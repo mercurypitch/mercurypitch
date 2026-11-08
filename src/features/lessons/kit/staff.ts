@@ -35,6 +35,16 @@
 // one sound (`owner`): a newer sound anywhere stops it, its notes go back
 // to rest, and a play cut short resolves false, so it counts as not heard.
 //
+// A state may hold a key signature (`key`, staff-key.ts), drawn just past
+// the clef; a tap then plays its place as the signature has it, and a page
+// changes it with `setKey`, which says it in words ("Key signature: two
+// sharps, F sharp and C sharp") and lets a sign that joins fade in, or travel
+// from the note that carried it (Lesson 21's WEB-SPEC, Toys 2). A state that
+// keeps room for a signature's signs (`keyRoom`) keeps its notes still as the
+// signature grows. A page whose taps judge a place hears each one
+// (`onPick`), and a page that follows the clef switch itself takes over
+// what a clef change says and shows (`onClef`).
+//
 // "See it on the pitch line" (`[data-staff-lanes]`, a switch, off at first)
 // is one choice for the visit, in memory: every staff toy on the page
 // follows it (`PitchLine`), and a state can leave it out. The clef switch
@@ -50,6 +60,8 @@ import { playNotes } from './run'
 import { Sound } from './sound'
 import type { Layout, Mark, Scene, Tone } from './staff-draw'
 import { drawScene, figureSize } from './staff-draw'
+import type { KeySig } from './staff-key'
+import { keyAlter, keyWords, NO_KEY } from './staff-key'
 import type { Clef, StaffKind } from './staff-places'
 import { midiOf, noteAt, placeOf, placeRange, sayPlace, staffName, writtenOf, } from './staff-places'
 
@@ -79,6 +91,14 @@ export interface StaffState {
   readonly endLine?: string
   /** No pitch line beside it, whatever the switch says. */
   readonly noLanes?: boolean
+  /** The key signature past the clef, on one staff; none when unset (staff-key.ts). */
+  readonly key?: KeySig | null
+  /** The signs the staff keeps room for past the clef, so its notes stay put as the signature grows. */
+  readonly keyRoom?: number
+  /** The staff spaces a run's figure holds across (staff-draw.ts `across`): a page whose runs are long asks for more. */
+  readonly across?: number
+  /** The picked note carries the house: a tap places do (Lesson 21's Find do). */
+  readonly house?: boolean
 }
 
 /** A note of a play: when it starts and how long it sounds, s, and how it lights. */
@@ -96,6 +116,10 @@ export interface PlayNote {
   readonly gold?: Clef
   /** The staff of the grand staff it names, lit as it sounds. */
   readonly staffLit?: Clef
+  /** Ringed in ink, with its sign, while it shows: a note a step has just changed. */
+  readonly outline?: boolean
+  /** The house under it: do. */
+  readonly home?: boolean
 }
 
 /** A page's play on the toy. */
@@ -117,12 +141,23 @@ export interface StaffToy {
   readonly state: StaffState
   readonly clef: Clef
   readonly kind: StaffKind
+  /** The key signature showing, or null for none. */
+  readonly key: KeySig | null
   /** The note picked or moved, or null. */
   readonly selected: Spelled | null
   /** Shows `s`: stops what plays and opens the state afresh. */
   setState(s: StaffState): void
   /** Switches a single staff's clef: stops what plays, keeps the selected place. */
   setClef(c: Clef): void
+  /**
+   * Changes the key signature and keeps what the staff shows, saying it in
+   * words unless `quiet`; a sign that joins fades in, or travels from beside
+   * the note in run column `from` that carried it.
+   */
+  setKey(
+    key: KeySig | null,
+    how?: { readonly from?: number; readonly quiet?: boolean },
+  ): void
   /** Plays `p`; resolves true when heard to its end with nothing cutting it short. */
   play(p: StaffPlay): Promise<boolean>
   /** Taps a place, as a tap on the staff does. */
@@ -146,6 +181,14 @@ export interface StaffOptions {
   readonly state: StaffState
   /** One sound at a time: the page's owner (kit/now-playing.ts). */
   readonly owner: SoundOwner
+  /** Hears each place a tap, a step or an arrow picks, with its note as the signature has it. */
+  readonly onPick?: (note: Spelled, place: number) => void
+  /**
+   * A page that follows the clef itself: once the clef has changed, by the
+   * switch, a play or `setClef`, the toy hands it over, and says and plays
+   * nothing of its own.
+   */
+  readonly onClef?: (clef: Clef) => void
 }
 
 // ---------------------------------------------------------------- the switch
@@ -213,6 +256,10 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
   let scoreTones: Tone[] = []
   let sweepAt: number | null = null
   let layout: Layout | null = null
+  // the key signature, and the sign that has just joined it, drawn once
+  let key: KeySig | null = state.key ?? null
+  let keyFresh: number | null = null
+  let keyFrom: number | null = null
   // what sounds: a play or a tap, and the timers that put its notes back to rest
   let playing: Run | null = null
   let timers: number[] = []
@@ -222,6 +269,14 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
     state.keys === undefined ? [] : whiteRange(state.keys.lo, state.keys.hi)
   const reach = (): readonly [number, number] =>
     state.reach ?? placeRange(kindOf())
+  /** A place's note as the key signature has it: F sharp on the F line under one sharp. */
+  const keyed = (note: Spelled): Spelled =>
+    key === null ? note : { ...note, alter: keyAlter(key, note.letter) }
+  /** The staff's name, with its key signature. */
+  const labelOf = (): string =>
+    key === null || state.staff === 'grand'
+      ? staffName(kindOf())
+      : `${staffName(kindOf())}. ${keyWords(key)}`
   const keyCount = (): number => {
     const w = figureSize(el).w - 24
     return Math.max(1, Math.min(whites().length, Math.floor(w / KEY_MIN)))
@@ -248,6 +303,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
                   tone: cursor.tone,
                   on: cursor.on,
                   named: true,
+                  home: state.house,
                 },
               ]
     const lo = midiOf(noteAt(room[0], kind))
@@ -258,7 +314,9 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
       marks,
       cols: state.score?.length ?? runCols,
       across:
-        state.score === undefined ? undefined : scoreAcross(state.score.length),
+        state.score === undefined
+          ? state.across
+          : scoreAcross(state.score.length),
       letters: [...letters],
       gold,
       lanes: PitchLine.on && state.noLanes !== true ? { lo, hi } : null,
@@ -268,6 +326,10 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
           : { ...state.keys, from, count: keyCount(), lit: keysLit },
       sweep: sweepAt,
       staffLit,
+      key,
+      keyFresh,
+      keyFrom,
+      keyRoom: state.keyRoom,
     }
   }
 
@@ -344,7 +406,14 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
         const tone = n.tone ?? 'lit'
         if (p.show === 'run') {
           const next = run.slice()
-          next[i] = { note: n.note, col: i, tone, on: n.on }
+          next[i] = {
+            note: n.note,
+            col: i,
+            tone,
+            on: n.on,
+            outline: n.outline,
+            home: n.home,
+          }
           run = next
         } else cursor = { note: n.note, tone, on: n.on }
         if (p.keep === true || state.keep === true)
@@ -403,6 +472,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
       },
       Sound.canPlay(),
     )
+    o.onPick?.(note, placeOf({ ...note, alter: 0 }, kindOf()))
   }
 
   function tapPlace(place: number): void {
@@ -411,7 +481,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
     const at = clamp(place, lo, hi)
     const extra =
       at !== place && state.endLine !== undefined ? state.endLine : ''
-    const note = noteAt(at, kindOf())
+    const note = keyed(noteAt(at, kindOf()))
     pick(
       note,
       state.tap === 'mover' ? MOVE_SEC : (state.tapSec ?? TAP_SEC),
@@ -455,8 +525,11 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
     sweepAt = null
     sel = s.start ?? null
     cursor = s.start === undefined ? null : { note: s.start, tone: 'rest' }
+    key = s.key == null || s.key.count === 0 ? null : s.key
+    keyFresh = null
+    keyFrom = null
     from = Math.max(0, Math.floor((whites().length - keyCount()) / 2))
-    el.setAttribute('aria-label', staffName(kindOf()))
+    el.setAttribute('aria-label', labelOf())
     showClef()
     draw()
   }
@@ -482,14 +555,47 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
       cursor = { note: moved(cursor.note, was, c), tone: 'rest' }
     run = run.map((m) => ({ ...m, note: moved(m.note, was, c), tone: 'rest' }))
     if (gold !== null) gold = null
-    el.setAttribute('aria-label', staffName(c))
+    el.setAttribute('aria-label', labelOf())
     showClef()
     draw()
+    if (o.onClef !== undefined) {
+      o.onClef(c)
+      return
+    }
     const name = c === 'treble' ? 'Treble clef' : 'Bass clef'
     // the selected place keeps its line or space, so the same line names
     // another note, and plays it
     if (sel === null || state.tap === 'none') say(`${name}.`)
     else pick(sel, state.tapSec ?? TAP_SEC, '', `${name}. `)
+  }
+
+  /**
+   * The first sign of `now` that `was` lacks, by its place in the order: all
+   * of them for a signature of the other kind, none for one no longer.
+   */
+  function joining(was: KeySig | null, now: KeySig | null): number | null {
+    if (now === null) return null
+    if (was === null || was.sign !== now.sign) return 0
+    return now.count > was.count ? was.count : null
+  }
+
+  function setKey(
+    next: KeySig | null,
+    how: { readonly from?: number; readonly quiet?: boolean } = {},
+  ): void {
+    const was = key
+    key =
+      next === null || next.count === 0 || state.staff === 'grand' ? null : next
+    const same =
+      was?.sign === key?.sign && (was?.count ?? 0) === (key?.count ?? 0)
+    keyFresh = joining(was, key)
+    keyFrom = keyFresh === null ? null : (how.from ?? null)
+    el.setAttribute('aria-label', labelOf())
+    draw()
+    // drawn once: a later redraw shows the signature as it stands
+    keyFresh = null
+    keyFrom = null
+    if (how.quiet !== true && !same) say(keyWords(key ?? NO_KEY))
   }
 
   // ------------------------------------------------------------ input
@@ -574,11 +680,15 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
     get kind() {
       return kindOf()
     },
+    get key() {
+      return key
+    },
     get selected() {
       return sel
     },
     setState,
     setClef,
+    setKey,
     play: (p) => {
       if (p.clef !== undefined && state.staff !== 'grand' && p.clef !== clef)
         setClef(p.clef)

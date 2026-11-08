@@ -14,7 +14,16 @@
 // Music's outlines (glyphs.ts and staff-glyphs.ts), a sign to the left of
 // its note, ledger lines a little wider than a notehead and only as far as
 // the note needs.
-// No stems, no time or key signature: note lengths wait for Lesson 17. The
+// No stems and no time signature: note lengths wait for Lesson 17. A key
+// signature, where a scene has one, sits just past the clef at its clef's
+// places (staff-key.ts), each sign its own width and a tenth of a space
+// after the last, as the app's notation library spaces them; a note whose
+// letter it covers is written with no sign of its own. A sign that has just
+// joined it fades in, or travels there from the note that carried it. A
+// note an F major written with A sharp would need a natural sign under a
+// signature is never written: a page drops the signature first (Lesson
+// 21's white keys). An outlined note, one a step has just changed, is ringed
+// in ink, never coloured. The
 // line weight and colour are the toy's tokens (lesson-staff.css), ink at
 // 3:1 or more against the figure at every stop of its gradient (FACTS 72).
 // A lit note is ink with a halo, never colour alone; Merc's sung note is
@@ -31,9 +40,12 @@ import { G_CLEF_PATH } from './glyphs'
 import { HOME_PATH } from './home-glyph'
 import type { Strip, StripKey, StripSpec } from './key-strip'
 import { stripLayout } from './key-strip'
+import { Motion } from './motion-switch'
 import type { Spelled } from './notes'
 import { isBlack, signName } from './notes'
 import { F_CLEF_PATH, FLAT_PATH, NOTEHEAD_PATH, NOTO_GLYPHS, SHARP_PATH, } from './staff-glyphs'
+import type { KeySig } from './staff-key'
+import { covered, keyLetters, keyPlaces } from './staff-key'
 import type { Clef, StaffKind } from './staff-places'
 import { clefPlace, isLine, ledgersOf, LINES, midiOf, noteAt, placeOf, writtenOf, } from './staff-places'
 
@@ -57,6 +69,8 @@ export interface Mark {
   readonly home?: boolean
   /** Its name beside it: "G4". */
   readonly named?: boolean
+  /** Ringed in ink, with its sign: a note a step has just changed (Lesson 21). */
+  readonly outline?: boolean
 }
 
 /** The key strip under the staff: its range, and the window of white keys showing. */
@@ -96,6 +110,14 @@ export interface Scene {
    * signs never touch on a narrow screen.
    */
   readonly across?: number
+  /** The key signature just past the clef, on one staff; none when unset (staff-key.ts). */
+  readonly key?: KeySig | null
+  /** The first sign that has just joined the signature, by its place in the order: it and those after it fade in. */
+  readonly keyFresh?: number | null
+  /** The run column whose note carried that sign: the sign travels from beside the note into the signature. */
+  readonly keyFrom?: number | null
+  /** The signs the staff keeps room for past the clef, so its notes stay put as a signature grows. */
+  readonly keyRoom?: number
 }
 
 /** A scene with nothing on it: `staff` making room for `room`. */
@@ -149,6 +171,43 @@ const KEYS_SHARE = 0.3
 const KEYS_MIN = 60
 const KEYS_MAX = 96
 
+/** A sign's own width, in staff spaces: the glyph's right edge less its left bearing, 50 units. */
+const signWidth = (sign: KeySig['sign']): number =>
+  ((sign === 'sharp' ? NOTO_GLYPHS.sharp : NOTO_GLYPHS.flat) - 50) /
+  NOTO_GLYPHS.space
+
+/** From one sign of a signature to the next, in staff spaces: its width and a tenth of a space. */
+const signStep = (sign: KeySig['sign']): number => signWidth(sign) + 0.1
+
+/** Where a signature's first sign starts, in staff spaces from the staff's left end: where a note would. */
+const KEY_X = 3.6
+/** The gap between a signature's last sign and the notes, staff spaces. */
+const KEY_GAP = 0.5
+/** How long a sign takes to travel from its note into the signature, ms. */
+const SLIDE_MS = 450
+
+/** The key signature a scene draws: none on the grand staff, or with no clef. */
+const keyOf = (s: Scene): KeySig | null =>
+  s.key == null || s.key.count === 0 || s.staff === 'grand' || s.noClef === true
+    ? null
+    : s.key
+
+/**
+ * The staff spaces past the clef a scene keeps for its signature and the
+ * gap after it: the signature's own, or the room asked for, a sharp's width
+ * a sign, whichever is wider; none with neither.
+ */
+export function keySpaces(s: Scene): number {
+  const key = keyOf(s)
+  const own = key === null ? 0 : key.count * signStep(key.sign)
+  const room =
+    s.staff === 'grand' || s.noClef === true
+      ? 0
+      : (s.keyRoom ?? 0) * signStep('sharp')
+  const width = Math.max(own, room)
+  return width === 0 ? 0 : width + KEY_GAP
+}
+
 /** Lays a scene out in a `w` by `h` figure. */
 export function layoutScene(w: number, h: number, s: Scene): Layout {
   const pad = s.small === true ? 4 : 12
@@ -160,12 +219,13 @@ export function layoutScene(w: number, h: number, s: Scene): Layout {
   const [lo, hi] = s.room
   // half a space and a little more past the room at each end
   const spaces = (hi - lo) / 2 + 1.6
+  const keyRoom = keySpaces(s)
   const space = Math.max(
     MIN_SPACE,
     Math.min(
       MAX_SPACE,
       (bottom - top) / spaces,
-      (w - lanesW - 2 * pad) / (s.across ?? 9),
+      (w - lanesW - 2 * pad) / ((s.across ?? 9) + keyRoom),
     ),
   )
   const mid = (top + bottom) / 2
@@ -174,7 +234,7 @@ export function layoutScene(w: number, h: number, s: Scene): Layout {
   const brace = s.staff === 'grand' ? space * 1.1 : 0
   const x0 = pad + lanesW + (lanesW > 0 ? 12 : 0) + brace
   const x1 = w - pad
-  const notes0 = x0 + space * 3.6
+  const notes0 = x0 + space * (KEY_X + keyRoom)
   const notes1 = x1 - space * 1.6
   const colX = (col?: number): number => {
     if (col === undefined || s.cols <= 1) return (notes0 + notes1) / 2
@@ -303,14 +363,11 @@ function engraveSign(
   parent: Element,
 ): void {
   if (alter === 0) return
-  const k = space / NOTO_GLYPHS.space
-  const right = cx - headHalf(space) - space * 0.25
-  const [d, width] =
-    alter > 0 ? [SHARP_PATH, NOTO_GLYPHS.sharp] : [FLAT_PATH, NOTO_GLYPHS.flat]
+  const at = signAt(alter, cx, y, space)
   glyph(
-    d,
-    right - width * k,
-    y + NOTO_GLYPHS.head.cy * k,
+    alter > 0 ? SHARP_PATH : FLAT_PATH,
+    at.x,
+    at.y,
     space,
     'st-sign',
     parent,
@@ -389,6 +446,86 @@ function staves(s: Scene, L: Layout, parent: Element): void {
   )
 }
 
+/** Where a mark's own sign is engraved, the glyph's origin: just left of its head. */
+function signAt(
+  alter: number,
+  cx: number,
+  y: number,
+  space: number,
+): { x: number; y: number } {
+  const k = space / NOTO_GLYPHS.space
+  const right = cx - headHalf(space) - space * 0.25
+  const width = alter > 0 ? NOTO_GLYPHS.sharp : NOTO_GLYPHS.flat
+  return { x: right - width * k, y: y + NOTO_GLYPHS.head.cy * k }
+}
+
+/** Moves a sign from (dx, dy) away to where it is drawn; held still while motion is paused. */
+function travel(el: SVGGElement, dx: number, dy: number): void {
+  if (Motion.paused || typeof el.animate !== 'function') return
+  el.animate(
+    [
+      { transform: `translate(${r(dx)}px, ${r(dy)}px)` },
+      { transform: 'translate(0px, 0px)' },
+    ],
+    { duration: SLIDE_MS, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)' },
+  )
+}
+
+/**
+ * The key signature past the clef: each sign at its clef's place, in its
+ * order, its own width and a tenth of a space after the one before. A sign
+ * that has just joined fades in, or travels from beside the note in the
+ * scene's `keyFrom` column that carried it.
+ */
+function keySig(s: Scene, L: Layout, parent: Element): void {
+  const key = keyOf(s)
+  if (key === null || s.staff === 'grand') return
+  const g = svg('g', { class: 'st-keysig' }, parent)
+  const k = L.space / NOTO_GLYPHS.space
+  const d = key.sign === 'sharp' ? SHARP_PATH : FLAT_PATH
+  const step = signStep(key.sign) * L.space
+  const fresh = s.keyFresh ?? null
+  const letters = keyLetters(key)
+  keyPlaces(key, s.staff).forEach((place, i) => {
+    // the glyph's left bearing, 50 units, sits before the sign's left edge
+    const x = L.x0 + KEY_X * L.space + i * step - 50 * k
+    const y = L.yOf(place) + NOTO_GLYPHS.head.cy * k
+    const joining = fresh !== null && i >= fresh
+    const from =
+      joining && s.keyFrom != null
+        ? s.marks.find(
+            (m) => m.col === s.keyFrom && m.note.letter === letters[i],
+          )
+        : undefined
+    if (from === undefined) {
+      glyph(
+        d,
+        x,
+        y,
+        L.space,
+        joining ? 'st-sign st-keysign is-fresh' : 'st-sign st-keysign',
+        g,
+      )
+      return
+    }
+    const holder = svg('g', { class: 'st-keysign-move' }, g)
+    glyph(d, x, y, L.space, 'st-sign st-keysign', holder)
+    const was = signAt(
+      key.sign === 'sharp' ? 1 : -1,
+      L.colX(from.col),
+      L.yOf(placeOf(from.note, s.staff)),
+      L.space,
+    )
+    travel(holder, was.x - x, was.y - y)
+  })
+}
+
+/** The sign a mark is written with: none where the scene's signature covers its letter. */
+function signOf(s: Scene, m: Mark): number {
+  const key = keyOf(s)
+  return key !== null && covered(m.note, key) ? 0 : m.note.alter
+}
+
 /** A mark's lane on the pitch line: its MIDI note's band, top and bottom. */
 function laneBand(
   s: Scene,
@@ -431,7 +568,7 @@ function pitchLine(s: Scene, L: Layout, parent: Element): void {
     const x =
       L.colX(m.col) -
       headHalf(L.space) -
-      (m.note.alter === 0 ? 0 : L.space * 1.1)
+      (signOf(s, m) === 0 ? 0 : L.space * 1.1)
     svg(
       'line',
       {
@@ -474,7 +611,25 @@ function mark(s: Scene, L: Layout, m: Mark, parent: Element): void {
       },
       g,
     )
-  engraveSign(m.note.alter, cx, y, L.space, g)
+  const sign = signOf(s, m)
+  if (m.outline === true) {
+    // round the head, and its sign where one is written
+    const left = cx - headHalf(L.space) - L.space * (sign === 0 ? 0.35 : 1.45)
+    const right = cx + headHalf(L.space) + L.space * 0.35
+    svg(
+      'rect',
+      {
+        x: r(left),
+        y: r(y - L.space * 0.95),
+        width: r(right - left),
+        height: r(L.space * 1.9),
+        rx: r(L.space * 0.5),
+        class: 'st-outline',
+      },
+      g,
+    )
+  }
+  engraveSign(sign, cx, y, L.space, g)
   engraveHead(cx, y, L.space, TONE_CLASS[m.tone], g)
   if (m.home === true) {
     const size = L.space * 1.05
@@ -490,8 +645,7 @@ function mark(s: Scene, L: Layout, m: Mark, parent: Element): void {
     )
   }
   if (m.named !== true || s.small === true) return
-  const left =
-    cx - headHalf(L.space) - L.space * (m.note.alter === 0 ? 0.45 : 1.55)
+  const left = cx - headHalf(L.space) - L.space * (sign === 0 ? 0.45 : 1.55)
   svg(
     'text',
     {
@@ -635,6 +789,7 @@ export function drawScene(
   el.setAttribute('viewBox', `0 0 ${r(size.w)} ${r(size.h)}`)
   pitchLine(s, L, el)
   staves(s, L, el)
+  keySig(s, L, el)
   letters(s, L, el)
   sweepLine(s, L, el)
   const marks = svg('g', { class: 'st-marks' }, el)

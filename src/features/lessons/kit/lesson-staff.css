@@ -78,6 +78,25 @@
 .st-head.is-orange {
   fill: var(--orange);
 }
+.st-outline {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.4px;
+}
+/* a key signature's sign that has just joined it fades in as its scale
+   ends (Lesson 21 WEB-SPEC, Look); reduced motion and the Pause animations
+   switch show it at once */
+.st-keysign.is-fresh {
+  animation: st-key-in 0.12s ease-out both;
+}
+.motion-paused .st-keysign.is-fresh {
+  animation: none;
+}
+@keyframes st-key-in {
+  from {
+    opacity: 0;
+  }
+}
 .st-halo {
   fill: none;
   stroke-width: 1.5px;
@@ -153,7 +172,8 @@
   .st-line,
   .st-ledger,
   .st-brace,
-  .st-sweep {
+  .st-sweep,
+  .st-outline {
     stroke: CanvasText;
   }
   .st-head,
