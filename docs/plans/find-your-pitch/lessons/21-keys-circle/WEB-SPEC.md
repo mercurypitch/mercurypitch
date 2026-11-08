@@ -593,15 +593,15 @@ Where the page differs from the text above, the page as built is the reference:
   Lessons 10, 12, 17, 19 and 23 name theirs: `21: "Lessons 6 and 15's pages at /learn/06 and
 /learn/15, and the vocal coach's look at Sing it (MASTER-PLAN § 12 item 8)"`.
 - Counted by `scripts/lesson-words.mjs`'s rule as the built page shows it, the package's 2,142 words
-  with about 259 more written in the open (the predict's hint and "You said" lines, 18; Find do's
-  lines with Next round and Again, 72; Spell it's two lines, 12; Sing it's status lines and the
-  stored voice's line, 75; the five figures' captions, 39; the toys' labels and readouts, 43; free
-  play and the sound-off lines left out, as the counter leaves them), the page is about 2,401 words,
-  some 22 over the series' cap of 2,379. Length's 175 left out Sing it's status lines and three of
-  the captions. So Length's next cut is made, in part: the reveal's last sentence keeps its fair
-  guess, as every predict in the series does (CURIOSITY-MOMENTS § 1 rule 2), in six words, "(After
-  C♯, D♯ was a fair guess.)". That leaves about 2,391, still some 12 over: the cap is the owner's to
-  weigh at the final look, as Lessons 8's, 17's, 22's and 24's were.
+  with about 247 more written in the open (the predict's hint and "You said" lines, 18; Find do's
+  lines with Next round and Again, 72; Sing it's status lines and the stored voice's line, 75; the
+  five figures' captions, 39; the toys' labels and readouts, 43; Spell it's two lines left out, since
+  the staff's live region only announces them, as Toys 2 asks, and free play and the sound-off lines
+  too, as the counter leaves them), the page is about 2,389 words, some 10 over the series' cap of
+  2,379: Length's 175 counted Spell it's lines and left out Sing it's status lines and three of the
+  captions. So Length's next cut is made, in part: the reveal's last sentence keeps its fair guess,
+  as every predict in the series does (CURIOSITY-MOMENTS § 1 rule 2), in six words, "(After C♯, D♯
+  was a fair guess.)". That leaves the page at about 2,379, level with the cap.
 - Step 1's staircase stands over the staff at every width, not beside it (Toys 1): eight stairs in
   half the stage card came out narrower than a fingertip's 44 px on every tablet and laptop
   (`learn-stage-fit.spec.ts`). On a phone 344 px wide the eight stairs share 312 px, 39 px each, as
