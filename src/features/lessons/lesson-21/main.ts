@@ -29,11 +29,13 @@ import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
 // the recall brings Lesson 6's quiz modules onto this page, through Lesson
 // 15's questions, so taking the guide's sheet here keeps it in their chunk,
-// which the other lessons link before their own sheets; the voice lessons'
-// sheet joins with Sing it, the module whose chunk it shares (MISTAKES.md,
-// on the lessons' base stylesheet)
+// which the other lessons link before their own sheets (MISTAKES.md, on the
+// lessons' base stylesheet)
 import '@/features/lessons/kit/lesson-guide.css'
 import '@/features/lessons/kit/lesson-parts.css'
+// Sing it brings the kit's comfort check and voice choice, so taking the
+// voice lessons' sheet here keeps it in the chunk it shares with them
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-21.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -48,6 +50,7 @@ import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
 import { initQuizzes } from './recall'
+import { initSing } from './sing'
 import { initSteps, TOYS } from './steps'
 import { initWords } from './words'
 
@@ -73,6 +76,10 @@ deck.start()
 // four words, each figure lit as its sound plays: a small ring, a staff in
 // the learner's clef, four keys round a small circle and thirteen tiles
 initWords()
+
+// Sing it on the kit's flow: so, la, ti and do in C and then in G, the
+// staff turning to G between the two runs
+initSing()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(21)
