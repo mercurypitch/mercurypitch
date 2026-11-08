@@ -518,3 +518,142 @@ describe('a score', () => {
     expect(Math.min(...gaps)).toBeGreaterThan(1.8)
   })
 })
+
+describe('a key signature', () => {
+  const ONE_SHARP: StaffState = {
+    ...PLACE,
+    key: { sign: 'sharp', count: 1 },
+    keyRoom: 3,
+  }
+
+  it('draws the signature of a state past the clef and names it with the staff', () => {
+    // Act
+    mount(ONE_SHARP)
+
+    // Assert: Lesson 21 WEB-SPEC, Toys 2
+    const svg = root().querySelector('[data-staff-svg]')
+    expect(svg?.querySelectorAll('.st-keysign').length).toBe(1)
+    expect(svg?.getAttribute('aria-label')).toBe(
+      'Treble staff, five lines and four spaces. Key signature: one sharp, F sharp',
+    )
+  })
+
+  it('plays a tapped place as the signature has it: the F line sounds F sharp', () => {
+    // Arrange: the top line is F5
+    const picks: [string, number][] = []
+    const r = document.getElementById('t') as HTMLElement
+    const toy = mountStaff(r, {
+      state: ONE_SHARP,
+      owner,
+      onPick: (n, place) => picks.push([`${n.letter}${n.alter}`, place]),
+    })
+
+    // Act
+    toy.tapPlace(8)
+
+    // Assert
+    expect(last().notes[0].midi).toBe(78)
+    expect(toy.selected).toEqual({ letter: 'F', alter: 1, octave: 5 })
+    expect(said()).toBe('F sharp 5, the top line')
+    expect(picks).toEqual([['F1', 8]])
+  })
+
+  it('grows a sign at a time as the page sets it, saying each new signature', () => {
+    // Arrange
+    const toy = mount(ONE_SHARP)
+
+    // Act
+    toy.setKey({ sign: 'sharp', count: 2 })
+
+    // Assert
+    expect(said()).toBe('Key signature: two sharps, F sharp and C sharp')
+    expect(root().querySelectorAll('.st-keysign').length).toBe(2)
+    expect(toy.key).toEqual({ sign: 'sharp', count: 2 })
+  })
+
+  it('fades in a joining sign only on the draw that adds it', () => {
+    // Arrange
+    const toy = mount(ONE_SHARP)
+    toy.setKey({ sign: 'sharp', count: 2 })
+    const fresh = root().querySelectorAll('.st-keysign.is-fresh').length
+
+    // Act: anything that draws again
+    toy.tapPlace(2)
+    last().note(0)
+
+    // Assert
+    expect(fresh).toBe(1)
+    expect(root().querySelectorAll('.st-keysign.is-fresh').length).toBe(0)
+  })
+
+  it('drops the signature, saying so, and says nothing when it stays the same', () => {
+    // Arrange
+    const toy = mount(ONE_SHARP)
+    toy.setKey(null)
+    const dropped = said()
+    toy.say('')
+
+    // Act
+    toy.setKey(null)
+
+    // Assert
+    expect(dropped).toBe('No key signature')
+    expect(said()).toBe('')
+    expect(root().querySelectorAll('.st-keysign').length).toBe(0)
+  })
+
+  it('writes the outlined note of a run in its ring, and its do over the house', () => {
+    // Arrange
+    const toy = mount({ ...PLACE, across: 23 })
+    void toy.play({
+      show: 'run',
+      notes: [
+        { t: 0, dur: 0.35, note: G4, home: true },
+        { t: 0.4, dur: 0.35, note: E4, outline: true },
+      ],
+    })
+
+    // Act
+    last().note(0)
+    last().note(1)
+
+    // Assert
+    expect(root().querySelectorAll('.st-home').length).toBe(1)
+    expect(root().querySelectorAll('.st-outline').length).toBe(1)
+  })
+
+  it('puts the house on the picked note where the state places do', () => {
+    // Arrange
+    const toy = mount({ ...ONE_SHARP, house: true, reach: [-1, 9] })
+
+    // Act
+    toy.tapPlace(2)
+    last().note(0)
+
+    // Assert
+    expect(root().querySelectorAll('.st-home').length).toBe(1)
+  })
+
+  it('hands a clef change to a page that follows the clef, saying and playing nothing itself', () => {
+    // Arrange
+    const clefs: string[] = []
+    const r = document.getElementById('t') as HTMLElement
+    const toy = mountStaff(r, {
+      state: ONE_SHARP,
+      owner,
+      onClef: (c) => clefs.push(c),
+    })
+    toy.tapPlace(2)
+    const before = runs.length
+
+    // Act
+    click('[data-clef="bass"]')
+
+    // Assert: the signature moves with the clef, a line lower
+    expect(clefs).toEqual(['bass'])
+    expect(runs.length).toBe(before)
+    expect(said()).not.toBe('Bass clef.')
+    expect(toy.clef).toBe('bass')
+    expect(root().querySelectorAll('.st-keysign').length).toBe(1)
+  })
+})
