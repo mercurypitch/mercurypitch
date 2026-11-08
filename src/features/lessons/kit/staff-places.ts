@@ -50,6 +50,17 @@ export function spelledAt(d: number): Spelled {
   return { letter, alter: 0, octave: Math.floor(d / 7) }
 }
 
+/** The movable-do syllables, do to ti, a letter each. */
+export const SOLFA = ['do', 're', 'mi', 'fa', 'so', 'la', 'ti'] as const
+
+/**
+ * A written note's syllable in the key whose do is `home`: its letters
+ * counted up from do, in any octave, so B is mi when G is do (Lesson 16's
+ * staff, the syllables under the notes).
+ */
+export const syllableOf = (s: Spelled, home: Spelled): string =>
+  SOLFA[(((diatonicOf(s) - diatonicOf(home)) % 7) + 7) % 7]
+
 /** The MIDI note a written note sounds: F♯4 is 66. */
 export const midiOf = (s: Spelled): number =>
   12 * (s.octave + 1) + NATURAL[s.letter] + s.alter

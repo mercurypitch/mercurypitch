@@ -124,13 +124,22 @@
   stroke-linecap: round;
   stroke-linejoin: round;
 }
+/* the house glows with its note: amber as Sing it's start sings do (Lesson 16) */
+.st-home.is-lit {
+  stroke: var(--staff-lit);
+}
+.st-home.is-amber {
+  stroke: var(--amber);
+}
 .st-name,
-.st-letter {
+.st-letter,
+.st-syl {
   fill: var(--ink-2);
   font-family: var(--f-display);
   font-weight: 600;
 }
-.st-name {
+.st-name,
+.st-syl.is-lit {
   fill: var(--ink);
 }
 .st-lane.is-white {

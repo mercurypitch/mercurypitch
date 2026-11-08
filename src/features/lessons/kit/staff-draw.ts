@@ -636,7 +636,7 @@ function mark(s: Scene, L: Layout, m: Mark, parent: Element): void {
       'path',
       {
         d: HOME_PATH,
-        class: 'st-home',
+        class: m.tone === 'rest' ? 'st-home' : `st-home is-${m.tone}`,
         transform: `translate(${r(cx - size / 2)} ${r(y + L.space * 0.95)}) scale(${k.toFixed(4)})`,
       },
       g,

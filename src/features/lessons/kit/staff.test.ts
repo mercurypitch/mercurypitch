@@ -657,3 +657,188 @@ describe('a key signature', () => {
     expect(root().querySelectorAll('.st-keysign').length).toBe(1)
   })
 })
+
+describe('reading along a written line (Lesson 16)', () => {
+  const A4: Spelled = { letter: 'A', alter: 0, octave: 4 }
+  const B4: Spelled = { letter: 'B', alter: 0, octave: 4 }
+  const C5: Spelled = { letter: 'C', alter: 0, octave: 5 }
+  const D5: Spelled = { letter: 'D', alter: 0, octave: 5 }
+  /** Lesson 16's staff in the treble: do to so in G, the house on do. */
+  const DO_TO_SO: StaffState = {
+    ...PLACE,
+    solfa: G4,
+    score: [
+      { note: G4, home: true },
+      { note: A4 },
+      { note: B4 },
+      { note: C5 },
+      { note: D5 },
+    ],
+  }
+  const syls = (): string[] =>
+    Array.from(root().querySelectorAll('.st-syl'), (t) => t.textContent ?? '')
+  const NAMES = `
+    <div data-staff-names role="group">
+      <button type="button" data-names="on" aria-pressed="true">Names on</button>
+      <button type="button" data-names="off" aria-pressed="false">Names off</button>
+    </div>`
+
+  it("writes each note's syllable under the staff, counted up from do, and Names off hides them and keeps the house", () => {
+    // Arrange
+    root().insertAdjacentHTML('beforeend', NAMES)
+    const toy = mount(DO_TO_SO)
+    const shown = syls()
+
+    // Act
+    click('[data-names="off"]')
+
+    // Assert: WEB-SPEC, Toys 2, item 5
+    expect(shown).toEqual(['do', 're', 'mi', 'fa', 'so'])
+    expect(syls()).toEqual([])
+    expect(toy.names).toBe(false)
+    expect(root().querySelectorAll('.st-home')).toHaveLength(1)
+    expect(heads()).toHaveLength(5)
+    expect(
+      root().querySelector('[data-names="off"]')?.getAttribute('aria-pressed'),
+    ).toBe('true')
+  })
+
+  it('keeps its Names choice from state to state unless a state says, and shows syllables only with a do', () => {
+    // Arrange
+    const toy = mount(DO_TO_SO)
+    toy.setNames(false)
+
+    // Act
+    toy.setState({ ...DO_TO_SO })
+    const kept = syls()
+    toy.setState({ ...DO_TO_SO, names: true })
+    const said = syls()
+    toy.setState({ ...PLACE, score: DO_TO_SO.score })
+
+    // Assert
+    expect(kept).toEqual([])
+    expect(said).toEqual(['do', 're', 'mi', 'fa', 'so'])
+    expect(syls()).toEqual([])
+  })
+
+  it("lights the score's note each note of a play sounds, and puts it back at rest", async () => {
+    // Arrange
+    const toy = mount({ ...DO_TO_SO, tap: 'none' })
+
+    // Act: do, mi, so
+    const heard = toy.play({
+      show: 'score',
+      notes: [
+        { t: 0, dur: 0.5, note: G4 },
+        { t: 0.6, dur: 0.5, note: B4 },
+        { t: 1.2, dur: 0.5, note: D5 },
+      ],
+    })
+    last().note(1)
+    const mi = heads()
+    last().end(true)
+
+    // Assert
+    expect(mi).toEqual([
+      'st-head',
+      'st-head',
+      'st-head is-lit',
+      'st-head',
+      'st-head',
+    ])
+    expect(await heard).toBe(true)
+    expect(heads().every((h) => h === 'st-head')).toBe(true)
+  })
+
+  it('lights a note its beat before it sounds, silent, when it plays ahead: Hear it inside', () => {
+    // Arrange
+    vi.useFakeTimers()
+    try {
+      const toy = mount({ ...DO_TO_SO, tap: 'none' })
+
+      // Act: re, sounding at 1.6 s, lit from 0.6 s
+      void toy.play({
+        show: 'score',
+        notes: [{ t: 1.6, dur: 0.6, note: A4, ahead: 1.0 }],
+      })
+      vi.advanceTimersByTime(590)
+      const before = heads()[1]
+      vi.advanceTimersByTime(20)
+      const ahead = heads()[1]
+
+      // Assert: lit with nothing sounding yet (FACTS 68)
+      expect(before).toBe('st-head')
+      expect(ahead).toBe('st-head is-lit')
+      expect(last().o.audible).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  it('plays do before a tapped note, 0.2 s apart, and do alone for a tap on do', () => {
+    // Arrange: Step 1's Try
+    const toy = mount({ ...DO_TO_SO, lead: G4 })
+
+    // Act
+    toy.tapPlace(4)
+    const toMi = last().notes
+    toy.tapPlace(2)
+    const toDo = last().notes
+
+    // Assert: FACTS 68, a tap 0.8 s
+    expect(toMi).toEqual([
+      { t: 0, midi: 67, dur: 0.8, kind: 'soft' },
+      { t: 1, midi: 71, dur: 0.8, kind: 'soft' },
+    ])
+    expect(toDo).toEqual([{ t: 0, midi: 67, dur: 0.8, kind: 'soft' }])
+  })
+
+  it('lights the tapped note on a score, where a state with no score draws it alone', () => {
+    // Arrange
+    const toy = mount(DO_TO_SO)
+
+    // Act: the middle line, mi
+    toy.tapPlace(4)
+    last().note(0)
+
+    // Assert
+    expect(heads()).toEqual([
+      'st-head',
+      'st-head',
+      'st-head is-lit',
+      'st-head',
+      'st-head',
+    ])
+    expect(said()).toBe('B4, the middle line')
+  })
+
+  it('lights each note of a list, and the house glows with its do', () => {
+    // Arrange: Sing it's start lights each written do amber
+    const toy = mount({
+      ...DO_TO_SO,
+      tap: 'none',
+      score: [
+        { note: G4, home: true },
+        { note: A4 },
+        { note: B4 },
+        { note: A4 },
+        { note: G4 },
+      ],
+    })
+
+    // Act
+    toy.light([0, 4], 'amber')
+
+    // Assert
+    expect(heads()).toEqual([
+      'st-head is-amber',
+      'st-head',
+      'st-head',
+      'st-head',
+      'st-head is-amber',
+    ])
+    expect(root().querySelector('.st-home')?.getAttribute('class')).toBe(
+      'st-home is-amber',
+    )
+  })
+})
