@@ -1,0 +1,120 @@
+/* ============================================================
+   Circle toy — the ring of twelve and the circle of fifths, and the buttons over its beads
+   ============================================================
+   The circle toy's look (circle.ts, circle-draw.ts; Lesson 21's WEB-SPEC,
+   Toys 3, and Look). A page that mounts the toy takes this sheet into its
+   own by @import, so it inlines there and no chunk the other lessons share
+   changes (MISTAKES.md, on the lessons' base stylesheet). Chrome at rest and
+   ink lit, as the staff's noteheads are; the key's own black keys ringed in
+   ink; the house marks do; the walk's gap is a short dashed arc in ink-2. */
+
+.circle-viz {
+  position: relative;
+}
+.circle-viz svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.ci-orbit {
+  fill: none;
+  stroke: rgba(195, 204, 214, 0.22);
+  stroke-width: 1.5px;
+}
+.ci-thread {
+  fill: none;
+  stroke: rgba(230, 237, 243, 0.55);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+}
+.ci-gap {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 2px;
+  stroke-dasharray: 4 4;
+  stroke-linecap: round;
+}
+.ci-gap-label {
+  fill: var(--ink-2);
+  font-family: var(--f-mono);
+  font-weight: 500;
+}
+.ci-bead {
+  fill: rgba(195, 204, 214, 0.16);
+  stroke: rgba(195, 204, 214, 0.45);
+  stroke-width: 1.5px;
+}
+.ci-bead.is-lit {
+  fill: var(--ink);
+  stroke: #ffffff;
+}
+.ci-bead.is-key {
+  fill: #1b2230;
+  stroke: var(--ink);
+  stroke-width: 2.5px;
+}
+.ci-bead.is-dim {
+  fill: none;
+  stroke: rgba(195, 204, 214, 0.22);
+}
+.ci-halo {
+  fill: rgba(230, 237, 243, 0.16);
+}
+.ci-name {
+  fill: #9aa5b1;
+  font-family: var(--f-display);
+  font-weight: 600;
+}
+.ci-name.is-lit:not(.is-out) {
+  fill: #0d1117;
+}
+.ci-name.is-lit.is-out,
+.ci-name.is-key {
+  fill: var(--ink);
+}
+.ci-name.is-dim {
+  fill: rgba(154, 165, 177, 0.55);
+}
+.ci-home {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.9px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.circle-viz .circle-beads {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* each bead in the step's part is a button laid over its bead, at least
+   44 px on a phone (Lesson 21 WEB-SPEC, Toys 3) */
+.circle-viz .circle-beads button {
+  position: absolute;
+  min-width: 44px;
+  min-height: 44px;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  pointer-events: auto;
+  cursor: pointer;
+}
+.circle-viz .circle-beads button:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: 2px;
+}
+@media (forced-colors: active) {
+  .ci-orbit,
+  .ci-thread,
+  .ci-gap,
+  .ci-bead,
+  .ci-home {
+    stroke: CanvasText;
+  }
+  .ci-name,
+  .ci-gap-label {
+    fill: CanvasText;
+  }
+}

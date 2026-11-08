@@ -702,8 +702,9 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // the staircase's taken in by @import, and the shared Inter and Outfit
   // @font-face rules; the smallest whole KB above, to rise as each part
   // joins, the guide's and the voice lessons' sheets with the recall and
-  // Sing it.
-  'learn/21.html': 85,
+  // Sing it. Raised to 86 with the circle toy's sheet and the staff toy's
+  // key signatures and outlines: 87,228 bytes.
+  'learn/21.html': 86,
   // Lesson 22 (a draft, as above), with its steps, its cold open, its two
   // quizzes, its four words, Sing it and the Wrap: 89,928 bytes in
   // build:e2e, the kit's sheets (the voice lessons' in the chunk Sing it

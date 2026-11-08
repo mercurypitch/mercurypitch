@@ -18,6 +18,7 @@
 
 @import '../kit/lesson-staff.css';
 @import '../kit/lesson-stairs.css';
+@import '../kit/lesson-circle.css';
 
 /* ---------------------------------------------------------------- hero: the ring and the keyboard between Merc and Tavi */
 /* five chips, which wrap: rows 16 px apart keep each prerequisite link's
@@ -142,37 +143,6 @@
   .l21-pair {
     grid-template-columns: minmax(0, 1fr);
   }
-}
-.circle-viz {
-  position: relative;
-}
-.circle-viz .circle-svg {
-  display: block;
-  width: 100%;
-  height: 100%;
-}
-.circle-viz .circle-beads {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-}
-/* each bead in the step's part is a button laid over its bead, at least
-   44 px on a phone (WEB-SPEC, Toys 3) */
-.circle-viz .circle-beads button {
-  position: absolute;
-  min-width: 44px;
-  min-height: 44px;
-  margin: 0;
-  padding: 0;
-  border: 0;
-  border-radius: 50%;
-  background: transparent;
-  pointer-events: auto;
-  cursor: pointer;
-}
-.circle-viz .circle-beads button:focus-visible {
-  outline: 2px solid var(--aqua);
-  outline-offset: 2px;
 }
 /* Find do's line under its staff */
 .l21-find .find-line {
