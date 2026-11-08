@@ -1824,11 +1824,24 @@
           <!-- the next lesson's card: the kit draws its words from the season
                (kit/next-card.ts), and keeps the tease still in its slot -->
           <div class="next-card card l21-next" data-next-card hidden>
-            <!-- the tease still (wrap.ts): Lesson 5's band, with a pitch line
-                 waving across both its edges and no centre line drawn; it
-                 plays nothing -->
+            <!-- the tease still: Lesson 5's band, with a pitch line waving
+                 across both its edges, six times, and no centre line drawn;
+                 it plays nothing -->
             <div class="l21-tease" aria-hidden="true">
-              <svg data-tease-band focusable="false"></svg>
+              <svg viewBox="0 0 200 72" focusable="false">
+                <rect
+                  class="l21-tease-band"
+                  x="8"
+                  y="26"
+                  width="184"
+                  height="20"
+                  rx="10"
+                />
+                <path
+                  class="l21-tease-line"
+                  d="M8 36Q15.67 8 23.33 36T38.67 36T54 36T69.33 36T84.67 36T100 36T115.33 36T130.67 36T146 36T161.33 36T176.67 36T192 36"
+                />
+              </svg>
             </div>
           </div>
           <!-- Shown by kit/plan-back.ts, only to someone who answered the
