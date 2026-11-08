@@ -583,3 +583,38 @@ For the vocal coach), not the owner's.
   Step 1's staircase; Step 3's heading; the guide's count-in before each run (56); the two teases
   (5, 5b); the signature places from the app's notation library (21); Step 2's Go deeper drawer
   cut (3, 27); "piano key" for a key on the keyboard (22); and the smaller ones in FACTS 4.
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- The page is held back as a draft (What the kit and the app still need, item 3), and its draft
+  line names the two pages its prerequisite chips and its recall link to, both drafts themselves, as
+  Lessons 10, 12, 17, 19 and 23 name theirs: `21: "Lessons 6 and 15's pages at /learn/06 and
+/learn/15, and the vocal coach's look at Sing it (MASTER-PLAN § 12 item 8)"`.
+- Counted by `scripts/lesson-words.mjs`'s rule as the built page shows it, the package's 2,142 words
+  with about 259 more written in the open (the predict's hint and "You said" lines, 18; Find do's
+  lines with Next round and Again, 72; Spell it's two lines, 12; Sing it's status lines and the
+  stored voice's line, 75; the five figures' captions, 39; the toys' labels and readouts, 43; free
+  play and the sound-off lines left out, as the counter leaves them), the page is about 2,401 words,
+  some 22 over the series' cap of 2,379. Length's 175 left out Sing it's status lines and three of
+  the captions. So Length's next cut is made, in part: the reveal's last sentence keeps its fair
+  guess, as every predict in the series does (CURIOSITY-MOMENTS § 1 rule 2), in six words, "(After
+  C♯, D♯ was a fair guess.)". That leaves about 2,391, still some 12 over: the cap is the owner's to
+  weigh at the final look, as Lessons 8's, 17's, 22's and 24's were.
+- Step 1's staircase stands over the staff at every width, not beside it (Toys 1): eight stairs in
+  half the stage card came out narrower than a fingertip's 44 px on every tablet and laptop
+  (`learn-stage-fit.spec.ts`). On a phone 344 px wide the eight stairs share 312 px, 39 px each, as
+  Lesson 4's do; Step 1's controls and every other target in the steps keep 44 px.
+- On a phone the circle in Steps 2 and 3 is 284 px tall, so its twelve round beads, 44 px across
+  and a fifth apart, keep clear of each other with the names outside the ring (Edge cases). Every
+  step's stage stays under the 786 px the masthead leaves at 390 by 844, as Lesson 4's do; on a
+  phone narrower than 390 px, where Step 1's controls wrap to a fourth row, its staff gives up 40 px.
+- The words' figures draw on the kit: the circle's small figure (`kit/circle-draw.ts`, `small`)
+  writes each bead's name inside it, and the staff lights the sign in the signature that a sounding
+  note takes (`kit/staff-draw.ts`, `keyLit`), so Key signature's F♯ lights while its F sounds.
+- Once Merc's notes or the guide end, heard to the end or cut short, Sing it's staff rests in C
+  again, with no signature and the house on C, where every run starts; Toys 7 leaves the staff's
+  state after a run unsaid.
+- The tease still is markup, an inline SVG in `learn/21.html`: Lesson 5's band with a pitch line
+  waving six times across it and past both its edges, and no centre line (Toys 9).
