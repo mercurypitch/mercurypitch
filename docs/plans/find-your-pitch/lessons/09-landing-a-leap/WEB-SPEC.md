@@ -360,7 +360,7 @@ States:
 6. **Take**: the status reads "Your turn: start on do when you're ready. Move on each time the next
    band lights up." The take waits up to 6 s for the first voiced frame, then runs one 1.5 s slot a
    note from that frame, 6.0 s for the full ladder and 7.5 s for the smaller (`takeFrames`,
-   `kit/listen.ts:174-201`, with `wait: 6` and `run` the ladder's length, `:95-116`; FACTS 76).
+   `kit/listen.ts:182-209`, with `wait: 6` and `run` the ladder's length, `:95-123`; FACTS 76).
    Before the voice starts, do's band glows; from the first voiced frame, each slot's band glows in
    turn, every 1.5 s: that is the guide, on the chart itself, so the page needs no ring or countdown
    beside it. The violet line draws live, folded around the glowing rung's note (its cents from the
@@ -384,7 +384,7 @@ States:
    6's page (PR #1149) gives `mountFeelings` a `changeable` option for its sweeps, which this page
    leaves off.
    - Easy or Workable: the count, and "If that felt tricky, good: that's learning." when fewer than
-     all the heard notes landed (`trickyAfter`, `kit/take.ts:200-202`); then, if the visit's one
+     all the heard notes landed (`trickyAfter`, `kit/take.ts:203-205`); then, if the visit's one
      Again is unused and fewer than three takes have been made, **Again** (the same ladder, named
      "Again: do-mi-so-do" or "Again: the smaller ladder") and, after the full ladder, **Again,
      smaller** too (named "Again, smaller ladder", which holds its visible label); either uses the
@@ -435,7 +435,7 @@ Reading a ladder (`kit/take.ts`, extended with `readLadder` and `rungLine`; pure
 
 - Input: the take's raw frames, the ladder's rungs as MIDI notes in sung order (from do D3: 50, 54,
   57, 62, or 50, 54, 57, 54, 50), and the slot length, 1.5 s. A frame is voiced when Voice Mirror's
-  `preprocess` keeps it, as `readTake` takes them (`kit/take.ts:141-163`).
+  `preprocess` keeps it, as `readTake` takes them (`kit/take.ts:144-166`).
 - No voiced frame gives `{ heard: false }`, the "didn't hear you start" line (state 7).
 - The slots start at the first voiced frame: slot k holds the raw frames from 1.5k s to 1.5(k + 1) s
   after it. Each slot is read by the kit's own `readTake` against its rung, unchanged: its first 0.3
@@ -447,16 +447,16 @@ Reading a ladder (`kit/take.ts`, extended with `readLadder` and `rungLine`; pure
 - The line for a slot, `rungLine(label, reading)`: the rung's label ("Do", "Mi", "So", "Top do"; on
   the smaller ladder "Do", "Mi", "So", "Mi again", "Do again"), a middle dot, then the reading:
   "Right in the middle: …", "In the band: …" or "Close: …", each with the kit's gap words
-  (`readingLine`, `kit/take.ts:97-114`), without its "Listen again, then aim a touch higher." on a
+  (`readingLine`, `kit/take.ts:97-117`), without its "Listen again, then aim a touch higher." on a
   close note; beyond 60 cents, "{About a semitone below}, nearer a different note."
   (`semitonesAway`, `:88-95`), without the kit's "Listen again, then slide up to the band." (FACTS
   79); a slot without steady voice, "We didn't hear a steady note there." (new,
   `NOT_STEADY_RUNG_LINE`), without the kit's "Try again at about speaking volume."
   (`NOT_STEADY_LINE`, `:83-84`); and the octave line, when there is one, as a second sentence
-  (`octaveLine`, `:116-129`).
+  (`octaveLine`, `:119-132`).
 - The count's line is the kit's `countLine` ("This time, 3 of your 4 notes landed in the band.", or
   "… of the 3 notes we heard …"), or `NONE_HEARD_LINE` when voice came but no note was steady
-  (`kit/take.ts:189-198`).
+  (`kit/take.ts:192-201`).
 - Every template passes `validateGuidedDynamicClaim` (`src/lib/guided-voice/claims.ts`, surface
   `finding`) in a unit test, as Lesson 3's lines do.
 

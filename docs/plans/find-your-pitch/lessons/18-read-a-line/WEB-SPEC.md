@@ -493,7 +493,7 @@ kit and the app still need, item 15).
 - **The line**: the rung line with the note's syllable and "the written note": "So · In the band: 20
   cents above the written note.", "Right in the middle" within 15 cents, with Lesson 3's octave line
   within 50 cents of the note an octave or more away, or "Mi · We didn't hear a steady note there."
-  (`rungLine`, `src/features/lessons/kit/take.ts:296-303`, given whose note it is, as Lesson 16's spec
+  (`rungLine`, `src/features/lessons/kit/take.ts:301-309`, given whose note it is, as Lesson 16's spec
   asks). No count, no score, no word on timing and no celebration on a note.
 - **No voice**: when no window holds a voiced frame, the take reads as no voice (state 7).
 
@@ -693,7 +693,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    - a take that keeps frames from half a beat before bar 1's first beat and ends when the last
      note's window closes, moved by the anchor, on the frames' clock, through Lesson 16's proposed
      `until`, with `wait` covering the whole take: today `run` counts from the first voiced frame
-     (`TakeOptions`, `src/features/lessons/kit/listen.ts:95-116`), so a late first note would push
+     (`TakeOptions`, `src/features/lessons/kit/listen.ts:95-123`), so a late first note would push
      the take's end past the bars;
    - `kit/read-in-time.ts`, new: the in-time reader (Toys 5), pure, with its tests, beside the cursor
      reader Lesson 16 proposes, `kit/read-along.ts`, sharing its line reading. It counts each note's

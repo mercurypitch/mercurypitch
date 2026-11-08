@@ -447,9 +447,9 @@ States:
 6. **Take**: the status reads "Take 1: sing the phrase when you're ready, and follow the bands as
    they light." (take 2: "Take 2: breathe, then sing through to "star", and breathe after it."). The
    take waits up to 6 s for the first voiced frame, then runs until 1.2 s of quiet or 8 s from that
-   frame (`takeFrames`, `kit/listen.ts:174-201`, with `wait: 6`, `run: 8` and `quiet: 1.2`,
-   `:95-116`; 72), so the 0.3 s breath the phrase asks for never ends it. Before the voice starts,
-   do's band glows; from the first voiced frame (`onFrame`'s `voicedAt`, `:112-113`), a playhead runs
+   frame (`takeFrames`, `kit/listen.ts:182-209`, with `wait: 6`, `run: 8` and `quiet: 1.2`,
+   `:95-123`; 72), so the 0.3 s breath the phrase asks for never ends it. Before the voice starts,
+   do's band glows; from the first voiced frame (`onFrame`'s `voicedAt`, `:119-120`), a playhead runs
    along the line at 80 beats a minute and each band lights as it passes: that is the guide, on the
    chart itself, so the page needs no ring or countdown beside it. The violet line draws live at the
    playhead, folded around the band under it (its cents from that band through `foldCents`,
@@ -538,7 +538,7 @@ pure and unit-tested; 53):
 
 - Input: the take's raw frames, the take's number, and Merc's do and la as MIDI notes (from do D3:
   50 and 59). A frame is voiced when Voice Mirror's `preprocess` keeps it, as `readTake` takes them
-  (`kit/take.ts:141-163`).
+  (`kit/take.ts:144-166`).
 - Under 1.5 s of voiced frames gives `{ heard: false }` and `NOT_HEARD_PHRASE_LINE`, "We didn't hear
   the phrase that time.", the kit's `NOT_STEADY_LINE` (`:64-65`) with "the phrase" for "a steady
   note" and without its "Try again at about speaking volume.", since the takes stop at three.
@@ -550,7 +550,7 @@ pure and unit-tested; 53):
   swell.
 - The octave line, as a second sentence, only when both notes, moved by the same whole number of
   octaves, are Merc's do and la: the kit's octave words in the plural, "You sang it an octave lower:
-  same notes." (`octaveLine`, `kit/take.ts:116-129`, whose "two octaves" form carries over).
+  same notes." (`octaveLine`, `kit/take.ts:119-132`, whose "two octaves" form carries over).
 - Every template passes `validateGuidedDynamicClaim` (`src/lib/guided-voice/claims.ts`, surface
   `finding`) in a unit test, as Lesson 3's lines do (95).
 

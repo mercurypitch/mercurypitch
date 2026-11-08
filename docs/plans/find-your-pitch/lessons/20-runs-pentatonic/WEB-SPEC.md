@@ -578,10 +578,10 @@ are listed so this page's needs are in one place.
    labels, the offers after Easy or Workable and Move do's reach as options; Lesson 9's page then
    imports them. This page adds a second offer, Again, faster, an unscored guide with the count-in.
 6. **The reader's two options** (FACTS 56): `readLadder`
-   (`src/features/lessons/kit/take.ts:336-353`) reads each slot through `readTake`
-   (`src/features/lessons/kit/take.ts:142-163`), which drops the kit's 0.3 s attack and needs 0.6 s
+   (`src/features/lessons/kit/take.ts:342-359`) reads each slot through `readTake`
+   (`src/features/lessons/kit/take.ts:145-166`), which drops the kit's 0.3 s attack and needs 0.6 s
    of steady voice itself (`ATTACK_SEC` and `STEADY_SEC`, `src/features/lessons/kit/take.ts:58-61`,
-   read at `:149-150`), more than a 0.75 s slot holds. So `readTake` takes an options argument with
+   read at `:152-153`), more than a 0.75 s slot holds. So `readTake` takes an options argument with
    `attackSec` and `steadySec`, defaulting to the two constants, and `LadderOptions` gains the same
    two, which `readLadder` passes on to it; Lessons 3 and 9's readings do not change. Unit tests on
    synthetic frames: a steady 0.6 s note in a 0.75 s slot reads, a 0.4 s one does not, and the
