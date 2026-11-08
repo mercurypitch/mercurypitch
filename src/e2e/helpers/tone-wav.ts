@@ -101,12 +101,20 @@ export function writeStereoToneWav(
   leftHz: number,
   rightHz: number,
   seconds = 5,
+  /** Each side's level, 0 to 1 of the 26000 written; half each unless a spec tells the sides apart by level. */
+  levels: readonly [left: number, right: number] = [0.5, 0.5],
 ): string {
-  const side = (hz: number) => (i: number) =>
-    0.5 * Math.sin((2 * Math.PI * hz * i) / RATE)
-  const buf = wavOf(RATE * seconds, side(leftHz), side(rightHz))
+  const side = (hz: number, level: number) => (i: number) =>
+    level * Math.sin((2 * Math.PI * hz * i) / RATE)
+  const buf = wavOf(
+    RATE * seconds,
+    side(leftHz, levels[0]),
+    side(rightHz, levels[1]),
+  )
+  const levelled =
+    levels[0] === 0.5 && levels[1] === 0.5 ? '' : `-${levels.join('-')}`
   return place(
-    `mercurypitch-e2e-stereo-${leftHz}-${rightHz}-${seconds}s.wav`,
+    `mercurypitch-e2e-stereo-${leftHz}-${rightHz}-${seconds}s${levelled}.wav`,
     buf,
   )
 }
