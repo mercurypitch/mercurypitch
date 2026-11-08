@@ -16,9 +16,9 @@
 // it. One lane is armed at a time, as one take records at a time, and the
 // arm stays put when another lane is selected and after a take. A lane can
 // have an input and a channel of its own, kept on this device
-// (lane-inputs.ts): its arm opens that input, and the arm moves to another
-// lane with the microphone open only when both hear the same input and
-// channel; otherwise it opens the other lane's.
+// (studio-lane-input-state.ts): its arm opens that input, and the arm
+// moves to another lane with the microphone open only when both hear the
+// same input and channel; otherwise it opens the other lane's.
 //
 // Keys: Record and R start a take on the armed lane in one press; with no
 // lane armed they arm the selected lane, else the first lane with no clips,
@@ -42,8 +42,8 @@ import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import { openStudioCapture, prepareStudioRecorderWorklet, } from '@/lib/studio/record/capture-node'
 import { createStudioClickTrack } from '@/lib/studio/record/click-track'
 import { createStudioInputMonitor } from '@/lib/studio/record/input-monitor'
-import type { InputChannelCount, StudioLaneInput, } from '@/lib/studio/record/lane-inputs'
-import { FOLLOW_STUDIO_INPUT, laneInputChannels, planStudioLaneInput, pruneStudioLaneInputs, readInputChannelCounts, rememberInputChannels, sameStudioLaneInput, writeStudioLaneInput, } from '@/lib/studio/record/lane-inputs'
+import type { StudioLaneInput } from '@/lib/studio/record/lane-inputs'
+import { sameStudioLaneInput } from '@/lib/studio/record/lane-inputs'
 import type { StudioRecordSettings } from '@/lib/studio/record/record-settings'
 import { readStudioRecordSettings, writeStudioRecordSettings, } from '@/lib/studio/record/record-settings'
 import type { StudioCapturedTake, StudioLiveTake, StudioRecorderView, StudioTakeJournalWriter, } from '@/lib/studio/record/studio-recorder'
@@ -62,6 +62,7 @@ import type { StudioRecordingImport } from '../controller/imports'
 import { studioContentEnd } from '../timeline/timeline-geometry'
 import type { StudioLaneArming, StudioTimelineRecording, } from '../timeline/types'
 import { createStudioInputs } from './studio-inputs'
+import { createStudioLaneInputState } from './studio-lane-input-state'
 import { studioTakeFrames, studioTakeImport } from './take-import'
 import { setStudioTakeRunning } from './take-running'
 
@@ -127,22 +128,6 @@ export function describeStudioRecordError(error: unknown): string {
 const RUNNING = new Set(['counting', 'recording'])
 const HOLDS_MIC = new Set(['armed', 'counting', 'recording', 'finishing'])
 
-/** What an arm opened in place of what its lane asked for, for the armed lane's card. */
-export interface StudioArmedInput {
-  /** The lane's own input, by its name, was not connected: the Studio's input opened instead. */
-  readonly laneMissing: string | null
-  /** The input asked for, by its name, was gone as it opened: the default opened instead. */
-  readonly defaultInstead: string | null
-  /** The lane's channel, 0-based, that the input did not have: all of it records, mixed. */
-  readonly channelMissing: number | null
-}
-
-const NOTHING_MISSING: StudioArmedInput = {
-  laneMissing: null,
-  defaultInstead: null,
-  channelMissing: null,
-}
-
 export function useStudioRecorder(options: StudioRecorderOptions) {
   const { transport } = options
   const [view, setView] = createSignal<StudioRecorderView>({
@@ -164,22 +149,14 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     readonly StudioTakeJournalRecord[]
   >([])
   const [recovering, setRecovering] = createSignal(false)
-  // The input takes record from: picked in Sound, opened for the arm alone.
+  // The input takes record from: picked in Sound, opened for the arm alone,
+  // and each lane's own input and channels (studio-lane-input-state.ts).
   const inputs = createStudioInputs()
-  const [inputMissing, setInputMissing] = createSignal(false)
-  // Each lane's own input and channel, on this device (lane-inputs.ts), and
-  // how many channels each input had when an arm opened it.
-  const [laneInputs, setLaneInputs] = createSignal<
-    ReadonlyMap<string, StudioLaneInput>
-  >(new Map())
-  const [channelCounts, setChannelCounts] = createSignal<
-    readonly InputChannelCount[]
-  >(readInputChannelCounts())
-  const [armedInput, setArmedInput] =
-    createSignal<StudioArmedInput>(NOTHING_MISSING)
-  // The input the last arm asked for, the lane's or the Studio's, or null
-  // when the default opened in its place.
-  let openedAsAsked: string | null = null
+  const lanes = createStudioLaneInputState({
+    project: () => options.project(),
+    settings,
+    devices: inputs.devices,
+  })
   const journal = createStudioTakeJournal()
   const writers = new Map<string, StudioTakeJournalWriter>()
   let restoreRepeat = false
@@ -215,7 +192,7 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     // Measured on the input this take records from, which need not be the
     // app's (MicManager.acquireFrom): as its track names it, else as asked.
     const named = reported?.deviceId?.trim() ?? ''
-    const device = named.length > 0 ? named : openedAsAsked
+    const device = named.length > 0 ? named : lanes.openedAsAsked()
     const trip = studioRoundTrip({
       measuredMs: micLatencyMsForDevice(device),
       measuredPathMs: micLatencyPathMsForDevice(device),
@@ -244,73 +221,25 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     return settings().punch ? { mode: 'punch', range } : null
   }
 
-  /** A lane's own input and channel, or the Studio's input to follow. */
-  function laneInputOf(trackId: string | null): StudioLaneInput {
-    return trackId === null
-      ? FOLLOW_STUDIO_INPUT
-      : (laneInputs().get(trackId) ?? FOLLOW_STUDIO_INPUT)
-  }
-
-  /** The kept channel count of what an arm opened: its track's id and name. */
-  function rememberOpened(stream: MediaStream, channels: number): void {
-    const track = stream.getAudioTracks?.()[0]
-    const opened = track?.getSettings?.()
-    setChannelCounts(
-      rememberInputChannels(
-        { deviceId: opened?.deviceId ?? null, label: track?.label ?? null },
-        channels,
-      ),
-    )
-  }
-
   const recorder = createStudioRecorder({
     unlock: () => transport.unlock(),
     clock: () => transport.clock(),
     acquireMic: async (trackId) => {
-      // From the list the Studio holds, never one read afresh: the input
-      // opens inside the press, before anything is awaited.
-      const lane = laneInputOf(trackId)
-      const studio = settings()
-      const plan = planStudioLaneInput(
-        lane,
-        studio.inputDeviceId,
-        inputs.devices(),
-      )
+      // Planned from the list the Studio holds: the input opens inside the
+      // press, before anything is awaited.
+      const plan = lanes.plan(trackId)
       const held = await micManager.acquireFrom(
         STUDIO_RECORD_MIC_ID,
         plan.deviceId,
       )
-      // The Sound panel's input, when that is the one that was gone.
-      setInputMissing(held.missing && !plan.own)
-      openedAsAsked = held.missing ? null : plan.deviceId
-      const asked = plan.own ? lane.label : studio.inputLabel
-      setArmedInput({
-        laneMissing: plan.laneInputMissing
-          ? (lane.label ?? 'The input you chose')
-          : null,
-        defaultInstead: held.missing ? (asked ?? 'the input you chose') : null,
-        channelMissing: null,
-      })
+      const channel = lanes.held(trackId, plan, held.missing)
       // The page may use the microphone now, so the browser names its inputs.
       void inputs.refresh()
       // Given back through itself, never by the Studio's id: a late release
-      // from an earlier arm cannot end this one (MicManager.acquireFrom). A
-      // channel is a jack of the input it was chosen on: the default opened
-      // in place of a gone one records all of it.
-      return {
-        stream: held.stream,
-        channel: held.missing ? null : plan.channel,
-        release: held.release,
-      }
+      // from an earlier arm cannot end this one (MicManager.acquireFrom).
+      return { stream: held.stream, channel, release: held.release }
     },
-    inputOpened: (opened) => {
-      setArmedInput((now) => ({
-        ...now,
-        channelMissing: opened.missingChannel,
-      }))
-      if (opened.channels !== null)
-        rememberOpened(opened.stream, opened.channels)
-    },
+    inputOpened: lanes.opened,
     prepareWorklet: prepareStudioRecorderWorklet,
     openCapture: openStudioCapture,
     createSource: (context, stream) => context.createMediaStreamSource(stream),
@@ -419,9 +348,7 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       if (armedLane === trackId) recorder.disarm()
       // The arm moves with the microphone open only to a lane that hears
       // the same input and channel; another one is opened for the lane.
-      else if (
-        sameStudioLaneInput(laneInputOf(armedLane), laneInputOf(trackId))
-      )
+      else if (sameStudioLaneInput(lanes.of(armedLane), lanes.of(trackId)))
         recorder.retarget(trackId)
       else {
         recorder.disarm()
@@ -557,24 +484,6 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       () => void refreshRecovery(),
     ),
   )
-  // A song's lane inputs, read as it opens: its lanes that are gone are
-  // forgotten then, so a removed lane's input cannot come back.
-  createEffect(
-    on(
-      () => project()?.id,
-      (id) => {
-        const song = untrack(project)
-        setLaneInputs(
-          id === undefined || song === null
-            ? new Map()
-            : pruneStudioLaneInputs(
-                id,
-                song.tracks.map((track) => track.id),
-              ),
-        )
-      },
-    ),
-  )
   // A take that could not be kept stays offered.
   createEffect(
     on(phase, (now, before) => {
@@ -624,34 +533,12 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     recorder.updateMonitor()
   }
 
-  /** Record lane `trackId` from its own input and channel from the next arm, on this device; the lane armed opens it now. */
+  /** Record lane `trackId` from its own input and channels from the next arm, on this device; the lane armed opens them now. */
   function chooseLaneInput(trackId: string, next: StudioLaneInput): void {
-    const song = project()
-    if (busy() || song === null) return
-    setLaneInputs(writeStudioLaneInput(song.id, trackId, next))
-    setArmedInput(NOTHING_MISSING)
+    if (busy() || !lanes.choose(trackId, next)) return
     if (phase() !== 'armed' || view().targetTrackId !== trackId) return
     recorder.disarm()
     void recorder.arm(trackId)
-  }
-
-  /** The Studio's input by its name, as a lane that follows it says. */
-  function studioInputName(): string {
-    const studio = settings()
-    return studio.inputDeviceId === null
-      ? 'Default input'
-      : (studio.inputLabel ?? 'The input you chose')
-  }
-
-  /** How many channels a lane's input has, as far as this device knows; null until an arm opened it. */
-  function laneChannels(trackId: string): number | null {
-    const studio = settings()
-    return laneInputChannels(
-      laneInputOf(trackId),
-      { deviceId: studio.inputDeviceId, label: studio.inputLabel },
-      channelCounts(),
-      inputs.devices(),
-    )
   }
 
   /** Record from `id` (null: the default) from the next arm; an armed lane opens it now. */
@@ -662,8 +549,7 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       inputDeviceId: id,
       inputLabel: id === null ? null : label,
     })
-    setInputMissing(false)
-    setArmedInput(NOTHING_MISSING)
+    lanes.forget()
     if (phase() !== 'armed') return
     const lane = view().targetTrackId
     recorder.disarm()
@@ -755,17 +641,17 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     /** The browser's audio inputs, named once the page may use the microphone. */
     inputs: inputs.devices,
     /** The chosen input was not connected at the arm: the default records instead. */
-    inputMissing,
+    inputMissing: lanes.inputMissing,
     chooseInput,
     /** Each lane's own input: what it is, choosing it, its channels as far as this device knows, and the Studio's input it follows otherwise. */
     laneInputs: {
-      of: (trackId: string) => laneInputOf(trackId),
+      of: (trackId: string) => lanes.of(trackId),
       choose: chooseLaneInput,
-      channels: laneChannels,
-      studioInputName,
+      channels: lanes.channels,
+      studioInputName: lanes.studioInputName,
     },
     /** What the last arm opened in place of what its lane asked for. */
-    armedInput,
+    armedInput: lanes.armed,
     /** Punch, on the transport: Record keeps only the range. */
     punch: {
       on: () => settings().punch,
