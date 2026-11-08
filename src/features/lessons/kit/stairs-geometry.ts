@@ -5,7 +5,9 @@
 // Pitch is height (playbook rule 20): eight stairs, do to do, left to right,
 // each one row per semitone above do (0, 2, 4, 5, 7, 9, 11, 12), on faint
 // semitone rows; a page may draw fewer, from do up (Lesson 16's five, do to
-// so), each column the wider. Three layouts of the one drawing:
+// so), whose rows on a phone run only from do to the top stair, each the
+// taller, and whose columns, each over its own key, keep to the narrow
+// layout's widest. Three layouts of the one drawing:
 //
 // - wide: the stage on a desktop. All 25 rows from the floor, the C at or
 //   below the lowest start, stay put and the staircase climbs them as it
@@ -159,11 +161,15 @@ const MAX_COLUMN = 64
 const specFor = (mode: StairsMode, H: number): ModeSpec =>
   mode === 'narrow' && H < SHORT_BELOW ? SHORT : SPEC[mode]
 
-/** The stairs' and the strip's left and right edges. */
-function spanOf(mode: StairsMode, W: number): { x0: number; x1: number } {
+/** The stairs' and the strip's left and right edges, for `count` stairs. */
+function spanOf(
+  mode: StairsMode,
+  W: number,
+  count: number,
+): { x0: number; x1: number } {
   const s = SPEC[mode]
   if (mode !== 'narrow') return { x0: s.left, x1: W - s.right }
-  const span = Math.min(W, 8 * MAX_COLUMN)
+  const span = Math.min(W, count * MAX_COLUMN)
   const x0 = (W - span) / 2
   return { x0, x1: x0 + span }
 }
@@ -221,11 +227,12 @@ function stripFor(
   H: number,
   start: number,
   floor: number,
+  count: number,
 ): Strip | null {
   if (mode === 'compact') return null
   const s = specFor(mode, H)
   const wide = mode === 'wide'
-  const { x0, x1 } = spanOf(mode, W)
+  const { x0, x1 } = spanOf(mode, W, count)
   return stripLayout({
     lo: floor,
     hi: floor + 24,
@@ -233,7 +240,7 @@ function stripFor(
     x1: wide ? W - 4 : x1,
     top: H - s.pad - s.stripH,
     height: s.stripH,
-    window: wide ? undefined : { from: stripWindow(start, floor), keys: 8 },
+    window: wide ? undefined : { from: stripWindow(start, floor), keys: count },
   })
 }
 
@@ -251,15 +258,18 @@ export function stairsLayout(
   count = MAJOR_DEGREES.length,
 ): StairsLayout {
   const s = specFor(mode, H)
-  const rowH = (H - s.pad - s.stripH - s.drop - s.depth - s.top) / s.rows
   const narrow = mode === 'narrow'
+  // the top stair's degree: narrow rows run from do up to it
+  const topDeg = MAJOR_DEGREES[count - 1]
+  const rowCount = narrow ? topDeg + 1 : s.rows
+  const rowH = (H - s.pad - s.stripH - s.drop - s.depth - s.top) / rowCount
   // the pitch at the top row's centre
-  const high = narrow ? start + 12 : floor + s.rows - 1
+  const high = narrow ? start + topDeg : floor + s.rows - 1
   const yOfRow = (midi: number): number =>
     s.top + rowH / 2 + (high - midi) * rowH
   const yOfStair = (deg: number): number =>
-    narrow ? s.top + rowH / 2 + (12 - deg) * rowH : yOfRow(start + deg)
-  const { x0, x1 } = spanOf(mode, W)
+    narrow ? s.top + rowH / 2 + (topDeg - deg) * rowH : yOfRow(start + deg)
+  const { x0, x1 } = spanOf(mode, W, count)
   const cw = (x1 - x0) / count
   const bottom = yOfStair(0) + rowH / 2 + s.depth
   const stairs = MAJOR_DEGREES.slice(0, count).map((deg, i): StairBox => {
@@ -280,9 +290,9 @@ export function stairsLayout(
     return { y, zone: { x: x0 + g * 4 * cw, y: y - 30, w: 4 * cw, h: TARGET } }
   })
   const rowsTop = s.top
-  const rowsBottom = s.top + s.rows * rowH
+  const rowsBottom = s.top + rowCount * rowH
   const rows: number[] = []
-  for (let m = Math.floor(high) - s.rows; m <= Math.ceil(high) + 1; m++) {
+  for (let m = Math.floor(high) - rowCount; m <= Math.ceil(high) + 1; m++) {
     // a row shows if any of it is inside the rows' band (a hair's tolerance for rounding)
     const y = yOfRow(m)
     if (y > rowsTop - rowH / 2 + 1e-6 && y < rowsBottom + rowH / 2 - 1e-6)
@@ -301,7 +311,7 @@ export function stairsLayout(
     x1,
     stairs,
     brackets,
-    strip: stripFor(mode, W, H, start, floor),
+    strip: stripFor(mode, W, H, start, floor, count),
   }
 }
 
