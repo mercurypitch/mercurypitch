@@ -3,8 +3,9 @@
 Owner-approved plan, 7 November 2026, with the channel model added on
 8 November, and MIDI lanes moved ahead of several lanes at once the same day:
 the owner asked for MIDI by name, not for several lanes at once. Seven pull
-requests, each one a separate owner decision to merge. The first two change
-no behaviour; the rest add what a musician sees.
+requests, each one a separate owner decision to merge, the last of them in
+two parts. The first two change no behaviour; the rest add what a musician
+sees, except the first part of the last, which readies the recorder for it.
 
 ## Goal
 
@@ -400,6 +401,43 @@ above). What follows is still to come.
 
 ### Several lanes at once
 
+**The recorder's lane arms (PR 7, part 1).** The recorder holds every armed
+lane, though the Studio still arms one at a time, so nothing a musician sees
+has changed: the recorder's existing tests pass unchanged.
+
+| File                                       | What it does                                                                                                                                         |
+| ------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/studio/record/lane-arms.ts`       | Every armed lane: its input opened in its own press, a capture and a monitor of its own, on the one clock and its one click track.                   |
+| `src/lib/studio/record/armed-input.ts`     | Lanes on one microphone share it: one source and one split, each lane taking its own pick, both gone with the last lane on it.                       |
+| `src/lib/studio/record/take-run.ts`        | One Record press across every armed lane: the start frame, count-in, song start, punch and loop they share.                                          |
+| `src/lib/studio/record/lane-take.ts`       | One lane's take: its audio, its own round trip and journal, and what it says when it ends.                                                           |
+| `src/lib/studio/record/studio-recorder.ts` | The run: Record starts every armed lane's capture on the same frame, Stop ends them all, and a lost input ends only the takes that recorded from it. |
+
+- **One start frame.** Every lane's capture starts on the same clock frame,
+  under one count-in and one song start, and a punch or a loop applies to
+  every lane. Stop ends every take, each one round trip of its own lane past
+  the press.
+- **Its own path.** Each take is moved by its own lane's path, read as the
+  take starts: a microphone's round trip, an instrument's output path.
+- **Its own journal.** Each take is journaled under its own id, so a closed
+  tab keeps every lane.
+- **Memory for every lane, or none.** Record holds memory for every lane's
+  take before any starts, and refuses the press, saying why, when one lane
+  cannot have it: it never records some lanes and drops others.
+- **Losses.** A lost input ends only the takes that recorded from it: the
+  microphone ends every lane on it and leaves an instrument lane recording; a
+  port ends its own lane. Each of those lanes keeps what it had and says so
+  (`notices`). A lane lost in a count-in drops its take, and the others
+  count on; alone, it ends the count-in, as before.
+- **The view.** The recorder's view keeps its one-lane fields, read from the
+  first armed lane, and adds `lanes` (each armed lane's level and live take)
+  and `notices`.
+- **Size.** `studio-recorder.ts` went from 765 lines to 643, with the lane
+  arms, the run and a lane's take in modules of their own.
+
+What follows is what PR 3, PR 5 and PR 6 left for this work, written before
+it.
+
 Lanes on channels of one interface share one capture and one split, which any
 browser can do. Lanes on different devices need a capture each, and WebKit
 (Safari, and every browser on iOS) keeps one capture at a time: it mutes the
@@ -474,7 +512,9 @@ From PR 6, MIDI lanes assume one arm too:
 6. **MIDI lanes kept as audio**, with the played notes kept beside them, and
    MIDI inputs in the Inputs view. Moved ahead of several lanes at once on
    8 November: the owner asked for MIDI by name.
-7. **Several lanes recording at once.**
+7. **Several lanes recording at once**, in two parts: the recorder holds
+   several lane arms with no change a musician sees, then the Studio arms
+   several lanes and records them.
 
 ## Owner's decisions
 
