@@ -27,10 +27,12 @@ import '@/features/lessons/kit/lesson-fonts.css'
 import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
-// the guide's and the voice lessons' sheets join with the recall and Sing
-// it, the modules whose chunks they share: taken before them, each leaves
-// its chunk for one of its own, which every lesson page would then link
-// after its own sheet (MISTAKES.md, on the lessons' base stylesheet)
+// the recall brings Lesson 6's quiz modules onto this page, through Lesson
+// 15's questions, so taking the guide's sheet here keeps it in their chunk,
+// which the other lessons link before their own sheets; the voice lessons'
+// sheet joins with Sing it, the module whose chunk it shares (MISTAKES.md,
+// on the lessons' base stylesheet)
+import '@/features/lessons/kit/lesson-guide.css'
 import '@/features/lessons/kit/lesson-parts.css'
 import './lesson-21.css'
 import { q } from '@/features/lessons/kit/dom'
@@ -44,6 +46,8 @@ import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
+import { initQuizzes } from './recall'
 import { initSteps, TOYS } from './steps'
 
 // Season 2, before anything draws
@@ -60,6 +64,9 @@ const deck = createStepDeck({
   after: { label: 'Sing it', selector: '#sing' },
 })
 initSteps(deck)
+// the recall from Lessons 6 and 15 and the quick check, each on the kit's
+// quiz; the recall's Play the three notes is Lesson 15's own
+initQuizzes(deck)
 deck.start()
 
 // the next lesson's card first: the explorer binds its link to the map
@@ -84,6 +91,9 @@ initMasthead(
   },
   { lesson: 21, deck },
 )
+// the cold open, in the masthead's task, so a first visit's tour waits for
+// its choice
+initColdOpen(deck)
 initReveals()
 startFrameLoop()
 // Tavi gives a quiet "oh" as the reveal shows, with no sparkles: the reveal
