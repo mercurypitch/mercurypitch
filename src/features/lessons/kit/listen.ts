@@ -109,6 +109,13 @@ export interface TakeOptions {
    * two seconds). Absent, any silence of `quiet` seconds ends it.
    */
   readonly quietAfter?: number
+  /**
+   * Ends the take, with its frames, once this says so of the frames so far:
+   * asked every animation frame once the voice has begun, as `quiet` is, so
+   * a take that reads along a phrase ends as its last note passes (Lesson
+   * 16, kit/read-along.ts). Absent, only `run` and `quiet` end it.
+   */
+  readonly until?: (frames: readonly F0Frame[]) => boolean
   /** Every animation frame while the take is open: the newest frame, and when the voice began (null before). */
   readonly onFrame?: (frame: PitchFrame | null, voicedAt: number | null) => void
   /** Ends the take early, with nothing to read: the viewer left. */
@@ -157,6 +164,7 @@ export function takeOver(
   o: TakeOptions,
 ): boolean {
   if (voicedAt === null) return waited >= o.wait
+  if (o.until?.(frames) === true) return true
   const last = frames[frames.length - 1]?.t ?? 0
   if (last >= voicedAt + o.run) return true
   if (o.quiet === undefined) return false

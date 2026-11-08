@@ -437,7 +437,7 @@ States:
    "Breathe, then hum one slow siren on "ng", up only as far as is easy and back. We stop listening
    when you stop." The take waits up to 6 s for the first voiced frame, then runs until the voice
    has been quiet for 1.0 s after at least 2.0 s of it, or for 14 s from the first voiced frame,
-   whichever comes first; nothing on the page extends it (`takeFrames`, `kit/listen.ts:174-201`,
+   whichever comes first; nothing on the page extends it (`takeFrames`, `kit/listen.ts:182-209`,
    with `wait: 6`, `run: 14`, `quiet: 1` and Lesson 7's `quietAfter: 2`; FACTS 63). The violet
    line draws live on the window from the left, from the listener's frames smoothed for drawing
    (`latest`, `kit/listen.ts:44-45`), as Lesson 7's does; a frame outside the window pins to the
@@ -840,11 +840,11 @@ the others take it.
    Lesson 7's reading as an option, so that a flow with no reading never shows a band, a reading or
    "Try again". Lesson 7's page had the rule in `lesson-07/siren-flow.ts`; this page promoted it
    (done: `reading` in `FlowOptions`, Lesson 7's lines in `lesson-07/siren-lines.ts`).
-8. `kit/listen.ts`: a `quietAfter` option on `TakeOptions` (`:95-116`), built with Lesson 7's page,
+8. `kit/listen.ts`: a `quietAfter` option on `TakeOptions` (`:95-123`), built with Lesson 7's page,
    whose take needs it ("quiet for 1.0 s after at least 2.0 s of voice", its Toys 4): `quiet` ends a
    take only once the take has heard `quietAfter` seconds of voice (`:106-111`), so a breath in the
    first two seconds does not end it; absent, a take ends on `quiet` as before (`takeOver`,
-   `:152-166`), so Lessons 3 and 5 see no change. This page needs nothing more of it.
+   `:159-174`), so Lessons 3 and 5 see no change. This page needs nothing more of it.
 9. `kit/comfort.ts`: an option that sends "Effortful" to the rest card,
    `afterFeeling(f, { restAfterEffort: true })`, since `afterFeeling` leaves it to the coach
    (`:69-78`) and Lessons 6, 7, 9 and 11 all choose it (unit test 13). Built by #1192: Lesson 6's

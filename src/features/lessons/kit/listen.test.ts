@@ -70,6 +70,22 @@ describe('takeOver', () => {
     expect(takeOver(frames(3.1, sung), 0.5, 3.1, hold)).toBe(true)
   })
 
+  it('ends once `until` says so of the frames, after the voice has begun', () => {
+    // Arrange: Lesson 16's read-along, done once 1 s of frames is in
+    const along: TakeOptions = {
+      wait: 8,
+      run: 40,
+      until: (f) => (f[f.length - 1]?.t ?? 0) >= 1,
+      cancelled: () => false,
+    }
+    const always = (): boolean => true
+
+    // Act and Assert: not before the voice, then at 1 s, long before the run
+    expect(takeOver(frames(1.2, always), null, 1.2, along)).toBe(false)
+    expect(takeOver(frames(0.9, always), 0, 0.9, along)).toBe(false)
+    expect(takeOver(frames(1.1, always), 0, 1.1, along)).toBe(true)
+  })
+
   it('without quiet, always runs its whole run', () => {
     const run: TakeOptions = { wait: 6, run: 3, cancelled: () => false }
     const sung = (t: number): boolean => t >= 0.5 && t < 1

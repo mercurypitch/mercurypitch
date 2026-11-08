@@ -495,7 +495,7 @@ States:
    (`HOLD_WAIT_SEC`, `HOLD_QUIET_SEC`, `kit/hold-take.ts:39-44`, and the reader's rules, `:1-31`).
    The names row lights ‘ee’ as the take opens and ‘eh’, ‘ah’, ‘oh’ and ‘oo’ at 2, 4, 6 and 8 s from
    the first voiced frame, on the frames' clock (the listener's `onFrame` gives the first voiced
-   time, `kit/listen.ts:95-116`): a pace, never a check, and nothing on the page compares the voice
+   time, `kit/listen.ts:95-123`): a pace, never a check, and nothing on the page compares the voice
    with the vowel lit. Nothing on the page extends the take. The microphone is released when it
    ends.
 8. **Reading**: one line from the kit's hold reader (`readHold`, `kit/hold-take.ts:285`), unchanged:
@@ -516,7 +516,7 @@ States:
    (`:56-87`) with its `restAfterEffort`, proposed here and built by #1192 (needs 10).
    - Easy or Workable: Merc `celebrate`s if the take was in the band for at least 80 % of its ten
      seconds, at most once a visit; rule 15's line, "If that felt tricky, good: that's learning."
-     (`TRICKY_LINE`, `kit/take.ts:190`), if it was in the band for under half; then Lesson 5's
+     (`TRICKY_LINE`, `kit/take.ts:193`), if it was in the band for under half; then Lesson 5's
      "Rest for a few easy breaths. Ready when you are.", with **Again** (named "Again: one more
      hold") while the visit has had fewer than three takes, and **Done for today**. The Wrap shows
      the practice card.

@@ -389,7 +389,7 @@ need, item 6):
 - Each line is the rung line with the note's syllable and "the written note": "Re · In the band: 20
   cents below the written note.", "Right in the middle" within 15 cents, with Lesson 3's octave line
   within 50 cents of the note an octave or more away, or "Do · We didn't hear a steady note there."
-  (`rungLine`, `src/features/lessons/kit/take.ts:296-303`, given whose note it is). No count, no
+  (`rungLine`, `src/features/lessons/kit/take.ts:301-309`, given whose note it is). No count, no
   score and no celebration on a note.
 
 On a phone the staff and its lines fit the card at 344 to 390 px: five notes at 52 px apart on a 26
@@ -546,11 +546,11 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    notes**:
    - `kit/read-along.ts`, new: the cursor reader (Toys 6), pure, with its tests;
    - `TakeOptions` gains `until`, a test run each frame that ends the take with its frames, as `quiet`
-     does, so a take can end as its last note passes (`src/features/lessons/kit/listen.ts:95-116`);
+     does, so a take can end as its last note passes (`src/features/lessons/kit/listen.ts:95-123`);
      today a take ends only by its `run`, its `quiet` or a cancel that keeps nothing;
    - `rungLine` and the reading's words take whose note it is, passed through to `gapWords`, which
      already takes it (`src/features/lessons/kit/band-words.ts:56-61`), so each line can name the
-     written note (`src/features/lessons/kit/take.ts:296-303`, `:98-104`);
+     written note (`src/features/lessons/kit/take.ts:301-309`, `:101-107`);
    - the start sung before each take, in the chosen voice.
 7. **No decorative staff** (Lesson 15's item 7).
 8. **The lesson copy**: this lesson's tease and its variant set on Lesson 16, with the variant's team

@@ -94,12 +94,15 @@ export function semitonesAway(d: number): string {
   return `About ${NUMBER_WORDS[n]} semitones ${way}`
 }
 
-/** The reading in words, with no advice after it: "Close: 45 cents below Merc's note." */
-function readingWords(d: number): string {
+/**
+ * The reading in words, with no advice after it: "Close: 45 cents below
+ * Merc's note.", or another note's name for `whose` ("the written note").
+ */
+function readingWords(d: number, whose?: string): string {
   const band = bandOf(d)
-  if (band === 'middle') return `Right in the middle: ${gapWords(d)}.`
-  if (band === 'band') return `In the band: ${gapWords(d)}.`
-  if (band === 'close') return `Close: ${gapWords(d)}.`
+  if (band === 'middle') return `Right in the middle: ${gapWords(d, whose)}.`
+  if (band === 'band') return `In the band: ${gapWords(d, whose)}.`
+  if (band === 'close') return `Close: ${gapWords(d, whose)}.`
   return `${semitonesAway(d)}, nearer a different note.`
 }
 
@@ -291,15 +294,18 @@ export const NOT_STEADY_RUNG_LINE = "We didn't hear a steady note there."
  * words, with the octave line when there is one: "Top do · Right in the
  * middle: on Merc's note. You sang it an octave lower: same note." It never
  * gives the advice to listen or try again that `readingLine` and
- * `NOT_STEADY_LINE` give a page that offers another try.
+ * `NOT_STEADY_LINE` give a page that offers another try. `whose` names the
+ * note it was measured against where that is not Merc's: Lesson 16 reads a
+ * phrase against "the written note".
  */
 export function rungLine(
   label: string,
   r: Pick<TakeReading, 'd' | 'octaveLine'>,
+  whose?: string,
 ): string {
   if (r.d === null) return `${label} · ${NOT_STEADY_RUNG_LINE}`
   const octave = r.octaveLine === null ? '' : ` ${r.octaveLine}`
-  return `${label} · ${readingWords(r.d)}${octave}`
+  return `${label} · ${readingWords(r.d, whose)}${octave}`
 }
 
 export interface LadderOptions {
