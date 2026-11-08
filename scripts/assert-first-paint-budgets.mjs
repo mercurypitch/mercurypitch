@@ -492,10 +492,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'learn/15.html': 179,
   // Lesson 16, "Sing what you see", a Season 2 page and a draft, built in
   // every mode as Lesson 3 is: its own module on the kit, carrying Season
-  // 2's map (kit/season-2.ts) as a Season 2 page must; its shell: 88,867
-  // bytes in build:e2e, the smallest whole KB above, to rise as each part
-  // joins.
-  'learn/16.html': 87,
+  // 2's map (kit/season-2.ts) as a Season 2 page must; its shell and its
+  // steps, the staircase that turns into the staff and the staff toy:
+  // 145,060 bytes in build:e2e, the smallest whole KB above, to rise as each
+  // part joins.
+  'learn/16.html': 142,
   // Lesson 17, "How long is a note?", a Season 2 page and a draft, built in
   // every mode as Lesson 3 is: its own module on the kit, carrying Season
   // 2's map (kit/season-2.ts) as a Season 2 page must, with the steps'
@@ -709,13 +710,13 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // shared parts), its own, and the shared Inter and Outfit @font-face
   // rules; a quarter over.
   'learn/15.html': 111,
-  // Lesson 16 (a draft, as above), its shell: 85,394 bytes in build:e2e,
-  // the kit's sheets (the shared parts), its own with the staff toy's and
-  // the staircase's taken in by @import, and the shared Inter and Outfit
-  // @font-face rules; the smallest whole KB above, to rise as each part
-  // joins, the guide's and the voice lessons' sheets with the recall and
-  // Sing it.
-  'learn/16.html': 84,
+  // Lesson 16 (a draft, as above), its shell and its steps: 86,273 bytes in
+  // build:e2e, the kit's sheets (the shared parts), its own with the staff
+  // toy's and the staircase's taken in by @import, and the shared Inter and
+  // Outfit @font-face rules; the smallest whole KB above, to rise as each
+  // part joins, the guide's and the voice lessons' sheets with the recall
+  // and Sing it.
+  'learn/16.html': 85,
   // Lesson 17 (a draft, as above), with its steps, its cold open, its four
   // words and the Wrap: 94,962 bytes in build:e2e, the kit's sheets
   // (the voice lessons' in the chunk it shares with them, the guide's, the
