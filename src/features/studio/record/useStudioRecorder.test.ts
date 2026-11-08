@@ -7,6 +7,7 @@ import type { StudioRecorderView } from '@/lib/studio/record/studio-recorder'
 const mocks = vi.hoisted(() => ({
   recorder: null as null | Record<string, ReturnType<typeof vi.fn>>,
   onChange: null as null | ((view: StudioRecorderView) => void),
+  describeError: null as null | ((error: unknown) => string),
   acquireMic: null as
     | null
     | ((trackId: string | null) => Promise<{ stream: MediaStream }>),
@@ -29,10 +30,12 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/studio/record/studio-recorder', () => ({
   createStudioRecorder: (deps: {
     onChange: (view: StudioRecorderView) => void
+    describeError: (error: unknown) => string
     acquireMic: (trackId: string | null) => Promise<{ stream: MediaStream }>
     roundTrip: (context: AudioContext, stream: MediaStream) => number
   }) => {
     mocks.onChange = deps.onChange
+    mocks.describeError = deps.describeError
     mocks.acquireMic = deps.acquireMic
     mocks.roundTrip = deps.roundTrip
     mocks.recorder = {
@@ -115,7 +118,7 @@ const band = {
 } as unknown as StudioProject
 
 function view(patch: Partial<StudioRecorderView>): StudioRecorderView {
-  return {
+  const made: StudioRecorderView = {
     phase: 'idle',
     level: 0,
     countBeat: null,
@@ -125,6 +128,20 @@ function view(patch: Partial<StudioRecorderView>): StudioRecorderView {
     live: null,
     ...patch,
   }
+  // The recorder lists every armed lane: the one named, unless a case lists more.
+  const lanes =
+    made.phase === 'idle'
+      ? []
+      : [
+          {
+            trackId: made.targetTrackId,
+            arming: made.phase === 'arming',
+            level: 0,
+            live: null,
+            microphone: true,
+          },
+        ]
+  return { lanes, ...made }
 }
 
 function mount(
@@ -327,21 +344,41 @@ describe('useStudioRecorder', () => {
     }
   })
 
-  it("arms a lane from its own button, moves the arm to another lane's, and disarms on the armed lane's", () => {
+  it('arms each lane from its own button beside the others, and disarms only the lane pressed', () => {
     const { hook, dispose } = mount({ project: band })
     const recorder = mocks.recorder!
+    const lane = (trackId: string) => ({
+      trackId,
+      arming: false,
+      level: 0,
+      live: null,
+      microphone: true,
+    })
 
     hook.arming.toggle('bass')
     expect(recorder.arm).toHaveBeenCalledWith('bass')
-    expect(hook.arming.armedTrackId()).toBe('bass')
+    expect(hook.arming.laneState('bass')).toBe('armed')
 
     hook.arming.toggle('keys')
-    expect(recorder.retarget).toHaveBeenCalledWith('keys')
+    expect(recorder.arm).toHaveBeenLastCalledWith('keys')
+    expect(recorder.disarm).not.toHaveBeenCalled()
+    expect(recorder.retarget).not.toHaveBeenCalled()
     expect(recorder.record).not.toHaveBeenCalled()
 
-    mocks.onChange!(view({ phase: 'armed', targetTrackId: 'keys' }))
+    mocks.onChange!(
+      view({
+        phase: 'armed',
+        targetTrackId: 'bass',
+        lanes: [lane('bass'), lane('keys')],
+      }),
+    )
+    expect(['bass', 'keys', 'drums'].map(hook.arming.laneState)).toEqual([
+      'armed',
+      'armed',
+      'idle',
+    ])
     hook.arming.toggle('keys')
-    expect(recorder.disarm).toHaveBeenCalledOnce()
+    expect(recorder.disarm).toHaveBeenCalledExactlyOnceWith('keys')
     dispose()
   })
 
@@ -357,6 +394,35 @@ describe('useStudioRecorder', () => {
     dispose()
   })
 
+  it('says Record found no memory for every armed lane and started none, and names one lane as before', () => {
+    const { dispose } = mount({ project: band })
+    const refused = new Error('Studio needs more memory to record this take.')
+    const lane = (trackId: string) => ({
+      trackId,
+      arming: false,
+      level: 0,
+      live: null,
+      microphone: true,
+    })
+
+    mocks.onChange!(view({ phase: 'armed', targetTrackId: 'bass' }))
+    const one = mocks.describeError!(refused)
+    mocks.onChange!(
+      view({
+        phase: 'armed',
+        targetTrackId: 'bass',
+        lanes: [lane('bass'), lane('keys')],
+      }),
+    )
+    const several = mocks.describeError!(refused)
+
+    expect(one).toBe(describeStudioRecordError(refused))
+    expect(several).toBe(
+      'Studio needs more memory to record every armed lane, so none started. Disarm a lane, or close other songs or tabs, then press Record again.',
+    )
+    dispose()
+  })
+
   it('keeps the arm on its lane when another lane is selected', () => {
     const { hook, dispose, setSelected } = mount()
     mocks.onChange!(view({ phase: 'armed', targetTrackId: 'lane-1' }))
@@ -364,7 +430,7 @@ describe('useStudioRecorder', () => {
     setSelected('lane-2')
 
     expect(mocks.recorder!.retarget).not.toHaveBeenCalled()
-    expect(hook.arming.armedTrackId()).toBe('lane-1')
+    expect(hook.arming.laneState('lane-1')).toBe('armed')
     dispose()
   })
 
@@ -595,13 +661,13 @@ describe('useStudioRecorder input', () => {
     const held = { stream: {} as MediaStream, missing: true, release: vi.fn() }
     mocks.acquireFrom.mockResolvedValueOnce(held)
 
-    // MicManager's stream, given back through the hold's own release, and
-    // the lane's pick: none, for a lane that follows the Studio's input.
-    await expect(mocks.acquireMic!(null)).resolves.toEqual({
-      stream: held.stream,
-      pick: null,
-      release: held.release,
-    })
+    // MicManager's stream and the lane's pick: none, for a lane that
+    // follows the Studio's input. Its release lets MicManager's hold go, as
+    // the last lane on the input lets it go.
+    const hold = await mocks.acquireMic!(null)
+    expect(hold).toMatchObject({ stream: held.stream, pick: null })
+    ;(hold as unknown as { release(): void }).release()
+    await vi.waitFor(() => expect(held.release).toHaveBeenCalledOnce())
 
     expect(mocks.acquireFrom).toHaveBeenCalledWith('studio-record', 'usb-mic')
     expect(hook.inputMissing()).toBe(true)

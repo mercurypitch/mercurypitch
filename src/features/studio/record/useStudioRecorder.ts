@@ -11,22 +11,26 @@
 // progress holds the mic against a hidden-tab release, navigation waits for
 // a take, and the mic is given back when a take ends or the Studio closes.
 //
-// Arming: each lane's arm button arms that lane (the microphone opens and
-// the lane shows its level), moves the arm from another lane, or disarms
-// it. One lane is armed at a time, as one take records at a time, and the
-// arm stays put when another lane is selected and after a take. A lane can
-// record from an input of its own, and one of its channels or an aligned
-// pair (studio-lane-input-state.ts): its arm opens that input, and the
-// arm moves to another lane with the microphone open only when both hear
-// the same input and channels; otherwise it opens the other lane's. A MIDI
-// lane plays its instrument in place of a microphone (midi/): no
-// microphone opens for it, the mic icon stays off, its player always
-// hears it, and a kept take keeps the notes played into it.
+// Arming: each lane's arm button arms that lane (its input opens and the
+// lane shows its level) or disarms it, and leaves every other lane as it
+// is: as in a DAW, any number of lanes can be armed, and one Record press
+// records them all, each lane's take a clip on its own lane. The arms stay
+// put when another lane is selected and after a take. A lane can record
+// from an input of its own, and one of its channels or an aligned pair
+// (studio-lane-input-state.ts). Audio lanes record from one input at a
+// time (studio-mic-share.ts): every armed audio lane takes its own channel
+// or pair of the one device, which opens once and stays open while any lane
+// on it is armed, re-armed or changes channel; a lane on another device is
+// refused in words that name both. A MIDI lane plays its instrument in
+// place of a microphone (midi/): any number can be armed beside the audio
+// lanes, each on a port of its own, its player always hears it, and a kept
+// take keeps the notes played into it. The mic icon is on while any armed
+// lane holds the microphone.
 //
-// Keys: Record and R start a take on the armed lane in one press; with no
+// Keys: Record and R start a take on every armed lane in one press; with no
 // lane armed they arm the selected lane, else the first lane with no clips,
 // else a new lane, and start in the same press. R or Stop ends the take;
-// Escape disarms, cancels a count-in or stops a take; Space stops a take
+// Escape disarms every lane, cancels a count-in or stops a take; Space stops a take
 // (StudioWorkspace's toggle). Arming takes the focus in the Studio; once
 // armed, R and Escape work wherever the focus is, outside text fields and
 // dialogs.
@@ -46,10 +50,10 @@ import { openStudioCapture, prepareStudioRecorderWorklet, } from '@/lib/studio/r
 import { createStudioClickTrack } from '@/lib/studio/record/click-track'
 import { createStudioInputMonitor } from '@/lib/studio/record/input-monitor'
 import type { StudioLaneInput } from '@/lib/studio/record/lane-inputs'
-import { isMidiLaneInput, sameStudioLaneInput, } from '@/lib/studio/record/lane-inputs'
+import { isMidiLaneInput } from '@/lib/studio/record/lane-inputs'
 import type { StudioRecordSettings } from '@/lib/studio/record/record-settings'
 import { readStudioRecordSettings, writeStudioRecordSettings, } from '@/lib/studio/record/record-settings'
-import type { StudioCapturedTake, StudioLiveTake, StudioRecorderView, StudioTakeJournalWriter, } from '@/lib/studio/record/studio-recorder'
+import type { StudioCapturedTake, StudioLiveTake, StudioRecorderView, StudioRecordPhase, StudioTakeJournalWriter, } from '@/lib/studio/record/studio-recorder'
 import { createStudioRecorder } from '@/lib/studio/record/studio-recorder'
 import { pcm16ToFloat } from '@/lib/studio/record/take-audio'
 import { studioTakeClip } from '@/lib/studio/record/take-passes'
@@ -63,11 +67,13 @@ import { sameTakeClock } from '../audio/take-clock'
 import type { useStudioTransport } from '../audio/useStudioTransport'
 import type { StudioRecordingImport } from '../controller/imports'
 import { studioContentEnd } from '../timeline/timeline-geometry'
-import type { StudioLaneArming, StudioTimelineRecording, } from '../timeline/types'
+import type { StudioLaneArming } from '../timeline/types'
 import { StudioMidiArmRefusal } from './midi/studio-midi-arm'
 import { createStudioMidiLanes } from './midi/studio-midi-lanes'
+import { createStudioRecordLanes } from './record-lanes'
 import { createStudioInputs } from './studio-inputs'
 import { createStudioLaneInputState } from './studio-lane-input-state'
+import { createStudioMicShare, StudioInputRefusal } from './studio-mic-share'
 import { studioTakeFrames, studioTakeImport } from './take-import'
 import { setStudioTakeRunning } from './take-running'
 
@@ -121,6 +127,7 @@ function placesSomething(row: StudioTakeJournalRecord): boolean {
 /** What to say when the microphone, the memory or the recorder would not start. */
 export function describeStudioRecordError(error: unknown): string {
   if (error instanceof StudioMidiArmRefusal) return error.words
+  if (error instanceof StudioInputRefusal) return error.words
   const kind = (error as Partial<MicError> | null)?.kind
   if (typeof kind === 'string' && kind in MIC_ERRORS)
     return MIC_ERRORS[kind as MicError['kind']]
@@ -131,8 +138,13 @@ export function describeStudioRecordError(error: unknown): string {
   return "Studio couldn't start recording. Press Record to try again."
 }
 
+/** Memory refused for one lane of several: Record started none of them. */
+const MEMORY_FOR_EVERY_LANE =
+  'Studio needs more memory to record every armed lane, so none started. Disarm a lane, or close other songs or tabs, then press Record again.'
+
 const RUNNING = new Set(['counting', 'recording'])
 const HOLDS_MIC = new Set(['armed', 'counting', 'recording', 'finishing'])
+const TAKE_PHASES = new Set(['counting', 'recording', 'finishing'])
 
 export function useStudioRecorder(options: StudioRecorderOptions) {
   const { transport } = options
@@ -163,12 +175,29 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     settings,
     devices: inputs.devices,
   })
+
+  /** A lane's name for the recorder's words. */
+  function laneName(trackId: string | null): string {
+    if (trackId === null) return 'the new lane'
+    const track = options.project()?.tracks.find((each) => each.id === trackId)
+    return track?.name ?? 'the lane'
+  }
   // A MIDI lane plays its sound in place of a microphone (midi/).
   const midi = createStudioMidiLanes({
     project: () => options.project(),
     laneInput: (trackId) => lanes.of(trackId),
-    onLost: (words) => recorder.inputLost(words),
+    laneName,
+    onLost: (words, trackId) => recorder.inputLost(words, trackId),
   })
+  // Every armed audio lane records from the one input (studio-mic-share.ts).
+  const micShare = createStudioMicShare({
+    open: (deviceId) => micManager.acquireFrom(STUDIO_RECORD_MIC_ID, deviceId),
+    armed: (trackId) =>
+      laneRecords.lanes().some((lane) => lane.trackId === trackId),
+    laneName,
+  })
+  // Each armed lane, as the timeline and the arm buttons read it.
+  const laneRecords = createStudioRecordLanes()
   const journal = createStudioTakeJournal()
   const writers = new Map<string, StudioTakeJournalWriter>()
   let restoreRepeat = false
@@ -248,12 +277,13 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     acquireInstrument: (trackId) => midi.acquire(trackId),
     acquireMic: async (trackId) => {
       // Planned from the list the Studio holds: the input opens inside the
-      // press, before anything is awaited.
+      // press, before anything is awaited, unless a lane armed on it holds
+      // it open already.
       const plan = lanes.plan(trackId)
-      const held = await micManager.acquireFrom(
-        STUDIO_RECORD_MIC_ID,
-        plan.deviceId,
-      )
+      const held = await micShare.open(trackId, {
+        deviceId: plan.deviceId,
+        name: lanes.askName(trackId, plan),
+      })
       const pick = lanes.held(trackId, plan, held.missing)
       // The page may use the microphone now, so the browser names its inputs.
       void inputs.refresh()
@@ -294,16 +324,22 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     keep: keepTake,
     title: () => `Take ${studioNextTakeNumber(options.assets())}`,
     createId: () => globalThis.crypto.randomUUID(),
-    describeError: describeStudioRecordError,
+    describeError: (error) =>
+      isStudioMemoryRefusal(error) && laneRecords.lanes().length > 1
+        ? MEMORY_FOR_EVERY_LANE
+        : describeStudioRecordError(error),
     onChange: (next) =>
       batch(() => {
         setLevel(next.level)
         setLive(next.live)
+        laneRecords.update(next)
         setView((before) =>
           before.phase === next.phase &&
           before.countBeat === next.countBeat &&
           before.error === next.error &&
           before.notice === next.notice &&
+          before.notices === next.notices &&
+          before.capture === next.capture &&
           before.targetTrackId === next.targetTrackId
             ? before
             : next,
@@ -359,24 +395,25 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     else if (RUNNING.has(now)) recorder.stop()
   }
 
-  /** A lane's arm button: arm it, move the arm to it, or disarm it. */
+  /** Whether lane `trackId` is armed, or its input is opening. */
+  const isArmed = (trackId: string | null) =>
+    laneRecords.lanes().some((lane) => lane.trackId === trackId)
+
+  /** A lane's arm button: arm that lane beside the others, or disarm it alone. */
   function toggleArm(trackId: string): void {
-    const now = phase()
     pressToken++
-    if (now === 'idle') {
-      if (canArm()) void recorder.arm(trackId)
-    } else if (now === 'armed' || now === 'arming') {
-      const armedLane = view().targetTrackId
-      if (armedLane === trackId) recorder.disarm()
-      // The arm moves with the microphone open only to a lane that hears
-      // the same input and channels; another one is opened for the lane.
-      else if (sameStudioLaneInput(lanes.of(armedLane), lanes.of(trackId)))
-        recorder.retarget(trackId)
-      else {
-        recorder.disarm()
-        void recorder.arm(trackId)
-      }
-    }
+    if (TAKE_PHASES.has(phase())) return
+    if (isArmed(trackId)) recorder.disarm(trackId)
+    else if (canArm()) void recorder.arm(trackId)
+  }
+
+  /** How lane `trackId`'s arm button shows: idle, opening, armed, or the take every armed lane is in. */
+  function laneState(trackId: string): StudioRecordPhase {
+    const lane = laneRecords.lanes().find((each) => each.trackId === trackId)
+    if (lane === undefined) return 'idle'
+    if (lane.arming) return 'arming'
+    const now = phase()
+    return TAKE_PHASES.has(now) ? now : 'armed'
   }
 
   function stop(): void {
@@ -415,14 +452,15 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
   // An armed lane that leaves the song (removed, or undone) disarms.
   createEffect(() => {
     const now = phase()
-    const lane = view().targetTrackId
-    if ((now !== 'armed' && now !== 'arming') || lane === null) return
-    if (project()?.tracks.some((track) => track.id === lane) !== true)
-      untrack(() => recorder.disarm())
+    if (now !== 'armed' && now !== 'arming') return
+    const song = new Set(project()?.tracks.map((track) => track.id))
+    for (const { trackId } of laneRecords.lanes())
+      if (trackId !== null && !song.has(trackId))
+        untrack(() => recorder.disarm(trackId))
   })
-  // Monitoring follows its setting and the lane's volume and pan.
+  // Monitoring follows its setting and each armed lane's volume and pan.
   createEffect(() => {
-    laneLevel(view().targetTrackId)
+    for (const { trackId } of laneRecords.lanes()) laneLevel(trackId)
     untrack(() => recorder.updateMonitor())
   })
   // Repeat comes back once the take is over.
@@ -452,10 +490,9 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     micManager.subscribe((state) => {
       const now = untrack(phase)
       if (now !== 'armed' && !RUNNING.has(now)) return
-      // A MIDI lane holds no microphone: its port's going is its own.
-      if (untrack(midi.armed) !== null) return
       // The Studio's input is a stream of its own (acquireFrom), apart from
       // the shared one `active` speaks for. A release by the app says why.
+      // Only the lanes on it go: a MIDI lane's port is its own.
       if (state.scoped !== STUDIO_RECORD_MIC_ID)
         recorder.micLost(state.released ?? null)
     }),
@@ -465,9 +502,9 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       STUDIO_RECORD_MIC_ID,
       // Deliberately non-reactive: the sentinel polls these accessors on its
       // own low-frequency interval — no tracked scope involved.
-      // A MIDI lane holds no microphone, so its arm leaves the icon off.
-      // eslint-disable-next-line solid/reactivity
-      () => HOLDS_MIC.has(phase()) && midi.armed() === null,
+      // On while any armed lane holds the microphone; a MIDI lane holds none.
+
+      () => laneRecords.lanes().some((lane) => lane.microphone),
       () => recorder.micLost(),
     ),
   )
@@ -561,12 +598,17 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     recorder.updateMonitor()
   }
 
-  /** Record lane `trackId` from its own input and channels from the next arm, on this device; the lane armed opens them now. */
+  /** Record lane `trackId` from its own input and channels from the next arm, on this device; an armed lane opens them now, the device left open when it stays the same. */
   function chooseLaneInput(trackId: string, next: StudioLaneInput): void {
     if (busy() || !lanes.choose(trackId, next)) return
-    if (phase() !== 'armed' || view().targetTrackId !== trackId) return
-    recorder.disarm()
+    if (phase() !== 'armed' || !isArmed(trackId)) return
+    const keepOpen = isMidiLaneInput(next)
+      ? () => undefined
+      : micShare.retain(lanes.plan(trackId).deviceId)
+    recorder.disarm(trackId)
+    // Its new arm takes the open input before the hold kept for it goes.
     void recorder.arm(trackId)
+    keepOpen()
   }
 
   /** Record from `id` (null: the default) from the next arm; an armed lane opens it now. */
@@ -579,38 +621,14 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     })
     lanes.forget()
     if (phase() !== 'armed') return
-    const lane = view().targetTrackId
-    recorder.disarm()
-    void recorder.arm(lane)
+    // The armed audio lanes open the new input; a MIDI lane plays on.
+    const audio = laneRecords
+      .lanes()
+      .filter(({ trackId }) => !isMidiLaneInput(lanes.of(trackId)))
+      .map(({ trackId }) => trackId)
+    for (const trackId of audio) recorder.disarm(trackId)
+    for (const trackId of audio) void recorder.arm(trackId)
   }
-
-  // One object from the arm until the take is kept: the level and the take
-  // are read through it, so a level wakes the meter that draws it and a
-  // chunk the take, not every lane on every level.
-  const timelineRecord = createMemo(
-    (): StudioTimelineRecording | null =>
-      phase() === 'idle'
-        ? null
-        : {
-            trackId: view().targetTrackId,
-            listening: phase() !== 'finishing',
-            get live() {
-              return live()
-            },
-            get level() {
-              return level()
-            },
-          },
-    undefined,
-    {
-      equals: (before, next) =>
-        before === next ||
-        (before !== null &&
-          next !== null &&
-          before.trackId === next.trackId &&
-          before.listening === next.listening),
-    },
-  )
 
   // A take counting in or recording, and where it sits on the clock: the
   // playhead follows it where no song plays under it (take-clock.ts).
@@ -640,8 +658,10 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     phase,
     level,
     live,
-    /** The armed lane's level and the take growing in it, for the timeline. */
-    timeline: timelineRecord,
+    /** Every armed lane's level and the take growing in it, for the timeline. */
+    timeline: laneRecords.records,
+    /** The armed lanes, in the order they were armed: which hold a microphone, and which are still opening. */
+    armedLanes: laneRecords.lanes,
     /** A running take's place on the clock, for the transport (take-clock.ts). */
     takeClock,
     /** A lane's name, or null for one that is not in the song. */
@@ -657,11 +677,12 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     keyDown,
     /** Each lane's arm button reads and presses through this. */
     arming: {
-      armedTrackId: () => (phase() === 'idle' ? null : view().targetTrackId),
+      laneState,
       phase,
       canArm,
       toggle: toggleArm,
     } satisfies StudioLaneArming,
+    /** Disarm every lane. */
     disarm: () => recorder.disarm(),
     clearMessages: () => recorder.clearMessages(),
     settings,
@@ -684,14 +705,17 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       /** Keep the channel count of an input opened elsewhere: the Inputs view's check. */
       remember: lanes.remember,
     },
-    /** The armed input for meters beside the take, on the arm's own split; null while none is armed. */
+    /** The armed microphone for meters beside the take, on its own split; null while no lane holds one. */
     inputTap: () => recorder.inputTap(),
+    /** Which opening of the microphone the armed lanes share: the Inputs view reads the tap again when it changes. */
+    inputCapture: () => view().capture ?? null,
     /** The Studio's MIDI access: its state and ports, and the ask from a press. */
     midi: midi.access,
-    /** The MIDI lane the last arm opened, by its port's name and sound; null for a microphone. */
-    midiArmed: midi.armed,
-    /** What the last arm opened: what records, and what opened in place of what its lane asked for. */
-    armedInput: lanes.armed,
+    /** Lane `trackId`'s MIDI arm by its port's name and sound, the first armed lane's with none named; null for a microphone. */
+    midiArmed: (trackId?: string | null) =>
+      midi.armed(trackId === undefined ? view().targetTrackId : trackId),
+    /** What lane `trackId`'s arm opened, the last arm's with none named: what records, and what opened in place of what its lane asked for. */
+    armedInput: (trackId?: string | null) => lanes.armed(trackId),
     /** Punch, on the transport: Record keeps only the range. */
     punch: {
       on: () => settings().punch,

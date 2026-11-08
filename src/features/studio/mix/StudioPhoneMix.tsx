@@ -38,7 +38,11 @@ export function StudioPhoneMix(props: StudioPhoneMixProps) {
             <div
               class={styles.phoneTrack}
               data-studio-phone-track={id}
-              data-armed={props.arming?.armedTrackId() === id ? '' : undefined}
+              data-armed={
+                (props.arming?.laneState(id) ?? 'idle') === 'idle'
+                  ? undefined
+                  : ''
+              }
               style={{
                 '--studio-track': studioTrackColor(
                   studioTrackHue(track(), index()),

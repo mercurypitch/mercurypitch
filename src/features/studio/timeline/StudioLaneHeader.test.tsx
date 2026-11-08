@@ -71,7 +71,9 @@ function arming(start: { phase: StudioRecordPhase; armed: string | null }) {
   const toggle = vi.fn()
   return {
     handle: {
-      armedTrackId: armed,
+      // The armed lane's button shows the recorder's phase.
+      laneState: (trackId: string): StudioRecordPhase =>
+        armed() === trackId ? phase() : 'idle',
       phase,
       canArm,
       toggle,
@@ -144,6 +146,47 @@ describe('Studio arm button', () => {
     expect(button).toHaveTextContent('Arm')
     fireEvent.click(button)
     expect(lanes.toggle).toHaveBeenCalledExactlyOnceWith('lane-1')
+  })
+
+  it('lights every armed lane at once, each pressed to disarm alone, and the one still opening as opening', () => {
+    // Arrange
+    const toggle = vi.fn()
+    const states: Record<string, StudioRecordPhase> = {
+      'lane-1': 'armed',
+      'lane-2': 'arming',
+      'lane-3': 'idle',
+    }
+    const handle = {
+      laneState: (trackId: string) => states[trackId],
+      phase: (): StudioRecordPhase => 'arming',
+      canArm: () => true,
+      toggle,
+    }
+
+    // Act
+    render(() => (
+      <>
+        <StudioArmButton trackId="lane-1" name="Vocals" arming={handle} />
+        <StudioArmButton trackId="lane-2" name="Guitar" arming={handle} />
+        <StudioArmButton trackId="lane-3" name="Bass" arming={handle} />
+      </>
+    ))
+    const [vocals, guitar, bass] = ['Vocals', 'Guitar', 'Bass'].map((name) =>
+      screen.getByRole('button', { name: `Arm ${name} for recording` }),
+    )
+    fireEvent.click(vocals)
+
+    // Assert
+    expect(
+      [vocals, guitar, bass].map((button) =>
+        button.getAttribute('aria-pressed'),
+      ),
+    ).toEqual(['true', 'true', 'false'])
+    expect(vocals).toHaveAttribute('data-phase', 'armed')
+    expect(guitar).toHaveAttribute('data-phase', 'arming')
+    expect(guitar.title).toBe('Opening the microphone')
+    expect(bass).toBeEnabled()
+    expect(toggle).toHaveBeenCalledExactlyOnceWith('lane-1')
   })
 
   it('waits while the song cannot take a recording, unless its lane is the armed one', () => {

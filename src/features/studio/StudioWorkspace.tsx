@@ -545,7 +545,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             laneInputs={recorder.laneInputs}
             readCanonicalAsset={props.studio.readCanonicalAsset}
             assetPeaks={props.studio.assetPeaks}
-            record={recorder.timeline()}
+            records={recorder.timeline()}
             arming={recorder.arming}
           />
           <StudioRecordStatus recorder={recorder} />

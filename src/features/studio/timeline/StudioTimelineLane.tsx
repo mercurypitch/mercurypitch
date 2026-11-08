@@ -84,7 +84,9 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
 
   const touch = () => props.timeline.phone || props.timeline.tablet === true
   const armed = () =>
-    props.timeline.arming?.armedTrackId() === props.id ? '' : undefined
+    (props.timeline.arming?.laneState(props.id) ?? 'idle') === 'idle'
+      ? undefined
+      : ''
   const laneInput = () => {
     const inputs = props.timeline.laneInputs
     return inputs === undefined
@@ -262,9 +264,9 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
           }}
         </For>
         <Show
-          when={
-            props.timeline.record?.trackId === props.id && props.timeline.record
-          }
+          when={props.timeline.records?.find(
+            (each) => each.trackId === props.id,
+          )}
         >
           {(record) => (
             <StudioLaneTake

@@ -1,7 +1,7 @@
 // Studio record notices tests — the armed card says what records of an input with more than one channel, one input or a pair mixed, or that the lane is ready; which input it records from when that is not the one asked for; and an input or pair the input does not have, with the default that records instead.
 import { describe, expect, it } from 'vitest'
 import type { StudioArmedInput, StudioArmedRecords, } from './studio-lane-input-state'
-import { armedWords } from './StudioRecordNotices'
+import { armedWords, studioRecordNotice } from './StudioRecordNotices'
 
 const nothing: StudioArmedInput = {
   laneMissing: null,
@@ -115,5 +115,53 @@ describe('the armed card', () => {
     expect(said).toBe(
       'Armed on Keys with Keystation 49. Press Record to start.',
     )
+  })
+})
+
+describe('what the last take said', () => {
+  const names: Record<string, string> = { vox: 'Vocals', keys: 'Keys' }
+  const laneName = (trackId: string | null) =>
+    trackId === null ? null : names[trackId]
+
+  it("says one lane's words as they are, and words every lane shared once", () => {
+    // Arrange, Act, Assert
+    expect(
+      studioRecordNotice(
+        {
+          notice: 'Keys gone mid-take.',
+          notices: [{ trackId: 'keys', text: 'Keys gone mid-take.' }],
+        },
+        laneName,
+      ),
+    ).toBe('Keys gone mid-take.')
+    expect(
+      studioRecordNotice(
+        {
+          notice: 'Takes stop at five minutes. Studio kept this one.',
+          notices: ['vox', 'keys'].map((trackId) => ({
+            trackId,
+            text: 'Takes stop at five minutes. Studio kept this one.',
+          })),
+        },
+        laneName,
+      ),
+    ).toBe('Takes stop at five minutes. Studio kept this one.')
+  })
+
+  it("names each lane before its own words where the lanes' takes said different things", () => {
+    // Arrange, Act
+    const said = studioRecordNotice(
+      {
+        notice: 'Too short.',
+        notices: [
+          { trackId: 'keys', text: 'Keys gone mid-take.' },
+          { trackId: null, text: 'Too short.' },
+        ],
+      },
+      laneName,
+    )
+
+    // Assert
+    expect(said).toBe('Keys: Keys gone mid-take. The new lane: Too short.')
   })
 })

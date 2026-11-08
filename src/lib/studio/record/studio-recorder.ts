@@ -82,6 +82,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     live: null,
     lanes: [],
     notices: [],
+    capture: null,
   }
   let run: Run | null = null
   let runPhase: RunPhase | null = null
@@ -129,6 +130,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
       level: first?.level ?? 0,
       live: first?.live ?? null,
       lanes: lanes.map(laneView),
+      capture: arms.capture(),
       notices,
     }
     if (!disposed) deps.onChange(view)
@@ -617,12 +619,6 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     micLost,
     inputLost,
     clockStopped,
-    /** Move lane `from`'s arm (the first lane's when none is named) to `trackId` before the take starts; its input stays open. */
-    retarget(trackId: string | null, from?: string | null): void {
-      if (run !== null) return
-      const moving = from === undefined ? view.targetTrackId : from
-      if (trackId !== moving && arms.retarget(trackId, moving)) publish()
-    },
     /** Each armed lane's monitoring follows the settings and its lane. */
     updateMonitor(): void {
       arms.updateMonitors()

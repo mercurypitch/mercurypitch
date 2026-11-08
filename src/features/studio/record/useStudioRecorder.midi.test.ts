@@ -124,7 +124,7 @@ afterEach(() => {
 })
 
 function view(patch: Partial<StudioRecorderView>): StudioRecorderView {
-  return {
+  const made: StudioRecorderView = {
     phase: 'idle',
     level: 0,
     countBeat: null,
@@ -134,6 +134,20 @@ function view(patch: Partial<StudioRecorderView>): StudioRecorderView {
     live: null,
     ...patch,
   }
+  // The recorder lists every armed lane: the one named, unless a case lists more.
+  const lanes =
+    made.phase === 'idle'
+      ? []
+      : [
+          {
+            trackId: made.targetTrackId,
+            arming: made.phase === 'arming',
+            level: 0,
+            live: null,
+            microphone: true,
+          },
+        ]
+  return { lanes, ...made }
 }
 
 /** The hook on the song, lane-1 on the Keystation; the recorder's dependencies in `mocks.deps`. */
@@ -212,21 +226,111 @@ describe('the Studio recorder on a MIDI lane', () => {
     setMicLatencyByDevice({})
   })
 
-  it('keeps the mic icon off while a MIDI lane is armed, and on for a microphone', async () => {
+  it('keeps the mic icon off while only MIDI lanes are armed, and on while any armed lane holds the microphone', async () => {
     // Arrange
     const { deps } = mount()
+    const lane = (trackId: string, microphone: boolean) => ({
+      trackId,
+      arming: false,
+      level: 0,
+      live: null,
+      microphone,
+    })
 
     // Act
     await deps.acquireInstrument('lane-1')
-    deps.onChange(view({ phase: 'armed', targetTrackId: 'lane-1' }))
+    deps.onChange(
+      view({
+        phase: 'armed',
+        targetTrackId: 'lane-1',
+        lanes: [lane('lane-1', false)],
+      }),
+    )
     const midiArmed = mocks.indicator!()
-    deps.acquireInstrument('lane-2')
-    deps.onChange(view({ phase: 'armed', targetTrackId: 'lane-2' }))
-    const micArmed = mocks.indicator!()
+    deps.onChange(
+      view({
+        phase: 'armed',
+        targetTrackId: 'lane-1',
+        lanes: [lane('lane-1', false), lane('lane-2', true)],
+      }),
+    )
+    const bothArmed = mocks.indicator!()
 
     // Assert
     expect(midiArmed).toBe(false)
-    expect(micArmed).toBe(true)
+    expect(bothArmed).toBe(true)
+  })
+
+  it('plays two MIDI lanes on two ports, each a sound of its own, and keeps each take only its own notes', async () => {
+    // Arrange
+    const pads = fakeMidiInput('pads', 'MPD218')
+    const fake = fakeMidiAccess([keys, pads])
+    Object.defineProperty(navigator, 'requestMIDIAccess', {
+      configurable: true,
+      value: () => Promise.resolve(fake.access),
+    })
+    const { hook, deps } = mount()
+    hook.laneInputs.choose('lane-2', {
+      kind: 'midi',
+      portId: 'pads',
+      label: 'MPD218',
+    })
+    const onKeys = (await deps.acquireInstrument('lane-1'))!
+    const onPads = (await deps.acquireInstrument('lane-2'))!
+    const clock = { currentTime: 10 }
+    onKeys.play(clock as unknown as AudioContext)
+    onPads.play(clock as unknown as AudioContext)
+
+    // Act: middle C on the keys, and E on the pads, each half a second.
+    keys.send([0x90, 60, 100], performance.now() - 50)
+    pads.send([0x90, 64, 90], performance.now() - 50)
+    clock.currentTime = 10.5
+    keys.send([0x80, 60, 0], performance.now() - 50)
+    pads.send([0x80, 64, 0], performance.now() - 50)
+    const take = (id: string, trackId: string) => ({
+      id,
+      title: 'Take 1',
+      trackId,
+      sampleRate: 48_000,
+      samples: new Float32Array(48_000),
+      heardFirst: 96_000,
+      fromFrame: null,
+      capturedFrom: 9.9,
+    })
+    await deps.keep(take('take-keys', 'lane-1'))
+    await deps.keep(take('take-pads', 'lane-2'))
+
+    // Assert
+    expect(mocks.sounds.attach).toHaveBeenCalledTimes(2)
+    expect(mocks.keepNotes.mock.calls).toEqual([
+      [
+        'song-1',
+        'take-keys',
+        [expect.objectContaining({ midi: 60, velocity: 100 })],
+      ],
+      [
+        'song-1',
+        'take-pads',
+        [expect.objectContaining({ midi: 64, velocity: 90 })],
+      ],
+    ])
+  })
+
+  it('refuses a second lane on a port another lane plays, naming that lane', async () => {
+    // Arrange
+    const { hook, deps } = mount()
+    hook.laneInputs.choose('lane-2', KEYS)
+    await deps.acquireInstrument('lane-1')
+
+    // Act
+    const error = await deps
+      .acquireInstrument('lane-2')!
+      .catch((refusal: unknown) => refusal)
+
+    // Assert
+    expect(describeStudioRecordError(error)).toBe(
+      'Keystation 49 plays Keys already. A MIDI keyboard or pad plays one lane at a time: disarm Keys, or choose another input for Voice.',
+    )
   })
 
   it('keeps the notes played into a kept take beside its audio, by its id', async () => {

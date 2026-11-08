@@ -1,5 +1,6 @@
-// Record in the Studio, a lane's own input — an arm opens the lane's input and its one input or aligned pair as the browser lists it, else the Studio's and its default and says so, says what records once the input has opened, and lines its takes up by that input's round trip; an armed lane re-arms on a new input or pick while the arm moves freely only between lanes on the same ones, and a lane's input is kept on this device until its lane is gone.
+// Record in the Studio, a lane's own input — an arm opens the lane's input and its one input or aligned pair as the browser lists it, else the Studio's and its default and says so, says what records once the input has opened, and lines its takes up by that input's round trip; an armed lane re-arms on a new input or pick, keeping the device open when it stays the same; armed lanes share one input, and a lane on another is refused in words that name both; and a lane's input is kept on this device until its lane is gone.
 import { createRoot, createSignal } from 'solid-js'
+import type { Mock } from 'vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { FakeMediaDevices } from '@/lib/audio-input/fake-devices.fixture'
 import { audioInput, fakeMediaDevices, } from '@/lib/audio-input/fake-devices.fixture'
@@ -13,9 +14,11 @@ const mocks = vi.hoisted(() => ({
   onChange: null as null | ((view: StudioRecorderView) => void),
   acquireMic: null as
     | null
-    | ((
-        trackId: string | null,
-      ) => Promise<{ stream: MediaStream; pick?: ChannelPick | null }>),
+    | ((trackId: string | null) => Promise<{
+        stream: MediaStream
+        pick?: ChannelPick | null
+        release(): void
+      }>),
   inputOpened: null as null | ((opened: StudioInputOpened) => void),
   roundTrip: null as
     | null
@@ -32,9 +35,11 @@ const mocks = vi.hoisted(() => ({
 vi.mock('@/lib/studio/record/studio-recorder', () => ({
   createStudioRecorder: (deps: {
     onChange: (view: StudioRecorderView) => void
-    acquireMic: (
-      trackId: string | null,
-    ) => Promise<{ stream: MediaStream; pick?: ChannelPick | null }>
+    acquireMic: (trackId: string | null) => Promise<{
+      stream: MediaStream
+      pick?: ChannelPick | null
+      release(): void
+    }>
     inputOpened: (opened: StudioInputOpened) => void
     roundTrip: (context: AudioContext, stream: MediaStream) => number
   }) => {
@@ -79,13 +84,14 @@ vi.mock('@/lib/local-save-navigation-reason', () => ({
   useLocalSaveNavigationLockWithReason: () => undefined,
 }))
 
-const { useStudioRecorder } = await import('./useStudioRecorder')
+const { describeStudioRecordError, useStudioRecorder } =
+  await import('./useStudioRecorder')
 const { setMicLatencyByDevice } = await import('@/stores/mic-latency-store')
 const { setMicLatencyPathByKey } =
   await import('@/stores/mic-latency-path-store')
 
 function view(patch: Partial<StudioRecorderView>): StudioRecorderView {
-  return {
+  const made: StudioRecorderView = {
     phase: 'idle',
     level: 0,
     countBeat: null,
@@ -95,6 +101,20 @@ function view(patch: Partial<StudioRecorderView>): StudioRecorderView {
     live: null,
     ...patch,
   }
+  // The recorder lists every armed lane: the one named, unless a case lists more.
+  const lanes =
+    made.phase === 'idle'
+      ? []
+      : [
+          {
+            trackId: made.targetTrackId,
+            arming: made.phase === 'arming',
+            level: 0,
+            live: null,
+            microphone: true,
+          },
+        ]
+  return { lanes, ...made }
 }
 
 const song = {
@@ -124,6 +144,8 @@ afterEach(() => {
   devices = null
   localStorage.clear()
   vi.clearAllMocks()
+  // A hold a case queued and did not open goes with it.
+  mocks.acquireFrom.mockReset()
 })
 
 /** The hook on `project`, with the browser listing `listed`; resolves once the Studio holds that list. */
@@ -181,14 +203,16 @@ describe("a lane's own input", () => {
     const hook = await mount([desk, interfaceIn])
     hook.laneInputs.choose('lane-1', scarlett)
     hook.laneInputs.choose('lane-2', { ...scarlett, channel: 0, pair: true })
-    mocks.acquireFrom
-      .mockResolvedValueOnce(held())
-      .mockResolvedValueOnce(held())
+    mocks.acquireFrom.mockResolvedValueOnce(held())
 
     const single = await mocks.acquireMic!('lane-1')
     const pair = await mocks.acquireMic!('lane-2')
 
-    expect(mocks.acquireFrom).toHaveBeenCalledWith('studio-record', 'scarlett')
+    // Both lanes are on the interface: it opens once for the two of them.
+    expect(mocks.acquireFrom).toHaveBeenCalledExactlyOnceWith(
+      'studio-record',
+      'scarlett',
+    )
     expect(single.pick).toEqual({ channel: 1, pair: false })
     expect(pair.pick).toEqual({ channel: 0, pair: true })
     expect(hook.armedInput()).toEqual({
@@ -315,20 +339,74 @@ describe("a lane's own input", () => {
     expect(mocks.recorder!.arm).toHaveBeenLastCalledWith('lane-1')
   })
 
-  it('moves the arm with the microphone open only to a lane on the same input and channels', async () => {
+  it('opens one input for every armed lane on it, and refuses a lane on another input in words that name both', async () => {
     const hook = await mount([desk, interfaceIn])
     hook.laneInputs.choose('lane-3', scarlett)
+    const opened = held()
+    mocks.acquireFrom.mockResolvedValueOnce(opened)
+    const lane = (trackId: string) => ({
+      trackId,
+      arming: false,
+      level: 0,
+      live: null,
+      microphone: true,
+    })
+
+    // Guitar and Voice follow the Studio's input, the default.
+    const guitar = await mocks.acquireMic!('lane-1')
+    mocks.onChange!(
+      view({
+        phase: 'armed',
+        targetTrackId: 'lane-1',
+        lanes: [lane('lane-1')],
+      }),
+    )
+    const voice = await mocks.acquireMic!('lane-2')
+    mocks.onChange!(
+      view({
+        phase: 'armed',
+        targetTrackId: 'lane-1',
+        lanes: [lane('lane-1'), lane('lane-2')],
+      }),
+    )
+    const keys = await mocks.acquireMic!('lane-3').catch((error) => error)
+
+    expect(mocks.acquireFrom).toHaveBeenCalledExactlyOnceWith(
+      'studio-record',
+      null,
+    )
+    expect(voice.stream).toBe(guitar.stream)
+    expect(describeStudioRecordError(keys)).toBe(
+      'Keys records from Scarlett 2i2 USB, and Guitar and Voice are armed on Default input. Studio records from one audio input at a time: disarm them, or choose Default input for Keys.',
+    )
+    guitar.release()
+    expect(opened.release).not.toHaveBeenCalled()
+    voice.release()
+    await vi.waitFor(() => expect(opened.release).toHaveBeenCalledOnce())
+  })
+
+  it("keeps the device open while an armed lane's channel changes on it", async () => {
+    const hook = await mount([desk, interfaceIn])
+    hook.laneInputs.choose('lane-1', scarlett)
+    const opened = held()
+    mocks.acquireFrom.mockResolvedValueOnce(opened)
+    const first = await mocks.acquireMic!('lane-1')
     mocks.onChange!(view({ phase: 'armed', targetTrackId: 'lane-1' }))
+    // The recorder lets the old arm go, then arms the lane again.
+    mocks.recorder!.disarm.mockImplementationOnce(() => first.release())
+    const arm = mocks.recorder!.arm as unknown as Mock<
+      (trackId: string | null) => Promise<boolean>
+    >
+    arm.mockImplementationOnce(async (trackId) => {
+      await mocks.acquireMic!(trackId)
+      return true
+    })
 
-    hook.arming.toggle('lane-2')
-    expect(mocks.recorder!.retarget).toHaveBeenCalledExactlyOnceWith('lane-2')
-    expect(mocks.recorder!.disarm).not.toHaveBeenCalled()
+    hook.laneInputs.choose('lane-1', { ...scarlett, channel: 0, pair: true })
+    await vi.waitFor(() => expect(mocks.recorder!.arm).toHaveBeenCalled())
 
-    mocks.onChange!(view({ phase: 'armed', targetTrackId: 'lane-2' }))
-    hook.arming.toggle('lane-3')
-    expect(mocks.recorder!.retarget).toHaveBeenCalledOnce()
-    expect(mocks.recorder!.disarm).toHaveBeenCalledOnce()
-    expect(mocks.recorder!.arm).toHaveBeenLastCalledWith('lane-3')
+    expect(mocks.acquireFrom).toHaveBeenCalledOnce()
+    expect(opened.release).not.toHaveBeenCalled()
   })
 
   it("will not change a lane's input while a take runs", async () => {

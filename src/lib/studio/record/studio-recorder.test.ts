@@ -1,4 +1,4 @@
-// Studio recorder — arming opens the clock and the microphone in the press, the arm moves between lanes and stays after a take, a take counts in on the song's grid, stops cleanly, survives a lost microphone, and is journaled until kept.
+// Studio recorder — arming opens the clock and the microphone in the press, each lane arms beside the others and stays after a take, a take counts in on the song's grid, stops cleanly, survives a lost microphone, and is journaled until kept.
 import type { Mock } from 'vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { releaseMicLock } from '@/lib/mic-lock'
@@ -170,7 +170,7 @@ describe('arming', () => {
     expect(h.deps.openCapture).not.toHaveBeenCalled()
   })
 
-  it('moves the arm to the lane pressed while the microphone opens, metering that lane', async () => {
+  it('arms the lane pressed while another lane opens beside it, each heard at its own level', async () => {
     const h = harness({
       monitorLevel: (trackId) => ({
         on: true,
@@ -178,18 +178,21 @@ describe('arming', () => {
         pan: 0,
       }),
     })
-    const arming = h.recorder.arm('lane-1')
+    const first = h.recorder.arm('lane-1')
 
-    h.recorder.retarget('lane-2')
+    const second = h.recorder.arm('lane-2')
 
-    expect(h.view()).toMatchObject({ phase: 'arming', targetTrackId: 'lane-2' })
-    expect(await arming).toBe(true)
-    expect(h.view()).toMatchObject({ phase: 'armed', targetTrackId: 'lane-2' })
-    expect(h.monitor.set).toHaveBeenLastCalledWith({
-      on: true,
-      gain: 0.5,
-      pan: 0,
-    })
+    expect(h.view()).toMatchObject({ phase: 'arming', targetTrackId: 'lane-1' })
+    expect(await Promise.all([first, second])).toEqual([true, true])
+    expect(h.view().phase).toBe('armed')
+    expect(h.view().lanes?.map((lane) => lane.trackId)).toEqual([
+      'lane-1',
+      'lane-2',
+    ])
+    expect(h.monitor.set.mock.calls).toEqual([
+      [{ on: true, gain: 1, pan: 0 }],
+      [{ on: true, gain: 0.5, pan: 0 }],
+    ])
   })
 
   it('closes the capture and gives the microphone back on disarm', async () => {

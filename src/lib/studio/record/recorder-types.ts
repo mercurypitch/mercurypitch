@@ -83,6 +83,8 @@ export interface StudioRecorderView {
   readonly lanes?: readonly StudioRecordLane[]
   /** What each lane's last take said, for the lanes whose take did not end the usual way. */
   readonly notices?: readonly StudioRecordNotice[]
+  /** Which opening of the microphone the armed lanes share: a new number each time it opens, the same while lanes come and go on it; null while no lane holds one. */
+  readonly capture?: number | null
 }
 
 /** A finished take, ready to be kept like an imported file. */

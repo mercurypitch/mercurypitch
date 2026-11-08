@@ -1,4 +1,5 @@
-// Studio record button — one press records: on the armed lane, or with none armed it arms the selected lane (else the first empty one, else a new lane) and starts in the same press; the next press stops.
+// Studio record button — one press records: on every armed lane, or with none armed it arms the selected lane (else the first empty one, else a new lane) and starts in the same press; the next press stops.
+import { joinNames } from '@/lib/jam/jam-arrivals'
 import type { StudioRecordPhase } from '@/lib/studio/record/studio-recorder'
 import { RecordDot } from '../studio-icons'
 import styles from './StudioRecord.module.css'
@@ -22,18 +23,33 @@ const TITLES: Readonly<Record<Exclude<StudioRecordPhase, 'armed'>, string>> = {
   finishing: 'Keeping the take',
 }
 
+/** The armed lanes by name, as the button's title says them. */
+function armedNames(
+  recorder: Pick<StudioRecorderHandle, 'view' | 'laneName'> &
+    Partial<Pick<StudioRecorderHandle, 'armedLanes'>>,
+): string {
+  const armed = recorder.armedLanes?.() ?? []
+  const lanes =
+    armed.length > 0
+      ? armed.map((lane) => lane.trackId)
+      : [recorder.view().targetTrackId]
+  return joinNames(
+    lanes.map((trackId) => recorder.laneName(trackId) ?? 'a new lane'),
+  )
+}
+
 export function StudioRecordButton(props: {
   recorder: Pick<
     StudioRecorderHandle,
     'phase' | 'canArm' | 'press' | 'view' | 'laneName'
-  >
+  > &
+    Partial<Pick<StudioRecorderHandle, 'armedLanes'>>
 }) {
   const phase = () => props.recorder.phase()
   const title = () => {
     const now = phase()
     if (now !== 'armed') return TITLES[now]
-    const lane = props.recorder.laneName(props.recorder.view().targetTrackId)
-    return `Record on ${lane ?? 'a new lane'} (R)`
+    return `Record on ${armedNames(props.recorder)} (R)`
   }
   return (
     <button
