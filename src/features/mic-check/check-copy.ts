@@ -39,6 +39,7 @@ export const INPUT_KIND_HINT: Partial<Record<InputKind, string>> = {
  */
 const HOLDER_NAMES: ReadonlyArray<readonly [prefix: string, name: string]> = [
   ['studio-record', 'Studio'],
+  ['studio-inputs', "Studio's Inputs view"],
   ['practice-engine', 'Singing practice'],
   ['audio-engine', 'The singing stage'],
   ['stem-mixer', 'Karaoke'],

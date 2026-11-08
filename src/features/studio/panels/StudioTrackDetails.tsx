@@ -24,6 +24,8 @@ interface StudioTrackDetailsProps {
   /** The lane header's input chip opened the details: the input takes the focus. */
   focusInput?: boolean
   onInputFocused?(): void
+  /** Open the Inputs view, where every input shows with its channels and levels. */
+  onInputs?(): void
   onCommand(command: StudioCommand): boolean
   /** After the lane's lines open in the arrangement: an overlaid panel steps out of their way. */
   afterLines?(): void
@@ -118,6 +120,7 @@ export function StudioTrackDetails(props: StudioTrackDetailsProps) {
             recorder={input()}
             focus={props.focusInput}
             onFocused={props.onInputFocused}
+            onAllInputs={props.onInputs}
           />
         )}
       </Show>

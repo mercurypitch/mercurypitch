@@ -300,6 +300,10 @@
   align-items: center;
   gap: 8px;
 }
+/* The way to every input, as wide as its words. */
+.inputsLink {
+  align-self: flex-start;
+}
 /* The input: a name can be long, so the list takes the row's width. */
 .input {
   display: flex;

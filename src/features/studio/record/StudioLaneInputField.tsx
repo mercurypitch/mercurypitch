@@ -38,6 +38,10 @@ export interface StudioLaneInputFieldProps {
   /** Take the focus to the input: the lane header's chip opened the details here. */
   focus?: boolean
   onFocused?(): void
+  /** Open the Inputs view, where every input shows with its channels and levels. */
+  onAllInputs?(): void
+  /** In the Inputs view: each input's own card offers to check it, so no hint to arm the lane. */
+  inInputsView?: boolean
 }
 
 export function StudioLaneInputField(props: StudioLaneInputFieldProps) {
@@ -155,11 +159,28 @@ export function StudioLaneInputField(props: StudioLaneInputFieldProps) {
           </p>
         }
       >
-        <Show when={count() === null && !choosesChannels()}>
+        <Show
+          when={
+            count() === null &&
+            !choosesChannels() &&
+            props.inInputsView !== true
+          }
+        >
           <p class={styles.help}>
-            Arm this lane once to see this input's channels.
+            Arm this lane once, or check its input in Inputs, to see this
+            input's channels.
           </p>
         </Show>
+      </Show>
+      <Show when={props.onAllInputs !== undefined}>
+        <button
+          type="button"
+          class={styles.textButton}
+          data-studio-open-inputs=""
+          onClick={() => props.onAllInputs?.()}
+        >
+          See every input, its channels and levels
+        </button>
       </Show>
     </div>
   )
