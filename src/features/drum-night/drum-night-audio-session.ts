@@ -6,6 +6,8 @@
 // only from Play or a live pad/key/MIDI strike; connecting MIDI requests only
 // device permission. Teardown closes the context because no other route owns it.
 
+import { performanceToAudioSeconds } from '@/lib/timing/performance-clock'
+
 export interface DrumNightAudioSession {
   contextForGesture(): AudioContext | null
   outputForGesture(): AudioNode | null
@@ -160,7 +162,11 @@ export function createDrumNightAudioSession(
       if (activeContext === null || !Number.isFinite(timestampMs)) return null
       const nowMs = (options.nowMs ?? (() => performance.now()))()
       if (!Number.isFinite(nowMs)) return null
-      return activeContext.currentTime + (timestampMs - nowMs) / 1000
+      return performanceToAudioSeconds(
+        timestampMs,
+        nowMs,
+        activeContext.currentTime,
+      )
     },
     async dispose(): Promise<void> {
       if (disposed) return
