@@ -232,14 +232,29 @@
 }
 /* on a phone the two figures stand one above the other, each the card's
    whole width (.viz.wide), and keep every step's stage under the 786 px
-   the masthead leaves at 390 x 844: Step 1's, the staircase over the staff
-   and three rows of controls, is the tallest, 764 px */
+   the masthead leaves at 390 x 844, as Lesson 4's do: Step 3's, the circle
+   over the staff, is the tallest, 780 px */
 @media (max-width: 560px) {
   .l21-stairs .stairs-viz {
     height: 300px;
   }
   .l21-pair > .staff-viz {
     height: 160px;
+  }
+  /* the circle's round 44 px bead buttons, a fifth apart, keep clear of
+     each other only round an orbit of 85 px radius or more: 284 px gives
+     88.5, their centres 45.8 px apart */
+  .l21-circle-toy .circle-viz {
+    height: 284px;
+  }
+}
+/* from 376 px down Step 1's controls wrap to a fourth row, and its staff
+   gives that row's room back, so the stage still fits under the masthead;
+   the rule starts at 389 px, so a browser that sets the labels a little
+   wider than Chromium still finds the room */
+@media (max-width: 389px) {
+  .l21-stairs .l21-pair > .staff-viz {
+    height: 120px;
   }
 }
 /* Find do's line under its staff */
