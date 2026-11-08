@@ -3,7 +3,8 @@
 // ============================================================
 //
 // One harness for the recorder's suites (studio-recorder.test.ts and its
-// channel suite), so each case says only what it changes. The fake context
+// channel, instrument and lanes suites), so each case says only what it
+// changes. The fake context
 // can split a source into channels (input-channels.ts) and records every
 // edge, and the harness keeps the node each capture and the monitor were
 // given, so a case can say what a take hears.
@@ -176,6 +177,8 @@ export function harness(
     get worklet() {
       return events[events.length - 1]
     },
+    /** Every capture's worklet messages, in the order the captures opened. */
+    worklets: events,
     get capture() {
       return captures[captures.length - 1]
     },
@@ -190,3 +193,10 @@ export function harness(
 }
 
 export const settle = () => new Promise((resolve) => setTimeout(resolve, 0))
+
+/** A pooled buffer holding `frames` samples of `value`, as a capture's worklet hands it over. */
+export function chunkOf(frames: number, value: number): ArrayBuffer {
+  const buffer = new ArrayBuffer(4096 * 4)
+  new Float32Array(buffer, 0, frames).fill(value)
+  return buffer
+}
