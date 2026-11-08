@@ -2,8 +2,12 @@
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { InstrumentFamilyId, InstrumentGlyphId, } from '@/lib/studio/instruments/glyph-catalog'
 import type { StudioLaneInput } from '@/lib/studio/record/lane-inputs'
 import { FOLLOW_STUDIO_INPUT } from '@/lib/studio/record/lane-inputs'
+import { fakeMidiAccess, fakeMidiInput } from './midi/fake-midi.fixture'
+import type { StudioMidiAccess } from './midi/studio-midi-access'
+import { createStudioMidiAccess } from './midi/studio-midi-access'
 import type { StudioLaneInputRecorder } from './StudioLaneInputField'
 import { StudioLaneInputField } from './StudioLaneInputField'
 
@@ -26,6 +30,8 @@ function mount(
     focus?: boolean
     inInputsView?: boolean
     onAllInputs?: () => void
+    midi?: StudioMidiAccess
+    instrument?: { family: InstrumentFamilyId; glyph: InstrumentGlyphId }
   } = {},
 ) {
   const [lanes, setLanes] = createSignal<ReadonlyMap<string, StudioLaneInput>>(
@@ -39,6 +45,11 @@ function mount(
   const recorder = {
     inputs: () => options.devices ?? listed,
     busy,
+    midi:
+      options.midi ??
+      createStudioMidiAccess({
+        request: () => Promise.resolve(fakeMidiAccess([]).access),
+      }),
     laneInputs: {
       of: (trackId: string) => lanes().get(trackId) ?? FOLLOW_STUDIO_INPUT,
       choose,
@@ -56,6 +67,7 @@ function mount(
       onFocused={onFocused}
       inInputsView={options.inInputsView}
       onAllInputs={options.onAllInputs}
+      instrument={options.instrument}
     />
   ))
   return { choose, setBusy, onFocused }
@@ -221,5 +233,74 @@ describe('Studio lane input field', () => {
     // Assert
     expect(screen.getByRole('combobox', { name: 'Input' })).toHaveFocus()
     expect(onFocused).toHaveBeenCalledOnce()
+  })
+
+  it('lists MIDI ports as a group of their own after the audio inputs once MIDI is allowed from a press, and chooses one for the lane', async () => {
+    // Arrange
+    const fake = fakeMidiAccess([fakeMidiInput('keys', 'Keystation 49')])
+    const request = vi.fn(() => Promise.resolve(fake.access))
+    const { choose } = mount({ midi: createStudioMidiAccess({ request }) })
+    const picker = screen.getByRole('combobox', { name: 'Input' })
+    const before = optionTexts(picker)
+
+    // Act
+    await fireEvent.click(
+      screen.getByRole('button', { name: 'Show MIDI keyboards and pads' }),
+    )
+    await vi.waitFor(() =>
+      expect(optionTexts(picker)).toContain('Keystation 49'),
+    )
+    await fireEvent.change(picker, { target: { value: 'midi:keys' } })
+
+    // Assert
+    expect(request).toHaveBeenCalledOnce()
+    expect(before).not.toContain('Keystation 49')
+    expect(optionTexts(picker).at(-1)).toBe('Keystation 49')
+    expect(picker.querySelector('optgroup')?.label).toBe('MIDI')
+    expect(choose).toHaveBeenLastCalledWith('lane-1', {
+      kind: 'midi',
+      portId: 'keys',
+      label: 'Keystation 49',
+    })
+  })
+
+  it('says what a MIDI lane plays as, and offers it no channels', () => {
+    // Arrange, Act
+    mount({
+      lane: { kind: 'midi', portId: 'keys', label: 'Keystation 49' },
+      channels: 2,
+      instrument: { family: 'keys', glyph: 'organ' },
+    })
+
+    // Assert
+    expect(
+      screen.getByText(
+        'Plays as piano until this instrument has its own sound.',
+      ),
+    ).toBeVisible()
+    expect(screen.queryByRole('combobox', { name: 'Channel' })).toBeNull()
+    expect(
+      (screen.getByRole('combobox', { name: 'Input' }) as HTMLSelectElement)
+        .value,
+    ).toBe('midi:keys')
+  })
+
+  it('says a browser without Web MIDI has no MIDI group to offer', async () => {
+    // Arrange
+    mount({ midi: createStudioMidiAccess({ request: () => null }) })
+
+    // Act
+    await fireEvent.click(
+      screen.getByRole('button', { name: 'Show MIDI keyboards and pads' }),
+    )
+
+    // Assert
+    const unavailable = screen.getByRole('option', {
+      name: 'Not available in this browser',
+    })
+    expect(unavailable).toBeDisabled()
+    expect(screen.getByRole('status')).toHaveTextContent(
+      "This browser can't use MIDI keyboards or pads.",
+    )
   })
 })

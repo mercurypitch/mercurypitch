@@ -93,9 +93,14 @@ function recordsWords(
  * that records in its place.
  */
 export function armedWords(
-  recorder: Pick<StudioRecorderHandle, 'armedInput'>,
+  recorder: Pick<StudioRecorderHandle, 'armedInput'> &
+    Partial<Pick<StudioRecorderHandle, 'midiArmed'>>,
   lane: string,
 ): string {
+  // A MIDI lane opened its port, and no microphone: it says which.
+  const midi = recorder.midiArmed?.() ?? null
+  if (midi !== null)
+    return `Armed on ${lane} with ${midi.port}. Press Record to start.`
   const input = recorder.armedInput()
   return (
     fallbackWords(input, lane) ??
@@ -104,16 +109,23 @@ export function armedWords(
   )
 }
 
+/** What to know while armed: a microphone hears the speakers, a MIDI lane's take is made in the page. */
+function armedAdvice(recorder: StudioRecorderHandle): string {
+  const midi = recorder.midiArmed()
+  if (midi !== null) return ` ${midi.words}`
+  const settings = recorder.settings()
+  if (settings.monitor)
+    return ' Monitoring is on: use headphones, or the speakers feed back into the microphone.'
+  return settings.click
+    ? ' Through speakers the click can leak into the take. Headphones keep it out.'
+    : ''
+}
+
 function ArmedHint(props: { recorder: StudioRecorderHandle }) {
-  const settings = () => props.recorder.settings()
   return (
     <span class={styles.statusHint}>
-      {COUNT_IN[settings().countInBars]}
-      {settings().monitor
-        ? ' Monitoring is on: use headphones, or the speakers feed back into the microphone.'
-        : settings().click
-          ? ' Through speakers the click can leak into the take. Headphones keep it out.'
-          : ''}
+      {COUNT_IN[props.recorder.settings().countInBars]}
+      {armedAdvice(props.recorder)}
     </span>
   )
 }

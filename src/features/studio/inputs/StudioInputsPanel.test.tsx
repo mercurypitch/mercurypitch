@@ -7,6 +7,7 @@ import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defa
 import type { InputChannelCount, StudioLaneInput, } from '@/lib/studio/record/lane-inputs'
 import { FOLLOW_STUDIO_INPUT } from '@/lib/studio/record/lane-inputs'
 import type { StudioRecordPhase } from '@/lib/studio/record/studio-recorder'
+import { createStudioMidiAccess } from '../record/midi/studio-midi-access'
 import type { StudioInputsPanelProps } from './StudioInputsPanel'
 import { StudioInputsPanel } from './StudioInputsPanel'
 
@@ -87,6 +88,7 @@ function mount(
     busy: () => false,
     phase,
     inputTap: () => null,
+    midi: createStudioMidiAccess({ request: () => null }),
     settings: () => ({ inputDeviceId: null, inputLabel: null }),
     laneInputs: {
       of: (id: string) => options.lanes?.[id] ?? FOLLOW_STUDIO_INPUT,

@@ -18,7 +18,10 @@
 // record from an input of its own, and one of its channels or an aligned
 // pair (studio-lane-input-state.ts): its arm opens that input, and the
 // arm moves to another lane with the microphone open only when both hear
-// the same input and channels; otherwise it opens the other lane's.
+// the same input and channels; otherwise it opens the other lane's. A MIDI
+// lane plays its instrument in place of a microphone (midi/): no
+// microphone opens for it, the mic icon stays off, its player always
+// hears it, and a kept take keeps the notes played into it.
 //
 // Keys: Record and R start a take on the armed lane in one press; with no
 // lane armed they arm the selected lane, else the first lane with no clips,
@@ -43,7 +46,7 @@ import { openStudioCapture, prepareStudioRecorderWorklet, } from '@/lib/studio/r
 import { createStudioClickTrack } from '@/lib/studio/record/click-track'
 import { createStudioInputMonitor } from '@/lib/studio/record/input-monitor'
 import type { StudioLaneInput } from '@/lib/studio/record/lane-inputs'
-import { sameStudioLaneInput } from '@/lib/studio/record/lane-inputs'
+import { isMidiLaneInput, sameStudioLaneInput, } from '@/lib/studio/record/lane-inputs'
 import type { StudioRecordSettings } from '@/lib/studio/record/record-settings'
 import { readStudioRecordSettings, writeStudioRecordSettings, } from '@/lib/studio/record/record-settings'
 import type { StudioCapturedTake, StudioLiveTake, StudioRecorderView, StudioTakeJournalWriter, } from '@/lib/studio/record/studio-recorder'
@@ -61,6 +64,8 @@ import type { useStudioTransport } from '../audio/useStudioTransport'
 import type { StudioRecordingImport } from '../controller/imports'
 import { studioContentEnd } from '../timeline/timeline-geometry'
 import type { StudioLaneArming, StudioTimelineRecording, } from '../timeline/types'
+import { StudioMidiArmRefusal } from './midi/studio-midi-arm'
+import { createStudioMidiLanes } from './midi/studio-midi-lanes'
 import { createStudioInputs } from './studio-inputs'
 import { createStudioLaneInputState } from './studio-lane-input-state'
 import { studioTakeFrames, studioTakeImport } from './take-import'
@@ -115,6 +120,7 @@ function placesSomething(row: StudioTakeJournalRecord): boolean {
 
 /** What to say when the microphone, the memory or the recorder would not start. */
 export function describeStudioRecordError(error: unknown): string {
+  if (error instanceof StudioMidiArmRefusal) return error.words
   const kind = (error as Partial<MicError> | null)?.kind
   if (typeof kind === 'string' && kind in MIC_ERRORS)
     return MIC_ERRORS[kind as MicError['kind']]
@@ -157,6 +163,12 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     settings,
     devices: inputs.devices,
   })
+  // A MIDI lane plays its sound in place of a microphone (midi/).
+  const midi = createStudioMidiLanes({
+    project: () => options.project(),
+    laneInput: (trackId) => lanes.of(trackId),
+    onLost: (words) => recorder.inputLost(words),
+  })
   const journal = createStudioTakeJournal()
   const writers = new Map<string, StudioTakeJournalWriter>()
   let restoreRepeat = false
@@ -178,7 +190,9 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
   function laneLevel(trackId: string | null) {
     const track = project()?.tracks.find((item) => item.id === trackId)
     return {
-      on: settings().monitor,
+      // The switch guards against a microphone's feedback; a MIDI lane has
+      // none, so its player always hears what they play.
+      on: settings().monitor || isMidiLaneInput(lanes.of(trackId)),
       gain:
         track === undefined ? 1 : track.mute ? 0 : 10 ** (track.gainDb / 20),
       pan: track?.pan ?? 0,
@@ -214,7 +228,10 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     // The recorder hands over, and recovery offers, only takes that keep
     // something (take-passes.ts); one that keeps nothing has nothing to retry.
     if (kept === null) return true
-    return options.addRecording(kept)
+    const stored = await options.addRecording(kept)
+    // A MIDI take keeps the notes played into it beside its audio.
+    if (stored) await midi.keepNotes(take)
+    return stored
   }
 
   /** What Record keeps: the range's passes with Repeat on, the range alone with Punch on, else a plain take. */
@@ -228,6 +245,7 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
   const recorder = createStudioRecorder({
     unlock: () => transport.unlock(),
     clock: () => transport.clock(),
+    acquireInstrument: (trackId) => midi.acquire(trackId),
     acquireMic: async (trackId) => {
       // Planned from the list the Studio holds: the input opens inside the
       // press, before anything is awaited.
@@ -434,6 +452,8 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     micManager.subscribe((state) => {
       const now = untrack(phase)
       if (now !== 'armed' && !RUNNING.has(now)) return
+      // A MIDI lane holds no microphone: its port's going is its own.
+      if (untrack(midi.armed) !== null) return
       // The Studio's input is a stream of its own (acquireFrom), apart from
       // the shared one `active` speaks for. A release by the app says why.
       if (state.scoped !== STUDIO_RECORD_MIC_ID)
@@ -445,8 +465,9 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       STUDIO_RECORD_MIC_ID,
       // Deliberately non-reactive: the sentinel polls these accessors on its
       // own low-frequency interval — no tracked scope involved.
+      // A MIDI lane holds no microphone, so its arm leaves the icon off.
       // eslint-disable-next-line solid/reactivity
-      () => HOLDS_MIC.has(phase()),
+      () => HOLDS_MIC.has(phase()) && midi.armed() === null,
       () => recorder.micLost(),
     ),
   )
@@ -458,7 +479,10 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     'Studio recording',
     () => 'Studio is recording. Stop the take before you leave.',
   )
-  onCleanup(() => recorder.dispose())
+  onCleanup(() => {
+    recorder.dispose()
+    midi.dispose()
+  })
 
   // ── Takes left in the journal by a closed tab or a refused save ──
 
@@ -662,6 +686,10 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     },
     /** The armed input for meters beside the take, on the arm's own split; null while none is armed. */
     inputTap: () => recorder.inputTap(),
+    /** The Studio's MIDI access: its state and ports, and the ask from a press. */
+    midi: midi.access,
+    /** The MIDI lane the last arm opened, by its port's name and sound; null for a microphone. */
+    midiArmed: midi.armed,
     /** What the last arm opened: what records, and what opened in place of what its lane asked for. */
     armedInput: lanes.armed,
     /** Punch, on the transport: Record keeps only the range. */
