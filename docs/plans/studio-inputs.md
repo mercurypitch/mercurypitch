@@ -71,7 +71,11 @@ Night's words ("the guitar").
   (`micLatencyMsForDevice`, `micLatencyPathMsForDevice`), which the latency
   wizard measures (`src/features/mic-feedback/MicLatencyWizard.tsx`): the
   input its track names, else the one the arm asked for, the lane's own where
-  it has one.
+  it has one. Since PR 5 the wizard measures the input its host names
+  (`deviceId`; null for the system default) and keeps the result under the
+  id the opened track names, `default` for the system default, which is the
+  key a lane that follows the default is lined up by. The Inputs view opens
+  it per input.
 - The song validator rejects any field it does not know
   (`src/lib/studio/model/validation-values.ts`), so a song carrying a new lane
   field would not open in an older build.
@@ -131,7 +135,9 @@ that says what it takes.
   picker offers channels once its input is known to have more than one. The
   picker does not open the input to count them: that would end the Studio's
   other hold on the microphone, and WebKit keeps one capture at a time. It
-  says "Arm this lane once to see this input's channels." instead.
+  says "Arm this lane once, or check its input in Inputs, to see this
+  input's channels." instead. A check in the Inputs view (below) opens an
+  input while nothing is armed and keeps its count the same way.
 - **What records, and the fallbacks**, each said on the armed lane's card
   (`armedWords` in `StudioRecordNotices.tsx`). On an input of more than one
   channel the card says what records: "Armed on Lane 2 with Input 2 of
@@ -163,7 +169,9 @@ that says what it takes.
   details at the Input section; a phone shows none, and its lanes' inputs are
   in their details. A new input or pick for the armed lane re-arms it. The
   arm moves to another lane with the input still open only when that lane's
-  input and channels are the same; otherwise it reopens.
+  input and channels are the same; otherwise it reopens. Track details links
+  to the Inputs view ("See every input, its channels and levels"), where
+  every lane has the same field.
 
 ### Why a DAW's channels (PR 4)
 
@@ -185,6 +193,100 @@ mono at half each, and the routing is the Studio's own (`splitChannels` and
 its `pair`), never Web Audio's fold. The default is what a DAW user expects of
 each count, and what the Studio already did for 1, 2, 3, 5, 7 and 8 or more
 channels.
+
+### The Inputs view (PR 5)
+
+The Studio's I/O view: every audio input, what is on each of its channels,
+and which lane records what, in one panel. It opens from "Inputs and
+channels" in the Sound panel's Recording section and from "See every input,
+its channels and levels" in a lane's Track details: a side panel on a
+computer, a sheet on a phone, like Sound and Mix (`'inputs'` in
+`studio-panels.ts`). It has no top-bar button, since `studio-top-bar.spec.ts`
+measures where the bar folds. The top bar moved out of `StudioWorkspace.tsx`
+into `StudioTopBar.tsx` first, so the workspace stays under 800 lines.
+
+| File                                                                      | What it does                                                                                                                          |
+| ------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/features/studio/inputs/inputs-view-model.ts`                         | The view's content from plain values: each input, its kind, channels, round trip, warning, lanes and rows. Tested without a browser.  |
+| `src/features/studio/inputs/input-check.ts`                               | Opening one input to check it, and letting it go: the hold rules below, with its dependencies injected.                               |
+| `src/features/studio/inputs/useStudioInputs.ts`                           | Which input is metered and how, its meters, its check and the latency check.                                                          |
+| `src/features/studio/inputs/StudioInputsPanel.tsx`, `StudioInputCard.tsx` | The panel: the permission step, a card per audio input, then the lanes.                                                               |
+| `src/lib/audio-input/channel-meters.ts`                                   | A peak and a level reading per input and aligned pair of a capture, on a tap: a split's `send` and `unsend`, or the capture as it is. |
+| `src/lib/audio-input/input-kinds.ts`, `src/components/input-kind-icon.ts` | A kind's tag ("USB", "Bluetooth"...) and icon, moved out of the mic check so the mic check, First Light and the Studio share them.    |
+
+- **Each input** is a card: its name, its kind as an icon and a tag, "System
+  default", its channel count ("Not known until it is opened" before an arm
+  or a check has opened it), its round trip ("12 ms round trip", or "Not
+  measured", with "Measure latency" opening the latency wizard for that
+  input in the card), the lanes that record from it, and what to know:
+  Bluetooth adds delay and drops to call quality while its microphone is
+  open; a loopback records what the computer plays; a virtual input passes on
+  only what its app sends. The list follows the roster, so it changes as
+  inputs are plugged in and out.
+- **Its rows**, once the count is known: the default, named for what it
+  takes ("Default: Inputs 1 + 2"), each input and each aligned pair
+  (`channelChoices`), each with the lanes that record it. A lane's pick that
+  the input does not have lands on the default row, as the take would.
+  While the input is open each row has a meter, a peak bar from -60 dB to
+  full scale and a word for clipping, hot, quiet or silent
+  (`describeInputHealth`, with a noise floor per row), and the card says
+  "Signal on Input 2" (`loudestChannel`). A row for a pair reads the pair as
+  a take hears it, both at half. "Noisy" is not shown: a steady tone reads
+  noisy once the floor has risen to it.
+- **The lanes**, below the inputs: every lane with the same input and
+  channel field as its Track details (`StudioLaneInputField`), so a choice
+  there is the lane's own and re-arms an armed lane.
+- **Before the browser names its inputs**, the view offers one thing to do,
+  "Allow the microphone to see your inputs". It opens the default through
+  `MicManager.acquireFrom`, lets it go at once, and lists the inputs again.
+  It never lists "Device N".
+
+**One hold and one capture.** `MicManager.acquireFrom` holds one input of
+its own at a time, and a later one ends the earlier; WebKit keeps one
+capture at a time. The view meters one input, two ways, and never opens a
+capture beside a take:
+
+- While a lane holds the microphone (armed, counting in, recording or
+  keeping a take), it meters the input that arm opened, on the arm's own
+  split: `StudioRecorder.inputTap()` gives the split's `send` and `unsend`
+  (`studioInputTap` in `lane-channel.ts`), or the capture as it is when
+  nothing is split. The card is found by the track the arm opened
+  (`trackIdentity`, `listeningInput`). A re-arm passes through idle, so the
+  meters follow the new split.
+- Otherwise a card's Check opens that input through
+  `MicManager.acquireFrom('studio-inputs', id)`, with no `getUserMedia` of
+  its own, and meters it until Inputs closes, Stop checking is pressed, or a
+  lane arms. Check is off while a lane is armed, since its hold would end the
+  arm's. An arm ends a check: the arm's `acquireFrom` takes the hold over,
+  which `subscribe` reports, and the check also lets go as the recorder
+  leaves idle. The microphone indicator shows while a check holds the input
+  (`registerMicIndicator`). A check keeps the count it finds
+  (`rememberInputChannels`), so the input's rows and the lanes' channel
+  pickers show without an arm.
+- The latency wizard opens its input as a hold of its own, so Measure
+  latency is off while a lane is armed, a check lets go before it opens, and
+  an arm closes it.
+- The meters read every 50 ms on a timer, not on animation frames: the
+  Studio asks for no frames while a lane is armed (`studio-perf.spec.ts`).
+
+**What it cannot show.**
+
+- An input's channels before it has opened: the browser says how many
+  only once a capture opens, so an input not yet armed or checked has no
+  rows.
+- The channels of an input whose browser does not report
+  `getSettings().channelCount`. A take records such an input as it is, so
+  the view meters it whole, on one row, "Whole input", and says the count is
+  "Not reported by this browser".
+- Two inputs at once, or any input but the armed one while a lane is armed:
+  one hold, one capture.
+- MIDI inputs, which come with MIDI lanes (PR 7). The view's sections are
+  the audio inputs, then the lanes, and a MIDI section can sit beside the
+  audio inputs.
+
+A panel the Studio opens in place of another (Inputs from deep in the Sound
+panel) now starts at its top, and focus lost with the button that opened it
+comes to the panel (`StudioPanel.tsx`).
 
 ### Left where it is
 
@@ -214,27 +316,9 @@ Input code found while moving the code above, and not moved:
 
 ## How it will work
 
-An input per lane, kept on the device, and one input or an aligned pair of an
-interface's are built (PR 3 and PR 4, "A lane's own input and channels"
-above). What follows is still to come.
-
-### The Inputs view
-
-One place that lists the devices from the roster, and under each interface one
-row per channel with a live meter (`loudestChannel` points at the live one) and
-a clip light from `level-health.ts`. It says which lane uses which input, shows
-MIDI activity, and shows each input's latency status, measured or not, with the
-existing latency wizard one step away.
-
-What it can build on: `channelPicks(count)` lists an input's inputs and
-aligned pairs, `channelPickLabel` names them ("Input 2", "Inputs 1 + 2"),
-`defaultChannelPick(count)` says what a lane with no choice takes, and
-`channelChoices` gives a picker's rows with the default named. A lane's pick
-is `laneChannelPick(lane)`, and `laneInputChannels` gives an input's count as
-an arm last found it. A count is known only once the input has opened; the
-view opens nothing on its own while another consumer holds the microphone.
-A meter per input taps the same split a take uses (`send(channel, node)`, or
-`take(pick)` for a pair), not a second capture.
+An input per lane, kept on the device, one input or an aligned pair of an
+interface's, and the Inputs view are built (PR 3 to PR 5, above). What
+follows is still to come.
 
 ### Several lanes at once
 
@@ -258,6 +342,22 @@ channel, which `studio-recorder.channel.test.ts` now catches. Moving the arm
 between lanes on different inputs already reopens the microphone, so with
 several lanes armed the hold has to know which lanes share an input.
 
+From PR 5, the Inputs view assumes one arm:
+
+- `StudioRecorder.inputTap()` gives the one armed capture's tap, and
+  `useStudioInputs` meters the one input it finds by that capture's track.
+  With several captures, it wants a tap per capture, and the view a metered
+  input per tap; the cards are already keyed by the roster's id.
+- A check is offered only while nothing is armed, and stays so: a check's
+  hold beside several arms' would end one of them.
+- The phases in which the arm's split is live are `HOLDING` in
+  `useStudioInputs.ts`. The view reads the tap once as a lane starts to hold
+  the microphone, and again only after the recorder has left those phases,
+  as a re-arm does through idle and arming. A recorder that swaps a capture
+  while staying armed has to make the view read the tap again.
+- A tap's `unsend` takes off only the view's own edges, so meters come and
+  go beside a take without touching what it records.
+
 ### MIDI lanes
 
 Notes played on a keyboard or pads become audio in the lane's sound: drums on a
@@ -267,7 +367,8 @@ too, in a plain shape (MIDI number, velocity, start and end on the song clock)
 from which a future notes viewer can make the beats Compose's piano roll and
 the stem mixer's note editor already edit. Where those notes are stored is
 decided in that PR; it cannot be a song field older builds reject. Editable
-MIDI clips are a much later feature.
+MIDI clips are a much later feature. MIDI inputs, with their activity, get a
+section of their own in the Inputs view, beside the audio inputs.
 
 ## Pull requests
 
@@ -279,10 +380,13 @@ MIDI clips are a much later feature.
 4. **A DAW's channels**: one input or an aligned pair mixed to mono per lane,
    the Studio's own routing in place of Web Audio's fold, and a default that
    says what it takes.
-5. **The Inputs view**: devices, a row per channel with a meter and clip light,
-   which lane uses what, MIDI activity, latency status with the latency wizard.
+5. **The Inputs view**: every audio input with its kind, channels, round trip
+   and what to know about it, a row per input and aligned pair with a live
+   meter and level words, which lane records what, each lane's input, and the
+   latency wizard per input. MIDI activity moved to PR 7.
 6. **Several lanes recording at once.**
-7. **MIDI lanes kept as audio**, with the played notes kept beside them.
+7. **MIDI lanes kept as audio**, with the played notes kept beside them, and
+   MIDI inputs in the Inputs view.
 
 ## Owner's decisions
 
@@ -326,6 +430,24 @@ MIDI clips are a much later feature.
   with the Studio's own split, default and worklet input settings: at 1 to 8
   channels, each input alone, each aligned pair at half each, and the
   default each count makes.
+- The Inputs view (PR 5) is tested in layers. Its content is tested on plain
+  values (`inputs-view-model.test.ts`: the rows, where each lane lands, the
+  counts by id, name and `default`, the warnings). The hold rules are tested
+  with injected dependencies (`input-check.test.ts`: off while armed, an arm
+  ending a check, a check made stale by an arm while it opens, the
+  indicator). The meters run on a fake graph (`channel-meters.test.ts`), and
+  the arm's tap on the recorder's own (`lane-channel.test.ts`,
+  `studio-recorder.channel.test.ts`). The panel is tested as a component
+  (`StudioInputsPanel.test.tsx`: the permission step, the cards, a check's
+  meters, a whole input, Check off while armed, the lanes).
+  `studio-inputs-view.spec.ts` plays the stereo file with the left side
+  loud and the right side quiet (half and an eighth of full scale), so the
+  rows tell the sides apart by level. Input 1 reads 0.397, Input 2 0.099,
+  and the pair and the default 0.238, on a check and on the armed lane's
+  split, and again after a channel chosen there re-arms the lane. The chosen
+  channel shows in Track details, and Check is off while the lane is armed.
+  The view fits at 390 by 844 and 1440 by 900 with no sideways scroll, and
+  every control is 44 px tall on touch.
 - The fake capture cannot be more than two channels or a second device, so
   those are unit-tested on fake lists and graphs and checked by the owner on
   real hardware: a guitar on one input of an interface and a microphone on

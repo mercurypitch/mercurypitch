@@ -1316,6 +1316,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Rule:** give a consumer one object for as long as its slow fields hold (`createMemo` with an `equals` on them) and read the fast fields through getters on it; JSX spread keeps the getters live. Read layout and computed style on a full redraw only, never per chunk.
 **See:** `timelineRecord` in `src/features/studio/record/useStudioRecorder.ts`, `src/features/studio/record/live-wave.ts`.
 
+### Draw a component picked at run time through a keyed Show, not Dynamic
+
+**Symptom:** the Studio Inputs view's kind icon, drawn with `<Dynamic component={...}>`, took Drum Night's first paint 1,361 bytes over its ceiling, on a page that never loads the Studio.
+**Cause:** `Dynamic` brings Solid's spread runtime into the shared `vendor-solid` chunk, which every page loads. The web build had none before: App.tsx's `Dynamic` sits behind `NATIVE_PROGRESS`, which the web build turns off.
+**Rule:** for a component taken from a map, write `<Show when={MAP[key]} keyed>{(Icon) => <Icon />}</Show>`. A new `solid-js/web` import costs every page: compare `vendor-solid`'s size in the build output with main's.
+**See:** `src/features/studio/inputs/StudioInputCard.tsx`, `scripts/assert-drum-night-bundle.mjs`
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag
