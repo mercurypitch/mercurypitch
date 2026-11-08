@@ -1,7 +1,7 @@
 // Studio record notices tests — the armed card says the lane is ready, or which input it records from when that is not the one asked for, and a channel the input does not have.
 import { describe, expect, it } from 'vitest'
+import type { StudioArmedInput } from './studio-lane-input-state'
 import { armedWords } from './StudioRecordNotices'
-import type { StudioArmedInput } from './useStudioRecorder'
 
 const nothing: StudioArmedInput = {
   laneMissing: null,
