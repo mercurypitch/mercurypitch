@@ -43,6 +43,8 @@ export interface StairsCoreOptions {
   readonly names?: () => NamesMode
   /** Hears every new layout, for the controls laid over the drawing. */
   readonly onLayout?: (layout: StairsLayout) => void
+  /** How many stairs it draws, from do up: eight, do to do, unless a page draws fewer (Lesson 16's five). */
+  readonly count?: number
 }
 
 /** How a played run lights the drawing. */
@@ -249,7 +251,7 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
       h,
       names: opts.compact ? 'solfege' : (opts.names?.() ?? 'letters'),
     }
-    layout = stairsLayout(modeFor(w, h), w, h, view, floor)
+    layout = stairsLayout(modeFor(w, h), w, h, view, floor, opts.count)
     const key = `${layout.mode} ${w} ${h} ${view.toFixed(3)} ${floor}`
     if (key !== lastKey) {
       lastKey = key
