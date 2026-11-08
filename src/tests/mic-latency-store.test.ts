@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { MAX_LATENCY_MS, MAX_ROUTE_LATENCY_MS } from '@/lib/mic-latency'
 import { micManager } from '@/lib/mic-manager'
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
-import { clearMicLatency, currentLatencyRoute, currentMicDeviceKey, DEFAULT_DEVICE_KEY, micLatencyByDevice, micLatencyByRoute, micLatencyMeasuredOnRoute, micLatencyMs, micLatencyMsForDevice, micLatencySec, micLatencySpreadByDevice, micLatencySpreadByRoute, micLatencySpreadMs, micLatencySpreadMsForDevice, setMicLatencyByDevice, setMicLatencyByRoute, setMicLatencyMeasurement, setMicLatencyMeasurementForDevice, setMicLatencyMs, setMicLatencySpreadByDevice, setMicLatencySpreadByRoute, } from '@/stores/mic-latency-store'
+import { clearMicLatency, clearMicLatencyForDevice, currentLatencyRoute, currentMicDeviceKey, DEFAULT_DEVICE_KEY, micLatencyByDevice, micLatencyByRoute, micLatencyMeasuredOnRoute, micLatencyMeasuredOnRouteForDevice, micLatencyMs, micLatencyMsForDevice, micLatencySec, micLatencySpreadByDevice, micLatencySpreadByRoute, micLatencySpreadMs, micLatencySpreadMsForDevice, setMicLatencyByDevice, setMicLatencyByRoute, setMicLatencyMeasurement, setMicLatencyMeasurementForDevice, setMicLatencyMs, setMicLatencySpreadByDevice, setMicLatencySpreadByRoute, } from '@/stores/mic-latency-store'
 
 /** Pretend a particular input is selected, without touching a real device. */
 function pretendDevice(deviceId: string | null) {
@@ -209,6 +209,30 @@ describe('Mic Latency Store', () => {
       const before = micLatencyByDevice()
       clearMicLatency()
       expect(micLatencyByDevice()).toBe(before)
+    })
+  })
+
+  // The Studio's Inputs view measures and clears each input it lists, which
+  // need not be the app's.
+  describe('an input named by its id', () => {
+    it('clears that input alone, whatever input the app is on', () => {
+      pretendDevice('built-in')
+      setMicLatencyMeasurementForDevice('usb-interface', 38, 3)
+      setMicLatencyMeasurement(140, 12)
+
+      clearMicLatencyForDevice('usb-interface')
+
+      expect(micLatencyByDevice()).toEqual({ 'built-in': 140 })
+      expect(micLatencySpreadByDevice()).toEqual({ 'built-in': 12 })
+    })
+
+    it('says whether that input was measured, the default by null', () => {
+      pretendDevice('built-in')
+      setMicLatencyByDevice({ [DEFAULT_DEVICE_KEY]: 96 })
+
+      expect(micLatencyMeasuredOnRouteForDevice(null)).toBe(true)
+      expect(micLatencyMeasuredOnRouteForDevice('usb-interface')).toBe(false)
+      expect(micLatencyMeasuredOnRoute()).toBe(false)
     })
   })
 
