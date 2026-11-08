@@ -3,7 +3,8 @@ import { expect, type Page, test } from '@playwright/test'
 import { defaultChannelPick, splitChannels, } from '../lib/audio-input/input-channels'
 import { STUDIO_CAPTURE_INPUT } from '../lib/studio/record/capture-input'
 import { openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
-import { armLane, recordButton, recordTake } from './helpers/studio-arming'
+import { armLane, recordButton, recordTake, setLaneInput, } from './helpers/studio-arming'
+import { storedTake } from './helpers/studio-takes'
 import { fakeMicArgs, writeStereoToneWav } from './helpers/tone-wav'
 
 const LEFT_HZ = 440
@@ -19,110 +20,19 @@ test.use({
   viewport: { width: 1440, height: 900 },
 })
 
-/** Choose `option` in the lane's Track details, then close them. */
-async function setLaneInput(
-  page: Page,
-  lane: string,
-  field: 'Input' | 'Channel',
-  option: string,
-): Promise<void> {
-  const studio = studioRegion(page)
-  await studio
-    .getByRole('button', { name: `${lane} details`, exact: true })
-    .click()
-  await studio
-    .getByRole('combobox', { name: field, exact: true })
-    .selectOption({ label: option })
-  await studio
-    .getByRole('button', { name: 'Close Track details', exact: true })
-    .click()
-}
-
 interface Tones {
   readonly left: number
   readonly right: number
 }
 
-/** A kept take's tones, read once its copy is in the database. */
+/** How strong each side's tone is over the middle second of a kept take, read once its copy is in the database. */
 async function storedTones(page: Page, title: string): Promise<Tones> {
-  let tones: Tones | null = null
-  await expect(async () => {
-    tones = await takeTones(page, title)
-  }).toPass({ timeout: 30_000 })
-  return tones!
-}
-
-/**
- * How strong each side's tone is in a kept take: the amplitude of the left
- * and the right tone over the middle second of its stored copy (a Goertzel
- * filter at each frequency).
- */
-async function takeTones(page: Page, title: string): Promise<Tones> {
-  return page.evaluate(
-    async ({ title, leftHz, rightHz }) => {
-      const database = await new Promise<IDBDatabase>((resolve, reject) => {
-        const request = indexedDB.open('MercuryPitchDB')
-        request.onsuccess = () => resolve(request.result)
-        request.onerror = () => reject(request.error)
-      })
-      const all = <T>(store: string) =>
-        new Promise<T[]>((resolve, reject) => {
-          const request = database
-            .transaction(store, 'readonly')
-            .objectStore(store)
-            .getAll()
-          request.onsuccess = () => resolve(request.result as T[])
-          request.onerror = () => reject(request.error)
-        })
-      try {
-        const assets = await all<{
-          asset: {
-            originalName?: string
-            canonicalPcmId: string
-            canonicalPcmFormat?: 'int16'
-            normalizedFrameCount: number
-          }
-        }>('studioAssets')
-        const take = assets
-          .map((row) => row.asset)
-          .find((asset) => asset.originalName?.startsWith(title))
-        if (take === undefined) throw new Error(`No take named ${title}.`)
-        const blobs = await all<{ id: string; data: ArrayBuffer }>(
-          'studioAssetBlobs',
-        )
-        const data = blobs.find((row) => row.id === take.canonicalPcmId)!.data
-        const frames = take.normalizedFrameCount
-        // Planar after a 32-byte header: a recorded take's one channel.
-        const samples =
-          take.canonicalPcmFormat === 'int16'
-            ? Float32Array.from(
-                new Int16Array(data, 32, frames),
-                (value) => value / 32768,
-              )
-            : new Float32Array(data, 32, frames)
-        const from = Math.max(0, Math.floor(frames / 2) - 24_000)
-        const middle = samples.subarray(from, Math.min(frames, from + 48_000))
-        const amplitude = (hz: number) => {
-          const w = (2 * Math.PI * hz) / 48_000
-          const k = 2 * Math.cos(w)
-          let s1 = 0
-          let s2 = 0
-          for (const x of middle) {
-            const s0 = x + k * s1 - s2
-            s2 = s1
-            s1 = s0
-          }
-          const re = s1 - s2 * Math.cos(w)
-          const im = s2 * Math.sin(w)
-          return (2 * Math.sqrt(re * re + im * im)) / middle.length
-        }
-        return { left: amplitude(leftHz), right: amplitude(rightHz) }
-      } finally {
-        database.close()
-      }
-    },
-    { title, leftHz: LEFT_HZ, rightHz: RIGHT_HZ },
+  const take = await storedTake(
+    page,
+    { title },
+    { hz: [LEFT_HZ, RIGHT_HZ], over: 'middle' },
   )
+  return { left: take.tones[0], right: take.tones[1] }
 }
 
 test.describe('Studio lane inputs', () => {
