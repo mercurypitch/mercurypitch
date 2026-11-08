@@ -10,9 +10,11 @@
 // target's tap box, found as app-check's `hitBox` finds it
 // (`elementFromPoint` in 1 px steps out from its centre, so a link's
 // `::after` counts and anything laid over it does not), at least 44 px
-// square with none overlapping; and what moves: the frames the page asks
-// for, the animations it runs, and each drawing a canvas shows. Lesson 9's
-// QA spec measures its page the same way; Lesson 10's uses these.
+// square with none overlapping, two round targets (a circle toy's beads,
+// whose rounded-off corners take no tap) measured by their circles; and
+// what moves: the frames the page asks for, the animations it runs, and
+// each drawing a canvas shows. Lesson 9's QA spec measures its page the
+// same way; Lesson 10's uses these.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect } from '@playwright/test'
@@ -322,6 +324,8 @@ interface Box {
   /** How far a tap lands on it through its centre, across and down; 121 at most. */
   readonly wide: number
   readonly tall: number
+  /** A circle, its corners rounded off by half its size: only the circle takes a tap. */
+  readonly round: boolean
 }
 
 /**
@@ -392,16 +396,22 @@ const targetsIn = (page: Page, scope: string): Promise<Box[]> =>
           h: r.height,
           wide: centre ? reach(-1, 0) + reach(1, 0) + 1 : 0,
           tall: centre ? reach(0, -1) + reach(0, 1) + 1 : 0,
+          round:
+            Math.abs(r.width - r.height) < 0.5 &&
+            getComputedStyle(el).borderRadius === '50%',
         })
       }
       return boxes
     })
 
 const overlap = (a: Box, b: Box): boolean =>
-  a.x < b.x + b.w - 0.5 &&
-  b.x < a.x + a.w - 0.5 &&
-  a.y < b.y + b.h - 0.5 &&
-  b.y < a.y + a.h - 0.5
+  a.round && b.round
+    ? Math.hypot(a.x + a.w / 2 - b.x - b.w / 2, a.y + a.h / 2 - b.y - b.h / 2) <
+      (a.w + b.w) / 2 - 0.5
+    : a.x < b.x + b.w - 0.5 &&
+      b.x < a.x + a.w - 0.5 &&
+      a.y < b.y + b.h - 0.5 &&
+      b.y < a.y + a.h - 0.5
 
 /** Every target inside `scope` a tap box at least 44 px square, none overlapping, and the page no wider than the screen; returns how many. */
 export async function expectTargets(
