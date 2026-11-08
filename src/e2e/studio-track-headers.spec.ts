@@ -305,7 +305,7 @@ for (const layout of LAYOUTS) {
 test.describe('Studio lane arming', () => {
   test.use({ viewport: { width: 1440, height: 900 } })
 
-  test('moves the arm to the lane pressed, starts on the armed lane with R whatever is selected, and Escape disarms', async ({
+  test('arms each lane pressed beside the others, disarms only the lane pressed again, records them all with R whatever is selected, and Escape disarms them all', async ({
     page,
   }) => {
     test.setTimeout(120_000)
@@ -320,18 +320,40 @@ test.describe('Studio lane arming', () => {
     await expect(
       studio.getByText(/^Armed on Phrase\b.*\. Press Record to start\.$/),
     ).toBeVisible({ timeout: 15_000 })
+    // A second lane arms beside the first, and the card lists both.
     await armButton(page, 'Lane 2').click()
-    await expect(
-      studio.getByText(/^Armed on Lane 2\b.*\. Press Record to start\.$/),
-    ).toBeVisible()
-    await expect(armButton(page, 'Phrase')).toHaveAttribute(
+    await expect(record).toHaveAttribute('data-phase', 'armed', {
+      timeout: 15_000,
+    })
+    for (const lane of ['Phrase', 'Lane 2']) {
+      await expect(armButton(page, lane)).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+      await expect(laneRow(page, lane)).toHaveAttribute('data-armed', '')
+    }
+    await expect(studio.locator('[data-studio-armed-lane]')).toHaveText([
+      /^Armed on Phrase\b/,
+      /^Armed on Lane 2\b/,
+    ])
+
+    // Pressed again, a lane disarms alone.
+    await armButton(page, 'Lane 2').click()
+    await expect(armButton(page, 'Lane 2')).toHaveAttribute(
       'aria-pressed',
       'false',
     )
-    await expect(laneRow(page, 'Phrase')).not.toHaveAttribute('data-armed', '')
-    await expect(laneRow(page, 'Lane 2')).toHaveAttribute('data-armed', '')
+    await expect(laneRow(page, 'Lane 2')).not.toHaveAttribute('data-armed', '')
+    await expect(armButton(page, 'Phrase')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    await armButton(page, 'Lane 2').click()
+    await expect(record).toHaveAttribute('data-phase', 'armed', {
+      timeout: 15_000,
+    })
 
-    // Selecting another lane leaves the arm where it is; R starts there.
+    // Selecting a lane leaves the arms where they are; R records them all.
     await studio
       .getByRole('button', { name: 'Phrase details', exact: true })
       .click()
@@ -343,7 +365,7 @@ test.describe('Studio lane arming', () => {
     await page.keyboard.press('r')
     await expect(
       studio.locator('[data-studio-record-status="recording"]'),
-    ).toContainText('Recording on Lane 2', { timeout: 15_000 })
+    ).toContainText('Recording on Phrase and Lane 2', { timeout: 15_000 })
     // A take holds every arm button.
     await expect(armButton(page, 'Phrase')).toBeDisabled()
     await untilAudioClock(page, (await audioClock(page)) + 1)
@@ -354,10 +376,11 @@ test.describe('Studio lane arming', () => {
 
     await page.keyboard.press('Escape')
     await expect(record).toHaveAttribute('data-phase', 'idle')
-    await expect(armButton(page, 'Lane 2')).toHaveAttribute(
-      'aria-pressed',
-      'false',
-    )
+    for (const lane of ['Phrase', 'Lane 2'])
+      await expect(armButton(page, lane)).toHaveAttribute(
+        'aria-pressed',
+        'false',
+      )
   })
 
   test('picks a lane’s instrument in its details, apart from its role, and keeps it after a reload', async ({
