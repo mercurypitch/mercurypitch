@@ -37,6 +37,8 @@ export function isStudioInstrumentHold(
 
 /** A microphone the lanes armed on it share: one source, one split. */
 interface SharedMicrophone {
+  /** Which opening of a microphone this is: a new number each time one opens. */
+  readonly capture: number
   readonly source: AudioNode
   readonly channels: StudioInputChannels
   tap(): StudioInputTap
@@ -65,6 +67,7 @@ export function createStudioArmedInputs(
   createSource: (context: AudioContext, stream: MediaStream) => AudioNode,
 ) {
   const microphones = new Map<MediaStream, SharedMicrophone>()
+  let opened = 0
 
   function share(context: AudioContext, stream: MediaStream): SharedMicrophone {
     const found = microphones.get(stream)
@@ -72,6 +75,7 @@ export function createStudioArmedInputs(
     const source = createSource(context, stream)
     const channels = openStudioInputChannels(context, source, stream)
     const made: SharedMicrophone = {
+      capture: ++opened,
       source,
       channels,
       tap: () => studioInputTap({ context, source, stream, lane: channels }),
@@ -131,6 +135,11 @@ export function createStudioArmedInputs(
     tap(): StudioInputTap | null {
       const [first] = microphones.values()
       return first?.tap() ?? null
+    },
+    /** Which opening of the microphone the lanes share; null while none holds one. */
+    capture(): number | null {
+      const [first] = microphones.values()
+      return first?.capture ?? null
     },
   }
 }

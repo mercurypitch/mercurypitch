@@ -149,6 +149,10 @@
   color: var(--studio-muted);
   font-size: 12px;
 }
+/* One armed lane's line, where the card lists several. */
+.armedLane {
+  overflow-wrap: anywhere;
+}
 .count {
   flex: none;
   width: 20px;

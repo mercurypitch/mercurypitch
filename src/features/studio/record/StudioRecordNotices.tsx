@@ -1,7 +1,9 @@
-// Studio record notices — what the recorder is doing (a card over the lanes' foot), a take the journal still holds, and why the last take did not go the usual way.
-import { Match, Show, Switch } from 'solid-js'
+// Studio record notices — what the recorder is doing (a card over the lanes' foot, every armed lane on it), a take the journal still holds, and why the last take did not go the usual way.
+import { For, Match, Show, Switch } from 'solid-js'
 import { channelPickLabel } from '@/lib/audio-input/input-choices'
+import { joinNames } from '@/lib/jam/jam-arrivals'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
+import type { StudioRecorderView } from '@/lib/studio/record/studio-recorder'
 import { MicSmall } from '../studio-icons'
 import common from '../StudioPage.module.css'
 import { formatStudioMoment } from '../timeline/timeline-geometry'
@@ -111,8 +113,10 @@ export function armedWords(
 
 /** What to know while armed: a microphone hears the speakers, a MIDI lane's take is made in the page. */
 function armedAdvice(recorder: StudioRecorderHandle): string {
-  const midi = recorder.midiArmed()
+  const lanes = recorder.armedLanes()
+  const midi = lanes.length < 2 ? recorder.midiArmed() : null
   if (midi !== null) return ` ${midi.words}`
+  if (lanes.length > 1 && !lanes.some((lane) => lane.microphone)) return ''
   const settings = recorder.settings()
   if (settings.monitor)
     return ' Monitoring is on: use headphones, or the speakers feed back into the microphone.'
@@ -130,9 +134,40 @@ function ArmedHint(props: { recorder: StudioRecorderHandle }) {
   )
 }
 
+/** What the last take said: one lane's words, or each lane's by its name where they differ. */
+export function studioRecordNotice(
+  view: Pick<StudioRecorderView, 'notice' | 'notices'>,
+  laneName: (trackId: string | null) => string | null,
+): string | null {
+  const said = view.notices ?? []
+  if (new Set(said.map((each) => each.text)).size < 2) return view.notice
+  return said
+    .map(
+      ({ trackId, text }) => `${laneName(trackId) ?? 'The new lane'}: ${text}`,
+    )
+    .join(' ')
+}
+
+/** One armed lane's line on a card that lists several: what it records, without the press every lane shares. */
+function laneLine(
+  recorder: StudioRecorderHandle,
+  trackId: string | null,
+): string {
+  const lane = recorder.laneName(trackId) ?? 'a new lane'
+  return armedWords(
+    {
+      armedInput: () => recorder.armedInput(trackId),
+      midiArmed: () => recorder.midiArmed(trackId),
+    },
+    lane,
+  ).replace(/ Press Record to start\.$/, '')
+}
+
 export function StudioRecordNotices(props: StudioRecordNoticesProps) {
   const recorder = () => props.recorder
-  const message = () => recorder().view().error ?? recorder().view().notice
+  const message = () =>
+    recorder().view().error ??
+    studioRecordNotice(recorder().view(), recorder().laneName)
   return (
     <>
       <Show when={recorder().recovery()[0]}>
@@ -210,8 +245,16 @@ export function StudioRecordNotices(props: StudioRecordNoticesProps) {
  */
 export function StudioRecordStatus(props: StudioRecordNoticesProps) {
   const recorder = () => props.recorder
+  const armed = () => recorder().armedLanes()
+  // Every armed lane by name, for the words a take shares.
   const lane = () =>
-    recorder().laneName(recorder().view().targetTrackId) ?? 'a new lane'
+    armed().length > 1
+      ? joinNames(
+          armed().map(
+            (each) => recorder().laneName(each.trackId) ?? 'a new lane',
+          ),
+        )
+      : (recorder().laneName(recorder().view().targetTrackId) ?? 'a new lane')
   return (
     <Show when={recorder().phase() !== 'idle' && !studioRecordCardAside()}>
       <div class={styles.statusDock}>
@@ -229,7 +272,22 @@ export function StudioRecordStatus(props: StudioRecordNoticesProps) {
                 <MicSmall />
               </span>
               <p class={styles.statusText}>
-                <span>{armedWords(recorder(), lane())}</span>
+                <Show
+                  when={armed().length > 1}
+                  fallback={<span>{armedWords(recorder(), lane())}</span>}
+                >
+                  <For each={armed()}>
+                    {(each) => (
+                      <span
+                        class={styles.armedLane}
+                        data-studio-armed-lane={each.trackId ?? 'new'}
+                      >
+                        {laneLine(recorder(), each.trackId)}
+                      </span>
+                    )}
+                  </For>
+                  <span class={styles.armedLane}>Press Record to start.</span>
+                </Show>
                 <ArmedHint recorder={recorder()} />
               </p>
               <button
@@ -237,7 +295,7 @@ export function StudioRecordStatus(props: StudioRecordNoticesProps) {
                 class={common.textButton}
                 onClick={() => recorder().disarm()}
               >
-                Disarm
+                {armed().length > 1 ? 'Disarm all' : 'Disarm'}
               </button>
             </Match>
             <Match when={recorder().phase() === 'counting'}>

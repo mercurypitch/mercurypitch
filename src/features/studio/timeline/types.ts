@@ -9,7 +9,7 @@ import type { StudioWaveformPeaksStore } from './waveform-resource'
 
 /** A lane being recorded into: its level, and the take growing in it. */
 export interface StudioTimelineRecording {
-  /** The armed lane, or null for a take that gets a lane of its own. */
+  /** An armed lane, or null for a take that gets a lane of its own. */
   readonly trackId: string | null
   readonly live: StudioLiveTake | null
   readonly level: number
@@ -17,11 +17,11 @@ export interface StudioTimelineRecording {
   readonly listening: boolean
 }
 
-/** Each lane's arm button: the lane the next take records on, and the press that arms, moves or disarms it. */
+/** Each lane's arm button: whether its lane is armed, and the press that arms or disarms that lane alone. */
 export interface StudioLaneArming {
-  /** The armed lane, from the arm until its take is kept; null when none is, or a new lane is. */
-  armedTrackId(): string | null
-  /** How the armed lane's button shows: opening, armed, counting in, recording or keeping. */
+  /** How lane `trackId`'s button shows: idle while it is not armed, opening, armed, then counting in, recording or keeping with every armed lane. */
+  laneState(trackId: string): StudioRecordPhase
+  /** The recorder's phase across every armed lane. */
   phase(): StudioRecordPhase
   /** Whether a press can arm a lane now: the song takes edits and its audio is free. */
   canArm(): boolean
@@ -87,8 +87,8 @@ export interface StudioTimelineProps {
   readCanonicalAsset(assetId: string): Promise<Blob>
   /** Where each take's waveform peaks are kept between visits. */
   assetPeaks?: StudioWaveformPeaksStore
-  /** A take being recorded, from arming until it is kept. */
-  record?: StudioTimelineRecording | null
+  /** Every armed lane's recording, from its arm until its take is kept, in the order they were armed. */
+  records?: readonly StudioTimelineRecording[]
   /** The lanes' arm buttons; absent, the headers show none. */
   arming?: StudioLaneArming
   /** The range on the ruler Repeat loops and Punch records in (StudioRulerRange.tsx). */

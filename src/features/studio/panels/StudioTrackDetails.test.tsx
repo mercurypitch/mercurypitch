@@ -47,7 +47,7 @@ describe('Studio track details', () => {
     // Arrange
     const toggle = vi.fn()
     mount({
-      armedTrackId: () => null,
+      laneState: (): StudioRecordPhase => 'idle',
       phase: (): StudioRecordPhase => 'idle',
       canArm: () => true,
       toggle,

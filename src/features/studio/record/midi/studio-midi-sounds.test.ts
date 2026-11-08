@@ -1,4 +1,4 @@
-// Studio MIDI sounds tests — each arm takes its sound through a node of its own and lets it go; a sound is made once on a clock and anew on another; a drum lane strikes the kit at General MIDI velocity; and a piano lane plays the synth until the sampled grand has loaded, its notes on the clock.
+// Studio MIDI sounds tests — each arm plays a sound of its own into a node of its own and lets it go; two piano lanes play two pianos, each hearing only its own notes; a drum lane strikes the kit at General MIDI velocity; and a piano lane plays the synth until the sampled grand has loaded, its notes on the clock.
 import { describe, expect, it, vi } from 'vitest'
 import type { StudioMidiModules } from './studio-midi-sounds'
 import { createStudioMidiSounds } from './studio-midi-sounds'
@@ -61,40 +61,64 @@ function fakeModules() {
 }
 
 describe('the Studio MIDI sounds', () => {
-  it('gives each arm a node of its own from its sound, and takes it off again', () => {
+  it('gives each arm a sound of its own, played into its own node, and lets it go with the arm', () => {
     // Arrange
-    const { modules } = fakeModules()
+    const { modules, raw, player } = fakeModules()
     const { context, gains } = fakeContext()
     const sounds = createStudioMidiSounds(modules)
 
     // Act
     const first = sounds.attach('drums', context)
-    first.detach()
     const second = sounds.attach('drums', context)
+    first.detach()
+    first.detach()
 
-    // Assert: one bus, and an arm node for each arm.
-    const [bus, firstNode, secondNode] = gains
+    // Assert: a kit and a node for each arm, the first one let go once.
+    const [firstNode, secondNode] = gains
+    expect(raw.drumKit.createDrumKitPlayer).toHaveBeenCalledTimes(2)
     expect(first.node).toBe(firstNode)
     expect(second.node).toBe(secondNode)
-    expect(bus.connect.mock.calls).toEqual([[firstNode], [secondNode]])
-    expect(bus.disconnect).toHaveBeenCalledExactlyOnceWith(firstNode)
+    expect(player.panic).toHaveBeenCalledOnce()
+    expect(player.dispose).toHaveBeenCalledOnce()
+    expect(firstNode.disconnect).toHaveBeenCalledOnce()
+    expect(secondNode.disconnect).not.toHaveBeenCalled()
   })
 
-  it('makes a sound once on a clock, and anew on another', () => {
+  it('plays two piano lanes on two pianos, so each hears only its own notes, and lets every sound go with the Studio', () => {
     // Arrange
-    const { modules, raw, player } = fakeModules()
+    const { modules, raw } = fakeModules()
+    const routers = [0, 1].map(() => ({
+      noteOn: vi.fn(),
+      noteOff: vi.fn(),
+      panic: vi.fn(),
+      dispose: vi.fn(),
+      setSampled: vi.fn(),
+      setPreference: vi.fn(),
+    }))
+    raw.router.createPianoInstrumentRouter
+      .mockReturnValueOnce(routers[0])
+      .mockReturnValueOnce(routers[1])
     const sounds = createStudioMidiSounds(modules)
-    const one = fakeContext().context
-    const two = fakeContext().context
+    const { context } = fakeContext()
+    const keys = sounds.attach('piano', context)
+    const pads = sounds.attach('piano', context)
 
     // Act
-    sounds.attach('drums', one)
-    sounds.attach('drums', one)
-    sounds.attach('drums', two)
+    keys.voice.start('k1', 60, 0.5, 4, 0)
+    pads.voice.start('p1', 64, 0.5, 4, 0)
+    sounds.dispose()
 
     // Assert
-    expect(raw.drumKit.createDrumKitPlayer).toHaveBeenCalledTimes(2)
-    expect(player.dispose).toHaveBeenCalledOnce()
+    expect(raw.sampled.createPianoSampledInstrument).toHaveBeenCalledTimes(2)
+    expect(routers[0].noteOn.mock.calls.map(([note]) => note.midi)).toEqual([
+      60,
+    ])
+    expect(routers[1].noteOn.mock.calls.map(([note]) => note.midi)).toEqual([
+      64,
+    ])
+    expect(
+      routers.every((router) => router.dispose.mock.calls.length === 1),
+    ).toBe(true)
   })
 
   it('strikes the kit at General MIDI velocity on the clock', () => {

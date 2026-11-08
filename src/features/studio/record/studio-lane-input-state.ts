@@ -2,12 +2,12 @@
 // Studio lane input state — each lane's own input and channels, what the last arm opened of them, and each input's channel count, for the recorder hook
 // ============================================================
 //
-// useStudioRecorder hands the recorder a microphone for the armed lane;
-// this is the lane's side of it. It keeps each lane's choice for the open
+// useStudioRecorder hands the recorder a microphone for each armed lane;
+// this is the lanes' side of it. It keeps each lane's choice for the open
 // song (lane-inputs.ts, on this device), plans what an arm opens from the
 // device list the Studio holds, since the input opens inside the press,
-// and keeps what the arm then opened: the input that was not there, the
-// one or two channels that record, and how many channels the input has,
+// and keeps what each lane's arm then opened: the input that was not there,
+// the one or two channels that record, and how many channels the input has,
 // remembered for the lane's picker. A song opened again forgets its lanes
 // that are gone, so a removed lane's input cannot come back.
 import type { Accessor } from 'solid-js'
@@ -64,7 +64,11 @@ export function createStudioLaneInputState(
   const [counts, setCounts] = createSignal<readonly InputChannelCount[]>(
     readInputChannelCounts(),
   )
-  const [armed, setArmed] = createSignal<StudioArmedInput>(NOTHING_OPENED)
+  // What each lane's arm opened, and which lane armed last.
+  const [armedBy, setArmedBy] = createSignal<
+    ReadonlyMap<string | null, StudioArmedInput>
+  >(new Map())
+  const [last, setLast] = createSignal<string | null>(null)
   // The Sound panel's input was not connected at the arm: the default opened.
   const [inputMissing, setInputMissing] = createSignal(false)
   // The input the last arm asked for and got, the lane's or the Studio's;
@@ -125,24 +129,39 @@ export function createStudioLaneInputState(
     setInputMissing(missing && !asked.own)
     openedAsAsked = missing ? null : asked.deviceId
     const name = asked.own ? lane.label : studio.inputLabel
-    setArmed({
-      laneMissing: asked.laneInputMissing
-        ? (lane.label ?? 'The input you chose')
-        : null,
-      defaultInstead: missing ? (name ?? 'the input you chose') : null,
-      records: null,
-    })
+    setLast(trackId)
+    setArmedBy(
+      new Map(armedBy()).set(trackId, {
+        laneMissing: asked.laneInputMissing
+          ? (lane.label ?? 'The input you chose')
+          : null,
+        defaultInstead: missing ? (name ?? 'the input you chose') : null,
+        records: null,
+      }),
+    )
     return missing ? null : asked.pick
   }
 
+  /** The input an arm for `trackId` asks for, by the name its picker shows. */
+  function askName(trackId: string | null, asked: StudioLaneInputPlan): string {
+    const lane = of(trackId)
+    return asked.own ? (lane.label ?? 'the input you chose') : studioInputName()
+  }
+
   /** What the recorder opened: what records, and the input's channel count, kept for the lane's picker. */
-  function opened(input: StudioInputOpened): void {
+  function opened(
+    input: StudioInputOpened & { readonly trackId?: string | null },
+  ): void {
     const track = input.stream.getAudioTracks?.()[0]
     const { channels, pick, missing } = input
-    setArmed((now) => ({
-      ...now,
-      records: { name: track?.label ?? '', channels, pick, missing },
-    }))
+    const trackId = input.trackId === undefined ? last() : input.trackId
+    const now = armedBy().get(trackId) ?? NOTHING_OPENED
+    setArmedBy(
+      new Map(armedBy()).set(trackId, {
+        ...now,
+        records: { name: track?.label ?? '', channels, pick, missing },
+      }),
+    )
     if (channels !== null) remember(input.stream, channels)
   }
 
@@ -165,7 +184,9 @@ export function createStudioLaneInputState(
     const song = options.project()
     if (song === null) return false
     setLanes(writeStudioLaneInput(song.id, trackId, next))
-    setArmed(NOTHING_OPENED)
+    const kept = new Map(armedBy())
+    kept.delete(trackId)
+    setArmedBy(kept)
     return true
   }
 
@@ -199,15 +220,17 @@ export function createStudioLaneInputState(
     channels,
     /** Every input's channel count this device has found, newest first. */
     counts,
-    /** What the last arm opened, for the armed lane's card. */
-    armed,
+    /** What lane `trackId`'s arm opened, for the armed card; the last arm's with no lane named. */
+    armed: (trackId?: string | null): StudioArmedInput =>
+      armedBy().get(trackId === undefined ? last() : trackId) ?? NOTHING_OPENED,
+    askName,
     inputMissing,
     /** The input the last arm asked for and got, to look its round trip up by when its track names none. */
     openedAsAsked: () => openedAsAsked,
     /** A new choice in the Sound panel: what the last arm found no longer stands. */
     forget(): void {
       setInputMissing(false)
-      setArmed(NOTHING_OPENED)
+      setArmedBy(new Map())
     },
   }
 }

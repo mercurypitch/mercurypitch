@@ -5,9 +5,10 @@
 // One input is metered at a time, and never on a capture of the view's own
 // beside a take (input-check.ts says how the view keeps to MicManager's one
 // hold and WebKit's one capture):
-//  - while a lane holds the microphone, the input it records from, on the
-//    arm's own split (recorder.inputTap), found in the roster by the track
-//    it opened (trackIdentity);
+//  - while lanes hold the microphone, the one input they record from, on
+//    its own split (recorder.inputTap), found in the roster by the track it
+//    opened (trackIdentity), read again only when that input opens anew,
+//    not as lanes are armed and disarmed on it; MIDI lanes have none;
 //  - otherwise the input a check opened, while the view is open.
 // Each row of that input reads a meter (channel-meters.ts): every input
 // and every aligned pair, the default row reading what the default takes;
@@ -39,6 +40,7 @@ export type StudioInputsRecorder = Pick<
   | 'settings'
   | 'phase'
   | 'inputTap'
+  | 'inputCapture'
   | 'busy'
 >
 
@@ -58,8 +60,6 @@ interface Metered {
   /** On the arm's split, beside a take; else on a check. */
   readonly armed: boolean
 }
-
-const HOLDING = new Set(['armed', 'counting', 'recording', 'finishing'])
 
 /**
  * An input whose channels the browser does not report is neither split
@@ -99,11 +99,12 @@ export function useStudioInputs(options: StudioInputsOptions) {
     }),
   )
 
-  // The arm's own split, from the moment a lane holds the microphone until
-  // it lets go: a take starting or ending keeps the same split.
-  const holding = createMemo(() => HOLDING.has(recorder.phase()))
+  // The armed lanes' split, from the moment a lane holds the microphone
+  // until the last lets go: a take, or a lane armed or disarmed beside
+  // them, keeps the same split; an input opened anew is read again.
+  const capture = createMemo(() => recorder.inputCapture())
   const armedTap = createMemo(() =>
-    holding() ? untrack(() => recorder.inputTap()) : null,
+    capture() === null ? null : untrack(() => recorder.inputTap()),
   )
   const metered = createMemo((): Metered | null => {
     const tap = armedTap()

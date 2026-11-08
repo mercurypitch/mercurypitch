@@ -462,7 +462,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
         [styles.tall]: tall(),
         [styles.editing]: pointer.active(),
         [styles.docking]: docked(),
-        [styles.armed]: props.record != null,
+        [styles.armed]: (props.records ?? []).length > 0,
       }}
       aria-label="Song arrangement"
       data-tour={props.phone ? 'studio.timeline-overview' : 'studio.timeline'}
@@ -604,7 +604,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
               />
             )}
           </For>
-          <Show when={props.record?.trackId === null && props.record}>
+          <Show when={props.records?.find((each) => each.trackId === null)}>
             {(record) => (
               <StudioRecordLane
                 {...record()}
@@ -696,7 +696,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
           when={
             props.project.tracks.length === 0 &&
             props.drawerOpen !== true &&
-            !props.record
+            (props.records ?? []).length === 0
           }
         >
           <div class={styles.empty}>

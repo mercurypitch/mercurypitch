@@ -1,15 +1,16 @@
 // ============================================================
-// Studio MIDI sounds — the drum kit and the piano a MIDI lane plays, loaded only when a lane needs one, and made once per clock
+// Studio MIDI sounds — the drum kit and the piano a MIDI lane plays, loaded only when a lane needs one, and made for each lane's arm
 // ============================================================
 //
 // Drum Night's kit player and the piano's synth, router and sampled grand
 // are big, and the Studio needs none of them until a lane is played from
 // MIDI, so they load with import() at the first MIDI arm, never with the
-// page. Each sound is made once for the Studio's clock and kept for every
-// arm after, so the sampled grand downloads and decodes once. Each plays
-// into a bus of its own; an arm takes the bus through a node of its own
-// (`attach`), which its take and its monitor listen on, and which comes
-// apart from the bus when the arm ends.
+// page. Each armed MIDI lane plays a sound of its own (`attach`), so its
+// take holds only its own notes, though two piano lanes are armed at once:
+// a sound plays into a node of its own, which the lane's take and its
+// monitor listen on, and the sound goes with the arm. Each piano decodes
+// the sampled grand's samples for itself, as it plays them (the browser's
+// cache serves the files again); the kit does the same with its own.
 //
 // The piano plays its synth at once and the sampled grand as its samples
 // load (from cdn.jsdelivr.net); until a note's sample is ready, the router
@@ -147,52 +148,32 @@ function pianoSound(modules: StudioMidiModules, context: AudioContext): Sound {
   }
 }
 
-/** The Studio's MIDI sounds, made on the clock they are first asked for, and again on a new one. */
+/** The Studio's MIDI sounds: one for each lane's arm, on the clock it is armed on. */
 export function createStudioMidiSounds(modules: StudioMidiModules) {
-  let clock: AudioContext | null = null
-  const made = new Map<StudioMidiSound, Sound>()
+  const playing = new Set<Sound>()
 
-  function release(): void {
-    for (const sound of made.values()) sound.dispose()
-    made.clear()
-  }
-
-  function sound(kind: StudioMidiSound, context: AudioContext): Sound {
-    if (clock !== context) {
-      release()
-      clock = context
-    }
-    let found = made.get(kind)
-    if (found === undefined) {
-      found =
+  return {
+    /** A sound of `kind` on `context` for one arm alone, through a node of its own. */
+    attach(kind: StudioMidiSound, context: AudioContext): StudioMidiAttached {
+      const sound =
         kind === 'drums'
           ? drumSound(modules, context)
           : pianoSound(modules, context)
-      made.set(kind, found)
-    }
-    return found
-  }
-
-  return {
-    /** Take `kind`'s sound on `context` through a node of the arm's own. */
-    attach(kind: StudioMidiSound, context: AudioContext): StudioMidiAttached {
-      const { bus, voice } = sound(kind, context)
-      const node = context.createGain()
-      bus.connect(node)
+      playing.add(sound)
       return {
-        node,
-        voice,
+        node: sound.bus,
+        voice: sound.voice,
         detach: () => {
-          voice.silence()
-          try {
-            bus.disconnect(node)
-          } catch {
-            // Already apart.
-          }
+          if (!playing.delete(sound)) return
+          sound.voice.silence()
+          sound.dispose()
         },
       }
     },
-    dispose: release,
+    dispose(): void {
+      for (const sound of playing) sound.dispose()
+      playing.clear()
+    },
   }
 }
 

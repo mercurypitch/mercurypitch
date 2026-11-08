@@ -27,7 +27,7 @@ const DISARMED = 'disarmed'
 
 export interface StudioLaneArm {
   /** The lane, or null for a take that gets a lane of its own. */
-  trackId: string | null
+  readonly trackId: string | null
   /** Its input is still opening. */
   arming: boolean
   input: StudioArmedInput | null
@@ -223,21 +223,13 @@ export function createStudioLaneArms(options: StudioLaneArmsOptions) {
       lane.capture?.dispose()
       listen(lane, clock.context, lane.input)
     },
-    /** Move lane `from`'s arm to `trackId`, its input open; true when it moved. */
-    retarget(trackId: string | null, from: string | null): boolean {
-      const lane = lanes.find((each) => each.trackId === from)
-      if (lane === undefined || lanes.some((each) => each.trackId === trackId))
-        return false
-      lane.trackId = trackId
-      lane.monitor?.set(deps.monitorLevel(trackId))
-      return true
-    },
     /** Each lane's monitoring follows the settings and its lane. */
     updateMonitors(): void {
       for (const lane of lanes)
         lane.monitor?.set(deps.monitorLevel(lane.trackId))
     },
     tap: (): StudioInputTap | null => inputs.tap(),
+    capture: (): number | null => inputs.capture(),
     dispose(): void {
       for (const lane of [...lanes]) close(lane)
     },

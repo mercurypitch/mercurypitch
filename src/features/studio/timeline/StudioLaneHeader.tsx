@@ -60,9 +60,10 @@ export function StudioLaneInstrument(props: {
 const RUNNING_TAKE = new Set(['counting', 'recording', 'finishing'])
 
 /**
- * The lane's record arm. Pressed, the lane is armed: the microphone opens
- * and the next Record records here. Pressing another lane's moves the arm;
- * pressing the armed lane's disarms it. A running take holds every button.
+ * The lane's record arm. Pressed, the lane is armed: its input opens and
+ * the next Record records here, beside every other armed lane, as a DAW's
+ * arms do. Pressed again, this lane alone disarms. A running take holds
+ * every button.
  */
 export function StudioArmButton(props: {
   trackId: string
@@ -72,14 +73,15 @@ export function StudioArmButton(props: {
   /** A word beside the dot, where the button stands among worded ones. */
   caption?: string
 }) {
-  const armed = () => props.arming.armedTrackId() === props.trackId
+  const state = () => props.arming.laneState(props.trackId)
+  const armed = () => state() !== 'idle'
   const taking = () => RUNNING_TAKE.has(props.arming.phase())
   const title = () => {
     if (!armed())
       return taking()
         ? 'Stop the take to arm another lane'
         : `Arm ${props.name} for recording`
-    if (props.arming.phase() === 'arming') return 'Opening the microphone'
+    if (state() === 'arming') return 'Opening the microphone'
     if (taking()) return `Recording on ${props.name}`
     return `${props.name} is armed. Record (R) starts a take here. Press to disarm.`
   }
@@ -93,7 +95,7 @@ export function StudioArmButton(props: {
       }}
       data-studio-arm={props.trackId}
       data-tour="studio.arm"
-      data-phase={armed() ? props.arming.phase() : 'idle'}
+      data-phase={state()}
       aria-label={`Arm ${props.name} for recording`}
       aria-pressed={armed()}
       title={title()}

@@ -63,7 +63,7 @@ function mount(
       writable={options.writable ?? true}
       phone={options.phone ?? false}
       deskOpen={options.deskOpen}
-      record={options.record}
+      records={options.record === undefined ? undefined : [options.record]}
       onSeek={vi.fn()}
       onCommand={onCommand}
       onClipDetails={vi.fn()}

@@ -77,6 +77,8 @@ function mount(
     options.phase ?? 'idle',
   )
   const [counts, setCounts] = createSignal(options.counts ?? [])
+  const [capture, setCapture] = createSignal<number | null>(null)
+  const inputTap = vi.fn(() => null)
   const refreshInputs = vi.fn(async () => undefined)
   const project = {
     ...createStudioProject({ id: 'song' }),
@@ -90,7 +92,9 @@ function mount(
     refreshInputs,
     busy: () => false,
     phase,
-    inputTap: () => null,
+    inputTap,
+    // Which opening of the microphone the armed lanes share.
+    inputCapture: capture,
     midi: options.midi ?? createStudioMidiAccess({ request: () => null }),
     settings: () => ({ inputDeviceId: null, inputLabel: null }),
     laneInputs: {
@@ -112,7 +116,7 @@ function mount(
       clock={() => Promise.resolve(context)}
     />
   ))
-  return { setPhase, refreshInputs, recorder }
+  return { setPhase, setCapture, inputTap, refreshInputs, recorder }
 }
 
 const card = (name: string) =>
@@ -291,6 +295,26 @@ describe('the Inputs view', () => {
       name: 'Measure latency',
     }))
       expect(measure).toBeDisabled()
+  })
+
+  it('reads the armed input once while lanes come and go on it, and again when it opens anew', () => {
+    // Arrange
+    const { setPhase, setCapture, inputTap } = mount()
+
+    // Act: a lane arms, a second arms beside it on the same input, then the
+    // input opens anew.
+    setPhase('armed')
+    setCapture(1)
+    const firstArm = inputTap.mock.calls.length
+    setPhase('arming')
+    setPhase('armed')
+    const besideIt = inputTap.mock.calls.length
+    setCapture(2)
+
+    // Assert
+    expect(firstArm).toBe(1)
+    expect(besideIt).toBe(1)
+    expect(inputTap).toHaveBeenCalledTimes(2)
   })
 
   it("lists every lane with its input picker, showing the lane's own choice and choosing for that lane alone", async () => {
