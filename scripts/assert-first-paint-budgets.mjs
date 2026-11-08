@@ -324,7 +324,14 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // hold run, which Lesson 5 shares: a set's mark and its rules
   // (kit/hold-flow.ts, 275) and the drone a hold keeps under its take
   // (kit/hold-run.ts, 14), shaken out until a page sang sets.
-  'learn/05.html': 148,
+  // Raised to 149 for Lesson 16's page shell: 151,506 bytes on main before
+  // it, 151,807 with it, against 151,552 at 148. 116 of the 301 are on
+  // every lesson page: Lesson 16's drafts line (kit/drafts.ts). The other
+  // 185 are the bundler cutting the kit's shared code differently around a
+  // shell that loads the reveal but not the predict, as on Lessons 21's and
+  // 22's; they come back once Lesson 16's cold open loads the predict, but
+  // the 116 alone leave no room at 148.
+  'learn/05.html': 149,
 
   // Lesson 4, "The major scale and home": its own module on the same kit,
   // the staircase drawn on canvas. Measured 114 with the lesson menu and the
@@ -483,6 +490,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // play and tease still, 146,372 bytes in build:e2e; a quarter over. Sing
   // it opens no microphone, so nothing of the listener comes in.
   'learn/15.html': 179,
+  // Lesson 16, "Sing what you see", a Season 2 page and a draft, built in
+  // every mode as Lesson 3 is: its own module on the kit, carrying Season
+  // 2's map (kit/season-2.ts) as a Season 2 page must; its shell: 88,867
+  // bytes in build:e2e, the smallest whole KB above, to rise as each part
+  // joins.
+  'learn/16.html': 87,
   // Lesson 17, "How long is a note?", a Season 2 page and a draft, built in
   // every mode as Lesson 3 is: its own module on the kit, carrying Season
   // 2's map (kit/season-2.ts) as a Season 2 page must, with the steps'
@@ -696,6 +709,13 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // shared parts), its own, and the shared Inter and Outfit @font-face
   // rules; a quarter over.
   'learn/15.html': 111,
+  // Lesson 16 (a draft, as above), its shell: 85,394 bytes in build:e2e,
+  // the kit's sheets (the shared parts), its own with the staff toy's and
+  // the staircase's taken in by @import, and the shared Inter and Outfit
+  // @font-face rules; the smallest whole KB above, to rise as each part
+  // joins, the guide's and the voice lessons' sheets with the recall and
+  // Sing it.
+  'learn/16.html': 84,
   // Lesson 17 (a draft, as above), with its steps, its cold open, its four
   // words and the Wrap: 94,962 bytes in build:e2e, the kit's sheets
   // (the voice lessons' in the chunk it shares with them, the guide's, the

@@ -223,6 +223,34 @@ describe('the explorer, a tab per season', () => {
     expect(openTitle()).toBe('The staff: where notes sit')
   })
 
+  it("opens Lesson 16's page on its own card, Ready, with the Exercises' link", async () => {
+    // Arrange: Lesson 16's page carries Season 2 before it draws (main.ts)
+    vi.resetModules()
+    const { carrySeason } = await import('./page-state')
+    const { SEASON_2: S2 } = await import('./season-2')
+    const { createExplorer: explorerBuilt } = await import('./explorer')
+    carrySeason(S2)
+    explorerPage()
+
+    // Act
+    explorerBuilt({ current: 16 })
+
+    // Assert: a draft with a page, shown in this build, whose card on its own
+    // page goes back to its top (Lesson 16's WEB-SPEC, Explorer and season data)
+    const card = document.querySelector('#exCardHost .ex-card')
+    expect(openTitle()).toBe('Sing what you see')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Lesson 16')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Ready')
+    expect(
+      Array.from(card?.querySelectorAll('a.btn') ?? [], (a) =>
+        a.getAttribute('href'),
+      ),
+    ).toEqual(['#top'])
+    expect(
+      card?.querySelector('a.addr[href="/pitch-training?lesson=16"]'),
+    ).not.toBeNull()
+  })
+
   it("opens Lesson 17's page on its own card, Ready, with the Ear Lab's link", async () => {
     // Arrange: Lesson 17's page carries Season 2 before it draws (main.ts)
     vi.resetModules()
@@ -492,9 +520,13 @@ describe('the explorer, a tab per season', () => {
         (a) => a.textContent,
       ),
     ).toEqual(['Read it Lessons 15 to 21', 'Harmonise it Lessons 22 to 28'])
+    // a draft with a page reads Ready where drafts show, as this build does
     expect(
       document.querySelector('#exList [data-n="16"] small')?.textContent,
-    ).toBe('Coming later · after 9, 15')
+    ).toBe('Ready · after 9, 15')
+    expect(
+      document.querySelector('#exList [data-n="18"] small')?.textContent,
+    ).toBe('Coming later · after 16, 17')
     expect(document.querySelectorAll('#exList .ex-row')).toHaveLength(14)
   })
 

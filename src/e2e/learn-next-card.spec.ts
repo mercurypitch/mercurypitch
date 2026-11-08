@@ -9,7 +9,7 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 5 to 15, 17, 19, 21, 22, 23 and 24 are live here; a page that holds them back is
+// does, so Lessons 5 to 17, 19, 21, 22, 23 and 24 are live here; a page that holds them back is
 // next-card.test.ts's, and one the site worker served with the console's
 // state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
@@ -116,9 +116,15 @@ const CARDS: readonly (readonly [string, string, string, string])[] = [
   ],
   [
     '/learn/15',
-    'Next lesson 16 · Sing what you see Coming later',
-    '#explorer',
-    'See it on the map',
+    'Next lesson 16 · Sing what you see Ready · 15 min',
+    '/learn/16',
+    'Start lesson',
+  ],
+  [
+    '/learn/16',
+    'Next lesson 17 · How long is a note? Ready · 16 min',
+    '/learn/17',
+    'Start lesson',
   ],
   [
     '/learn/17',
@@ -452,7 +458,8 @@ test("Lesson 15's card sets up Lesson 16 with its tease, one line above its hook
   // Act
   await page.goto('/learn/15')
 
-  // Assert: Lesson 16 has no page yet, so the card leads to the map (WEB-SPEC, Toys 8)
+  // Assert: Lesson 16's page is live here, as drafts are, so the card opens
+  // it (WEB-SPEC, Toys 8)
   const c = card(page)
   await expect(c.locator('.next-tease')).toHaveText(
     LESSON_COPY[16]?.tease ?? 'Lesson 16 has a tease',
@@ -479,7 +486,7 @@ test("Lesson 15's card sets up Lesson 16 with its tease, one line above its hook
     })),
   ).toEqual({ heads: 5, lit: 0, words: 0, moving: 0 })
   await expect(c.locator('button')).toHaveCount(0)
-  await expect(c).toHaveAttribute('href', '#explorer')
+  await expect(c).toHaveAttribute('href', '/learn/16')
 })
 
 test("Lesson 17's card sets up Lesson 18 with its tease, one line above its hook, and keeps the page's tease still after its words: seven notes on the bass staff over the beat pads, written whole, nothing lit and no stopwatch", async ({

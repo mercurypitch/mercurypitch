@@ -516,6 +516,8 @@ for (const [n, name, size] of [
   [14, 'desktop', DESKTOP],
   [15, 'phone', PHONE],
   [15, 'desktop', DESKTOP],
+  [16, 'phone', PHONE],
+  [16, 'desktop', DESKTOP],
   [17, 'phone', PHONE],
   [17, 'desktop', DESKTOP],
   [21, 'phone', PHONE],
