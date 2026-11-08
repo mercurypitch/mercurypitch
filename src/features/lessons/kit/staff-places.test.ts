@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 import type { Spelled } from './notes'
 import { signName } from './notes'
 import type { StaffKind } from './staff-places'
-import { BOTTOM, CLEF_NOTE, clefForVoice, clefPlace, diatonicOf, GRAND_WHITE_KEYS, isLine, ledgerCount, ledgersOf, midiOf, noteAt, placeOf, placeRange, placeWords, sayPlace, spelledAt, staffName, writtenOf, } from './staff-places'
+import { BOTTOM, CLEF_NOTE, clefForVoice, clefPlace, diatonicOf, GRAND_WHITE_KEYS, isLine, ledgerCount, ledgersOf, midiOf, noteAt, placeOf, placeRange, placeWords, sayPlace, spelledAt, staffName, syllableOf, writtenOf, } from './staff-places'
 
 /** A note from its name: "G4", "F♯4", "B♭4". */
 function n(name: string): Spelled {
@@ -243,5 +243,20 @@ describe('a place in words', () => {
     expect(staffName('grand')).toMatch(
       /^Grand staff: a treble staff above a bass staff/,
     )
+  })
+})
+
+describe("a note's syllable", () => {
+  it('counts its letters up from do, in any octave: G do, B mi, D so, F sharp ti', () => {
+    // Arrange: Lesson 16's do, G
+    const doG = n('G4')
+
+    // Act
+    const syls = ['G3', 'A3', 'B3', 'C4', 'D4', 'E4', 'F♯4', 'G5'].map((m) =>
+      syllableOf(n(m), doG),
+    )
+
+    // Assert
+    expect(syls).toEqual(['do', 're', 'mi', 'fa', 'so', 'la', 'ti', 'do'])
   })
 })
