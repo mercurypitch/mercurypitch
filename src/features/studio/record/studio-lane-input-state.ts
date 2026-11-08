@@ -140,7 +140,12 @@ export function createStudioLaneInputState(
       ...now,
       records: { name: track?.label ?? '', channels, pick, missing },
     }))
-    if (channels === null) return
+    if (channels !== null) remember(input.stream, channels)
+  }
+
+  /** Keep how many channels the input `stream` opened has, by its track's id and name: an arm's, or the Inputs view's check. */
+  function remember(stream: MediaStream, channels: number): void {
+    const track = stream.getAudioTracks?.()[0]
     setCounts(
       rememberInputChannels(
         {
@@ -185,9 +190,12 @@ export function createStudioLaneInputState(
     plan,
     held,
     opened,
+    remember,
     choose,
     studioInputName,
     channels,
+    /** Every input's channel count this device has found, newest first. */
+    counts,
     /** What the last arm opened, for the armed lane's card. */
     armed,
     inputMissing,

@@ -34,8 +34,8 @@ import type { StudioCaptureEvents, StudioCaptureHandle } from './capture-node'
 import type { StudioClickTrack } from './click-track'
 import { createStudioClickScheduler } from './click-track'
 import type { StudioInputMonitor } from './input-monitor'
-import type { StudioLaneChannel } from './lane-channel'
-import { openStudioLaneChannel } from './lane-channel'
+import type { StudioInputTap, StudioLaneChannel } from './lane-channel'
+import { openStudioLaneChannel, studioInputTap } from './lane-channel'
 import type { StudioCaptureStop } from './pcm-capture'
 import type { StudioRecordSettings } from './record-settings'
 import type { StudioCapturedTake, StudioMicHold, StudioRecorderDeps, StudioRecorderView, } from './recorder-types'
@@ -771,6 +771,10 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     /** The armed lane's monitoring follows the settings and the lane. */
     updateMonitor(): void {
       armed?.monitor.set(deps.monitorLevel(view.targetTrackId))
+    },
+    /** The armed input, for meters beside the take on the arm's own split; null while nothing is armed. */
+    inputTap(): StudioInputTap | null {
+      return armed === null ? null : studioInputTap(armed)
     },
     clearMessages(): void {
       if (view.error !== null || view.notice !== null)

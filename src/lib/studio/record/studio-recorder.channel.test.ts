@@ -2,7 +2,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import type { ChannelPick } from '@/lib/audio-input/input-channels'
 import type { FakeGraphNode } from './studio-recorder.test-fixtures'
-import { harness, settle } from './studio-recorder.test-fixtures'
+import { fakeGraphNode, harness, settle } from './studio-recorder.test-fixtures'
 
 /** An input whose track reports `channelCount` (undefined: it does not say), held for a lane asking for `pick`. */
 function inputHold(channelCount: number | undefined, pick: ChannelPick | null) {
@@ -207,5 +207,24 @@ describe("a lane's channels", () => {
     expect(splitter.disconnect).toHaveBeenCalledOnce()
     expect(h.source.disconnect).toHaveBeenLastCalledWith()
     expect(h.capture.dispose).toHaveBeenCalledOnce()
+  })
+
+  it("offers meters the armed input on the arm's own split, and nothing while none is armed", async () => {
+    const h = harness({
+      acquireMic: vi.fn(async () => inputHold(2, single(1))),
+    })
+    expect(h.recorder.inputTap()).toBeNull()
+    await h.recorder.arm('lane-1')
+    const [splitter] = h.splitters
+    const meter = fakeGraphNode('meter')
+
+    const tap = h.recorder.inputTap()!
+    tap.send(0, meter as unknown as AudioNode)
+
+    expect(tap.channels).toBe(2)
+    expect(edges(splitter)).toContainEqual(['meter', 0, 0])
+    expect(h.ctx.createChannelSplitter).toHaveBeenCalledOnce()
+    h.recorder.disarm()
+    expect(h.recorder.inputTap()).toBeNull()
   })
 })
