@@ -4,7 +4,7 @@
 
 import { describe, expect, it, vi } from 'vitest'
 import type { PianoInputEvent } from './piano-input-state'
-import { createWebMidiInputPort } from './web-midi-input-port'
+import { createWebMidiInputPort, parseWebMidiMessage, } from './web-midi-input-port'
 
 interface MockMidiInput {
   id: string
@@ -298,5 +298,44 @@ describe('createWebMidiInputPort', () => {
     await expect(port.connect()).resolves.toBe(false)
     expect(port.snapshot().permission).toBe('denied')
     expect(listener).toHaveBeenCalledTimes(2)
+  })
+})
+
+describe('parseWebMidiMessage', () => {
+  it('reads notes, the three pedals and the channel-wide resets, and nothing else', () => {
+    // Arrange, Act, Assert
+    expect(parseWebMidiMessage(new Uint8Array([0x91, 60, 127]))).toEqual({
+      type: 'note-on',
+      channel: 1,
+      midi: 60,
+      velocity: 1,
+    })
+    // A note on at velocity 0 is an off.
+    expect(parseWebMidiMessage(new Uint8Array([0x90, 60, 0]))).toEqual({
+      type: 'note-off',
+      channel: 0,
+      midi: 60,
+      velocity: 0,
+    })
+    expect(parseWebMidiMessage(new Uint8Array([0x80, 62, 64]))).toEqual({
+      type: 'note-off',
+      channel: 0,
+      midi: 62,
+      velocity: 64 / 127,
+    })
+    expect(parseWebMidiMessage(new Uint8Array([0xb0, 64, 127]))).toEqual({
+      type: 'pedal',
+      channel: 0,
+      pedal: 'sustain',
+      value: 1,
+    })
+    expect(parseWebMidiMessage(new Uint8Array([0xb2, 123, 0]))).toEqual({
+      type: 'all-notes-off',
+      channel: 2,
+    })
+    expect(parseWebMidiMessage(new Uint8Array([0xc0, 5]))).toBeNull()
+    expect(parseWebMidiMessage(new Uint8Array([0xb0, 7, 100]))).toBeNull()
+    expect(parseWebMidiMessage(new Uint8Array([0x90]))).toBeNull()
+    expect(parseWebMidiMessage(null)).toBeNull()
   })
 })

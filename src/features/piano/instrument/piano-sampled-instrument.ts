@@ -53,6 +53,8 @@ export interface PianoSampledInstrument
 export interface PianoSampledInstrumentOptions {
   /** The route-owned context. This instrument never constructs or closes it. */
   getAudioContext(): AudioContext | null
+  /** The route-owned node the instrument plays into, as the drum kit player takes one; the context's destination when absent or null. */
+  getOutput?(): AudioNode | null
   /** Test seam; production requests still pass the fixed manifest allowlist. */
   fetchArrayBuffer?: (
     url: string,
@@ -575,7 +577,7 @@ export function createPianoSampledInstrument(
     tone.connect(lateDelay)
     lateDelay.connect(late)
     late.connect(limiter)
-    limiter.connect(context.destination)
+    limiter.connect(options.getOutput?.() ?? context.destination)
 
     const nextGraph = {
       context,
