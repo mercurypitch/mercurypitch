@@ -19,9 +19,11 @@
 // read off films.ts: `duration`, measured from the published MP4's own
 // metadata (ffprobe over a range read, rounded to the second), and
 // `uploadDate`, when the film first went live on mercurypitch.com (the
-// release tag that first shipped its sources). A fixed cut that goes up as a
-// new version (films.ts) changes `duration` here in the same commit; its
-// `uploadDate` stays the first one. src/tests/lesson-watch-pages.test.ts
+// release tag that first shipped its sources). A release commit is written
+// before its tag, so where it sets the date the time is the start of the
+// tag's planned day, never later than the film went live. A fixed cut that
+// goes up as a new version (films.ts) changes `duration` here in the same
+// commit; its `uploadDate` stays the first one. src/tests/lesson-watch-pages.test.ts
 // holds each document's structured data to these and to films.ts.
 //
 // Pure data, read by the site worker, the build and the tests: nothing here
@@ -46,12 +48,12 @@ export const WATCH_PAGES: WatchRegistry = {
   1: { duration: 'PT5M36S', uploadDate: '2026-10-26T14:03:38+01:00' },
   // v1/lesson-02-1080p.mp4: 439.10 s. Live with v0.9.22.
   2: { duration: 'PT7M19S', uploadDate: '2026-10-26T14:03:38+01:00' },
-  // v1/lesson-03-1080p.mp4: 572.10 s. Released on the owner's word on 7
-  // November 2026; the release tag that ships it sets the time it went live.
-  3: { duration: 'PT9M32S', uploadDate: '2026-11-07T00:00:00+01:00' },
-  // v1/lesson-04-1080p.mp4: 551.23 s. Released on the owner's word on 7
-  // November 2026; the release tag that ships it sets the time it went live.
-  4: { duration: 'PT9M11S', uploadDate: '2026-11-07T00:00:00+01:00' },
+  // v1/lesson-03-1080p.mp4: 572.10 s. Live with v0.9.30, released on the
+  // owner's word of 7 November 2026; its release commit set the day.
+  3: { duration: 'PT9M32S', uploadDate: '2026-11-08T00:00:00+01:00' },
+  // v1/lesson-04-1080p.mp4: 551.23 s. Live with v0.9.30, released on the
+  // owner's word of 7 November 2026; its release commit set the day.
+  4: { duration: 'PT9M11S', uploadDate: '2026-11-08T00:00:00+01:00' },
 }
 
 const pad = (n: number): string => String(n).padStart(2, '0')

@@ -5,6 +5,27 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.30] - 2026-11-08
+
+Find Your Pitch opens Lessons 3 and 4, each with its film, and Jam keeps the
+input you chose.
+
+### Added
+
+- **Lessons 3 and 4 are open.** _Match a note_ and _The major scale and
+  home_ are free at mercurypitch.com/learn, 16 and 14 minutes. Home's
+  Lessons link opens Lesson 3 once you've finished Lessons 1 and 2.
+- **Sing three notes back.** In Lesson 3, Merc sings A, then G, then B, and
+  after each try you see how far your note sits from his, in any octave.
+- **A film for each, with Merc and Tavi.** Lesson 3's runs 9:32 and Lesson
+  4's 9:11, with captions, chapters you tap to jump to, and a Watch page
+  with the transcript.
+
+### Fixed
+
+- **Jam keeps your input.** The input you pick under Your sound is still
+  chosen after you reload the page, instead of going back to the default.
+
 ## [0.9.29] - 2026-11-07
 
 Pasted lyrics follow the singing, a drill you stop early no longer passes a
