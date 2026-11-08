@@ -53,6 +53,7 @@ import { initQuizzes } from './recall'
 import { initSing } from './sing'
 import { initSteps, TOYS } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -78,8 +79,10 @@ deck.start()
 initWords()
 
 // Sing it on the kit's flow: so, la, ti and do in C and then in G, the
-// staff turning to G between the two runs
+// staff turning to G between the two runs; the Wrap's card in the version
+// its ending picks, and free play, the circle beside the staff again
 initSing()
+initWrap()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(21)

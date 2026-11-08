@@ -370,7 +370,17 @@
 .l21-tease svg {
   display: block;
   width: 100%;
-  height: 96px;
+  height: auto;
+}
+.l21-tease-band {
+  fill: color-mix(in srgb, var(--chrome) 16%, transparent);
+  stroke: var(--hair-2);
+}
+.l21-tease-line {
+  fill: none;
+  stroke: var(--chrome);
+  stroke-width: 2px;
+  stroke-linecap: round;
 }
 .l21-free > .eyebrow {
   margin: 0 0 10px;
