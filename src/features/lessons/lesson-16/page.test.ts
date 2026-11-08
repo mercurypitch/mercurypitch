@@ -283,18 +283,29 @@ describe("Lesson 16's page", () => {
         .querySelector('#toyStaff [data-hear-inside]')
         ?.getAttribute('aria-pressed'),
     ).toBe('false')
-    // each of the staff's plays names the steps it shows in
+    // each of the staff's plays names the steps it shows on, and only Step
+    // 2's show before any script runs (kit/step-parts.ts)
     expect(
       Array.from(d.querySelectorAll('#toyStaff [data-staff-play]'), (b) => [
         b.getAttribute('data-staff-play'),
-        b.getAttribute('data-for'),
+        b.getAttribute('data-part'),
+        b.hasAttribute('hidden'),
         words(b),
       ]),
     ).toEqual([
-      ['do', '2', 'Play do'],
-      ['do-so', '3 5', 'Play do to so'],
-      ['triad', '4 5', 'Play do, mi, so, mi, do'],
-      ['turn', '4', 'Play do, mi, then do, so'],
+      ['do', '2', false, 'Play do'],
+      ['do-so', '3 5', true, 'Play do to so'],
+      ['triad', '4 5', true, 'Play do, mi, so, mi, do'],
+      ['turn', '4', true, 'Play do, mi, then do, so'],
+    ])
+    expect(
+      ['[data-hear-inside]', '[data-staff-names]'].map((s) => {
+        const part = d.querySelector(`#toyStaff ${s}`)
+        return [part?.getAttribute('data-part'), part?.hasAttribute('hidden')]
+      }),
+    ).toEqual([
+      ['3', true],
+      ['5', true],
     ])
     // no step has a Go deeper drawer (Length)
     expect(d.querySelectorAll('#lesson details.deeper')).toHaveLength(0)

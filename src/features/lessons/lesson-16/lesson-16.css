@@ -137,6 +137,37 @@
     height: 160px;
   }
 }
+/* at 344 px Step 1's controls take a fourth row, which the two figures
+   give back, so the stage still fits under the masthead */
+@media (max-width: 360px) {
+  .l16-stairs .stairs-viz {
+    height: 256px;
+  }
+  .l16-pair > .staff-viz {
+    height: 146px;
+  }
+}
+/* the turn (kit/stairs-turn.ts): the toy is the layer its stairs travel
+   across; while they travel the staircase dims, and the staff's notes, the
+   house, the syllables and the ledger line wait, hidden, for them to land */
+.l16-stairs {
+  position: relative;
+}
+.l16-stairs .stairs-viz canvas {
+  transition: opacity 0.3s ease-out;
+}
+.l16-stairs.is-turning .stairs-viz canvas {
+  opacity: 0.25;
+}
+.l16-stairs.is-turning .staff-viz .st-head,
+.l16-stairs.is-turning .staff-viz .st-home,
+.l16-stairs.is-turning .staff-viz .st-syls,
+.l16-stairs.is-turning .staff-viz .st-ledger {
+  opacity: 0;
+}
+.motion-paused .l16-stairs .stairs-viz canvas {
+  transition: none;
+}
 .staff-toy .staff-row,
 .l16-stairs .stairs-controls,
 .staff-controls {
