@@ -1,8 +1,10 @@
 # Studio inputs — each lane records from its own input
 
 Owner-approved plan, 7 November 2026, with the channel model added on
-8 November. Seven pull requests, each one a separate owner decision to merge.
-The first two change no behaviour; the rest add what a musician sees.
+8 November, and MIDI lanes moved ahead of several lanes at once the same day:
+the owner asked for MIDI by name, not for several lanes at once. Seven pull
+requests, each one a separate owner decision to merge. The first two change
+no behaviour; the rest add what a musician sees.
 
 ## Goal
 
@@ -280,13 +282,89 @@ capture beside a take:
   "Not reported by this browser".
 - Two inputs at once, or any input but the armed one while a lane is armed:
   one hold, one capture.
-- MIDI inputs, which come with MIDI lanes (PR 7). The view's sections are
-  the audio inputs, then the lanes, and a MIDI section can sit beside the
-  audio inputs.
+
+Its MIDI section, beside the audio inputs, came with MIDI lanes (PR 6,
+below).
 
 A panel the Studio opens in place of another (Inputs from deep in the Sound
 panel) now starts at its top, and focus lost with the button that opened it
 comes to the panel (`StudioPanel.tsx`).
+
+### MIDI lanes (PR 6)
+
+A lane can be played from a MIDI keyboard or pads. The page makes its sound
+(no microphone opens for it), records that sound as an ordinary take, and
+keeps the notes played into the take beside its audio.
+
+| File                                                      | What it does                                                                                                                                              |
+| --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/studio/record/lane-inputs.ts`                    | A lane's input is a union: an audio input `{ deviceId, label, channel, pair }`, or `{ kind: 'midi', portId, label }`. A row kept before reads as audio.   |
+| `src/lib/studio/record/armed-input.ts`                    | What an arm opens for its lane: a microphone's source and channels, or an instrument's sound (`StudioInstrumentHold`), one node for the take and monitor. |
+| `src/lib/studio/record/take-notes.ts`                     | A note `{ midi, velocity, startFrame, endFrame }`, the log of notes as they sound, and a take's notes placed on the song as its audio is.                 |
+| `src/db/services/studio-take-notes.ts`                    | The notes kept on this device by the take's id (`studioTakeNotes`, database v15), gone with the take's audio and its song.                                |
+| `src/features/studio/record/midi/studio-midi-access.ts`   | The Studio's one MIDI access, asked for from a press only: its state and its ports.                                                                       |
+| `src/features/studio/record/midi/studio-midi-sound(s).ts` | Which sound a lane plays, from its instrument, and the sounds themselves, loaded with import() and made once per clock.                                   |
+| `src/features/studio/record/midi/studio-midi-arm.ts`      | A MIDI lane's arm: its port, its sound on the clock, every note logged.                                                                                   |
+| `src/features/studio/record/midi/studio-midi-lanes.ts`    | The recorder hook's MIDI side: the arm, which MIDI lane is armed, and a kept take's notes.                                                                |
+| `src/features/studio/inputs/StudioMidiInputs.tsx`         | The Inputs view's MIDI section: each port with a light while it plays and the lanes it plays.                                                             |
+| `src/lib/timing/performance-clock.ts`                     | An event's performance-clock timestamp on an audio clock: the arithmetic Guitar and Drum Night each had, now one.                                         |
+
+- **Choosing it.** A lane's input picker, in Track details and in Inputs,
+  lists MIDI ports as a group of their own after the audio inputs, once MIDI
+  is allowed from a press ("Show MIDI keyboards and pads"). A lane on one
+  has no channels, its header chip says "MIDI", and its words say what it
+  plays as. A browser without Web MIDI (Safari, every browser on iOS) says
+  so in the group, and a denial reads apart from any other failure, as Drum
+  Night tells them apart.
+- **Its sound follows its instrument** (`studioLaneInstrument`): the drum
+  kit (Drum Night's player, General MIDI keys 35 to 81) for drums and
+  percussion, and the piano for every other lane: the fallback synth at
+  once, and the sampled grand from cdn.jsdelivr.net note by note as its
+  samples load (the piano's router). A piano lane says "Plays the piano.",
+  any other "Plays as piano until this instrument has its own sound.". A
+  key with no drum plays nothing on a drum lane, and its note is kept.
+- **Arming it** never asks MicManager for anything: the recorder asks for
+  the lane's instrument first (`acquireInstrument`), inside the press, and
+  a lane that has one never reaches the microphone. MIDI is asked for in
+  the press; the sounds and the Piano room's port and input state load
+  alongside with import(), never with the page. A port that is gone
+  refuses the arm in its own name, "Connect Keystation 49, then arm
+  again.", rather than record the room in place of the keyboard. One lane
+  is armed at a time, as before.
+- **Hearing it.** The instrument plays through the lane's monitor, at its
+  volume and pan, whatever the monitoring switch says: the switch guards
+  against a microphone's feedback, and a MIDI lane has none. The same node
+  is the take's capture input. The mic icon stays off (no microphone is
+  held; the sentinel would otherwise force the arm off), and a port
+  unplugged while armed or mid-take ends the arm or the take in its own
+  words.
+- **Notes and audio line up.** A note sounds at the clock time its message
+  arrived, mapped onto the Studio's clock by `performanceToAudioSeconds`
+  (one already past sounds at once), and is logged at that time. The take
+  is moved by the output path alone (`studioInstrumentShift`): the player
+  plays to what they hear, late by the output path, and the sound reaches
+  the take inside the page, with no input path, no measured round trip and
+  no line-up. A kept take keeps the notes it captured, on the song as its
+  audio sits before any cut; a note still held at the end of the take ends
+  with it.
+- **How close.** A note whose message is already past is started at the
+  audio's next callback, so its sound can begin up to one callback after
+  the time its note is kept at (up to 12 ms apart in headless Chromium).
+  The piano adds its own rise (8 ms) and limiter lookahead (6 ms). The
+  browser test measured the sound 12.8 to 24.8 ms after its note. Exact
+  alignment would need every live note started a fixed time ahead, which
+  the player would hear as latency.
+- **The Inputs view's MIDI section** asks for MIDI from a press, then lists
+  each port with the lanes played from it, a lane's port that is gone as
+  not connected, and a light that comes on for a moment when the port sends
+  a note, a pedal or a reset (read with the Piano room's
+  `parseWebMidiMessage`, not a second parser).
+
+**What it does not do.** Other instruments wait for sound banks; there is
+no MIDI clip, and the notes have no viewer yet. A take kept from the
+journal after a closed tab has no notes: the notes are kept only when the
+take is kept on the spot. Duplicate song and a restored backup give their
+takes new ids, so the copy has no notes, and a backup file carries none.
 
 ### Left where it is
 
@@ -317,8 +395,8 @@ Input code found while moving the code above, and not moved:
 ## How it will work
 
 An input per lane, kept on the device, one input or an aligned pair of an
-interface's, and the Inputs view are built (PR 3 to PR 5, above). What
-follows is still to come.
+interface's, the Inputs view and MIDI lanes are built (PR 3 to PR 6,
+above). What follows is still to come.
 
 ### Several lanes at once
 
@@ -358,17 +436,26 @@ From PR 5, the Inputs view assumes one arm:
 - A tap's `unsend` takes off only the view's own edges, so meters come and
   go beside a take without touching what it records.
 
-### MIDI lanes
+From PR 6, MIDI lanes assume one arm too:
 
-Notes played on a keyboard or pads become audio in the lane's sound: drums on a
-drum lane, the piano on a keyboard lane; other instruments wait for sound
-banks. The lane keeps that audio as an ordinary take. The played notes are kept
-too, in a plain shape (MIDI number, velocity, start and end on the song clock)
-from which a future notes viewer can make the beats Compose's piano roll and
-the stem mixer's note editor already edit. Where those notes are stored is
-decided in that PR; it cannot be a song field older builds reject. Editable
-MIDI clips are a much later feature. MIDI inputs, with their activity, get a
-section of their own in the Inputs view, beside the audio inputs.
+- The recorder holds one armed input (`armed-input.ts`), a microphone or an
+  instrument. With several lanes armed it holds several, and an instrument
+  lane needs no capture of the browser's: a MIDI lane can be armed beside a
+  microphone lane even in WebKit.
+- `createStudioMidiLanes` keeps which MIDI lane is armed (`armed`), and the
+  hook reads it to keep the mic icon off and to ignore the shared
+  microphone's goings. With several lanes, the icon is on while any armed
+  lane holds a microphone.
+- Each sound is made once per clock (`studio-midi-sounds.ts`), and an arm
+  takes it through a node of its own. Two lanes playing the piano at once
+  would share one piano and hear each other; give each arm a sound of its
+  own, or the router a voice range per lane.
+- The note log is the hook's one log. Notes are kept for a take by the
+  time window it captured, so two lanes recording at once would each keep
+  the other's notes: log per arm.
+- A MIDI port is routed to one lane at a time (`createWebMidiInputPort`
+  selects one input). Two lanes on one keyboard want the port's events
+  split by channel, or both lanes fed.
 
 ## Pull requests
 
@@ -383,10 +470,11 @@ section of their own in the Inputs view, beside the audio inputs.
 5. **The Inputs view**: every audio input with its kind, channels, round trip
    and what to know about it, a row per input and aligned pair with a live
    meter and level words, which lane records what, each lane's input, and the
-   latency wizard per input. MIDI activity moved to PR 7.
-6. **Several lanes recording at once.**
-7. **MIDI lanes kept as audio**, with the played notes kept beside them, and
-   MIDI inputs in the Inputs view.
+   latency wizard per input.
+6. **MIDI lanes kept as audio**, with the played notes kept beside them, and
+   MIDI inputs in the Inputs view. Moved ahead of several lanes at once on
+   8 November: the owner asked for MIDI by name.
+7. **Several lanes recording at once.**
 
 ## Owner's decisions
 
@@ -456,3 +544,36 @@ section of their own in the Inputs view, beside the audio inputs.
   do: a fake access handed to the adapter (`guitar-midi-input.test.ts`,
   `drum-input.test.ts`), or `navigator.requestMIDIAccess` stubbed
   (`web-midi-input-port.test.ts`).
+- MIDI lanes (PR 6) are tested on a fake access with ports that send and
+  can be plugged and unplugged (`midi/fake-midi.fixture.ts`).
+  - The lane input union and its rows kept before: `lane-inputs.test.ts`.
+  - The recorder on an instrument, with no microphone, moved by what the
+    hook gives for no stream, and a lost port in its own words:
+    `studio-recorder.instrument.test.ts`.
+  - Routing by instrument family: `studio-midi-sound.test.ts`.
+  - The sounds: a node per arm, once per clock, the kit's velocity, and the
+    piano on its synth until the grand loads: `studio-midi-sounds.test.ts`.
+  - The arm: each note at the clock time its message arrived and logged
+    there, a drum key with no drum still kept, a port by its name, refusals
+    in words, an unplug, and the release: `studio-midi-arm.test.ts`.
+  - The hook: no microphone asked for, the monitor on whatever the switch
+    says, the shift pinned to the output path alone, the mic icon off, a
+    kept take's notes by its id, and a gone port refused in its name:
+    `useStudioRecorder.midi.test.ts`.
+  - The notes, their placement and their store: `take-notes.test.ts`,
+    `studio-take-notes.test.ts`.
+  - The picker's MIDI group and words: `studio-midi-choices.test.ts`,
+    `StudioLaneInputField.test.tsx`.
+  - The Inputs view's MIDI section and its lights: `midi-inputs-model.test.ts`,
+    `studio-midi-activity.test.ts`, `StudioInputsPanel.test.tsx`.
+
+  In a browser, `studio-midi-lanes.spec.ts` puts a fake keyboard in the page
+  with addInitScript, refuses the sampled grand's samples so the synth plays
+  and every run is the same, and fails on any request to the live site. A
+  take recorded while middle C is held:
+  - asked for no microphone;
+  - holds the piano's middle C;
+  - keeps one note, about 0.6 s long, whose sound begins 12.8 to 24.8 ms
+    after its frame and never before it.
+
+  Inputs lists the keyboard with its lane and lights it while it plays.
