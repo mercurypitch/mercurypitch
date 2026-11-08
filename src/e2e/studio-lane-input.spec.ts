@@ -3,7 +3,7 @@ import { expect, type Page, test } from '@playwright/test'
 import { defaultChannelPick, splitChannels, } from '../lib/audio-input/input-channels'
 import { STUDIO_CAPTURE_INPUT } from '../lib/studio/record/capture-input'
 import { openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
-import { armLane, recordButton } from './helpers/studio-arming'
+import { armLane, recordButton, recordTake } from './helpers/studio-arming'
 import { fakeMicArgs, writeStereoToneWav } from './helpers/tone-wav'
 
 const LEFT_HZ = 440
@@ -36,29 +36,6 @@ async function setLaneInput(
   await studio
     .getByRole('button', { name: 'Close Track details', exact: true })
     .click()
-}
-
-/** Record about two seconds on the armed lane with R; resolves once the take is kept as `title`. */
-async function recordTake(page: Page, title: string): Promise<void> {
-  const studio = studioRegion(page)
-  await studio.locator('[data-tour="studio.workspace"]').focus()
-  await page.keyboard.press('r')
-  await expect(recordButton(page)).toHaveAccessibleName('Stop recording', {
-    timeout: 10_000,
-  })
-  await expect(studio.getByRole('timer')).toHaveText(/^0:0[2-9]/, {
-    timeout: 10_000,
-  })
-  await page.keyboard.press('r')
-  await expect(recordButton(page)).toHaveAccessibleName('Record', {
-    timeout: 30_000,
-  })
-  await expect(
-    studio.getByRole('button', { name: new RegExp(`, ${title}\\.wav, `) }),
-  ).toHaveCount(1)
-  await expect(
-    studio.getByText('Saved in this browser', { exact: true }),
-  ).toBeVisible({ timeout: 30_000 })
 }
 
 interface Tones {

@@ -22,3 +22,34 @@ export async function armLane(page: Page, lane: string): Promise<void> {
   })
   await expect(armButton(page, lane)).toHaveAttribute('aria-pressed', 'true')
 }
+
+/**
+ * Record about two seconds on the armed lane with R, doing `during` once
+ * the take is two seconds in; resolves once the take is kept as `title`.
+ */
+export async function recordTake(
+  page: Page,
+  title: string,
+  during: () => Promise<void> = async () => undefined,
+): Promise<void> {
+  const studio = studioRegion(page)
+  await studio.locator('[data-tour="studio.workspace"]').focus()
+  await page.keyboard.press('r')
+  await expect(recordButton(page)).toHaveAccessibleName('Stop recording', {
+    timeout: 10_000,
+  })
+  await expect(studio.getByRole('timer')).toHaveText(/^0:0[2-9]/, {
+    timeout: 10_000,
+  })
+  await during()
+  await page.keyboard.press('r')
+  await expect(recordButton(page)).toHaveAccessibleName('Record', {
+    timeout: 30_000,
+  })
+  await expect(
+    studio.getByRole('button', { name: new RegExp(`, ${title}\\.wav, `) }),
+  ).toHaveCount(1)
+  await expect(
+    studio.getByText('Saved in this browser', { exact: true }),
+  ).toBeVisible({ timeout: 30_000 })
+}
