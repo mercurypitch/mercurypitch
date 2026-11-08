@@ -259,6 +259,7 @@ const NO_FILM = [
   { n: 13, title: 'Resonance and vowels' },
   { n: 14, title: 'Phrasing: sing a whole song' },
   { n: 15, title: 'The staff: where notes sit' },
+  { n: 16, title: 'Sing what you see' },
   // its sung part is a tapped checkpoint first, so its anchor says so
   { n: 17, title: 'How long is a note?', sing: 'Tap it' },
   // nothing on it is sung: its solo is tapped, so its anchor says so; and
