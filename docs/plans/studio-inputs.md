@@ -1,16 +1,16 @@
 # Studio inputs — each lane records from its own input
 
-Owner-approved plan, 7 November 2026. Six pull requests, each one a separate
-owner decision to merge. The first two change no behaviour; the rest add what
-a musician sees.
+Owner-approved plan, 7 November 2026, with the channel model added on
+8 November. Seven pull requests, each one a separate owner decision to merge.
+The first two change no behaviour; the rest add what a musician sees.
 
 ## Goal
 
 A Studio lane records from the input that lane is played on: a microphone, one
-channel of an audio interface (a guitar plugged straight in), or later a MIDI
-keyboard or pad. The singer sees every input in one Inputs view and picks one
-per lane. Today the Studio has one input for every lane, and an interface's
-inputs arrive summed.
+input of an audio interface (a guitar plugged straight in), a pair of them, or
+later a MIDI keyboard or pad. The singer sees every input in one Inputs view
+and picks one per lane. Before this plan the Studio had one input for every
+lane, and an interface's inputs arrived summed.
 
 ## What exists
 
@@ -20,15 +20,15 @@ PR 2 gathered the generic input code the rooms had grown separately into one
 headless module, by moving it, not copying it. Every consumer imports from
 there; nothing is re-exported from the old places.
 
-| File                      | What it answers                                                                                                                                                                                                                                                                                                                                                                                                                          | Moved from                                                                                                  |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `mic-roster.ts`           | Every connected input once, with Chromium's `default` and `communications` entries folded into flags, a kind guessed from the name (loopback, USB, Bluetooth...), which input a live track hears, and what changed between two lists. `isPseudoEntry` names the browser's role entries.                                                                                                                                                  | `src/features/mic-check/`                                                                                   |
-| `device-watch.ts`         | The device list (`listDevices`, and `listAudioInputDevices` for the audio inputs alone), `devicechange` read once a burst settles or at every event, and what a track says it opened (`trackIdentity`).                                                                                                                                                                                                                                  | `src/features/mic-check/`; Studio's own `devicechange` listener and Jam's own enumeration now go through it |
-| `input-choices.ts`        | A picker's rows: the null row first ("Default input" in the Sound panel, "Studio's input (its name)" for a lane), each input by name or as "Device N" until the browser names it, and a chosen input that is gone kept as "(not connected)". `channelChoices` gives a channel picker's rows: "All inputs, mixed" (null) first, then "Input 1", "Input 2"..., and a chosen channel the input does not have kept as "(not on this input)". | Studio's `studio-inputs.ts`                                                                                 |
-| `saved-input.ts`          | A remembered input found again: exact id, then the same name (never a loopback's), then nothing, so the caller takes the default. `isLoopbackLabel` spots PipeWire and PulseAudio monitors.                                                                                                                                                                                                                                              | `src/lib/jam/jam-audio-source.ts`                                                                           |
-| `input-channels.ts`       | One channel of a multichannel capture: `splitChannels` (open, send a channel to a node, take a channel alone as mono, close only its own edge), `captureChannelCount` (the track's count, else the source's, clamped at 32), `isAvailableChannel`, `loudestChannel`.                                                                                                                                                                     | `src/lib/guitar/recording-capture.ts`, `src/lib/jam/jam-input-monitor.ts`                                   |
-| `level-health.ts`         | How a block peak reads (clipping, hot, good, quiet, silent, noisy) against a noise floor that falls at once and rises over seconds.                                                                                                                                                                                                                                                                                                      | `src/lib/guitar/input-events.ts`                                                                            |
-| `fake-devices.fixture.ts` | A device list a test can plug into, and a capture track that fires `mute` and `ended`.                                                                                                                                                                                                                                                                                                                                                   | `src/features/mic-check/fake-capture.fixture.ts`                                                            |
+| File                      | What it answers                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                   | Moved from                                                                                                  |
+| ------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------- |
+| `mic-roster.ts`           | Every connected input once, with Chromium's `default` and `communications` entries folded into flags, a kind guessed from the name (loopback, USB, Bluetooth...), which input a live track hears, and what changed between two lists. `isPseudoEntry` names the browser's role entries.                                                                                                                                                                                                                                                                                           | `src/features/mic-check/`                                                                                   |
+| `device-watch.ts`         | The device list (`listDevices`, and `listAudioInputDevices` for the audio inputs alone), `devicechange` read once a burst settles or at every event, and what a track says it opened (`trackIdentity`).                                                                                                                                                                                                                                                                                                                                                                           | `src/features/mic-check/`; Studio's own `devicechange` listener and Jam's own enumeration now go through it |
+| `input-choices.ts`        | A picker's rows: the null row first ("Default input" in the Sound panel, "Studio's input (its name)" for a lane), each input by name or as "Device N" until the browser names it, and a chosen input that is gone kept as "(not connected)". `channelChoices` gives a channel picker's rows as a DAW's record input lists them: the default (null) first, named for what it takes once the count is known ("Default: Inputs 1 + 2"), then each input ("Input 1"...), each aligned pair ("Inputs 1 + 2"...), and a kept one the input does not have, marked "(not on this input)". | Studio's `studio-inputs.ts`                                                                                 |
+| `saved-input.ts`          | A remembered input found again: exact id, then the same name (never a loopback's), then nothing, so the caller takes the default. `isLoopbackLabel` spots PipeWire and PulseAudio monitors.                                                                                                                                                                                                                                                                                                                                                                                       | `src/lib/jam/jam-audio-source.ts`                                                                           |
+| `input-channels.ts`       | One channel of a multichannel capture, or an aligned pair of them: `splitChannels` (open, send a channel to a node, take a channel alone as mono, take a pair as one mono node at half each (`pair`, `take`), close only its own edge), `ChannelPick` and `defaultChannelPick` (PR 4), `isAvailablePick`, `channelPicks`, `captureChannelCount` (the track's count, else the source's, clamped at 32), `isAvailableChannel`, `loudestChannel`.                                                                                                                                    | `src/lib/guitar/recording-capture.ts`, `src/lib/jam/jam-input-monitor.ts`                                   |
+| `level-health.ts`         | How a block peak reads (clipping, hot, good, quiet, silent, noisy) against a noise floor that falls at once and rises over seconds.                                                                                                                                                                                                                                                                                                                                                                                                                                               | `src/lib/guitar/input-events.ts`                                                                            |
+| `fake-devices.fixture.ts` | A device list a test can plug into, and a capture track that fires `mute` and `ended`.                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            | `src/features/mic-check/fake-capture.fixture.ts`                                                            |
 
 Where rooms deliberately differ, each keeps its behaviour. Studio's list leaves
 the browser's role entries out ("Default input" stands for them); Jam keeps
@@ -52,19 +52,21 @@ Night's words ("the guitar").
   input of its own for one consumer at a time, by id only: a gone id opens the
   default. The input opens inside the press, before anything is awaited,
   because WebKit allows the microphone only there.
-- The recorder worklet hears one channel (`capture-input.ts`). A lane on one
-  channel of an interface gives it that channel alone. A lane on all of an
-  input gives it the whole capture, which Web Audio folds by its speaker
-  rules, and those mix only 2, 4 and 6 channels: stereo at half of each side,
-  four channels at a quarter each, six as 5.1 (the front pair at √½, the
-  centre whole, the surrounds at half, the fourth channel, its LFE, left out).
-  Any other count (3, 5, 7, 8 or more) keeps Input 1 alone and drops the rest,
-  so on such an interface "All inputs, mixed" records Input 1 only. This was
-  so before PR 3, which pins it (`studio-lane-input.spec.ts`) and leaves it
-  for the owner to decide.
+- The recorder worklet hears one channel (`capture-input.ts`), and the Studio
+  chooses it (`lane-channel.ts`): one input of the capture, or an aligned pair
+  summed at half each, as a DAW's record input does. Nothing mixes every
+  channel. A lane with no choice takes the default its input's channel count
+  makes (below). Before PR 4 that default was Web Audio's speaker fold, which
+  mixes only 2, 4 and 6 channels (stereo at half each side, four channels at
+  a quarter each, six as 5.1: the front pair at √½, the centre whole, the
+  surrounds at half, the fourth channel, its LFE, left out) and keeps input 1
+  alone of any other count. So the default changed for four- and six-channel
+  inputs only, which now record input 1. Where the browser does not say how
+  many channels it opened, the input still reaches the worklet as it is, and
+  the fold applies there.
 - Monitoring is the dry input at the lane's volume and pan, off unless asked
-  for (`input-monitor.ts`); a lane on one channel hears that channel alone,
-  from the same node as its take.
+  for (`input-monitor.ts`); a lane hears what it records, from the same node
+  as its take.
 - Each take is lined up by the round trip measured for its input
   (`micLatencyMsForDevice`, `micLatencyPathMsForDevice`), which the latency
   wizard measures (`src/features/mic-feedback/MicLatencyWizard.tsx`): the
@@ -74,18 +76,23 @@ Night's words ("the guitar").
   (`src/lib/studio/model/validation-values.ts`), so a song carrying a new lane
   field would not open in an older build.
 
-### A lane's own input
+### A lane's own input and channels
 
-PR 3 gave each lane an input of its own and one channel of it.
+PR 3 gave each lane an input of its own and one channel of it. PR 4 made its
+channels a DAW's: one input, or an aligned pair mixed to mono, and a default
+that says what it takes.
 
-- **The choice** is `{ deviceId, label, channel }`
+- **The choice** is `{ deviceId, label, channel, pair }`
   (`src/lib/studio/record/lane-inputs.ts`). A null `deviceId` follows the
-  Studio's input; a null `channel` takes all of the input, mixed; a channel is
-  0-based and shown 1-based ("Input 2"). It is the device's, never the song's:
-  kept under `mercurypitch.studio.lane-inputs` by song id and lane id, the 200
-  chosen last, and a song opened again forgets its lanes that are gone. A
-  lane with no choice records as every lane did before, and its header looks
-  as it did.
+  Studio's input. A null `channel` takes the default the input's count
+  makes; a channel is 0-based and shown 1-based ("Input 2"); with `pair`, the
+  channel and the next are mixed to mono at half each ("Inputs 1 + 2"), the
+  channel even. A row kept before pairs reads as one input, and a pair that
+  is not aligned reads as the default. The choice is the device's, never the
+  song's: kept under `mercurypitch.studio.lane-inputs` by song id and lane
+  id, the 200 chosen last, and a song opened again forgets its lanes that are
+  gone. A lane with no choice records as every lane did before, and its
+  header looks as it did.
 - **Arming** (`planStudioLaneInput`, called by `useStudioRecorder`'s
   `acquireMic`) finds the lane's input with `resolveDeviceId` (id, then name)
   in the device list the Studio already holds, refreshed at every
@@ -94,14 +101,30 @@ PR 3 gave each lane an input of its own and one channel of it.
   the press, which WebKit refuses. Before the browser names its inputs, the
   kept id is opened as it is. The input opens through the existing
   `MicManager.acquireFrom`; there is no new `getUserMedia`.
-- **The channel.** The recorder reads the capture's channel count from its
-  track (`getSettings().channelCount`). For a lane on a channel the capture
-  has, it splits the source (`openStudioLaneChannel` in `lane-channel.ts`:
-  `splitChannels(context, source, count)`, `open()`, `alone(channel)`) and
-  gives that mono node to both the recorder worklet and the lane's monitor:
-  the guitar raw, the monitor dry. The split closes with the arm. Every
-  capture the arm opens, including the fresh one after each take, listens on
-  that node (`armed.lane.input`), never on the whole source.
+- **The channels.** The recorder reads the capture's channel count from its
+  track (`getSettings().channelCount`) and takes the lane's pick where the
+  capture has it, else the default (`studioLaneRoute` and
+  `openStudioLaneChannel` in `lane-channel.ts`): the shared `splitChannels`,
+  `open()`, then `take(pick)`, which is `alone(channel)` for
+  one input and `pair(channel)` for two at half each. That one mono node
+  feeds both the recorder worklet and the lane's monitor: the guitar raw,
+  the monitor dry. The split closes with the arm. Every capture the arm
+  opens, including the fresh one after each take, listens on that node
+  (`armed.lane.input`), never on the whole source. One channel goes as it
+  is, with nothing split.
+- **The default**, from the count the capture reports at the arm
+  (`defaultChannelPick`):
+
+  | Channels     | A lane with no choice records                                 |
+  | ------------ | ------------------------------------------------------------- |
+  | 1            | Input 1, as it is                                             |
+  | 2            | Inputs 1 + 2, at half each: what the speaker fold gave before |
+  | 3 or more    | Input 1: the fold gave this for 3, 5, 7 and 8 or more before  |
+  | Not reported | The input as it is, folded by the worklet's input as before   |
+
+  Four channels were mixed at a quarter each before, and six as 5.1; both
+  now record input 1, as a DAW's default input would.
+
 - **Channel counts** are known only once an input has opened. The arm keeps
   the count by the input's id, with its name as the second key
   (`mercurypitch.studio.input-channels`, the 50 opened last), and the lane's
@@ -109,31 +132,59 @@ PR 3 gave each lane an input of its own and one channel of it.
   picker does not open the input to count them: that would end the Studio's
   other hold on the microphone, and WebKit keeps one capture at a time. It
   says "Arm this lane once to see this input's channels." instead.
-- **Fallbacks**, each said on the armed lane's card (`armedWords` in
-  `StudioRecordNotices.tsx`):
+- **What records, and the fallbacks**, each said on the armed lane's card
+  (`armedWords` in `StudioRecordNotices.tsx`). On an input of more than one
+  channel the card says what records: "Armed on Lane 2 with Input 2 of
+  Scarlett 2i2. Press Record to start.", or "with Inputs 1 + 2 of Scarlett
+  2i2, mixed."
 
-  | What happened                                                  | What the lane records     | The card says                                                                          |
-  | -------------------------------------------------------------- | ------------------------- | -------------------------------------------------------------------------------------- |
-  | The lane's own input is not in the list                        | All of the Studio's input | "Armed on Lane 2 with the Studio's input: Scarlett 2i2 is not connected."              |
-  | The input asked for was gone as it opened (the default opened) | All of the default        | "Armed on Lane 2 with the default input: Scarlett 2i2 is not connected."               |
-  | Both                                                           | All of the default        | "Armed on Lane 2 with the default input: Scarlett 2i2 and Desk mic are not connected." |
-  | The input has no such channel                                  | All of it, mixed          | "Armed on Lane 2. The input has no Input 3, so all of it records, mixed."              |
+  | What happened                                                  | What the lane records        | The card says                                                                                    |
+  | -------------------------------------------------------------- | ---------------------------- | ------------------------------------------------------------------------------------------------ |
+  | The lane's own input is not in the list                        | The Studio's input's default | "Armed on Lane 2 with the Studio's input: Scarlett 2i2 is not connected."                        |
+  | The input asked for was gone as it opened (the default opened) | The default's default        | "Armed on Lane 2 with the default input: Scarlett 2i2 is not connected."                         |
+  | Both                                                           | The default's default        | "Armed on Lane 2 with the default input: Scarlett 2i2 and Desk mic are not connected."           |
+  | The input has no such input                                    | Its default                  | "Armed on Lane 2. Scarlett 2i2 has no Input 3, so Inputs 1 + 2 record, mixed."                   |
+  | The input has no such pair                                     | Its default                  | "Armed on Lane 2. Desk mic has no Inputs 1 + 2, so Input 1 records."                             |
+  | The browser does not say how many channels it opened           | The input as it is           | "Armed on Lane 2. The browser does not say which inputs Scarlett 2i2 has, so all of it records." |
 
   A channel belongs to the input it was chosen on, so a lane that falls back
-  to another input records all of that one. While a lane's own input is gone,
+  to another input takes that one's default. While a lane's own input is gone,
   its Track details say "Scarlett 2i2 is not connected. Takes on Lane 2 record
   from the Studio's input until it is back."
 
 - **Where it is chosen.** Track details has an Input section
   (`src/features/studio/record/StudioLaneInputField.tsx`): the input, its
-  first row "Studio's input (Desk mic)", and a Channel select ("All inputs,
-  mixed", "Input 1", "Input 2"...) once the count is known and more than one.
-  On a computer and a tablet, a lane with an input or a channel of its own
-  shows a chip in its header ("In 2", or the input's first word), which opens
-  Track details at the Input section; a phone shows none, and its lanes'
-  inputs are in their details. A new input for the armed lane re-arms it. The
+  first row "Studio's input (Desk mic)", and a Channel select once the count
+  is known and more than one: "Default: Inputs 1 + 2" (or "Default: Input 1",
+  and plain "Default" before the count is known), "Input 1", "Input 2"...,
+  then "Inputs 1 + 2"... for the pairs the input has. On a computer and a
+  tablet, a lane with an input or channels of its own shows a chip in its
+  header ("In 2", "In 1+2", or the input's first word), which opens Track
+  details at the Input section; a phone shows none, and its lanes' inputs are
+  in their details. A new input or pick for the armed lane re-arms it. The
   arm moves to another lane with the input still open only when that lane's
-  input and channel are the same; otherwise it reopens.
+  input and channels are the same; otherwise it reopens.
+
+### Why a DAW's channels (PR 4)
+
+PR 3 offered "All inputs, mixed" beside each input, and its browser test found
+that Web Audio's fold, which made that mix, mixes only stereo, quad and 5.1
+and keeps input 1 of any other count. On 8 November 2026 the owner asked for
+robust input handling, as Reaper or a similar DAW does it. What DAWs do:
+
+- **Reaper.** The record input menu lists "Input: Mono > Input 1..N" and
+  "Input: Stereo > pairs". A track records exactly the input chosen, and its
+  button reads "Record input: Input 1".
+- **Ableton Live.** "Ext. In" offers mono channels "1", "2" and stereo pairs
+  "1/2", "3/4". A known pitfall: a single microphone on a stereo pair lands on
+  one side only, and the fix is the mono input.
+- **No DAW offers "all inputs mixed".**
+
+A Studio take is mono, so a lane takes one input, or an aligned pair mixed to
+mono at half each, and the routing is the Studio's own (`splitChannels` and
+its `pair`), never Web Audio's fold. The default is what a DAW user expects of
+each count, and what the Studio already did for 1, 2, 3, 5, 7 and 8 or more
+channels.
 
 ### Left where it is
 
@@ -163,8 +214,9 @@ Input code found while moving the code above, and not moved:
 
 ## How it will work
 
-An input per lane, kept on the device, and one channel of an interface are
-built (PR 3, "A lane's own input" above). What follows is still to come.
+An input per lane, kept on the device, and one input or an aligned pair of an
+interface's are built (PR 3 and PR 4, "A lane's own input and channels"
+above). What follows is still to come.
 
 ### The Inputs view
 
@@ -174,14 +226,15 @@ a clip light from `level-health.ts`. It says which lane uses which input, shows
 MIDI activity, and shows each input's latency status, measured or not, with the
 existing latency wizard one step away.
 
-From PR 3: `channelChoices` gives a channel's rows and their names, and
-`laneInputChannels` an input's count as an arm last found it. A count is known
-only once the input has opened; the view opens nothing on its own while
-another consumer holds the microphone. A meter per channel taps the same split
-a take uses (`send(channel, node)`), not a second capture. Where "All inputs,
-mixed" keeps Input 1 alone (3, 5, 7 or 8 or more channels, above), the view is
-the place to say so, or the owner may want that row to sum every channel
-evenly instead.
+What it can build on: `channelPicks(count)` lists an input's inputs and
+aligned pairs, `channelPickLabel` names them ("Input 2", "Inputs 1 + 2"),
+`defaultChannelPick(count)` says what a lane with no choice takes, and
+`channelChoices` gives a picker's rows with the default named. A lane's pick
+is `laneChannelPick(lane)`, and `laneInputChannels` gives an input's count as
+an arm last found it. A count is known only once the input has opened; the
+view opens nothing on its own while another consumer holds the microphone.
+A meter per input taps the same split a take uses (`send(channel, node)`, or
+`take(pick)` for a pair), not a second capture.
 
 ### Several lanes at once
 
@@ -196,7 +249,8 @@ song clock.
 
 From PR 3: the recorder builds one split per arm and closes it with the arm.
 Several lanes on one interface will share one capture and one split, each
-lane taking its own mono node from it (`alone`) for its take and its monitor.
+lane taking its own mono node from it (`take`: an input or a pair) for its
+take and its monitor.
 Every capture an arm reopens must listen on the lane's node, not the whole
 source (`armed.lane.input` in `studio-recorder.ts`): while PR 3 was written, the
 fresh capture after a take took the source and would have recorded every
@@ -222,10 +276,13 @@ MIDI clips are a much later feature.
    with no behaviour change.
 3. **An input per lane, kept on the device, and one interface channel** picked
    for a lane's capture and monitoring.
-4. **The Inputs view**: devices, a row per channel with a meter and clip light,
+4. **A DAW's channels**: one input or an aligned pair mixed to mono per lane,
+   the Studio's own routing in place of Web Audio's fold, and a default that
+   says what it takes.
+5. **The Inputs view**: devices, a row per channel with a meter and clip light,
    which lane uses what, MIDI activity, latency status with the latency wizard.
-5. **Several lanes recording at once.**
-6. **MIDI lanes kept as audio**, with the played notes kept beside them.
+6. **Several lanes recording at once.**
+7. **MIDI lanes kept as audio**, with the played notes kept beside them.
 
 ## Owner's decisions
 
@@ -249,7 +306,9 @@ MIDI clips are a much later feature.
   split (`studio-recorder.test-fixtures.ts`), and
   `useStudioRecorder.lane-input.test.ts` for the choice, its fallbacks and the
   re-arm. The store and the arm's plan are tested on plain values
-  (`lane-inputs.test.ts`), the Input section and the header chip as
+  (`lane-inputs.test.ts`, old rows included), the default table from 1 to 8
+  channels twice over (`input-channels.test.ts`, `lane-channel.test.ts`),
+  and the Input section, the header chip and the armed card's words as
   components.
 - In a browser, Chromium's fake capture (`--use-file-for-fake-audio-capture`,
   `src/e2e/helpers/tone-wav.ts`) gives one input playing a known file, as
@@ -259,14 +318,14 @@ MIDI clips are a much later feature.
   `getSettings().channelCount` 2, deviceId `default`, and each side's tone
   alone on its channel. So `studio-lane-input.spec.ts` plays 440 Hz on the
   left and 660 Hz on the right, and records a lane on Input 2 (the right-hand
-  tone at its full level, the left 275 dB down) and on all inputs (each at
-  half). The spec checks the count first, so a browser that hands the file
-  over folded fails there, not on the tones. CI's Playwright Chromium is an
-  older build than the one measured; the same spec runs there.
-- What the worklet keeps of a wider input is pinned on an
-  `OfflineAudioContext`, with the Studio's own split and the worklet's own
-  input settings: a chosen channel alone at 2, 3, 4, 5, 6 and 8 channels, and
-  the speaker rules' fold of all of them.
+  tone at its full level, the left 275 dB down), on Inputs 1 + 2 and on the
+  default (each at half), with the armed card's words. The spec checks the
+  count first, so a browser that hands the file over folded fails there, not
+  on the tones. It passes on CI's Playwright Chromium too.
+- What a take hears of a wider input is pinned on an `OfflineAudioContext`,
+  with the Studio's own split, default and worklet input settings: at 1 to 8
+  channels, each input alone, each aligned pair at half each, and the
+  default each count makes.
 - The fake capture cannot be more than two channels or a second device, so
   those are unit-tested on fake lists and graphs and checked by the owner on
   real hardware: a guitar on one input of an interface and a microphone on
