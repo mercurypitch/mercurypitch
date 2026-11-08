@@ -15,19 +15,6 @@ export interface CheckLine {
   text: string
 }
 
-/** A short tag for each kind of input. `other` says nothing rather than guess. */
-export const INPUT_KIND_LABEL: Record<InputKind, string> = {
-  'built-in': 'Built-in',
-  usb: 'USB',
-  bluetooth: 'Bluetooth',
-  headset: 'Headset',
-  camera: 'Webcam',
-  display: 'Display',
-  virtual: 'Virtual',
-  loopback: 'Loopback',
-  other: '',
-}
-
 /**
  * What to know about the kinds that explain a bad check on their own. Shown
  * beside the input being heard, and beside the system default, because those
