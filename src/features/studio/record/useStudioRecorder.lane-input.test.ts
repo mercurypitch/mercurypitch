@@ -5,6 +5,7 @@ import type { FakeMediaDevices } from '@/lib/audio-input/fake-devices.fixture'
 import { audioInput, fakeMediaDevices, } from '@/lib/audio-input/fake-devices.fixture'
 import type { ChannelPick } from '@/lib/audio-input/input-channels'
 import type { StudioProject } from '@/lib/studio/model/types'
+import { FOLLOW_STUDIO_INPUT } from '@/lib/studio/record/lane-inputs'
 import type { StudioInputOpened, StudioRecorderView, } from '@/lib/studio/record/studio-recorder'
 
 const mocks = vi.hoisted(() => ({
@@ -336,7 +337,7 @@ describe("a lane's own input", () => {
 
     hook.laneInputs.choose('lane-1', scarlett)
 
-    expect(hook.laneInputs.of('lane-1').deviceId).toBeNull()
+    expect(hook.laneInputs.of('lane-1')).toEqual(FOLLOW_STUDIO_INPUT)
   })
 
   it('keeps a lane its input on this device, and forgets a lane that is gone when the song opens again', async () => {
@@ -353,7 +354,7 @@ describe("a lane's own input", () => {
     const again = await mount([desk, interfaceIn], withoutKeys)
 
     expect(again.laneInputs.of('lane-1')).toEqual(scarlett)
-    expect(again.laneInputs.of('lane-3').deviceId).toBeNull()
+    expect(again.laneInputs.of('lane-3')).toEqual(FOLLOW_STUDIO_INPUT)
     expect(
       localStorage.getItem('mercurypitch.studio.lane-inputs'),
     ).not.toContain('lane-3')

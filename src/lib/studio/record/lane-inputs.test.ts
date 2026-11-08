@@ -138,6 +138,44 @@ describe('Studio lane inputs', () => {
       writeStudioLaneInput('song-1', 'lane-1', scarlett).get('lane-1'),
     ).toEqual(scarlett)
   })
+
+  it('keeps a MIDI lane its port by id and name, beside lanes on audio inputs', () => {
+    // Arrange
+    const keys = {
+      kind: 'midi' as const,
+      portId: 'port-7',
+      label: 'Keystation 49',
+    }
+
+    // Act
+    writeStudioLaneInput('song-1', 'lane-1', scarlett)
+    writeStudioLaneInput('song-1', 'lane-2', keys)
+
+    // Assert
+    expect(readStudioLaneInputs('song-1')).toEqual(
+      new Map<string, unknown>([
+        ['lane-2', keys],
+        ['lane-1', scarlett],
+      ]),
+    )
+  })
+
+  it('reads a row with no kind as an audio input, a MIDI row with no port and a kind it does not know as no choice', () => {
+    // Arrange, Act, Assert: rows kept before MIDI lanes had no kind.
+    expect(sanitizeStudioLaneInput(scarlett)).toEqual(scarlett)
+    expect(sanitizeStudioLaneInput({ ...scarlett, kind: 'audio' })).toEqual(
+      scarlett,
+    )
+    expect(
+      sanitizeStudioLaneInput({ kind: 'midi', portId: '', label: 'Keys' }),
+    ).toEqual(FOLLOW_STUDIO_INPUT)
+    expect(
+      sanitizeStudioLaneInput({ kind: 'midi', portId: 'port-7', label: 4 }),
+    ).toEqual({ kind: 'midi', portId: 'port-7', label: null })
+    expect(sanitizeStudioLaneInput({ ...scarlett, kind: 'osc' })).toEqual(
+      FOLLOW_STUDIO_INPUT,
+    )
+  })
 })
 
 describe('laneChannelPick', () => {
@@ -316,5 +354,15 @@ describe('sameStudioLaneInput', () => {
       ),
     ).toBe(false)
     expect(sameStudioLaneInput(FOLLOW_STUDIO_INPUT, scarlett)).toBe(false)
+  })
+
+  it('never moves an arm to or from a MIDI lane: each lane plays its own instrument', () => {
+    // Arrange
+    const keys = { kind: 'midi' as const, portId: 'port-7', label: null }
+
+    // Act, Assert
+    expect(sameStudioLaneInput(keys, keys)).toBe(false)
+    expect(sameStudioLaneInput(keys, FOLLOW_STUDIO_INPUT)).toBe(false)
+    expect(laneChannelPick(keys)).toBeNull()
   })
 })
