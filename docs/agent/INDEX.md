@@ -78,7 +78,7 @@ These are the rules that break things when ignored.
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 32.2k | The room's lit instruments, by the name each web instrument exports itself under (instrument-skin.ts). |
-| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 20.4k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
+| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 20.5k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 19.0k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 15.5k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 15.0k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
@@ -149,7 +149,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `studio` | [studio-recorder.ts](../../src/lib/studio/record/studio-recorder.ts) | 20.2k | Studio recorder — arm a lane, count in, record a take on the song's clock, and hand the finished take over to be kept Arming a lane opens... |
+| `studio` | [studio-recorder.ts](../../src/lib/studio/record/studio-recorder.ts) | 20.3k | Studio recorder — arm a lane, count in, record a take on the song's clock, and hand the finished take over to be kept Arming a lane opens... |
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.9k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
 | `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 6.0k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
@@ -169,9 +169,9 @@ These are the rules that break things when ignored.
 | `domain` | [performance-take.ts](../../src/lib/domain/performance-take.ts) | 1.1k | Performance Take — local replay and scored-result contract Hear Yourself still uses its original VoiceTake stores internally, but a kept... |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 1.1k | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
 | `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 1.1k | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
+| `audio-input` | [mic-roster.ts](../../src/lib/audio-input/mic-roster.ts) | 1.0k | Mic roster — every connected input, and which one is in charge `enumerateDevices()` answers "what is plugged in" in two dialects. |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |
 | `key-shift` | [key-shift-graph.ts](../../src/lib/key-shift/key-shift-graph.ts) | 1.0k | Key shift graph — routes audio buses through the key shifter Three buses: - pitched: everything that moves with the key → shifter P; - vo... |
-| `audio-input` | [mic-roster.ts](../../src/lib/audio-input/mic-roster.ts) | 900 | Mic roster — every connected input, and which one is in charge `enumerateDevices()` answers "what is plugged in" in two dialects. |
 | `tab` | [gp-to-midi-song.ts](../../src/lib/tab/gp-to-midi-song.ts) | 750 | Guitar Pro (.gp/.gp3/.gp4/.gp5/.gpx) → MidiSong mapping Pure mapping from an alphaTab Score into the app's existing MidiSong shape, so im... |
 | `portable` | [portable-audio.ts](../../src/lib/portable/portable-audio.ts) | 700 | ── Portable audio Turns a stored WAV stem into something small enough to send or to keep on a phone. |
 | `check-up` | [then-and-now.ts](../../src/lib/check-up/then-and-now.ts) | 500 | Weekly Check-up — then and now, from the voiceprint history What moved between a singer's first week of Check-ups and their latest, said... |
