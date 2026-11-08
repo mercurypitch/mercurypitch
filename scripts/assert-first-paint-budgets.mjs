@@ -385,7 +385,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // does: 157,694 bytes in build:e2e with it, 15,086 of them the film's two
   // chunks, kit/episode.ts (4,994) and lesson-04/film.ts with its chapters
   // and captions (10,092).
-  'learn/04.html': 155,
+  // Raised to 156 as the kit's staircase draws only while something it shows
+  // moves and takes new starts (Lesson 21's, on G2 or G4): 158,596 bytes
+  // before, 159,274 with it (stairs-core.ts), against 158,720 at 155.
+  'learn/04.html': 156,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
