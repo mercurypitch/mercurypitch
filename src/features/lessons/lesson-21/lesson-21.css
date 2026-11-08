@@ -167,6 +167,26 @@
   width: 88px;
   height: 120px;
 }
+/* Equal temperament's thirteen tiles, a semitone each and all one width:
+   chrome at rest, ink while its semitone sounds */
+.et-tile {
+  fill: rgba(195, 204, 214, 0.22);
+  stroke: var(--chrome);
+  stroke-width: 1px;
+}
+.et-tile.is-lit {
+  fill: var(--ink);
+  stroke: var(--ink);
+}
+@media (forced-colors: active) {
+  .et-tile {
+    fill: Canvas;
+    stroke: CanvasText;
+  }
+  .et-tile.is-lit {
+    fill: CanvasText;
+  }
+}
 
 /* ---------------------------------------------------------------- the stage */
 /* a figure label is one 16 px line (the stage budget counts on it) */

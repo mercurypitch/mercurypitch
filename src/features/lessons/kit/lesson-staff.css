@@ -66,16 +66,21 @@
 .st-sign {
   fill: var(--staff-head);
 }
-.st-head.is-lit {
+/* a key signature's sign lit with the note it covers takes the note's colour */
+.st-head.is-lit,
+.st-keysign.is-lit {
   fill: var(--staff-lit);
 }
-.st-head.is-amber {
+.st-head.is-amber,
+.st-keysign.is-amber {
   fill: var(--amber);
 }
-.st-head.is-blue {
+.st-head.is-blue,
+.st-keysign.is-blue {
   fill: var(--signal-blue);
 }
-.st-head.is-orange {
+.st-head.is-orange,
+.st-keysign.is-orange {
   fill: var(--orange);
 }
 .st-outline {
