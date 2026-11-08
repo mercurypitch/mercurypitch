@@ -206,3 +206,22 @@ describe('a staircase on other starts', () => {
     expect(stripWindow(50, 48)).toBe(stripWindow(62, C4))
   })
 })
+
+describe('a staircase of fewer stairs', () => {
+  it('draws five, do to so, each column the wider, with no brackets for Group', () => {
+    // Act: Lesson 16's, on G4 over C4, on a phone's figure
+    const five = stairsLayout('narrow', 356, 424, 67, C4, 5)
+    const eight = stairsLayout('narrow', 356, 424, 67, C4)
+
+    // Assert: the short stair from mi to fa a row, the others two
+    expect(five.stairs).toHaveLength(5)
+    expect(five.stairs[0].w).toBeCloseTo((eight.stairs[0].w * 8) / 5, 6)
+    expect(
+      five.stairs.map((st) =>
+        Math.round((five.stairs[0].top - st.top) / five.rowH),
+      ),
+    ).toEqual([0, 2, 4, 5, 7])
+    expect(five.brackets).toEqual([])
+    expect(eight.brackets).toHaveLength(2)
+  })
+})

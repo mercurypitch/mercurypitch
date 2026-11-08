@@ -81,7 +81,7 @@ function paintHairlines(
   if (strip === null) return
   scaleNotes(s.tonic).forEach((midi, i) => {
     const key = strip.key(midi)
-    if (key === null) return
+    if (key === null || i >= L.stairs.length) return
     const st = L.stairs[i]
     const lit = s.light(i)?.amount ?? 0
     ctx.strokeStyle = rgba(COLOR.chrome, 0.32 + 0.5 * lit)
@@ -99,7 +99,8 @@ function paintKeys(
   s: StairsScene,
 ): void {
   if (L.strip === null) return
-  const notes = scaleNotes(s.tonic)
+  // the keys of the stairs it draws
+  const notes = scaleNotes(s.tonic).slice(0, L.stairs.length)
   drawStrip(ctx, L.strip, {
     lit: (m) => notes.includes(m),
     label: (m) => (notes.includes(m) ? nameInScale(m, s.tonic) : null),
@@ -156,7 +157,7 @@ function paintRisers(
   L: StairsLayout,
   s: StairsScene,
 ): void {
-  MAJOR_STEPS.forEach((size, i) => {
+  MAJOR_STEPS.slice(0, L.stairs.length - 1).forEach((size, i) => {
     const r = riser(L, i)
     const gold = s.gold && size === 'S'
     ctx.strokeStyle = gold ? COLOR.gold : rgba(COLOR.chrome, 0.4)
@@ -191,7 +192,7 @@ function paintStepLabels(
   s: StairsScene,
 ): void {
   if (!s.steps || s.white > 0.5) return
-  MAJOR_STEPS.forEach((size, i) => {
+  MAJOR_STEPS.slice(0, L.stairs.length - 1).forEach((size, i) => {
     const gold = s.gold && size === 'S'
     // with Group on, the tone that joins the two groups speaks up
     const joint = i === 3 && s.group > 0.5
@@ -234,7 +235,7 @@ function paintHomes(
   const room = L.stairs[0].bottom - L.stairs[0].top
   const size =
     L.mode === 'compact' ? Math.min(18, L.rowH * 1.45) : Math.min(18, room - 4)
-  for (const i of [0, 7]) {
+  for (const i of [0, 7].filter((k) => k < L.stairs.length)) {
     const st = L.stairs[i]
     const lit = i === 7 ? s.home : 0
     const color = i === 7 && s.waiting ? rgba(COLOR.chrome, 0.6) : COLOR.ink
@@ -277,7 +278,7 @@ function paintOverlay(
   s: StairsScene,
 ): void {
   const keys = s.whiteFrom === null ? null : whiteKeysFrom(s.whiteFrom)
-  if (s.white <= 0 || keys === null) return
+  if (s.white <= 0 || keys === null || keys.length > L.stairs.length) return
   const pts = overlayPoints(L, keys)
   const sizes = stepSizes(keys)
   ctx.save()
@@ -378,7 +379,7 @@ function paintArrow(
   L: StairsLayout,
   s: StairsScene,
 ): void {
-  if (s.arrow <= 0) return
+  if (s.arrow <= 0 || L.stairs.length < 8) return
   const ti = L.stairs[6]
   const top = L.stairs[7]
   const x0 = ti.x + ti.w * 0.72

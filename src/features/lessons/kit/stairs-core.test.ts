@@ -158,3 +158,39 @@ describe('a still staircase', () => {
     expect(drawer.wants?.()).toBe(false)
   })
 })
+
+describe('a staircase of fewer stairs', () => {
+  it('lays out and draws five stairs, do to so, and lights them as a run plays', () => {
+    // Arrange: Lesson 16's, on G4, with things allowed to move so every part draws
+    still = false
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] })
+    const canvas = document.createElement('canvas')
+    document.body.replaceChildren(canvas)
+    core = mountStairs({
+      canvas,
+      compact: false,
+      active: () => true,
+      range: { lo: 67, hi: 67 },
+      names: () => 'solfege',
+      count: 5,
+    })
+    const drawer = drawers[drawers.length - 1]
+    core.set({ steps: true, home: true })
+
+    // Act: do to so, each stair lit as it sounds
+    void core.play(
+      [67, 69, 71, 72, 74].map((midi, i) => ({ midi, at: i * 0.6, dur: 0.5 })),
+      false,
+    )
+    const frames = (): void => {
+      for (let i = 0; i < 4; i++) drawer.draw(0, 0.05)
+    }
+    frames()
+    vi.advanceTimersByTime(1300)
+
+    // Assert
+    expect(frames).not.toThrow()
+    expect(core.layout?.stairs).toHaveLength(5)
+    expect(core.layout?.brackets).toEqual([])
+  })
+})

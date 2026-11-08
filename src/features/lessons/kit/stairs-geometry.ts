@@ -4,7 +4,8 @@
 //
 // Pitch is height (playbook rule 20): eight stairs, do to do, left to right,
 // each one row per semitone above do (0, 2, 4, 5, 7, 9, 11, 12), on faint
-// semitone rows. Three layouts of the one drawing:
+// semitone rows; a page may draw fewer, from do up (Lesson 16's five, do to
+// so), each column the wider. Three layouts of the one drawing:
 //
 // - wide: the stage on a desktop. All 25 rows from the floor, the C at or
 //   below the lowest start, stay put and the staircase climbs them as it
@@ -247,6 +248,7 @@ export function stairsLayout(
   H: number,
   start: number,
   floor: number,
+  count = MAJOR_DEGREES.length,
 ): StairsLayout {
   const s = specFor(mode, H)
   const rowH = (H - s.pad - s.stripH - s.drop - s.depth - s.top) / s.rows
@@ -258,9 +260,9 @@ export function stairsLayout(
   const yOfStair = (deg: number): number =>
     narrow ? s.top + rowH / 2 + (12 - deg) * rowH : yOfRow(start + deg)
   const { x0, x1 } = spanOf(mode, W)
-  const cw = (x1 - x0) / 8
+  const cw = (x1 - x0) / count
   const bottom = yOfStair(0) + rowH / 2 + s.depth
-  const stairs = MAJOR_DEGREES.map((deg, i): StairBox => {
+  const stairs = MAJOR_DEGREES.slice(0, count).map((deg, i): StairBox => {
     const top = yOfStair(deg) - rowH / 2
     const zoneTop = Math.min(top - 6, bottom - TARGET)
     const x = x0 + i * cw
@@ -272,7 +274,8 @@ export function stairsLayout(
       zone: { x, y: zoneTop, w: cw, h: bottom - zoneTop },
     }
   })
-  const brackets = [0, 1].map((g) => {
+  // Group's two groups of four need the whole octave
+  const brackets = (count < MAJOR_DEGREES.length ? [] : [0, 1]).map((g) => {
     const y = stairs[g * 4 + 3].top - 28
     return { y, zone: { x: x0 + g * 4 * cw, y: y - 30, w: 4 * cw, h: TARGET } }
   })

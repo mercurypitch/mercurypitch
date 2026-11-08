@@ -45,6 +45,27 @@
   outline: 2px solid var(--aqua);
   outline-offset: -2px;
 }
+/* the turn into the staff (stairs-turn.ts): a ghost of each stair travels
+   onto its note's head over the two figures, then goes; with motion paused
+   each is the head itself, fading in at its place */
+.stairs-turn {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.stairs-ghost {
+  position: absolute;
+  box-sizing: border-box;
+  border-top: 3px solid var(--chrome);
+  border-radius: 2px;
+  background: rgba(195, 204, 214, 0.28);
+}
+.stairs-ghost.is-head {
+  border: 0;
+  border-radius: 50%;
+  background: var(--staff-head, var(--chrome));
+}
 /* the readout sits in the drawing's top margin, clear of the stairs */
 .stairs-status {
   position: absolute;
