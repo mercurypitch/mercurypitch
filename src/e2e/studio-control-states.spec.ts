@@ -116,6 +116,15 @@ for (const theme of THEMES) {
     await expect(repeat).toHaveAttribute('aria-pressed', 'true')
     await page.mouse.move(2, 2)
     await expect.poll(() => paintedFill(repeat)).not.toBe(offFill)
+    // The fill fades over 0.12 s (StudioPage.module.css), toward the pressed
+    // and hovered tint as the click lands and then toward the pressed one as
+    // the pointer leaves: read it once the button's own fades are over, not
+    // as soon as it first differs from the unpressed look.
+    await repeat.evaluate((element) =>
+      Promise.all(
+        element.getAnimations().map((animation) => animation.finished),
+      ),
+    )
     const onFill = await paintedFill(repeat)
     // The fill is the state's mark: 3:1 from the unpressed look (WCAG 1.4.11).
     expect(await contrast(page, onFill, offFill)).toBeGreaterThanOrEqual(3)
