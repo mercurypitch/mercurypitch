@@ -516,9 +516,9 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // that plays Lesson 15's three notes, and the quick check on the kit's
   // quiz, the four words on the kit's words strip, Sing it on the kit's
   // sing flow, comfort check, voice choice and count-in, and free play on
-  // the circle: 197,268 bytes in build:e2e; a quarter over. Sing it opens
+  // the circle: 197,624 bytes in build:e2e; a quarter over. Sing it opens
   // no microphone, so nothing of the listener comes in.
-  'learn/21.html': 241,
+  'learn/21.html': 242,
   // Lesson 22, "Vibrato", a Season 2 page and a draft, built in every mode
   // as Lesson 3 is: its own module on the kit, carrying Season 2's map
   // (kit/season-2.ts) as a Season 2 page must, with Merc's vibrato option in
