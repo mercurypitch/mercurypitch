@@ -1,6 +1,7 @@
-// Studio lane channel — what a lane takes of its input by the count the capture reports: its own pick where the input has it, else the default (both sides of a stereo input, input 1 of any other), saying which pick was missing; and nothing taken where the count is not known.
-import { describe, expect, it } from 'vitest'
-import { reportedChannels, studioLaneRoute } from './lane-channel'
+// Studio lane channel — what a lane takes of its input by the count the capture reports: its own pick where the input has it, else the default (both sides of a stereo input, input 1 of any other), saying which pick was missing; and nothing taken where the count is not known; and an arm tapped for meters on its own split.
+import { describe, expect, it, vi } from 'vitest'
+import type { ChannelSplit } from '@/lib/audio-input/input-channels'
+import { reportedChannels, studioInputTap, studioLaneRoute, } from './lane-channel'
 
 const single = (channel: number) => ({ channel, pair: false })
 const pair = (channel: number) => ({ channel, pair: true })
@@ -70,5 +71,52 @@ describe('reportedChannels', () => {
     expect(reportedChannels(stream({ channelCount: 64 }))).toBe(32)
     expect(reportedChannels(stream({}))).toBeNull()
     expect(reportedChannels(stream({ channelCount: 0 }))).toBeNull()
+  })
+})
+
+describe('studioInputTap', () => {
+  const track = { id: 'track' } as unknown as MediaStreamTrack
+  const armedOn = (split: ChannelSplit | null, channels: number | null) => {
+    const source = { connect: vi.fn(), disconnect: vi.fn() }
+    const armed = {
+      context: {} as BaseAudioContext,
+      source: source as unknown as AudioNode,
+      stream: { getAudioTracks: () => [track] } as unknown as MediaStream,
+      lane: {
+        split,
+        input: source as unknown as AudioNode,
+        channels,
+        pick: null,
+        missing: null,
+      },
+    }
+    return { armed, source }
+  }
+
+  it("meters beside the take on the arm's own split, and names the input by its track", () => {
+    const split = { send: vi.fn(), unsend: vi.fn() } as unknown as ChannelSplit
+    const { armed, source } = armedOn(split, 2)
+    const meter = {} as AudioNode
+
+    const tap = studioInputTap(armed)
+    tap.send(1, meter)
+    tap.unsend(1, meter)
+
+    expect(split.send).toHaveBeenCalledExactlyOnceWith(1, meter)
+    expect(split.unsend).toHaveBeenCalledExactlyOnceWith(1, meter)
+    expect(source.connect).not.toHaveBeenCalled()
+    expect(tap).toMatchObject({ channels: 2, track })
+  })
+
+  it('meters the input as it is where one channel left nothing to split', () => {
+    const { armed, source } = armedOn(null, 1)
+    const meter = {} as AudioNode
+
+    const tap = studioInputTap(armed)
+    tap.send(0, meter)
+    tap.unsend(0, meter)
+
+    expect(source.connect).toHaveBeenCalledExactlyOnceWith(meter)
+    expect(source.disconnect).toHaveBeenCalledExactlyOnceWith(meter)
   })
 })

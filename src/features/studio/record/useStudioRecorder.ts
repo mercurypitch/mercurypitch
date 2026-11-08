@@ -640,6 +640,8 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     setSettings,
     /** The browser's audio inputs, named once the page may use the microphone. */
     inputs: inputs.devices,
+    /** List the inputs again: after the page was let use the microphone, say. */
+    refreshInputs: inputs.refresh,
     /** The chosen input was not connected at the arm: the default records instead. */
     inputMissing: lanes.inputMissing,
     chooseInput,
@@ -649,7 +651,13 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       choose: chooseLaneInput,
       channels: lanes.channels,
       studioInputName: lanes.studioInputName,
+      /** Every input's channel count found on this device. */
+      counts: lanes.counts,
+      /** Keep the channel count of an input opened elsewhere: the Inputs view's check. */
+      remember: lanes.remember,
     },
+    /** The armed input for meters beside the take, on the arm's own split; null while none is armed. */
+    inputTap: () => recorder.inputTap(),
     /** What the last arm opened: what records, and what opened in place of what its lane asked for. */
     armedInput: lanes.armed,
     /** Punch, on the transport: Record keeps only the range. */

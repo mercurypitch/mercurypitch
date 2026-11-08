@@ -14,6 +14,8 @@
 // arm says so (StudioInputOpened). Where the browser does not say the count,
 // the input goes as it is, and the recorder's one-channel input folds it
 // (capture-input.ts).
+import type { ChannelTap } from '@/lib/audio-input/channel-meters'
+import { sourceTap } from '@/lib/audio-input/channel-meters'
 import type { ChannelPick, ChannelSplit, } from '@/lib/audio-input/input-channels'
 import { captureChannelCount, defaultChannelPick, isAvailablePick, splitChannels, } from '@/lib/audio-input/input-channels'
 import type { StudioInputOpened } from './recorder-types'
@@ -70,4 +72,35 @@ export function openStudioLaneChannel(
   const split = splitChannels(context, source, channels)
   split.open()
   return { split, input: split.take(taken), channels, pick: taken, missing }
+}
+
+/** The armed input as meters beside the take hear it, and the track that names it. */
+export interface StudioInputTap extends ChannelTap {
+  /** The input's channels as its track reports them; null where the browser does not say. */
+  readonly channels: number | null
+  /** The capture's track, which says which input the arm opened (trackIdentity). */
+  readonly track: MediaStreamTrack | null
+}
+
+/**
+ * A tap on an arm's input for meters that listen beside the take: on the
+ * arm's own split, or on the input as it is when it has one channel, never
+ * on a capture of their own.
+ */
+export function studioInputTap(armed: {
+  readonly context: BaseAudioContext
+  readonly source: AudioNode
+  readonly stream: MediaStream
+  readonly lane: StudioLaneChannel
+}): StudioInputTap {
+  const { split, channels } = armed.lane
+  const tap: ChannelTap =
+    split === null
+      ? sourceTap(armed.context, armed.source)
+      : { context: armed.context, send: split.send, unsend: split.unsend }
+  return {
+    ...tap,
+    channels,
+    track: armed.stream.getAudioTracks?.()[0] ?? null,
+  }
 }
