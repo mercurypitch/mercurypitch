@@ -128,8 +128,10 @@
 .steps-stage .toy .eyebrow {
   line-height: 16px;
 }
-/* the staircase or the circle beside the staff, side by side while the
-   stage is wide, one above the other in the deck */
+/* the circle beside the staff, side by side while the stage is wide, one
+   above the other in the deck; the staircase over the staff at every width,
+   since eight stairs in half the stage card came out narrower than a
+   fingertip's 44 px on every tablet and laptop (learn-stage-fit.spec.ts) */
 .l21-pair {
   display: grid;
   grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
@@ -142,6 +144,37 @@
 @media (max-width: 960px), (max-height: 560px) {
   .l21-pair {
     grid-template-columns: minmax(0, 1fr);
+  }
+}
+.l21-stairs .l21-pair {
+  grid-template-columns: minmax(0, 1fr);
+}
+/* the staff under the staircase needs no more than its notes' room; the
+   staircase keeps at least 210 px, so its stairs still climb, and a stage
+   too short for all of it scrolls inside itself (kit/lesson-stage.css) */
+.l21-stairs .stairs-viz {
+  --viz-min: 210px;
+}
+@media (min-width: 561px) {
+  .l21-stairs .l21-pair > .staff-viz {
+    height: 150px;
+  }
+}
+@media (min-width: 961px) and (max-height: 720px) {
+  .l21-stairs .l21-pair > .staff-viz {
+    height: 116px;
+  }
+}
+/* on a phone the two figures stand one above the other, each the card's
+   whole width (.viz.wide), and keep every step's stage under the 786 px
+   the masthead leaves at 390 x 844: Step 1's, the staircase over the staff
+   and three rows of controls, is the tallest, 764 px */
+@media (max-width: 560px) {
+  .l21-stairs .stairs-viz {
+    height: 300px;
+  }
+  .l21-pair > .staff-viz {
+    height: 160px;
   }
 }
 /* Find do's line under its staff */

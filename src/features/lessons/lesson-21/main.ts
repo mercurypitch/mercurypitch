@@ -44,6 +44,7 @@ import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initSteps, TOYS } from './steps'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -52,13 +53,13 @@ initSoundSwitch()
 initMotionSwitch()
 Motion.init()
 
-// five steps on four toys: the staircase, the circle with the staff (Steps
-// 2 and 3), Find do and the circle's walk
-const TOYS: Readonly<Record<number, number>> = { 1: 1, 2: 2, 3: 2, 4: 3, 5: 4 }
+// five steps on four toys (steps.ts), mounted before the deck starts, so
+// an address that names a step opens it
 const deck = createStepDeck({
   toyFor: (step) => TOYS[step] ?? 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
+initSteps(deck)
 deck.start()
 
 // the next lesson's card first: the explorer binds its link to the map

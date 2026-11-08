@@ -15,6 +15,10 @@ import { resolve } from 'node:path'
 import { vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { Sound } from '@/features/lessons/kit/sound'
+import type { StepDeck } from '@/features/lessons/kit/step-deck'
+import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import type { Steps } from './steps'
+import { initSteps, TOYS } from './steps'
 
 /** learn/21.html, as the repository has it. */
 export const PAGE = readFileSync(
@@ -50,4 +54,20 @@ export const words = (e: Element | null | undefined): string =>
 /** Lets the promises the page awaits settle. */
 export const settle = async (): Promise<void> => {
   for (let i = 0; i < 6; i++) await Promise.resolve()
+}
+
+/**
+ * The page's deck with its four toys mounted as the page mounts them,
+ * opened on step 1 as the page opens it.
+ */
+export function mountSteps(): StepDeck & { readonly steps: Steps } {
+  loadPage()
+  vi.spyOn(window, 'scrollTo').mockImplementation(() => undefined)
+  const deck = createStepDeck({
+    toyFor: (step) => TOYS[step] ?? 1,
+    after: { label: 'Sing it', selector: '#sing' },
+  })
+  const steps = initSteps(deck)
+  deck.start()
+  return Object.assign(deck, { steps })
 }
