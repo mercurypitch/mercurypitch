@@ -150,6 +150,8 @@ export interface ChannelSplit {
   pair(channel: number): GainNode
   /** A pick as one mono node: its channel alone, or its pair. */
   take(pick: ChannelPick): GainNode
+  /** Take a node `take`, `alone` or `pair` made off the split again, leaving the others fed. */
+  drop(node: AudioNode): void
   /** Take the split out: its edge from the source, if it was fed, then its outlets. */
   close(): void
 }
@@ -197,6 +199,13 @@ export function splitChannels(
     alone,
     pair,
     take: (pick) => (pick.pair ? pair(pick.channel) : alone(pick.channel)),
+    drop(node) {
+      try {
+        splitter.disconnect(node)
+      } catch {
+        // Not taken from this split, or the split is already closed.
+      }
+    },
     close() {
       if (opened) {
         try {
