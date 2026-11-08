@@ -13,6 +13,14 @@
 // The split adds one edge to the source and only ever takes that edge away,
 // because the source usually belongs to someone else: a listening
 // controller that may already have released it.
+//
+// A mono signal is taken from a capture the way a DAW's record input is
+// (Reaper's Mono and Stereo inputs, Ableton's "1", "2" and "1/2"): one
+// channel, or an aligned pair, 1 and 2 or 3 and 4, summed at half each.
+// Nothing mixes every channel. Web Audio's own downmix, a node of fewer
+// channels than its input, mixes only stereo, quad and 5.1 and keeps the
+// first channel of any other count, so the mixing is done here, never left
+// to it.
 
 /** Web Audio's ceiling for a ChannelSplitterNode, so for any input's channels. */
 export const MAX_INPUT_CHANNELS = 32
@@ -55,6 +63,63 @@ export function isAvailableChannel(
   )
 }
 
+/**
+ * Which channels of a capture make one mono signal: `channel` alone, or an
+ * aligned pair (`channel` even, and the one after it) summed at half each.
+ * 0-based.
+ */
+export interface ChannelPick {
+  readonly channel: number
+  readonly pair: boolean
+}
+
+/**
+ * What a mono take hears of a capture nobody chose channels for: both
+ * sides of a stereo input at half each, and the first channel of any other.
+ * An input of three or more channels is an interface, where each channel
+ * is something else plugged in, and none of them is mixed in unasked.
+ */
+export function defaultChannelPick(channelCount: number): ChannelPick {
+  return { channel: 0, pair: channelCount === 2 }
+}
+
+/** Whether a capture of `channelCount` channels has `pick`: its channel, or both of its aligned pair. */
+export function isAvailablePick(
+  pick: ChannelPick,
+  channelCount: number,
+): boolean {
+  if (!pick.pair) return isAvailableChannel(pick.channel, channelCount)
+  return (
+    pick.channel % 2 === 0 &&
+    isAvailableChannel(pick.channel, channelCount) &&
+    isAvailableChannel(pick.channel + 1, channelCount)
+  )
+}
+
+/** Every pick a capture of `channelCount` channels offers: each channel, then each aligned pair. */
+export function channelPicks(channelCount: number): ChannelPick[] {
+  const count = Math.min(
+    Math.max(0, Math.floor(channelCount)),
+    MAX_INPUT_CHANNELS,
+  )
+  const picks: ChannelPick[] = []
+  for (let channel = 0; channel < count; channel += 1)
+    picks.push({ channel, pair: false })
+  for (let channel = 0; channel + 1 < count; channel += 2)
+    picks.push({ channel, pair: true })
+  return picks
+}
+
+/** Whether two picks take the same channels; null is nobody's choice. */
+export function samePick(
+  a: ChannelPick | null,
+  b: ChannelPick | null,
+): boolean {
+  return a === null || b === null
+    ? a === b
+    : a.channel === b.channel && a.pair === b.pair
+}
+
 /** Loudest channel, for "your guitar is on input 2". Null when all silent. */
 export function loudestChannel(
   levels: readonly number[],
@@ -79,6 +144,10 @@ export interface ChannelSplit {
   send(channel: number, target: AudioNode): void
   /** One channel as a node of its own: mono, never mixed with the others. */
   alone(channel: number): GainNode
+  /** `channel` and the one after it as one mono node: the two summed at half each, the others left out. */
+  pair(channel: number): GainNode
+  /** A pick as one mono node: its channel alone, or its pair. */
+  take(pick: ChannelPick): GainNode
   /** Take the split out: its edge from the source, if it was fed, then its outlets. */
   close(): void
 }
@@ -95,6 +164,19 @@ export function splitChannels(
 ): ChannelSplit {
   const splitter = context.createChannelSplitter(channelCount)
   let opened = false
+  // Everything stays inside this function: a browser test hands it to a
+  // page as its text (studio-lane-input.spec.ts).
+  const mono = (channels: readonly number[], gain: number) => {
+    const node = context.createGain()
+    node.channelCount = 1
+    node.channelCountMode = 'explicit'
+    node.channelInterpretation = 'discrete'
+    if (gain !== 1) node.gain.value = gain
+    for (const channel of channels) splitter.connect(node, channel, 0)
+    return node
+  }
+  const alone = (channel: number) => mono([channel], 1)
+  const pair = (channel: number) => mono([channel, channel + 1], 0.5)
   return {
     open() {
       source.connect(splitter)
@@ -103,14 +185,9 @@ export function splitChannels(
     send(channel, target) {
       splitter.connect(target, channel, 0)
     },
-    alone(channel) {
-      const mono = context.createGain()
-      mono.channelCount = 1
-      mono.channelCountMode = 'explicit'
-      mono.channelInterpretation = 'discrete'
-      splitter.connect(mono, channel, 0)
-      return mono
-    },
+    alone,
+    pair,
+    take: (pick) => (pick.pair ? pair(pick.channel) : alone(pick.channel)),
     close() {
       if (opened) {
         try {

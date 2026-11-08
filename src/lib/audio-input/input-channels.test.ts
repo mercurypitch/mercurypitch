@@ -1,7 +1,7 @@
-// Input channels tests — a split feeds nothing until it is opened, takes one channel alone and takes away only its own edge; a channel is one the capture has; the count falls back and clamps; the loudest channel is named only above the floor.
+// Input channels tests — a split feeds nothing until it is opened, takes one channel alone or an aligned pair at half each, and takes away only its own edge; a channel or a pair is one the capture has; a capture nobody chose for takes both sides of a stereo input and the first channel of any other; the count falls back and clamps; the loudest channel is named only above the floor.
 
 import { describe, expect, it, vi } from 'vitest'
-import { captureChannelCount, isAvailableChannel, loudestChannel, splitChannels, } from './input-channels'
+import { captureChannelCount, channelPicks, defaultChannelPick, isAvailableChannel, isAvailablePick, loudestChannel, samePick, splitChannels, } from './input-channels'
 
 class FakeNode {
   connect = vi.fn()
@@ -12,6 +12,7 @@ class FakeGain extends FakeNode {
   channelCount = 2
   channelCountMode: ChannelCountMode = 'max'
   channelInterpretation: ChannelInterpretation = 'speakers'
+  gain = { value: 1 }
 }
 
 /** A context that hands out nodes recording how they were wired. */
@@ -78,6 +79,43 @@ describe('splitChannels', () => {
     expect(graph.splitter.connect).toHaveBeenCalledExactlyOnceWith(mono, 1, 0)
   })
 
+  it('takes one channel exactly as it came, at its own level', () => {
+    // Arrange
+    const graph = fakeGraph()
+    const split = graph.split(4)
+
+    // Act
+    const mono = split.take({ channel: 3, pair: false }) as unknown as FakeGain
+
+    // Assert
+    expect(mono.gain.value).toBe(1)
+    expect(graph.splitter.connect).toHaveBeenCalledExactlyOnceWith(mono, 3, 0)
+  })
+
+  it('takes an aligned pair as one mono node, the two at half each and the others left out', () => {
+    // Arrange
+    const graph = fakeGraph()
+    const split = graph.split(4)
+
+    // Act
+    const pair = split.pair(2) as unknown as FakeGain
+    const taken = split.take({ channel: 0, pair: true }) as unknown as FakeGain
+
+    // Assert
+    for (const mono of [pair, taken]) {
+      expect(mono.channelCount).toBe(1)
+      expect(mono.channelCountMode).toBe('explicit')
+      expect(mono.channelInterpretation).toBe('discrete')
+      expect(mono.gain.value).toBe(0.5)
+    }
+    expect(graph.splitter.connect.mock.calls).toEqual([
+      [pair, 2, 0],
+      [pair, 3, 0],
+      [taken, 0, 0],
+      [taken, 1, 0],
+    ])
+  })
+
   it('takes away only its own edge from a source its owner already let go', () => {
     // Arrange
     const graph = fakeGraph()
@@ -126,6 +164,72 @@ describe('isAvailableChannel', () => {
 
   it('refuses every channel of a capture wider than a split can address', () => {
     expect(isAvailableChannel(0, 33)).toBe(false)
+  })
+})
+
+describe('defaultChannelPick', () => {
+  it('takes both sides of a stereo input at half each, and the first channel of any other', () => {
+    // A DAW mixes no interface's inputs unasked: input 1 of three or more.
+    const table = [1, 2, 3, 4, 5, 6, 7, 8].map((count) => [
+      count,
+      defaultChannelPick(count),
+    ])
+
+    expect(table).toEqual([
+      [1, { channel: 0, pair: false }],
+      [2, { channel: 0, pair: true }],
+      [3, { channel: 0, pair: false }],
+      [4, { channel: 0, pair: false }],
+      [5, { channel: 0, pair: false }],
+      [6, { channel: 0, pair: false }],
+      [7, { channel: 0, pair: false }],
+      [8, { channel: 0, pair: false }],
+    ])
+  })
+})
+
+describe('isAvailablePick', () => {
+  it('accepts a channel the capture has, and an aligned pair it has both of', () => {
+    expect(isAvailablePick({ channel: 1, pair: false }, 2)).toBe(true)
+    expect(isAvailablePick({ channel: 0, pair: true }, 2)).toBe(true)
+    expect(isAvailablePick({ channel: 2, pair: true }, 4)).toBe(true)
+    expect(isAvailablePick({ channel: 30, pair: true }, 32)).toBe(true)
+  })
+
+  it('refuses a pair past the count, one that is not aligned, and a channel it does not have', () => {
+    expect(isAvailablePick({ channel: 0, pair: true }, 1)).toBe(false)
+    expect(isAvailablePick({ channel: 2, pair: true }, 3)).toBe(false)
+    expect(isAvailablePick({ channel: 1, pair: true }, 4)).toBe(false)
+    expect(isAvailablePick({ channel: 2, pair: false }, 2)).toBe(false)
+    expect(isAvailablePick({ channel: 0, pair: true }, 33)).toBe(false)
+  })
+})
+
+describe('channelPicks', () => {
+  it('offers each channel, then each aligned pair the capture has', () => {
+    const named = (count: number) =>
+      channelPicks(count).map(
+        ({ channel, pair }) => `${channel}${pair ? '+' : ''}`,
+      )
+
+    expect(named(0)).toEqual([])
+    expect(named(1)).toEqual(['0'])
+    expect(named(2)).toEqual(['0', '1', '0+'])
+    expect(named(3)).toEqual(['0', '1', '2', '0+'])
+    expect(named(4)).toEqual(['0', '1', '2', '3', '0+', '2+'])
+  })
+})
+
+describe('samePick', () => {
+  it('matches the same channels, and nobody’s choice only to itself', () => {
+    expect(
+      samePick({ channel: 0, pair: true }, { channel: 0, pair: true }),
+    ).toBe(true)
+    expect(
+      samePick({ channel: 0, pair: true }, { channel: 0, pair: false }),
+    ).toBe(false)
+    expect(samePick(null, null)).toBe(true)
+    expect(samePick(null, { channel: 0, pair: false })).toBe(false)
   })
 })
 
