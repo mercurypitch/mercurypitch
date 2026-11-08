@@ -511,8 +511,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // shell: 88,379 bytes in build:e2e, the smallest whole KB above, to rise
   // as each part joins. Raised to 151 with the five steps on their four
   // toys (the staircase, the circle and the staff, Find do and the walk):
-  // 153,766 bytes.
-  'learn/21.html': 151,
+  // 153,766 bytes. Raised to 179 with the cold open and the two quizzes,
+  // the recall from Lessons 6 and 15 and the quick check: 183,134 bytes, of
+  // which the kit's quiz, the three lessons' questions and Lesson 15's
+  // recall, the slot that plays its three notes, are 19,556.
+  'learn/21.html': 179,
   // Lesson 22, "Vibrato", a Season 2 page and a draft, built in every mode
   // as Lesson 3 is: its own module on the kit, carrying Season 2's map
   // (kit/season-2.ts) as a Season 2 page must, with Merc's vibrato option in
@@ -709,8 +712,10 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // @font-face rules; the smallest whole KB above, to rise as each part
   // joins, the guide's and the voice lessons' sheets with the recall and
   // Sing it. Raised to 86 with the circle toy's sheet and the staff toy's
-  // key signatures and outlines: 87,228 bytes.
-  'learn/21.html': 86,
+  // key signatures and outlines: 87,228 bytes. Raised to 87 with the
+  // guide's sheet, which joins with the recall, and the cold open's small
+  // staircases and phone row: 88,611 bytes.
+  'learn/21.html': 87,
   // Lesson 22 (a draft, as above), with its steps, its cold open, its two
   // quizzes, its four words, Sing it and the Wrap: 89,928 bytes in
   // build:e2e, the kit's sheets (the voice lessons' in the chunk Sing it

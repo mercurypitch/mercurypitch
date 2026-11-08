@@ -93,6 +93,23 @@
   width: 132px;
   height: 44px;
 }
+/* a stair a note, each as high as its semitones above do: a semitone's
+   riser half a tone's, its stair edged in ink, no colour of its own */
+.mini-stair {
+  fill: rgba(195, 204, 214, 0.22);
+  stroke: var(--chrome);
+  stroke-width: 1px;
+}
+.mini-stair.is-semi {
+  stroke: var(--ink);
+  stroke-width: 1.5px;
+}
+@media (forced-colors: active) {
+  .mini-stair {
+    fill: Canvas;
+    stroke: CanvasText;
+  }
+}
 @media (max-width: 1080px) {
   .l21-duo {
     --merc: clamp(120px, 20vw, 190px);
@@ -115,6 +132,34 @@
   .l21-duo .hero-ring {
     grid-column: 1 / -1;
   }
+  /* the kit shares the row out among the plays' buttons; here each button
+     stands in a column over its staircase, so the column takes the share,
+     or the button would grow 140 px tall down it. D major takes a row of
+     its own and the two A major plays share the next, their staircases
+     side by side, until the row is too narrow for both */
+  .l21-hero .play-col {
+    flex: 1 1 160px;
+    align-items: stretch;
+  }
+  .l21-hero .play-col:first-child {
+    flex-basis: 100%;
+  }
+  .l21-hero .play-col .btn {
+    flex: none;
+  }
+  .l21-hero .play-col .mini-stairs {
+    align-self: center;
+  }
+}
+
+/* ---------------------------------------------------------------- the recall */
+/* Lesson 15's question keeps its slot: its small treble staff, beside its
+   play, with no pitch line */
+.l15-quiz-staff {
+  display: block;
+  width: 168px;
+  height: 64px;
+  margin-top: 8px;
 }
 
 /* ---------------------------------------------------------------- four words */
