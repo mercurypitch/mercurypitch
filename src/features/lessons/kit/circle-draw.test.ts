@@ -57,6 +57,37 @@ describe('drawCircle', () => {
     expect(el.querySelectorAll('circle.ci-bead.is-lit')).toHaveLength(1)
   })
 
+  it('draws a figure with no room yet at its centre, never with a negative radius', () => {
+    // Arrange: a box half a pixel tall, as a figure measures before its
+    // first layout; the circle of fifths and the ring by semitones
+    const beads: BeadView[] = Array.from({ length: 12 }, (_, pc) => ({
+      pc,
+      angle: angleOf(pc),
+      look: 'rest',
+      names: [],
+      big: true,
+    }))
+    const scenes: CircleScene[] = [
+      fifthsScene(),
+      { beads, fifths: false, house: null, thread: [], gap: null },
+    ]
+
+    for (const scene of scenes) {
+      const el = figure()
+
+      // Act
+      const L = drawCircle(el, scene, { w: 358, h: 0.5 })
+
+      // Assert
+      expect(L.r).toBe(0)
+      const radii = Array.from(el.querySelectorAll('circle'), (c) =>
+        Number(c.getAttribute('r')),
+      )
+      expect(radii.length).toBeGreaterThan(12)
+      expect(radii.every((r) => r >= 0)).toBe(true)
+    }
+  })
+
   it('names every key outside the ring, the bottom three twice, the sharp name over the flat', () => {
     // Arrange
     const el = figure()

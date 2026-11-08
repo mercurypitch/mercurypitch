@@ -86,7 +86,10 @@ export function layoutCircle(
   const bead = s.fifths
     ? Math.max(8, Math.min(15, r0 * 0.12))
     : Math.max(least, Math.min(22, r0 * 0.17))
-  const r = r0 - bead * (s.fifths ? 1.1 : 1.45)
+  // a figure measured before it has room, a pixel tall on its first frame,
+  // keeps its ring at the centre until the next draw: a negative radius is
+  // an error in every browser
+  const r = Math.max(0, r0 - bead * (s.fifths ? 1.1 : 1.45))
   const cx = w / 2
   const cy = h / 2
   return { cx, cy, r, bead, at: (a) => onRing(cx, cy, r, a) }
