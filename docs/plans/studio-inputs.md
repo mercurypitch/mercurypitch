@@ -304,7 +304,7 @@ keeps the notes played into the take beside its audio.
 | `src/lib/studio/record/take-notes.ts`                     | A note `{ midi, velocity, startFrame, endFrame }`, the log of notes as they sound, and a take's notes placed on the song as its audio is.                 |
 | `src/db/services/studio-take-notes.ts`                    | The notes kept on this device by the take's id (`studioTakeNotes`, database v15), gone with the take's audio and its song.                                |
 | `src/features/studio/record/midi/studio-midi-access.ts`   | The Studio's one MIDI access, asked for from a press only: its state and its ports.                                                                       |
-| `src/features/studio/record/midi/studio-midi-sound(s).ts` | Which sound a lane plays, from its instrument, and the sounds themselves, loaded with import() and made once per clock.                                   |
+| `src/features/studio/record/midi/studio-midi-sound(s).ts` | Which sound a lane plays, from its instrument, and the sounds themselves, loaded with import() and made for each arm (PR 7).                              |
 | `src/features/studio/record/midi/studio-midi-arm.ts`      | A MIDI lane's arm: its port, its sound on the clock, every note logged.                                                                                   |
 | `src/features/studio/record/midi/studio-midi-lanes.ts`    | The recorder hook's MIDI side: the arm, which MIDI lane is armed, and a kept take's notes.                                                                |
 | `src/features/studio/inputs/StudioMidiInputs.tsx`         | The Inputs view's MIDI section: each port with a light while it plays and the lanes it plays.                                                             |
@@ -435,8 +435,92 @@ has changed: the recorder's existing tests pass unchanged.
 - **Size.** `studio-recorder.ts` went from 765 lines to 643, with the lane
   arms, the run and a lane's take in modules of their own.
 
+**Arming several lanes and recording them (PR 7, part 2).** The Studio
+works as a DAW does: each lane's arm is its own, one Record press records
+every armed lane on the one song clock, and each lane keeps its own take as a
+clip on its own lane. These are the design decisions, and why each was
+chosen.
+
+| File                                                   | What it does                                                                                                  |
+| ------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------- |
+| `src/features/studio/record/studio-mic-share.ts`       | The one audio input every armed audio lane records from, opened once and held until its last lane lets go.    |
+| `src/features/studio/record/record-lanes.ts`           | Each armed lane as the timeline and the arm buttons read it: its level and take, woken by its own lane alone. |
+| `src/features/studio/record/midi/studio-midi-lanes.ts` | Each MIDI lane's arm, with a sound and a note log of its own, and one lane per port.                          |
+
+1. **One audio input at a time, for every armed audio lane.** Reaper, Logic
+   and Ableton record from one audio device, or from an aggregate the
+   operating system makes of several: two devices run on clocks of their own
+   and drift apart, and WebKit keeps one capture anyway. So every armed audio
+   lane is handed the one stream MicManager opened, and they share one split,
+   each lane taking its own input or pair. A lane whose input is another
+   device is refused in words that name both: "Lane 3 records from Webcam,
+   and Lane 1 is armed on Scarlett 2i2. Studio records from one audio input
+   at a time: disarm Lane 1, or choose Scarlett 2i2 for Lane 3." Devices are
+   compared as the arm plans them, so a lane that follows the Studio's input
+   and a lane set to that same input are one device. MicManager keeps its
+   one scoped hold, held until the last lane on the input lets it go: what is
+   written below, that this work changes that hold, no longer applies.
+2. **MIDI lanes need no capture.** Any number can be armed beside the audio
+   lanes, in any browser.
+   - A port plays one lane at a time. A second lane armed on a port is
+     refused, naming the lane on it.
+   - Each armed MIDI lane plays a sound of its own (`studio-midi-sounds.ts`
+     makes one for each arm), so its take holds only its own notes, and logs
+     what it plays in a log of its own.
+   - The cost: each piano lane's sampled grand decodes its own samples as it
+     plays them, up to the instrument's 96 MiB cap; the browser's cache
+     serves the files again. The kit does the same with its own. Sharing
+     decoded samples between two instruments would need the sampled grand's
+     cache, budget and eviction reworked, so they are not shared.
+3. **Arming.**
+   - A lane's arm button toggles that lane alone; arming one lane never
+     disarms another.
+   - R and Record work as before for zero or one armed lane. With several
+     armed, they record them all.
+   - Moving the arm (`retarget`) is gone, from the hook and the recorder:
+     each lane's arm is its own. What it gave, the input staying open, now
+     comes from the share. A lane armed or disarmed beside others on the
+     device never reopens it, and a lane whose channel changes re-arms with
+     the device held open across the change (`retain`).
+   - Lane headers show every armed lane, and one still opening as opening.
+     The armed card lists each armed lane with what it records, then says
+     "Press Record to start." once, and its Disarm becomes Disarm all.
+4. **Recording**, as part 1 built it. Every lane's take starts on the same
+   frame; punch, loop, count-in and click apply to all of them, and Stop ends
+   them all. Each take shifts by its own lane's path, and is journaled on its
+   own. Memory is held for every lane before the take starts; with several
+   lanes, a refusal says "Studio needs more memory to record every armed
+   lane, so none started.", and no lane records.
+5. **Losses**, as part 1 built them. A lost input ends only the takes that
+   recorded from it: the microphone every lane on it, leaving MIDI lanes
+   recording; a port its own lane. Each lane that kept what it had says so.
+   Where the lanes' takes said different things, the card names each lane
+   before its words.
+6. **The mic icon** is on while any armed lane holds the microphone.
+7. **The Inputs view** keeps its one tap, since there is one capture: the
+   meters follow the armed device, and MIDI lanes have none. Check stays off
+   while anything is armed. The view reads the tap again only when the
+   capture changes (`inputCapture`, a new number each time the microphone
+   opens), not as lanes are armed and disarmed on it.
+8. **Size.** `studio-recorder.ts` stays under the ratchet's 800 lines, the
+   lane arms in a module of their own, and no function is over cognitive
+   complexity 15.
+9. **Two parts.** The whole passed 3,000 changed lines, so the recorder came
+   first, with no change a musician sees, and this part second.
+
+**What it does not do.**
+
+- Record from two audio devices at once. That is the first decision.
+- Tell that the system default is the device it stands for: a lane on the
+  default and a lane set to the default's own device are two inputs, since
+  the browser lists them under different ids.
+- Play one MIDI port into two lanes, or split a port's channels across
+  lanes.
+- Arm a lane while a take runs: every arm button waits for the take.
+- Share decoded piano samples between lanes.
+
 What follows is what PR 3, PR 5 and PR 6 left for this work, written before
-it.
+it. The decisions above answer each point.
 
 Lanes on channels of one interface share one capture and one split, which any
 browser can do. Lanes on different devices need a capture each, and WebKit
@@ -444,8 +528,8 @@ browser can do. Lanes on different devices need a capture each, and WebKit
 earlier one as another opens (`src/lib/mic-input-loss.ts`). There a second
 device cannot record beside the first, and the Studio has to say so.
 `MicManager.acquireFrom` holds one input per consumer today, so this PR
-changes that hold. The recorder arms several lanes and records them on the one
-song clock.
+changes that hold (it did not: see the first decision above). The recorder
+arms several lanes and records them on the one song clock.
 
 From PR 3: the recorder builds one split per arm and closes it with the arm.
 Several lanes on one interface will share one capture and one split, each
@@ -591,8 +675,9 @@ From PR 6, MIDI lanes assume one arm too:
     hook gives for no stream, and a lost port in its own words:
     `studio-recorder.instrument.test.ts`.
   - Routing by instrument family: `studio-midi-sound.test.ts`.
-  - The sounds: a node per arm, once per clock, the kit's velocity, and the
-    piano on its synth until the grand loads: `studio-midi-sounds.test.ts`.
+  - The sounds: a sound of its own for each arm (two pianos for two piano
+    lanes, since PR 7), the kit's velocity, and the piano on its synth until
+    the grand loads: `studio-midi-sounds.test.ts`.
   - The arm: each note at the clock time its message arrived and logged
     there, a drum key with no drum still kept, a port by its name, refusals
     in words, an unplug, and the release: `studio-midi-arm.test.ts`.
@@ -617,3 +702,35 @@ From PR 6, MIDI lanes assume one arm too:
     after its frame and never before it.
 
   Inputs lists the keyboard with its lane and lights it while it plays.
+
+- Several lanes at once (PR 7) are tested in two parts.
+  - The recorder holds several lanes, on its fake graph
+    (`studio-recorder.lanes.test.ts`):
+    - two lanes on one stereo input share its split and start on the same
+      frame, each keeping only its own side;
+    - an instrument lane records beside a microphone lane, each take placed
+      by its own path, and two instrument lanes each keep their own sound;
+    - each lane's take is journaled on its own;
+    - memory is held for every lane, or Record is refused for all;
+    - a lost microphone or port ends only its own lanes' takes, mid-take
+      and in a count-in;
+    - the shared microphone opens once, drops each lane as it leaves, and
+      goes with the last.
+  - The one input every armed audio lane shares, opened once and refused for
+    another device in words that name both: `studio-mic-share.test.ts`,
+    with the hook's side in `useStudioRecorder.lane-input.test.ts`.
+  - Two MIDI lanes on two ports, each a sound and a log of its own, and a
+    second lane refused on a port: `useStudioRecorder.midi.test.ts` and
+    `studio-midi-sounds.test.ts`.
+  - The arm buttons, each its own lane's: `StudioLaneHeader.test.tsx` and
+    `useStudioRecorder.test.ts`. Each lane's record for the timeline:
+    `record-lanes.test.ts`. The card's words for several lanes:
+    `StudioRecordNotices.test.tsx`.
+
+  In a browser, `studio-several-lanes.spec.ts` plays the stereo fake capture,
+  a loud tone on the left and a quiet one on the right. Lane 2 on Input 1 and
+  Lane 3 on Input 2 record from one press, and each take is a clip on its own
+  lane, holding its own side alone, from the same frame. A fake MIDI
+  keyboard's lane then records beside a microphone lane: the microphone opens
+  once, each take holds only its own sound, and the note is kept with the
+  keyboard's take alone.
