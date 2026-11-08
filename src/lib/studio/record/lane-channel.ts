@@ -1,22 +1,27 @@
 // ============================================================
-// Studio lane channel — what an armed lane records and hears: one channel of its input alone, or all of it
+// Studio lane channel — what an armed lane records and hears: one input of its capture, or an aligned pair mixed to mono
 // ============================================================
 //
 // An interface hands the browser its inputs as the channels of one capture.
-// A lane on one of them takes it alone: the source split, opened, and that
-// channel as a mono node, which the take and the lane's monitor share, so a
-// guitar is recorded raw and the singer hears what is recorded. The count is
-// the one the capture's track reports. A channel the capture does not have,
-// or a count the browser does not say, leaves the lane on all of it, mixed,
-// and the arm says so (StudioInputOpened).
-import type { ChannelSplit } from '@/lib/audio-input/input-channels'
-import { captureChannelCount, isAvailableChannel, splitChannels, } from '@/lib/audio-input/input-channels'
+// A lane takes one of them, or an aligned pair at half each, as a DAW's
+// record input does, and nothing else: the capture split, opened, and that
+// pick as one mono node, which the take and the lane's monitor share, so a
+// guitar is recorded raw and the singer hears what is recorded. A lane that
+// chose nothing takes the default its input's count makes
+// (defaultChannelPick): both sides of a stereo input, else input 1. One
+// channel goes as it is. The count is the one the capture's track reports.
+// A pick the capture does not have leaves the lane on the default, and the
+// arm says so (StudioInputOpened). Where the browser does not say the count,
+// the input goes as it is, and the recorder's one-channel input folds it
+// (capture-input.ts).
+import type { ChannelPick, ChannelSplit, } from '@/lib/audio-input/input-channels'
+import { captureChannelCount, defaultChannelPick, isAvailablePick, splitChannels, } from '@/lib/audio-input/input-channels'
 import type { StudioInputOpened } from './recorder-types'
 
 export interface StudioLaneChannel extends Omit<StudioInputOpened, 'stream'> {
-  /** Where the lane's one channel is taken from the others; null while it records them all. Closed with the arm. */
+  /** Where the lane's input or pair is taken from the others; null where the input goes as it is. Closed with the arm. */
   readonly split: ChannelSplit | null
-  /** What the lane records and hears: its one channel, or the whole source. */
+  /** What the lane records and hears: one mono node, or the input as it is. */
   readonly input: AudioNode
 }
 
@@ -31,35 +36,38 @@ export function reportedChannels(stream: MediaStream): number | null {
 }
 
 /**
- * `channel` of `source` alone, or all of it: for null, for a channel the
- * input does not have, and for an input whose track does not say its count.
+ * What a lane takes of an input of `channels` channels: its pick where the
+ * input has it, else the default the count makes, and the pick it asked
+ * for that the input does not have. Nothing is taken, and the input goes as
+ * it is, where the count is not known.
  */
+export function studioLaneRoute(
+  pick: ChannelPick | null,
+  channels: number | null,
+): {
+  readonly taken: ChannelPick | null
+  readonly missing: ChannelPick | null
+} {
+  if (channels === null) return { taken: null, missing: pick }
+  const fits = pick !== null && isAvailablePick(pick, channels)
+  return {
+    taken: fits ? pick : defaultChannelPick(channels),
+    missing: pick === null || fits ? null : pick,
+  }
+}
+
+/** The lane's pick of `source`, or its default, as one mono node. */
 export function openStudioLaneChannel(
   context: BaseAudioContext,
   source: AudioNode,
   stream: MediaStream,
-  channel: number | null,
+  pick: ChannelPick | null,
 ): StudioLaneChannel {
   const channels = reportedChannels(stream)
-  if (
-    channel === null ||
-    channels === null ||
-    !isAvailableChannel(channel, channels)
-  )
-    return {
-      split: null,
-      input: source,
-      channels,
-      channel: null,
-      missingChannel: channel,
-    }
+  const { taken, missing } = studioLaneRoute(pick, channels)
+  if (taken === null || channels === null || channels === 1)
+    return { split: null, input: source, channels, pick: taken, missing }
   const split = splitChannels(context, source, channels)
   split.open()
-  return {
-    split,
-    input: split.alone(channel),
-    channels,
-    channel,
-    missingChannel: null,
-  }
+  return { split, input: split.take(taken), channels, pick: taken, missing }
 }

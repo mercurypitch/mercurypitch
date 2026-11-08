@@ -1,4 +1,4 @@
-// Studio lane input field tests — the Studio's input comes first by its name, a pick keeps the lane on all of its new input, an interface's channels show once it has opened, a lane's input that is gone says the Studio's records, a take holds the field, and the lane header's chip brings the focus here.
+// Studio lane input field tests — the Studio's input comes first by its name, a pick starts the lane on its new input's default, an interface's inputs and aligned pairs show once it has opened after a default named for what it takes, a lane's input that is gone says the Studio's records, a take holds the field, and the lane header's chip brings the focus here.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -61,7 +61,7 @@ const optionTexts = (select: HTMLElement) =>
   [...(select as HTMLSelectElement).options].map((option) => option.text)
 
 describe('Studio lane input field', () => {
-  it("lists the Studio's input first, by its name, and a pick keeps the lane on all of its new input", async () => {
+  it("lists the Studio's input first, by its name, and a pick starts the lane on its new input's default", async () => {
     // Arrange
     const { choose } = mount()
     const picker = screen.getByRole('combobox', { name: 'Input' })
@@ -79,32 +79,54 @@ describe('Studio lane input field', () => {
       deviceId: 'scarlett',
       label: 'Scarlett 2i2 USB',
       channel: null,
+      pair: false,
     })
     expect(picker).toHaveValue('scarlett')
   })
 
-  it("offers an interface's channels once its input has opened, and keeps the one picked", async () => {
+  it("offers an interface's inputs and its aligned pairs once it has opened, after the default named for what it takes", async () => {
     // Arrange
-    const { choose } = mount({
-      lane: { deviceId: 'scarlett', label: 'Scarlett 2i2 USB', channel: null },
-      channels: 2,
-    })
+    const scarlett = {
+      deviceId: 'scarlett',
+      label: 'Scarlett 2i2 USB',
+      channel: null,
+      pair: false,
+    }
+    const { choose } = mount({ lane: scarlett, channels: 2 })
     const channel = screen.getByRole('combobox', { name: 'Channel' })
 
     // Act
-    await fireEvent.change(channel, { target: { value: '1' } })
+    await fireEvent.change(channel, { target: { value: '2' } })
+    await fireEvent.change(channel, { target: { value: '1+2' } })
 
     // Assert
     expect(optionTexts(channel)).toEqual([
-      'All inputs, mixed',
+      'Default: Inputs 1 + 2',
       'Input 1',
       'Input 2',
+      'Inputs 1 + 2',
     ])
-    expect(choose).toHaveBeenCalledExactlyOnceWith('lane-1', {
-      deviceId: 'scarlett',
-      label: 'Scarlett 2i2 USB',
-      channel: 1,
-    })
+    expect(choose.mock.calls).toEqual([
+      ['lane-1', { ...scarlett, channel: 1, pair: false }],
+      ['lane-1', { ...scarlett, channel: 0, pair: true }],
+    ])
+    expect(channel).toHaveValue('1+2')
+  })
+
+  it('names the default by what it takes on a wider input, and lists only the pairs it has', () => {
+    // Arrange, Act
+    mount({ channels: 3 })
+
+    // Assert
+    expect(
+      optionTexts(screen.getByRole('combobox', { name: 'Channel' })),
+    ).toEqual([
+      'Default: Input 1',
+      'Input 1',
+      'Input 2',
+      'Input 3',
+      'Inputs 1 + 2',
+    ])
   })
 
   it('asks for one arm before it shows the channels of an input not opened yet, and shows none for a mono input', () => {
@@ -125,7 +147,14 @@ describe('Studio lane input field', () => {
 
   it("names the lane's input that is gone, and says the Studio's records until it is back", () => {
     // Arrange, Act
-    mount({ lane: { deviceId: 'gone', label: 'Old interface', channel: null } })
+    mount({
+      lane: {
+        deviceId: 'gone',
+        label: 'Old interface',
+        channel: null,
+        pair: false,
+      },
+    })
 
     // Assert
     const picker = screen.getByRole('combobox', { name: 'Input' })

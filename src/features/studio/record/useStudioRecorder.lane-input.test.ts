@@ -1,8 +1,9 @@
-// Record in the Studio, a lane's own input — an arm opens the lane's input and channel as the browser lists it, else the Studio's and says so, and lines its takes up by that input's round trip; an armed lane re-arms on a new input while the arm moves freely only between lanes on the same one, and a lane's input is kept on this device until its lane is gone.
+// Record in the Studio, a lane's own input — an arm opens the lane's input and its one input or aligned pair as the browser lists it, else the Studio's and its default and says so, says what records once the input has opened, and lines its takes up by that input's round trip; an armed lane re-arms on a new input or pick while the arm moves freely only between lanes on the same ones, and a lane's input is kept on this device until its lane is gone.
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { FakeMediaDevices } from '@/lib/audio-input/fake-devices.fixture'
 import { audioInput, fakeMediaDevices, } from '@/lib/audio-input/fake-devices.fixture'
+import type { ChannelPick } from '@/lib/audio-input/input-channels'
 import type { StudioProject } from '@/lib/studio/model/types'
 import type { StudioInputOpened, StudioRecorderView, } from '@/lib/studio/record/studio-recorder'
 
@@ -13,7 +14,7 @@ const mocks = vi.hoisted(() => ({
     | null
     | ((
         trackId: string | null,
-      ) => Promise<{ stream: MediaStream; channel?: number | null }>),
+      ) => Promise<{ stream: MediaStream; pick?: ChannelPick | null }>),
   inputOpened: null as null | ((opened: StudioInputOpened) => void),
   roundTrip: null as
     | null
@@ -32,7 +33,7 @@ vi.mock('@/lib/studio/record/studio-recorder', () => ({
     onChange: (view: StudioRecorderView) => void
     acquireMic: (
       trackId: string | null,
-    ) => Promise<{ stream: MediaStream; channel?: number | null }>
+    ) => Promise<{ stream: MediaStream; pick?: ChannelPick | null }>
     inputOpened: (opened: StudioInputOpened) => void
     roundTrip: (context: AudioContext, stream: MediaStream) => number
   }) => {
@@ -110,6 +111,7 @@ const scarlett = {
   deviceId: 'scarlett',
   label: 'Scarlett 2i2 USB',
   channel: 1,
+  pair: false,
 }
 
 let devices: FakeMediaDevices | null = null
@@ -174,23 +176,49 @@ const desk = audioInput('desk', 'Desk mic')
 const interfaceIn = audioInput('scarlett', 'Scarlett 2i2 USB')
 
 describe("a lane's own input", () => {
-  it('arms the lane on its own input as the browser lists it, and takes its channel', async () => {
+  it('arms the lane on its own input as the browser lists it, and takes its input or pair', async () => {
     const hook = await mount([desk, interfaceIn])
     hook.laneInputs.choose('lane-1', scarlett)
-    mocks.acquireFrom.mockResolvedValueOnce(held())
+    hook.laneInputs.choose('lane-2', { ...scarlett, channel: 0, pair: true })
+    mocks.acquireFrom
+      .mockResolvedValueOnce(held())
+      .mockResolvedValueOnce(held())
 
-    const hold = await mocks.acquireMic!('lane-1')
+    const single = await mocks.acquireMic!('lane-1')
+    const pair = await mocks.acquireMic!('lane-2')
 
     expect(mocks.acquireFrom).toHaveBeenCalledWith('studio-record', 'scarlett')
-    expect(hold.channel).toBe(1)
+    expect(single.pick).toEqual({ channel: 1, pair: false })
+    expect(pair.pick).toEqual({ channel: 0, pair: true })
     expect(hook.armedInput()).toEqual({
       laneMissing: null,
       defaultInstead: null,
-      channelMissing: null,
+      records: null,
     })
   })
 
-  it("arms on the Studio's input, all of it, when the lane's own is not connected, and says so", async () => {
+  it('says what records once the input has opened: its name, its channels and the pick', async () => {
+    const hook = await mount([desk, interfaceIn])
+    hook.laneInputs.choose('lane-1', scarlett)
+    mocks.acquireFrom.mockResolvedValueOnce(held())
+    await mocks.acquireMic!('lane-1')
+
+    mocks.inputOpened!({
+      stream: openedStream('scarlett', 'Scarlett 2i2 USB'),
+      channels: 2,
+      pick: { channel: 1, pair: false },
+      missing: null,
+    })
+
+    expect(hook.armedInput().records).toEqual({
+      name: 'Scarlett 2i2 USB',
+      channels: 2,
+      pick: { channel: 1, pair: false },
+      missing: null,
+    })
+  })
+
+  it("arms on the Studio's input and its default when the lane's own is not connected, and says so", async () => {
     const hook = await mount([desk])
     hook.chooseInput('desk', 'Desk mic')
     hook.laneInputs.choose('lane-1', scarlett)
@@ -199,13 +227,13 @@ describe("a lane's own input", () => {
     const hold = await mocks.acquireMic!('lane-1')
 
     expect(mocks.acquireFrom).toHaveBeenCalledWith('studio-record', 'desk')
-    expect(hold.channel).toBeNull()
+    expect(hold.pick).toBeNull()
     expect(hook.armedInput().laneMissing).toBe('Scarlett 2i2 USB')
     // The Studio's own input was there: the Sound panel has nothing to say.
     expect(hook.inputMissing()).toBe(false)
   })
 
-  it("says which input was gone as it opened, the lane's own, and records all of the default in its place", async () => {
+  it("says which input was gone as it opened, the lane's own, and records the default's default in its place", async () => {
     const hook = await mount([desk, interfaceIn])
     hook.laneInputs.choose('lane-1', scarlett)
     mocks.acquireFrom.mockResolvedValueOnce(held(true))
@@ -214,7 +242,7 @@ describe("a lane's own input", () => {
 
     expect(hook.armedInput().defaultInstead).toBe('Scarlett 2i2 USB')
     // A channel is a jack of the input it was chosen on, not of the default.
-    expect(hold.channel).toBeNull()
+    expect(hold.pick).toBeNull()
     expect(hook.inputMissing()).toBe(false)
   })
 
@@ -244,20 +272,34 @@ describe("a lane's own input", () => {
     setMicLatencyPathByKey({})
   })
 
-  it('says the channel was not on the input, and keeps how many channels it has for the picker', async () => {
+  it('says the pick was not on the input and the default records, and keeps how many channels it has for the picker', async () => {
     const hook = await mount([desk, interfaceIn])
-    hook.laneInputs.choose('lane-1', { ...scarlett, channel: 3 })
+    hook.laneInputs.choose('lane-1', { ...scarlett, channel: 2, pair: true })
     expect(hook.laneInputs.channels('lane-1')).toBeNull()
 
     mocks.inputOpened!({
       stream: openedStream('scarlett', 'Scarlett 2i2 USB'),
       channels: 2,
-      channel: null,
-      missingChannel: 3,
+      pick: { channel: 0, pair: true },
+      missing: { channel: 2, pair: true },
     })
 
-    expect(hook.armedInput().channelMissing).toBe(3)
+    expect(hook.armedInput().records).toMatchObject({
+      pick: { channel: 0, pair: true },
+      missing: { channel: 2, pair: true },
+    })
     expect(hook.laneInputs.channels('lane-1')).toBe(2)
+  })
+
+  it('re-arms the armed lane when its input changes from one input to a pair of the same', async () => {
+    const hook = await mount([desk, interfaceIn])
+    hook.laneInputs.choose('lane-1', { ...scarlett, channel: 0 })
+    mocks.onChange!(view({ phase: 'armed', targetTrackId: 'lane-1' }))
+
+    hook.laneInputs.choose('lane-1', { ...scarlett, channel: 0, pair: true })
+
+    expect(mocks.recorder!.disarm).toHaveBeenCalledOnce()
+    expect(mocks.recorder!.arm).toHaveBeenLastCalledWith('lane-1')
   })
 
   it('re-arms the armed lane when its input changes, and leaves the arm alone for another lane', async () => {
@@ -272,7 +314,7 @@ describe("a lane's own input", () => {
     expect(mocks.recorder!.arm).toHaveBeenLastCalledWith('lane-1')
   })
 
-  it('moves the arm with the microphone open only to a lane on the same input and channel', async () => {
+  it('moves the arm with the microphone open only to a lane on the same input and channels', async () => {
     const hook = await mount([desk, interfaceIn])
     hook.laneInputs.choose('lane-3', scarlett)
     mocks.onChange!(view({ phase: 'armed', targetTrackId: 'lane-1' }))

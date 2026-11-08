@@ -1,10 +1,12 @@
 // Studio record notices — what the recorder is doing (a card over the lanes' foot), a take the journal still holds, and why the last take did not go the usual way.
 import { Match, Show, Switch } from 'solid-js'
+import { channelPickLabel } from '@/lib/audio-input/input-choices'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { MicSmall } from '../studio-icons'
 import common from '../StudioPage.module.css'
 import { formatStudioMoment } from '../timeline/timeline-geometry'
 import { studioRecordCardAside } from './record-card-aside'
+import type { StudioArmedInput, StudioArmedRecords, } from './studio-lane-input-state'
 import { liveTakeSpan } from './StudioLaneTake'
 import styles from './StudioRecord.module.css'
 import type { StudioRecorderHandle } from './useStudioRecorder'
@@ -53,34 +55,53 @@ function recordingWords(recorder: StudioRecorderHandle, lane: string): string {
     : `Recording on ${lane} from ${formatStudioMoment(cut.range.startFrame)}`
 }
 
+/** Which input the lane records from when it is not the one asked for; null when it is. */
+function fallbackWords(input: StudioArmedInput, lane: string): string | null {
+  if (input.defaultInstead !== null)
+    return input.laneMissing !== null
+      ? `Armed on ${lane} with the default input: ${input.laneMissing} and ${input.defaultInstead} are not connected.`
+      : `Armed on ${lane} with the default input: ${input.defaultInstead} is not connected.`
+  return input.laneMissing === null
+    ? null
+    : `Armed on ${lane} with the Studio's input: ${input.laneMissing} is not connected.`
+}
+
+/** What records of an input with more than one channel, and a pick it does not have; null for one channel. */
+function recordsWords(
+  records: StudioArmedRecords,
+  lane: string,
+): string | null {
+  const name = records.name === '' ? null : records.name
+  const { pick, missing } = records
+  if (missing !== null && pick === null)
+    return `Armed on ${lane}. The browser does not say which inputs ${name ?? 'it'} has, so all of it records.`
+  if (pick === null) return null
+  const taken = channelPickLabel(pick)
+  if (missing !== null)
+    return `Armed on ${lane}. ${name ?? 'The input'} has no ${channelPickLabel(missing)}, so ${taken} ${pick.pair ? 'record, mixed' : 'records'}.`
+  if ((records.channels ?? 0) < 2) return null
+  const of = name === null ? '' : ` of ${name}`
+  return `Armed on ${lane} with ${taken}${of}${pick.pair ? ', mixed' : ''}. Press Record to start.`
+}
+
 /**
- * The armed card's words: ready, or which input the lane records from when
- * it is not the one asked for (a lane's own input that is not connected
- * leaves it on the Studio's; one gone as it opened, on the default), and a
- * channel the input does not have.
+ * The armed card's words: what records of an input with more than one
+ * channel, one input or a pair mixed to mono; which input the lane records
+ * from when it is not the one asked for (a lane's own input that is not
+ * connected leaves it on the Studio's; one gone as it opened, on the
+ * default); and an input or pair the input does not have, with the default
+ * that records in its place.
  */
 export function armedWords(
   recorder: Pick<StudioRecorderHandle, 'armedInput'>,
   lane: string,
 ): string {
   const input = recorder.armedInput()
-  const device =
-    input.defaultInstead !== null
-      ? input.laneMissing !== null
-        ? `Armed on ${lane} with the default input: ${input.laneMissing} and ${input.defaultInstead} are not connected.`
-        : `Armed on ${lane} with the default input: ${input.defaultInstead} is not connected.`
-      : input.laneMissing !== null
-        ? `Armed on ${lane} with the Studio's input: ${input.laneMissing} is not connected.`
-        : null
-  const channel =
-    input.channelMissing === null
-      ? null
-      : `The input has no Input ${input.channelMissing + 1}, so all of it records, mixed.`
-  if (device === null && channel === null)
-    return `Armed on ${lane}. Press Record to start.`
-  return channel === null
-    ? device!
-    : `${device ?? `Armed on ${lane}.`} ${channel}`
+  return (
+    fallbackWords(input, lane) ??
+    (input.records === null ? null : recordsWords(input.records, lane)) ??
+    `Armed on ${lane}. Press Record to start.`
+  )
 }
 
 function ArmedHint(props: { recorder: StudioRecorderHandle }) {

@@ -35,7 +35,12 @@ function mount(phone = false) {
       laneInputs={{
         of: (id) =>
           id === 'gtr'
-            ? { deviceId: 'scarlett', label: 'Scarlett 2i2 USB', channel: 1 }
+            ? {
+                deviceId: 'scarlett',
+                label: 'Scarlett 2i2 USB',
+                channel: 1,
+                pair: false,
+              }
             : FOLLOW_STUDIO_INPUT,
         studioInputName: () => 'Desk mic',
       }}

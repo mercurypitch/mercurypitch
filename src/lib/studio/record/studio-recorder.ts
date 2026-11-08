@@ -22,9 +22,9 @@
 // also journaled as it records (studio-take-journal.ts), so a closed tab
 // leaves the take to be kept on the next visit.
 //
-// A lane can take one channel of its input: a guitar on input 2 of an
-// interface. The arm hands the take and the monitor the same node, that
-// channel alone (lane-channel.ts), and so does every capture it opens after.
+// A lane records one input of its capture, or an aligned pair mixed to
+// mono (lane-channel.ts): the arm hands the take and the monitor the same
+// node, and so does every capture it opens after.
 import { audioOutputPathSeconds } from '@/lib/mic-latency'
 import type { MicReleaseReason } from '@/lib/mic-manager'
 import { STUDIO_MAX_CLIP_PASSES } from '../model/clip-passes'
@@ -256,13 +256,13 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
       context,
       source,
       stream,
-      mic.channel ?? null,
+      mic.pick ?? null,
     )
     const capture = deps.openCapture(context, lane.input, captureEvents())
     const monitor = deps.createMonitor(context, lane.input)
     monitor.set(deps.monitorLevel(trackId))
-    const { channels, channel, missingChannel } = lane
-    deps.inputOpened?.({ stream, channels, channel, missingChannel })
+    const { channels, pick, missing } = lane
+    deps.inputOpened?.({ stream, channels, pick, missing })
     return {
       context,
       mic,

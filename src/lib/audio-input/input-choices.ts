@@ -12,12 +12,16 @@
 //
 // A device is never called "Input N": that is a channel, a jack on an
 // interface ("Input 2"), as Guitar Night names them too. An input's
-// channels are rows of their own, and the null channel takes all of them.
+// channels are rows of their own, as a DAW's record input lists them: each
+// input, then each aligned pair ("Inputs 1 + 2"), after the default, which
+// says what it takes once the input's channel count is known.
 //
 // Studio's input lists read their rows from here. Jam keeps the browser's
 // role entries as rows of their own, so it lists its inputs itself
 // (jam-audio-source.ts).
 
+import type { ChannelPick } from './input-channels'
+import { channelPicks, defaultChannelPick, samePick } from './input-channels'
 import { isPseudoEntry } from './mic-roster'
 
 /** One row of an input picker: null is the system's default input, or what the picker follows. */
@@ -69,37 +73,57 @@ export function inputsNamed(devices: readonly PickerDevice[]): boolean {
   return devices.some((device) => device.label !== '' && !isPseudoEntry(device))
 }
 
-/** One row of a channel picker: null takes every channel, mixed; a number is 0-based. */
+/** A pick by its jacks' names, 1-based: "Input 2", or "Inputs 1 + 2". */
+export function channelPickLabel(pick: ChannelPick): string {
+  return pick.pair
+    ? `Inputs ${pick.channel + 1} + ${pick.channel + 2}`
+    : `Input ${pick.channel + 1}`
+}
+
+/** One row of a channel picker: null is the default, which the input's channel count decides. */
 export interface ChannelChoice {
-  readonly channel: number | null
+  readonly pick: ChannelPick | null
   readonly label: string
-  /** The input has this channel; false for a chosen one past its count. */
+  /** False for a kept pick the input does not have, as far as its count is known. */
   readonly present: boolean
 }
 
 /**
- * An input's channels: all of them first, then each by its jack's name,
- * "Input 1" up, and a chosen channel past the count, marked, so the picker
- * still shows what is kept.
+ * An input's channel picker: the default first, named for what it takes
+ * once the count is known ("Default: Inputs 1 + 2"), then each input and
+ * each aligned pair the input has. A kept pick the input does not have
+ * stays, marked, so the picker still shows what is kept; while the count
+ * is not known it is listed as it is.
  */
 export function channelChoices(
-  channelCount: number,
-  chosen: number | null,
+  channelCount: number | null,
+  chosen: ChannelPick | null,
 ): ChannelChoice[] {
-  const count = Math.max(0, Math.floor(channelCount))
+  const count =
+    channelCount === null ? null : Math.max(0, Math.floor(channelCount))
   const choices: ChannelChoice[] = [
-    { channel: null, label: 'All inputs, mixed', present: true },
-    ...Array.from({ length: count }, (_, channel) => ({
-      channel,
-      label: `Input ${channel + 1}`,
+    {
+      pick: null,
+      label:
+        count === null || count === 0
+          ? 'Default'
+          : `Default: ${channelPickLabel(defaultChannelPick(count))}`,
+      present: true,
+    },
+    ...channelPicks(count ?? 0).map((pick) => ({
+      pick,
+      label: channelPickLabel(pick),
       present: true,
     })),
   ]
-  if (chosen !== null && chosen >= count)
+  if (chosen !== null && !choices.some((row) => samePick(row.pick, chosen)))
     choices.push({
-      channel: chosen,
-      label: `Input ${chosen + 1} (not on this input)`,
-      present: false,
+      pick: chosen,
+      label:
+        count === null
+          ? channelPickLabel(chosen)
+          : `${channelPickLabel(chosen)} (not on this input)`,
+      present: count === null,
     })
   return choices
 }

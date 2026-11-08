@@ -23,6 +23,7 @@ export interface FakeGraphNode {
   channelCount: number
   channelCountMode: ChannelCountMode
   channelInterpretation: ChannelInterpretation
+  readonly gain: { value: number }
   connect: ReturnType<typeof vi.fn>
   disconnect: ReturnType<typeof vi.fn>
 }
@@ -34,6 +35,7 @@ export function fakeGraphNode(name: string): FakeGraphNode {
     channelCount: 2,
     channelCountMode: 'max',
     channelInterpretation: 'speakers',
+    gain: { value: 1 },
     connect: vi.fn((to: FakeGraphNode, output?: number, input?: number) => {
       node.edges.push([to, output, input])
       return to

@@ -1,8 +1,10 @@
-// Studio lane input badge — what a lane header's chip says for a lane with an input or a channel of its own, and the whole of it for its title and a screen reader.
+// Studio lane input badge — what a lane header's chip says for a lane with an input, a channel or a pair of its own, and the whole of it for its title and a screen reader.
+import { channelPickLabel } from '@/lib/audio-input/input-choices'
 import type { StudioLaneInput } from '@/lib/studio/record/lane-inputs'
+import { laneChannelPick } from '@/lib/studio/record/lane-inputs'
 
 export interface StudioLaneInputBadge {
-  /** On the chip: the channel ("In 2"), else the input's first word. */
+  /** On the chip: the channel ("In 2") or the pair ("In 1+2"), else the input's first word. */
   readonly short: string
   /** The input and the channel in full, to follow "records from". */
   readonly full: string
@@ -23,21 +25,24 @@ export function studioInputShortName(label: string): string {
 
 /**
  * The chip for a lane's input, or null for a lane that follows the Studio's
- * input and records all of it: its header looks as every lane's did.
+ * input and takes its default: its header looks as every lane's did.
  */
 export function studioLaneInputBadge(
   lane: StudioLaneInput,
   studioInputName: string,
 ): StudioLaneInputBadge | null {
-  if (lane.deviceId === null && lane.channel === null) return null
+  const pick = laneChannelPick(lane)
+  if (lane.deviceId === null && pick === null) return null
   const device =
     lane.deviceId === null
       ? `the Studio's input (${studioInputName})`
       : (lane.label ?? 'its own input')
-  if (lane.channel === null)
+  if (pick === null)
     return { short: studioInputShortName(device), full: device }
   return {
-    short: `In ${lane.channel + 1}`,
-    full: `${device}, Input ${lane.channel + 1}`,
+    short: pick.pair
+      ? `In ${pick.channel + 1}+${pick.channel + 2}`
+      : `In ${pick.channel + 1}`,
+    full: `${device}, ${channelPickLabel(pick)}`,
   }
 }
