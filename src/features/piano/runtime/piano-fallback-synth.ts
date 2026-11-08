@@ -17,6 +17,8 @@ export type PianoFallbackSynth = PianoInstrumentPort
 export interface PianoFallbackSynthOptions {
   /** The route-owned transport context; this synth never creates one. */
   getAudioContext(): AudioContext | null
+  /** The route-owned node the synth plays into, as the drum kit player takes one; the context's destination when absent or null. */
+  getOutput?(): AudioNode | null
   /** Test/device seam. Values above the production ceiling are clamped. */
   maxVoices?: number
 }
@@ -173,7 +175,7 @@ export function createPianoFallbackSynth(
     limiter.attack.value = 0.003
     limiter.release.value = 0.16
     master.connect(limiter)
-    limiter.connect(context.destination)
+    limiter.connect(options.getOutput?.() ?? context.destination)
     graph = { context, master, limiter }
     return graph
   }

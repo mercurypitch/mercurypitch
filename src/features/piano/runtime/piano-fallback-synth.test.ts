@@ -138,6 +138,27 @@ describe('createPianoFallbackSynth', () => {
     expect(synth.activeVoiceIds()).toEqual([])
   })
 
+  it("plays into the host's output node when it names one, and into the destination when it does not", () => {
+    // Arrange
+    const owned = new FakeAudioContext()
+    const output = new FakeAudioNode()
+    const routed = createPianoFallbackSynth({
+      getAudioContext: () => owned as unknown as AudioContext,
+      getOutput: () => output as unknown as AudioNode,
+    })
+    const { context, synth } = harness()
+
+    // Act
+    routed.noteOn({ id: 'routed', midi: 60, velocity: 0.8 })
+    synth.noteOn({ id: 'plain', midi: 60, velocity: 0.8 })
+
+    // Assert
+    expect(owned.compressors[0].connect).toHaveBeenCalledExactlyOnceWith(output)
+    expect(context.compressors[0].connect).toHaveBeenCalledExactlyOnceWith(
+      context.destination,
+    )
+  })
+
   it('stages normalized master volume without constructing an audio graph', () => {
     const { context, getAudioContext, synth } = harness()
 

@@ -6,7 +6,7 @@
 // one selected input is routed at a time; switching, hot-unplugging, and
 // disposal emit source cleanup before a listener can be left behind.
 
-import type { PianoInputEvent, PianoInputSource } from './piano-input-state'
+import type { PianoInputEvent, PianoInputSource, PianoPedalKind, } from './piano-input-state'
 
 export type WebMidiPermissionState =
   | 'idle'
@@ -59,11 +59,71 @@ export interface WebMidiInputPortOptions {
 
 type SelectionMode = 'auto' | 'manual'
 
-const PEDAL_CONTROLLERS = new Map<number, 'sustain' | 'sostenuto' | 'soft'>([
+const PEDAL_CONTROLLERS = new Map<number, PianoPedalKind>([
   [64, 'sustain'],
   [66, 'sostenuto'],
   [67, 'soft'],
 ])
+
+const CHANNEL_RESETS = new Map<
+  number,
+  'panic' | 'reset-controllers' | 'all-notes-off'
+>([
+  [120, 'panic'],
+  [121, 'reset-controllers'],
+  [123, 'all-notes-off'],
+])
+
+/** What one MIDI message says, apart from where it came from and when. */
+export type WebMidiMessage =
+  | {
+      readonly type: 'note-on'
+      readonly channel: number
+      readonly midi: number
+      /** 0..1 of the message's 127. */
+      readonly velocity: number
+    }
+  | {
+      readonly type: 'note-off'
+      readonly channel: number
+      readonly midi: number
+      readonly velocity: number
+    }
+  | {
+      readonly type: 'pedal'
+      readonly channel: number
+      readonly pedal: PianoPedalKind
+      readonly value: number
+    }
+  | {
+      readonly type: 'panic' | 'reset-controllers' | 'all-notes-off'
+      readonly channel: number
+    }
+
+/**
+ * A MIDI message's bytes read: a note on or off (a note on at velocity 0 is
+ * an off), the sustain, sostenuto or soft pedal, or a channel-wide reset
+ * (CC 120, 121, 123); null for anything else.
+ */
+export function parseWebMidiMessage(
+  data: ArrayLike<number> | null,
+): WebMidiMessage | null {
+  if (data === null || data.length < 2) return null
+  const command = data[0] & 0xf0
+  const channel = data[0] & 0x0f
+  const data1 = data[1]
+  const data2 = data.length >= 3 ? data[2] : 0
+  if (command === 0x90 && data2 > 0)
+    return { type: 'note-on', channel, midi: data1, velocity: data2 / 127 }
+  if (command === 0x80 || (command === 0x90 && data2 === 0))
+    return { type: 'note-off', channel, midi: data1, velocity: data2 / 127 }
+  if (command !== 0xb0) return null
+  const pedal = PEDAL_CONTROLLERS.get(data1)
+  if (pedal !== undefined)
+    return { type: 'pedal', channel, pedal, value: data2 / 127 }
+  const reset = CHANNEL_RESETS.get(data1)
+  return reset === undefined ? null : { type: reset, channel }
+}
 
 function defaultRequestMIDIAccess(): Promise<MIDIAccess> {
   if (
@@ -175,78 +235,16 @@ export function createWebMidiInputPort(
 
   function routeMessage(input: MIDIInput, message: MIDIMessageEvent): void {
     if (input !== attachedInput) return
-    const data = message.data
-    if (data === null || data.length < 2) return
-
-    const command = data[0] & 0xf0
-    const channel = data[0] & 0x0f
-    const data1 = data[1]
-    const data2 = data.length >= 3 ? data[2] : 0
-    const source = inputSource(input)
-    const timestampMs = Number.isFinite(message.timeStamp)
-      ? message.timeStamp
-      : now()
-
-    if (command === 0x90 && data2 > 0) {
-      options.onInput({
-        type: 'note-on',
-        source,
-        channel,
-        midi: data1,
-        velocity: data2 / 127,
-        timestampMs,
-      })
-      return
+    const parsed = parseWebMidiMessage(message.data)
+    if (parsed === null) return
+    const event: PianoInputEvent = {
+      ...parsed,
+      source: inputSource(input),
+      timestampMs: Number.isFinite(message.timeStamp)
+        ? message.timeStamp
+        : now(),
     }
-
-    if (command === 0x80 || (command === 0x90 && data2 === 0)) {
-      options.onInput({
-        type: 'note-off',
-        source,
-        channel,
-        midi: data1,
-        velocity: data2 / 127,
-        timestampMs,
-      })
-      return
-    }
-
-    if (command !== 0xb0) return
-    const pedal = PEDAL_CONTROLLERS.get(data1)
-    if (pedal !== undefined) {
-      options.onInput({
-        type: 'pedal',
-        source,
-        channel,
-        pedal,
-        value: data2 / 127,
-        timestampMs,
-      })
-      return
-    }
-
-    if (data1 === 120) {
-      options.onInput({
-        type: 'panic',
-        source,
-        channel,
-        timestampMs,
-      })
-    } else if (data1 === 121) {
-      options.onInput({
-        type: 'reset-controllers',
-        source,
-        channel,
-        timestampMs,
-      })
-    } else if (data1 === 123) {
-      options.onInput({
-        type: 'all-notes-off',
-        source,
-        channel,
-        timestampMs,
-      })
-    }
+    options.onInput(event)
   }
 
   function attachSelectedInput(input: MIDIInput): void {

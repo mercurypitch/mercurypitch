@@ -285,6 +285,28 @@ describe('createPianoSampledInstrument', () => {
     expect(context?.filters).toHaveLength(1)
   })
 
+  it("plays into the host's output node when it names one, and into the destination when it does not", async () => {
+    // Arrange
+    const owned = new FakeAudioContext()
+    const output = new FakeAudioNode()
+    const routed = createPianoSampledInstrument({
+      getAudioContext: () => owned as unknown as AudioContext,
+      getOutput: () => output as unknown as AudioNode,
+      fetchArrayBuffer: async () => new Uint8Array([1]).buffer,
+    })
+    const { context, instrument } = harness()
+
+    // Act
+    await routed.load()
+    await instrument.load()
+
+    // Assert
+    expect(owned.compressors[0].connect).toHaveBeenCalledExactlyOnceWith(output)
+    expect(context?.compressors[0].connect).toHaveBeenCalledExactlyOnceWith(
+      context?.destination,
+    )
+  })
+
   it('rejects an oversized declared response before reading or decoding it', async () => {
     const context = new FakeAudioContext()
     const getReader = vi.fn()
