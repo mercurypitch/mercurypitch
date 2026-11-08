@@ -7,6 +7,8 @@ import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defa
 import type { InputChannelCount, StudioLaneInput, } from '@/lib/studio/record/lane-inputs'
 import { FOLLOW_STUDIO_INPUT } from '@/lib/studio/record/lane-inputs'
 import type { StudioRecordPhase } from '@/lib/studio/record/studio-recorder'
+import { fakeMidiAccess, fakeMidiInput } from '../record/midi/fake-midi.fixture'
+import type { StudioMidiAccess } from '../record/midi/studio-midi-access'
 import { createStudioMidiAccess } from '../record/midi/studio-midi-access'
 import type { StudioInputsPanelProps } from './StudioInputsPanel'
 import { StudioInputsPanel } from './StudioInputsPanel'
@@ -68,6 +70,7 @@ function mount(
     counts?: InputChannelCount[]
     lanes?: Record<string, StudioLaneInput>
     levels?: number[]
+    midi?: StudioMidiAccess
   } = {},
 ) {
   const [phase, setPhase] = createSignal<StudioRecordPhase>(
@@ -88,7 +91,7 @@ function mount(
     busy: () => false,
     phase,
     inputTap: () => null,
-    midi: createStudioMidiAccess({ request: () => null }),
+    midi: options.midi ?? createStudioMidiAccess({ request: () => null }),
     settings: () => ({ inputDeviceId: null, inputLabel: null }),
     laneInputs: {
       of: (id: string) => options.lanes?.[id] ?? FOLLOW_STUDIO_INPUT,
@@ -319,5 +322,40 @@ describe('the Inputs view', () => {
       channel: null,
       pair: false,
     })
+  })
+
+  it('asks for MIDI from a press, then lists each keyboard with the lanes it plays and a light while it plays', async () => {
+    // Arrange
+    const keys = fakeMidiInput('keys', 'Keystation 49')
+    const request = vi.fn(() => Promise.resolve(fakeMidiAccess([keys]).access))
+    mount({
+      midi: createStudioMidiAccess({ request }),
+      lanes: { vox: { kind: 'midi', portId: 'keys', label: 'Keystation 49' } },
+    })
+    const section = screen.getByRole('region', { name: 'MIDI inputs' })
+    const asked = request.mock.calls.length
+
+    // Act
+    await fireEvent.click(
+      within(section).getByRole('button', {
+        name: 'Allow MIDI to see your keyboards and pads',
+      }),
+    )
+    const row = await vi.waitFor(() => {
+      const found = section.querySelector('[data-studio-midi-port="keys"]')
+      if (found === null) throw new Error('No row yet')
+      return found
+    })
+    const light = row.querySelector('[aria-hidden="true"]')!
+    await vi.waitFor(() => {
+      keys.send([0x90, 60, 100], performance.now())
+      expect(light).toHaveAttribute('data-active')
+    })
+
+    // Assert
+    expect(asked).toBe(0)
+    expect(request).toHaveBeenCalledOnce()
+    expect(row).toHaveTextContent('Keystation 49')
+    expect(row).toHaveTextContent('Vocal')
   })
 })
