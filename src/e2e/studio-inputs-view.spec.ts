@@ -65,6 +65,30 @@ async function peaks(card: Locator): Promise<Record<string, number>> {
     )
 }
 
+/**
+ * Every row's reading at one moment, once all of them read the capture. A
+ * Check's first few hundred milliseconds can read silence on every row at
+ * once: Chromium's fake capture starts with 30 ms of silence, longer than a
+ * meter's 21 ms block, and its first buffers arrive unevenly. Measured, the
+ * four rows all read 0.000 at 0.215, 0.241 and 0.273 s after the capture
+ * opened, between readings of the tones, and never after 0.3 s in 75 s of
+ * reading; this test reads them about 0.15 s in. The file's loop leaves 5 to
+ * 14 ms of silence, shorter than a block, and no row ever read 0 there.
+ */
+async function peaksTogether(card: Locator): Promise<Record<string, number>> {
+  let read: Record<string, number> = {}
+  await expect
+    .poll(
+      async () => {
+        read = await peaks(card)
+        return Object.values(read).every((value) => value > 0)
+      },
+      { timeout: 10_000 },
+    )
+    .toBe(true)
+  return read
+}
+
 /** Each side's row reads its own tone: the left loud, the right quiet, neither the other. */
 async function expectSides(card: Locator): Promise<void> {
   for (const [row, level] of [
@@ -118,7 +142,7 @@ test.describe('Studio Inputs view', () => {
     // reads between them; and the default row reads what the default
     // takes, the pair.
     await expectSides(card)
-    const read = await peaks(card)
+    const read = await peaksTogether(card)
     console.log(`[studio-inputs-view] checked ${JSON.stringify(read)}`)
     expect(read['Inputs 1 + 2']).toBeGreaterThan(read['Input 2'])
     expect(read['Inputs 1 + 2']).toBeLessThan(read['Input 1'])
