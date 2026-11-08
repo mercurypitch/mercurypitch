@@ -1,6 +1,8 @@
 // Host-neutral Web MIDI input for Guitar Night capture and device selection.
 // ============================================================
 
+import { performanceToAudioSeconds } from '@/lib/timing/performance-clock'
+
 export interface GuitarMidiMessageLike {
   data: ArrayLike<number> | null
   timeStamp: number
@@ -96,7 +98,11 @@ export function mapMidiTimestampToAudioClock(
   return {
     capturedAtSeconds: Math.max(
       0,
-      safeAudioSeconds + (safeEventTimestamp - safeObservedPerformance) / 1000,
+      performanceToAudioSeconds(
+        safeEventTimestamp,
+        safeObservedPerformance,
+        safeAudioSeconds,
+      ),
     ),
     eventTimestampMs: safeEventTimestamp,
     observedPerformanceMs: safeObservedPerformance,
