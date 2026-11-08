@@ -4,9 +4,10 @@
 //
 // An interface hands the browser its inputs as the channels of one capture.
 // A lane takes one of them, or an aligned pair at half each, as a DAW's
-// record input does, and nothing else: the capture split, opened, and that
-// pick as one mono node, which the take and the lane's monitor share, so a
-// guitar is recorded raw and the singer hears what is recorded. A lane that
+// record input does, and nothing else: the capture split once, however many
+// lanes record from it, and each lane's pick as one mono node, which its
+// take and its monitor share, so a guitar is recorded raw and the singer
+// hears what is recorded. A lane that
 // chose nothing takes the default its input's count makes
 // (defaultChannelPick): both sides of a stereo input, else input 1. One
 // channel goes as it is. The count is the one the capture's track reports.
@@ -21,7 +22,7 @@ import { captureChannelCount, defaultChannelPick, isAvailablePick, splitChannels
 import type { StudioInputOpened } from './recorder-types'
 
 export interface StudioLaneChannel extends Omit<StudioInputOpened, 'stream'> {
-  /** Where the lane's input or pair is taken from the others; null where the input goes as it is. Closed with the arm. */
+  /** Where the lane's input or pair is taken from the others; null where the input goes as it is. Closed with the last lane on the input. */
   readonly split: ChannelSplit | null
   /** What the lane records and hears: one mono node, or the input as it is. */
   readonly input: AudioNode
@@ -58,20 +59,56 @@ export function studioLaneRoute(
   }
 }
 
-/** The lane's pick of `source`, or its default, as one mono node. */
-export function openStudioLaneChannel(
+/**
+ * An input's channels as its lanes take them: split once, however many
+ * lanes record from it, each lane taking its own pick, as a DAW's tracks
+ * take their inputs of one interface. One channel, or a count the browser
+ * does not say, leaves nothing to split: each lane takes the input as it is.
+ */
+export interface StudioInputChannels {
+  /** The input's channels as its track reports them; null where the browser does not say. */
+  readonly channels: number | null
+  /** Where each lane's input or pair is taken from the others; null where the input goes as it is. */
+  readonly split: ChannelSplit | null
+  /** What a lane asking for `pick` records: its pick where the input has it, else the default the count makes, as one mono node. */
+  take(
+    pick: ChannelPick | null,
+  ): Pick<StudioLaneChannel, 'input' | 'pick' | 'missing'>
+  /** Take one lane's node off the split again, for a lane that leaves while others stay. */
+  drop(input: AudioNode): void
+  /** Take the split apart, its own edge from the source first; the source is its owner's. */
+  close(): void
+}
+
+export function openStudioInputChannels(
   context: BaseAudioContext,
   source: AudioNode,
   stream: MediaStream,
-  pick: ChannelPick | null,
-): StudioLaneChannel {
+): StudioInputChannels {
   const channels = reportedChannels(stream)
-  const { taken, missing } = studioLaneRoute(pick, channels)
-  if (taken === null || channels === null || channels === 1)
-    return { split: null, input: source, channels, pick: taken, missing }
-  const split = splitChannels(context, source, channels)
-  split.open()
-  return { split, input: split.take(taken), channels, pick: taken, missing }
+  const split =
+    channels === null || channels === 1
+      ? null
+      : splitChannels(context, source, channels)
+  split?.open()
+  return {
+    channels,
+    split,
+    take(pick) {
+      const { taken, missing } = studioLaneRoute(pick, channels)
+      return {
+        input: split === null || taken === null ? source : split.take(taken),
+        pick: taken,
+        missing,
+      }
+    },
+    drop(input) {
+      if (input !== source) split?.drop(input)
+    },
+    close() {
+      split?.close()
+    },
+  }
 }
 
 /** The armed input as meters beside the take hear it, and the track that names it. */
@@ -91,7 +128,7 @@ export function studioInputTap(armed: {
   readonly context: BaseAudioContext
   readonly source: AudioNode
   readonly stream: MediaStream
-  readonly lane: StudioLaneChannel
+  readonly lane: Pick<StudioLaneChannel, 'split' | 'channels'>
 }): StudioInputTap {
   const { split, channels } = armed.lane
   const tap: ChannelTap =

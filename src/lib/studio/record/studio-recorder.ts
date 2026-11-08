@@ -1,179 +1,74 @@
 // ============================================================
-// Studio recorder — arm a lane, count in, record a take on the song's clock, and hand the finished take over to be kept
+// Studio recorder — arm lanes, count in, record every armed lane's take on the song's clock, and hand each take over to be kept
 // ============================================================
 //
-// Arming a lane opens the clock and the microphone inside the press (WebKit
-// lets neither start outside one), the recorder worklet starts metering, and
-// the armed lane shows the singer's level. Recording starts from the armed
-// lane: the count-in is written on the song's beat grid before the playhead,
-// the song is asked to start on the count-in's last frame (transport.play's
-// notBefore), and the capture starts on the count-in's first frame, so a
-// pickup sung into the count-in is kept in the take's trim. Stop pauses the
-// song, keeps capturing for one round trip so the last sung note is not
-// cut, and the take is handed over (`keep`) to be stored like an imported
-// file. The lane stays armed after a take, as a DAW's armed track does, so
-// the next Record starts the next take; the microphone is released when the
-// lane is disarmed, when the microphone or the clock goes away, or when the
-// Studio closes, and the mic icon goes off with it.
+// Arming a lane opens the clock and its input inside the press (WebKit lets
+// neither start outside one), the recorder worklet starts metering, and the
+// armed lane shows its level. Lanes are armed one at a time, as a DAW's
+// tracks are (lane-arms.ts), and one Record press records every armed lane:
+// the count-in is written on the song's beat grid before the playhead, the
+// song is asked to start on the count-in's last frame (transport.play's
+// notBefore), and every lane's capture starts on the count-in's first
+// frame, the same frame for all, so a pickup sung into the count-in is kept
+// in the take's trim. Stop pauses the song, keeps capturing for one round
+// trip so the last sung note is not cut, and each lane's take is handed
+// over (`keep`) to be stored like an imported file. The lanes stay armed
+// after a take, as a DAW's armed tracks do, so the next Record starts the
+// next take; an input is released when its last lane is disarmed, when it
+// or the clock goes away, or when the Studio closes, and the mic icon goes
+// off with it.
 //
 // Nothing here knows Solid or the Studio's storage: the hook
-// (useStudioRecorder.ts) supplies the clock, the microphone, the transport
-// and the store, and mirrors the view into signals. The take's audio is
-// also journaled as it records (studio-take-journal.ts), so a closed tab
-// leaves the take to be kept on the next visit.
+// (useStudioRecorder.ts) supplies the clock, the inputs, the transport and
+// the store, and mirrors the view into signals. Each lane's take is also
+// journaled as it records (studio-take-journal.ts), so a closed tab leaves
+// every lane's take to be kept on the next visit.
 //
 // A lane records one input of its capture, or an aligned pair mixed to
 // mono (lane-channel.ts), or, on a MIDI lane, an instrument's sound with no
-// microphone at all (armed-input.ts): the arm hands the take and the
-// monitor the same node, and so does every capture it opens after.
+// microphone at all (armed-input.ts). Each take is placed by its own lane's
+// path, and a lost input ends only the takes that recorded from it
+// (lane-take.ts).
 import { audioOutputPathSeconds } from '@/lib/mic-latency'
 import type { MicReleaseReason } from '@/lib/mic-manager'
-import { STUDIO_MAX_CLIP_PASSES } from '../model/clip-passes'
-import { STUDIO_SAMPLE_RATE } from '../model/types'
-import { frameTime, wholeFrameAtOrAfter } from '../playback/whole-frame'
-import type { StudioArmedInput } from './armed-input'
-import { openStudioArmedInput } from './armed-input'
-import type { StudioCaptureEvents, StudioCaptureHandle } from './capture-node'
-import type { StudioClickTrack } from './click-track'
 import { createStudioClickScheduler } from './click-track'
-import type { StudioInputMonitor } from './input-monitor'
+import type { StudioLaneArm } from './lane-arms'
+import { createStudioLaneArms } from './lane-arms'
 import type { StudioInputTap } from './lane-channel'
+import type { StudioLaneTake } from './lane-take'
+import { endNotice, keepsSomething, studioMicLostWords, takeFrames, } from './lane-take'
 import type { StudioCaptureStop } from './pcm-capture'
 import type { StudioRecordSettings } from './record-settings'
-import type { StudioCapturedTake, StudioInputHold, StudioInputLostWords, StudioRecorderDeps, StudioRecorderView, } from './recorder-types'
-import type { StudioLivePeaks } from './take-audio'
-import { createStudioLivePeaks, createStudioTakeBuffer } from './take-audio'
-import type { StudioTakeJournalFeed } from './take-journal-feed'
-import { createStudioTakeJournalFeed } from './take-journal-feed'
-import { studioTakeClip } from './take-passes'
-import type { StudioTakeCut } from './take-plan'
-import { planStudioTake } from './take-plan'
-import type { StudioTakeAnchor } from './take-timing'
-import { studioClickBeats, studioHeardFirst, takeFrameAt, takeTimeOf, } from './take-timing'
+import type { StudioInputLostWords, StudioRecorderDeps, StudioRecorderView, StudioRecordLane, StudioRecordNotice, StudioRecordPhase, } from './recorder-types'
+import type { StudioRunLane as RunLane, StudioTakeRun as Run } from './take-run'
+import { createStudioRunTake, planStudioRun, runLaneDone as ended, STUDIO_TAKE_MAX_SECONDS, studioCapturedTake, studioCountInTicks, studioRunHeardFirst, } from './take-run'
+import { takeFrameAt, takeTimeOf } from './take-timing'
 
-/** The longest take, as the Studio's import allows: five minutes. */
-export const STUDIO_TAKE_MAX_SECONDS = 300
-/** How far past the press a take's capture can begin. */
-const START_LEAD_SECONDS = 0.1
+export {
+  MIC_LOST_ARMED,
+  MIC_LOST_BEFORE_TAKE,
+  MIC_LOST_MID_TAKE,
+  MIC_RELEASED_IN_BACKGROUND,
+  MIC_TAKEN_BY_OTHER_TAB,
+} from './lane-take'
+export { STUDIO_TAKE_MAX_SECONDS } from './take-run'
+
 /** How long past its stop frame a take waits for the worklet before finishing anyway. */
 const STOP_WATCHDOG_MS = 2000
 
-const STOP_NOTICES: Partial<Record<StudioCaptureStop, string>> = {
-  'input-lost':
-    'The microphone went quiet mid-take, so the take ends there. Studio kept what came before.',
-  limit: 'Takes stop at five minutes. Studio kept this one.',
-  'fell-behind':
-    'Studio fell behind keeping this take, so it stopped there. Studio kept what came before.',
-  interrupted:
-    'Audio stopped for a moment, so the take ends there. Studio kept what came before.',
-  'last-pass': `A loop keeps ${STUDIO_MAX_CLIP_PASSES} passes, so recording stopped after the last one.`,
-}
+type RunPhase = Extract<
+  StudioRecordPhase,
+  'counting' | 'recording' | 'finishing'
+>
 
-/** A take that ended before the song reached it keeps nothing, and says so. */
-const ENDED_BEFORE_THE_TAKE: Partial<Record<StudioCaptureStop, string>> = {
-  'input-lost':
-    'The microphone went quiet before the take began, so nothing was recorded. Press Record to try again.',
-  'fell-behind':
-    'Studio fell behind before the take began, so nothing was recorded. Press Record to try again.',
-  interrupted:
-    'Audio stopped for a moment before the take began, so nothing was recorded. Press Record to try again.',
-}
-
-export const MIC_LOST_MID_TAKE =
-  'The microphone went away mid-take. Studio kept what it heard up to then.'
-export const MIC_LOST_BEFORE_TAKE =
-  'The microphone went away before the take began, so nothing was recorded. Plug it back in, then press Record again.'
-export const MIC_LOST_ARMED =
-  'The microphone went away. Plug it back in, then press Record again.'
-/** An armed lane's microphone, let go by the app as the tab stayed in the background (mic-manager.ts). */
-export const MIC_RELEASED_IN_BACKGROUND =
-  'Studio let the microphone go while this tab was in the background. Arm the lane again.'
-/** An armed lane's microphone, handed to another MercuryPitch tab that asked for it. */
-export const MIC_TAKEN_BY_OTHER_TAB =
-  'Another MercuryPitch tab took the microphone. Close it there, then arm the lane again.'
-
-/** What an armed lane says when its microphone goes: the release's own reason, else a lost device. */
-function lostWhileArmed(reason: MicReleaseReason | null): string {
-  if (reason === 'background') return MIC_RELEASED_IN_BACKGROUND
-  if (reason === 'other-tab') return MIC_TAKEN_BY_OTHER_TAB
-  return MIC_LOST_ARMED
-}
-const AUDIO_DID_NOT_START = "Studio's audio didn't start. Press Record again."
-const TAKE_TOO_SHORT = 'That take was too short to keep.'
-const BEFORE_THE_IN_POINT =
-  'Stopped before the range began, so nothing was recorded.'
-/** A punch keeps a tenth of a second at least, a loop's first pass a second (take-passes.ts). */
-const TOO_SOON_IN_RANGE =
-  'Stopped just after the range began, so the take was too short to keep.'
-
-interface Armed {
-  readonly context: AudioContext
-  /** What the lane records and hears, given back through itself only: every capture of the arm listens on its node. */
-  readonly input: StudioArmedInput
-  readonly capture: StudioCaptureHandle
-  readonly monitor: Pick<StudioInputMonitor, 'set' | 'dispose'>
-  readonly clicks: Pick<StudioClickTrack, 'schedule' | 'stop'>
-}
-
-interface Take {
-  readonly id: string
-  readonly title: string
-  readonly trackId: string | null
-  readonly sampleRate: number
-  readonly buffer: ReturnType<typeof createStudioTakeBuffer>
-  readonly peaks: StudioLivePeaks
-  readonly fromFrame: number | null
-  /** Where Record started the song; null for one that played on. */
-  readonly songFrom: number | null
-  readonly cut: StudioTakeCut | null
-  /** The song frame, on the run's count, where the capture stops by itself. */
-  readonly stopAt: number | null
-  readonly countInEnd: number
-  /** Taken off the take's start, in seconds; read as the take starts. */
-  readonly roundTrip: number
-  anchor: StudioTakeAnchor
-  startFrame: number
-  started: boolean
-  releaseMemory: () => void
-  scheduler: ReturnType<typeof createStudioClickScheduler> | null
-  timers: ReturnType<typeof setTimeout>[]
-  /** Set by Stop: the song is not to start any more. */
-  stopped: boolean
-  /** Finishes the take if the worklet never says it stopped. */
-  watchdog: ReturnType<typeof setTimeout> | null
-  readonly journal: StudioTakeJournalFeed
-  /** The input went mid-take, in these words. */
-  lost: StudioInputLostWords | null
-}
-
-/** The take's length in the 48 kHz frames its import keeps. */
-function takeFrames(current: Take): number {
-  return Math.round(
-    (current.buffer.frames * STUDIO_SAMPLE_RATE) / current.sampleRate,
-  )
-}
-
-/** Whether the take keeps anything: past its trim, or enough of a punch's range or a loop's (take-passes.ts). */
-function keepsSomething(current: Take, heardFirst: number): boolean {
-  const take = { heardFirst, fromFrame: current.fromFrame, cut: current.cut }
-  return studioTakeClip(take, takeFrames(current)) !== null
-}
-
-/** What a finished take says: why it ended, and whether anything was kept. */
-function endNotice(
-  kept: boolean,
-  named: string | null,
-  reason: StudioCaptureStop,
-  cut: StudioTakeCut | null,
-  /** The capture ran past the range's start. */
-  inRange: boolean,
-  lost: StudioInputLostWords | null,
-): string | null {
-  if (kept) return named ?? STOP_NOTICES[reason] ?? null
-  if (lost !== null && named === lost.midTake) return lost.beforeTake
-  const early = inRange ? TOO_SOON_IN_RANGE : BEFORE_THE_IN_POINT
-  const stopped = cut !== null && reason === 'stopped' ? early : null
-  return ENDED_BEFORE_THE_TAKE[reason] ?? stopped ?? TAKE_TOO_SHORT
+function laneView(lane: StudioLaneArm): StudioRecordLane {
+  return {
+    trackId: lane.trackId,
+    arming: lane.arming,
+    level: lane.level,
+    live: lane.live,
+    microphone: lane.input !== null && lane.input.stream !== null,
+  }
 }
 
 export function createStudioRecorder(deps: StudioRecorderDeps) {
@@ -185,251 +80,166 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     notice: null,
     targetTrackId: null,
     live: null,
+    lanes: [],
+    notices: [],
   }
-  let armed: Armed | null = null
-  let take: Take | null = null
-  let armToken = 0
+  let run: Run | null = null
+  let runPhase: RunPhase | null = null
+  let notices: readonly StudioRecordNotice[] = []
   let disposed = false
 
-  function set(next: Partial<StudioRecorderView>): void {
-    view = { ...view, ...next }
+  const arms = createStudioLaneArms({
+    deps,
+    events: (lane) => ({
+      level: (peak) => {
+        lane.level = peak
+        publish()
+      },
+      started: (frame) => onStarted(lane, frame),
+      chunk: (firstFrame, frames, buffer) =>
+        onChunk(lane, firstFrame, frames, buffer),
+      stopped: (frames, reason) => {
+        if (lane.take !== null) void onStopped(lane, lane.take, frames, reason)
+      },
+    }),
+    changed: (change) => publish(change),
+  })
+
+  function phase(): StudioRecordPhase {
+    if (runPhase !== null) return runPhase
+    const lanes = arms.list()
+    if (lanes.some((lane) => lane.arming)) return 'arming'
+    return lanes.length > 0 ? 'armed' : 'idle'
+  }
+
+  /** Show the lanes as they are now, with what changed. */
+  function publish(
+    next: Partial<
+      Pick<StudioRecorderView, 'error' | 'notice' | 'countBeat'>
+    > = {},
+  ): void {
+    if (next.notice === null) notices = []
+    const lanes = arms.list()
+    const first = lanes[0]
+    view = {
+      ...view,
+      ...next,
+      phase: phase(),
+      targetTrackId: first?.trackId ?? null,
+      level: first?.level ?? 0,
+      live: first?.live ?? null,
+      lanes: lanes.map(laneView),
+      notices,
+    }
     if (!disposed) deps.onChange(view)
   }
 
   // ── Arming ────────────────────────────────────────────────────
 
-  /** Open the clock and the microphone for `trackId`; inside the press. */
+  /** Open the clock and the input for `trackId`, beside the lanes armed already; inside the press. */
   async function arm(trackId: string | null): Promise<boolean> {
-    if (view.phase !== 'idle' || disposed) return false
-    const token = ++armToken
-    set({ phase: 'arming', error: null, notice: null, targetTrackId: trackId })
-    // Both start before anything is awaited: the press must still be current.
-    // A MIDI lane's instrument opens in place of a microphone, never beside one.
-    const unlocked = deps.unlock().catch(() => false)
-    const input = deps.acquireInstrument?.(trackId) ?? deps.acquireMic(trackId)
-    let held: StudioInputHold
-    try {
-      held = await input
-    } catch (error) {
-      if (token === armToken)
-        set({ phase: 'idle', error: deps.describeError(error) })
-      return false
-    }
-    try {
-      if (!(await unlocked)) throw new Error(AUDIO_DID_NOT_START)
-      const context = deps.clock()
-      if (context === null || context.state !== 'running')
-        throw new Error(AUDIO_DID_NOT_START)
-      await deps.prepareWorklet(context)
-      if (token !== armToken || disposed) throw new Error('disarmed')
-      // The lane pressed last while the microphone opened.
-      armed = open(context, held, view.targetTrackId)
-      set({ phase: 'armed', level: 0 })
-      return true
-    } catch (error) {
-      // This arm's own: an arm after it holds a microphone of its own.
-      held.release()
-      if (token === armToken && !disposed)
-        set({
-          phase: 'idle',
-          error:
-            error instanceof Error && error.message === 'disarmed'
-              ? null
-              : describeOpenError(error),
-        })
-      return false
-    }
+    if (run !== null || disposed) return false
+    return arms.arm(trackId)
   }
 
-  function describeOpenError(error: unknown): string {
-    if (error instanceof Error && error.message === AUDIO_DID_NOT_START)
-      return AUDIO_DID_NOT_START
-    return deps.describeError(error)
-  }
-
-  function open(
-    context: AudioContext,
-    held: StudioInputHold,
-    trackId: string | null,
-  ): Armed {
-    const input = openStudioArmedInput(context, held, deps.createSource)
-    const capture = deps.openCapture(context, input.node, captureEvents())
-    const monitor = deps.createMonitor(context, input.node)
-    monitor.set(deps.monitorLevel(trackId))
-    if (input.opened !== null) deps.inputOpened?.(input.opened)
-    return {
-      context,
-      input,
-      capture,
-      monitor,
-      clicks: deps.createClicks(context),
-    }
-  }
-
-  /** Close everything the arm opened and give the input back. */
-  function closeArmed(): void {
-    const closing = armed
-    armed = null
-    if (closing === null) return
-    closing.capture.dispose()
-    closing.monitor.dispose()
-    closing.clicks.stop()
-    closing.input.close()
-  }
-
-  function disarm(): void {
-    if (view.phase === 'arming') {
-      armToken++
-      set({ phase: 'idle', targetTrackId: null })
-      return
-    }
-    if (view.phase !== 'armed') return
-    closeArmed()
-    set({ phase: 'idle', level: 0, targetTrackId: null })
+  /** Disarm lane `trackId`, or every lane when none is named; not while a take runs. */
+  function disarm(trackId?: string | null): void {
+    if (run !== null) return
+    if (arms.disarm(trackId)) publish()
   }
 
   // ── The worklet's messages ───────────────────────────────────
 
-  function captureEvents(): StudioCaptureEvents {
-    return {
-      level: (peak) => {
-        if (view.phase !== 'idle') set({ level: peak })
-      },
-      started: (frame) => onStarted(frame),
-      chunk: (firstFrame, frames, buffer) =>
-        onChunk(firstFrame, frames, buffer),
-      stopped: (frames, reason) => void onStopped(frames, reason),
-    }
-  }
-
-  function onStarted(frame: number): void {
-    if (take === null) return
+  function onStarted(lane: StudioLaneArm, frame: number): void {
+    const take = lane.take
+    if (take === null || run === null) return
     take.startFrame = frame
     take.started = true
-    placeLive(take)
+    place(run, { lane, take })
+    publish()
   }
 
-  function onChunk(firstFrame: number, frames: number, buffer: ArrayBuffer) {
+  function onChunk(
+    lane: StudioLaneArm,
+    firstFrame: number,
+    frames: number,
+    buffer: ArrayBuffer,
+  ) {
+    const take = lane.take
     if (take === null) return
     const chunk = take.buffer.append(firstFrame, frames, buffer)
     take.peaks.push(chunk.samples)
     take.journal.push(chunk.samples)
-    if (view.live !== null)
-      set({ live: { ...view.live, count: take.peaks.count } })
+    if (lane.live === null) return
+    lane.live = { ...lane.live, count: take.peaks.count }
+    publish()
   }
 
   // ── Recording ────────────────────────────────────────────────
 
-  /** Start the take from the armed lane; inside the press. */
-  function record(): boolean {
-    if (view.phase !== 'armed' || armed === null) return false
-    const settings = deps.settings()
-    const context = armed.context
-    const rate = context.sampleRate
-    const maxFrames = Math.floor((STUDIO_TAKE_MAX_SECONDS - 0.01) * rate)
-    let releaseMemory: () => void
+  /** Hold memory for every lane's take, or none: a lane that cannot record stops them all. */
+  function reserveEach(count: number, bytes: number): (() => void)[] | null {
+    const releases: (() => void)[] = []
     try {
-      releaseMemory = deps.reserveMemory(maxFrames * 4)
+      for (let lane = 0; lane < count; lane += 1)
+        releases.push(deps.reserveMemory(bytes))
+      return releases
     } catch (error) {
-      set({ error: deps.describeError(error) })
-      return false
+      for (const release of releases) release()
+      publish({ error: deps.describeError(error) })
+      return null
     }
-    const now = context.currentTime
-    const startTime = wholeFrameAtOrAfter(now + START_LEAD_SECONDS, rate)
-    const cut = deps.takeCut?.() ?? null
-    // A punch or a loop starts the song where its range needs it.
-    const playingOn = cut === null && deps.transport.playing()
-    const liveAnchor = playingOn ? deps.transport.anchor() : null
-    // A song still starting has no place on the clock yet: start it over.
-    if (liveAnchor === null && deps.transport.playing()) deps.transport.pause()
-    const playing = liveAnchor !== null
-    const plan = planStudioTake({
-      cut,
-      playing,
-      playheadFrame: deps.transport.playheadFrame(),
-      countInBars: settings.countInBars,
-      tempoBpm: deps.tempoBpm(),
-    })
-    const countIn = plan.countInSeconds
-    const countInEnd = wholeFrameAtOrAfter(startTime + countIn, rate)
-    const fromFrame = plan.fromFrame
-    const anchor: StudioTakeAnchor = liveAnchor ?? {
-      frame: plan.songFrom ?? 0,
-      time: countInEnd,
-    }
-    const id = deps.createId()
-    const title = deps.title()
-    // Read now, so an offset changed while armed is in this take.
-    const roundTrip = deps.roundTrip(context, armed.input.stream)
-    take = {
-      id,
-      title,
-      trackId: view.targetTrackId,
-      sampleRate: rate,
-      buffer: createStudioTakeBuffer(),
-      peaks: createStudioLivePeaks(rate, maxFrames),
-      fromFrame,
-      songFrom: plan.songFrom,
-      cut,
-      stopAt: plan.stopAt,
-      countInEnd,
-      roundTrip,
-      anchor,
-      startFrame: Math.round(startTime * rate),
-      started: false,
-      releaseMemory,
-      scheduler: null,
-      timers: [],
-      stopped: false,
-      watchdog: null,
-      journal: createStudioTakeJournalFeed(deps.journal, {
-        id,
-        trackId: view.targetTrackId,
-        title,
-        sampleRate: rate,
-        fromFrame,
-        heardFirst: studioHeardFirst(anchor, startTime, roundTrip),
-        cut,
+  }
+
+  /** Start a take on every armed lane, from the same frame; inside the press. */
+  function record(): boolean {
+    const context = arms.context()
+    const lanes = arms.list()
+    if (phase() !== 'armed' || context === null || disposed) return false
+    const maxFrames = Math.floor(
+      (STUDIO_TAKE_MAX_SECONDS - 0.01) * context.sampleRate,
+    )
+    const releases = reserveEach(lanes.length, maxFrames * 4)
+    if (releases === null) return false
+    const planned = planStudioRun(deps, context)
+    const current = planned.run
+    current.takes = lanes.map((lane, index) => ({
+      lane,
+      take: createStudioRunTake(deps, current, lane, {
+        context,
+        startTime: planned.startTime,
+        maxFrames,
+        releaseMemory: releases[index],
       }),
-      lost: null,
+    }))
+    run = current
+    for (const { lane, take } of current.takes) {
+      lane.take = take
+      lane.capture?.start(take.startFrame, maxFrames)
     }
-    armed.capture.start(take.startFrame, maxFrames)
-    if (countIn > 0) countInClicks(take, countIn)
-    startSong(take, playing, settings)
-    placeLive(take)
-    set({
-      phase: countIn > 0 ? 'counting' : 'recording',
-      error: null,
-      notice: null,
-    })
+    if (planned.countIn > 0) countInClicks(current, planned.countIn)
+    startSong(current, planned.playing, planned.settings)
+    for (const each of current.takes) place(current, each)
+    runPhase = planned.countIn > 0 ? 'counting' : 'recording'
+    publish({ error: null, notice: null })
     return true
   }
 
   /** The count-in: its ticks on the song's grid, and the beats left on screen. */
-  function countInClicks(current: Take, countIn: number): void {
-    const from = current.songFrom
-    if (armed === null || from === null) return
-    const tempo = deps.tempoBpm()
-    const beats = studioClickBeats(
-      from - countIn * STUDIO_SAMPLE_RATE,
-      from,
-      tempo,
-    )
-    const virtual = { frame: from, time: current.countInEnd }
-    const ticks = beats.map((beat) => ({
-      time: takeTimeOf(virtual, beat.frame),
-      accent: beat.accent,
-    }))
-    armed.clicks.schedule(ticks)
-    const context = armed.context
+  function countInClicks(current: Run, countIn: number): void {
+    const context = arms.context()
+    const clicks = arms.clicks()
+    if (context === null || clicks === null || current.songFrom === null) return
+    const ticks = studioCountInTicks(current, countIn, deps.tempoBpm())
+    clicks.schedule(ticks)
     const heardLate = audioOutputPathSeconds(context)
+    const counting = () => run === current && runPhase === 'counting'
     ticks.forEach((tick, index) => {
       const wait = (tick.time + heardLate - context.currentTime) * 1000
       current.timers.push(
         setTimeout(
           () => {
-            if (take === current && view.phase === 'counting')
-              set({ countBeat: ticks.length - index })
+            if (counting()) publish({ countBeat: ticks.length - index })
           },
           Math.max(0, wait),
         ),
@@ -439,8 +249,9 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     current.timers.push(
       setTimeout(
         () => {
-          if (take === current && view.phase === 'counting')
-            set({ phase: 'recording', countBeat: null })
+          if (!counting()) return
+          runPhase = 'recording'
+          publish({ countBeat: null })
         },
         Math.max(0, end),
       ),
@@ -449,7 +260,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
 
   /** Start the song on the count-in's last frame, or follow it if it plays already. */
   function startSong(
-    current: Take,
+    current: Run,
     playing: boolean,
     settings: StudioRecordSettings,
   ): void {
@@ -467,30 +278,37 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
           deps.transport.pause()
           return
         }
-        if (take !== current) return
+        if (run !== current) return
         // The song's real place on the clock, if it started; else as planned.
         current.anchor = deps.transport.anchor() ?? current.anchor
-        placeLive(current)
+        for (const each of current.takes) place(current, each)
+        publish()
         scheduleStop(current)
         startClick(current, settings)
       })
   }
 
-  /** A punch stops at its out point, a loop after its last pass: the capture is told once the song's place is known. */
-  function scheduleStop(current: Take): void {
-    if (current.stopAt === null || armed === null || take !== current) return
-    const time = takeTimeOf(current.anchor, current.stopAt) + current.roundTrip
+  /** A punch stops at its out point, a loop after its last pass: each capture is told once the song's place is known, one round trip of its own later. */
+  function scheduleStop(current: Run): void {
+    if (current.stopAt === null || run !== current) return
     const reason = current.cut?.mode === 'punch' ? 'out-point' : 'last-pass'
-    armed.capture.stop(Math.round(time * current.sampleRate), reason)
+    const at = takeTimeOf(current.anchor, current.stopAt)
+    for (const { lane, take } of current.takes) {
+      if (take.ended || take.stopping) continue
+      const frame = Math.round((at + take.roundTrip) * current.sampleRate)
+      lane.capture?.stop(frame, reason)
+    }
   }
 
-  function startClick(current: Take, settings: StudioRecordSettings): void {
-    if (!settings.click || armed === null || take !== current) return
-    const context = armed.context
+  function startClick(current: Run, settings: StudioRecordSettings): void {
+    const context = arms.context()
+    const clicks = arms.clicks()
+    if (!settings.click || context === null || clicks === null) return
+    if (run !== current) return
     const from =
       current.songFrom ?? takeFrameAt(current.anchor, context.currentTime)
     current.scheduler = createStudioClickScheduler({
-      track: armed.clicks,
+      track: clicks,
       tempoBpm: deps.tempoBpm(),
       fromFrame: from,
       anchor: () => current.anchor,
@@ -500,232 +318,293 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     current.scheduler.start()
   }
 
-  /** Where the live waveform starts, once the first sample's place is known. */
-  function placeLive(current: Take): void {
-    if (armed === null) return
-    const heardFirst = studioHeardFirst(
-      current.anchor,
-      frameTime(current.startFrame, current.sampleRate),
-      current.roundTrip,
-    )
-    set({
-      live: {
-        title: current.title,
-        heardFirst,
-        fromFrame: current.fromFrame,
-        peaks: current.peaks,
-        sampleRate: current.sampleRate,
-        count: current.peaks.count,
-        cut: current.cut,
-        anchor: current.anchor,
-      },
-    })
-    if (current.started) current.journal.place(heardFirst)
+  /** Where a lane's live waveform starts, once its first sample's place is known; journaled from then. */
+  function place(current: Run, { lane, take }: RunLane): void {
+    if (take.ended) return
+    const heardFirst = studioRunHeardFirst(current, take)
+    lane.live = {
+      title: current.title,
+      heardFirst,
+      fromFrame: current.fromFrame,
+      peaks: take.peaks,
+      sampleRate: take.sampleRate,
+      count: take.peaks.count,
+      cut: current.cut,
+      anchor: current.anchor,
+    }
+    if (take.started) take.journal.place(heardFirst)
   }
 
-  /** Stop the take: Stop, Space, R or Escape. A count-in stopped keeps nothing. */
+  /** Stop every lane's take: Stop, Space, R or Escape. A count-in stopped keeps nothing. */
   function stop(): void {
-    if (take === null || armed === null) return
-    if (view.phase === 'counting') {
+    const current = run
+    const context = arms.context()
+    if (current === null || context === null) return
+    if (runPhase === 'counting') {
       cancel()
       return
     }
-    if (view.phase !== 'recording') return
-    const context = armed.context
-    const until = Math.round(
-      (context.currentTime + take.roundTrip) * context.sampleRate,
-    )
-    armed.capture.stop(Math.max(take.startFrame + 1, until), 'stopped')
-    endSound(take)
-    set({ phase: 'finishing', countBeat: null })
+    if (runPhase !== 'recording') return
+    for (const each of current.takes) {
+      if (ended(each)) continue
+      const { lane, take } = each
+      const until = Math.round(
+        (context.currentTime + take.roundTrip) * context.sampleRate,
+      )
+      lane.capture?.stop(Math.max(take.startFrame + 1, until), 'stopped')
+      take.stopping = true
+    }
+    endSound(current)
+    runPhase = 'finishing'
+    publish({ countBeat: null })
   }
 
   /** Finish with what arrived if the worklet never reports its stop (a closed clock). */
-  function watch(current: Take, reason: StudioCaptureStop): void {
-    if (current.watchdog !== null) return
-    current.watchdog = setTimeout(
-      () => {
-        if (take === current) void onStopped(current.buffer.frames, reason)
-      },
-      STOP_WATCHDOG_MS + current.roundTrip * 1000,
+  function watch({ lane, take }: RunLane, reason: StudioCaptureStop): void {
+    if (take.watchdog !== null) return
+    take.watchdog = setTimeout(
+      () => void onStopped(lane, take, take.buffer.frames, reason),
+      STOP_WATCHDOG_MS + take.roundTrip * 1000,
     )
   }
 
-  /** The song, the click and the count-in timers stop with the take. */
-  function endSound(
-    current: Take,
-    reason: StudioCaptureStop = 'stopped',
-  ): void {
+  /** The song, the click and the count-in timers stop with the run. */
+  function endSound(current: Run, reason: StudioCaptureStop = 'stopped'): void {
     current.stopped = true
-    watch(current, reason)
+    for (const each of current.takes) if (!each.take.ended) watch(each, reason)
     current.scheduler?.stop()
     for (const timer of current.timers) clearTimeout(timer)
     current.timers = []
-    armed?.clicks.stop()
+    arms.clicks()?.stop()
     deps.transport.pause()
   }
 
-  /** A count-in stopped before the take began: nothing is kept, the lane stays armed. */
-  function cancel(): void {
-    const current = take
-    if (current === null || armed === null) return
-    take = null
-    endSound(current)
-    clearTimeout(current.watchdog ?? undefined)
-    current.releaseMemory()
-    current.journal.discard()
-    listenAgain()
-    set({ phase: 'armed', countBeat: null, live: null })
+  /** Let a take go that kept nothing: a count-in stopped, or its lane lost in it. */
+  function letGo({ lane, take }: RunLane): void {
+    clearTimeout(take.watchdog ?? undefined)
+    take.ended = true
+    take.finished = true
+    take.releaseMemory()
+    take.journal.discard()
+    lane.take = null
+    lane.live = null
   }
 
-  /** A capture takes one start; the armed lane listens on through a fresh one, on the same channel. */
-  function listenAgain(): void {
-    if (armed === null) return
-    armed.capture.dispose()
-    armed = {
-      ...armed,
-      capture: deps.openCapture(
-        armed.context,
-        armed.input.node,
-        captureEvents(),
-      ),
+  /** A count-in stopped before the take began: nothing is kept, the lanes stay armed. */
+  function cancel(): void {
+    const current = run
+    if (current === null) return
+    run = null
+    runPhase = null
+    endSound(current)
+    for (const each of current.takes) {
+      letGo(each)
+      arms.listenAgain(each.lane)
     }
+    publish({ countBeat: null })
   }
 
   /**
-   * Whether the lane stays armed after a take that ended for `reason`: not
-   * when its input or the clock went with it, or the Studio closed.
+   * Whether a lane stays armed after its take ended for `reason`: not when
+   * its input or the clock went with it, or the Studio closed.
    */
-  function staysArmed(reason: StudioCaptureStop): boolean {
-    if (disposed || armed === null) return false
+  function staysArmed(lane: StudioLaneArm, reason: StudioCaptureStop): boolean {
+    if (disposed || !arms.has(lane)) return false
     if (reason === 'input-lost' || reason === 'interrupted') return false
-    return armed.context.state === 'running' && armed.input.live()
+    return arms.context()?.state === 'running' && lane.input?.live() === true
   }
 
-  /** The worklet stopped: by Stop, or on its own (a limit, the input gone). */
-  async function onStopped(frames: number, reason: StudioCaptureStop) {
-    const current = take
-    if (current === null) return
-    if (view.phase === 'counting' || view.phase === 'recording') {
+  /** A lane's capture stopped: by Stop, or on its own (a limit, its input gone). */
+  async function onStopped(
+    lane: StudioLaneArm,
+    take: StudioLaneTake,
+    frames: number,
+    reason: StudioCaptureStop,
+  ) {
+    const current = run
+    if (current === null || take.ended) return
+    take.ended = true
+    if (lane.take === take) lane.take = null
+    clearTimeout(take.watchdog ?? undefined)
+    // The run ends as its last lane stops.
+    const running = runPhase === 'counting' || runPhase === 'recording'
+    if (running && current.takes.every(ended)) {
       endSound(current)
-      set({ phase: 'finishing', countBeat: null })
+      runPhase = 'finishing'
+      publish({ countBeat: null })
     }
-    clearTimeout(current.watchdog ?? undefined)
-    // A loss already named (the microphone gone) says it best.
-    const named = view.notice
-    take = null
-    await finish(current, frames, reason, named)
+    await finish(current, { lane, take }, frames, reason)
   }
 
   async function finish(
-    current: Take,
+    current: Run,
+    { lane, take }: RunLane,
     frames: number,
     reason: StudioCaptureStop,
-    named: string | null,
   ): Promise<void> {
-    // The armed lane listens on for the next take, or lets the microphone go.
-    const after: Partial<StudioRecorderView> = staysArmed(reason)
-      ? { phase: 'armed' }
-      : { phase: 'idle', targetTrackId: null }
-    if (after.phase === 'armed') listenAgain()
-    else closeArmed()
+    // The lane listens on for the next take, or lets its input go.
+    if (staysArmed(lane, reason)) arms.listenAgain(lane)
+    else arms.close(lane)
+    let notice: string | null = null
     try {
-      const heardFirst = studioHeardFirst(
-        current.anchor,
-        frameTime(current.startFrame, current.sampleRate),
-        current.roundTrip,
-      )
-      const reached = current.started && keepsSomething(current, heardFirst)
-      const notice = endNotice(
-        reached && frames > 0,
-        named,
-        reason,
-        current.cut,
-        current.cut !== null &&
-          heardFirst + takeFrames(current) > current.cut.range.startFrame,
-        current.lost,
-      )
-      if (!reached || frames <= 0) {
-        current.journal.discard()
-        set({ ...after, live: null, level: 0, notice })
-        return
-      }
-      const captured: StudioCapturedTake = {
-        id: current.id,
-        title: current.title,
-        trackId: current.trackId,
-        sampleRate: current.sampleRate,
-        samples: current.buffer.assemble(),
+      const heardFirst = studioRunHeardFirst(current, take)
+      const placed = {
         heardFirst,
         fromFrame: current.fromFrame,
         cut: current.cut,
-        capturedFrom: frameTime(current.startFrame, current.sampleRate),
       }
-      current.buffer.clear()
-      const kept = await deps.keep(captured).catch(() => false)
-      // Kept: the journal goes. Not kept: it holds the take for the next try.
-      if (kept) current.journal.discard()
-      else current.journal.flush()
-      set({ ...after, live: null, level: 0, notice })
+      const reached = take.started && frames > 0 && keepsSomething(take, placed)
+      // A loss already named (the input gone) says it best.
+      notice = endNotice(
+        reached,
+        take.lost?.midTake ?? null,
+        reason,
+        current.cut,
+        current.cut !== null &&
+          heardFirst + takeFrames(take) > current.cut.range.startFrame,
+        take.lost,
+      )
+      if (reached) await keep(current, take, heardFirst)
+      else take.journal.discard()
     } finally {
-      current.releaseMemory()
+      take.releaseMemory()
+      finished(current, { lane, take }, notice)
     }
+  }
+
+  /** Hand the take over to be stored; its journal goes once it is kept, and holds it for the next try if not. */
+  async function keep(
+    current: Run,
+    take: StudioLaneTake,
+    heardFirst: number,
+  ): Promise<void> {
+    const captured = studioCapturedTake(current, take, heardFirst)
+    take.buffer.clear()
+    const kept = await deps.keep(captured).catch(() => false)
+    if (kept) take.journal.discard()
+    else take.journal.flush()
+  }
+
+  /** A lane's take is done; the run is over once every lane's is. */
+  function finished(
+    current: Run,
+    { lane, take }: RunLane,
+    notice: string | null,
+  ): void {
+    take.finished = true
+    // Its waveform stayed in the lane until the take was kept.
+    lane.live = null
+    lane.level = 0
+    if (notice !== null)
+      notices = [...notices, { trackId: take.trackId, text: notice }]
+    if (run === current && current.takes.every((each) => each.take.finished)) {
+      run = null
+      runPhase = null
+    }
+    publish(notice === null ? {} : { notice })
   }
 
   // ── Losses ───────────────────────────────────────────────────
 
-  /** The lane's input went away: an armed lane disarms and says so in `words`, and a take keeps what it has. */
-  function inputLost(words: StudioInputLostWords): void {
-    if (view.phase === 'arming' || view.phase === 'idle') return
-    if (view.phase === 'armed' || view.phase === 'counting') {
-      if (view.phase === 'counting') cancel()
-      closeArmed()
-      set({ phase: 'idle', level: 0, targetTrackId: null, error: words.armed })
+  /** Lanes whose input went while a count-in runs: alone, the count-in ends; beside others, their takes go and the rest count on. */
+  function loseInCountIn(current: Run, lost: readonly StudioLaneArm[]): void {
+    if (current.takes.every(({ lane }) => lost.includes(lane))) {
+      cancel()
       return
     }
-    if (view.phase !== 'recording' || armed === null) return
-    armed.capture.stop(null, 'input-lost')
-    if (take !== null) {
-      take.lost = words
-      endSound(take, 'input-lost')
-    }
-    set({ phase: 'finishing', notice: words.midTake })
+    const gone = current.takes.filter(({ lane }) => lost.includes(lane))
+    for (const each of gone) letGo(each)
+    current.takes = current.takes.filter((each) => !gone.includes(each))
   }
 
-  /** The microphone went away, saying why when the app let it go (`reason`). */
+  /** Lanes whose input went mid-take: each keeps what it had, and the others record on. */
+  function loseMidTake(
+    current: Run,
+    lost: readonly StudioLaneArm[],
+    words: StudioInputLostWords,
+  ): void {
+    for (const each of current.takes) {
+      if (!lost.includes(each.lane) || ended(each)) continue
+      each.lane.capture?.stop(null, 'input-lost')
+      each.take.stopping = true
+      each.take.lost = words
+      watch(each, 'input-lost')
+    }
+    if (current.takes.every(ended)) {
+      endSound(current, 'input-lost')
+      runPhase = 'finishing'
+    }
+    publish({ notice: words.midTake })
+  }
+
+  /** The inputs of the lanes `hit` names went away: an armed lane disarms and says so in `words`, and a take keeps what it has. */
+  function lose(
+    words: StudioInputLostWords,
+    hit: (lane: StudioLaneArm) => boolean,
+  ): void {
+    const lost = arms.list().filter((lane) => !lane.arming && hit(lane))
+    const current = run
+    if (lost.length === 0) return
+    if (current !== null && runPhase === 'recording') {
+      loseMidTake(current, lost, words)
+      return
+    }
+    if (current !== null && runPhase !== 'counting') return
+    if (current !== null) loseInCountIn(current, lost)
+    for (const lane of lost) arms.close(lane)
+    publish({ error: words.armed })
+  }
+
+  /** Lane `trackId`'s input went away, or every lane's when none is named. */
+  function inputLost(
+    words: StudioInputLostWords,
+    trackId?: string | null,
+  ): void {
+    lose(words, (lane) => trackId === undefined || lane.trackId === trackId)
+  }
+
+  /** The microphone went away, saying why when the app let it go (`reason`): every lane on it, and no instrument. */
   function micLost(reason: MicReleaseReason | null = null): void {
-    inputLost({
-      armed: lostWhileArmed(reason),
-      midTake: MIC_LOST_MID_TAKE,
-      beforeTake: MIC_LOST_BEFORE_TAKE,
-    })
+    lose(
+      studioMicLostWords(reason),
+      (lane) => lane.input !== null && lane.input.stream !== null,
+    )
   }
 
-  /** The clock stopped running (an interruption): a take keeps what it has. */
+  /** The clock stopped running (an interruption): every take keeps what it has. */
   function clockStopped(): void {
-    if (view.phase === 'recording' && armed !== null) {
-      armed.capture.stop(null, 'interrupted')
-      if (take !== null) endSound(take, 'interrupted')
-      set({ phase: 'finishing' })
+    const current = run
+    if (current !== null && runPhase === 'recording') {
+      for (const each of current.takes) {
+        if (ended(each)) continue
+        each.lane.capture?.stop(null, 'interrupted')
+        each.take.stopping = true
+      }
+      endSound(current, 'interrupted')
+      runPhase = 'finishing'
+      publish()
       return
     }
-    if (view.phase === 'counting') cancel()
+    if (runPhase === 'counting') cancel()
     disarm()
   }
 
   /** The Studio closed: what was recording stays in the journal for the next visit. */
   function dispose(): void {
     if (disposed) return
-    const current = take
-    take = null
+    const current = run
+    run = null
+    runPhase = null
     if (current !== null) {
       endSound(current)
-      clearTimeout(current.watchdog ?? undefined)
-      current.journal.flush()
-      current.releaseMemory()
+      for (const { take } of current.takes) {
+        if (take.ended) continue
+        clearTimeout(take.watchdog ?? undefined)
+        take.journal.flush()
+        take.releaseMemory()
+      }
     }
-    armToken++
-    closeArmed()
+    arms.dispose()
     disposed = true
   }
 
@@ -738,24 +617,23 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     micLost,
     inputLost,
     clockStopped,
-    /** Move the arm to another lane before the take starts; the microphone stays open. */
-    retarget(trackId: string | null): void {
-      if (view.phase !== 'armed' && view.phase !== 'arming') return
-      if (trackId === view.targetTrackId) return
-      set({ targetTrackId: trackId })
-      armed?.monitor.set(deps.monitorLevel(trackId))
+    /** Move lane `from`'s arm (the first lane's when none is named) to `trackId` before the take starts; its input stays open. */
+    retarget(trackId: string | null, from?: string | null): void {
+      if (run !== null) return
+      const moving = from === undefined ? view.targetTrackId : from
+      if (trackId !== moving && arms.retarget(trackId, moving)) publish()
     },
-    /** The armed lane's monitoring follows the settings and the lane. */
+    /** Each armed lane's monitoring follows the settings and its lane. */
     updateMonitor(): void {
-      armed?.monitor.set(deps.monitorLevel(view.targetTrackId))
+      arms.updateMonitors()
     },
-    /** The armed input, for meters beside the take on the arm's own split; null while nothing is armed. */
+    /** The armed microphone, for meters beside the take on its own split; null while no lane holds one. */
     inputTap(): StudioInputTap | null {
-      return armed?.input.tap() ?? null
+      return arms.tap()
     },
     clearMessages(): void {
       if (view.error !== null || view.notice !== null)
-        set({ error: null, notice: null })
+        publish({ error: null, notice: null })
     },
     dispose,
   }

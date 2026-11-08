@@ -45,19 +45,44 @@ export interface StudioLiveTake {
   readonly anchor?: StudioTakeAnchor
 }
 
-export interface StudioRecorderView {
-  readonly phase: StudioRecordPhase
+/** One armed lane: its input opening or open, its level, and its take as it records. */
+export interface StudioRecordLane {
+  /** The lane, or null for a take that gets a lane of its own. */
+  readonly trackId: string | null
+  /** Its input is still opening, in the press that armed it. */
+  readonly arming: boolean
   /** The loudest input sample lately, 0 to 1. */
+  readonly level: number
+  readonly live: StudioLiveTake | null
+  /** It records a microphone; false for an instrument, and while its input opens. */
+  readonly microphone: boolean
+}
+
+/** What one lane's take said when it did not end the usual way. */
+export interface StudioRecordNotice {
+  readonly trackId: string | null
+  readonly text: string
+}
+
+export interface StudioRecorderView {
+  /** Idle with no lane armed, arming while any lane's input opens, else armed; then counting in, recording and keeping, across every armed lane. */
+  readonly phase: StudioRecordPhase
+  /** The loudest input sample lately on the first armed lane, 0 to 1. */
   readonly level: number
   /** The count-in beats left, while counting in. */
   readonly countBeat: number | null
   /** Why the last arm or take did not happen. */
   readonly error: string | null
-  /** What happened to the last take when it did not end the usual way. */
+  /** What happened to the last lane's take that did not end the usual way. */
   readonly notice: string | null
-  /** The lane the take goes to, or null for a new lane. */
+  /** The first armed lane, which its take goes to, or null for a new lane. */
   readonly targetTrackId: string | null
+  /** The first armed lane's take as it records. */
   readonly live: StudioLiveTake | null
+  /** Every armed lane, in the order they were armed. */
+  readonly lanes?: readonly StudioRecordLane[]
+  /** What each lane's last take said, for the lanes whose take did not end the usual way. */
+  readonly notices?: readonly StudioRecordNotice[]
 }
 
 /** A finished take, ready to be kept like an imported file. */
@@ -155,7 +180,7 @@ export interface StudioInputOpened {
 export interface StudioRecorderDeps {
   unlock(): Promise<boolean>
   clock(): AudioContext | null
-  /** Open the input `trackId` records from: its own, or the Studio's (null: a new lane). */
+  /** Open the input `trackId` records from: its own, or the Studio's (null: a new lane). Lanes on one microphone are handed the same stream, which they share. */
   acquireMic(trackId: string | null): Promise<StudioMicHold>
   /** A MIDI lane's instrument, asked first and inside the press, opened in place of a microphone; null for a lane that records one. */
   acquireInstrument?(
@@ -176,15 +201,18 @@ export interface StudioRecorderDeps {
     input: AudioNode,
   ): Pick<StudioInputMonitor, 'set' | 'dispose'>
   monitorLevel(trackId: string | null): StudioMonitorLevel
-  /** The input an arm opened: how many channels it has, what the lane records of them, and whether its pick was there. */
-  inputOpened?(opened: StudioInputOpened): void
+  /** The input a lane's arm opened (`trackId`): how many channels it has, what the lane records of them, and whether its pick was there. */
+  inputOpened?(
+    opened: StudioInputOpened & { readonly trackId: string | null },
+  ): void
   transport: StudioRecorderTransport
   settings(): StudioRecordSettings
   /** What the next take keeps: a punch or a loop of the range, or null for a plain take. */
   takeCut?(): StudioTakeCut | null
   tempoBpm(): number
-  /** What a new take is moved earlier by, in seconds: a microphone's round trip, or an instrument's (`stream` null) output path. */
+  /** What a new take is moved earlier by, in seconds: a microphone's round trip, or an instrument's (`stream` null) output path; read for each lane's take. */
   roundTrip(context: AudioContext, stream: MediaStream | null): number
+  /** Hold `bytes` for one lane's take; throws when there is not room. */
   reserveMemory(bytes: number): () => void
   journal?: StudioTakeJournalWriter
   /** Store the take; true once it is kept. */
