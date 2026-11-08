@@ -36,6 +36,15 @@ describe('studioLaneInputBadge', () => {
       studioLaneInputBadge({ ...scarlett, channel: null }, 'Desk mic'),
     ).toEqual({ short: 'Scarlett', full: 'Scarlett 2i2 USB' })
   })
+
+  it('shows a MIDI lane as MIDI, with its port in full', () => {
+    expect(
+      studioLaneInputBadge(
+        { kind: 'midi', portId: 'port-7', label: 'Keystation 49' },
+        'Desk mic',
+      ),
+    ).toEqual({ short: 'MIDI', full: 'Keystation 49 (MIDI)' })
+  })
 })
 
 describe('studioInputShortName', () => {

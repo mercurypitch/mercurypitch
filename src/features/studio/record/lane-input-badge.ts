@@ -1,10 +1,10 @@
-// Studio lane input badge — what a lane header's chip says for a lane with an input, a channel or a pair of its own, and the whole of it for its title and a screen reader.
+// Studio lane input badge — what a lane header's chip says for a lane with an input, a channel or a pair of its own, or a MIDI port, and the whole of it for its title and a screen reader.
 import { channelPickLabel } from '@/lib/audio-input/input-choices'
 import type { StudioLaneInput } from '@/lib/studio/record/lane-inputs'
-import { laneChannelPick } from '@/lib/studio/record/lane-inputs'
+import { isMidiLaneInput, laneChannelPick, } from '@/lib/studio/record/lane-inputs'
 
 export interface StudioLaneInputBadge {
-  /** On the chip: the channel ("In 2") or the pair ("In 1+2"), else the input's first word. */
+  /** On the chip: the channel ("In 2") or the pair ("In 1+2"), "MIDI" for a MIDI lane, else the input's first word. */
   readonly short: string
   /** The input and the channel in full, to follow "records from". */
   readonly full: string
@@ -31,6 +31,8 @@ export function studioLaneInputBadge(
   lane: StudioLaneInput,
   studioInputName: string,
 ): StudioLaneInputBadge | null {
+  if (isMidiLaneInput(lane))
+    return { short: 'MIDI', full: `${lane.label ?? 'a MIDI input'} (MIDI)` }
   const pick = laneChannelPick(lane)
   if (lane.deviceId === null && pick === null) return null
   const device =

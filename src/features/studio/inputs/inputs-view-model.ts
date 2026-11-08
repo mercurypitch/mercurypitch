@@ -22,7 +22,7 @@ import type { GuitarInputHealth } from '@/lib/audio-input/level-health'
 import type { DeviceInfoLike, InputKind, RosterInput, } from '@/lib/audio-input/mic-roster'
 import { buildRoster } from '@/lib/audio-input/mic-roster'
 import type { InputChannelCount, StudioLaneInput, } from '@/lib/studio/record/lane-inputs'
-import { knownInputChannels, planStudioLaneInput, } from '@/lib/studio/record/lane-inputs'
+import { isMidiLaneInput, knownInputChannels, planStudioLaneInput, } from '@/lib/studio/record/lane-inputs'
 
 /** A lane as the view lists it. */
 export interface StudioInputsLane {
@@ -134,7 +134,9 @@ export function studioInputsModel(
   if (!roster.labelled) return { named: false, devices: [] }
   const fallback =
     roster.inputs.find((device) => device.isDefault) ?? roster.inputs[0] ?? null
-  const placed = input.lanes.map((lane) => {
+  // A MIDI lane records no audio input: it is listed with its port.
+  const placed = input.lanes.flatMap((lane) => {
+    if (isMidiLaneInput(lane.input)) return []
     const plan = planStudioLaneInput(
       lane.input,
       input.studioDeviceId,
@@ -142,7 +144,7 @@ export function studioInputsModel(
     )
     const device =
       roster.inputs.find((each) => each.deviceId === plan.deviceId) ?? fallback
-    return { name: lane.name, device, pick: plan.pick }
+    return [{ name: lane.name, device, pick: plan.pick }]
   })
   const devices = roster.inputs.map((device): StudioInputDevice => {
     const channels = channelsOf(device, input.counts)

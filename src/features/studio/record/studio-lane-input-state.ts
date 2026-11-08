@@ -15,7 +15,7 @@ import { createEffect, createSignal, on, untrack } from 'solid-js'
 import type { ChannelPick } from '@/lib/audio-input/input-channels'
 import type { StudioProject } from '@/lib/studio/model/types'
 import type { InputChannelCount, StudioLaneInput, StudioLaneInputPlan, } from '@/lib/studio/record/lane-inputs'
-import { FOLLOW_STUDIO_INPUT, laneInputChannels, planStudioLaneInput, pruneStudioLaneInputs, readInputChannelCounts, rememberInputChannels, writeStudioLaneInput, } from '@/lib/studio/record/lane-inputs'
+import { FOLLOW_STUDIO_INPUT, isMidiLaneInput, laneInputChannels, planStudioLaneInput, pruneStudioLaneInputs, readInputChannelCounts, rememberInputChannels, writeStudioLaneInput, } from '@/lib/studio/record/lane-inputs'
 import type { StudioRecordSettings } from '@/lib/studio/record/record-settings'
 import type { StudioInputOpened } from '@/lib/studio/record/studio-recorder'
 
@@ -99,8 +99,11 @@ export function createStudioLaneInputState(
 
   /** What an arm opens for `trackId`: from the list the Studio holds now, never one read afresh, as the input opens inside the press. */
   function plan(trackId: string | null): StudioLaneInputPlan {
+    // A MIDI lane opens its instrument, never a microphone (the recorder
+    // asks for the instrument first), so it is never planned here.
+    const lane = of(trackId)
     return planStudioLaneInput(
-      of(trackId),
+      isMidiLaneInput(lane) ? FOLLOW_STUDIO_INPUT : lane,
       options.settings().inputDeviceId,
       options.devices(),
     )

@@ -27,7 +27,10 @@ import type { DeviceInfoLike } from '@/lib/audio-input/mic-roster'
 import { buildRoster, defaultInput } from '@/lib/audio-input/mic-roster'
 import { resolveDeviceId } from '@/lib/audio-input/saved-input'
 
-export interface StudioLaneInput {
+/** A lane that records an audio input: its own, or the Studio's to follow, and its channels. */
+export interface StudioLaneAudioInput {
+  /** Absent on every row kept before MIDI lanes: an audio input. */
+  readonly kind?: 'audio'
   /** The lane's own input; null to follow the Studio's (the Sound panel's). */
   readonly deviceId: string | null
   /** Its name when chosen: the second key to find it by, and what to call it when it is gone. */
@@ -38,19 +41,35 @@ export interface StudioLaneInput {
   readonly pair: boolean
 }
 
+/** A lane played from a MIDI keyboard or pads: the page makes its sound, and no microphone opens for it. */
+export interface StudioLaneMidiInput {
+  readonly kind: 'midi'
+  /** The port's id as the browser lists it. */
+  readonly portId: string
+  /** Its name when chosen: the second key to find it by, and what to call it when it is gone. */
+  readonly label: string | null
+}
+
+export type StudioLaneInput = StudioLaneAudioInput | StudioLaneMidiInput
+
+export function isMidiLaneInput(
+  lane: StudioLaneInput,
+): lane is StudioLaneMidiInput {
+  return lane.kind === 'midi'
+}
+
 /** A lane that follows the Studio's input and takes its default. */
-export const FOLLOW_STUDIO_INPUT: StudioLaneInput = {
+export const FOLLOW_STUDIO_INPUT: StudioLaneAudioInput = {
   deviceId: null,
   label: null,
   channel: null,
   pair: false,
 }
 
-/** A lane's channels as a pick; null for the default. */
+/** A lane's channels as a pick; null for the default, and for a MIDI lane, which has none. */
 export function laneChannelPick(lane: StudioLaneInput): ChannelPick | null {
-  return lane.channel === null
-    ? null
-    : { channel: lane.channel, pair: lane.pair }
+  if (isMidiLaneInput(lane) || lane.channel === null) return null
+  return { channel: lane.channel, pair: lane.pair }
 }
 
 /** How many lanes' inputs are kept at most: the ones chosen last. */
@@ -61,7 +80,7 @@ export const MAX_INPUT_CHANNEL_COUNTS = 50
 const LANES_KEY = 'mercurypitch.studio.lane-inputs'
 const CHANNELS_KEY = 'mercurypitch.studio.input-channels'
 
-interface LaneInputRow extends StudioLaneInput {
+type LaneInputRow = StudioLaneInput & {
   readonly projectId: string
   readonly trackId: string
 }
@@ -114,12 +133,26 @@ function writeRows(key: string, rows: readonly unknown[]): void {
   }
 }
 
-/** A lane's input from anything: what does not fit follows the Studio's input. */
+/** A MIDI lane's port as kept: one with no id is no choice at all. */
+function sanitizeMidiInput(raw: Record<string, unknown>): StudioLaneInput {
+  const portId = text(raw.portId)
+  return portId === null
+    ? FOLLOW_STUDIO_INPUT
+    : { kind: 'midi', portId, label: text(raw.label) }
+}
+
+/**
+ * A lane's input from anything: what does not fit follows the Studio's
+ * input. A row with no kind was kept before MIDI lanes, and is an audio
+ * input; a kind this build does not know is no choice.
+ */
 export function sanitizeStudioLaneInput(value: unknown): StudioLaneInput {
   const raw =
     typeof value === 'object' && value !== null
       ? (value as Record<string, unknown>)
       : {}
+  if (raw.kind === 'midi') return sanitizeMidiInput(raw)
+  if (raw.kind !== undefined && raw.kind !== 'audio') return FOLLOW_STUDIO_INPUT
   const deviceId = text(raw.deviceId)
   const channel = channelOf(raw.channel)
   // A row kept before pairs says nothing of one: it is one input. A pair
@@ -138,7 +171,7 @@ export function sanitizeStudioLaneInput(value: unknown): StudioLaneInput {
 }
 
 const follows = (input: StudioLaneInput) =>
-  input.deviceId === null && input.channel === null
+  !isMidiLaneInput(input) && input.deviceId === null && input.channel === null
 
 /** The kept rows, newest first: each one whole, once per lane, at most MAX_LANE_INPUTS. */
 function laneRows(): LaneInputRow[] {
@@ -167,14 +200,8 @@ function songInputs(
   projectId: string,
 ): ReadonlyMap<string, StudioLaneInput> {
   const lanes = new Map<string, StudioLaneInput>()
-  for (const row of rows)
-    if (row.projectId === projectId)
-      lanes.set(row.trackId, {
-        deviceId: row.deviceId,
-        label: row.label,
-        channel: row.channel,
-        pair: row.pair,
-      })
+  for (const { projectId: song, trackId, ...input } of rows)
+    if (song === projectId) lanes.set(trackId, input)
   return lanes
 }
 
@@ -297,6 +324,7 @@ export function laneInputChannels(
   counts: readonly InputChannelCount[],
   devices: readonly DeviceInfoLike[],
 ): number | null {
+  if (isMidiLaneInput(lane)) return null
   if (lane.deviceId !== null) return knownInputChannels(counts, lane)
   if (studio.deviceId !== null) return knownInputChannels(counts, studio)
   const opened = knownInputChannels(counts, {
@@ -338,7 +366,7 @@ export interface StudioLaneInputPlan {
  * default).
  */
 export function planStudioLaneInput(
-  lane: StudioLaneInput,
+  lane: StudioLaneAudioInput,
   studioDeviceId: string | null,
   devices: readonly Pick<MediaDeviceInfo, 'deviceId' | 'label'>[],
 ): StudioLaneInputPlan {
@@ -363,11 +391,16 @@ export function planStudioLaneInput(
     : { deviceId: found, own: true, laneInputMissing: false, pick }
 }
 
-/** Whether two lanes record from the same input and channels, so an arm can move between them. */
+/**
+ * Whether two lanes record from the same input and channels, so an arm can
+ * move between them with the input open. Never for a MIDI lane: its arm
+ * makes the sound of its own lane's instrument, so another lane opens anew.
+ */
 export function sameStudioLaneInput(
   a: StudioLaneInput,
   b: StudioLaneInput,
 ): boolean {
+  if (isMidiLaneInput(a) || isMidiLaneInput(b)) return false
   return (
     a.deviceId === b.deviceId && a.channel === b.channel && a.pair === b.pair
   )

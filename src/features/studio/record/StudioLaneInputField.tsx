@@ -13,7 +13,7 @@ import { createEffect, For, on, Show } from 'solid-js'
 import type { ChannelPick } from '@/lib/audio-input/input-channels'
 import { samePick } from '@/lib/audio-input/input-channels'
 import { channelChoices, inputChoices, inputsNamed, } from '@/lib/audio-input/input-choices'
-import { laneChannelPick } from '@/lib/studio/record/lane-inputs'
+import { FOLLOW_STUDIO_INPUT, isMidiLaneInput, laneChannelPick, } from '@/lib/studio/record/lane-inputs'
 import styles from '../StudioPage.module.css'
 import type { StudioRecorderHandle } from './useStudioRecorder'
 
@@ -47,10 +47,15 @@ export interface StudioLaneInputFieldProps {
 export function StudioLaneInputField(props: StudioLaneInputFieldProps) {
   let deviceSelect: HTMLSelectElement | undefined
   const lane = () => props.recorder.laneInputs.of(props.trackId)
+  // The lane's audio input and channels; a MIDI lane's port is its own row.
+  const audio = () => {
+    const input = lane()
+    return isMidiLaneInput(input) ? FOLLOW_STUDIO_INPUT : input
+  }
   const devices = () =>
     inputChoices(
       props.recorder.inputs(),
-      { id: lane().deviceId, label: lane().label },
+      { id: audio().deviceId, label: audio().label },
       `Studio's input (${props.recorder.laneInputs.studioInputName()})`,
     )
   const count = () => props.recorder.laneInputs.channels(props.trackId)
@@ -101,7 +106,7 @@ export function StudioLaneInputField(props: StudioLaneInputFieldProps) {
             {(choice) => (
               <option
                 value={choice.id ?? ''}
-                selected={choice.id === lane().deviceId}
+                selected={choice.id === audio().deviceId}
               >
                 {choice.label}
               </option>
@@ -120,7 +125,7 @@ export function StudioLaneInputField(props: StudioLaneInputFieldProps) {
               const choice = channels()[event.currentTarget.selectedIndex]
               if (choice === undefined) return
               props.recorder.laneInputs.choose(props.trackId, {
-                ...lane(),
+                ...audio(),
                 channel: choice.pick?.channel ?? null,
                 pair: choice.pick?.pair ?? false,
               })
@@ -141,12 +146,12 @@ export function StudioLaneInputField(props: StudioLaneInputFieldProps) {
       </Show>
       <Show
         when={
-          devices().find((choice) => choice.id === lane().deviceId)
+          devices().find((choice) => choice.id === audio().deviceId)
             ?.connected === false
         }
       >
         <p class={styles.help} role="status">
-          {lane().label ?? 'The input you chose'} is not connected. Takes on{' '}
+          {audio().label ?? 'The input you chose'} is not connected. Takes on{' '}
           {props.trackName} record from the Studio's input until it is back.
         </p>
       </Show>
