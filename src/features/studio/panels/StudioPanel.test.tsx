@@ -112,6 +112,42 @@ describe('Studio panel', () => {
     expect(close).toHaveBeenCalledTimes(1)
   })
 
+  it('starts a panel that gives way to another at its top, brings focus lost with its opener to the panel, and leaves focus elsewhere alone', async () => {
+    // Arrange
+    viewport(1360, 900)
+    const [title, setTitle] = createSignal('Sound')
+    render(() => (
+      <>
+        <button>Clip</button>
+        <StudioPanel title={title()} onClose={vi.fn()}>
+          <Show when={title() === 'Sound'} fallback={<p>Every input</p>}>
+            <button onClick={() => setTitle('Inputs')}>
+              Inputs and channels
+            </button>
+          </Show>
+        </StudioPanel>
+      </>
+    ))
+    const panel = screen.getByRole('region', { name: 'Sound' })
+    await waitFor(() => expect(panel).toHaveFocus())
+    const opener = screen.getByRole('button', { name: 'Inputs and channels' })
+    const body = opener.parentElement!
+    body.scrollTop = 240
+    opener.focus()
+
+    // Act
+    fireEvent.click(opener)
+
+    // Assert
+    expect(screen.getByRole('region', { name: 'Inputs' })).toBe(panel)
+    expect(body.scrollTop).toBe(0)
+    expect(panel).toHaveFocus()
+    const outside = screen.getByRole('button', { name: 'Clip' })
+    outside.focus()
+    setTitle('Sound')
+    expect(outside).toHaveFocus()
+  })
+
   it('keeps a coarse 1200 by 400 landscape panel modal with transport in its focus cycle', async () => {
     viewport(1200, 400, true)
     render(() => (
