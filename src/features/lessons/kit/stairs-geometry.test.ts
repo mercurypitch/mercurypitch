@@ -208,14 +208,13 @@ describe('a staircase on other starts', () => {
 })
 
 describe('a staircase of fewer stairs', () => {
-  it('draws five, do to so, each column the wider, with no brackets for Group', () => {
+  it('draws five, do to so, with no brackets for Group', () => {
     // Act: Lesson 16's, on G4 over C4, on a phone's figure
     const five = stairsLayout('narrow', 356, 424, 67, C4, 5)
     const eight = stairsLayout('narrow', 356, 424, 67, C4)
 
     // Assert: the short stair from mi to fa a row, the others two
     expect(five.stairs).toHaveLength(5)
-    expect(five.stairs[0].w).toBeCloseTo((eight.stairs[0].w * 8) / 5, 6)
     expect(
       five.stairs.map((st) =>
         Math.round((five.stairs[0].top - st.top) / five.rowH),
@@ -223,5 +222,39 @@ describe('a staircase of fewer stairs', () => {
     ).toEqual([0, 2, 4, 5, 7])
     expect(five.brackets).toEqual([])
     expect(eight.brackets).toHaveLength(2)
+  })
+
+  it('runs its rows from do to so on a phone, each the taller, and keeps the widest column, centred', () => {
+    // Act
+    const five = stairsLayout('narrow', 356, 424, 67, C4, 5)
+    const eight = stairsLayout('narrow', 356, 424, 67, C4)
+    const narrowFive = stairsLayout('narrow', 300, 424, 67, C4, 5)
+
+    // Assert: eight rows where eight stairs take thirteen
+    expect(five.rowH).toBeCloseTo((eight.rowH * 13) / 8, 6)
+    expect(five.rows[0]).toBeLessThanOrEqual(67)
+    expect(five.rows[five.rows.length - 1]).toBeGreaterThanOrEqual(74)
+    expect(five.rows.filter((m) => m > 75)).toEqual([])
+    // the top stair's tread on the top row, as eight stairs' top do is
+    expect(five.stairs[4].top).toBeCloseTo(eight.stairs[7].top, 6)
+    // 64 px columns in the middle of a 356 px figure; all of a narrower one
+    expect(five.stairs.map((st) => st.w)).toEqual(Array(5).fill(64))
+    expect(five.x0).toBe(18)
+    expect(five.x1).toBe(338)
+    expect(narrowFive.stairs.map((st) => st.w)).toEqual(Array(5).fill(60))
+  })
+
+  it('keeps each stair over its own white key on a phone', () => {
+    // Act: G4 to D4 over G, A, B, C, D
+    const five = stairsLayout('narrow', 356, 424, 67, C4, 5)
+    const whites = (five.strip?.keys ?? []).filter(
+      (k) => k.white && k.cx > five.x0 && k.cx < five.x1,
+    )
+
+    // Assert
+    expect(whites.map((k) => k.midi)).toEqual([67, 69, 71, 72, 74])
+    whites.forEach((k, i) =>
+      expect(k.cx).toBeCloseTo(five.stairs[i].x + five.stairs[i].w / 2, 6),
+    )
   })
 })
