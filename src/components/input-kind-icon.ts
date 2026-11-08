@@ -1,5 +1,5 @@
 // The icon for each kind of input, for every list that names inputs: the
-// Settings mic check and First Light's microphone panel.
+// Settings mic check, First Light's microphone panel and the Studio's Inputs view.
 
 import type { Component } from 'solid-js'
 import { Cpu, Headphones, Loop, Mic } from '@/components/icons'
