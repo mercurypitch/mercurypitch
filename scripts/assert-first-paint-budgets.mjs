@@ -388,7 +388,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Raised to 156 as the kit's staircase draws only while something it shows
   // moves and takes new starts (Lesson 21's, on G2 or G4): 158,596 bytes
   // before, 159,274 with it (stairs-core.ts), against 158,720 at 155.
-  'learn/04.html': 156,
+  // Raised to 157 as Lesson 21's steps take the kit's staircase too: the
+  // bundler moves it out of Lesson 4's own chunk into one the two pages
+  // share (14,203 bytes), and the imports between them cost 611 bytes:
+  // 159,267 before, 159,878 with them, against 159,744 at 156.
+  'learn/04.html': 157,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
@@ -505,8 +509,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must; its
   // shell: 88,379 bytes in build:e2e, the smallest whole KB above, to rise
-  // as each part joins.
-  'learn/21.html': 87,
+  // as each part joins. Raised to 151 with the five steps on their four
+  // toys (the staircase, the circle and the staff, Find do and the walk):
+  // 153,766 bytes.
+  'learn/21.html': 151,
   // Lesson 22, "Vibrato", a Season 2 page and a draft, built in every mode
   // as Lesson 3 is: its own module on the kit, carrying Season 2's map
   // (kit/season-2.ts) as a Season 2 page must, with Merc's vibrato option in

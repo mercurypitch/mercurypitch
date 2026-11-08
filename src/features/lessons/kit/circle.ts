@@ -411,7 +411,8 @@ export function mountCircle(root: HTMLElement, o: CircleToyOptions): CircleToy {
     },
     moveTo,
     thread(next) {
-      if (next === to && threadU >= 1) return
+      // already there, or on its way: a step shown again lets it go on
+      if (next === to) return
       from = to
       to = next
       threadU = Motion.paused ? 1 : 0

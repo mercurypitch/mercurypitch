@@ -19,6 +19,7 @@ import type { CircleKey, CirclePart } from './circle-geometry'
 import { CIRCLE, PARTS } from './circle-geometry'
 import type * as FrameLoop from './frame-loop'
 import type { Drawer } from './frame-loop'
+import { Motion } from './motion-switch'
 import { createSoundOwner } from './now-playing'
 import type * as RunModule from './run'
 import { resetRuns, runs } from './run-recorder.test-fixtures'
@@ -230,6 +231,32 @@ describe('the house', () => {
     expect(root.querySelectorAll('.ci-bead.is-dim')).toHaveLength(5)
     expect(root.querySelectorAll('.ci-home')).toHaveLength(1)
     expect(drawer.wants?.()).toBe(false)
+  })
+})
+
+describe('the threading', () => {
+  it('goes on re-threading when asked again on the way, the keys named as it arrives', () => {
+    // Arrange: Lesson 2's ring, as Lesson 21's steps open it, half way to the circle of fifths, with motion on
+    vi.spyOn(Motion, 'paused', 'get').mockReturnValue(false)
+    const root = document.getElementById('c') as HTMLElement
+    const toy = mountCircle(root, {
+      active: () => true,
+      part: PARTS.sharps,
+      threading: 'semitones',
+      owner,
+    })
+    const drawer = drawers[drawers.length - 1]
+    toy.thread('fifths')
+    drawer.draw(0, 0.6)
+    const halfWay = root.querySelectorAll('.ci-name').length
+
+    // Act: asked again, as a step shown again asks
+    toy.thread('fifths')
+    drawer.draw(0, 0.6)
+
+    // Assert: 1.2 s in all, every key named outside the ring
+    expect(halfWay).toBe(0)
+    expect(root.querySelectorAll('.ci-name')).toHaveLength(15)
   })
 })
 
