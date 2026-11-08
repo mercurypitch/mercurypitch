@@ -1,14 +1,15 @@
 // ============================================================
-// Studio Inputs view — every audio input with its channels, levels, round trip and what to know about it, and every lane's input, in one panel
+// Studio Inputs view — every audio input with its channels, levels, round trip and what to know about it, every MIDI keyboard and pad, and every lane's input, in one panel
 // ============================================================
 //
 // The Studio's I/O view. Its sections sit one after another: the audio
-// inputs, each a card (StudioInputCard), then the lanes, each with the same
-// input and channel picker its Track details has (StudioLaneInputField), so
-// a choice here is the lane's own choice, kept on this device, and re-arms
-// an armed lane. Another kind of input gets a section of its own beside the
-// audio inputs. Before the browser names its inputs there is one thing to
-// do, so the view offers that alone rather than a list of numbered devices.
+// inputs, each a card (StudioInputCard); the MIDI inputs, each a port with
+// a light while it plays and the lanes it plays (StudioMidiInputs); then
+// the lanes, each with the same input and channel picker its Track details
+// has (StudioLaneInputField), so a choice here is the lane's own choice,
+// kept on this device, and re-arms an armed lane. Before the browser names
+// its audio inputs there is one thing to do, so the view offers that alone
+// rather than a list of numbered devices; MIDI is asked for on its own.
 import { Index, Show } from 'solid-js'
 import { studioLaneInstrument } from '@/lib/studio/instruments/resolve'
 import type { StudioProject } from '@/lib/studio/model/types'
@@ -17,6 +18,7 @@ import { StudioLaneInputField } from '../record/StudioLaneInputField'
 import common from '../StudioPage.module.css'
 import { StudioInputCard } from './StudioInputCard'
 import styles from './StudioInputs.module.css'
+import { StudioMidiInputs } from './StudioMidiInputs'
 import type { StudioInputsRecorder } from './useStudioInputs'
 import { useStudioInputs } from './useStudioInputs'
 
@@ -78,6 +80,14 @@ export function StudioInputsPanel(props: StudioInputsPanelProps) {
             {(device) => <StudioInputCard device={device()} inputs={inputs} />}
           </Index>
         </section>
+      </Show>
+      {/* MIDI asks for nothing of the microphone, so it shows either way. */}
+      <StudioMidiInputs
+        access={props.recorder.midi}
+        project={props.project}
+        laneInput={(trackId) => props.recorder.laneInputs.of(trackId)}
+      />
+      <Show when={inputs.model().named}>
         <section class={styles.section} aria-labelledby="studio-inputs-lanes">
           <h3 id="studio-inputs-lanes">Lanes</h3>
           <Index each={props.project.tracks}>
