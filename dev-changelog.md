@@ -9,6 +9,327 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.30] - 2026-11-08
+
+60 commits since `v0.9.29` (fb51e24d9) before these notes, from 14 PRs:
+#1397 (15 commits), #1392 (7), #1394 (7), #1386 (6), #1391 (6), #1399 (5),
+#1387 (4), #1393 (2), and one each from #1388, #1389, #1390, #1395, #1396
+and #1398. Every commit came through a PR. All were rebased onto `main`
+except #1392 and #1395, which came in with merge commits (counted above: 7
+commits and a merge, 1 and a merge).
+
+`v0.9.29` went on its release commit, not on `main`'s head that evening:
+#1386 and #1387 (AirPlay) had merged after it, and Release Tours had not
+walked them. Both reached TestFlight the same evening in `mp-v0.8.58`
+(10dd26e9e, build 1734), and reach the web with this release, where they
+change nothing a visitor sees or hears (below).
+
+On the web:
+
+- **Find Your Pitch: Lessons 3 and 4 go live** (#1392, on the owner's word
+  of 7 November). "Match a note" and "The major scale and home" leave
+  `kit/drafts.ts`, so every environment serves both pages by default and the
+  admin console can still hold either back. Lesson 5 is now the season's
+  first draft.
+  - The static listings name them as they name Lessons 1 and 2:
+    `public/sitemap.xml` and `public/llms.txt` gain both lessons and both
+    watch pages, the service worker's standalone documents (`sw-runtime.ts`)
+    move them out of the drafts group, and `RELEASED_LESSONS`
+    (`src/lib/current-lesson.ts`) adds them, so Home's Lessons link opens
+    Lesson 3 once Lessons 1 and 2 are done, and the hub once all four are.
+  - The hub keeps "New to the series? Start with Season 1's Lessons 1, 2 and
+    4." (decided 1 November), which this release makes true: the 0.9.29
+    handoff listed its Lesson 4 link as pointing at a draft in production.
+  - Every test, spec and comment that used Lesson 3 or 4 as its example of a
+    draft now uses Lesson 5 (or 5 and 6), and one that needs Lesson 3 held
+    back asks the console for it. The plans that called either lesson
+    waiting say it was released on 7 November; dated reviews stay as written.
+  - Review fixes: Lesson 3's slowed folds say "once a second" (RELEASE-REVIEW
+    L3-03), both pages name the X account, Lesson 4's share titles take the
+    colon form the other lessons use, and mastheads with four sections drop
+    their numerals up to 1280 px, so Lesson 4's row fits.
+  - Still open from RELEASE-REVIEW, per #1392: L3-04 to L3-10 and L4-01 to
+    L4-05 (coach, teaching and design calls), S-08, S-09, G-04 and V-01, the
+    microphone device check that Lesson 3's Sing it waits on.
+- **Lesson 4's film** (#1392). The 9:11 cut (551.23 s) with the final Merc
+  and Tavi voices, from R2 at `learn/04/v1` in 1080p and 720p. The page
+  gains a Watch section and `/learn/04/watch`. Its captions (123 cues) and
+  twelve chapters come from the film's own timing; the 00:27 cue now names
+  Tavi, so the transcript credits her question to her. The credit reads
+  "Merc and Tavi voiced with ElevenLabs" with no model name, since the
+  film's model is not recorded. Lesson 4's first-paint ceiling rises from
+  139 to 155 KB for the film's chunks, as Lesson 2's did for its film.
+- **Lesson 3's film** (#1395). Master-10, 9:32 (572.10 s), voiced by the
+  ElevenLabs Merc and Tavi, from R2 at `learn/03/v1`. The film critic passed
+  it in round 10, and its production merged in disjoint-colliders #217.
+  - Wired as Lessons 2 and 4 are: `FILMS[3]`, the season entry's `film` and
+    `len`, `lesson-03/film.ts` with a Watch section and its masthead link
+    (sections numbered I to IV), the hero's link to the watch page, credits
+    that name the voices, and `/learn/03/watch` with its VideoObject and
+    transcript, listed in the sitemap, llms.txt and the service worker's
+    list.
+  - Captions (151 cues) and twelve chapters are the film's own.
+    `film-sync.test.ts` keeps the two copies equal, and
+    `kit/episode.test.ts` checks that the transcript gives Tavi the hook's
+    question at 00:13.
+  - The poster is the delivery master's title frame; the share card stays
+    the drawn hero still.
+- **The dates the release sets** (this commit). `datePublished` 2026-11-08
+  on `learn/03.html` and `learn/04.html`, and `uploadDate`
+  2026-11-08T00:00:00+01:00 for both films in `kit/watch-pages.ts` and the
+  two watch pages. Why that time, under Release steps.
+- **Jam remembers its input after a reload** (#1390). `createPersistedSignal`
+  (`src/lib/storage.ts`) wrote a string bare whatever the default, and read
+  it back with `JSON.parse` unless the default was itself a string, so a
+  string under a `null` default threw on every load and fell back to
+  `null`. Jam's `mp_jam_input_device` and `mp_jam_input_label` were the only
+  keys of that shape, so the input chosen under Your sound was forgotten on
+  every reload.
+  - A string default still stores its strings bare; any other default now
+    stores JSON, strings included. A value saved bare before the fix is taken
+    as it is where the key's validator accepts it, so an input chosen before
+    the fix comes back too; without a validator, unreadable text still falls
+    back to the default. Values arriving through settings sync
+    (`applyPersistedValue`) follow the same rules.
+  - Fixed in the shared helper rather than Jam's two keys, so no later
+    `string | null` setting falls into it. Found while planning Studio's
+    per-lane inputs.
+- **The AirPlay work, as the web sees it** (#1386, #1387). Shared code moved
+  and nothing a visitor sees or hears changes: `openEnvelope`
+  (`src/lib/preview-player.ts`) takes an optional start time and every
+  existing caller behaves as before; First Note's fades move to
+  `first-note-rules.ts`, shared by its two players; the start check in
+  `src/lib/audio-unlock.ts` is set only by the app, so the web plays the
+  unlock clip as always; and the notices that read `airPlayAlone()` stay
+  quiet on the web, whose route store is always null.
+
+Lessons held as drafts on mercurypitch.com (shown on the dev deploy, PR
+previews and `build:e2e`):
+
+- **Lesson 21, "Keys and the circle of fifths"** (#1397), a Season 2 page
+  built from its package (LESSON.md, FACTS.md, WEB-SPEC.md). The spec's new
+  "As built" section records every place the page differs from the text. It
+  waits on Lessons 6 and 15's pages, which its prerequisite chips and recall
+  link to, and on the vocal coach's look at Sing it.
+  - Cold open: D major lit on Lesson 2's ring and the keyboard, then which
+    note A major adds as its third sharp, D♯ or G♯. After a choice A major
+    plays both ways, each play drawing a small staircase under its button,
+    and the reveal waits until both have been heard. The welcome tour waits
+    for the choice.
+  - Recall (Lesson 6's question 2 and Lesson 15's question 2, the same
+    question objects), four words (Key, Key signature, Circle of fifths and
+    Equal temperament, each figure lit as it plays), five steps on the
+    sticky stage (the staircase over the staff, G major's F♯ sliding into
+    the signature, the circle of fifths, the flat side with Spell it, Find
+    do in the learner's clef, and the walk of twelve fifths, Pure
+    overshooting by 23.46 cents and Equal closing the ring), Sing it (so,
+    la, ti, do in C and then in G, with a count-in; nothing listens), a
+    four-question quick check and the Wrap.
+  - Kit: the staircase rests when still and takes a new start, so Lesson 21
+    starts it on G in the learner's clef; the staff writes key signatures at
+    each clef's places and rings a changed note as its sign moves into the
+    signature; the circle of fifths (`kit/circle*.ts`) has the house and the
+    walk. The one defect the two review rounds found: a figure measured
+    before it had room drew its ring with a negative radius, which the
+    browser logged as an error. It now draws at the centre.
+  - First paint for `learn/21.html`: 197,624 bytes of script against a
+    242 KB ceiling, and 95,757 of CSS against 117 KB. Lesson 21's tease, its
+    alternative and its drafts line ride on every lesson page; Lessons 2 and
+    3 stay within main's 173 and 158 KB at 176,633 and 161,304 bytes. The
+    shared base sheet is now named `predict-*.css`, not `reveal-*.css`, as
+    the predict's code joined its chunk.
+  - The hub carries Lesson 21's title and Start lesson link, hidden in a
+    production build until the console publishes the page. The sitemap's
+    fingerprint reads hidden links too, so `/learn/` took 2026-11-08 and a
+    new fingerprint (fb12492d2).
+  - Left for the owner: the page's length, about 2,379 words, level with the
+    series' cap, and a real phone by ear (the scales, the walk's gap and Sing
+    it's two runs).
+- **The staircase moves into the kit** (#1393), so Lessons 16, 20 and 21 can
+  use it (Lesson 21's WEB-SPEC, item 6). `lesson-04/stairs-*.ts` and their
+  tests move to `kit/` by `git mv`; the scales it plays move to
+  `kit/stairs-plays.ts` and its styles to `kit/lesson-stairs.css`, which
+  Lesson 4's sheet imports. A page now hands the staircase its starts and
+  its states (Lesson 4's are `lesson-04/stairs-states.ts`), and `setStep`
+  becomes `setState`. Lesson 4 compared before and after at 390 and 1440 px:
+  30 screenshots pixel-identical to main's build and 26 recorded states
+  matching. Its script grows by 403 bytes, to 158,097 against its 155 KB
+  ceiling.
+- **Lesson 23's cold open clears its timers** (#1396). A dispatched PR Gate
+  run (42421265957) failed a unit job with every test passing and two
+  `ReferenceError: document is not defined` from a cold-open timer that
+  fired after jsdom was gone, the leak Lesson 15 had before #1384. A play
+  that ends, heard or cut short, now clears its timers, `stop()` clears them
+  whether or not a play runs, and the test stops every cold open it mounted.
+  Lesson 2's fire-and-forget `singAlong` timer is left for its own change.
+- **The lesson tour spec answers Lesson 21's predict first** (#1398, test
+  only). Lesson 21 holds a first visit's tour until the choice, and the
+  spec's `FIRST_CHOICE` did not list it, so three tests failed on `main`'s
+  full browser suite after #1397, out of the PR smoke tier's sight.
+  `LESSON-TOUR.md` now lists Lessons 15, 19, 21, 22, 23 and 24 as holding.
+
+Studio, switched off on mercurypitch.com (on for the dev deploy, PR previews,
+`build:e2e` and the unit tests, and in production only when an admin sets its
+switch at `/admin/features`). These are steps 2 to 4 of
+`docs/plans/studio-inputs.md`, approved 7 November; step 1 is Jam's input fix
+above (#1390):
+
+- **One shared input module** (#1391), moved from the rooms that grew it into
+  `src/lib/audio-input/`, with nothing re-exported from the old places and
+  nothing anyone sees or hears changed.
+  - `mic-roster.ts` and `device-watch.ts` (the mic check's device roster and
+    the watcher that reads the list once a burst of `devicechange` settles);
+    First Light no longer reaches into the mic check.
+  - `input-choices.ts` (Studio's input-list rules under neutral names),
+    `saved-input.ts` (Jam's `resolveDeviceId` and `isLoopbackLabel`),
+    `input-channels.ts` (Guitar Night's recorder split, now also Jam's input
+    check's per-channel meters) and `level-health.ts` (Guitar's level
+    reading, its words unchanged).
+  - Cross-feature imports go from 569 to 564. Left alone on purpose and
+    listed in the plan: Guitar Night's own listing and splits, the legacy
+    `AudioDeviceSettings`, the four Web MIDI adapters, the two MicManagers,
+    the two readings of "loopback" and `src/lib/input-health.ts`.
+- **Each lane records from its own input, or one channel of an interface**
+  (#1394).
+  - A lane's choice (`lane-inputs.ts`, `{ deviceId, label, channel }`) is
+    kept on this device by song and lane under
+    `mercurypitch.studio.lane-inputs`, sanitised, the 200 most recent, and
+    pruned of lanes that no longer exist; nothing goes into the song.
+  - Arming finds the input with `resolveDeviceId` in the device list the
+    Studio already holds, not an awaited listing, because WebKit refuses a
+    capture opened after an await in the press. `MicManager.acquireFrom`
+    opens it; there is no new `getUserMedia` call.
+  - One channel: `lane-channel.ts` splits the capture and feeds one mono
+    node to both the take and the monitor, so a guitar on input 2 records
+    raw and the monitor stays dry. Channel counts are learnt on arming and
+    kept by device (`mercurypitch.studio.input-channels`, 50 inputs); the
+    picker never probes, since WebKit allows one capture at a time.
+  - Track details gains an Input section (an Input and a Channel select),
+    and on desktop and tablet a lane with its own input shows a header chip
+    ("In 2") that opens it. Each fallback is said on the armed card.
+  - The shared `inputChoices` now names an unnamed device "Device N", not
+    "Input N", in the Sound panel before microphone permission; "Input N"
+    now means a channel, as in Guitar Night and Jam.
+  - Found: Chromium's fake capture is two channels with voice processing
+    off, and Web Audio's speaker fold mixes only 2, 4 and 6 channels,
+    keeping Input 1 alone at any other count (MISTAKES.md).
+- **A lane records one input or an aligned pair, as a DAW's record input
+  does** (#1399), on the owner's ask of 8 November for input handling as
+  Reaper or a similar DAW does it. No DAW offers every input mixed, so "All
+  inputs, mixed" is gone.
+  - `input-channels.ts` gains `ChannelPick`, `pair(n)` (channels n and n + 1
+    at 0.5 each into one mono gain), `take(pick)`, `defaultChannelPick`,
+    `isAvailablePick`, `channelPicks` and `samePick`; `alone(n)` is
+    unchanged for Guitar Night and Jam. A lane's choice gains `pair`, and a
+    row kept before pairs reads as a single input.
+  - The default by channel count: 1, the input as it is; 2, Inputs 1 + 2 at
+    half each; 3 or more, Input 1. A browser that reports no count gets the
+    input as before. The Studio now does all mixing itself, never through
+    the fold.
+  - Behaviour change: a lane with no choice on a 4-channel input recorded
+    all four at a quarter each, and on a 6-channel input a 5.1 mix with
+    channel 4 dropped; both now record Input 1. Only the owner's hardware
+    can show a real 4- or 6-channel interface.
+  - The words follow: "Default: Inputs 1 + 2", the pairs as "Inputs 3 + 4",
+    the armed card naming what records, the chip showing "In 1+2", and a
+    kept pick the device no longer has falling back with a sentence saying
+    so. The lane-input state moves out of `useStudioRecorder.ts` (793 to 679
+    lines) into `studio-lane-input-state.ts`.
+
+In the native app only. TestFlight carried #1386 and #1387 in `mp-v0.8.58`
+(10dd26e9e, build 1734):
+
+- **First Note's rounds through Web Audio** (#1386). On `mp-v0.8.57` the
+  owner found the AirPlay sound check's button 6, an element routed into
+  Web Audio, silent over AirPlay, and First Note plays its rounds that way.
+  Where the phone can stream (Safari's AudioDecoder, iOS 26), the app now
+  plays every round through `web-audio-song-player.ts`: each stem opened
+  with Karaoke's `openStemStream` and played in two 4 s windows on the
+  room's clock, never decoded whole. Where it cannot, over AirPlay alone,
+  the room says "Over AirPlay this room plays nothing." with the way to
+  Screen Mirroring (`FirstNoteAirPlayNotice.tsx`). Test 14 in
+  `docs/plans/tv-device-tests.md` is the device check.
+- **Where the sound goes, checked when it matters** (#1387). A cold start
+  with AirPlay already on played a song on neither the TV nor the phone: the
+  shared clock, made at launch before WebKit took the AirPlay route, read
+  48 kHz for good, so the lock screen's carrier and the unlock clip played
+  beside the song. `src/stores/output-check.ts` reads a fresh throwaway
+  context's rate when a room is shown, the app comes to the front, the route
+  changes, each start's gesture and 1.5 s into a song;
+  `checkBeforeEachStart` keeps the clip and the carrier aside unless the
+  check says local or a screen is connected. KaraokeAirPlayHint, the
+  stopped-song notice and Ear Lab's stopped card follow the live state, and
+  the Developer screen's AirPlay sound check gains a readout. Test 13 is the
+  device check.
+
+Nothing merged after #1387 touches `apps/mercurypitch`, `apps/beside-cue` or
+`packages/`. A `vite build --sourcemap` of `apps/mercurypitch` at f0640d0ec
+lists 2,878 modules; of the files changed after #1387, these shared ones are
+among them and reach the next `mp-v` tag: `src/lib/storage.ts` (#1390), the
+`src/lib/audio-input/` module with the mic check and Jam's source picker,
+input monitor and store (#1391), Studio's recorder, lane inputs and Track
+details (#1394, #1399; Studio is in the native bundle behind its switch),
+the lesson season's lists (`drafts.ts`, `films.ts`, `season.ts`,
+`season-2.ts`, `lesson-copy.ts`, `team-notes.ts`; #1392, #1395, #1397) and
+`src/lib/sw-runtime.ts`. Beside Cue: nothing.
+
+Builds, tests and docs only:
+
+- **#1388:** `karaoke-tour.spec.ts`'s bubble check read Merc's bubble once
+  while it could still be sliding across its target (top and left over
+  160 ms, a look every 300 ms). `restingBubble()` waits until the box is the
+  same twice, 400 ms apart. The unchanged test failed 3 runs in 5 at
+  10dd26e9e and 5 in 10 at fb51e24d9; fixed, 20 in 20.
+- **#1389:** `jam-lyrics-follow.spec.ts:325` compared the armed hint's and
+  Done's boxes from two layouts 108 ms apart. Both now come from one
+  `evaluateAll`, polled until the bar settles; with Done forced onto its own
+  row the check still fails, at 28.5 px.
+- #1396 and #1398 (lesson tests) are described above, and
+  `docs/plans/studio-inputs.md` with Studio.
+
+### Release steps
+
+1. **Migrations:** none. Nothing under `workers/` changed.
+2. **Secrets, variables and bindings:** none new; `wrangler.jsonc` is
+   unchanged.
+3. **Worker code.** Site worker: only through the lesson lists it imports
+   (`src/lesson-gate.ts`, `src/lesson-listings.ts`): `drafts.ts` no longer
+   holds Lessons 3 and 4, `films.ts` and `watch-pages.ts` give both a watch
+   page, and the season lists gain Lesson 21's draft entry. DB worker and
+   Jam worker: unchanged.
+4. **Local database:** none. Dexie stays at v14.
+5. **Links into about.mercurypitch.com** (prod-upd step 0c): none new.
+   Lessons 3 and 4's watch pages and Lesson 21 link only the landing's
+   Privacy, Terms and Imprint, as every lesson page already does.
+6. **Social cards:** `pnpm run og:versions` on the release PR stamped all
+   13 cards with no change.
+7. **What's New** is untouched: 0.9.30 is a patch.
+8. **Version files:** `package.json` goes from 0.9.29 to 0.9.30.
+9. **Dates.** `datePublished` is the day a lesson goes live on
+   mercurypitch.com: 2026-11-08, the day this tag is planned for, as 0.9.22
+   dated Lessons 1 and 2 with its tag day. A film's `uploadDate` is when its
+   release tag first shipped it; Lessons 1 and 2 carry `v0.9.22`'s tagger
+   time, 2026-10-26T14:03:38+01:00. This commit is written before its tag,
+   so Lessons 3 and 4 carry the start of the planned day,
+   2026-11-08T00:00:00+01:00: the right day, and never a time after the
+   films went live. If the tag goes out on a later day, these four dates
+   and the four sitemap entries below move to that day first.
+10. **Sitemap.** On a production build,
+    `node scripts/sitemap-lastmod.mjs --update --date 2026-11-08 dist`
+    re-dated exactly the four pages whose structured data changed: `/learn/03`, `/learn/04`,
+    `/learn/03/watch` and `/learn/04/watch`, from 2026-11-07. The check then
+    read 26 URLs, every `<lastmod>` matching its page. The local build
+    stopped at the Glassworks LFS pointer `glass3d/merc-v2-meshopt.glb` after
+    the pages were written; no LFS object was fetched.
+11. **Tag gate:** the tag goes on a `main` commit whose own PR Gate push run
+    passed, after Release Tours passes on it.
+12. **After the deploy:** IndexNow announces the URLs re-dated since
+    `v0.9.29`, Lessons 3 and 4 and their watch pages among them. In Search
+    Console, the two new lessons and the two watch pages (video indexing).
+13. **Native:** the app ships on its own `mp-v*` tags; `mp-v0.8.58` carries
+    #1386 and #1387, and the next tag carries the shared changes listed
+    above.
+
 ## [0.9.29] - 2026-11-07
 
 519 commits since `v0.9.28` (5a41440bf) before these notes, from 75 PRs:
