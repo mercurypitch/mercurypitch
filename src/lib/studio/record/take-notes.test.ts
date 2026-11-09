@@ -1,7 +1,7 @@
-// Studio take notes tests — a take's notes land in ticks from its first sample at the song's tempo, only those it captured and none past its end; the log keeps each note's sound as it started and stopped, its velocity as the port gave it to 4 decimals; and a take's sequence covers its whole audio, its next id past its notes'.
+// Studio take notes tests — a take's notes land in ticks from its first sample at the song's tempo, only those it captured and none past its end; the log keeps each note's sound as it started and stopped, its velocity as the port gave it to 4 decimals (midi/notes.ts); and a take's sequence covers its whole audio, its next id past its notes'.
 import { describe, expect, it } from 'vitest'
 import { validateStudioSequence } from '../model/validation'
-import { createStudioNoteLog, studioNoteVelocity, studioTakeNotes, studioTakeSequence, } from './take-notes'
+import { createStudioNoteLog, studioTakeNotes, studioTakeSequence, } from './take-notes'
 
 /** A take whose first sample was captured at 1.1 s, and which ran 2 s. */
 const TAKE = { capturedFrom: 1.1, seconds: 2 }
@@ -78,15 +78,6 @@ describe('createStudioNoteLog', () => {
       { midi: 60, velocity: 1, start: 2, end: 2.4 },
       { midi: 64, velocity: 0.7874, start: 2.1, end: null },
     ])
-  })
-})
-
-describe('studioNoteVelocity', () => {
-  it('keeps 4 decimals, above 0 and up to 1, and makes a broken value full', () => {
-    expect(studioNoteVelocity(0.123456)).toBe(0.1235)
-    expect(studioNoteVelocity(0)).toBe(0.0001)
-    expect(studioNoteVelocity(1.2)).toBe(1)
-    expect(studioNoteVelocity(Number.NaN)).toBe(1)
   })
 })
 
