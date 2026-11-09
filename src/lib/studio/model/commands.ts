@@ -11,6 +11,9 @@ import type { StudioPasteEdit } from './placement-commands'
 import { moveStudioClipToNewTrack, pasteStudioClip } from './placement-commands'
 import type { StudioPunchEdit } from './punch-commands'
 import { punchStudioClip } from './punch-commands'
+import type { StudioSequenceEdit } from './sequence-commands'
+import { applyStudioSequenceEdit, isStudioSequenceEdit, } from './sequence-commands'
+import { pruneStudioSequences } from './sequences'
 import type { StudioSoundEdit } from './sound-commands'
 import { applyStudioSoundEdit, isStudioSoundEdit } from './sound-commands'
 import type { StudioAsset, StudioClip, StudioProject, StudioTrack, } from './types'
@@ -22,6 +25,7 @@ export type StudioEdit =
   | StudioPunchEdit
   | StudioSoundEdit
   | StudioAutomationEdit
+  | StudioSequenceEdit
   | { readonly type: 'rename-project'; readonly title: string }
   | { readonly type: 'add-track'; readonly track: StudioTrack }
   | { readonly type: 'add-clip'; readonly clip: StudioClip }
@@ -193,10 +197,13 @@ function setTrackInstrument(
   }
 }
 
-function editClip(
-  project: StudioProject,
-  edit: Extract<StudioEdit, { clipId: string }>,
-): StudioProject {
+/** An edit of one clip's placement or sound; its notes are a sequence edit's. */
+type StudioClipEdit = Exclude<
+  Extract<StudioEdit, { clipId: string }>,
+  StudioSequenceEdit
+>
+
+function editClip(project: StudioProject, edit: StudioClipEdit): StudioProject {
   const clip = getClip(project, edit.clipId)
   switch (edit.type) {
     case 'remove-clip':
@@ -276,6 +283,7 @@ function applyEdit(project: StudioProject, edit: StudioEdit): StudioProject {
   if (isStudioSoundEdit(edit)) return applyStudioSoundEdit(project, edit)
   if (isStudioAutomationEdit(edit))
     return applyStudioAutomationEdit(project, edit)
+  if (isStudioSequenceEdit(edit)) return applyStudioSequenceEdit(project, edit)
   if ('clipId' in edit) return editClip(project, edit)
   switch (edit.type) {
     case 'paste-clip':
@@ -374,7 +382,9 @@ export function applyStudioCommand(
 ): StudioProject {
   const initial = validateStudioProject(project, options.assets)
   const edits = command.type === 'batch' ? command.commands : [command]
-  const next = edits.reduce(applyEdit, initial)
+  // A sequence no clip names any more goes with the command that left it so;
+  // undo brings it back with its clip.
+  const next = pruneStudioSequences(edits.reduce(applyEdit, initial))
   if (JSON.stringify(next) === JSON.stringify(initial)) return project
   return reviseStudioProject(project, next, options)
 }

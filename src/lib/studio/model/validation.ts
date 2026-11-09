@@ -1,39 +1,54 @@
 // Studio project validation — strict versioned snapshots and owned-source references for local saves and backups.
 import { LOUDNESS_PRESETS } from '@/lib/studio-fx/master'
 import { MIX_FLAVOURS } from '@/lib/studio-fx/mix-macros'
+import { migrateStudioProject } from './migrations'
+import { pruneStudioSequences } from './sequences'
 import type { StudioAsset, StudioProject } from './types'
 import { STUDIO_ENGINE_VERSION, STUDIO_SAMPLE_RATE, STUDIO_SCHEMA_VERSION, } from './types'
 import { validateStudioAsset } from './validation-assets'
 import { assertNoLaneOverlaps, validateClipAsset, validateStudioClip, validateStudioTrack, } from './validation-clips'
 import { validateStudioMacros, validateStudioMasterEq } from './validation-fx'
+import { validateStudioSequences } from './validation-midi'
 import { arrayValue, enumValue, frameValue, idValue, isoValue, numberValue, record, requireValue, textValue, uniqueValue, } from './validation-values'
 
 export { validateStudioAsset } from './validation-assets'
 export { validateStudioClip, validateStudioTrack } from './validation-clips'
 export { validateStudioChain } from './validation-fx'
+export { validateStudioSequence } from './validation-midi'
 export { StudioValidationError } from './validation-values'
 
-/** Omitting assets validates structure only; persistence must supply its full owned metadata catalogue. */
+/**
+ * A song as read: stepped up from an older version first (migrations.ts),
+ * then checked whole, then without the sequences no clip names, which are
+ * dropped rather than refused. Omitting assets validates structure only;
+ * persistence must supply its full owned metadata catalogue.
+ */
 export function validateStudioProject(
   raw: unknown,
   assets?: readonly StudioAsset[],
 ): StudioProject {
-  const value = record(raw, 'project', [
-    'id',
-    'schemaVersion',
-    'revision',
-    'title',
-    'createdAt',
-    'updatedAt',
-    'sampleRate',
-    'tempoBpm',
-    'ruler',
-    'tracks',
-    'clips',
-    'mix',
-    'master',
-    'export',
-  ])
+  const song = migrateStudioProject(raw)
+  const value = record(
+    song,
+    'project',
+    [
+      'id',
+      'schemaVersion',
+      'revision',
+      'title',
+      'createdAt',
+      'updatedAt',
+      'sampleRate',
+      'tempoBpm',
+      'ruler',
+      'tracks',
+      'clips',
+      'mix',
+      'master',
+      'export',
+    ],
+    ['sequences'],
+  )
   idValue(value.id, 'project.id')
   enumValue(
     value.schemaVersion,
@@ -74,6 +89,7 @@ export function validateStudioProject(
     )
   }
   assertNoLaneOverlaps(clips)
+  validateStudioSequences(value.sequences, clips)
   const mix = record(
     value.mix,
     'project.mix',
@@ -145,5 +161,5 @@ export function validateStudioProject(
       validateClipAsset(clip, asset)
     }
   }
-  return structuredClone(raw) as StudioProject
+  return pruneStudioSequences(structuredClone(song) as StudioProject)
 }

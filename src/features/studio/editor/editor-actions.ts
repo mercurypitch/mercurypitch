@@ -1,10 +1,17 @@
 // Studio edit shortcuts — an in-project clipboard reuses owned audio and commands preserve undo history.
-import type { StudioClip } from '@/lib/studio/model/types'
+import { studioSequence } from '@/lib/studio/model/sequences'
+import type { StudioClip, StudioSequence } from '@/lib/studio/model/types'
 import type { StudioEditorFocus, StudioEditorOptions } from './types'
+
+/** A copied clip, and a MIDI clip's notes as they were copied: the song may drop or change its sequence before the paste. */
+interface StudioClipboard {
+  readonly clip: StudioClip
+  readonly sequence?: StudioSequence
+}
 
 export function createEditorActions(options: StudioEditorOptions) {
   let projectId = options.project()?.id ?? null
-  let clipboard: StudioClip | null = null
+  let clipboard: StudioClipboard | null = null
   const createId = options.createId ?? (() => globalThis.crypto.randomUUID())
 
   function sync(): void {
@@ -17,9 +24,11 @@ export function createEditorActions(options: StudioEditorOptions) {
 
   function copy(clipId: string): boolean {
     sync()
-    const clip = options.project()?.clips.find((item) => item.id === clipId)
-    if (!clip) return false
-    clipboard = structuredClone(clip)
+    const project = options.project()
+    const clip = project?.clips.find((item) => item.id === clipId)
+    if (!project || !clip) return false
+    const sequence = clip.midi && studioSequence(project, clip.midi.sequenceId)
+    clipboard = structuredClone({ clip, ...(sequence && { sequence }) })
     options.clipboardChanged?.(true)
     options.announce('Clip copied.')
     return true
@@ -40,9 +49,14 @@ export function createEditorActions(options: StudioEditorOptions) {
     const project = options.project()
     if (!clipboard || !project || !options.writable()) return false
     const newClipId = createId()
+    const copied = structuredClone(clipboard)
     const accepted = options.dispatch({
       type: 'paste-clip',
-      clip: structuredClone(clipboard),
+      clip: copied.clip,
+      ...(copied.sequence && {
+        sequence: copied.sequence,
+        newSequenceId: createId(),
+      }),
       trackId,
       startFrame: options.playheadFrame(),
       newClipId,

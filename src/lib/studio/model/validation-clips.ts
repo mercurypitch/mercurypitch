@@ -4,6 +4,7 @@ import { STUDIO_MAX_CLIP_PASSES, studioPassAt, studioPassWindow, } from './clip-
 import type { StudioAsset, StudioClip, StudioClipPasses, StudioTrack, } from './types'
 import { validateStudioLaneAutomation } from './validation-automation'
 import { validateStudioChain } from './validation-fx'
+import { validateStudioClipMidi } from './validation-midi'
 import { boolValue, enumValue, frameValue, idValue, numberValue, record, requireValue, textValue, } from './validation-values'
 
 export function validateStudioTrack(raw: unknown, path = 'track'): StudioTrack {
@@ -69,7 +70,7 @@ export function validateStudioClip(raw: unknown, path = 'clip'): StudioClip {
       'gainDb',
       'fades',
     ],
-    ['passes'],
+    ['passes', 'midi'],
   )
   for (const key of ['id', 'trackId', 'assetId'])
     idValue(value[key], `${path}.${key}`)
@@ -116,6 +117,8 @@ export function validateStudioClip(raw: unknown, path = 'clip'): StudioClip {
   )
   if (Object.hasOwn(value, 'passes'))
     validateClipPasses(clip, value.passes, `${path}.passes`)
+  if (Object.hasOwn(value, 'midi'))
+    validateStudioClipMidi(value.midi, `${path}.midi`)
   return structuredClone(clip)
 }
 

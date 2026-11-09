@@ -544,5 +544,11 @@
   "src/features/studio/backup/studio-backup-memory.test.ts",
   "src/lib/studio/audio/sha256.test.ts",
   "src/features/studio/backup/archive-writer.test.ts",
-  "src/lib/studio/audio/stream-check.test.ts"
+  "src/lib/studio/audio/stream-check.test.ts",
+  "src/db/services/studio-service.midi.test.ts",
+  "src/lib/studio/model/migrations.test.ts",
+  "src/lib/studio/model/validation-midi.test.ts",
+  "src/lib/studio/model/sequence-commands.test.ts",
+  "src/lib/studio/midi/time.test.ts",
+  "src/lib/studio/midi/render-key.test.ts"
 ]

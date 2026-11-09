@@ -12,7 +12,7 @@ import { releaseStudioResource, reserveStudioMemory, setStudioWorkingBytes, stud
 import { readStudioArchive as rawReadStudioArchive, STUDIO_BACKUP_LIMITS, } from './archive-codec'
 import type { StudioArchiveSink } from './archive-writer'
 import { writeStudioArchive as rawWriteStudioArchive } from './archive-writer'
-import { createStudioBackup as rawCreateStudioBackup, readStudioBackup as rawReadStudioBackup, restoreStudioBackup, writeStudioBackup, } from './studio-backup'
+import { createStudioBackup as rawCreateStudioBackup, readStudioBackup as rawReadStudioBackup, restoreStudioBackup, StudioBackupError, writeStudioBackup, } from './studio-backup'
 
 describe('portable Studio backups', () => {
   const resources: object[] = []
@@ -207,7 +207,7 @@ describe('portable Studio backups', () => {
         manifest.version = 2
       },
       (manifest: typeof base) => {
-        manifest.project.schemaVersion = 2
+        manifest.project.schemaVersion = 3
       },
       (manifest: typeof base) => {
         manifest.project.tracks[0].fx.baseSpec.version = 2
@@ -240,6 +240,35 @@ describe('portable Studio backups', () => {
       ).rejects.toThrow()
       expect(await service.listProjects()).toHaveLength(1)
     }
+  })
+
+  it('restores a backup of a version 1 song at version 2, and refuses one from a newer build in plain words', async () => {
+    // Arrange
+    const { archive } = await fixture()
+    const entries = await readStudioArchive(archive)
+    const base = JSON.parse(text(entries.get('manifest.json')))
+    const atVersion = (version: number) => {
+      const manifest = structuredClone(base)
+      manifest.project.schemaVersion = version
+      const changed = new Map<string, ArrayBuffer | Blob>(entries)
+      changed.set('manifest.json', new Blob([JSON.stringify(manifest)]))
+      return writeStudioArchive(blobs(changed))
+    }
+
+    // Act
+    const restored = await restoreStudioBackup(await atVersion(1), service)
+    const newer = await restoreStudioBackup(await atVersion(3), service).catch(
+      (error: unknown) => error,
+    )
+
+    // Assert
+    expect(restored.schemaVersion).toBe(2)
+    expect((await service.loadProject(restored.id)).schemaVersion).toBe(2)
+    expect(newer).toBeInstanceOf(StudioBackupError)
+    expect((newer as Error).message).toBe(
+      'This song was saved by a newer MercuryPitch. Update the app to open it.',
+    )
+    expect(await service.listProjects()).toHaveLength(2)
   })
 
   it('verifies original hashes and canonical finite samples even if an attacker updates the declared hash', async () => {
@@ -452,9 +481,10 @@ describe('portable Studio backups', () => {
       )
 
       // SHA-256 of the writer before backups could stream, measured on the
-      // same song at the same local time under three time zones.
+      // same song at the same local time under three time zones, and again
+      // once the song document moved to schema version 2.
       const old =
-        '29a48fe5c9b85d3d7683c61ef88eac35579a4891901407129edf094f41563156'
+        '97aec262fc119ae5103fb37539da08e01dac998e75e59008ac77c9230e4ba1f5'
       expect(sha256(new Uint8Array(await archive.arrayBuffer()))).toBe(old)
       expect(sha256(sink.bytes())).toBe(old)
     } finally {

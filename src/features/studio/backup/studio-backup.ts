@@ -6,6 +6,7 @@ import type { StudioService } from '@/db/services/studio-service'
 import { StudioStorageError } from '@/db/services/studio-service'
 import { checkCanonicalStream, checkOriginalStream, } from '@/lib/studio/audio/stream-check'
 import { isStudioMemoryRefusal, releaseStudioResource, reserveStudioMemory, retainStudioResource, StudioMemoryError, } from '@/lib/studio/memory-budget'
+import { StudioNewerSongError } from '@/lib/studio/model/migrations'
 import type { StudioAsset, StudioAssetBytes, StudioAssetData, StudioProject, } from '@/lib/studio/model/types'
 import { validateStudioAsset, validateStudioProject, } from '@/lib/studio/model/validation'
 import { readStudioArchive, studioBackupAssetPath, StudioBackupError, } from './archive-codec'
@@ -332,6 +333,9 @@ export async function readStudioBackup(
       )
     } catch (error) {
       if (error instanceof StudioBackupError) throw error
+      // A song from a newer build says so, in its own words.
+      if (error instanceof StudioNewerSongError)
+        throw new StudioBackupError(error.message)
       throw new StudioBackupError(
         'The project backup manifest contains invalid or unsupported data.',
       )

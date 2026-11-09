@@ -37,6 +37,8 @@ const EDIT_LABELS: Record<StudioEdit['type'], string> = {
   'set-sound-macros': 'adjust sound',
   'set-master-preset': 'change master target',
   'apply-auto-balance': 'auto-balance',
+  'add-sequence': 'add notes',
+  'set-sequence-notes': 'edit notes',
 }
 
 type TrackChanges = Extract<StudioEdit, { type: 'update-track' }>['changes']
@@ -57,7 +59,11 @@ function commandLabel(command: StudioCommand): string {
   if (command.type === 'update-track') return trackChangeLabel(command.changes)
   if (command.type === 'set-lane-automation') return `${command.param} line`
   if (command.type !== 'batch') return EDIT_LABELS[command.type]
-  return command.commands.every((edit) => edit.type === 'add-audio')
+  // A MIDI take's notes ride in the batch that adds its clip, which names it.
+  const edits = command.commands.filter((edit) => edit.type !== 'add-sequence')
+  if (edits.length === 1 && edits.length < command.commands.length)
+    return commandLabel(edits[0])
+  return edits.every((edit) => edit.type === 'add-audio')
     ? 'add takes'
     : 'edit arrangement'
 }

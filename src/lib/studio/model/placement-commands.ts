@@ -1,5 +1,6 @@
-// Studio placement commands — copied audio and explicit new lanes preserve source samples and track settings.
-import type { StudioClip, StudioProject, StudioTrack } from './types'
+// Studio placement commands — copied audio and explicit new lanes preserve source samples and track settings; a pasted MIDI clip plays the notes it was copied with.
+import { sameStudioSequence, studioSequence } from './sequences'
+import type { StudioClip, StudioProject, StudioSequence, StudioTrack, } from './types'
 import { requireValue } from './validation-values'
 
 function trackById(project: StudioProject, id: string): StudioTrack {
@@ -23,10 +24,46 @@ function clonedTrack(
 export interface StudioPasteEdit {
   readonly type: 'paste-clip'
   readonly clip: StudioClip
+  /** A MIDI clip's sequence as it was copied: the song may have dropped or changed it since. */
+  readonly sequence?: StudioSequence
+  /** The id the copied sequence takes when the song no longer holds it as it was. */
+  readonly newSequenceId?: string
   readonly trackId: string
   readonly startFrame: number
   readonly newClipId: string
   readonly newTrackId: string
+}
+
+/**
+ * What a pasted clip plays: its sequence, shared while the song holds it as
+ * it was copied; else the copy the paste carries, under a new id, since its
+ * clip may be gone (and its sequence with it) or its notes edited since.
+ */
+function pastedMidi(
+  project: StudioProject,
+  edit: StudioPasteEdit,
+): { clip: StudioClip; sequences: StudioProject['sequences'] } {
+  const midi = edit.clip.midi
+  const held = midi && studioSequence(project, midi.sequenceId)
+  if (
+    midi === undefined ||
+    (held !== undefined &&
+      (edit.sequence === undefined || sameStudioSequence(held, edit.sequence)))
+  )
+    return { clip: edit.clip, sequences: project.sequences }
+  const copied = edit.sequence
+  const id = edit.newSequenceId
+  requireValue(
+    copied?.id === midi.sequenceId &&
+      id !== undefined &&
+      studioSequence(project, id) === undefined,
+    `clip.${edit.clip.id}.midi`,
+    'The copied notes are gone',
+  )
+  return {
+    clip: { ...edit.clip, midi: { ...midi, sequenceId: id } },
+    sequences: [...(project.sequences ?? []), { ...copied, id }],
+  }
 }
 
 export function pasteStudioClip(
@@ -42,8 +79,9 @@ export function pasteStudioClip(
       clip.startFrame + clip.sourceOutFrame - clip.sourceInFrame >
         edit.startFrame,
   )
+  const pasted = pastedMidi(project, edit)
   const next = {
-    ...edit.clip,
+    ...pasted.clip,
     id: edit.newClipId,
     trackId: conflict ? edit.newTrackId : destination.id,
     startFrame: edit.startFrame,
@@ -54,6 +92,7 @@ export function pasteStudioClip(
       ? [...project.tracks, clonedTrack(project, destination, edit.newTrackId)]
       : project.tracks,
     clips: [...project.clips, next],
+    ...(pasted.sequences && { sequences: pasted.sequences }),
   }
 }
 
