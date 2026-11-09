@@ -551,5 +551,7 @@
   "src/lib/studio/model/sequence-commands.test.ts",
   "src/lib/studio/midi/time.test.ts",
   "src/lib/studio/midi/render-key.test.ts",
-  "src/lib/roll-geometry.test.ts"
+  "src/lib/roll-geometry.test.ts",
+  "src/lib/studio/midi/notes.test.ts",
+  "src/lib/studio/midi/roll.test.ts"
 ]

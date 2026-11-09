@@ -11,6 +11,7 @@
 // the song's tempo as the take is kept (midi/time.ts). A loop's passes are
 // windows of one take, so a note in a later pass sits past the clip's
 // window, where the take's audio does before its clip moves to it.
+import { studioNoteVelocity } from '../midi/notes'
 import { studioFramesToTicks, studioTicksCovering } from '../midi/time'
 import type { StudioNote, StudioSequence } from '../model/types'
 import { STUDIO_PPQ, STUDIO_SAMPLE_RATE } from '../model/types'
@@ -33,12 +34,6 @@ export interface StudioNotedTake {
 
 /** How long a log keeps a note: a take's five minutes, its count-in, and room. */
 const LOG_SECONDS = 400
-
-/** A velocity as a sequence keeps it: above 0, up to 1, to 4 decimals. */
-export function studioNoteVelocity(normalized: number): number {
-  if (!Number.isFinite(normalized)) return 1
-  return Math.min(1, Math.max(0.0001, Math.round(normalized * 10_000) / 10_000))
-}
 
 /** The notes played on an armed MIDI lane, as they sound, for the takes recorded meanwhile. */
 export function createStudioNoteLog() {
