@@ -1330,6 +1330,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Rule:** for a component taken from a map, write `<Show when={MAP[key]} keyed>{(Icon) => <Icon />}</Show>`. A new `solid-js/web` import costs every page: compare `vendor-solid`'s size in the build output with main's.
 **See:** `src/features/studio/inputs/StudioInputCard.tsx`, `scripts/assert-drum-night-bundle.mjs`
 
+### Schedule an offline render as it plays, never whole
+
+**Symptom:** a 2,000-note MIDI take (250 s) took 148 s to render offline with every note scheduled before `startRendering`, and 3.0 s scheduled four seconds ahead (Chrome 153, a synth voice per note; 108 s against 4.6 s with sampled voices).
+**Cause:** Chromium pulls every node the destination reaches at every render quantum, started or not, so a source scheduled minutes ahead costs work in every quantum until it has played. Scheduling ahead also counts against a voice cap that frees a voice only when it ends: the piano's synth stopped 8 of 40 notes scheduled ahead before they began.
+**Rule:** render through `renderAsScheduled`, which schedules four seconds ahead and suspends every two seconds to schedule more, and build any instrument with a voice cap `offline`, without it.
+**See:** `src/lib/studio/playback/scheduled-render.ts`, `src/features/studio/midi/render/render-studio-midi.ts`
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag
