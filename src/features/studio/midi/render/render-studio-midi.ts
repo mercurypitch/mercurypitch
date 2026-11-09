@@ -13,10 +13,12 @@
 //   same notes. Every gain between the instruments and that node is the
 //   instruments' own.
 //
-//   TIME — frame 0 is tick 0, and each note starts on its nearest whole
-//   frame (whole-frame.ts). Its sound begins its instrument's own delay
-//   after that, as it does in a take (the piano's limiter looks 6 ms
-//   ahead), so a render lines up where the take it replaces did.
+//   TIME — frame 0 is tick 0, ticks are the song's (STUDIO_PPQ, through
+//   midi/time.ts, which holds every tick and frame conversion), and each
+//   note starts on its nearest whole frame (whole-frame.ts). Its sound
+//   begins its instrument's own delay after that, as it does in a take (the
+//   piano's limiter looks 6 ms ahead), so a render lines up where the take
+//   it replaces did.
 //
 //   PRE-ROLL — a new DynamicsCompressorNode starts about 17 dB down and
 //   needs about 300 ms to settle (studio-fx/render.ts), and the grand's tone
@@ -42,25 +44,23 @@
 //
 // An abort stops the scheduling and silences what was scheduled. The render
 // settles before the abort is reported, and holds its memory until then.
-import type { StudioMidiSound } from '@/features/studio/record/midi/studio-midi-sound'
 import type { StudioMidiModules, StudioMidiVoice, } from '@/features/studio/record/midi/studio-midi-sounds'
 import { buildStudioDrumSound, buildStudioPianoSound, loadStudioMidiModules, } from '@/features/studio/record/midi/studio-midi-sounds'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
+import type { StudioMidiSoundKind } from '@/lib/studio/midi/render-key'
+import { studioTicksToFrames } from '@/lib/studio/midi/time'
+import type { StudioNote } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import type { StudioRenderSchedule } from '@/lib/studio/playback/scheduled-render'
 import { renderAsScheduled } from '@/lib/studio/playback/scheduled-render'
 import { frameTime } from '@/lib/studio/playback/whole-frame'
 import { STUDIO_CAPTURE_INPUT } from '@/lib/studio/record/capture-input'
-import { ticksToSeconds } from './midi-render-time'
 
-/** One note of a sequence, as the song keeps it. */
-export interface StudioMidiRenderNote {
-  readonly pitch: number
-  readonly startTick: number
-  readonly lengthTicks: number
-  /** 0 to 1. */
-  readonly velocity: number
-}
+/** One note of a sequence, as the song keeps it: a sequence's notes pass as they are. */
+export type StudioMidiRenderNote = Pick<
+  StudioNote,
+  'pitch' | 'startTick' | 'lengthTicks' | 'velocity' | 'releaseVelocity'
+>
 
 /** What played a render's notes: the sampled grand, the piano's synth, or the drum kit. */
 export type StudioMidiRenderEngine = 'grand' | 'synth' | 'kit'
@@ -76,15 +76,14 @@ export interface StudioMidiRenderDeps {
   readonly grandTimeoutMs?: number
 }
 
+/** A sequence's notes and time, in the song's ticks (STUDIO_PPQ), and the sound its lane plays. */
 export interface StudioMidiRenderInput {
   readonly notes: readonly StudioMidiRenderNote[]
-  /** Ticks a beat. */
-  readonly ppq: number
   /** The tempo the sequence's ticks were laid on. */
   readonly tempoBpm: number
   /** The sequence's length: no note starting from here on is heard. */
   readonly lengthTicks: number
-  readonly sound: StudioMidiSound
+  readonly sound: StudioMidiSoundKind
   /** How long the render runs past `lengthTicks` for releases to ring: 1.5 s for the piano and 0.8 s for the drums by default. */
   readonly tailSeconds?: number
   readonly signal?: AbortSignal
@@ -100,7 +99,7 @@ export interface StudioMidiRender {
 
 /** The silence a render runs first and cuts, for its limiters to settle. */
 const PRE_ROLL_FRAMES = STUDIO_SAMPLE_RATE / 2
-const TAIL_SECONDS: Readonly<Record<StudioMidiSound, number>> = {
+const TAIL_SECONDS: Readonly<Record<StudioMidiSoundKind, number>> = {
   piano: 1.5,
   drums: 0.8,
 }
@@ -114,6 +113,7 @@ interface ClockNote {
   readonly id: string
   readonly pitch: number
   readonly velocity: number
+  readonly releaseVelocity: number
   readonly start: number
   readonly end: number
 }
@@ -133,8 +133,8 @@ const nonNegative = (value: number) => Number.isFinite(value) && value >= 0
 
 /** The tail a render runs past its sequence; a timing it cannot place is refused. */
 function renderTail(input: StudioMidiRenderInput): number {
-  if (!positive(input.ppq) || !positive(input.tempoBpm))
-    throw new RangeError('A MIDI render needs a positive ppq and tempo.')
+  if (!positive(input.tempoBpm))
+    throw new RangeError('A MIDI render needs a positive tempo.')
   if (!nonNegative(input.lengthTicks))
     throw new RangeError("A MIDI render's length can't be negative.")
   const tail = input.tailSeconds ?? TAIL_SECONDS[input.sound]
@@ -145,8 +145,7 @@ function renderTail(input: StudioMidiRenderInput): number {
 
 /** The nearest whole frame of the render to tick `ticks`. */
 function frameOf(input: StudioMidiRenderInput, ticks: number): number {
-  const seconds = ticksToSeconds(ticks, input.ppq, input.tempoBpm)
-  return Math.round(seconds * STUDIO_SAMPLE_RATE)
+  return Math.round(studioTicksToFrames(ticks, input.tempoBpm))
 }
 
 /** When frame `frame` of the render plays on its clock, after the pre-roll. */
@@ -182,6 +181,7 @@ function clockNotes(input: StudioMidiRenderInput): ClockNote[] {
       id: `n${index}`,
       pitch: note.pitch,
       velocity: note.velocity,
+      releaseVelocity: note.releaseVelocity ?? RELEASE_VELOCITY,
       start: clockTime(start),
       end: clockTime(end),
     }))
@@ -198,7 +198,7 @@ function noteSchedule(
       for (; next < notes.length && notes[next].start < time; next += 1) {
         const note = notes[next]
         voice.start(note.id, note.pitch, note.velocity, note.start, 0)
-        voice.stop(note.id, note.end, RELEASE_VELOCITY)
+        voice.stop(note.id, note.end, note.releaseVelocity)
       }
     },
   }

@@ -20,7 +20,7 @@ class RenderBuffer extends FakeBuffer {
 }
 
 /** A gain that remembers every node it was ever wired to: a sound's teardown clears its live connections. */
-class RenderGain extends FakeNode {
+export class RenderGain extends FakeNode {
   readonly gain = new PlaybackParam(1)
   readonly wired: FakeNode[] = []
   constructor() {
@@ -73,9 +73,16 @@ export class RenderSource extends FakeNode {
   onended: (() => void) | null = null
   startedAt: number | null = null
   readonly stopTimes: number[] = []
+  /** Every node it was ever wired to, kept after its voice is cleaned up. */
+  readonly wired: FakeNode[] = []
   marked = false
   ended = false
   private readonly endedListeners: (() => void)[] = []
+
+  override connect(node: FakeNode, output = 0, input = 0): FakeNode {
+    this.wired.push(node)
+    return super.connect(node, output, input)
+  }
 
   start(when = 0): void {
     this.startedAt = when
