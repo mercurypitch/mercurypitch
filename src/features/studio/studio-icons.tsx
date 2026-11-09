@@ -305,3 +305,23 @@ export const CrossSmall: Component<{ size?: number }> = (p) => (
     <path d="M17 7L7 17" />
   </svg>
 )
+
+// Notes — a piano roll's bars in a frame: opens a MIDI clip's note editor.
+export const NoteBars: Component<{ size?: number }> = (p) => (
+  <svg
+    viewBox="0 0 24 24"
+    fill="none"
+    stroke="currentColor"
+    stroke-width="2"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+    width={p.size ?? 24}
+    height={p.size ?? 24}
+    aria-hidden="true"
+  >
+    <rect x="3" y="4" width="18" height="16" rx="2.5" stroke-width="1.6" />
+    <path d="M7 9h4" />
+    <path d="M10 13h6" />
+    <path d="M7.5 16.5h3.5" />
+  </svg>
+)

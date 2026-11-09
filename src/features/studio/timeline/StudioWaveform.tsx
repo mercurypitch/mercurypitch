@@ -1,15 +1,20 @@
-// Studio waveform — peaks and loudness in the lane's hue, with fade geometry, rendered without playback.
+// Studio waveform — peaks and loudness in the lane's hue, with fade geometry, rendered without playback; a MIDI clip's notes over it.
 //
 // A draw reads its props once: every prop read reruns the clip's geometry,
 // and the fade curve used to read them for every second pixel column. The
 // canvas keeps its size unless the size changes (setting it, even to the same
 // value, clears and reallocates the bitmap), the colour is read again only
 // when the theme or the lane's colour changes, and a canvas out of the
-// timeline's view is drawn once it comes into view.
+// timeline's view is drawn once it comes into view. A MIDI clip draws its
+// notes in the same canvas, over its waveform faded back (clip-notes.ts),
+// and the canvas says how many it drew (data-notes), which a browser test
+// reads.
 import { createEffect, createSignal, onCleanup, onMount, untrack, } from 'solid-js'
 import { studioPeakLevel } from '@/lib/studio/audio/waveform-peaks'
 import { studioClipGainAtSourceFrame } from '@/lib/studio/model/arrangement-plan'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
+import type { StudioClipNotes } from './clip-notes'
+import { drawStudioClipNotes, STUDIO_MIDI_WAVE_ALPHA } from './clip-notes'
 import styles from './StudioTimeline.module.css'
 import type { StudioWaveformEnvelope, StudioWaveformResource, } from './waveform-resource'
 import { StudioWaveformBusyError } from './waveform-resource'
@@ -24,6 +29,8 @@ export interface StudioWaveformProps {
   width?: number
   /** The lane's colour: a change reads the drawn colour again. */
   color?: string
+  /** A MIDI clip's notes, drawn over its waveform faded back. */
+  notes?: StudioClipNotes
 }
 
 /**
@@ -114,6 +121,7 @@ function drawEnvelope(
   context: CanvasRenderingContext2D,
   wave: StudioWaveformEnvelope,
   frame: WaveformFrame,
+  strength: number,
 ): void {
   const mid = frame.height / 2
   const reach = mid - 2
@@ -124,14 +132,14 @@ function drawEnvelope(
     frame.sourceInFrame,
     frame.sourceOutFrame,
   )
-  context.globalAlpha = 0.42
+  context.globalAlpha = 0.42 * strength
   fillBand(
     context,
     (x) => mid - high[x] * reach,
     (x) => mid - low[x] * reach,
     frame.columns,
   )
-  context.globalAlpha = 1
+  context.globalAlpha = strength
   fillBand(
     context,
     (x) => mid - body[x] * reach,
@@ -265,11 +273,22 @@ export function StudioWaveform(props: StudioWaveformProps) {
     context.globalAlpha = 0.35
     context.fillRect(0, Math.round(frame.height / 2) - 0.5, frame.width, 1)
     const wave = envelope()
-    if (wave) drawEnvelope(context, wave, frame)
+    const notes = props.notes
+    if (wave)
+      drawEnvelope(
+        context,
+        wave,
+        frame,
+        notes === undefined ? 1 : STUDIO_MIDI_WAVE_ALPHA,
+      )
     const { fades } = frame.clip
     if (fades.in !== undefined || fades.out !== undefined)
       drawFades(context, frame)
     context.globalAlpha = 1
+    if (notes !== undefined)
+      canvas.dataset.notes = String(
+        drawStudioClipNotes(context, notes, frame, color),
+      )
   }
 
   function schedule(): void {
@@ -285,6 +304,7 @@ export function StudioWaveform(props: StudioWaveformProps) {
     void props.sourceOutFrame
     void props.width
     void props.color
+    void props.notes
     void envelope()
     schedule()
   })

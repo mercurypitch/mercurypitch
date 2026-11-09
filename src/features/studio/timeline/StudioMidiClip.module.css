@@ -1,0 +1,141 @@
+/* Studio MIDI clip — a glass body in the lane's hue, its chip and note count in the title band, the mark of the clip the note editor shows, and the hint that opens it. */
+/* The clip's colours are the lane's custom properties (StudioTimeline.module.css,
+   .lane): set again here, the button and its band read these. The body's
+   gradient carries `border-box`, which sets its origin and its clip, so the
+   translucent edge shows the gradient's own end and not a tile's seam. */
+.midi {
+  --studio-clip-sheen: rgb(255 255 255 / 0.07);
+  --track-body: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--studio-track) 24%, var(--studio-clip-base)) 0%,
+      color-mix(in srgb, var(--studio-track) 11%, var(--studio-clip-base)) 100%
+    )
+    border-box;
+  --track-edge: color-mix(in srgb, var(--studio-track) 52%, transparent);
+}
+:global(html[data-theme='light']) .midi {
+  --studio-clip-sheen: rgb(255 255 255 / 0.75);
+  --track-body: linear-gradient(
+      180deg,
+      color-mix(in srgb, var(--studio-track) 16%, var(--studio-clip-base)) 0%,
+      color-mix(in srgb, var(--studio-track) 7%, var(--studio-clip-base)) 100%
+    )
+    border-box;
+}
+
+/* Light across the glass: a sheen from the top left, and a lit top edge. */
+.sheen {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(
+    115deg,
+    var(--studio-clip-sheen) 0%,
+    transparent 40%
+  );
+  box-shadow: inset 0 1px 0 var(--studio-clip-sheen);
+  pointer-events: none;
+}
+
+/* The title band holds the take's name, the chip and the count in a row. */
+.band {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+}
+.name {
+  flex: 0 1 auto;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chip {
+  flex: none;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--studio-track) 18%, transparent);
+  color: color-mix(in srgb, var(--studio-track) 70%, var(--studio-text));
+  font-size: 9.5px;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  line-height: 12px;
+}
+.count {
+  flex: none;
+  color: var(--studio-text-2);
+  font-size: 10.5px;
+  font-weight: 500;
+}
+.editing {
+  flex: none;
+  margin-left: auto;
+  padding: 1px 7px;
+  border-radius: 999px;
+  background: var(--studio-accent);
+  color: var(--studio-on-accent);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 12px;
+}
+
+/* The clip the note editor shows: an accent ring, over the selected one's. */
+.midi button[data-editing][data-studio-clip] {
+  border-color: var(--studio-accent);
+  box-shadow:
+    0 0 0 2px var(--studio-accent),
+    0 6px 18px rgb(1 4 9 / 0.28);
+}
+
+/* How to open the notes, over the selected clip for a few seconds. It
+   takes no pointer, so the clip under it stays as easy to press. */
+.hint {
+  position: absolute;
+  z-index: 6;
+  bottom: calc(100% + 9px);
+  padding: 6px 10px;
+  border-radius: 8px;
+  background: var(--studio-tooltip);
+  box-shadow: var(--studio-shadow);
+  color: var(--studio-on-tooltip);
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 16px;
+  white-space: nowrap;
+  pointer-events: none;
+  transform: translateX(-50%);
+  animation: studio-midi-hint 4.6s ease-out both;
+}
+.hint::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  width: 8px;
+  height: 8px;
+  margin-left: -4px;
+  background: var(--studio-tooltip);
+  transform: rotate(45deg);
+}
+@keyframes studio-midi-hint {
+  0% {
+    opacity: 0;
+    translate: 0 4px;
+  }
+  5%,
+  85% {
+    opacity: 1;
+    translate: 0 0;
+  }
+  100% {
+    opacity: 0;
+    visibility: hidden;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .hint {
+    animation: none;
+  }
+}
