@@ -4,8 +4,11 @@ import type { ChainSpec, ParamValues } from '@/lib/studio-fx/chain-spec'
 import type { MixMacros } from '@/lib/studio-fx/mix-macros'
 import type { TrackRole } from '@/lib/studio-fx/role-chains'
 
-export const STUDIO_SCHEMA_VERSION = 1
+/** The song document's version: each one has a step in migrations.ts. */
+export const STUDIO_SCHEMA_VERSION = 2
 export const STUDIO_SAMPLE_RATE = 48000
+/** Ticks per quarter note in every MIDI sequence (docs/plans/studio-midi.md). */
+export const STUDIO_PPQ = 960
 export const STUDIO_ENGINE_VERSION = 'studio-fx-v1'
 export const STUDIO_PREPARATION_VERSION = 'bs1770-48k-v1'
 export type Frame = number
@@ -14,7 +17,7 @@ export type SourceKind = VoiceTakeSource | 'file' | 'recording'
 
 export interface StudioProject {
   readonly id: string
-  readonly schemaVersion: 1
+  readonly schemaVersion: typeof STUDIO_SCHEMA_VERSION
   readonly revision: number
   readonly title: string
   readonly createdAt: string
@@ -42,6 +45,56 @@ export interface StudioProject {
     readonly bitDepth: 16
     readonly range: 'song' | 'selection'
   }
+  /**
+   * The MIDI content the song's clips play, each named by a clip's
+   * `midi.sequenceId`. Absent when no clip plays any; a sequence no clip
+   * names is dropped by the command that leaves it so (sequences.ts).
+   */
+  readonly sequences?: readonly StudioSequence[]
+}
+
+/**
+ * MIDI content apart from where it is placed: its notes in ticks from its
+ * start, tick 0 on frame 0 of the audio rendered from it. Several clips may
+ * share one; an edit gives the edited clip a copy of its own first
+ * (sequence-commands.ts).
+ */
+export interface StudioSequence {
+  readonly id: string
+  readonly ppq: typeof STUDIO_PPQ
+  /** The tempo its ticks were laid on; a later change of the song's tempo leaves it. */
+  readonly tempoBpm: number
+  /** How long its render runs, in ticks. */
+  readonly lengthTicks: number
+  /** The id the next note added gets: ids are never reused. */
+  readonly nextNoteId: number
+  readonly notes: readonly StudioNote[]
+}
+
+/** One note of a sequence. A field holding its default is left out. */
+export interface StudioNote {
+  /** Unique within its sequence and never reused; a copied sequence keeps it. */
+  readonly id: number
+  /** MIDI note number, 0 to 127. */
+  readonly pitch: number
+  readonly startTick: number
+  readonly lengthTicks: number
+  /** 0 to 1, kept to 4 decimals, above 0; shown as round(velocity × 127). */
+  readonly velocity: number
+  /** 0 to 1, kept to 4 decimals; absent means 0.5. */
+  readonly releaseVelocity?: number
+  /** 0 to 15; absent means 0. */
+  readonly channel?: number
+}
+
+/**
+ * A clip that plays MIDI: its sequence, and the key of what its audio
+ * (`assetId`) was rendered from (midi/render-key.ts). A key that no longer
+ * matches the sequence means the audio is due a render.
+ */
+export interface StudioClipMidi {
+  readonly sequenceId: string
+  readonly renderKey: string
 }
 
 export interface StudioTrack {
@@ -120,6 +173,8 @@ export interface StudioClip {
   }
   /** A loop take's passes, its source frames inside one of them; absent for any other clip. */
   readonly passes?: StudioClipPasses
+  /** The sequence a MIDI clip plays, its audio rendered from it; absent for an audio clip. */
+  readonly midi?: StudioClipMidi
 }
 
 export interface StudioAsset {

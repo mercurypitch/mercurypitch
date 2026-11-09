@@ -23,7 +23,7 @@ describe('strict Studio persistence validation', () => {
   it('rejects unknown schema, engine, properties and source ownership instead of normalizing them', () => {
     const { project, asset } = studioFixture()
     expect(() =>
-      validateStudioProject({ ...project, schemaVersion: 2 }, [asset]),
+      validateStudioProject({ ...project, schemaVersion: 0 }, [asset]),
     ).toThrow(/version/)
     expect(() =>
       validateStudioProject(
