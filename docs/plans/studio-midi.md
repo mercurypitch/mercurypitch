@@ -243,6 +243,23 @@ budgets and a local e2e run. New UI loads lazily.
 - **A song's kept records go with it.** Deleting a song deletes its
   `studioProjectSnapshots` rows.
 
+### Design decisions made while building A2
+
+- **An edit returns the selection after it**, beside the new sequence: an
+  added, duplicated or pasted note is selected in place of the notes it came
+  from, a deleted one leaves none, and every other edit keeps its selection.
+- **A selection moves as a group.** A move or a transpose that would take
+  one selected note out of the clip's window or off the keyboard stops the
+  whole selection at that edge, so a chord or a run keeps its shape.
+- **Quantize snaps starts, to a grid with an offset.** The song's bars need
+  not fall on the sequence's tick 0 (a take's first sample is its count-in),
+  so the grid's lines can sit on any tick; lengths are left as they are.
+- **A full sequence takes no more notes.** An add, a duplicate or a paste
+  that would pass 10,000 notes returns null, for the editor to say so.
+- **The roll picks only what the clip plays.** A note starting outside the
+  clip's window is drawn dimmed and never picked, and the roll's zoom and
+  pan stay inside the window, a zoom closing in to a sixteenth note.
+
 ## 3. How the big DAWs do it (research, 9 Nov 2026)
 
 |                       | REAPER                                        | FL Studio                                | Ableton Live                    | DAWproject (Bitwig, Studio One)                  |
@@ -296,7 +313,7 @@ Unconfirmed from primary sources: REAPER's exact `.RPP` MIDI event layout, and
 whether Ableton or Bitwig link clips natively. Nothing in this design depends
 on either.
 
-## 4. Where A1 lives
+## 4. Where A lives
 
 | File                                        | What it answers                                                                                                                                                        |
 | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -312,3 +329,6 @@ on either.
 | `src/features/studio/controller/imports.ts` | A MIDI take's sequence added in the edit that adds its clip, with its render key.                                                                                      |
 | `src/db/services/studio-service.ts`         | Reads migrate; a stored song's record kept in `studioProjectSnapshots` before its first migration, and deleted with the song; a newer song refused as `newer-version`. |
 | `src/db/adapters/dexie-adapter.ts`          | Version 16: `studioProjectSnapshots` added, `studioTakeNotes` deleted.                                                                                                 |
+| `src/lib/studio/midi/notes.ts`              | A2: the note edits over a sequence and a selection of ids, the selection helpers, and the velocity rule.                                                               |
+| `src/lib/studio/midi/roll.ts`               | A2: the note editor's roll in ticks over a clip's window: its viewport, zoom, pan, hit test and the point under a pointer.                                             |
+| `src/lib/roll-geometry.ts`                  | A2: a piano roll's geometry in the caller's time unit, moved from the Lab's `transcription-roll.ts`, which the Lab's bench now draws with in seconds.                  |
