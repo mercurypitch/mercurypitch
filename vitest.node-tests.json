@@ -553,5 +553,8 @@
   "src/lib/studio/midi/render-key.test.ts",
   "src/lib/roll-geometry.test.ts",
   "src/lib/studio/midi/notes.test.ts",
-  "src/lib/studio/midi/roll.test.ts"
+  "src/lib/studio/midi/roll.test.ts",
+  "src/lib/studio/midi/preview.test.ts",
+  "src/lib/studio/midi/drum-rows.test.ts",
+  "src/lib/studio/midi/roll-keyboard.test.ts"
 ]
