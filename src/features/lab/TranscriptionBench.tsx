@@ -22,6 +22,8 @@ import { WaveformBars } from '@/components/icons'
 import type { MidiSong, MidiSongPitchedTrack } from '@/lib/midi-song'
 import { createBeatClock, isPitchedMidiSongTrack, parseMidiSong, } from '@/lib/midi-song'
 import { downloadMIDI } from '@/lib/piano-roll'
+import type { RollHit, RollNote, RollScale, RollViewport, } from '@/lib/roll-geometry'
+import { fitViewport, hitTest, midiToY, noteRect, panViewport, rowHeight, timeToX, visibleNotes, xToTime, yToMidi, zoomViewport, } from '@/lib/roll-geometry'
 import { midiToNote } from '@/lib/scale-data'
 import { installSpacePlaybackToggle } from '@/lib/space-playback'
 import { parseGuitarProFile } from '@/lib/tab/gp-import'
@@ -36,12 +38,16 @@ import type { MelodyItem } from '@/types'
 import type { EditableNote, PitchEditLayer, } from '../stem-mixer/pitch-edit-model'
 import { applyEditLayer, deleteNote, editNote, emptyEditLayer, splitNote, } from '../stem-mixer/pitch-edit-model'
 import labStyles from './Lab.module.css'
-import type { RollHit, RollNote, RollViewport } from './transcription-roll'
-import { fitViewport, hitTest, midiToY, noteRect, panViewport, rowHeight, secondsToX, visibleNotes, xToSeconds, yToMidi, zoomViewport, } from './transcription-roll'
 import styles from './TranscriptionBench.module.css'
 
 /** How close a heard onset has to be to count as the same note. */
 const MATCH_TOLERANCE_SECONDS = 0.12
+
+/** The roll's spans in seconds: a fifth of a second at the closest, 30 seconds when empty, a second at the least when fitted. */
+const ROLL_SECONDS: RollScale = { minSpan: 0.2, emptySpan: 30, minFitSpan: 1 }
+
+/** A note on the roll, in seconds, by the bench's own id. */
+type BenchNote = RollNote & { readonly id: string }
 
 /**
  * The roll measures time in seconds; the edit model names its axis in beats
@@ -147,11 +153,11 @@ export const TranscriptionBench: Component = () => {
     applyEditLayer(baseNotes(), layer()),
   )
 
-  const rollNotes = createMemo<RollNote[]>(() =>
+  const rollNotes = createMemo<BenchNote[]>(() =>
     notes().map((note) => ({
       id: note.id,
-      startSeconds: note.startBeat,
-      endSeconds: note.endBeat,
+      start: note.startBeat,
+      end: note.endBeat,
       midi: note.midi,
     })),
   )
@@ -172,21 +178,21 @@ export const TranscriptionBench: Component = () => {
   })
 
   /** Reference notes in real seconds, through the file's whole tempo map. */
-  const referenceNotes = createMemo<RollNote[]>(() => {
+  const referenceNotes = createMemo<BenchNote[]>(() => {
     const song = reference()
     const track = referenceTrack()
     if (song === null || track === null) return []
     const clock = createBeatClock(song)
     return track.notes.map((note, index) => ({
       id: `ref-${index}`,
-      startSeconds: clock(note.startBeat),
-      endSeconds: clock(note.startBeat + note.duration),
+      start: clock(note.startBeat),
+      end: clock(note.startBeat + note.duration),
       midi: note.midi,
     }))
   })
 
   const scorable = (list: readonly RollNote[]): ScorableNote[] =>
-    list.map((note) => ({ midi: note.midi, startSeconds: note.startSeconds }))
+    list.map((note) => ({ midi: note.midi, startSeconds: note.start }))
 
   const score = createMemo(() => {
     const heard = rollNotes()
@@ -220,7 +226,7 @@ export const TranscriptionBench: Component = () => {
   })
 
   /** Tab outlines moved onto the recording's clock. */
-  const alignedReferenceNotes = createMemo<RollNote[]>(() => {
+  const alignedReferenceNotes = createMemo<BenchNote[]>(() => {
     const refs = referenceNotes()
     const map = alignment()
     if (map.anchors.length === 0) return refs
@@ -230,14 +236,14 @@ export const TranscriptionBench: Component = () => {
     const toAudio = createScoreToAudioClock(map)
     return refs.map((note) => ({
       ...note,
-      startSeconds: toAudio(note.startSeconds),
-      endSeconds: toAudio(note.endSeconds),
+      start: toAudio(note.start),
+      end: toAudio(note.end),
     }))
   })
 
   const totalSeconds = createMemo(() => {
     const analysed = result()?.analysedSeconds ?? 0
-    const lastReference = alignedReferenceNotes().at(-1)?.endSeconds ?? 0
+    const lastReference = alignedReferenceNotes().at(-1)?.end ?? 0
     return Math.max(1, analysed, lastReference)
   })
 
@@ -265,8 +271,8 @@ export const TranscriptionBench: Component = () => {
   const startPlayback = (source: 'heard' | 'tab'): void => {
     stopPlayback()
     const list = (source === 'heard' ? rollNotes() : alignedReferenceNotes())
-      .filter((note) => note.endSeconds > playhead())
-      .sort((left, right) => left.startSeconds - right.startSeconds)
+      .filter((note) => note.end > playhead())
+      .sort((left, right) => left.start - right.start)
     if (list.length === 0) return
 
     const context = new AudioContext()
@@ -285,11 +291,11 @@ export const TranscriptionBench: Component = () => {
       const horizon = from + (context.currentTime - origin) + 1.2
       while (next < list.length) {
         const note = list[next]
-        if (note === undefined || note.startSeconds > horizon) break
+        if (note === undefined || note.start > horizon) break
         next += 1
-        const at = origin + (note.startSeconds - from)
+        const at = origin + (note.start - from)
         if (at < context.currentTime) continue
-        const duration = Math.max(0.06, note.endSeconds - note.startSeconds)
+        const duration = Math.max(0.06, note.end - note.start)
         const osc = context.createOscillator()
         const gain = context.createGain()
         // Two sources, two timbres, so switching between them is audible
@@ -308,7 +314,7 @@ export const TranscriptionBench: Component = () => {
     scheduleAhead()
     scheduleTimer = window.setInterval(scheduleAhead, 250)
 
-    const end = list.at(-1)?.endSeconds ?? from
+    const end = list.at(-1)?.end ?? from
     const tick = (): void => {
       if (audio !== context) return
       const at = from + Math.max(0, context.currentTime - origin)
@@ -460,7 +466,7 @@ export const TranscriptionBench: Component = () => {
   // ── Roll interaction ─────────────────────────────────────────
 
   interface Drag {
-    hit: RollHit
+    hit: RollHit<BenchNote>
     startSeconds: number
     startMidi: number
   }
@@ -486,7 +492,7 @@ export const TranscriptionBench: Component = () => {
       // a running audition keeps playing from the new place.
       const wasPlaying = playing()
       if (wasPlaying !== null) stopPlayback()
-      setPlayhead(Math.max(0, xToSeconds(x, view)))
+      setPlayhead(Math.max(0, xToTime(x, view)))
       if (wasPlaying !== null) startPlayback(wasPlaying)
       return
     }
@@ -495,7 +501,7 @@ export const TranscriptionBench: Component = () => {
     canvas?.setPointerCapture?.(event.pointerId)
     drag = {
       hit,
-      startSeconds: xToSeconds(x, view),
+      startSeconds: xToTime(x, view),
       startMidi: yToMidi(y, view),
     }
   }
@@ -533,7 +539,7 @@ export const TranscriptionBench: Component = () => {
     if (note === undefined) return
 
     if (active.hit.zone === 'end') {
-      const endBeat = xToSeconds(x, view)
+      const endBeat = xToTime(x, view)
       if (endBeat <= note.startBeat) return
       const next = editNote(layer(), note, { endBeat })
       commit(next)
@@ -541,7 +547,7 @@ export const TranscriptionBench: Component = () => {
       return
     }
 
-    const deltaSeconds = xToSeconds(x, view) - active.startSeconds
+    const deltaSeconds = xToTime(x, view) - active.startSeconds
     const deltaMidi = yToMidi(y, view) - active.startMidi
     if (deltaSeconds === 0 && deltaMidi === 0) return
     const next = editNote(layer(), note, {
@@ -567,11 +573,12 @@ export const TranscriptionBench: Component = () => {
           event.deltaY > 0 ? 1.2 : 1 / 1.2,
           event.clientX - box.left,
           totalSeconds(),
+          ROLL_SECONDS,
         ),
       )
       return
     }
-    const span = view.endSeconds - view.startSeconds
+    const span = view.end - view.start
     setViewport(panViewport(view, (event.deltaY / 400) * span, totalSeconds()))
   }
 
@@ -623,7 +630,9 @@ export const TranscriptionBench: Component = () => {
     const element = canvas
     if (element === undefined) return
     const box = element.getBoundingClientRect()
-    setViewport(fitViewport([...heard, ...truth], box.width, box.height))
+    setViewport(
+      fitViewport([...heard, ...truth], box.width, box.height, ROLL_SECONDS),
+    )
   })
 
   createEffect(() => {
@@ -655,16 +664,16 @@ export const TranscriptionBench: Component = () => {
     }
 
     // Seconds, at whatever spacing keeps the labels apart at this zoom.
-    const span = view.endSeconds - view.startSeconds
+    const span = view.end - view.start
     const step = span > 120 ? 30 : span > 40 ? 10 : span > 8 ? 2 : 0.5
     context.fillStyle = 'rgba(255, 255, 255, 0.35)'
     context.font = '10px system-ui, sans-serif'
     for (
-      let at = Math.ceil(view.startSeconds / step) * step;
-      at <= view.endSeconds;
+      let at = Math.ceil(view.start / step) * step;
+      at <= view.end;
       at += step
     ) {
-      const x = secondsToX(at, view)
+      const x = timeToX(at, view)
       context.fillRect(x, 0, 1, view.height)
       context.fillText(formatTime(at), x + 3, 11)
     }
@@ -700,7 +709,7 @@ export const TranscriptionBench: Component = () => {
     }
 
     // The playhead, over everything: it is where the ear currently is.
-    const headX = secondsToX(playhead(), view)
+    const headX = timeToX(playhead(), view)
     if (headX >= 0 && headX <= view.width) {
       context.fillStyle = '#58a6ff'
       context.fillRect(headX - 1, 0, 2, view.height)

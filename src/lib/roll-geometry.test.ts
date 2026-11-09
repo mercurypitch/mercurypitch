@@ -1,10 +1,14 @@
+// Roll geometry tests — a roll maps its time across the width and pitch down the height and back, keeps a short note clickable, picks the note on top and its body or end, keeps what overlaps the view, fits notes with air or an empty roll on its fallback, zooms about the pointer inside the material and its floor, and pans without changing the span. Counted in seconds here, as the Lab's bench counts.
 import { describe, expect, it } from 'vitest'
-import type { RollNote, RollViewport } from './transcription-roll'
-import { fitViewport, hitTest, midiToY, noteRect, panViewport, secondsToX, visibleNotes, xToSeconds, yToMidi, zoomViewport, } from './transcription-roll'
+import type { RollNote, RollScale, RollViewport } from './roll-geometry'
+import { fitViewport, hitTest, midiToY, noteRect, panViewport, timeToX, visibleNotes, xToTime, yToMidi, zoomViewport, } from './roll-geometry'
+
+/** In seconds, as the Lab's transcription bench draws: a fifth of a second at the closest, 30 seconds when empty, a second at the least when fitted. */
+const SECONDS: RollScale = { minSpan: 0.2, emptySpan: 30, minFitSpan: 1 }
 
 const viewport: RollViewport = {
-  startSeconds: 0,
-  endSeconds: 10,
+  start: 0,
+  end: 10,
   minMidi: 40,
   maxMidi: 49,
   width: 1000,
@@ -13,17 +17,17 @@ const viewport: RollViewport = {
 
 const note = (
   id: string,
-  startSeconds: number,
-  endSeconds: number,
+  start: number,
+  end: number,
   midi: number,
-): RollNote => ({ id, startSeconds, endSeconds, midi })
+): RollNote & { id: string } => ({ id, start, end, midi })
 
 describe('roll axes', () => {
-  it('maps seconds across the full width and back', () => {
-    expect(secondsToX(0, viewport)).toBe(0)
-    expect(secondsToX(10, viewport)).toBe(1000)
-    expect(secondsToX(2.5, viewport)).toBe(250)
-    expect(xToSeconds(250, viewport)).toBeCloseTo(2.5, 6)
+  it('maps time across the full width and back', () => {
+    expect(timeToX(0, viewport)).toBe(0)
+    expect(timeToX(10, viewport)).toBe(1000)
+    expect(timeToX(2.5, viewport)).toBe(250)
+    expect(xToTime(250, viewport)).toBeCloseTo(2.5, 6)
   })
 
   it('draws higher pitches higher up', () => {
@@ -85,7 +89,7 @@ describe('hitTest', () => {
 
 describe('visibleNotes', () => {
   it('keeps anything overlapping the span, including notes straddling it', () => {
-    const window: RollViewport = { ...viewport, startSeconds: 4, endSeconds: 6 }
+    const window: RollViewport = { ...viewport, start: 4, end: 6 }
     const notes = [
       note('before', 0, 1, 45),
       note('straddling', 3, 7, 45),
@@ -105,61 +109,77 @@ describe('fitViewport', () => {
       [note('a', 0, 1, 40), note('b', 5, 9, 52)],
       800,
       200,
+      SECONDS,
     )
     expect(fitted.minMidi).toBe(38)
     expect(fitted.maxMidi).toBe(54)
-    expect(fitted.endSeconds).toBe(9)
+    expect(fitted.end).toBe(9)
   })
 
   it('falls back to a playable range when there is nothing to frame', () => {
-    const fitted = fitViewport([], 800, 200)
+    const fitted = fitViewport([], 800, 200, SECONDS)
     expect(fitted.minMidi).toBe(28)
     expect(fitted.maxMidi).toBe(60)
-    expect(fitted.endSeconds).toBeGreaterThan(0)
+    expect(fitted.end).toBe(30)
+  })
+
+  it("keeps to its scale's spans in any unit: an empty roll, and one of short notes", () => {
+    // 960 ticks a beat: an empty roll shows a bar, a fitted one a beat at least.
+    const ticks: RollScale = { minSpan: 240, emptySpan: 3840, minFitSpan: 960 }
+    expect(fitViewport([], 800, 200, ticks).end).toBe(3840)
+    expect(fitViewport([note('a', 0, 10, 60)], 800, 200, ticks).end).toBe(960)
+    const closest = zoomViewport(
+      { ...viewport, end: 3840 },
+      0.0001,
+      0,
+      3840,
+      ticks,
+    )
+    expect(closest.end - closest.start).toBe(240)
   })
 })
 
 describe('zoomViewport', () => {
   it('keeps the anchored instant under the cursor', () => {
-    const before = xToSeconds(500, viewport)
-    const zoomed = zoomViewport(viewport, 0.5, 500, 60)
-    expect(xToSeconds(500, zoomed)).toBeCloseTo(before, 6)
-    expect(zoomed.endSeconds - zoomed.startSeconds).toBeCloseTo(5, 6)
+    const before = xToTime(500, viewport)
+    const zoomed = zoomViewport(viewport, 0.5, 500, 60, SECONDS)
+    expect(xToTime(500, zoomed)).toBeCloseTo(before, 6)
+    expect(zoomed.end - zoomed.start).toBeCloseTo(5, 6)
   })
 
   it('will not zoom out past the material or in past a fifth of a second', () => {
     expect(
-      zoomViewport(viewport, 100, 500, 20).endSeconds -
-        zoomViewport(viewport, 100, 500, 20).startSeconds,
+      zoomViewport(viewport, 100, 500, 20, SECONDS).end -
+        zoomViewport(viewport, 100, 500, 20, SECONDS).start,
     ).toBeCloseTo(20, 6)
-    const tight = zoomViewport(viewport, 0.001, 500, 60)
-    expect(tight.endSeconds - tight.startSeconds).toBeCloseTo(0.2, 6)
+    const tight = zoomViewport(viewport, 0.001, 500, 60, SECONDS)
+    expect(tight.end - tight.start).toBeCloseTo(0.2, 6)
   })
 
   it('stays inside the material at either end', () => {
-    const atStart = zoomViewport(viewport, 2, 0, 60)
-    expect(atStart.startSeconds).toBe(0)
+    const atStart = zoomViewport(viewport, 2, 0, 60, SECONDS)
+    expect(atStart.start).toBe(0)
     const late: RollViewport = {
       ...viewport,
-      startSeconds: 50,
-      endSeconds: 60,
+      start: 50,
+      end: 60,
     }
-    const atEnd = zoomViewport(late, 2, 1000, 60)
-    expect(atEnd.endSeconds).toBeCloseTo(60, 6)
+    const atEnd = zoomViewport(late, 2, 1000, 60, SECONDS)
+    expect(atEnd.end).toBeCloseTo(60, 6)
   })
 })
 
 describe('panViewport', () => {
   it('slides without changing the span', () => {
     const panned = panViewport(viewport, 5, 60)
-    expect(panned.startSeconds).toBe(5)
-    expect(panned.endSeconds).toBe(15)
+    expect(panned.start).toBe(5)
+    expect(panned.end).toBe(15)
   })
 
   it('stops at both ends of the material', () => {
-    expect(panViewport(viewport, -100, 60).startSeconds).toBe(0)
+    expect(panViewport(viewport, -100, 60).start).toBe(0)
     const panned = panViewport(viewport, 100, 60)
-    expect(panned.endSeconds).toBe(60)
-    expect(panned.startSeconds).toBe(50)
+    expect(panned.end).toBe(60)
+    expect(panned.start).toBe(50)
   })
 })
