@@ -106,7 +106,11 @@ class FakeAudioContext {
 }
 
 function harness(
-  options: { maxVoices?: number; context?: FakeAudioContext } = {},
+  options: {
+    maxVoices?: number
+    context?: FakeAudioContext
+    offline?: boolean
+  } = {},
 ) {
   const context = options.context ?? new FakeAudioContext()
   const getAudioContext = vi.fn(() => context as unknown as AudioContext)
@@ -115,8 +119,36 @@ function harness(
     ...(options.maxVoices === undefined
       ? {}
       : { maxVoices: options.maxVoices }),
+    ...(options.offline === undefined ? {} : { offline: options.offline }),
   })
   return { context, getAudioContext, synth }
+}
+
+/** `count` notes a quarter second apart from clock time 6, each held half a second, as a render schedules them before they sound. */
+function scheduleAhead(
+  synth: ReturnType<typeof createPianoFallbackSynth>,
+  count: number,
+): void {
+  for (let index = 0; index < count; index += 1) {
+    const at = 6 + index / 4
+    synth.noteOn({
+      id: `ahead:${index}`,
+      midi: 48 + (index % 36),
+      velocity: 0.7,
+      atContextTime: at,
+    })
+    synth.noteOff({ id: `ahead:${index}`, atContextTime: at + 0.5 })
+  }
+}
+
+/** Each note's fundamental: when it starts, and when its last stop says it ends. */
+function noteSpans(context: FakeAudioContext) {
+  return context.oscillators
+    .filter((_, index) => index % 2 === 0)
+    .map((oscillator) => ({
+      start: oscillator.starts[0],
+      end: oscillator.stops.at(-1) ?? Number.POSITIVE_INFINITY,
+    }))
 }
 
 function strikePeak(gain: FakeGainNode): number {
@@ -245,6 +277,37 @@ describe('createPianoFallbackSynth', () => {
     expect(synth.activeVoiceIds()).toContain('voice:32')
     expect(context.oscillators[0].stops).toHaveLength(1)
     expect(context.oscillators[1].stops).toHaveLength(1)
+  })
+
+  it('steals a note scheduled ahead before it sounds once 32 are waiting live, so the ceiling stays as it was', () => {
+    // Arrange
+    const { context, synth } = harness()
+
+    // Act
+    scheduleAhead(synth, 40)
+
+    // Assert: the first eight are stopped before they start, the rest play out.
+    const spans = noteSpans(context)
+    expect(synth.descriptor().maximumVoices).toBe(32)
+    expect(spans.filter((span) => span.end < span.start)).toHaveLength(8)
+    expect(spans.slice(8).every((span) => span.end > span.start)).toBe(true)
+  })
+
+  it('keeps every note an offline render schedules ahead, each to its release', () => {
+    // Arrange
+    const { context, synth } = harness({ offline: true, maxVoices: 2 })
+
+    // Act
+    scheduleAhead(synth, 1000)
+
+    // Assert: each note ends 0.1 s after its note-off, half a second after it starts.
+    const spans = noteSpans(context)
+    expect(spans).toHaveLength(1000)
+    expect(
+      spans.every((span) => Math.abs(span.end - span.start - 0.6) < 1e-9),
+    ).toBe(true)
+    expect(synth.activeVoiceIds()).toHaveLength(1000)
+    expect(synth.descriptor().maximumVoices).toBe(Number.POSITIVE_INFINITY)
   })
 
   it('can pull a scheduled release earlier during panic', () => {

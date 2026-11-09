@@ -5,6 +5,12 @@
 // The transport owns and activates the AudioContext. This synth only builds
 // its graph after that context exists, so construction is silent and live or
 // scheduled notes can share one route lifetime without importing AudioEngine.
+//
+// A voice frees only when it ends, so the 32-voice ceiling counts every note
+// started and not yet over. Live that is the notes sounding now. An offline
+// render (`offline`) schedules notes seconds before the render reaches them,
+// and at the ceiling it would steal notes that have not begun to sound, so an
+// offline synth has no ceiling.
 
 import type { PianoInstrumentNoteOn, PianoInstrumentPedalEvent, PianoInstrumentPort, } from '../instrument/piano-instrument-port'
 
@@ -15,16 +21,18 @@ export type PianoFallbackSynthNote = PianoInstrumentNoteOn
 export type PianoFallbackSynth = PianoInstrumentPort
 
 export interface PianoFallbackSynthOptions {
-  /** The route-owned transport context; this synth never creates one. */
-  getAudioContext(): AudioContext | null
+  /** The route-owned transport context, live or offline; this synth never creates one. */
+  getAudioContext(): BaseAudioContext | null
   /** The route-owned node the synth plays into, as the drum kit player takes one; the context's destination when absent or null. */
   getOutput?(): AudioNode | null
   /** Test/device seam. Values above the production ceiling are clamped. */
   maxVoices?: number
+  /** An offline render's synth, its notes scheduled ahead into an OfflineAudioContext: no voice is ever stolen. */
+  offline?: boolean
 }
 
 interface SynthGraph {
-  context: AudioContext
+  context: BaseAudioContext
   master: GainNode
   limiter: DynamicsCompressorNode
 }
@@ -86,13 +94,17 @@ export function createPianoFallbackSynth(
   options: PianoFallbackSynthOptions,
 ): PianoFallbackSynth {
   const requestedVoices = options.maxVoices ?? PIANO_FALLBACK_MAX_VOICES
-  const maxVoices = Math.min(
-    PIANO_FALLBACK_MAX_VOICES,
-    Math.max(
-      1,
-      Number.isFinite(requestedVoices) ? Math.floor(requestedVoices) : 1,
-    ),
-  )
+  // Offline, nothing is stolen (see the header); live, 32 at most.
+  const maxVoices =
+    options.offline === true
+      ? Infinity
+      : Math.min(
+          PIANO_FALLBACK_MAX_VOICES,
+          Math.max(
+            1,
+            Number.isFinite(requestedVoices) ? Math.floor(requestedVoices) : 1,
+          ),
+        )
   const voices = new Map<string, SynthVoice>()
   const descriptor = Object.freeze({
     id: 'mercury-felt-synth',
@@ -159,7 +171,7 @@ export function createPianoFallbackSynth(
     }
   }
 
-  const ensureGraph = (context: AudioContext): SynthGraph => {
+  const ensureGraph = (context: BaseAudioContext): SynthGraph => {
     if (graph?.context === context) return graph
     if (graph !== null) {
       panic(graph.context.currentTime)
