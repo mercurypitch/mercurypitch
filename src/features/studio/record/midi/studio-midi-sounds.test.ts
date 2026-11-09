@@ -1,7 +1,7 @@
-// Studio MIDI sounds tests — each arm plays a sound of its own into a node of its own and lets it go; two piano lanes play two pianos, each hearing only its own notes; a drum lane strikes the kit at General MIDI velocity; and a piano lane plays the synth until the sampled grand has loaded, its notes on the clock.
+// Studio MIDI sounds tests — each arm plays a sound of its own into a node of its own and lets it go; two piano lanes play two pianos, each hearing only its own notes; a drum lane strikes the kit at General MIDI velocity; a piano lane plays the synth until the sampled grand has loaded, its notes on the clock; and an offline render's sound is built the same way, its instruments told they are offline, where a live arm's never are.
 import { describe, expect, it, vi } from 'vitest'
 import type { StudioMidiModules } from './studio-midi-sounds'
-import { createStudioMidiSounds } from './studio-midi-sounds'
+import { buildStudioDrumSound, buildStudioPianoSound, createStudioMidiSounds, } from './studio-midi-sounds'
 
 function fakeNode() {
   return { connect: vi.fn(), disconnect: vi.fn() }
@@ -137,6 +137,50 @@ describe('the Studio MIDI sounds', () => {
       [{ gmKey: 38, velocity: 127, atContextTime: 4.25 }],
       [{ gmKey: 42, velocity: 64, atContextTime: 4.5 }],
     ])
+  })
+
+  it("builds a live arm's instruments with their live voice caps: none is told it is offline", () => {
+    // Arrange
+    const { modules, raw } = fakeModules()
+    const sounds = createStudioMidiSounds(modules)
+    const { context } = fakeContext()
+
+    // Act
+    sounds.attach('piano', context)
+    sounds.attach('drums', context)
+
+    // Assert
+    const built = [
+      raw.synth.createPianoFallbackSynth.mock.calls,
+      raw.sampled.createPianoSampledInstrument.mock.calls,
+      raw.drumKit.createDrumKitPlayer.mock.calls,
+    ].map((calls) => (calls as unknown as [object][])[0][0])
+    expect(built.some((options) => 'offline' in options)).toBe(false)
+  })
+
+  it("builds an offline render's sound the same way, its instruments told they are offline, and loads nothing on its own", () => {
+    // Arrange
+    const { modules, raw, player, sampled } = fakeModules()
+    const { context, gains } = fakeContext()
+
+    // Act
+    const piano = buildStudioPianoSound(modules, context, { offline: true })
+    const drums = buildStudioDrumSound(modules, context, { offline: true })
+
+    // Assert: the same instruments, each into the sound's own node.
+    const offline = expect.objectContaining({ offline: true })
+    expect(raw.synth.createPianoFallbackSynth).toHaveBeenCalledWith(offline)
+    expect(raw.sampled.createPianoSampledInstrument).toHaveBeenCalledWith(
+      offline,
+    )
+    expect(raw.drumKit.createDrumKitPlayer).toHaveBeenCalledWith(offline)
+    const [[synthOptions]] = raw.synth.createPianoFallbackSynth.mock
+      .calls as unknown as [[{ getOutput(): unknown }]]
+    expect(synthOptions.getOutput()).toBe(piano.bus)
+    expect(piano.bus).toBe(gains[0])
+    expect(drums.bus).toBe(gains[1])
+    expect(sampled.load).not.toHaveBeenCalled()
+    expect(player.activate).not.toHaveBeenCalled()
   })
 
   it('plays a piano lane on the synth until the sampled grand has loaded, its notes on the clock', async () => {
