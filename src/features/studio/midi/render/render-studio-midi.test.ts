@@ -1,16 +1,15 @@
-// Studio MIDI render tests — each note on its whole frame of a 48 kHz render, every note of a 1,000-note take heard to its own end, the kit offline for drums, the grand when its samples load in time and the synth when they do not, the take's own level, the sequence's window and tail, and an abort before, during and after loading.
+// Studio MIDI render tests — each note on its whole frame of a 48 kHz render, every note of a 1,000-note take heard to its own end, the kit offline for drums, the grand when its samples load in time and the synth when they do not, a note's release velocity, the take's own level, the sequence's window and tail, and an abort before, during and after loading.
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioMidiModules } from '@/features/studio/record/midi/studio-midi-sounds'
 import { loadStudioMidiModules } from '@/features/studio/record/midi/studio-midi-sounds'
 import { studioReservedMemoryBytes } from '@/lib/studio/memory-budget'
 import { STUDIO_CAPTURE_INPUT } from '@/lib/studio/record/capture-input'
-import type { RenderClock } from './render-clock.fixture'
+import type { RenderClock, RenderGain } from './render-clock.fixture'
 import { renderClocks } from './render-clock.fixture'
 import type { StudioMidiRenderInput, StudioMidiRenderNote, } from './render-studio-midi'
 import { renderStudioMidi } from './render-studio-midi'
 
-/** At 960 ticks a beat and 120 beats a minute, a tick is 25 frames of 48 kHz. */
-const PPQ = 960
+/** At the song's 960 ticks a beat and 120 beats a minute, a tick is 25 frames of 48 kHz. */
 const BPM = 120
 const PRE_ROLL = 24000
 
@@ -26,7 +25,6 @@ function render(
 ): Promise<Awaited<ReturnType<typeof renderStudioMidi>>> {
   return renderStudioMidi({
     notes: [],
-    ppq: PPQ,
     tempoBpm: BPM,
     lengthTicks: 3840,
     sound: 'piano',
@@ -238,6 +236,27 @@ describe('the Studio MIDI render', () => {
     ])
   })
 
+  it("releases each note at its own release velocity, and at the song's 0.5 where it keeps none", async () => {
+    // Arrange
+    samplesServed()
+    const clocks = renderClocks()
+    const notes = [{ ...note(48, 0), releaseVelocity: 1 }, note(72, 960)]
+
+    // Act
+    await render({ notes }, clocks)
+
+    // Assert: each note's release sample is 0.1 + 0.08 x its release velocity loud.
+    const [clock] = clocks.made
+    const releases = clock.sources
+      .filter((source) => source.nodeType === 'buffer-source')
+      .filter((_, index) => index % 2 === 1)
+    const loudness = releases.map((source) => {
+      const [gain] = source.wired as RenderGain[]
+      return Number(gain.gain.events[0].value?.toFixed(4))
+    })
+    expect(loudness).toEqual([0.18, 0.14])
+  })
+
   it('plays the synth when the grand cannot load its samples in time, and stops asking for them', async () => {
     // Arrange
     const asked = samplesStalled()
@@ -319,8 +338,8 @@ describe('the Studio MIDI render', () => {
   })
 
   it.each([
-    ['no ticks a beat', { ppq: 0 }],
     ['no tempo', { tempoBpm: Number.NaN }],
+    ['a tempo of zero', { tempoBpm: 0 }],
     ['a negative length', { lengthTicks: -1 }],
     ['a negative tail', { tailSeconds: -0.5 }],
   ])('refuses %s', async (_name, wrong) => {
