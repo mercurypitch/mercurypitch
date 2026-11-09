@@ -464,6 +464,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
         [styles.docking]: docked(),
         [styles.armed]: (props.records ?? []).length > 0,
       }}
+      inert={props.covered === true}
       aria-label="Song arrangement"
       data-tour={props.phone ? 'studio.timeline-overview' : 'studio.timeline'}
       data-studio-scale={roundStudioZoom(scale())}
@@ -773,6 +774,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
             name={name()}
             clip={selectedClip() ?? null}
             onRange={props.onRange}
+            onEditNotes={props.onOpenNotes}
           />
         )}
       </Show>

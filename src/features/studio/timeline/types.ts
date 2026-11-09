@@ -95,4 +95,10 @@ export interface StudioTimelineProps {
   range?: StudioFrameRange | null
   /** Set or clear the range: a drag along the ruler, its handles, or a clip's toolbar. */
   onRange?(range: StudioFrameRange | null): void
+  /** The clip whose notes the note editor shows: its lane marks it. */
+  editingClipId?: string | null
+  /** Open a MIDI clip's notes: its double-click or double tap, or a phone's Edit notes. */
+  onOpenNotes?(clipId: string): void
+  /** The note editor fills the arrangement: the lanes under it take no focus. */
+  covered?: boolean
 }

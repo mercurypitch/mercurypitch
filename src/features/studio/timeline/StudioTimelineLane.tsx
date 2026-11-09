@@ -1,10 +1,14 @@
 // Studio timeline lane — one track's header (its instrument, name, arm, Mute and Solo; in a tall lane its lines and mix) and clips, and its volume or pan line while that is open.
 import type { Accessor } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
+import { studioLaneInstrument } from '@/lib/studio/instruments/resolve'
 import { hasStudioAutomation } from '@/lib/studio/model/automation'
+import { studioSequence } from '@/lib/studio/model/sequences'
 import type { StudioAsset, StudioClip, StudioTrack, } from '@/lib/studio/model/types'
 import { studioLaneInputBadge } from '../record/lane-input-badge'
+import { studioMidiSound } from '../record/midi/studio-midi-sound'
 import { StudioLaneTake } from '../record/StudioLaneTake'
+import type { StudioClipNotes } from './clip-notes'
 import type { StudioLineEditor } from './line-editor'
 import { createStudioLineActions } from './line-editor'
 import { LaneLine } from './line-icons'
@@ -53,6 +57,28 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
   const color = createMemo(() =>
     studioTrackColor(studioTrackHue(props.track, props.index)),
   )
+  // What a MIDI clip on this lane sounds as: the kit on drums, else the piano.
+  const sound = createMemo(() =>
+    studioMidiSound(studioLaneInstrument(props.track)),
+  )
+  /** Clip `clipId`'s notes, the same object while its sequence and sound are. */
+  const clipNotes = (clipId: string) => {
+    const notes = createMemo<StudioClipNotes | undefined>(
+      () => {
+        const midi = props.view.clips().get(clipId)?.midi
+        const sequence =
+          midi && studioSequence(props.timeline.project, midi.sequenceId)
+        return sequence ? { sequence, sound: sound() } : undefined
+      },
+      undefined,
+      {
+        equals: (before, after) =>
+          before?.sequence === after?.sequence &&
+          before?.sound === after?.sound,
+      },
+    )
+    return notes
+  }
   const source = () =>
     studioSourcePresentation(props.view.assets().get(props.clips[0]?.assetId))
   // Clips keyed by id, so an edit to one redraws only that one.
@@ -241,6 +267,7 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
         <For each={clipIds()}>
           {(clipId) => {
             const clip = () => props.view.clips().get(clipId)!
+            const notes = clipNotes(clipId)
             return (
               <StudioTimelineClip
                 clip={clip()}
@@ -257,8 +284,15 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
                 color={color()}
                 pointer={props.view.pointer}
                 resource={props.view.resource()}
+                notes={notes()}
+                editing={props.timeline.editingClipId === clipId}
                 onSelect={() => props.timeline.onSelectClip(clipId)}
                 onDetails={() => props.timeline.onClipDetails(clipId)}
+                onOpenNotes={
+                  props.timeline.onOpenNotes
+                    ? () => props.timeline.onOpenNotes?.(clipId)
+                    : undefined
+                }
               />
             )
           }}

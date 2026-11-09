@@ -1,8 +1,10 @@
-// Studio clip details — numeric alternatives to move, trim and source-anchored fades.
+// Studio clip details — numeric alternatives to move, trim and source-anchored fades; a MIDI clip's notes open from here.
+import { Show } from 'solid-js'
 import styles from '@/features/studio/StudioPage.module.css'
 import { studioClipSourceBounds } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
+import { NoteBars } from '../studio-icons'
 import { StudioNumberField } from './StudioNumberField'
 
 interface StudioClipDetailsProps {
@@ -10,6 +12,8 @@ interface StudioClipDetailsProps {
   asset: StudioAsset
   writable: boolean
   onCommand(command: StudioCommand): boolean
+  /** Open a MIDI clip's notes in the note editor. */
+  onEditNotes?(): void
 }
 
 // Preserve the exact displayed source bounds even for a one-frame clip.
@@ -80,6 +84,27 @@ export function StudioClipDetails(props: StudioClipDetailsProps) {
       <p class={styles.detailsName}>
         {props.asset.originalName ?? 'Audio clip'}
       </p>
+      <Show when={props.clip.midi !== undefined && props.onEditNotes}>
+        {(edit) => (
+          <>
+            <button
+              type="button"
+              class={styles.primaryButton}
+              aria-keyshortcuts="E"
+              data-studio-edit-notes=""
+              onClick={() => edit()()}
+            >
+              <NoteBars size={16} />
+              Edit notes
+            </button>
+            <p class={styles.help}>
+              Opens the clip's notes under the lanes. A double-click on the
+              clip, or E, opens them too.
+            </p>
+            <div class={styles.fieldDivider} />
+          </>
+        )}
+      </Show>
       <StudioNumberField
         label="Start"
         unit="s"
