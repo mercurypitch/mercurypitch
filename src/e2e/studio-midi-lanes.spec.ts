@@ -1,14 +1,14 @@
-// Studio MIDI lanes — with a fake Web MIDI keyboard in the page, a lane set to it plays the piano's synth (the sampled grand's samples refused, so the run is the same every time), arms with no microphone, records the sound as a take, and keeps the note played, its sound in the take starting at its frame or within one audio callback after; and the Inputs view lists the keyboard with its lane and a light while it plays. Nothing reaches the live site.
+// Studio MIDI lanes — with a fake Web MIDI keyboard in the page, a lane set to it plays the piano's synth (the sampled grand's samples refused, so the run is the same every time), arms with no microphone, records the sound as a take, and saves the note played in the song as the sequence its clip plays, its sound in the take starting at its frame or within one audio callback after; and the Inputs view lists the keyboard with its lane and a light while it plays. Nothing reaches the live site.
 import { expect, test } from '@playwright/test'
 import { openArrangement, readStudioProject, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import { armLane, recordTake } from './helpers/studio-arming'
 import { installFakeMidi, microphonesAsked, playLaneFromKeys, playMidi as play, routeNetwork, } from './helpers/studio-midi'
-import { storedTake } from './helpers/studio-takes'
+import { storedTake, studioTickFrame } from './helpers/studio-takes'
 
 test.use({ viewport: { width: 1440, height: 900 } })
 
 test.describe('Studio MIDI lanes', () => {
-  test('records a MIDI lane as a take with no microphone, and keeps its note at or just before its sound', async ({
+  test('records a MIDI lane as a take with no microphone, and saves its note in the song at or just before its sound', async ({
     page,
   }) => {
     test.setTimeout(120_000)
@@ -48,20 +48,23 @@ test.describe('Studio MIDI lanes', () => {
     const take = { ...read, middleC: read.tones[0], between: read.tones[1] }
     const project = await readStudioProject(page)
     const clip = project.clips.find((each) => each.assetId === take.assetId)!
-    // Where the take's first sample sits on the song.
-    const heardFirst = clip.startFrame - clip.sourceInFrame
     const microphones = await microphonesAsked(page)
     console.log(
-      `[studio-midi-lanes] ${JSON.stringify({ ...take, heardFirst, microphones })}`,
+      `[studio-midi-lanes] ${JSON.stringify({ ...take, midi: clip.midi, microphones })}`,
     )
 
     expect(microphones).toBe(0)
+    // The clip plays a sequence of the song, laid on the song's tempo.
+    expect(clip.midi?.sequenceId).toEqual(expect.any(String))
+    expect(clip.midi?.renderKey).toMatch(/^[0-9a-f]{16}$/)
+    expect(take.tempoBpm).toBe(project.tempoBpm)
     expect(take.notes).toHaveLength(1)
     const [note] = take.notes
-    expect([note.midi, note.velocity]).toEqual([60, 100])
+    expect([note.pitch, Math.round(note.velocity * 127)]).toEqual([60, 100])
     // The key was held about 0.6 s.
-    expect(note.endFrame - note.startFrame).toBeGreaterThan(0.45 * 48_000)
-    expect(note.endFrame - note.startFrame).toBeLessThan(0.9 * 48_000)
+    const held = studioTickFrame(take, note.lengthTicks)
+    expect(held).toBeGreaterThan(0.45 * 48_000)
+    expect(held).toBeLessThan(0.9 * 48_000)
     // The take holds the piano's middle C, and the note sits where its sound
     // starts, never after it. The sound crosses the onset's level a little
     // later: the synth rises over 8 ms and its limiter looks 6 ms ahead, and
@@ -70,7 +73,8 @@ test.describe('Studio MIDI lanes', () => {
     // headless Chromium, 12.8 to 24.8 ms.
     expect(take.peak).toBeGreaterThan(0.02)
     expect(take.middleC).toBeGreaterThan(4 * take.between)
-    const late = take.onset - (note.startFrame - heardFirst)
+    // Tick 0 is the take's first sample, where the clip's source frames count from.
+    const late = take.onset - studioTickFrame(take, note.startTick)
     expect(late).toBeGreaterThanOrEqual(0)
     expect(late).toBeLessThan(0.04 * 48_000)
     expect(live).toEqual([])

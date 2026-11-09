@@ -1,4 +1,4 @@
-// Studio takes for browser tests — a kept take read back from the page's database: its audio's loudest sample and first sound, how strong each asked-for tone is in it, and the notes kept beside it.
+// Studio takes for browser tests — a kept take read back from the page's database: its audio's loudest sample and first sound, how strong each asked-for tone is in it, and the notes its clip plays from the saved song.
 import { expect, type Page } from '@playwright/test'
 
 /** Which take: by the name its file was kept under, or by its asset's id. */
@@ -20,12 +20,21 @@ export interface StudioStoredTake {
   readonly onset: number
   /** Each asked tone's amplitude where it was measured, in the order asked. */
   readonly tones: readonly number[]
+  /** The notes its clip plays, from the saved song's sequence, in ticks from the take's first sample; none for an audio take. */
   readonly notes: readonly {
-    midi: number
+    pitch: number
+    startTick: number
+    lengthTicks: number
+    /** 0 to 1: MIDI's 1 to 127 is round(velocity × 127). */
     velocity: number
-    startFrame: number
-    endFrame: number
   }[]
+  /** The tempo the notes' ticks were laid on; null for an audio take. */
+  readonly tempoBpm: number | null
+}
+
+/** A tick of a take's notes as a frame of its audio. */
+export function studioTickFrame(take: StudioStoredTake, tick: number): number {
+  return (tick / 960) * (60 / take.tempoBpm!) * 48_000
 }
 
 /** The take `match` names, read once its copy is in the database. */
@@ -96,10 +105,28 @@ function readTake(
                 (value) => value / 32768,
               )
             : new Float32Array(data, 32, frames)
-        const row = await get<{ notes: StudioStoredTake['notes'] } | undefined>(
-          'studioTakeNotes',
-          take.id,
-        )
+        // The clip that plays this take's audio, and the sequence it names.
+        const songs = await get<
+          {
+            clips: { assetId: string; midi?: { sequenceId: string } }[]
+            sequences?: {
+              id: string
+              tempoBpm: number
+              notes: StudioStoredTake['notes']
+            }[]
+          }[]
+        >('studioProjects')
+        const sequence = songs
+          .flatMap((song) =>
+            song.clips.map((clip) =>
+              clip.assetId === take.id && clip.midi !== undefined
+                ? song.sequences?.find(
+                    (each) => each.id === clip.midi!.sequenceId,
+                  )
+                : undefined,
+            ),
+          )
+          .find((each) => each !== undefined)
         let peak = 0
         let onset = -1
         samples.forEach((value, frame) => {
@@ -132,7 +159,8 @@ function readTake(
           peak,
           onset,
           tones: hz.map(amplitude),
-          notes: row?.notes ?? [],
+          notes: sequence?.notes ?? [],
+          tempoBpm: sequence?.tempoBpm ?? null,
         }
       } finally {
         database.close()

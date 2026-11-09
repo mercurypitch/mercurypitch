@@ -1,4 +1,4 @@
-// Studio several lanes — on Chromium's two-channel fake capture, a loud tone on the left and a quiet one on the right, Lane 2 on Input 1 and Lane 3 on Input 2 are armed beside each other, the armed card lists both, and one Record records both from the same frame, each take a clip on its own lane holding only its own side; and a fake MIDI keyboard's lane records beside a microphone lane, the microphone opened once, each take holding only its own sound, and the note kept with the keyboard's take alone. Nothing reaches the live site.
+// Studio several lanes — on Chromium's two-channel fake capture, a loud tone on the left and a quiet one on the right, Lane 2 on Input 1 and Lane 3 on Input 2 are armed beside each other, the armed card lists both, and one Record records both from the same frame, each take a clip on its own lane holding only its own side; and a fake MIDI keyboard's lane records beside a microphone lane, the microphone opened once, each take holding only its own sound, and the note saved in the song with the keyboard's clip alone. Nothing reaches the live site.
 import { expect, type Page, test } from '@playwright/test'
 import type { StudioProject } from '../lib/studio/model/types'
 import { openArrangement, readStudioProject, studioRegion, } from './helpers/dedicatedstudio-fixture'
@@ -184,9 +184,9 @@ test.describe('Studio several lanes', () => {
     // Lane 3 holds middle C and none of the capture, and keeps its note.
     expect(keys.tones[2]).toBeGreaterThan(4 * keys.tones[0])
     expect(keys.tones[0]).toBeLessThan(LEFT_AMPLITUDE / 100)
-    expect(keys.notes.map((note) => [note.midi, note.velocity])).toEqual([
-      [60, 100],
-    ])
+    expect(
+      keys.notes.map((note) => [note.pitch, Math.round(note.velocity * 127)]),
+    ).toEqual([[60, 100]])
     expect(live).toEqual([])
   })
 })
