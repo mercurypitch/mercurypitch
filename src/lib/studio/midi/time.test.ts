@@ -1,6 +1,6 @@
-// Studio MIDI time tests — frames become ticks to the nearest and ticks frames exactly, at the sequence's tempo; a tick turned to frames comes back the same tick; a sequence's length covers its audio; a clip's window takes the ticks from its first source frame up to its last; and a tick of a clip's sequence finds its song frame and back.
+// Studio MIDI time tests — frames become ticks to the nearest and ticks frames exactly, at the sequence's tempo; a tick turned to frames comes back the same tick; a sequence's length covers its audio; a clip's window takes the ticks from its first source frame up to its last; a tick of a clip's sequence finds its song frame and back; and the song's beats fall on the sequence's ticks.
 import { describe, expect, it } from 'vitest'
-import { studioClipTickWindow, studioFramesToTicks, studioSongFrameToTick, studioTicksCovering, studioTicksToFrames, studioTickToSongFrame, } from './time'
+import { studioClipTickWindow, studioFramesToTicks, studioSongBeats, studioSongFrameToTick, studioTicksCovering, studioTicksToFrames, studioTickToSongFrame, } from './time'
 
 describe('studioFramesToTicks and studioTicksToFrames', () => {
   it('counts 960 ticks a beat at the tempo given', () => {
@@ -83,5 +83,30 @@ describe('a tick on the song', () => {
     expect(studioTickToSongFrame(clip, sequence, 0)).toBe(24_000)
     expect(studioSongFrameToTick(clip, sequence, 48_000)).toBe(960)
     expect(studioSongFrameToTick(clip, sequence, 48_012.5)).toBe(960.5)
+  })
+})
+
+describe('studioSongBeats', () => {
+  it("lays the song's bar 1 on the sequence's tick at the song's first frame, a beat 960 ticks while the tempos agree", () => {
+    // The sequence's tick 0 sounds at song frame 24000, half a second in.
+    const beats = studioSongBeats(
+      { startFrame: 48_000, sourceInFrame: 24_000 },
+      { tempoBpm: 120 },
+      120,
+    )
+
+    expect(beats).toEqual({ beatTicks: 960, originTick: -960 })
+  })
+
+  it('counts a beat of a slower song in more of the faster sequence’s ticks', () => {
+    // A song at 90 bpm over notes laid at 120: a song beat is 4/3 of theirs.
+    const beats = studioSongBeats(
+      { startFrame: 0, sourceInFrame: 0 },
+      { tempoBpm: 120 },
+      90,
+    )
+
+    expect(beats.beatTicks).toBeCloseTo(1280, 9)
+    expect(beats.originTick).toBe(0)
   })
 })

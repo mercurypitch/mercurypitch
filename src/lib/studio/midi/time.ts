@@ -77,3 +77,30 @@ export function studioSongFrameToTick(
     sequence.tempoBpm,
   )
 }
+
+/** The song's beats over a clip's sequence: the bar and beat lines a roll draws, in the sequence's ticks. */
+export interface StudioSongBeats {
+  /** Ticks of the sequence one beat of the song lasts, unrounded. */
+  readonly beatTicks: number
+  /** The sequence's tick on the song's first frame, where its bar 1 starts: unrounded, and below 0 for a clip later in the song. */
+  readonly originTick: number
+}
+
+/**
+ * The song's beats at `songTempoBpm` counted in the sequence's ticks. They
+ * fall on the sequence's own beats only while the song keeps the tempo the
+ * sequence was laid on; after a change of the song's tempo the notes stay
+ * where they were played, and the song's beats move over them.
+ */
+export function studioSongBeats(
+  clip: Pick<StudioClip, 'startFrame' | 'sourceInFrame'>,
+  sequence: Pick<StudioSequence, 'tempoBpm'>,
+  songTempoBpm: number,
+): StudioSongBeats {
+  const originTick = studioSongFrameToTick(clip, sequence, 0)
+  const beatFrames = (60 / songTempoBpm) * STUDIO_SAMPLE_RATE
+  return {
+    beatTicks: studioSongFrameToTick(clip, sequence, beatFrames) - originTick,
+    originTick,
+  }
+}
