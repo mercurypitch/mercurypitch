@@ -18,6 +18,7 @@ import type { StudioFrozenLane } from './lane-freeze'
 import { freezeStudioPlan, laneFreezeKeys, StudioFrozenBuffers, } from './lane-freeze'
 import type { StudioLatencyReader } from './prepare-plan'
 import { NO_FREEZES, planAssets, planLatencySeconds, prepareStudioPlan, } from './prepare-plan'
+import { renderAsScheduled } from './scheduled-render'
 
 export interface StudioOfflineOptions {
   signal?: AbortSignal
@@ -39,10 +40,6 @@ export interface StudioArrangementRender {
   release(): void
 }
 
-/** How far ahead of the render a graph playing renders is scheduled, and how often the render stops to schedule more. */
-const AHEAD_SECONDS = 4
-const STEP_SECONDS = 2
-
 /** The renders in `frozen` that match `project`'s lanes as they stand. */
 function matchingFreezes(
   project: StudioProject,
@@ -55,38 +52,6 @@ function matchingFreezes(
     [...frozen].filter(([trackId, lane]) => keys.get(trackId) === lane.key),
   )
   return matching.size ? matching : NO_FREEZES
-}
-
-/**
- * Render `graph`, scheduling it as the render reaches it, the way a run is
- * scheduled as it plays. A failure to schedule fails the render once it
- * has settled; the context is never left suspended.
- */
-async function renderAsScheduled(
-  ctx: OfflineAudioContext,
-  graph: StudioGraph,
-  seconds: number,
-  signal: AbortSignal,
-): Promise<AudioBuffer> {
-  const failures: unknown[] = []
-  graph.scheduleUntil(AHEAD_SECONDS)
-  for (let at = STEP_SECONDS; at < seconds; at += STEP_SECONDS) {
-    ctx
-      .suspend(at)
-      .then(() => {
-        try {
-          if (!failures.length && !signal.aborted)
-            graph.scheduleUntil(at + AHEAD_SECONDS)
-        } catch (error) {
-          failures.push(error)
-        }
-        return ctx.resume()
-      })
-      .catch((error: unknown) => failures.push(error))
-  }
-  const rendered = await ctx.startRendering()
-  if (failures.length) throw failures[0]
-  return rendered
 }
 
 /** This is the arrangement bus, not a mastered/export-verified deliverable. */
