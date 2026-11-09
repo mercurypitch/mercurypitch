@@ -14,8 +14,8 @@ export const STUDIO_STORES = {
   /** A take journaled while it records, until it is stored (studio-take-journal.ts). */
   takes: 'studioTakeJournals',
   takeChunks: 'studioTakeChunks',
-  /** The notes played into a MIDI lane's take, by the take's id (studio-take-notes.ts). */
-  notes: 'studioTakeNotes',
+  /** A song's stored record as it was at an older schema version, kept before its first migration (studio-service.ts). */
+  snapshots: 'studioProjectSnapshots',
 } as const
 
 export type StudioStorageErrorCode =
@@ -24,6 +24,7 @@ export type StudioStorageErrorCode =
   | 'locked'
   | 'lease-lost'
   | 'invalid-project'
+  | 'newer-version'
   | 'invalid-asset'
   | 'project-limit'
   | 'memory-limit'

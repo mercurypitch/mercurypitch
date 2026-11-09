@@ -142,6 +142,14 @@ class DexieDatabase extends DexieDB {
     this.version(15).stores({
       studioTakeNotes: 'id, projectId',
     })
+    // v16: a Studio MIDI take's notes live in its song now, so the v15 store
+    // goes, rows and all. A song stepped up from an older schema version
+    // keeps its stored record here first, by song and version, so a bad
+    // migration can be undone. Device-only; never cloud entities.
+    this.version(16).stores({
+      studioTakeNotes: null,
+      studioProjectSnapshots: 'id, projectId',
+    })
     // Two tabs on one origin disagree about the schema after every deploy that
     // raises it. Dexie's own defaults yield and then let this tab reopen at the
     // old version, which deadlocks the upgrading tab rather than delaying it.

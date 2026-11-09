@@ -1,5 +1,5 @@
 // ============================================================
-// Studio MIDI lanes — the recorder hook's MIDI side: the Studio's one MIDI access, each MIDI lane's arm with a sound and a note log of its own, and its takes' notes kept beside their audio
+// Studio MIDI lanes — the recorder hook's MIDI side: the Studio's one MIDI access, each MIDI lane's arm with a sound and a note log of its own, and the notes each take plays, for its clip
 // ============================================================
 //
 // useStudioRecorder hands the recorder an instrument for a MIDI lane
@@ -9,12 +9,12 @@
 // capture of the browser's, so any number of them can be armed beside the
 // audio lanes, in any browser. Each plays a sound of its own, so its take
 // holds only its own notes, and logs what it plays in a log of its own
-// (take-notes.ts); a take that is kept keeps the notes played into it, on
-// this device by the take's id. A port plays one lane at a time: a second
-// lane armed on it is refused, in words that name the lane on it.
+// (take-notes.ts); a take that is kept goes into the song with the notes
+// played into it, as the sequence its clip plays. A port plays one lane at
+// a time: a second lane armed on it is refused, in words that name the lane
+// on it.
 import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
-import { createStudioTakeNotesStore } from '@/db/services/studio-take-notes'
 import { studioLaneInstrument } from '@/lib/studio/instruments/resolve'
 import type { StudioProject } from '@/lib/studio/model/types'
 import type { StudioLaneInput, StudioLaneMidiInput, } from '@/lib/studio/record/lane-inputs'
@@ -22,6 +22,7 @@ import { isMidiLaneInput } from '@/lib/studio/record/lane-inputs'
 import type { StudioCapturedTake, StudioInputLostWords, StudioInstrumentHold, } from '@/lib/studio/record/recorder-types'
 import type { StudioNoteLog } from '@/lib/studio/record/take-notes'
 import { createStudioNoteLog, studioTakeNotes, } from '@/lib/studio/record/take-notes'
+import type { StudioRecordingMidi } from '../../controller/imports'
 import { createStudioMidiAccess } from './studio-midi-access'
 import { openStudioMidiArm, StudioMidiArmRefusal, studioMidiLostWords, } from './studio-midi-arm'
 import type { StudioMidiSound } from './studio-midi-sound'
@@ -66,9 +67,9 @@ export function studioPortTakenWords(
 
 export function createStudioMidiLanes(options: StudioMidiLanesOptions) {
   const access = createStudioMidiAccess()
-  const notes = createStudioTakeNotesStore()
-  // Each lane's log, kept past its arm until a take of it is kept.
-  const logs = new Map<string, StudioNoteLog>()
+  // Each MIDI lane's log and the sound it played, kept past its arm until a
+  // take of it is kept, and dropped once the lane arms anything else.
+  const logs = new Map<string, { log: StudioNoteLog; sound: StudioMidiSound }>()
   // The lanes armed now, or opening, by lane; the signal shows them.
   const arming = new Map<string, LaneArm>()
   const [arms, setArms] = createSignal<ReadonlyMap<string, LaneArm>>(new Map())
@@ -94,9 +95,13 @@ export function createStudioMidiLanes(options: StudioMidiLanesOptions) {
   function acquire(
     trackId: string | null,
   ): Promise<StudioInstrumentHold> | null {
-    const input = trackId === null ? null : options.laneInput(trackId)
-    if (trackId === null || input === null || !isMidiLaneInput(input))
+    if (trackId === null) return null
+    const input = options.laneInput(trackId)
+    if (!isMidiLaneInput(input)) {
+      // This lane's next take records a microphone: no notes of its own.
+      logs.delete(trackId)
       return null
+    }
     const port = input.label ?? 'The MIDI input'
     for (const [other, arm] of arming)
       if (other !== trackId && samePort(arm.input, input))
@@ -123,7 +128,7 @@ export function createStudioMidiLanes(options: StudioMidiLanesOptions) {
     arming.set(trackId, arm)
     setArms(new Map(arming))
     const log = createStudioNoteLog()
-    logs.set(trackId, log)
+    logs.set(trackId, { log, sound })
     return openStudioMidiArm({
       input,
       sound,
@@ -146,20 +151,30 @@ export function createStudioMidiLanes(options: StudioMidiLanesOptions) {
     )
   }
 
-  /** Keep the notes played into `take` beside its stored audio, from its own lane's log; a take with none keeps nothing. */
-  async function keepNotes(take: StudioCapturedTake): Promise<void> {
+  /**
+   * What a take recorded on a MIDI lane plays, for its clip: the notes
+   * played into it, from its own lane's log, in ticks at the song's tempo,
+   * and the sound they played as. A take with no notes is still a MIDI
+   * lane's, its sequence empty. Undefined for a microphone's take, and for
+   * one kept from the journal, whose notes went with the tab.
+   */
+  function takeMidi(take: StudioCapturedTake): StudioRecordingMidi | undefined {
     const song = options.project()
-    const log = take.trackId === null ? undefined : logs.get(take.trackId)
-    if (take.capturedFrom === undefined || song === null || log === undefined)
-      return
-    const played = studioTakeNotes(log.notes(), {
-      heardFirst: take.heardFirst,
-      capturedFrom: take.capturedFrom,
-      seconds: take.samples.length / take.sampleRate,
-    })
-    if (played.length === 0) return
-    // The audio is kept whatever happens to its notes.
-    await notes.keep(song.id, take.id, played).catch(() => undefined)
+    const lane = take.trackId === null ? undefined : logs.get(take.trackId)
+    if (take.capturedFrom === undefined || song === null || lane === undefined)
+      return undefined
+    return {
+      notes: studioTakeNotes(
+        lane.log.notes(),
+        {
+          capturedFrom: take.capturedFrom,
+          seconds: take.samples.length / take.sampleRate,
+        },
+        song.tempoBpm,
+      ),
+      tempoBpm: song.tempoBpm,
+      sound: lane.sound,
+    }
   }
 
   /** Lane `trackId`'s MIDI arm, armed or opening; null for a lane that holds none. */
@@ -173,7 +188,7 @@ export function createStudioMidiLanes(options: StudioMidiLanesOptions) {
     access,
     acquire,
     armed,
-    keepNotes,
+    takeMidi,
     dispose(): void {
       access.dispose()
       void sounds?.then((made) => made.dispose()).catch(() => undefined)

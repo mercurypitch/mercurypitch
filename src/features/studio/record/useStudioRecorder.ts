@@ -24,8 +24,8 @@
 // refused in words that name both. A MIDI lane plays its instrument in
 // place of a microphone (midi/): any number can be armed beside the audio
 // lanes, each on a port of its own, its player always hears it, and a kept
-// take keeps the notes played into it. The mic icon is on while any armed
-// lane holds the microphone.
+// take's clip plays the notes played into it. The mic icon is on while any
+// armed lane holds the microphone.
 //
 // Keys: Record and R start a take on every armed lane in one press; with no
 // lane armed they arm the selected lane, else the first lane with no clips,
@@ -252,15 +252,17 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
   }
 
   /** Keep a take the way a picked WAV is kept: trimmed to the frame the singer heard, a punch's range, or a loop's passes. */
-  async function keepTake(take: StudioCapturedTake): Promise<boolean> {
+  function keepTake(take: StudioCapturedTake): Promise<boolean> {
     const kept = studioTakeImport(take)
     // The recorder hands over, and recovery offers, only takes that keep
     // something (take-passes.ts); one that keeps nothing has nothing to retry.
-    if (kept === null) return true
-    const stored = await options.addRecording(kept)
-    // A MIDI take keeps the notes played into it beside its audio.
-    if (stored) await midi.keepNotes(take)
-    return stored
+    if (kept === null) return Promise.resolve(true)
+    // A MIDI lane's take goes into the song with the notes played into it,
+    // in the edit that adds its clip.
+    const notes = midi.takeMidi(take)
+    return options.addRecording(
+      notes === undefined ? kept : { ...kept, midi: notes },
+    )
   }
 
   /** What Record keeps: the range's passes with Repeat on, the range alone with Punch on, else a plain take. */

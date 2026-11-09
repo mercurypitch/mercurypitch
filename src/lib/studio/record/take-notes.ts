@@ -1,54 +1,43 @@
 // ============================================================
-// Studio take notes — the notes a MIDI lane's player played into a take, kept beside its audio for a notes viewer
+// Studio take notes — the notes a MIDI lane's player played into a take, as the sequence its clip plays
 // ============================================================
 //
 // A MIDI lane keeps the sound of its instrument as an ordinary take, and
-// the notes that made the sound are kept too, in a plain shape a later
-// notes viewer can read (Compose's piano roll, the stem mixer's note
-// editor). Each note is logged at the clock time its sound started and
-// stopped: the instrument's own times, so the notes line up with the audio.
-// They are placed on the song as the take's audio is: its first sample on
-// `heardFirst`, every later one 1/48000 s after. A loop's passes are windows
-// of one take, so a note in a later pass sits past the range, where the
-// take's audio does before its clip folds it in. Kept on this device by the
-// take's id, never in the song: its validator refuses a field it does not
-// know, so a song carrying one would not open in an older build.
-import { STUDIO_SAMPLE_RATE } from '../model/types'
-
-/** One note of a take, on the song's 48 kHz frames as the take's audio sits before any cut. */
-export interface StudioTakeNote {
-  readonly midi: number
-  /** The key's MIDI velocity, 1 to 127. */
-  readonly velocity: number
-  readonly startFrame: number
-  /** After `startFrame`: a note still held when the take ends, ends with it. */
-  readonly endFrame: number
-}
+// the notes that made the sound go into the song with its clip, as a
+// sequence (docs/plans/studio-midi.md). Each note is logged at the clock
+// time its sound started and stopped: the instrument's own times, so the
+// notes line up with the audio. A sequence counts ticks from the take's
+// first sample, which is where its clip's source frames count from too, at
+// the song's tempo as the take is kept (midi/time.ts). A loop's passes are
+// windows of one take, so a note in a later pass sits past the clip's
+// window, where the take's audio does before its clip moves to it.
+import { studioFramesToTicks, studioTicksCovering } from '../midi/time'
+import type { StudioNote, StudioSequence } from '../model/types'
+import { STUDIO_PPQ, STUDIO_SAMPLE_RATE } from '../model/types'
+import { STUDIO_MAX_SEQUENCE_NOTES } from '../model/validation-midi'
 
 /** A note as it sounded, on the clock, in seconds; `end` null while it sounds. */
 export interface StudioPlayedNote {
   readonly midi: number
+  /** As the port gave it: above 0, up to 1, kept to 4 decimals. */
   readonly velocity: number
   readonly start: number
   readonly end: number | null
 }
 
-/** Where a take sits: its first sample's song frame and clock time, and how long it ran. */
+/** When a take captured: its first sample's clock time, and how long it ran. */
 export interface StudioNotedTake {
-  readonly heardFirst: number
   readonly capturedFrom: number
   readonly seconds: number
 }
 
-/** The most notes a take keeps, as a piano performance take does. */
-export const STUDIO_TAKE_MAX_NOTES = 10_000
 /** How long a log keeps a note: a take's five minutes, its count-in, and room. */
 const LOG_SECONDS = 400
 
-/** A MIDI velocity from the port's 0..1. */
-export function midiVelocity(normalized: number): number {
+/** A velocity as a sequence keeps it: above 0, up to 1, to 4 decimals. */
+export function studioNoteVelocity(normalized: number): number {
   if (!Number.isFinite(normalized)) return 1
-  return Math.min(127, Math.max(1, Math.round(normalized * 127)))
+  return Math.min(1, Math.max(0.0001, Math.round(normalized * 10_000) / 10_000))
 }
 
 /** The notes played on an armed MIDI lane, as they sound, for the takes recorded meanwhile. */
@@ -61,7 +50,7 @@ export function createStudioNoteLog() {
   }[] = []
   const sounding = new Map<string, (typeof played)[number]>()
   return {
-    /** Voice `id` began to sound at `at`. */
+    /** Voice `id` began to sound at `at`, `velocity` as the port gives it, 0 to 1. */
     started(id: string, midi: number, velocity: number, at: number): void {
       // A note this old belongs to no take the recorder can still keep.
       played = played.filter(
@@ -69,7 +58,7 @@ export function createStudioNoteLog() {
       )
       const note = {
         midi,
-        velocity: midiVelocity(velocity),
+        velocity: studioNoteVelocity(velocity),
         start: at,
         end: null,
       }
@@ -93,63 +82,55 @@ export function createStudioNoteLog() {
 export type StudioNoteLog = ReturnType<typeof createStudioNoteLog>
 
 /**
- * A take's notes on the song: the ones that began while it captured, each
- * ending by the take's end at the latest, in the order they began.
+ * A take's notes in ticks from its first sample, at `tempoBpm`: the ones
+ * that began while it captured, each ending by the take's end at the
+ * latest and a tick long at the least, numbered from 1 in the order they
+ * began.
  */
 export function studioTakeNotes(
   played: readonly StudioPlayedNote[],
   take: StudioNotedTake,
-): StudioTakeNote[] {
+  tempoBpm: number,
+): StudioNote[] {
   const end = take.capturedFrom + take.seconds
-  const frameOf = (time: number) =>
-    take.heardFirst +
-    Math.round((time - take.capturedFrom) * STUDIO_SAMPLE_RATE)
-  const notes: StudioTakeNote[] = []
-  for (const note of played) {
-    if (note.start < take.capturedFrom || note.start >= end) continue
-    const startFrame = frameOf(note.start)
-    const endFrame = Math.max(
-      startFrame + 1,
-      frameOf(Math.min(note.end ?? end, end)),
+  const tickOf = (time: number) =>
+    studioFramesToTicks(
+      (time - take.capturedFrom) * STUDIO_SAMPLE_RATE,
+      tempoBpm,
     )
-    notes.push({
-      midi: note.midi,
+  const captured = played
+    .filter((note) => note.start >= take.capturedFrom && note.start < end)
+    .slice(0, STUDIO_MAX_SEQUENCE_NOTES)
+  return captured.map((note, index) => {
+    const startTick = tickOf(note.start)
+    const endTick = Math.max(
+      startTick + 1,
+      tickOf(Math.min(note.end ?? end, end)),
+    )
+    return {
+      id: index + 1,
+      pitch: note.midi,
+      startTick,
+      lengthTicks: endTick - startTick,
       velocity: note.velocity,
-      startFrame,
-      endFrame,
-    })
-    if (notes.length === STUDIO_TAKE_MAX_NOTES) break
-  }
-  return notes
+    }
+  })
 }
 
-const wholeIn = (value: unknown, min: number, max: number): value is number =>
-  typeof value === 'number' &&
-  Number.isSafeInteger(value) &&
-  value >= min &&
-  value <= max
-
-function sanitizeNote(value: unknown): StudioTakeNote | null {
-  const raw =
-    typeof value === 'object' && value !== null
-      ? (value as Record<string, unknown>)
-      : {}
-  const { midi, velocity, startFrame, endFrame } = raw
-  if (!wholeIn(midi, 0, 127) || !wholeIn(velocity, 1, 127)) return null
-  if (!wholeIn(startFrame, Number.MIN_SAFE_INTEGER, Number.MAX_SAFE_INTEGER))
-    return null
-  if (!wholeIn(endFrame, startFrame + 1, Number.MAX_SAFE_INTEGER)) return null
-  return { midi, velocity, startFrame, endFrame }
-}
-
-/** Notes as read back from storage: each whole, or left out; at most STUDIO_TAKE_MAX_NOTES. */
-export function sanitizeStudioTakeNotes(value: unknown): StudioTakeNote[] {
-  if (!Array.isArray(value)) return []
-  const notes: StudioTakeNote[] = []
-  for (const each of value) {
-    const note = sanitizeNote(each)
-    if (note !== null) notes.push(note)
-    if (notes.length === STUDIO_TAKE_MAX_NOTES) break
+/** A take's sequence: its notes, over its whole stored audio of `frames` frames, at `tempoBpm`. */
+export function studioTakeSequence(take: {
+  readonly id: string
+  readonly notes: readonly StudioNote[]
+  readonly tempoBpm: number
+  readonly frames: number
+}): StudioSequence {
+  return {
+    id: take.id,
+    ppq: STUDIO_PPQ,
+    tempoBpm: take.tempoBpm,
+    lengthTicks: studioTicksCovering(take.frames, take.tempoBpm),
+    nextNoteId:
+      take.notes.reduce((highest, note) => Math.max(highest, note.id), 0) + 1,
+    notes: take.notes,
   }
-  return notes
 }

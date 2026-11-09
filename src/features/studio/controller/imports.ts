@@ -2,12 +2,15 @@
 import { audioUploadValidationError } from '@/lib/audio-upload-contract'
 import { checkImportCancelled, DEFAULT_STUDIO_IMPORT_LIMITS, } from '@/lib/studio/audio/import-limits'
 import { prepareStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
+import type { StudioMidiSoundKind } from '@/lib/studio/midi/render-key'
+import { studioMidiRenderKey } from '@/lib/studio/midi/render-key'
 import { studioFitPasses } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand, StudioEdit } from '@/lib/studio/model/commands'
 import { createStudioTrack } from '@/lib/studio/model/defaults'
 import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limits'
-import type { StudioAsset, StudioAssetData, StudioClipPasses, StudioProject, } from '@/lib/studio/model/types'
+import type { StudioAsset, StudioAssetData, StudioClipMidi, StudioClipPasses, StudioNote, StudioProject, } from '@/lib/studio/model/types'
 import { studioTakeFileName } from '@/lib/studio/record/take-audio'
+import { studioTakeSequence } from '@/lib/studio/record/take-notes'
 import { prepareStudioSource } from '../integration/prepare-source'
 import type { StudioSourceEntry } from '../integration/source-catalog'
 import { formatStudioMoment } from '../timeline/timeline-geometry'
@@ -26,6 +29,8 @@ interface ImportItem {
   passes?: StudioClipPasses
   /** A punch: it replaces what its lane plays under it, as tape does. */
   punch?: boolean
+  /** A MIDI lane's take: the notes its clip plays. */
+  midi?: StudioRecordingMidi
   prepare(
     id: string,
     projectId: string,
@@ -106,6 +111,15 @@ function retainNewAudio(
   return data.asset
 }
 
+/** What a take recorded on a MIDI lane plays: its notes, and what they sounded as. */
+export interface StudioRecordingMidi {
+  /** In ticks from the take's first sample, at `tempoBpm` (take-notes.ts). */
+  readonly notes: readonly StudioNote[]
+  /** The song's tempo as the take was kept. */
+  readonly tempoBpm: number
+  readonly sound: StudioMidiSoundKind
+}
+
 /** A take recorded in the Studio, kept the way a picked file is. */
 export interface StudioRecordingImport {
   /** The take as a WAV at the rate it was captured. */
@@ -128,6 +142,8 @@ export interface StudioRecordingImport {
   readonly trackId: string | null
   /** The take's own id for its audio, so its journal can tell it was stored. */
   readonly assetId?: string
+  /** A MIDI lane's take: the notes it plays go into the song with its clip. */
+  readonly midi?: StudioRecordingMidi
 }
 
 const TAKE_TOO_SHORT = 'That take was too short to keep.'
@@ -149,7 +165,36 @@ function laneHasRoom(
   )
 }
 
-type ImportEntry = { item: ImportItem; asset: StudioAsset }
+type ImportEntry = {
+  item: ImportItem
+  asset: StudioAsset
+  /** A MIDI take's clip: the sequence it plays, added in the same edit. */
+  midi?: StudioClipMidi
+}
+
+/**
+ * A MIDI take's sequence over its whole stored audio, and its clip's key
+ * of it: the audio recorded live is its first render, so nothing renders
+ * until its notes are edited (midi/render-key.ts).
+ */
+function midiEntry(
+  entry: ImportEntry,
+  createId: () => string,
+): { entry: ImportEntry; edit?: StudioEdit } {
+  const take = entry.item.midi
+  if (take === undefined) return { entry }
+  const sequence = studioTakeSequence({
+    id: createId(),
+    notes: take.notes,
+    tempoBpm: take.tempoBpm,
+    frames: entry.asset.normalizedFrameCount,
+  })
+  const renderKey = studioMidiRenderKey(sequence, take.sound)
+  return {
+    entry: { ...entry, midi: { sequenceId: sequence.id, renderKey } },
+    edit: { type: 'add-sequence', sequence },
+  }
+}
 
 /** A clip's source frames, fades and passes: the item's trim, inside its audio. */
 function clipSource({ item, asset }: ImportEntry) {
@@ -228,6 +273,7 @@ function importCommands(
       startFrame,
       ...clipSource(entry),
       gainDb: 0,
+      ...(entry.midi && { midi: entry.midi }),
     })
     if (index === 0 && target !== null)
       return punch
@@ -333,19 +379,26 @@ export function createStudioImporter(options: ImportControllerOptions) {
       }
       const currentProject = options.project()
       if (currentProject === null || !options.current(epoch)) return false
+      // A MIDI take's sequence is added in the edit that adds its clip, so
+      // one undo takes both away.
+      const played = selected.map((entry) => midiEntry(entry, options.createId))
       const commands = importCommands(
-        selected,
+        played.map((each) => each.entry),
         currentProject,
         startFrame,
         options.createId,
         trackId,
       )
+      const edits = [
+        ...played.flatMap((each) => (each.edit ? [each.edit] : [])),
+        ...commands,
+      ]
       const prepared = retained.values()
       // Transfer admission synchronously to the queue. No allocation or await
       // intervenes; if staging fails, these results are discarded by this scope.
       retained.clear()
       const committed = options.commit(
-        commands.length === 1 ? commands[0] : { type: 'batch', commands },
+        edits.length === 1 ? edits[0] : { type: 'batch', commands: edits },
         prepared,
         options.report,
       )
@@ -456,6 +509,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
           fadeFrames: take.fadeFrames,
           passes: take.passes,
           punch: take.punch,
+          midi: take.midi,
           prepare: async (id, projectId, signal) => {
             const data = await (options.prepareFile ?? prepareStudioAsset)(
               take.wav,
