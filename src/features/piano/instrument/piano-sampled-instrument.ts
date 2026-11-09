@@ -13,6 +13,15 @@
 // stereo burst rendered offline lost -18.5 dBFS of what followed it in the
 // hall, -27.0 in the studio and -32.8 close (Chromium 148); mono samples
 // never change count and lost nothing.
+//
+// Live, the 64-voice ceiling and the 24 release and pedal samples count what
+// was started and has not ended, which is what sounds now. An offline render
+// (`offline`) schedules notes seconds before the render reaches them, and at
+// a ceiling it would steal notes that have not begun to sound. So an offline
+// instrument has no ceilings, and a prewarm prepares every root it is given,
+// all pinned for the pass: the render needs every one before it starts, and
+// a set too big for the decoded budget fails whole rather than evicting its
+// own first roots.
 
 import { createStereoHold } from '@/lib/audio/stereo-hold'
 import type { PianoInstrumentDescriptor, PianoInstrumentNoteOff, PianoInstrumentNoteOn, PianoInstrumentPedalEvent, PianoInstrumentPort, } from './piano-instrument-port'
@@ -51,8 +60,8 @@ export interface PianoSampledInstrument
   extends PianoInstrumentPort, PianoSampledInstrumentControls {}
 
 export interface PianoSampledInstrumentOptions {
-  /** The route-owned context. This instrument never constructs or closes it. */
-  getAudioContext(): AudioContext | null
+  /** The route-owned context, live or offline. This instrument never constructs or closes it. */
+  getAudioContext(): BaseAudioContext | null
   /** The route-owned node the instrument plays into, as the drum kit player takes one; the context's destination when absent or null. */
   getOutput?(): AudioNode | null
   /** Test seam; production requests still pass the fixed manifest allowlist. */
@@ -65,10 +74,12 @@ export interface PianoSampledInstrumentOptions {
   maxEncodedSampleBytes?: number
   maxVoices?: number
   loadConcurrency?: number
+  /** An offline render's grand, its notes scheduled ahead into an OfflineAudioContext: nothing is stolen, and a prewarm takes every root. */
+  offline?: boolean
 }
 
 interface SampleGraph {
-  context: AudioContext
+  context: BaseAudioContext
   input: GainNode
   hold: DelayNode
   tone: BiquadFilterNode
@@ -377,11 +388,13 @@ export function createPianoSampledInstrument(
     options.maxEncodedSampleBytes,
     DEFAULT_MAX_ENCODED_SAMPLE_BYTES,
   )
-  const maxVoices = positiveInteger(
-    options.maxVoices,
-    DEFAULT_MAX_VOICES,
-    MAXIMUM_MAX_VOICES,
-  )
+  // An offline render's instrument steals nothing and prepares every root.
+  const offline = options.offline === true
+  const maxVoices = offline
+    ? Infinity
+    : positiveInteger(options.maxVoices, DEFAULT_MAX_VOICES, MAXIMUM_MAX_VOICES)
+  const maxAuxiliaryVoices = offline ? Infinity : MAX_AUXILIARY_VOICES
+  const maxPrewarmRoots = offline ? Infinity : MAX_PREWARM_ROOTS
   const loadConcurrency = positiveInteger(
     options.loadConcurrency,
     DEFAULT_LOAD_CONCURRENCY,
@@ -548,7 +561,7 @@ export function createPianoSampledInstrument(
     softPedalValue = 0
   }
 
-  const createGraph = (context: AudioContext): SampleGraph => {
+  const createGraph = (context: BaseAudioContext): SampleGraph => {
     const input = context.createGain()
     // Enabled for the longest reflection, so it plays out when a voice ends.
     const hold = createStereoHold(context, LATE_DELAY_MAX_SECONDS)
@@ -934,9 +947,10 @@ export function createPianoSampledInstrument(
     )
     // The caller supplies current/next phrase order. Keep the first roots in
     // that order so one prewarm cannot decode an entire piece or churn the LRU.
+    // An offline render keeps them all: it needs the entire piece.
     const roots = Array.from(
       new Set(normalizedMidis.map(resolveSalamanderRootMidi)),
-    ).slice(0, MAX_PREWARM_ROOTS)
+    ).slice(0, maxPrewarmRoots)
     const selectedRoots = new Set(roots)
     const resources = new Map<string, PianoSampleResource>()
     const coverageResources = roots.map((rootMidi) =>
@@ -1046,7 +1060,7 @@ export function createPianoSampledInstrument(
     const activeGraph = graph
     const cached = cachedSample(resource)
     if (activeGraph === null || cached === undefined) return false
-    while (auxiliaries.size >= MAX_AUXILIARY_VOICES) {
+    while (auxiliaries.size >= maxAuxiliaryVoices) {
       const oldest = auxiliaries.values().next().value as
         | AuxiliaryVoice
         | undefined

@@ -171,6 +171,7 @@ function harness(
     maxDecodedBytes?: number
     maxEncodedSampleBytes?: number
     maxVoices?: number
+    offline?: boolean
   } = {},
 ) {
   const context =
@@ -204,6 +205,7 @@ function harness(
     ...(options.loadConcurrency === undefined
       ? {}
       : { loadConcurrency: options.loadConcurrency }),
+    ...(options.offline === undefined ? {} : { offline: options.offline }),
   })
   return {
     context,
@@ -725,6 +727,80 @@ describe('createPianoSampledInstrument', () => {
     expect(instrument.activeVoiceIds()).toEqual(['second', 'third'])
     expect(context?.sources[0].stops.at(-1)).toBeCloseTo(10.03)
     expect(context?.sources[1].stops).toEqual([])
+  })
+
+  it('keeps the live ceiling at 64 voices, stealing the oldest for the 65th', async () => {
+    // Arrange
+    const { context, instrument } = harness()
+    await instrument.prewarm([60])
+
+    // Act
+    for (let index = 0; index <= 64; index += 1)
+      instrument.noteOn({ id: `live:${index}`, midi: 60, velocity: 0.8 })
+
+    // Assert
+    expect(instrument.descriptor().maximumVoices).toBe(64)
+    expect(instrument.activeVoiceIds()).toHaveLength(64)
+    expect(instrument.activeVoiceIds()).not.toContain('live:0')
+    expect(context?.sources[0].stops.at(-1)).toBeCloseTo(10.03)
+    expect(context?.sources[1].stops).toEqual([])
+  })
+
+  it('keeps every note an offline render schedules ahead, and every release sample, each to its own end', async () => {
+    // Arrange
+    const { context, instrument } = harness({ offline: true, maxVoices: 2 })
+    await instrument.prewarm([60])
+    const count = 200
+
+    // Act: each note a quarter second apart, held half a second.
+    for (let index = 0; index < count; index += 1) {
+      const at = 11 + index / 4
+      instrument.noteOn({
+        id: `ahead:${index}`,
+        midi: 60,
+        velocity: 0.8,
+        atContextTime: at,
+      })
+      instrument.noteOff({ id: `ahead:${index}`, atContextTime: at + 0.5 })
+    }
+
+    // Assert: attacks and release samples alternate, none cut before its end.
+    const sources = context!.sources
+    const attacks = sources.filter((_, index) => index % 2 === 0)
+    const releases = sources.filter((_, index) => index % 2 === 1)
+    expect(attacks).toHaveLength(count)
+    expect(releases).toHaveLength(count)
+    expect(
+      attacks.every(
+        (source, index) =>
+          source.stops.length === 1 &&
+          Math.abs(source.stops[0] - (11 + index / 4 + 0.67)) < 1e-9,
+      ),
+    ).toBe(true)
+    expect(releases.every((source) => source.stops.length === 0)).toBe(true)
+    expect(instrument.descriptor().maximumVoices).toBe(Number.POSITIVE_INFINITY)
+  })
+
+  it('prepares every root of a take in one offline prewarm, where live takes the first eight', async () => {
+    // Arrange
+    const roots = [36, 39, 42, 45, 48, 51, 54, 57, 60, 63]
+    const live = harness()
+    const offline = harness({ offline: true })
+    const coverage = (urls: readonly string[]) =>
+      urls.filter((url) => url.endsWith('v12.mp3')).length
+
+    // Act
+    await live.instrument.prewarm(roots)
+    await offline.instrument.prewarm(roots)
+
+    // Assert
+    expect(coverage(live.requestedUrls)).toBe(8)
+    expect(coverage(offline.requestedUrls)).toBe(roots.length)
+    expect(
+      roots.every((midi) =>
+        offline.instrument.noteOn({ id: `root:${midi}`, midi, velocity: 0.5 }),
+      ),
+    ).toBe(true)
   })
 
   it('keeps decoded buffers within an LRU byte ceiling and refetches evicted zones', async () => {
