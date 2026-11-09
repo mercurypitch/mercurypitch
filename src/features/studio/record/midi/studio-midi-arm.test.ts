@@ -80,7 +80,7 @@ describe('a MIDI lane arm', () => {
     expect(armed.voice.stop.mock.calls[0][1]).toBeCloseTo(10.504, 9)
     const [note] = armed.log.notes()
     expect(note.midi).toBe(60)
-    expect(note.velocity).toBe(127)
+    expect(note.velocity).toBe(1)
     expect(note.start).toBeCloseTo(10.004, 9)
     expect(note.end).toBeCloseTo(10.504, 9)
   })

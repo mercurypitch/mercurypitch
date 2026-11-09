@@ -1,4 +1,4 @@
-// Studio recorder MIDI tests — a MIDI lane arms on its port and never asks for a microphone; its player hears it whatever the monitoring switch says; its take is moved by the output path alone, not a microphone's measured round trip or the line-up; the mic icon stays off while it is armed; a kept take keeps the notes played into it by its id; and a port that is gone refuses the arm in its own name.
+// Studio recorder MIDI tests — a MIDI lane arms on its port and never asks for a microphone; its player hears it whatever the monitoring switch says; its take is moved by the output path alone, not a microphone's measured round trip or the line-up; the mic icon stays off while it is armed; a kept take goes into the song with the notes played into it, in ticks at the song's tempo, and with an empty sequence when none were; a lane armed on a microphone after its MIDI arm keeps none; and a port that is gone refuses the arm in its own name.
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FakeMediaDevices } from '@/lib/audio-input/fake-devices.fixture'
@@ -6,6 +6,7 @@ import { fakeMediaDevices } from '@/lib/audio-input/fake-devices.fixture'
 import type { StudioProject } from '@/lib/studio/model/types'
 import type { StudioMonitorLevel } from '@/lib/studio/record/input-monitor'
 import type { StudioCapturedTake, StudioInstrumentHold, StudioRecorderView, } from '@/lib/studio/record/studio-recorder'
+import type { StudioRecordingImport } from '../controller/imports'
 import type { FakeMidiInput } from './midi/fake-midi.fixture'
 import { fakeMidiAccess, fakeMidiInput } from './midi/fake-midi.fixture'
 
@@ -21,7 +22,9 @@ const mocks = vi.hoisted(() => ({
   },
   acquireFrom: vi.fn(),
   indicator: null as null | (() => boolean),
-  keepNotes: vi.fn(async () => undefined),
+  addRecording: vi.fn<(take: StudioRecordingImport) => Promise<boolean>>(
+    async () => true,
+  ),
   sounds: {
     attach: vi.fn(() => ({
       node: { name: 'arm node' },
@@ -58,9 +61,6 @@ vi.mock('@/db/services/studio-take-journal', () => ({
     read: vi.fn(),
     discard: vi.fn(async () => undefined),
   }),
-}))
-vi.mock('@/db/services/studio-take-notes', () => ({
-  createStudioTakeNotesStore: () => ({ keep: mocks.keepNotes, read: vi.fn() }),
 }))
 vi.mock('@/lib/mic-manager', () => ({
   micManager: {
@@ -150,6 +150,20 @@ function view(patch: Partial<StudioRecorderView>): StudioRecorderView {
   return { lanes, ...made }
 }
 
+/** A second's take on `trackId` whose first sample, captured at 9.9 s, lands on frame 96000. */
+function take(id: string, trackId: string): StudioCapturedTake {
+  return {
+    id,
+    title: 'Take 1',
+    trackId,
+    sampleRate: 48_000,
+    samples: new Float32Array(48_000),
+    heardFirst: 96_000,
+    fromFrame: null,
+    capturedFrom: 9.9,
+  }
+}
+
 /** The hook on the song, lane-1 on the Keystation; the recorder's dependencies in `mocks.deps`. */
 function mount() {
   devices = fakeMediaDevices([])
@@ -160,7 +174,7 @@ function mount() {
       project: current,
       assets: () => [],
       canEdit: () => true,
-      addRecording: vi.fn(async () => true),
+      addRecording: mocks.addRecording,
       transport: {
         playing: () => false,
         frameNow: () => 0,
@@ -261,7 +275,7 @@ describe('the Studio recorder on a MIDI lane', () => {
     expect(bothArmed).toBe(true)
   })
 
-  it('plays two MIDI lanes on two ports, each a sound of its own, and keeps each take only its own notes', async () => {
+  it('plays two MIDI lanes on two ports, each a sound of its own, and saves each take with only its own notes', async () => {
     // Arrange
     const pads = fakeMidiInput('pads', 'MPD218')
     const fake = fakeMidiAccess([keys, pads])
@@ -287,32 +301,19 @@ describe('the Studio recorder on a MIDI lane', () => {
     clock.currentTime = 10.5
     keys.send([0x80, 60, 0], performance.now() - 50)
     pads.send([0x80, 64, 0], performance.now() - 50)
-    const take = (id: string, trackId: string) => ({
-      id,
-      title: 'Take 1',
-      trackId,
-      sampleRate: 48_000,
-      samples: new Float32Array(48_000),
-      heardFirst: 96_000,
-      fromFrame: null,
-      capturedFrom: 9.9,
-    })
     await deps.keep(take('take-keys', 'lane-1'))
     await deps.keep(take('take-pads', 'lane-2'))
 
-    // Assert
+    // Assert: velocities as the ports gave them, 100 and 90 of 127.
     expect(mocks.sounds.attach).toHaveBeenCalledTimes(2)
-    expect(mocks.keepNotes.mock.calls).toEqual([
-      [
-        'song-1',
-        'take-keys',
-        [expect.objectContaining({ midi: 60, velocity: 100 })],
-      ],
-      [
-        'song-1',
-        'take-pads',
-        [expect.objectContaining({ midi: 64, velocity: 90 })],
-      ],
+    expect(
+      mocks.addRecording.mock.calls.map(([kept]) => [
+        kept.assetId,
+        kept.midi?.notes,
+      ]),
+    ).toEqual([
+      ['take-keys', [expect.objectContaining({ pitch: 60, velocity: 0.7874 })]],
+      ['take-pads', [expect.objectContaining({ pitch: 64, velocity: 0.7087 })]],
     ])
   })
 
@@ -333,7 +334,7 @@ describe('the Studio recorder on a MIDI lane', () => {
     )
   })
 
-  it('keeps the notes played into a kept take beside its audio, by its id', async () => {
+  it("saves the notes played into a kept take with its clip, in ticks from its first sample at the song's tempo", async () => {
     // Arrange
     const { deps } = mount()
     const hold = (await deps.acquireInstrument('lane-1'))!
@@ -343,25 +344,71 @@ describe('the Studio recorder on a MIDI lane', () => {
     clock.currentTime = 10.5
     keys.send([0x80, 60, 0], performance.now() - 50)
 
-    // Act: a second's take whose first sample, captured at 9.9 s, lands on frame 96000.
-    const kept = await deps.keep({
-      id: 'take-1',
-      title: 'Take 1',
-      trackId: 'lane-1',
-      sampleRate: 48_000,
-      samples: new Float32Array(48_000),
-      heardFirst: 96_000,
-      fromFrame: null,
-      capturedFrom: 9.9,
-    })
+    // Act
+    const kept = await deps.keep(take('take-1', 'lane-1'))
+
+    // Assert: held from 0.1 s to 0.6 s into the take, at 120 bpm's 1920
+    // ticks a second.
+    expect(kept).toBe(true)
+    expect(mocks.addRecording).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({
+        assetId: 'take-1',
+        midi: {
+          notes: [
+            {
+              id: 1,
+              pitch: 60,
+              startTick: 192,
+              lengthTicks: 960,
+              velocity: 0.7874,
+            },
+          ],
+          tempoBpm: 120,
+          sound: 'piano',
+        },
+      }),
+    )
+  })
+
+  it("saves a take with no notes played into it as a MIDI lane's, its sequence empty", async () => {
+    // Arrange
+    const { deps } = mount()
+    await deps.acquireInstrument('lane-1')
+
+    // Act
+    await deps.keep(take('take-1', 'lane-1'))
 
     // Assert
-    expect(kept).toBe(true)
-    expect(mocks.keepNotes).toHaveBeenCalledExactlyOnceWith(
-      'song-1',
-      'take-1',
-      [{ midi: 60, velocity: 100, startFrame: 100_800, endFrame: 124_800 }],
-    )
+    expect(mocks.addRecording.mock.calls[0][0].midi).toEqual({
+      notes: [],
+      tempoBpm: 120,
+      sound: 'piano',
+    })
+  })
+
+  it('keeps no notes with a take of a lane armed on a microphone after its MIDI arm', async () => {
+    // Arrange: a note played on the lane's MIDI arm, then the lane set to
+    // follow the Studio's microphone.
+    const { hook, deps } = mount()
+    const hold = (await deps.acquireInstrument('lane-1'))!
+    hold.play({ currentTime: 10 } as unknown as AudioContext)
+    keys.send([0x90, 60, 100], performance.now() - 50)
+    hold.release()
+    hook.laneInputs.choose('lane-1', {
+      deviceId: null,
+      label: null,
+      channel: null,
+      pair: false,
+    })
+
+    // Act
+    const armed = deps.acquireInstrument('lane-1')
+    await deps.keep(take('take-1', 'lane-1'))
+
+    // Assert
+    expect(armed).toBeNull()
+    expect(mocks.addRecording).toHaveBeenCalledOnce()
+    expect(mocks.addRecording.mock.calls[0][0]).not.toHaveProperty('midi')
   })
 
   it('refuses a MIDI lane whose port is gone in its own name', async () => {

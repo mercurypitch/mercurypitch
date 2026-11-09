@@ -23,6 +23,26 @@ export interface StudioBlobRecord extends DbEntity {
   data: ArrayBuffer
 }
 
+/**
+ * A song's stored record as it was before it was first stepped up from
+ * `schemaVersion` (migrations.ts): kept once per song and version, so a bad
+ * migration can be undone by hand, and deleted with the song.
+ */
+export interface StudioProjectSnapshotRecord extends DbEntity {
+  projectId: string
+  schemaVersion: number
+  /** The record as storage held it, unread and unchanged. */
+  project: unknown
+}
+
+/** The row that keeps song `projectId` as it was at `schemaVersion`. */
+export function studioSnapshotRowId(
+  projectId: string,
+  schemaVersion: number,
+): string {
+  return `${projectId}:${schemaVersion}`
+}
+
 /** The row that keeps a take's waveform peaks in its song: one per song and canonical PCM hash. */
 export function studioPeaksRowId(
   projectId: string,

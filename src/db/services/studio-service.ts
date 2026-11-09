@@ -7,14 +7,16 @@ import { getLocalDatabase } from '@/db/local-database'
 import { CANONICAL_PCM_MIME } from '@/lib/studio/audio/canonical-pcm'
 import { isStudioMemoryRefusal, reserveStudioMemory, } from '@/lib/studio/memory-budget'
 import { createStudioProject, summarizeStudioProject, } from '@/lib/studio/model/defaults'
+import { StudioNewerSongError, studioSongVersion, } from '@/lib/studio/model/migrations'
 import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limits'
 import type { StudioAsset, StudioAssetBytes, StudioAssetData, StudioProject, StudioProjectSummary, } from '@/lib/studio/model/types'
+import { STUDIO_SCHEMA_VERSION } from '@/lib/studio/model/types'
 import { validateStudioAsset, validateStudioProject, } from '@/lib/studio/model/validation'
 import { acquireStudioEditor, reclaimStudioEditor, releaseStudioEditor, renewStudioEditor, requireStudioEditor, } from './studio-editor-lease'
 import type { StudioAssetInput } from './studio-record-preparation'
 import { withPreparedStudioRecords } from './studio-record-preparation'
-import type { PreparedStudioRecords, StudioAssetRecord, StudioBlobRecord, } from './studio-records'
-import { studioPeaksRowId } from './studio-records'
+import type { PreparedStudioRecords, StudioAssetRecord, StudioBlobRecord, StudioProjectSnapshotRecord, } from './studio-records'
+import { studioPeaksRowId, studioSnapshotRowId } from './studio-records'
 import type { StudioEditorLease, StudioEditorToken, StudioWriteToken, } from './studio-storage-types'
 import { STUDIO_STORES, StudioStorageError, studioStorageOperation, } from './studio-storage-types'
 
@@ -102,6 +104,9 @@ function projectSnapshot(
   try {
     return validateStudioProject(structuredClone(value), assets)
   } catch (cause) {
+    // A song from a newer build says so, in its own words.
+    if (cause instanceof StudioNewerSongError)
+      throw new StudioStorageError('newer-version', cause.message, cause)
     throw new StudioStorageError(
       'invalid-project',
       'The project contains unsupported or invalid data.',
@@ -172,6 +177,30 @@ export function createStudioService(
     )
     return records.map((record) => assetMetadata(record, projectId))
   }
+  /**
+   * Keep a stored song's record as it is before its first migration from
+   * its version: once per song and version, never over an earlier one.
+   */
+  const keepBeforeMigration = async (
+    id: string,
+    stored: unknown,
+  ): Promise<void> => {
+    const version = studioSongVersion(stored)
+    if (version === null || version >= STUDIO_SCHEMA_VERSION) return
+    const db = database()
+    const rowId = studioSnapshotRowId(id, version)
+    if (await db.readByIdStrict(STUDIO_STORES.snapshots, rowId)) return
+    const stamp = now().toISOString()
+    await db.addStrict<StudioProjectSnapshotRecord>(STUDIO_STORES.snapshots, {
+      id: rowId,
+      projectId: id,
+      schemaVersion: version,
+      project: structuredClone(stored),
+      createdAt: stamp,
+      updatedAt: stamp,
+    })
+  }
+  /** A stored song, stepped up to this build's version as it is read. */
   const readProject = async (id: string): Promise<StudioProject> => {
     const project = await database().readByIdStrict<StudioProject>(
       STUDIO_STORES.projects,
@@ -182,6 +211,7 @@ export function createStudioService(
         'not-found',
         'The local project was not found.',
       )
+    await keepBeforeMigration(id, project)
     return projectSnapshot(project, await listAssets(id))
   }
   /** The stored rows' own buffers: a copy of a song reads each take once. */
@@ -521,8 +551,6 @@ export function createStudioService(
                 STUDIO_STORES.blobs,
                 studioPeaksRowId(id, asset.canonicalPcmSha256),
               )
-            // A MIDI take's notes go with its audio (studio-take-notes.ts).
-            await db.deleteByIdStrict(STUDIO_STORES.notes, asset.id)
             await db.deleteByIdStrict(STUDIO_STORES.assets, asset.id)
           }
           return assets.filter((asset) => used.has(asset.id))
@@ -593,7 +621,7 @@ export function createStudioService(
             id,
           )
           await db.deleteByIndexStrict(STUDIO_STORES.takes, 'projectId', id)
-          await db.deleteByIndexStrict(STUDIO_STORES.notes, 'projectId', id)
+          await db.deleteByIndexStrict(STUDIO_STORES.snapshots, 'projectId', id)
         })
       }),
   }
