@@ -9,7 +9,7 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 5 to 19, 21, 22, 23 and 24 are live here; a page that holds them back is
+// does, so Lessons 5 to 24 are live here; a page that holds them back is
 // next-card.test.ts's, and one the site worker served with the console's
 // state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
@@ -140,9 +140,15 @@ const CARDS: readonly (readonly [string, string, string, string])[] = [
   ],
   [
     '/learn/19',
-    'Next lesson 20 · Runs and the pentatonic scale Coming later',
-    '#explorer',
-    'See it on the map',
+    'Next lesson 20 · Runs and the pentatonic scale Ready · 15 min',
+    '/learn/20',
+    'Start lesson',
+  ],
+  [
+    '/learn/20',
+    'Next lesson 21 · Keys and the circle of fifths Ready · 15 min',
+    '/learn/21',
+    'Start lesson',
   ],
   [
     '/learn/21',
@@ -549,7 +555,8 @@ test("Lesson 19's card sets up Lesson 20 with its tease, one line above its hook
   // Act
   await page.goto('/learn/19')
 
-  // Assert: Lesson 20 has no page yet, so the card leads to the map (WEB-SPEC, Toys 11)
+  // Assert: Lesson 20's page is live here, as drafts are, so the card opens
+  // it (WEB-SPEC, Toys 11)
   const c = card(page)
   await expect(c.locator('.next-tease')).toHaveText(
     LESSON_COPY[20]?.tease ?? 'Lesson 20 has a tease',
@@ -604,7 +611,7 @@ test("Lesson 19's card sets up Lesson 20 with its tease, one line above its hook
     moving: 0,
   })
   await expect(c.locator('button')).toHaveCount(0)
-  await expect(c).toHaveAttribute('href', '#explorer')
+  await expect(c).toHaveAttribute('href', '/learn/20')
 })
 
 test("Lesson 2's card, its two figures kept, leads to Lesson 3's page @smoke", async ({
