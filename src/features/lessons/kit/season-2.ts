@@ -14,7 +14,7 @@
 // (Lesson 16 needs Lesson 9) is a plain edge, and the explorer draws it as
 // a line in from the season before.
 //
-// Lessons 15, 16, 17, 19, 21, 22, 23 and 24 have their pages, drafts (drafts.ts); every other
+// Lessons 15 to 19 and 21 to 24 have their pages, drafts (drafts.ts); every other
 // lesson is coming later, with no page, no reading time and no film, as
 // Lesson 14 was before its page. A lesson's page, its reading time, its
 // tease and its figure land with the page. Each entry takes its lesson's copy from lesson-copy.ts, as
@@ -126,6 +126,10 @@ const ENTRIES_2: readonly Lesson[] = [
     title: 'Read and sing a whole line',
     short: 'Reading in time',
     topics: ['S11b', 'T32'],
+    // A draft until Lessons 16 and 17 are live and the vocal coach's
+    // sign-off (drafts.ts).
+    minutes: 16,
+    page: '/learn/18',
     hook: "How do singers read a tune they've never heard without stopping on every note?",
     pr: {
       needs:

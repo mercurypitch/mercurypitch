@@ -1,0 +1,273 @@
+/* ============================================================
+   Lesson 18 — Read and sing a whole line: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's: lesson-base, lesson-sections, lesson-stage
+   and lesson-parts, imported by main.ts, and the rhythm bar's and the tap
+   pad's sheets, taken in here by @import so they inline into this page's
+   own sheet and split no chunk the other lessons share (MISTAKES.md, on the
+   lessons' base stylesheet).
+
+   Here: the hero's bass staff between Merc and Tavi, with the play under
+   it; the four words' figures; the reading staff on the stage, with its
+   lock line and Step 3's tap pad (WEB-SPEC, Toys 2 and 3); Sing it's staff;
+   and the Wrap's cards, with the next card's tease still and free play. No
+   decorative staff: the section heads carry none, and the body's season-2
+   class drops the background's (kit/lesson-base.css). */
+
+@import '../kit/lesson-rhythm.css';
+@import '../kit/lesson-tap-pad.css';
+
+/* ---------------------------------------------------------------- hero: the staff between Merc and Tavi */
+/* five chips, which wrap: rows 16 px apart keep each prerequisite link's
+   44 px tap box whole (lesson-base.css, `.chip-link::after`), as Lessons 14,
+   16 and 21 set it */
+.l18-hero .meta {
+  row-gap: 16px;
+}
+.l18-duo {
+  --merc: clamp(110px, 10vw, 150px);
+  --staff-h: clamp(250px, 23vw, 310px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  column-gap: 6px;
+  height: calc(var(--staff-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the staff, where Merc and Tavi stand */
+.l18-duo .floor {
+  top: var(--staff-h);
+}
+.l18-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l18-duo .merc-blue {
+  grid-column: 1;
+}
+.l18-duo .merc-orange {
+  grid-column: 3;
+}
+.l18-duo .hero-staff {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  height: var(--staff-h);
+}
+.l18-duo .hero-staff svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* the play sits under the stage, outside the predict card */
+.l18-hero .hero-plays {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+}
+/* the choices are long: each wraps inside its button rather than running
+   past a phone's edge */
+.l18-hero .choice,
+.l18-hero .hero-plays .btn {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+  padding-block: 8px;
+}
+@media (max-width: 1080px) {
+  .l18-duo {
+    --merc: clamp(110px, 18vw, 170px);
+    --staff-h: clamp(250px, 38vw, 330px);
+  }
+  /* the play sits right under the stage, before the sound gate (the kit
+     orders the hero's parts at this width) */
+  .l18-hero .hero-plays {
+    order: 4;
+  }
+}
+/* on a phone the staff takes the stage's width, two bars of four beats each
+   needing every pixel of it, and Merc and Tavi stand smaller either side of
+   it */
+@media (max-width: 560px) {
+  .l18-duo {
+    --merc: min(24vw, 96px);
+    --staff-h: 250px;
+    margin-top: 2px;
+  }
+  .l18-duo .hero-staff {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------------------------------------------------------------- four words */
+/* each figure a short line in the learner's clef, or the count-in's pads */
+.ticket .stub svg.word-fig {
+  width: 96px;
+  height: 120px;
+}
+
+/* ---------------------------------------------------------------- the stage */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+.read-viz {
+  position: relative;
+  min-width: 0;
+}
+.read-viz svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.lock-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-2);
+}
+.lock-line[hidden] {
+  display: none;
+}
+.read-controls {
+  margin-top: 10px;
+}
+.read-controls .btn {
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.2;
+}
+/* Bass · Treble and Names on · off: each button a 44 px target */
+.controls .seg .btn {
+  min-width: 44px;
+}
+/* Step 3's tap pad under the figure, with its readout beside it */
+.read-tap {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 10px;
+}
+.read-tap[hidden] {
+  display: none;
+}
+.read-tap .tap-tempo {
+  margin: 0;
+  font-variant-numeric: tabular-nums;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.l18-sing .sing-card .turn {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--hair);
+}
+.l18-sing .sing-card .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l18-sing .voice-clef {
+  margin: 10px 0 0;
+  color: var(--ink-2);
+}
+.l18-sing .guide-hint {
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+/* the learner's staff, two bars over the beat grid, with the still of the
+   one who sings beside it, as Lessons 15, 16 and 23 stand it */
+.l18-sing-staff {
+  margin-top: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 12px;
+  align-items: center;
+}
+.l18-sing-staff .viz {
+  height: 230px;
+}
+.l18-sing-staff .sing-merc {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+}
+.l18-sing .tune-readings {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  color: var(--ink-2);
+}
+/* on a phone the staff takes the card's width and the still stands under
+   it */
+@media (max-width: 560px) {
+  .l18-sing-staff {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: start;
+    row-gap: 10px;
+  }
+  .l18-sing-staff .viz {
+    justify-self: stretch;
+    height: 210px;
+  }
+  .l18-sing-staff .sing-merc {
+    width: 56px;
+    height: 56px;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l18-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l18-app .rest-line {
+  margin: 0 0 10px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l18-app .addr-line,
+.l18-app .second-drill {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l18-app .second-drill {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid var(--hair);
+}
+.l18-app a.addr {
+  text-decoration: none;
+}
+.l18-next {
+  margin-top: 18px;
+}
+/* the tease still in the next-lesson card: Lesson 19's stage before its
+   first play, under a class of its own, apart from .next-tease */
+.l18-tease {
+  width: min(100%, 320px);
+  margin-top: 12px;
+}
+.l18-tease svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+/* free play: the reading staff with every play from the steps */
+.l18-free {
+  margin-top: 18px;
+}
+.l18-free .read-viz {
+  height: 240px;
+}

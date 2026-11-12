@@ -521,6 +521,8 @@ for (const [n, name, size] of [
   [16, 'desktop', DESKTOP],
   [17, 'phone', PHONE],
   [17, 'desktop', DESKTOP],
+  [18, 'phone', PHONE],
+  [18, 'desktop', DESKTOP],
   [21, 'phone', PHONE],
   [21, 'desktop', DESKTOP],
   [22, 'phone', PHONE],

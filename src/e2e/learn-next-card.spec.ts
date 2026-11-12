@@ -9,7 +9,7 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 5 to 17, 19, 21, 22, 23 and 24 are live here; a page that holds them back is
+// does, so Lessons 5 to 19, 21, 22, 23 and 24 are live here; a page that holds them back is
 // next-card.test.ts's, and one the site worker served with the console's
 // state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
@@ -128,9 +128,15 @@ const CARDS: readonly (readonly [string, string, string, string])[] = [
   ],
   [
     '/learn/17',
-    'Next lesson 18 · Read and sing a whole line Coming later',
-    '#explorer',
-    'See it on the map',
+    'Next lesson 18 · Read and sing a whole line Ready · 16 min',
+    '/learn/18',
+    'Start lesson',
+  ],
+  [
+    '/learn/18',
+    'Next lesson 19 · Threes, offbeats and syncopation Ready · 12 min',
+    '/learn/19',
+    'Start lesson',
   ],
   [
     '/learn/19',
@@ -495,7 +501,8 @@ test("Lesson 17's card sets up Lesson 18 with its tease, one line above its hook
   // Act
   await page.goto('/learn/17')
 
-  // Assert: Lesson 18 has no page yet, so the card leads to the map (WEB-SPEC, Toys 11)
+  // Assert: Lesson 18's page is live here, as drafts are, so the card opens
+  // it (WEB-SPEC, Toys 11)
   const c = card(page)
   await expect(c.locator('.next-tease')).toHaveText(
     LESSON_COPY[18]?.tease ?? 'Lesson 18 has a tease',
@@ -533,7 +540,7 @@ test("Lesson 17's card sets up Lesson 18 with its tease, one line above its hook
     moving: 0,
   })
   await expect(c.locator('button')).toHaveCount(0)
-  await expect(c).toHaveAttribute('href', '#explorer')
+  await expect(c).toHaveAttribute('href', '/learn/18')
 })
 
 test("Lesson 19's card sets up Lesson 20 with its tease, one line above its hook, and keeps the page's tease still after its words: nine beads on a string, do re mi so la so mi re do, each in its band, nothing lit and no words", async ({
