@@ -29,7 +29,8 @@
 // string. An illustrated singer's line is the scene's own line, drawn over
 // the beads as any singer's line is. Over a fast run's narrow slots two lit
 // edges on one row would print their words over each other: the later
-// keeps its edges and leaves its words to the earlier's.
+// keeps its edges and leaves its words to the earlier's. A sounding bead's
+// label is written before any, so a lit edge's words leave it its place.
 
 import type { Arc } from './band-chart-arcs'
 import { drawArcs } from './band-chart-arcs'
@@ -185,10 +186,10 @@ function drawString(f: ChartFrame, rungs: readonly Rung[]): void {
   ctx.stroke()
 }
 
-/** A rung's bead: faint before its turn, swelling with a halo while it glows, its label over the band then. */
-function drawBead(f: ChartFrame, r: Rung): void {
+/** A rung's bead: faint before its turn, swelling with a halo while it glows, its label over the band then, whose place it gives (null for none). */
+function drawBead(f: ChartFrame, r: Rung): Words | null {
   const at = beadAt(f, r)
-  if (at === null) return
+  if (at === null) return null
   const { ctx } = f
   const glow = r.glow ?? 0
   const radius = BEAD_R + BEAD_SWELL * glow
@@ -202,12 +203,15 @@ function drawBead(f: ChartFrame, r: Rung): void {
   ctx.beginPath()
   ctx.arc(at.x, at.y, radius, 0, Math.PI * 2)
   ctx.fill()
-  if (glow <= 0 || r.label === undefined) return
+  if (glow <= 0 || r.label === undefined) return null
   ctx.font = MONO
   ctx.fillStyle = BAND_COLOR.target
   ctx.textAlign = 'center'
   ctx.textBaseline = 'bottom'
-  ctx.fillText(r.label, at.x, yOf(f, r.c + HIT_TOLERANCE_CENTS) - 3)
+  const y = yOf(f, r.c + HIT_TOLERANCE_CENTS) - 3
+  ctx.fillText(r.label, at.x, y)
+  const half = ctx.measureText(r.label).width / 2
+  return { x0: at.x - half, x1: at.x + half, y }
 }
 
 /**
@@ -239,11 +243,16 @@ export function paintRungs(
   })
   if (scene.arcs !== undefined) drawArcs(f, scene.arcs)
   const { beads } = scene
+  const written: Words[] = []
   if (beads !== undefined && beads !== null) {
     if (beads.string) drawString(f, rungs)
-    rungs.forEach((r) => drawBead(f, r))
+    // a sounding bead's label is written first, so a lit edge's words, as
+    // the last take left them under Lesson 20's faster pass, give way to it
+    rungs.forEach((r) => {
+      const label = drawBead(f, r)
+      if (label !== null) written.push(label)
+    })
   }
-  const written: Words[] = []
   rungs.forEach((r, i) => {
     if (r.lit !== true) return
     // a rung across the plot lights as the band does, its words at the end

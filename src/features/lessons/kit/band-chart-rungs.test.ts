@@ -487,6 +487,36 @@ describe("the bead style (Lesson 20's run)", () => {
     expect(atRe[1].r).toBeCloseTo(6.5, 9)
   })
 
+  it("leaves out a lit edge's words where they would print over a sounding bead's label (Lesson 20's faster pass)", async () => {
+    // Arrange: the last take's edges kept lit on do, re and mi, 0.45 s
+    // slots across a 6.75 s window, and re sounding
+    const kept: Rung[] = slotsAt(3, 0.45).map((slot, i) => ({
+      c: [0, 200, 400][i],
+      ...slot,
+      label: ['do', 're', 'mi'][i],
+      glow: i === 1 ? 1 : 0,
+      lit: true,
+    }))
+    const figure: Figure = {
+      opts: { ...beaded([]).opts, window: 6.75 },
+      scene: (s) => {
+        s.rungs = kept
+        s.beads = { string: true }
+      },
+    }
+
+    // Act
+    const [{ calls }] = await paintCharts(figure)
+
+    // Assert: re's label stands, its words give way; do's and mi's stay
+    const marks = marksOf(calls)
+    const labels = inColor(marks, AMBER)
+      .filter((m) => m.line.startsWith('text '))
+      .map((m) => m.line.split(' ').at(-1))
+    expect(labels).toEqual(['re'])
+    expect(marks.filter((m) => m.line.endsWith(' IN THE BAND'))).toHaveLength(2)
+  })
+
   it("draws a faint rung's bead faint while it rests", async () => {
     // Act
     const [{ calls }] = await paintCharts(
