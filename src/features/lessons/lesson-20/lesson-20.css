@@ -188,8 +188,22 @@
   inset: 0;
   pointer-events: none;
 }
-.bead-hits > button {
+/* a fingertip square over its bead, placed by run-toy.ts, drawing nothing
+   of its own but the focus ring, as the staircase's stairs are */
+.bead-hit {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
   pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.bead-hit:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: -2px;
 }
 .illustration-tag {
   position: absolute;
