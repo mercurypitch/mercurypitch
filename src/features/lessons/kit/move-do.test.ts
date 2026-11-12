@@ -93,6 +93,14 @@ describe('Move do with a reach for each side', () => {
     expect(kept).toEqual([-4, -4, 3, 3])
   })
 
+  it('keeps do at 0, never -0, under a reach of none lower (Lesson 20 FACTS 52)', () => {
+    // Act
+    const kept = clampMove(-1, { lower: 0, higher: 3 })
+
+    // Assert
+    expect(Object.is(kept, 0)).toBe(true)
+  })
+
   it('stops a press at three higher and at four lower', () => {
     // Arrange
     const [lower, higher] = buttons()

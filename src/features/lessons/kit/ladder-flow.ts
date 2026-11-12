@@ -52,10 +52,25 @@
 // it by default. Nothing here is stored, and the ladder reader, which loads
 // with the listener after Start, is known here only by the shape of what it
 // returns (`kindOf`).
+//
+// Two options are Lesson 20's (its WEB-SPEC, Toys 6, and FACTS 52, 57 and
+// 63). Move do's reach may differ by voice (`reach`): the run goes higher
+// only, three semitones for the lower voice and four for the higher, and a
+// change of voice brings do back within the new voice's reach. And a page
+// may offer the faster pass (`fasterPass`), Again, faster, once a visit
+// after "Easy" or "Workable": Merc's ladder again at a faster pace, the
+// count-in and the guide, with nothing listening and nothing counted. It is
+// not a take: it spends no take and no sung ladder, it asks "How did that
+// feel?" again, whose "Easy" or "Workable" says the faster line in place of
+// the count, and Merc does not celebrate it. With the sound off it plays
+// nothing and shows the hint, unspent; cut short, by the sound going off or
+// the viewer leaving, it is unspent too, the card as it was before its
+// button.
 
 import type { Ending, Feeling } from './comfort'
 import { afterFeeling } from './comfort'
-import { clampMove } from './move-do'
+import type { MoveReach } from './move-do'
+import { clampMove, MOVE_REACH } from './move-do'
 import type { Voice } from './voice-choice'
 
 /** Sing it's two ladders: the full one, or the smaller one a page offers beside it. */
@@ -152,6 +167,16 @@ export interface LadderVisit {
   readonly celebrated: number | null
   /** Done for today pressed. */
   readonly finished: boolean
+  /** Move do's reach for each voice. */
+  readonly reach: Readonly<Record<Voice, MoveReach>>
+  /** The page offers the faster pass, once a visit. */
+  readonly fasterPass: boolean
+  /** The faster pass is open, on this ladder: from its button to its end. */
+  readonly passing: LadderId | null
+  /** The faster pass has run to its end this visit. */
+  readonly fasterUsed: boolean
+  /** The faster pass was the latest ladder sung: "How did that feel?" asks about it. */
+  readonly passed: boolean
 }
 
 export interface VisitStart {
@@ -159,6 +184,16 @@ export interface VisitStart {
   readonly voice: Voice | null
   readonly sound: boolean
   readonly webAudio: boolean
+  /** Move do's reach for each voice, where a page's is not the kit's four either way. */
+  readonly reach?: Readonly<Record<Voice, MoveReach>>
+  /** The page offers the faster pass. */
+  readonly fasterPass?: boolean
+}
+
+/** Move do's reach either way for both voices unless a page gives its own. */
+const KIT_REACH: Readonly<Record<Voice, MoveReach>> = {
+  lower: MOVE_REACH,
+  higher: MOVE_REACH,
 }
 
 /** The visit as Sing it opens: the full ladder pressed, do where it starts. */
@@ -181,7 +216,16 @@ export const openVisit = (s: VisitStart): LadderVisit => ({
   rest: false,
   celebrated: null,
   finished: false,
+  reach: s.reach ?? KIT_REACH,
+  fasterPass: s.fasterPass ?? false,
+  passing: null,
+  fasterUsed: false,
+  passed: false,
 })
+
+/** Move do's reach for the voice the visit sings in, the lower until one is chosen. */
+export const reachOf = (v: LadderVisit): MoveReach =>
+  v.reach[v.voice ?? 'lower']
 
 export type LadderEvent =
   | { readonly type: 'comfort'; readonly sing: boolean }
@@ -203,6 +247,10 @@ export type LadderEvent =
   | { readonly type: 'took'; readonly kind: TakeKind }
   | { readonly type: 'feel'; readonly feeling: Feeling }
   | { readonly type: 'done' }
+  /** Again, faster pressed. */
+  | { readonly type: 'faster' }
+  /** The faster pass ended: run to its end, or cut short. */
+  | { readonly type: 'passed'; readonly whole: boolean }
 
 /** Ladders sung this visit: every take that heard a voice, abandoned or not. */
 const sungCount = (v: LadderVisit): number => v.takes.filter(isVoiced).length
@@ -219,6 +267,7 @@ function mayTake(v: LadderVisit): boolean {
     v.webAudio &&
     !v.nomic &&
     v.taking === null &&
+    v.passing === null &&
     !v.effort &&
     !v.finished &&
     v.takes.length < MAX_TAKES &&
@@ -230,8 +279,9 @@ function mayTake(v: LadderVisit): boolean {
  * Where the card stands: the comfort check (state 1), the voice choice
  * waiting for one (2), just listening (3), listening with no microphone or
  * no Web Audio (9), the warm-up and briefing (4, 5), a take (6), a take
- * that heard no voice (7), the reading and "How did that feel?" (7, 8), or
- * the takes spent by an abandoned one, Done for today alone.
+ * that heard no voice (7), the reading and "How did that feel?" (7, 8), the
+ * faster pass, or the takes spent by an abandoned one, Done for today
+ * alone.
  */
 export type Stage =
   | 'comfort'
@@ -242,6 +292,7 @@ export type Stage =
   | 'take'
   | 'noVoice'
   | 'reading'
+  | 'faster'
   | 'spent'
 
 export interface LadderOffers {
@@ -265,6 +316,8 @@ export interface LadderOffers {
   readonly startAgain: boolean
   /** The Again buttons, by the ladder each sings: the same ladder, then the smaller after the full. */
   readonly again: readonly LadderId[]
+  /** Again, faster. */
+  readonly faster: boolean
   /** Done for today. */
   readonly done: boolean
   /**
@@ -286,8 +339,8 @@ export interface LadderOffers {
   readonly count: boolean
   /** "If that felt tricky, good: that's learning." */
   readonly tricky: boolean
-  /** "Effortful"'s line, or "Uncomfortable"'s. */
-  readonly closing: 'gentle' | 'enough' | null
+  /** "Effortful"'s line, or "Uncomfortable"'s; or, after the faster pass, its "Easy" and "Workable" line. */
+  readonly closing: 'gentle' | 'enough' | 'faster' | null
   readonly doctor: boolean
   /** Merc celebrates this take. */
   readonly celebrate: boolean
@@ -317,6 +370,7 @@ function stageOf(v: LadderVisit): Stage {
   if (v.comfort === 'listen') return 'listen'
   if (v.nomic || !v.webAudio) return 'nomic'
   if (v.taking !== null) return 'take'
+  if (v.passing !== null) return 'faster'
   const last = v.takes[v.takes.length - 1]
   if (last === undefined) return 'briefing'
   if (isAbandoned(last)) return mayTake(v) ? 'briefing' : 'spent'
@@ -335,6 +389,7 @@ export function offers(v: LadderVisit): LadderOffers {
     moveDo: false,
     startAgain: false,
     again: NONE,
+    faster: false,
     done: false,
     hint: null,
     noVoiceLine: card.noVoiceLine === null ? null : 'noVoiceLast',
@@ -358,6 +413,7 @@ function cardOffers(v: LadderVisit): LadderOffers {
     start: false,
     startAgain: false,
     again: NONE,
+    faster: false,
     done: false,
     hint: null,
     noVoiceLine: null,
@@ -376,6 +432,9 @@ function cardOffers(v: LadderVisit): LadderOffers {
     case 'comfort':
     case 'take':
       return base
+    case 'faster':
+      // the take's lines and lit edges stay: the faster pass reads nothing
+      return { ...base, lines: true }
     case 'voice':
       return { ...base, voiceChoice: true }
     case 'listen':
@@ -419,7 +478,10 @@ function cardOffers(v: LadderVisit): LadderOffers {
   }
 }
 
-/** After a take with voice: the lines, the question, and what its answer leaves. */
+/**
+ * After a take with voice, or the faster pass: the lines, the question,
+ * and what its answer leaves.
+ */
 function readingOffers(v: LadderVisit, base: LadderOffers): LadderOffers {
   const last = v.takes[v.takes.length - 1]
   if (v.feeling === null) return { ...base, ask: true, lines: true }
@@ -430,22 +492,26 @@ function readingOffers(v: LadderVisit, base: LadderOffers): LadderOffers {
         ? openLadders(v)
         : SMALLER
       : NONE
+  const faster = a.again && v.fasterPass && !v.fasterUsed
+  // the faster pass reads nothing: no count, no tricky line, no celebration
+  const scored = !v.passed
   return {
     ...base,
     ask: true,
     locked: true,
     // "Uncomfortable" takes the lines away with the count
     lines: a.count,
-    count: a.count,
-    tricky: a.tricky && last.kind === 'some',
-    closing: a.closing,
+    count: a.count && scored,
+    tricky: scored && a.tricky && last.kind === 'some',
+    closing: a.closing ?? (scored ? null : 'faster'),
     doctor: a.doctor,
     again,
+    faster,
     // do may move before an Again; the Again buttons carry the ladder
     moveDo: again.length > 0,
     done: a.closing !== 'enough',
-    celebrate: v.celebrated === v.takes.length - 1,
-    hint: offBeside(v, 'soundOffAgain', again.length > 0),
+    celebrate: scored && v.celebrated === v.takes.length - 1,
+    hint: offBeside(v, 'soundOffAgain', again.length > 0 || faster),
   }
 }
 
@@ -456,13 +522,18 @@ export function next(v: LadderVisit, e: LadderEvent): LadderVisit {
     case 'comfort':
       return comfortAnswered(v, e.sing)
     case 'voice':
-      return o.voiceChoice ? { ...v, voice: e.voice } : v
+      // do comes back within the new voice's reach
+      return o.voiceChoice
+        ? { ...v, voice: e.voice, shift: clampMove(v.shift, v.reach[e.voice]) }
+        : v
     case 'sound':
       return { ...v, sound: e.on, silentPress: false }
     case 'ladder':
       return o.ladders.includes(e.ladder) ? { ...v, ladder: e.ladder } : v
     case 'move':
-      return o.moveDo ? { ...v, shift: clampMove(v.shift + e.step) } : v
+      return o.moveDo
+        ? { ...v, shift: clampMove(v.shift + e.step, reachOf(v)) }
+        : v
     case 'play':
       return mercPlayed(v, o)
     case 'begin':
@@ -479,6 +550,10 @@ export function next(v: LadderVisit, e: LadderEvent): LadderVisit {
       return o.ask && !o.locked ? answered(v, e.feeling) : v
     case 'done':
       return o.done ? { ...v, finished: true } : v
+    case 'faster':
+      return fasterBegun(v, o)
+    case 'passed':
+      return fasterEnded(v, e.whole)
   }
 }
 
@@ -514,6 +589,7 @@ function took(v: LadderVisit, kind: TakeKind): LadderVisit {
     undo: null,
     takes: [...v.takes, { ladder: v.taking, kind }],
     feeling: null,
+    passed: false,
     // a ladder abandoned after its voice was heard is the visit's one retry
     againUsed: v.againUsed || kind === 'leftVoiced',
   }
@@ -537,7 +613,8 @@ function begin(v: LadderVisit, o: LadderOffers, ladder: LadderId): LadderVisit {
 function answered(v: LadderVisit, f: Feeling): LadderVisit {
   const last = v.takes[v.takes.length - 1]
   const hard = f === 'effortful' || f === 'uncomfortable'
-  const earns = !hard && last.kind === 'all' && v.celebrated === null
+  const earns =
+    !v.passed && !hard && last.kind === 'all' && v.celebrated === null
   return {
     ...v,
     feeling: f,
@@ -545,6 +622,28 @@ function answered(v: LadderVisit, f: Feeling): LadderVisit {
     rest: v.rest || afterFeeling(f, { restAfterEffort: true }).rest,
     celebrated: earns ? v.takes.length - 1 : v.celebrated,
   }
+}
+
+/**
+ * Again, faster: the ladder last sung, at the faster pace. With the sound
+ * off nothing plays, nothing is spent, and the hint says why.
+ */
+function fasterBegun(v: LadderVisit, o: LadderOffers): LadderVisit {
+  if (!o.faster) return v
+  if (!v.sound) return v.silentPress ? v : { ...v, silentPress: true }
+  return { ...v, passing: v.takes[v.takes.length - 1].ladder }
+}
+
+/**
+ * The faster pass ended. Run to its end, it is spent, and the card asks
+ * how it felt; cut short, it is not, the card as it was before its button,
+ * with the hint if the sound went off.
+ */
+function fasterEnded(v: LadderVisit, whole: boolean): LadderVisit {
+  if (v.passing === null) return v
+  if (!whole)
+    return { ...v, passing: null, silentPress: v.silentPress || !v.sound }
+  return { ...v, passing: null, fasterUsed: true, passed: true, feeling: null }
 }
 
 /** The Again buttons' accessible names: the same ladder again, either one, or the smaller after the full. */
@@ -586,4 +685,8 @@ export interface LadderLines {
   readonly feel: string
   readonly gentle: string
   readonly enough: string
+  /** While the faster pass runs: "Sing along as each bead lights, if you like." */
+  readonly passing?: string
+  /** After the faster pass, "Easy" or "Workable": "That's the run, faster." */
+  readonly faster?: string
 }
