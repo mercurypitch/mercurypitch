@@ -4,7 +4,8 @@
 //
 // The page's one drawing of the run (WEB-SPEC, Toys 2, 5 and 6): the kit's
 // band chart on a notes axis from a semitone under do to a semitone over
-// la, each of the run's notes a rung over its slot in the bead style
+// the run's top, la, or so for Sing it's smaller run, each of the run's
+// notes a rung over its slot in the bead style
 // (kit/band-chart-rungs.ts `beads`). The time axis is fixed, 6.75 s across,
 // so a faster tempo draws the same beads closer together at the same
 // heights (FACTS 39). A bead glows and shows its sung name while its note
@@ -12,7 +13,9 @@
 // toy names its rows, "do · D3" to "la · B3"; the hero names nothing, its
 // beads faint until a note sounds (FACTS 11). A line drawn as it goes
 // (`follow`) is asked for each frame until it ends, and stays as it last
-// drew: Play it smudged's illustrated singer, and Sing it's voice. Only a
+// drew: Play it smudged's illustrated singer, and Sing it's voice. Edges
+// another hand lit, Sing it's reading, can be kept through the chart's own
+// repaints (`keep`), as the faster pass keeps the last take's. Only a
 // swell or such a line asks for frames (`wants`); the chart itself paints
 // only what changed.
 
@@ -78,6 +81,8 @@ export interface RunChart {
   rest(): void
   /** A line drawn as it goes, or none. */
   follow(live: LiveLine | null): void
+  /** Edges lit by another hand, a bead each, kept through the chart's repaints; null lets them go, as another run or do does. */
+  keep(lit: readonly boolean[] | null): void
   /** Where bead `i` sits on the canvas, CSS px from its top left. */
   beadAt(i: number): { x: number; y: number }
   /** How far apart neighbouring beads stand, CSS px. */
@@ -96,6 +101,7 @@ export function mountRunChart(root: HTMLElement, o: RunChartOptions): RunChart {
   /** A glow's end, kept from an older `rest` by its round. */
   let round = 0
   let live: LiveLine | null = null
+  let kept: readonly boolean[] | null = null
   let moving = false
 
   /** How far a swell has come since `since`: all the way at once under reduced motion. */
@@ -120,7 +126,7 @@ export function mountRunChart(root: HTMLElement, o: RunChartOptions): RunChart {
         from: slot.from,
         to: slot.to,
         glow: progress(glowing.get(i), now),
-        lit: sung?.lit[i] === true,
+        lit: sung?.lit[i] === true || kept?.[i] === true,
         faint: o.faint === true,
       }),
     )
@@ -152,7 +158,7 @@ export function mountRunChart(root: HTMLElement, o: RunChartOptions): RunChart {
     target: doMidi,
     axis: {
       get notes(): readonly [number, number] {
-        return [doMidi - 1, doMidi + 10]
+        return [doMidi - 1, doMidi + Math.max(...degrees) + 1]
       },
       names: {
         gutter: (ctx) => (o.names ? names : unnamed).gutter(ctx),
@@ -184,6 +190,7 @@ export function mountRunChart(root: HTMLElement, o: RunChartOptions): RunChart {
     setDo(next) {
       if (next === doMidi) return
       doMidi = next
+      kept = null
       names = named()
       chart.setTarget(doMidi)
       redraw()
@@ -191,6 +198,9 @@ export function mountRunChart(root: HTMLElement, o: RunChartOptions): RunChart {
     setDegrees(next) {
       degrees = next
       glowing.clear()
+      kept = null
+      // the window follows the run's top
+      chart.setTarget(doMidi)
       redraw()
     },
     setTempo(next, holdSec = next) {
@@ -217,6 +227,10 @@ export function mountRunChart(root: HTMLElement, o: RunChartOptions): RunChart {
     follow(next) {
       live = next
       if (next === null) chart.scene.line = []
+      redraw()
+    },
+    keep(lit) {
+      kept = lit
       redraw()
     },
     beadAt: (i) => {

@@ -33,6 +33,7 @@ import '@/features/lessons/kit/lesson-stage.css'
 // its chunk for one of its own, which every lesson page would then link
 // after its own sheet (MISTAKES.md, on the lessons' base stylesheet)
 import '@/features/lessons/kit/lesson-parts.css'
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-20.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -46,6 +47,7 @@ import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
+import { initSing } from './sing'
 import { initSteps, toyFor } from './steps'
 import { initWords } from './words'
 
@@ -76,6 +78,9 @@ void import('./recall').then(
 // four words, three of them a figure lit as its play sounds: the run's
 // beads, and the five-note staircase from do and from la
 initWords()
+// Sing it: the run, or the smaller run, sung back a bead at a time, the
+// take's reader and its pitch line loaded with the microphone at Start
+initSing()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(20)
