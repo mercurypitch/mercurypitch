@@ -282,6 +282,8 @@ const NO_FILM = [
   { n: 23, title: 'Perfect, major, minor and the tritone', steps: 4 },
   // it teaches in four steps
   { n: 24, title: 'Harmony against a drone', steps: 4 },
+  // it teaches in four steps
+  { n: 25, title: 'Minor, properly', steps: 4 },
 ] as const
 
 for (const entry of NO_FILM) {
