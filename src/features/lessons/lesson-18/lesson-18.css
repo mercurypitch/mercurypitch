@@ -301,6 +301,11 @@
   width: 100%;
   height: auto;
 }
+/* all six pads one size: the first's number not set larger, as a bar's
+   first is elsewhere, since nothing is grouped yet */
+.l18-tease .rb-pad.one .rb-pad-n {
+  font-size: var(--fs-18);
+}
 /* free play: the reading staff with every play from the steps */
 .l18-free {
   margin-top: 18px;
