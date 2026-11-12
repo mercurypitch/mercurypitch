@@ -10,11 +10,11 @@
 // every ♯ and ♭ is spoken: in words here, and as markup where a line is
 // shown (`signsHtml`). Another scale's stairs (stairs-scales.ts, Lesson
 // 20's pentatonic) are named the same way, from their own degrees: "Stair
-// 2, me, E flat 3", and their summary gives each riser's size.
+// 2, me, E flat 3", printed as do, me, fa, so, te on the minor five, and
+// their summary gives each riser's size.
 
 import { blackKeysOf, MAJOR_DEGREES, MAJOR_STEPS, majorScale, stepSizes, whiteKeysFrom, } from './major-scale'
 import type { NamesMode } from './names-modes'
-import { MAJOR_SOLFEGE } from './names-modes'
 import type { Spelled } from './notes'
 import { signName, signsHtml, wordName } from './notes'
 import type { Degrees } from './stairs-scales'
@@ -27,11 +27,26 @@ const STEP_WORD = { T: 'tone', S: 'semitone' } as const
 const plain = (s: Spelled): string => signName(s, { octave: false })
 const spoken = (s: Spelled): string => wordName(s, { octave: false })
 
-/** Stair `i`'s name in a mode: its letter, its number (1 to 7, then 1 at the top) or its sung name. */
-export function stairName(i: number, tonic: number, mode: NamesMode): string {
-  if (mode === 'numbers') return i === 7 ? '1' : String(i + 1)
-  if (mode === 'solfege') return MAJOR_SOLFEGE[i]
-  return plain(majorScale(tonic)[i])
+/**
+ * Stair `i`'s name in a mode: its letter, its number (1 to 7, then 1 at
+ * the top) or its sung name. Another scale's stairs take theirs from its
+ * own degrees: the major five's numbers are 1, 2, 3, 5, 6 and 1, and a
+ * degree outside the major scale, the minor five's me, is named by its
+ * syllable in Numbers too.
+ */
+export function stairName(
+  i: number,
+  tonic: number,
+  mode: NamesMode,
+  degrees: Degrees = MAJOR_DEGREES,
+): string {
+  const d = degrees[i]
+  if (mode === 'numbers') {
+    const k = MAJOR_DEGREES.indexOf(d % 12)
+    return k === -1 ? syllableOf(d) : String(k + 1)
+  }
+  if (mode === 'solfege') return syllableOf(d)
+  return plain(spellDegrees(tonic, degrees)[i])
 }
 
 /**

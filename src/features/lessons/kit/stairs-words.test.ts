@@ -3,6 +3,8 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import type { NamesMode } from './names-modes'
+import type { Degrees } from './stairs-scales'
 import { MAJOR_FIVE, MINOR_FIVE } from './stairs-scales'
 import { readout, risersSaid, scaleName, sliderText, stairLabel, stairName, stopSaid, summary, whiteKeysSaid, } from './stairs-words'
 
@@ -64,6 +66,54 @@ describe('stairName', () => {
       'E♭',
     ])
     expect(stairName(6, 66, 'letters')).toBe('E♯')
+  })
+
+  it("names another scale's stairs from its own degrees: the major five on C, and the minor five on A (Lesson 20)", () => {
+    // Act
+    const names = (tonic: number, degrees: Degrees, mode: NamesMode) =>
+      degrees.map((_d, i) => stairName(i, tonic, mode, degrees))
+
+    // Assert
+    expect(names(60, MAJOR_FIVE, 'solfege')).toEqual([
+      'do',
+      're',
+      'mi',
+      'so',
+      'la',
+      'do',
+    ])
+    expect(names(60, MAJOR_FIVE, 'letters')).toEqual([
+      'C',
+      'D',
+      'E',
+      'G',
+      'A',
+      'C',
+    ])
+    expect(names(60, MAJOR_FIVE, 'numbers')).toEqual([
+      '1',
+      '2',
+      '3',
+      '5',
+      '6',
+      '1',
+    ])
+    expect(names(57, MINOR_FIVE, 'solfege')).toEqual([
+      'do',
+      'me',
+      'fa',
+      'so',
+      'te',
+      'do',
+    ])
+    expect(names(57, MINOR_FIVE, 'letters')).toEqual([
+      'A',
+      'C',
+      'D',
+      'E',
+      'G',
+      'A',
+    ])
   })
 })
 
