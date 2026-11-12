@@ -13,12 +13,15 @@
 // only while something it shows moves or has changed, so a still staircase
 // asks the page's frame loop for nothing (frame-loop.ts, `wants`). A page
 // whose staircase changes octave hands it new starts (`setRange`): Lesson
-// 21's stands on G2 or G4 by the learner's clef.
+// 21's stands on G2 or G4 by the learner's clef. A page may draw another
+// scale's stairs and change them as it goes (`degrees`, `setDegrees`):
+// Lesson 20's leaves fa and ti out, then starts the five on la, each stair
+// with both its names and each riser with its size in semitones.
 
 import { clamp } from './dom'
 import type { Surface } from './frame-loop'
 import { addDrawer, surface, wake } from './frame-loop'
-import { scaleNotes, whiteKeysFrom } from './major-scale'
+import { MAJOR_DEGREES, whiteKeysFrom } from './major-scale'
 import { reducedMotion } from './motion-switch'
 import type { NamesMode } from './names-modes'
 import { COLOR, hz } from './notes'
@@ -30,6 +33,7 @@ import type { StairsLayout, StairsMode, StairsRange } from './stairs-geometry'
 import { floorOf, fullMode, stairsLayout } from './stairs-geometry'
 import type { NoteEvent } from './stairs-plays'
 import { lengthOf } from './stairs-plays'
+import type { Degrees } from './stairs-scales'
 
 export interface StairsCoreOptions {
   readonly canvas: HTMLCanvasElement
@@ -45,6 +49,12 @@ export interface StairsCoreOptions {
   readonly onLayout?: (layout: StairsLayout) => void
   /** How many stairs it draws, from do up: eight, do to do, unless a page draws fewer (Lesson 16's five). */
   readonly count?: number
+  /** The stairs it draws as semitones above do, in place of `count`'s: another scale's (Lesson 20's pentatonic). */
+  readonly degrees?: Degrees
+  /** Each stair's sung name over its letter, in place of the names mode (Lesson 20). */
+  readonly both?: boolean
+  /** Each riser's size as a number of semitones, in place of T and S (Lesson 20). */
+  readonly numbers?: boolean
 }
 
 /** How a played run lights the drawing. */
@@ -62,8 +72,12 @@ export interface StairsCore {
   readonly tonic: number
   readonly busy: boolean
   readonly layout: StairsLayout | null
+  /** The stairs it draws, as semitones above do. */
+  readonly degrees: Degrees
   /** A slide: silent, the staircase keeping its shape, kept within its starts. */
   setTonic(midi: number): void
+  /** Other stairs, at once: what plays stops (Lesson 20's fa and ti left out, and its minor five). */
+  setDegrees(degrees: Degrees): void
   /** New starts: what plays stops, and the staircase stands on the lowest at once. */
   setRange(range: StairsRange): void
   /** Seconds a slide's travel takes (none under reduced motion). */
@@ -135,6 +149,8 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
   const coarse = window.matchMedia('(pointer: coarse)').matches
   let { lo, hi } = opts.range
   let floor = floorOf(opts.range)
+  let degrees: Degrees =
+    opts.degrees ?? MAJOR_DEGREES.slice(0, opts.count ?? MAJOR_DEGREES.length)
   let tonic = lo
   let view = lo
   let travelFrom = lo
@@ -182,6 +198,9 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
     }
     return {
       tonic,
+      degrees,
+      both: opts.both === true,
+      numbers: opts.numbers === true,
       names: opts.compact ? 'solfege' : (opts.names?.() ?? 'letters'),
       steps: sw.steps,
       gold: sw.gold,
@@ -251,8 +270,8 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
       h,
       names: opts.compact ? 'solfege' : (opts.names?.() ?? 'letters'),
     }
-    layout = stairsLayout(modeFor(w, h), w, h, view, floor, opts.count)
-    const key = `${layout.mode} ${w} ${h} ${view.toFixed(3)} ${floor}`
+    layout = stairsLayout(modeFor(w, h), w, h, view, floor, degrees)
+    const key = `${layout.mode} ${w} ${h} ${view.toFixed(3)} ${floor} ${degrees.join()}`
     if (key !== lastKey) {
       lastKey = key
       opts.onLayout?.(layout)
@@ -282,7 +301,9 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
   }
 
   function stairOf(midi: number, overlay: boolean): number {
-    const notes = overlay ? (whiteKeysFrom(tonic) ?? []) : scaleNotes(tonic)
+    const notes = overlay
+      ? (whiteKeysFrom(tonic) ?? [])
+      : degrees.map((d) => tonic + d)
     return notes.indexOf(midi)
   }
 
@@ -299,6 +320,9 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
     get switches() {
       return sw
     },
+    get degrees() {
+      return degrees
+    },
     get travel() {
       return reducedMotion() ? 0 : TRAVEL_SEC
     },
@@ -310,6 +334,11 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
       tonic = next
       // the overlay follows a slide (the toy turns it off for a black start)
       if (sw.white) whiteFrom = tonic
+      changed()
+    },
+    setDegrees(next) {
+      clearRun()
+      degrees = next
       changed()
     },
     setRange(range) {
