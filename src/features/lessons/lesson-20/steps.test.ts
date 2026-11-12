@@ -324,6 +324,25 @@ describe('Steps 3 and 4: the run', () => {
     )
   })
 
+  it('takes the smudged line and its tag away once the beads move: a notch down, or Step 4', () => {
+    // Arrange
+    const deck = mountSteps()
+    deck.show(3)
+    click('#toyRun [data-run-play="smudged"]')
+    const tagged = !el('#toyRun [data-run-illustration]').hidden
+
+    // Act: the Notice's notch back, then smudged again and on to Step 4
+    click('#toyRun [data-tempo="0.3"]')
+    const afterNotch = !el('#toyRun [data-run-illustration]').hidden
+    click('#toyRun [data-run-play="smudged"]')
+    deck.show(4)
+
+    // Assert: the line was sung at 0.2 s, so it goes as its beads move
+    expect(tagged).toBe(true)
+    expect(afterNotch).toBe(false)
+    expect(el('#toyRun [data-run-illustration]').hidden).toBe(true)
+  })
+
   it('holds Step 4 at 0.45 s with Staccato · Legato, and staccato sings nine 0.15 s notes on a short envelope', () => {
     // Arrange
     const deck = mountSteps()

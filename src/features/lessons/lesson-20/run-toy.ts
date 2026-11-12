@@ -14,7 +14,8 @@
 // violet line labelled "An illustration", the four notes that land
 // lighting their edges, the five that slip out of their bands not
 // (FACTS 82a). Nothing of Merc's plays then, nothing scores it, and the
-// line stays until the next play. Nothing here listens.
+// line stays until the next play, or until a tempo change moves the beads
+// from under it, since it was sung at 0.2 s. Nothing here listens.
 //
 // See it on the staff (a switch, off at first) shows Lesson 15's staff toy
 // under the beads in the learner's clef, bass for the lower voice and treble
@@ -352,6 +353,7 @@ export function mountRunToy(
       kind: 'soft',
     })
     // the line stays, whole or where a stop left it, until the next play
+    // or a tempo change (`setTempo`)
     return end(press, await run.done)
   }
 
@@ -411,6 +413,8 @@ export function mountRunToy(
   function setTempo(every: number): void {
     if (every === tempo) return
     halt()
+    // the beads move: a smudged line sung at another tempo goes, with its tag
+    clearSmudge()
     tempo = every
     tempoBtns.forEach((b) =>
       b.setAttribute('aria-pressed', String(Number(b.dataset.tempo) === every)),
