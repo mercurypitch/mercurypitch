@@ -75,10 +75,10 @@ describe('lessonRows', () => {
     )
   })
 
-  it('reads every Season 2 lesson but Lessons 15 to 19 and 21 to 24 as planned, with no page and nothing to publish', () => {
+  it('reads every Season 2 lesson but Lessons 15 to 24 as planned, with no page and nothing to publish', () => {
     // Act
     const withPage = (n: number): boolean =>
-      [15, 16, 17, 18, 19, 21, 22, 23, 24].includes(n)
+      [15, 16, 17, 18, 19, 20, 21, 22, 23, 24].includes(n)
     const rows = lessonRows().filter(
       (row) => row.lesson.n >= 15 && !withPage(row.lesson.n),
     )
