@@ -14,8 +14,11 @@
 // nine short notes, 0.15 s each, a note every 0.45 s, each its own voice on
 // a short envelope that ends before the next note starts (FACTS 31); and
 // Play it smudged's illustrated singer in the soft tone, each note gliding
-// for 0.12 s of its 0.2 s and landing short (FACTS 82a).
+// for 0.12 s of its 0.2 s and landing short (FACTS 82a). Sing it's runs
+// are Merc's notes, the run or the smaller run, do, re, mi, so, mi, re and
+// do, a note every 0.75 s, or 0.45 s in the faster pass (FACTS 50, 63).
 
+import type { LadderId } from '@/features/lessons/kit/ladder-flow'
 import { hz } from '@/features/lessons/kit/notes'
 import type { RunNote } from '@/features/lessons/kit/run'
 import type { ContourPoint } from '@/features/lessons/kit/sound'
@@ -36,6 +39,21 @@ export const RUN_DEGREES: readonly number[] = [0, 2, 4, 7, 9, 7, 4, 2, 0]
 
 /** Each note's sung name, in order. */
 export const RUN_NAMES: readonly string[] = RUN_DEGREES.map(syllableOf)
+
+/** Sing it's smaller run: do, re, mi, so, mi, re, do (FACTS 50). */
+export const SMALLER_DEGREES: readonly number[] = [0, 2, 4, 7, 4, 2, 0]
+
+/** Sing it's two runs, by the kit's ladder ids. */
+export const RUNS: Readonly<Record<LadderId, readonly number[]>> = {
+  full: RUN_DEGREES,
+  smaller: SMALLER_DEGREES,
+}
+
+/** Sing it's pace: Merc's note and the take's slot, s (FACTS 50). */
+export const SING_SLOT_SEC = 0.75
+
+/** The faster pass's pace, s a note (FACTS 63). */
+export const FASTER_SEC = 0.45
 
 /** Tempo's five notches, s a note, slowest first (FACTS 39). */
 export const TEMPOS: readonly number[] = [0.75, 0.6, 0.45, 0.3, 0.2]
@@ -71,13 +89,14 @@ const BAND_CENTS = 35
 export const smudgeLands = (i: number): boolean =>
   Math.abs(SMUDGE.cents[i]) <= BAND_CENTS
 
-/** The run's notes on `doMidi`, a note every `every` s, each `hold` s long (the slot unless staccato). */
+/** The run's notes on `doMidi`, a note every `every` s, each `hold` s long (the slot unless staccato); Sing it's smaller run by its `degrees`. */
 export function runNotes(
   doMidi: number,
   every: number,
   hold = every,
+  degrees: readonly number[] = RUN_DEGREES,
 ): RunNote[] {
-  return RUN_DEGREES.map((d, i) => ({
+  return degrees.map((d, i) => ({
     t: Math.round(i * every * 1000) / 1000,
     midi: doMidi + d,
     dur: hold,
