@@ -19,7 +19,10 @@
 // the first note lights and the take reads along (sing-take.ts, loaded on
 // the first Start): nothing plays during a take, and each next note lights
 // as the voice passes the one lit, while Merc and Tavi listen in the hero
-// (kit/merc-duo.ts `mercListen`). Then the pitch line, drawn only now
+// (kit/merc-duo.ts `mercListen`) and nothing else on the page plays: every
+// other play button is disabled until the take ends, and a press on one
+// enabled since, or a tap on a figure, falls on nothing, as on Lesson 22's
+// page (WEB-SPEC, Tests 17). Then the pitch line, drawn only now
 // (sing-chart.ts), the lines, one a note, and "How did that feel?". Beside
 // the staff stands the still of the one who sings: Merc for the lower
 // voice, Tavi for the higher. Nothing celebrates a note.
@@ -83,6 +86,35 @@ const STILL: Readonly<Record<Voice, { src: string; alt: string }>> = {
     alt: 'Tavi, who sings the start for the higher voice',
   },
 }
+
+/** Every play button on the page outside Sing it: none sounds during a take. */
+export const PAGE_PLAYS =
+  '[data-play], [data-staff-play], [data-stairs-play], [data-word-play], [data-quiz-play]'
+
+/** The figures a tap or a key plays: the steps' staircase and staves, and free play's. */
+const FIGURE_PLAYS = '[data-stairs-viz], [data-staff-viz]'
+
+/** The keys that move or play a figure. */
+const FIGURE_KEYS = new Set([
+  'ArrowUp',
+  'ArrowDown',
+  'ArrowLeft',
+  'ArrowRight',
+  'Home',
+  'End',
+])
+
+/** Whether `e` would play something outside Sing it: a press on a play, a tap on a figure, or a key that moves one. */
+function playsElsewhere(e: Event): boolean {
+  const t = e.target
+  if (!(t instanceof Element) || t.closest('#sing') !== null) return false
+  if (e instanceof KeyboardEvent)
+    return FIGURE_KEYS.has(e.key) && t.closest(FIGURE_PLAYS) !== null
+  return t.closest(`${PAGE_PLAYS}, ${FIGURE_PLAYS}`) !== null
+}
+
+/** The events a play or a figure answers. */
+const PLAY_EVENTS = ['pointerdown', 'click', 'keydown'] as const
 
 /** The syllable a degree from do is sung on. */
 const SYLLABLES = ['Do', 'Re', 'Mi', 'Fa', 'So'] as const
@@ -269,10 +301,32 @@ export function initSing(
     )
   }
 
-  /** Merc and Tavi listen while a take runs, and stand easy after it. */
+  // the plays a take disabled, given back as it ends
+  let held: HTMLButtonElement[] = []
+  const hush = (): void => undefined
+  const letFall = (e: Event): void => {
+    if (!root.isConnected || !playsElsewhere(e)) return
+    e.preventDefault()
+    e.stopImmediatePropagation()
+  }
+
+  /** While a take runs Merc and Tavi listen, and nothing else on the page plays. */
   function listening(on: boolean): void {
     mercListen('blue', on)
     mercListen('orange', on)
+    for (const b of held) b.disabled = false
+    held = on
+      ? qa<HTMLButtonElement>(PAGE_PLAYS).filter(
+          (b) => !b.disabled && b.closest('#sing') === null,
+        )
+      : []
+    for (const b of held) b.disabled = true
+    for (const type of PLAY_EVENTS)
+      if (on) document.addEventListener(type, letFall, true)
+      else document.removeEventListener(type, letFall, true)
+    // a sound still going as the take opens stops
+    if (on) NowPlaying.claim(hush)
+    else NowPlaying.release(hush)
   }
 
   /** Ends a Start before its take: the microphone let go, and no take counted. */
