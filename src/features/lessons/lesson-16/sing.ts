@@ -18,8 +18,11 @@
 // so the start never shows where mi or so sit (FACTS 42). 0.4 s after it
 // the first note lights and the take reads along (sing-take.ts, loaded on
 // the first Start): nothing plays during a take, and each next note lights
-// as the voice passes the one lit. Then the lines, one a note, and "How did
-// that feel?".
+// as the voice passes the one lit, while Merc and Tavi listen in the hero
+// (kit/merc-duo.ts `mercListen`). Then the pitch line, drawn only now
+// (sing-chart.ts), the lines, one a note, and "How did that feel?". Beside
+// the staff stands the still of the one who sings: Merc for the lower
+// voice, Tavi for the higher. Nothing celebrates a note.
 //
 // The start, Play the start and Play Merc's phrases are the page's one
 // sound (kit/now-playing.ts). Sound turned off during the start ends it
@@ -33,6 +36,7 @@ import type { Feeling } from '@/features/lessons/kit/comfort'
 import { mountComfort, mountFeelings, VisitEnding, } from '@/features/lessons/kit/comfort'
 import { q, qa } from '@/features/lessons/kit/dom'
 import { onLeave } from '@/features/lessons/kit/leave'
+import { mercListen } from '@/features/lessons/kit/merc-duo'
 import { MicHold } from '@/features/lessons/kit/mic-hold'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type { Run } from '@/features/lessons/kit/run'
@@ -42,7 +46,10 @@ import type { StaffState, StaffToy } from '@/features/lessons/kit/staff'
 import { mountStaff } from '@/features/lessons/kit/staff'
 import type { Clef } from '@/features/lessons/kit/staff-places'
 import { clefForVoice, midiOf } from '@/features/lessons/kit/staff-places'
+import type { Voice } from '@/features/lessons/kit/voice-choice'
 import { bindVoiceButtons, VoiceChoice, } from '@/features/lessons/kit/voice-choice'
+import mercBlue from '@/features/lessons/lesson-01/assets/merc-blue.png'
+import mercOrange from '@/features/lessons/lesson-01/assets/merc-orange.png'
 import type { PhraseId, SingEvent, SingView, SingVisit } from './sing-flow'
 import { HINT, nextVisit, openVisit, viewOf } from './sing-flow'
 import type * as TakeKit from './sing-take'
@@ -60,6 +67,18 @@ export const hasWebAudio = (): boolean =>
   typeof window.AudioContext === 'function' ||
   typeof (window as { webkitAudioContext?: unknown }).webkitAudioContext ===
     'function'
+
+/** The still beside the staff: the one who sings, for each voice. */
+const STILL: Readonly<Record<Voice, { src: string; alt: string }>> = {
+  lower: {
+    src: mercBlue,
+    alt: 'Merc, who sings the start for the lower voice',
+  },
+  higher: {
+    src: mercOrange,
+    alt: 'Tavi, who sings the start for the higher voice',
+  },
+}
 
 /** The syllable a degree from do is sung on. */
 const SYLLABLES = ['Do', 'Re', 'Mi', 'Fa', 'So'] as const
@@ -103,6 +122,9 @@ export function initSing(
   const namesSeg = q('[data-sing-names]', root)
   const hint = q('#startHint', root)
   const readings = q<HTMLOListElement>('[data-readings]', root)
+  const live = q('#singLive', root)
+  const chart = q('#singChart', live)
+  const still = q<HTMLImageElement>('.sing-merc', staffRoot)
   const button = (name: string): HTMLButtonElement =>
     q<HTMLButtonElement>(`[data-sing="${name}"]`, root)
   const loadTake = o.loadTake ?? (() => import('./sing-take'))
@@ -130,10 +152,15 @@ export function initSing(
     state: singStaff(1, clef(), true),
     owner: NowPlaying,
   })
+  show(1)
 
+  /** The staff shows phrase `id`, and the still the one who sings it. */
   function show(id: PhraseId): void {
     shown = id
     staff.setState(singStaff(id, clef(), id === 1 ? true : names2))
+    const s = STILL[clef() === 'bass' ? 'lower' : 'higher']
+    if (still.getAttribute('src') !== s.src) still.src = s.src
+    still.alt = s.alt
   }
 
   function say(text: string | null): void {
@@ -201,6 +228,8 @@ export function initSing(
       p.hidden = p.dataset.after !== v.closing
     q('[data-after-cue]', card).hidden = !v.cue
     for (const d of qa<HTMLElement>('.doctor', card)) d.hidden = !v.doctor
+    // the pitch line and the lines: after a take with voice, never during one
+    live.hidden = !v.readings
     readings.hidden = !v.readings || readings.childElementCount === 0
   }
 
@@ -234,6 +263,12 @@ export function initSing(
         return li
       }),
     )
+  }
+
+  /** Merc and Tavi listen while a take runs, and stand easy after it. */
+  function listening(on: boolean): void {
+    mercListen('blue', on)
+    mercListen('orange', on)
   }
 
   /** Ends a Start before its take: the microphone let go, and no take counted. */
@@ -281,25 +316,30 @@ export function initSing(
   async function take(phrase: PhraseId): Promise<void> {
     staff.light(0)
     send({ type: 'listen' })
+    listening(true)
     const kit = await loadTake()
+    const notes = phraseOf(phrase, clef()).map(midiOf)
+    const labels = labelsOf(phrase)
     const end =
       mic.mod === null || mic.listener === null
         ? null
         : await kit.runTake({
             mod: mic.mod,
             listener: mic.listener,
-            notes: phraseOf(phrase, clef()).map(midiOf),
-            labels: labelsOf(phrase),
+            notes,
+            labels,
             light: (i) => staff.light(i),
             cancelled: () => leaving,
           })
     mic.release()
+    listening(false)
     staff.light(null)
     if (end === null || end.kind === 'left') {
       send({ type: 'took', voiced: true, abandoned: true })
       return
     }
     writeLines(end.lines)
+    if (end.pitch !== null) kit.drawPitchLine(chart, end.pitch, notes, labels)
     feelings.reset()
     send({ type: 'took', voiced: end.voiced, abandoned: false })
   }

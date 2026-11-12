@@ -10,9 +10,10 @@
    Here: the hero's treble staff between Merc and Tavi, with the two plays
    under it; the stage's staircase over the staff that it turns into, then
    the staff toy alone (WEB-SPEC, Toys 2 and 3); Tavi's line in Step 2; Sing
-   it's staff; and the Wrap's cards, with the next card's tease still and
-   free play. No decorative staff: the section heads carry none, and the
-   body's season-2 class drops the background's (kit/lesson-base.css). */
+   it's staff with its still, and the pitch line and the lines after a take;
+   and the Wrap's cards, with the next card's tease still and free play. No
+   decorative staff: the section heads carry none, and the body's season-2
+   class drops the background's (kit/lesson-base.css). */
 
 @import '../kit/lesson-staff.css';
 @import '../kit/lesson-stairs.css';
@@ -243,20 +244,71 @@
   font-size: var(--fs-14);
   color: var(--ink-3);
 }
-/* the learner's staff: five notes 52 px apart on a 26 px staff space on a
-   phone (WEB-SPEC, Toys 6) */
+/* the learner's staff, with the still of the one who sings beside it, as
+   Lessons 15 and 23 stand it; on a phone, five notes 52 px apart on a 26 px
+   staff space (WEB-SPEC, Toys 6) */
 .l16-sing-staff {
   margin-top: 14px;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 12px;
+  align-items: center;
 }
 .l16-sing-staff .viz {
   height: 230px;
 }
-.l16-sing-staff .seg {
-  margin-top: 10px;
+.l16-sing-staff .sing-merc {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
 }
+.l16-sing-staff .seg {
+  grid-column: 1 / -1;
+}
+/* the pitch line under the staff after a take, and one line a note under it,
+   each led by its syllable */
+.l16-sing .sing-chart {
+  height: 200px;
+}
+/* the octave tag in the chart's top right corner, clear of the rows' names
+   at the left and above the top note's band: each phrase ends low, on do */
+.l16-sing .octave-tag {
+  top: 4px;
+  right: 8px;
+  bottom: auto;
+  left: auto;
+}
+.l16-sing .phrase-readings {
+  margin: 12px 0 0;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  gap: 6px;
+  color: var(--ink-2);
+}
+/* on a phone the staff takes the card's width and the still stands under
+   it, beside the Names switch; the pitch line is 160 px tall */
 @media (max-width: 560px) {
+  .l16-sing-staff {
+    grid-template-columns: minmax(0, 1fr) 56px;
+    row-gap: 10px;
+  }
   .l16-sing-staff .viz {
+    grid-column: 1 / -1;
     height: 210px;
+  }
+  .l16-sing-staff .seg {
+    grid-row: 2;
+    grid-column: 1;
+  }
+  .l16-sing-staff .sing-merc {
+    grid-row: 2;
+    grid-column: 2;
+    width: 56px;
+    height: 56px;
+  }
+  .l16-sing .sing-chart {
+    height: 160px;
   }
 }
 
