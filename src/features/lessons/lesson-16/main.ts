@@ -50,6 +50,7 @@ import { initQuizzes } from './recall'
 import { initSing } from './sing'
 import { initSteps, TOYS } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -75,6 +76,9 @@ initWords()
 // Sing it: two phrases from the page, each found from do, the microphone
 // asked for only by Start, the take's reader loaded with it
 initSing()
+// the Wrap: the practice card's rest line, free play on the learner's
+// staff, and Lesson 17's still, drawn after first paint
+initWrap()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(16)
