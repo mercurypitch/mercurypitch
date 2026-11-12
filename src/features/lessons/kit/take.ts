@@ -35,9 +35,12 @@
 // its band glowed, or else the first frame `preprocess` keeps, which on the
 // same frames is that frame too. Each slot is read by `readTake` against its
 // rung, unchanged, so the attack trim takes the move from the note before,
-// and the run counts one take a slot. A rung's line (`rungLine`) leaves off
-// the advice to listen or try again: the lines stay on screen after an
-// answer that ends the singing (Lesson 9 FACTS 79).
+// and the run counts one take a slot. A ladder of shorter notes passes the
+// reader its own attack and steady voice (`ReadOptions`): Lesson 20's run,
+// a note every 0.75 s, drops 0.15 s and needs 0.45 s, where Lesson 9's 1.5 s
+// notes keep the kit's 0.3 s and 0.6 s (Lesson 20 FACTS 56). A rung's line
+// (`rungLine`) leaves off the advice to listen or try again: the lines stay
+// on screen after an answer that ends the singing (Lesson 9 FACTS 79).
 //
 // A phrase (Lesson 14) is read for the notes it ran over and nothing else
 // (`readRange`): the 10th and 90th percentiles of its voiced frames' pitch,
@@ -141,16 +144,26 @@ const notSteady: TakeReading = {
   octaveLine: null,
 }
 
+/** How a take is read: the attack it drops and the steady voice it needs, seconds. */
+export interface ReadOptions {
+  /** The attack dropped from the take's first voiced frame (`ATTACK_SEC`). */
+  readonly attackSec?: number
+  /** The voice it needs after the attack to be read (`STEADY_SEC`). */
+  readonly steadySec?: number
+}
+
 /** Reads one take: the raw frames of a sung reply against Merc's note (MIDI). */
 export function readTake(
   frames: readonly F0Frame[],
   target: number,
+  o: ReadOptions = {},
 ): TakeReading {
   const voiced = preprocess(frames)
   if (voiced.length === 0) return notSteady
   const onset = voiced[0].t
-  const kept = voiced.filter((v) => v.t >= onset + ATTACK_SEC)
-  if (kept.length * estimateFrameHop(voiced) < STEADY_SEC) return notSteady
+  const kept = voiced.filter((v) => v.t >= onset + (o.attackSec ?? ATTACK_SEC))
+  if (kept.length * estimateFrameHop(voiced) < (o.steadySec ?? STEADY_SEC))
+    return notSteady
   const diffs = kept.map((v) => v.cents - target * 100)
   const d = median(diffs.map(foldCents))
   const octaves = Math.round(median(diffs) / 1200)
@@ -308,7 +321,7 @@ export function rungLine(
   return `${label} · ${readingWords(r.d, whose)}${octave}`
 }
 
-export interface LadderOptions {
+export interface LadderOptions extends ReadOptions {
   /** Seconds of each rung's slot (`LADDER_SLOT_SEC`). */
   readonly slotSec?: number
   /**
@@ -353,6 +366,7 @@ export function readLadder(
     readTake(
       frames.filter((f) => f.t >= edge(k) && f.t < edge(k + 1)),
       rung,
+      o,
     ),
   )
   return { heard: true, slots, count: countRun(slots.map((s) => [s])) }
