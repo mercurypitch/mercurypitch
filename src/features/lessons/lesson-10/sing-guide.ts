@@ -21,6 +21,7 @@
 // readout names do in Lesson 4's names for the key, "do is E3", from "do
 // is C3" to "do is A♭3", every sign spoken (FACTS 64).
 
+import { FIFTH, THIRD_OF } from '@/features/lessons/kit/chords'
 import { majorScale } from '@/features/lessons/kit/major-scale'
 import { clampMove } from '@/features/lessons/kit/move-do'
 import { MAJOR_SOLFEGE, MINOR_SOLFEGE, } from '@/features/lessons/kit/names-modes'
@@ -28,7 +29,6 @@ import { nameHtml } from '@/features/lessons/kit/notes'
 import type { RunNote } from '@/features/lessons/kit/run'
 import type { GuidePoint, GuideRow } from '@/features/lessons/kit/slide-guide'
 import type { Voice } from '@/features/lessons/kit/voice-choice'
-import { FIFTH, THIRD_OF } from './chords'
 
 /** Do before Move do: E3 for the lower voice, E4 for the higher (FACTS 63). */
 export const SING_DO: Readonly<Record<Voice, number>> = {

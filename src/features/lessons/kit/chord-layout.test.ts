@@ -1,24 +1,24 @@
 // ============================================================
-// Lesson 10 chord layout tests — 44 px targets, none overlapping, at every width
+// Chord layout tests — 44 px targets, none overlapping, at every width
 // ============================================================
 //
-// WEB-SPEC, Tests 6 (FACTS 82): at every width every bead target and gap
-// button is at least 44 px each way and none overlaps another; the full
-// figure is 340 px tall; the compact layout fits 150 px with the same
+// Lesson 10's WEB-SPEC, Tests 6 (FACTS 82): at every width every bead target
+// and gap button is at least 44 px each way and none overlaps another; the
+// full figure is 340 px tall; the compact layout fits 150 px with the same
 // targets and is the one drawn below 340 px; the gap buttons' centres sit
-// 52.5 px apart. FACTS 82's figure is 310 px wide on a 344 px page and 651
-// px on a 1440 px one, and a phone's spans its card up to 960 px, so every
-// figure width from 310 to 1440 px holds every page from 344 to 1440 px:
-// each test walks all of them, in every state, on every root, in both
-// qualities and in both layouts.
+// 52.5 px apart. FACTS 82's figure is 310 px wide on a 344 px page and 651 px
+// on a 1440 px one, and a phone's spans its card up to 960 px, so every
+// figure width from 310 to 1440 px holds every page from 344 to 1440 px: each
+// test walks all of them, in every state, on every root, in both qualities
+// and in both layouts.
 
 import { describe, expect, it } from 'vitest'
-import type { Rect } from '@/features/lessons/kit/tune-line-layout'
-import { MIN_TARGET, overlaps } from '@/features/lessons/kit/tune-line-layout'
 import type { BeadState, ChordLayout } from './chord-layout'
 import { chordLayout, FULL_H, modeFor, targetsOf } from './chord-layout'
 import type { Quality } from './chords'
 import { QUALITIES, ROOTS, scaleOf, thirdOf, triad, WINDOW } from './chords'
+import type { Rect } from './tune-line-layout'
+import { MIN_TARGET, overlaps } from './tune-line-layout'
 
 /** Every figure width from the 344 px page's 310 px to 1440 px. */
 const WIDTHS = Array.from({ length: 1440 - 310 + 1 }, (_, i) => 310 + i)

@@ -20,10 +20,10 @@
 // between two quavers as well as during one. A silent one plays on, its
 // visuals with it, as the kit's silent runs do.
 
+import type { Quality } from '@/features/lessons/kit/chords'
 import type { Run, RunNote } from '@/features/lessons/kit/run'
 import { playNotes } from '@/features/lessons/kit/run'
 import { onStopAll } from '@/features/lessons/kit/sound'
-import type { Quality } from './chords'
 import type { Tempo } from './sounds'
 import { PATTERN, patternSound, QUAVER } from './sounds'
 

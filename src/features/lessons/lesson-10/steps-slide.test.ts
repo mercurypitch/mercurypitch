@@ -17,11 +17,11 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
+import type { BeadsScene } from '@/features/lessons/kit/chord-beads-draw'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type * as RunModule from '@/features/lessons/kit/run'
 import type { RecordedRun } from '@/features/lessons/kit/run-recorder.test-fixtures'
 import { resetRuns, runs, } from '@/features/lessons/kit/run-recorder.test-fixtures'
-import type { BeadsScene } from './chord-beads-draw'
 import { el, mountSteps, settle, soundOn } from './page-dom.test-fixtures'
 
 vi.mock('@/features/lessons/kit/run', async (actual) => ({

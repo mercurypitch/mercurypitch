@@ -1,22 +1,23 @@
 // ============================================================
-// Lesson 10 chords tests — every triad and scale spelled, sized and named
+// Chords tests — every triad and scale spelled, sized and named
 // ============================================================
 //
-// WEB-SPEC, Tests 1 and 2: FACTS 19's fourteen triads and FACTS 27's
-// fourteen scales, spelled one letter per degree with no double sign and no
-// E♯, B♯, C♭ or F♭; C minor's third is E♭4, never D♯4; major is 4 then 3
-// semitones and minor 3 then 4, both 7 to the fifth (FACTS 17); in the cold
-// open C, E♭, G is minor and C, E, G♭ is neither (FACTS 41b); B, E, G
-// stacks in thirds as E, G, B, E minor (FACTS 41a); natural minor steps 2,
-// 1, 2, 2, 1, 2, 2 and lowers degrees 3, 6 and 7 (FACTS 22, 24). And the
-// slide's roots and the window every chord stays inside (FACTS 70a).
+// Lesson 10's WEB-SPEC, Tests 1 and 2, and its FACTS: FACTS 19's fourteen
+// triads and FACTS 27's fourteen scales, spelled one letter per degree with
+// no double sign and no E♯, B♯, C♭ or F♭; C minor's third is E♭4, never D♯4;
+// major is 4 then 3 semitones and minor 3 then 4, both 7 to the fifth (FACTS
+// 17); in the cold open C, E♭, G is minor and C, E, G♭ is neither (FACTS
+// 41b); B, E, G stacks in thirds as E, G, B, E minor (FACTS 41a); natural
+// minor steps 2, 1, 2, 2, 1, 2, 2 and lowers degrees 3, 6 and 7 (FACTS 22,
+// 24). And the slide's roots and the window every chord stays inside (FACTS
+// 70a).
 
 import { describe, expect, it } from 'vitest'
-import { MAJOR_DEGREES } from '@/features/lessons/kit/major-scale'
-import type { Spelled } from '@/features/lessons/kit/notes'
-import { signName } from '@/features/lessons/kit/notes'
 import type { ChordTone, Quality } from './chords'
 import { LOWERED_DEGREES, NATURAL_MINOR_DEGREES, nextRoot, QUALITIES, qualityOf, ROOTS, scaleOf, stackInThirds, thirdOf, tone, triad, WINDOW, } from './chords'
+import { MAJOR_DEGREES } from './major-scale'
+import type { Spelled } from './notes'
+import { signName } from './notes'
 
 /** A note's letters with any sign, no octave: "E♭". */
 const letters = (notes: readonly ChordTone[]): string =>

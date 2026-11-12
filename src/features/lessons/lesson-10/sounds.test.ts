@@ -13,9 +13,9 @@
 // scales, the moves' held notes and quick check question 2's chord.
 
 import { describe, expect, it } from 'vitest'
+import { QUALITIES, ROOTS } from '@/features/lessons/kit/chords'
 import { hz } from '@/features/lessons/kit/notes'
 import type { RunNote } from '@/features/lessons/kit/run'
-import { QUALITIES, ROOTS } from './chords'
 import type { MoveSound, Tempo } from './sounds'
 import { CHORD_C, CHORD_GAIN, gapSound, lengthOf, MOVE_IDS, moveLength, moveSound, PATTERN, patternSound, QUAVER, QUIZ_CHORD, scaleSound, SLOW, slow, thirdSound, triadSound, WORD_IDS, wordSounds, } from './sounds'
 
