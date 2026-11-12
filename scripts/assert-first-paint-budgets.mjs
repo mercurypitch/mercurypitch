@@ -499,10 +499,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // check on the kit's quiz, the three words' figures and plays, and Sing
   // it on its flow, with the comfort check, the voice choice, the
   // feelings and the still of the one who sings, its take's reader and
-  // pitch line loaded with the first Start, and the Wrap's free play, the
-  // tease still drawn after first paint: 190,684 bytes in build:e2e, the
-  // smallest whole KB above, to rise as each part joins.
-  'learn/16.html': 187,
+  // pitch line loaded with the first Start and every other play held while
+  // a take runs, and the Wrap's free play, the tease still drawn after
+  // first paint: 191,543 bytes in build:e2e, the smallest whole KB above,
+  // to rise as each part joins.
+  'learn/16.html': 188,
   // Lesson 17, "How long is a note?", a Season 2 page and a draft, built in
   // every mode as Lesson 3 is: its own module on the kit, carrying Season
   // 2's map (kit/season-2.ts) as a Season 2 page must, with the steps'
