@@ -717,7 +717,7 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // rules; a quarter over.
   'learn/15.html': 111,
   // Lesson 16 (a draft, as above), its shell, its steps, Sing it and the
-  // Wrap: 94,065 bytes in build:e2e, the kit's sheets (the shared parts)
+  // Wrap: 94,076 bytes in build:e2e, the kit's sheets (the shared parts)
   // with the voice lessons' (lesson-voice.css: the comfort check, the voice
   // choice, the briefing and the feelings), its own with the staff toy's
   // and the staircase's taken in by @import, and the shared Inter and

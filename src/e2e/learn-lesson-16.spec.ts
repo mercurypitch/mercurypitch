@@ -438,7 +438,7 @@ for (const width of [390, 344]) {
   test.describe(`the page's targets at ${String(width)} px wide`, () => {
     test.use({ viewport: { width, height: 844 } })
 
-    test("every target of the hero, the words, the five steps, Sing it and free play is at least 44 px square, none overlapping another, each step's stage fits under the masthead, and nothing scrolls sideways (WEB-SPEC, Edge cases)", async ({
+    test("every target of the hero, the words, the five steps, Sing it and free play is at least 44 px square, none overlapping another, each step's stage fits under the masthead, Sing it's briefing keeps its spacing, and nothing scrolls sideways (WEB-SPEC, Edge cases)", async ({
       page,
     }) => {
       // Arrange: the choice in, so every step shows all its controls
@@ -479,6 +479,16 @@ for (const width of [390, 344]) {
       await page.locator('[data-comfort="sing"]').click()
       await page.locator('[data-voice="lower"]').click()
       counts.sing = await expectTargets(page, '#singCard', 'Sing it')
+      // the line under the brief stands clear of its box, as the kit spaces it
+      const gap = await page.evaluate(() => {
+        const box = document.querySelector('#singCard .brief')
+        const line = document.querySelector('#singCard .brief-how')
+        return box === null || line === null
+          ? -1
+          : line.getBoundingClientRect().top -
+              box.getBoundingClientRect().bottom
+      })
+      expect(gap, 'the line under the brief').toBeGreaterThanOrEqual(12)
       await page.locator('#freePlay').scrollIntoViewIfNeeded()
       counts.free = await expectTargets(page, '#freePlay', 'Free play')
       expect(counts).toEqual({

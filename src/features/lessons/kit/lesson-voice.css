@@ -288,7 +288,9 @@
 .brief p {
   margin: 0;
 }
-.brief-how {
+/* the line under the brief stands clear of its box: inside the card, as
+   every brief is, `.sing-card p` above would otherwise take its top margin */
+.sing-card .brief-how {
   margin-top: 14px;
 }
 .brief-lines {
