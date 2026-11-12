@@ -7,7 +7,9 @@
 // in it, one voice from breath to breath (`playLines`); a tune, note by
 // note, each note its own voice (`playNotes`); or one note held for a moment
 // (`playNote`); each in Merc's "ooh" unless the caller picks the soft tone,
-// and a note may take a tone and a level of its own. A sung line may carry
+// and a note may take a tone and a level of its own. A tune's notes may
+// take a shorter attack and release than the house's, each note over
+// before the next starts (Lesson 20's staccato). A sung line may carry
 // a vibrato of the caller's, or none, and glide it to a new rate and extent
 // as it sounds (`setVibrato`): Lesson 22's waves, its straight notes and its
 // sliders. Notes that share an onset start in one timer task, so a chord's
@@ -60,6 +62,13 @@ export interface RunOptions {
   readonly kind?: VoiceOptions['kind']
   /** The level (kit/sound.ts's default when unset), for each note without its own; every run honours it. */
   readonly gain?: number
+  /**
+   * A tune's notes' attack and release, s: the house envelope, shorter, so
+   * each short note ends before the next starts (Lesson 20's staccato).
+   * `playNotes` honours them; unset, kit/sound.ts's own.
+   */
+  readonly attack?: number
+  readonly release?: number
   /** Shapes a sung line (kit/timbre.ts): `playLine` honours it, `playNotes` and `playNote` ignore it. */
   readonly timbre?: VoiceOptions['timbre']
   /** A sung line's partials, whatever its kind (kit/sound.ts): `playLine` honours it, as it does `timbre`. */
@@ -227,6 +236,8 @@ export function playNotes(
               kind: n.kind ?? o.kind ?? 'merc',
               dur: n.dur,
               gain: n.gain ?? o.gain,
+              attack: o.attack,
+              release: o.release,
             })
             if (v !== null) voices.push(v)
           }
