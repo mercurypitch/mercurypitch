@@ -732,14 +732,17 @@ Where the page differs from the text above, the page as built is the reference:
   Lessons 10, 12, 17, 19, 21 and 23 name theirs: `16: "Lessons 9 and 15's pages at /learn/09 and
 /learn/15, and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`.
 - Counted by `scripts/lesson-words.mjs`'s rule as the built page shows it, the package's 2,217 words
-  with about 195 more written in the open (the predict's two plays, its hints and "You said" lines,
+  with about 220 more written in the open (the predict's two plays, its hints and "You said" lines,
   28; the five figures' captions, 39; the toys' labels the steps do not bracket, 17; Sing it's status
-  lines and the stored voice's line, 82; the lines a take prints, each form once, with the octave
-  tag, 29; the figure's "Tavi sang ..." lines left out, since only its live region announces them,
-  and free play and the sound-off and no-sound lines too, as the counter leaves them), less 43 the
-  page does not print (the brief's four example lines, as Length says, with "Added when it applies:"
-  and the lead-in's "such as", 41; the quick check's play reads "Play do, then re", 2), the page is
-  about 2,369 words, 10 under the series' cap of 2,379. Length's two cuts are not made.
+  lines and the stored voice's line, 82; the lines a take prints, each form once, right in the
+  middle, in the band, close, a semitone or more away and not steady, with the octave line and the
+  octave tag, 54; the figure's "Tavi sang ..." lines left out, since only its live region announces
+  them, and free play and the sound-off and no-sound lines too, as the counter leaves them), less 43
+  the page does not print (the brief's four example lines, as Length says, with "Added when it
+  applies:" and the lead-in's "such as", 41; the quick check's play reads "Play do, then re", 2),
+  the page would run about 2,394 words, 15 over the series' cap of 2,379. So Length's first cut is
+  made: Step 2's sentence on the 1993 review, 20 words, whose fact stays in FACTS 20. That leaves the
+  page at about 2,374, 5 under the cap; the second cut is not made.
 - Step 1's staircase stands over the staff it turns into at every width, not beside it (Toys 2,
   state 1), as Lesson 21's does, so each takes the stage card's full width and every stair travels
   down onto its own note; beside the staff, the stairs and the notes would each have half of it.
