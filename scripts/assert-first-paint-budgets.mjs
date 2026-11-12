@@ -403,8 +403,9 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // 160,840 with it, against 160,768 at 157. 117 of the 304 are on every
   // lesson page: Lesson 18's drafts line (kit/drafts.ts). The other 187 are
   // the bundler cutting the kit's shared code differently around a shell
-  // that loads the reveal but not the predict, as Lesson 16's shell did;
-  // 157 can be tried once Lesson 18's cold open loads the predict.
+  // that loads the reveal but not the predict, as Lesson 16's shell did.
+  // With Lesson 18's cold open on the predict it is 160,785, still 17
+  // bytes over 157, so 158 stays.
   'learn/04.html': 158,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
@@ -522,10 +523,16 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'learn/17.html': 178,
   // Lesson 18, "Read and sing a whole line", a Season 2 page and a draft,
   // built in every mode as Lesson 3 is: its own module on the kit, carrying
-  // Season 2's map (kit/season-2.ts) as a Season 2 page must; its shell:
-  // 88,983 bytes in build:e2e, the smallest whole KB above, to rise as each
-  // part joins.
-  'learn/18.html': 87,
+  // Season 2's map (kit/season-2.ts) as a Season 2 page must; its shell and
+  // its steps, the reading staff on the kit's rhythm bar with its marks
+  // (kit/read-marks.ts) and the tap pad, the cold open's read on the kit's
+  // predict, the four words, and Sing it on its flow, with the comfort
+  // check, the voice choice and the feelings, every other play held from
+  // Start, and the Wrap's practice card and tease still: 191,171 bytes in
+  // build:e2e; a quarter over. The recall and quick check, the take's
+  // reader and pitch line (loaded with the first Start) and free play load
+  // after first paint.
+  'learn/18.html': 234,
   // Lesson 19, "Threes, offbeats and syncopation", a Season 2 page and a
   // draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
@@ -742,12 +749,13 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // shared parts), its own, and the shared Inter and Outfit @font-face
   // rules; a quarter over.
   'learn/17.html': 116,
-  // Lesson 18 (a draft, as above), its shell: 87,238 bytes in build:e2e,
-  // the kit's sheets (the shared parts), its own with the rhythm bar's and
-  // the tap pad's taken in by @import, and the shared Inter and Outfit
-  // @font-face rules; the smallest whole KB above, to rise as each part
-  // joins, the voice lessons' sheets with Sing it.
-  'learn/18.html': 86,
+  // Lesson 18 (a draft, as above), its shell, its steps, Sing it and the
+  // Wrap: 95,710 bytes in build:e2e, the kit's sheets (the shared parts)
+  // with the voice lessons' (lesson-voice.css: the comfort check, the voice
+  // choice, the briefing and the feelings), its own with the rhythm bar's
+  // and the tap pad's taken in by @import, and the shared Inter and Outfit
+  // @font-face rules; a quarter over.
+  'learn/18.html': 117,
   // Lesson 19 (a draft, as above), with its steps, its cold open, its four
   // words, the take and the Wrap: 86,737 bytes in build:e2e, the kit's
   // sheets (the rhythm bar's and the tap pad's inlined into its own by
