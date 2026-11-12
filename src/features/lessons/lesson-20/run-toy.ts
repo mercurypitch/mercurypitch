@@ -2,12 +2,10 @@
 // Lesson 20 run toy — Merc's run as beads on a string, at five tempos
 // ============================================================
 //
-// Steps 3 and 4's toy (WEB-SPEC, Toys 5): the kit's band chart on a notes
-// axis from a semitone under do to a semitone over la, each of the run's
-// nine notes a rung over its slot in the bead style (kit/band-chart-rungs.ts
-// `beads`), its rows named "do · D3" to "la · B3". The time axis is fixed,
-// 6.75 s across, so a faster tempo draws the same nine beads closer
-// together at the same heights (FACTS 39). It sings in the learner's voice,
+// Steps 3 and 4's toy (WEB-SPEC, Toys 5): the run chart (run-chart.ts), its
+// rows named "do · D3" to "la · B3", the time axis fixed at 6.75 s across,
+// so a faster tempo draws the same nine beads closer together at the same
+// heights (FACTS 39). It sings in the learner's voice,
 // Merc from D3 or Tavi from D4: the run as one line in his "ooh", held on
 // each note and gliding into the next, each bead glowing and showing its
 // name while its note sounds; Staccato's nine short notes, each its own
@@ -33,15 +31,9 @@
 // figure's own label names the run. Every sound is the page's one
 // (`NowPlaying`).
 
-import { mountBandChart } from '@/features/lessons/kit/band-chart'
-import { rungNames } from '@/features/lessons/kit/band-chart-names'
-import type { Rung } from '@/features/lessons/kit/band-chart-rungs'
-import { paintRungs, slotsAt } from '@/features/lessons/kit/band-chart-rungs'
 import { q, qa } from '@/features/lessons/kit/dom'
-import { addDrawer, wake } from '@/features/lessons/kit/frame-loop'
-import { reducedMotion } from '@/features/lessons/kit/motion-switch'
 import type { Spelled } from '@/features/lessons/kit/notes'
-import { signName, wordName } from '@/features/lessons/kit/notes'
+import { wordName } from '@/features/lessons/kit/notes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type { PlayLight } from '@/features/lessons/kit/play-lights'
 import { playLights } from '@/features/lessons/kit/play-lights'
@@ -52,9 +44,10 @@ import type { PlayNote, StaffState, StaffToy, } from '@/features/lessons/kit/sta
 import { mountStaff, scoreAcross } from '@/features/lessons/kit/staff'
 import type { Clef } from '@/features/lessons/kit/staff-places'
 import { clefForVoice } from '@/features/lessons/kit/staff-places'
-import { MAJOR_FIVE, spellDegrees } from '@/features/lessons/kit/stairs-scales'
 import type { Voice } from '@/features/lessons/kit/voice-choice'
-import { BETWEEN_SEC, FIRST_TEMPO, RUN_AXIS_SEC, RUN_DEGREES, RUN_NAMES, runDo, runLine, runNotes, runSec, SMUDGE, smudgeCentsAt, smudgeLands, smudgeLine, TOUCH, } from './sounds'
+import type { LiveLine } from './run-chart'
+import { mountRunChart, spelledRun } from './run-chart'
+import { BETWEEN_SEC, FIRST_TEMPO, RUN_DEGREES, RUN_NAMES, runDo, runLine, runNotes, runSec, SMUDGE, smudgeCentsAt, smudgeLands, smudgeLine, TOUCH, } from './sounds'
 
 /** What the run toy offers in one place on the page. */
 export interface RunState {
@@ -73,8 +66,6 @@ export const RUN_STATES = {
   free: { tempo: true, touch: true, smudged: true },
 } as const satisfies Readonly<Record<string | number, RunState>>
 
-/** A bead swells in over this long as its note starts. */
-const SWELL_MS = 150
 /** A tapped bead's note, s. */
 const TAP_SEC = 0.6
 /** A fingertip, px: closer beads are not buttons. */
@@ -93,15 +84,9 @@ export const RUN_SAID = {
 export const runSaid = (every: number): string =>
   `The run at ${every} seconds a note.`
 
-/** The run's notes spelled as written, from `doMidi`: D, E, F♯, A, B, A, F♯, E, D. */
-export function runSpelled(doMidi: number): Spelled[] {
-  const five = spellDegrees(doMidi, MAJOR_FIVE)
-  return RUN_DEGREES.map((d) => five[MAJOR_FIVE.indexOf(d)])
-}
-
 /** A bead's button: "Bead 3, mi, F sharp 3". */
 export const beadLabel = (i: number, doMidi: number): string =>
-  `Bead ${i + 1}, ${RUN_NAMES[i]}, ${wordName(runSpelled(doMidi)[i])}`
+  `Bead ${i + 1}, ${RUN_NAMES[i]}, ${wordName(spelledRun(doMidi)[i])}`
 
 /** The figure's label: "Merc's run: do, re, mi, so, la, so, mi, re and do, a note every 0.6 seconds". */
 export function runDescribed(
@@ -123,6 +108,29 @@ export function runStaff(clef: Clef, written: Spelled[] | null): StaffState {
     across: scoreAcross(RUN_DEGREES.length),
     noLanes: true,
     ...(written === null ? {} : { score: written.map((note) => ({ note })) }),
+  }
+}
+
+/** The smudged singer's line as it goes, from `since` (ms); `until` freezes it where a stop left it. */
+export function smudgeLive(since: number): LiveLine & { until: number } {
+  return {
+    until: Infinity,
+    at(now) {
+      const end = runSec(SMUDGE.every)
+      const t = Math.max(
+        0,
+        Math.min(end, (Math.min(now, this.until) - since) / 1000),
+      )
+      const line: { t: number; c: number }[] = []
+      for (let s = 0; s < t; s += TRACE_STEP)
+        line.push({ t: s, c: smudgeCentsAt(s) })
+      line.push({ t, c: smudgeCentsAt(t) })
+      // a landing in its band lights its edge once the singer is there
+      const lit = RUN_DEGREES.map(
+        (_d, i) => smudgeLands(i) && t >= i * SMUDGE.every + SMUDGE.glide,
+      )
+      return { line, lit, done: t >= end || now >= this.until }
+    },
   }
 }
 
@@ -151,12 +159,6 @@ interface Press {
   readonly audible: boolean
 }
 
-/** The smudged singer's line on the chart, from when it began. */
-interface Smudge {
-  readonly since: number
-  done: boolean
-}
-
 export function mountRunToy(
   root: HTMLElement,
   o: {
@@ -183,7 +185,6 @@ export function mountRunToy(
 
   let state: RunState = o.state
   let voice = o.voice
-  let doMidi = runDo(voice)
   let tempo = o.state.tempo ? FIRST_TEMPO : TOUCH.every
   /** Step 3's notch, kept while Step 4 holds the tempo. */
   let kept = FIRST_TEMPO
@@ -192,99 +193,19 @@ export function mountRunToy(
   let run: Run | null = null
   /** A pause's wake-up, which a stop runs. */
   let pending: (() => void) | null = null
-  /** When each bead's note began, while it sounds. */
-  const glowing = new Map<number, number>()
-  let smudge: Smudge | null = null
+  /** The smudged singer's line while it draws. */
+  let smudge: ReturnType<typeof smudgeLive> | null = null
   /** The staff has written the run: later plays light its noteheads. */
   let written = false
-  let moving = false
 
+  const chart = mountRunChart(viz, {
+    active: o.active,
+    doMidi: runDo(voice),
+    names: true,
+  })
+  const doMidi = (): number => chart.doMidi
   const clefNow = (): Clef => (voice === null ? 'bass' : clefForVoice(voice))
   const holdSec = (): number => (staccato ? TOUCH.staccato : tempo)
-  const slots = (): { from: number; to: number }[] =>
-    slotsAt(RUN_DEGREES.length, tempo, holdSec())
-
-  /** How far a swell of `ms` has come since `since`: all the way at once under reduced motion. */
-  function progress(since: number | undefined, now: number): number {
-    if (since === undefined) return 0
-    const k = reducedMotion() ? 1 : Math.min(1, (now - since) / SWELL_MS)
-    if (k < 1) moving = true
-    return k
-  }
-
-  /** The smudged line so far, and which landings have come. */
-  function smudgeNow(now: number): {
-    line: { t: number; c: number }[]
-    t: number
-  } {
-    if (smudge === null) return { line: [], t: 0 }
-    const end = runSec(SMUDGE.every)
-    const t = smudge.done ? end : Math.min(end, (now - smudge.since) / 1000)
-    if (!smudge.done) moving = true
-    const line: { t: number; c: number }[] = []
-    for (let s = 0; s < t; s += TRACE_STEP)
-      line.push({ t: s, c: smudgeCentsAt(s) })
-    line.push({ t, c: smudgeCentsAt(t) })
-    return { line, t }
-  }
-
-  /** The scene for this moment: the beads, their glow and lit edges, and the smudged line. */
-  function paint(now: number): void {
-    moving = false
-    const s = chart.scene
-    const sung = smudgeNow(now)
-    s.rungs = slots().map(
-      (slot, i): Rung => ({
-        label: RUN_NAMES[i],
-        c: RUN_DEGREES[i] * 100,
-        from: slot.from,
-        to: slot.to,
-        glow: progress(glowing.get(i), now),
-        // a landing in its band lights its edge once the singer is there
-        lit:
-          smudge !== null &&
-          smudgeLands(i) &&
-          sung.t >= i * SMUDGE.every + SMUDGE.glide,
-      }),
-    )
-    s.beads = { string: !staccato }
-    s.line = sung.line
-  }
-
-  // the swell and the smudged line, ahead of the chart's own drawer, so the
-  // chart paints what this frame moved them to
-  addDrawer({
-    active: o.active,
-    wants: () => moving,
-    draw: (now) => paint(now),
-  })
-
-  const names = (): ReturnType<typeof rungNames> =>
-    rungNames(
-      [0, 2, 4, 7, 9].map(
-        (d) =>
-          [
-            doMidi + d,
-            `${RUN_NAMES[RUN_DEGREES.indexOf(d)]} · ${signName(runSpelled(doMidi)[RUN_DEGREES.indexOf(d)])}`,
-          ] as const,
-      ),
-    )
-  let named = names()
-  const chart = mountBandChart(viz, {
-    target: doMidi,
-    axis: {
-      get notes(): readonly [number, number] {
-        return [doMidi - 1, doMidi + 10]
-      },
-      names: {
-        gutter: (ctx) => named.gutter(ctx),
-        paint: (f, target) => named.paint(f, target),
-      },
-    },
-    window: RUN_AXIS_SEC,
-    active: o.active,
-    paintRungs,
-  })
 
   const staff: StaffToy = mountStaff(root, {
     state: runStaff(clefNow(), null),
@@ -307,16 +228,13 @@ export function mountRunToy(
 
   /** Each bead's button over its bead, where the beads stand a fingertip apart; none closer. */
   function layOut(): void {
-    const sl = slots()
-    const a = chart.pointOf(0, 0)
-    const b = chart.pointOf(tempo, 0)
-    const room = b.x - a.x >= TARGET
+    const room = chart.spacing() >= TARGET
     hits.hidden = !room
     beadBtns.forEach((btn, i) => {
       btn.hidden = !room
-      btn.setAttribute('aria-label', beadLabel(i, doMidi))
+      btn.setAttribute('aria-label', beadLabel(i, doMidi()))
       if (!room) return
-      const at = chart.pointOf(sl[i].from, RUN_DEGREES[i] * 100)
+      const at = chart.beadAt(i)
       btn.style.left = `${at.x - TARGET / 2}px`
       btn.style.top = `${at.y - TARGET / 2}px`
       btn.style.width = `${TARGET}px`
@@ -327,7 +245,7 @@ export function mountRunToy(
 
   // ---------------------------------------------------------------- plays
 
-  /** Stops what plays here: its sound, its staff, a pause, every glow. */
+  /** Stops what plays here: its sound, its staff, a pause, every glow; a smudged line stays where it was. */
   function halt(): void {
     token += 1
     run?.stop()
@@ -336,8 +254,9 @@ export function mountRunToy(
     const wake = pending
     pending = null
     wake?.()
-    glowing.clear()
-    redraw()
+    if (smudge !== null)
+      smudge.until = Math.min(smudge.until, performance.now())
+    chart.rest()
   }
 
   function begin(): Press {
@@ -353,27 +272,17 @@ export function mountRunToy(
     return heard
   }
 
-  function redraw(): void {
-    paint(performance.now())
-    wake()
-  }
-
-  /** Bead `i` glows while its note sounds, `dur` s. */
-  function glow(i: number, dur: number, press: Press): void {
-    const at = performance.now()
-    glowing.set(i, at)
-    redraw()
-    window.setTimeout(() => {
-      if (press.mine !== token || glowing.get(i) !== at) return
-      glowing.delete(i)
-      redraw()
-    }, dur * 1000)
+  /** A play of Merc's: no illustrated line any more. */
+  function clearSmudge(): void {
+    smudge = null
+    tag.hidden = true
+    chart.follow(null)
   }
 
   /** The run's notes as the staff writes them, on the run's clock. */
   function staffNotes(): PlayNote[] {
-    const spelled = runSpelled(doMidi)
-    return runNotes(doMidi, tempo, holdSec()).map((n, i) => ({
+    const spelled = spelledRun(doMidi())
+    return runNotes(doMidi(), tempo, holdSec()).map((n, i) => ({
       t: n.t,
       dur: n.dur,
       note: spelled[i],
@@ -393,17 +302,16 @@ export function mountRunToy(
       .then((heard) => {
         if (!first || !heard || press.mine !== token) return
         written = true
-        staff.setState(runStaff(clefNow(), runSpelled(doMidi)))
+        staff.setState(runStaff(clefNow(), spelledRun(doMidi())))
       })
   }
 
   /** The run sung once, in the touch the toy has now. */
   function singRun(press: Press): Promise<boolean> {
-    smudge = null
-    tag.hidden = true
-    const notes: RunNote[] = runNotes(doMidi, tempo, holdSec())
+    clearSmudge()
+    const notes: RunNote[] = runNotes(doMidi(), tempo, holdSec())
     const onNote = (n: RunNote, i: number): void => {
-      if (press.mine === token) glow(i, n.dur, press)
+      if (press.mine === token) chart.glow(i, n.dur)
     }
     run = staccato
       ? playNotes(notes, {
@@ -414,7 +322,7 @@ export function mountRunToy(
           onNote,
         })
       : allOf([
-          playLine(runLine(doMidi, tempo), {
+          playLine(runLine(doMidi(), tempo), {
             audible: press.audible,
             kind: 'merc',
           }),
@@ -423,7 +331,6 @@ export function mountRunToy(
         ])
     onStaff(press)
     said.textContent = staccato ? RUN_SAID.staccato : runSaid(tempo)
-    redraw()
     return run.done
   }
 
@@ -436,17 +343,16 @@ export function mountRunToy(
     setTempo(SMUDGE.every)
     setStaccato(false)
     const press = begin()
-    smudge = { since: performance.now(), done: false }
-    const mine = smudge
+    smudge = smudgeLive(performance.now())
+    chart.follow(smudge)
     tag.hidden = false
     said.textContent = RUN_SAID.smudged
-    run = playLine(smudgeLine(doMidi), { audible: press.audible, kind: 'soft' })
-    redraw()
-    const heard = await run.done
-    // the line stays, whole, until the next play
-    mine.done = true
-    redraw()
-    return end(press, heard)
+    run = playLine(smudgeLine(doMidi()), {
+      audible: press.audible,
+      kind: 'soft',
+    })
+    // the line stays, whole or where a stop left it, until the next play
+    return end(press, await run.done)
   }
 
   const pause = (press: Press): Promise<boolean> =>
@@ -472,10 +378,9 @@ export function mountRunToy(
 
   async function tapBead(i: number): Promise<boolean> {
     const press = begin()
-    smudge = null
-    tag.hidden = true
-    glow(i, TAP_SEC, press)
-    run = playNote(doMidi + RUN_DEGREES[i], TAP_SEC, {
+    clearSmudge()
+    chart.glow(i, TAP_SEC)
+    run = playNote(doMidi() + RUN_DEGREES[i], TAP_SEC, {
       audible: press.audible,
       kind: 'merc',
     })
@@ -484,14 +389,10 @@ export function mountRunToy(
 
   // ---------------------------------------------------------------- controls
 
-  function describe(): void {
-    chart.describe(runDescribed(voice, tempo, staccato))
-  }
-
-  /** Tempo or touch changed: the slots redrawn, the buttons laid over them. */
+  /** Tempo or touch changed: the slots redrawn, the buttons laid over them, the label anew. */
   function reslot(): void {
-    describe()
-    redraw()
+    chart.setTempo(tempo, holdSec())
+    chart.describe(runDescribed(voice, tempo, staccato))
     layOut()
   }
 
@@ -540,12 +441,10 @@ export function mountRunToy(
     if (v === voice) return
     halt()
     voice = v
-    const moved = runDo(v) !== doMidi
-    doMidi = runDo(v)
-    if (moved) {
-      named = names()
-      chart.setTarget(doMidi)
-      staff.setState(runStaff(clefNow(), written ? runSpelled(doMidi) : null))
+    if (runDo(v) !== doMidi()) {
+      clearSmudge()
+      chart.setDo(runDo(v))
+      staff.setState(runStaff(clefNow(), written ? spelledRun(doMidi()) : null))
     }
     reslot()
   }

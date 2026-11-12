@@ -167,7 +167,9 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // shell that loads the reveal but not the predict, as Lesson 18's shell
   // did; 173 can be tried again once Lesson 20's cold open loads the
   // predict.
-  'learn/02.html': 174,
+  // Back to 173 with Lesson 20's cold open, which loads the predict:
+  // 177,002 bytes in build:e2e.
+  'learn/02.html': 173,
 
   // Lesson 3, released on the owner's word on 7 November 2026 and built in
   // every mode like the rest: the site worker decides where it is live
@@ -273,7 +275,9 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Raised to 159 for Lesson 20's page shell, as on Lesson 2: 161,537
   // bytes before it, 161,817 with it, against 161,792 at 158; 158 can be
   // tried again once Lesson 20's cold open loads the predict.
-  'learn/03.html': 159,
+  // Back to 158 with Lesson 20's cold open, which loads the predict:
+  // 161,638 bytes in build:e2e.
+  'learn/03.html': 158,
   // Lesson 5, a draft (src/features/lessons/kit/drafts.ts), built in every
   // mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
@@ -561,10 +565,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Lesson 20, "Runs and the pentatonic scale", a Season 2 page and a draft,
   // built in every mode as Lesson 3 is: its own module on the kit, carrying
   // Season 2's map (kit/season-2.ts) as a Season 2 page must; its shell
-  // and the steps' two toys, the staircase and the run with its staff:
-  // 165,437 bytes in build:e2e, the smallest whole KB above, to rise as
-  // each part joins.
-  'learn/20.html': 162,
+  // and the steps' two toys, the staircase and the run with its staff;
+  // the cold open's run and predict, and the four words' figures: 172,342
+  // bytes in build:e2e, the smallest whole KB above, to rise as each part
+  // joins. The recall and quick check load after first paint.
+  'learn/20.html': 169,
   // Lesson 21, "Keys and the circle of fifths", a Season 2 page and a
   // draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
