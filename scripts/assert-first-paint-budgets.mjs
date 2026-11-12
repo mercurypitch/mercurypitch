@@ -496,10 +496,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // steps, the staircase that turns into the staff and the staff toy, the
   // cold open's two tries on the kit's predict, the recall's Lesson 9 and
   // 15 questions, imported with the questions theirs import, and the quick
-  // check on the kit's quiz, and the three words' figures and plays:
-  // 175,927 bytes in build:e2e, the smallest whole KB above, to rise as
-  // each part joins.
-  'learn/16.html': 172,
+  // check on the kit's quiz, the three words' figures and plays, and Sing
+  // it on its flow, with the comfort check, the voice choice and the
+  // feelings, its take's reader loaded with the first Start: 189,021 bytes
+  // in build:e2e, the smallest whole KB above, to rise as each part joins.
+  'learn/16.html': 185,
   // Lesson 17, "How long is a note?", a Season 2 page and a draft, built in
   // every mode as Lesson 3 is: its own module on the kit, carrying Season
   // 2's map (kit/season-2.ts) as a Season 2 page must, with the steps'
@@ -713,13 +714,14 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // shared parts), its own, and the shared Inter and Outfit @font-face
   // rules; a quarter over.
   'learn/15.html': 111,
-  // Lesson 16 (a draft, as above), its shell and its steps: 86,273 bytes in
-  // build:e2e, the kit's sheets (the shared parts), its own with the staff
-  // toy's and the staircase's taken in by @import, and the shared Inter and
+  // Lesson 16 (a draft, as above), its shell, its steps and Sing it: 93,121
+  // bytes in build:e2e, the kit's sheets (the shared parts)
+  // with the voice lessons' (lesson-voice.css: the comfort check, the voice
+  // choice, the briefing and the feelings), its own with the staff toy's
+  // and the staircase's taken in by @import, and the shared Inter and
   // Outfit @font-face rules; the smallest whole KB above, to rise as each
-  // part joins, the guide's and the voice lessons' sheets with the recall
-  // and Sing it.
-  'learn/16.html': 85,
+  // part joins.
+  'learn/16.html': 91,
   // Lesson 17 (a draft, as above), with its steps, its cold open, its four
   // words and the Wrap: 94,962 bytes in build:e2e, the kit's sheets
   // (the voice lessons' in the chunk it shares with them, the guide's, the

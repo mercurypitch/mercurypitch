@@ -11,7 +11,7 @@ import { describe, expect, it } from 'vitest'
 import type { PlayNote } from '@/features/lessons/kit/staff'
 import { midiOf } from '@/features/lessons/kit/staff-places'
 import type { StepPlay } from './sounds'
-import { DO, doToSo, inside, playLength, staffState, stairsStaff, stepNotes, stepPlay, } from './sounds'
+import { DO, doToSo, inside, mercPhrases, phraseOf, playLength, runOf, staffState, stairsStaff, START_SEC, startNotes, stepNotes, stepPlay, sungLength, } from './sounds'
 
 const midis = (notes: readonly PlayNote[]): number[] =>
   notes.map((n) => midiOf(n.note))
@@ -147,5 +147,61 @@ describe('the staff’s states', () => {
     ])
     expect(turned.lead).toEqual(DO.treble)
     expect(turned.names).toBe(true)
+  })
+})
+
+describe('Sing it’s notes', () => {
+  /** Notes as [onset, MIDI note, length, the columns they light]. */
+  const heard = (notes: ReturnType<typeof startNotes>) =>
+    notes.map((n) => [
+      n.t,
+      midiOf(n.note),
+      n.dur,
+      n.lights === null
+        ? null
+        : `${n.lights.phrase}:${n.lights.cols.join(',')}`,
+    ])
+
+  it('writes the two phrases in each clef’s octave: do, re, mi, re, do and do, so, mi, re, do', () => {
+    // Assert: WEB-SPEC, Toys 6
+    expect(phraseOf(1, 'bass').map(midiOf)).toEqual([55, 57, 59, 57, 55])
+    expect(phraseOf(2, 'bass').map(midiOf)).toEqual([55, 62, 59, 57, 55])
+    expect(phraseOf(2, 'treble').map(midiOf)).toEqual([67, 74, 71, 69, 67])
+  })
+
+  it('gives the start do for 1.0 s, 0.4 s of quiet, then do, mi, so, mi, do, 4.4 s, lighting only the written do’s', () => {
+    // Assert: FACTS 42
+    expect(heard(startNotes('bass', 1))).toEqual([
+      [0, 55, 1, '1:0,4'],
+      [1.4, 55, 0.6, '1:0,4'],
+      [2, 59, 0.6, null],
+      [2.6, 62, 0.6, null],
+      [3.2, 59, 0.6, null],
+      [3.8, 55, 0.6, '1:0,4'],
+    ])
+    expect([START_SEC, sungLength(startNotes('treble', 2))]).toEqual([4.4, 4.4])
+    expect(runOf(startNotes('treble', 2)).map((n) => n.midi)).toEqual([
+      67, 67, 71, 74, 71, 67,
+    ])
+  })
+
+  it('plays Merc’s phrases as the start, 0.6 s of quiet, phrase 1, 1.0 s of quiet and phrase 2, 12.0 s', () => {
+    // Act
+    const notes = mercPhrases('bass')
+
+    // Assert: FACTS 70
+    expect(sungLength(notes)).toBe(12)
+    expect(heard(notes.slice(6))).toEqual([
+      [5, 55, 0.6, '1:0'],
+      [5.6, 57, 0.6, '1:1'],
+      [6.2, 59, 0.6, '1:2'],
+      [6.8, 57, 0.6, '1:3'],
+      [7.4, 55, 0.6, '1:4'],
+      [9, 55, 0.6, '2:0'],
+      [9.6, 62, 0.6, '2:1'],
+      [10.2, 59, 0.6, '2:2'],
+      [10.8, 57, 0.6, '2:3'],
+      [11.4, 55, 0.6, '2:4'],
+    ])
   })
 })

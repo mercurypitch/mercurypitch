@@ -168,3 +168,93 @@ export function quizDoRe(clef: Clef): RunNote[] {
     { t: round(TAP_SEC + QUIZ_GAP_SEC), midi: midiOf(r), dur: TAP_SEC },
   ]
 }
+
+// ---------------------------------------------------------------- Sing it
+
+/** Sing it's two phrases by degree from do: do, re, mi, re, do; then do, so, mi, re, do (WEB-SPEC, Toys 6). */
+export const PHRASES: Readonly<Record<1 | 2, readonly number[]>> = {
+  1: [0, 1, 2, 1, 0],
+  2: [0, 4, 2, 1, 0],
+}
+
+/** Phrase `id`'s written notes in `clef`'s octave: G3 A3 B3 A3 G3 for the bass, G4 up for the treble. */
+export const phraseOf = (id: 1 | 2, clef: Clef): Spelled[] =>
+  PHRASES[id].map((d) => doToSo(clef)[d])
+
+/** The start: do alone this long, s, then this quiet, s, then do, mi, so, mi, do (FACTS 42). */
+export const START_DO_SEC = 1
+export const START_QUIET_SEC = 0.4
+/** The start's broken triad, by degree from do. */
+const TRIAD_RUN = [0, 2, 4, 2, 0] as const
+
+/** A sung note of Sing it: its onset, its note, its length, and the phrase column it lights, if any. */
+export interface SungNote {
+  readonly t: number
+  readonly note: Spelled
+  readonly dur: number
+  /** The phrase whose notes it lights (1 or 2), by column; none for the start's mi and so. */
+  readonly lights: {
+    readonly phrase: 1 | 2
+    readonly cols: readonly number[]
+  } | null
+}
+
+/**
+ * The start in `clef`'s octave from `t0`: do for 1.0 s, 0.4 s of quiet,
+ * then do, mi, so, mi, do, 0.6 s a note, 4.4 s, sung in Merc's "ooh" by
+ * the chosen voice (FACTS 42). Only its do's light: every written do of
+ * the phrase `next` reads, at once, never where mi or so sit.
+ */
+export function startNotes(clef: Clef, next: 1 | 2, t0 = 0): SungNote[] {
+  const notes = doToSo(clef)
+  // every written do of the phrase: its first and last notes
+  const doCols = {
+    phrase: next,
+    cols: PHRASES[next].flatMap((d, col) => (d === 0 ? [col] : [])),
+  }
+  const runAt = t0 + START_DO_SEC + START_QUIET_SEC
+  return [
+    { t: round(t0), note: notes[0], dur: START_DO_SEC, lights: doCols },
+    ...TRIAD_RUN.map((d, i) => ({
+      t: round(runAt + i * EVERY_SEC),
+      note: notes[d],
+      dur: EVERY_SEC,
+      lights: d === 0 ? doCols : null,
+    })),
+  ]
+}
+
+/** The start's length, s: 4.4 (FACTS 42). */
+export const START_SEC = round(
+  START_DO_SEC + START_QUIET_SEC + TRIAD_RUN.length * EVERY_SEC,
+)
+
+/** The quiet after the start, and between the phrases, in Play Merc's phrases, s (FACTS 70). */
+export const AFTER_START_SEC = 0.6
+export const BETWEEN_SEC = 1
+
+/**
+ * Play Merc's phrases in `clef`'s octave: the start, 0.6 s of quiet, the
+ * first phrase at 0.6 s a note, 1.0 s of quiet and the second, 12.0 s,
+ * each phrase note lighting its column as it sounds (FACTS 70).
+ */
+export function mercPhrases(clef: Clef): SungNote[] {
+  const first = START_SEC + AFTER_START_SEC
+  const second = first + PHRASES[1].length * EVERY_SEC + BETWEEN_SEC
+  const phrase = (id: 1 | 2, t0: number): SungNote[] =>
+    phraseOf(id, clef).map((note, col) => ({
+      t: round(t0 + col * EVERY_SEC),
+      note,
+      dur: EVERY_SEC,
+      lights: { phrase: id, cols: [col] },
+    }))
+  return [...startNotes(clef, 1), ...phrase(1, first), ...phrase(2, second)]
+}
+
+/** A sung play's length, s: its last note's end. */
+export const sungLength = (notes: readonly SungNote[]): number =>
+  round(Math.max(...notes.map((n) => n.t + n.dur)))
+
+/** The sung notes as a run's notes, MIDI. */
+export const runOf = (notes: readonly SungNote[]): RunNote[] =>
+  notes.map((n) => ({ t: n.t, midi: midiOf(n.note), dur: n.dur }))

@@ -32,6 +32,7 @@ import '@/features/lessons/kit/lesson-stage.css'
 // its chunk for one of its own, which every lesson page would then link
 // after its own sheet (MISTAKES.md, on the lessons' base stylesheet)
 import '@/features/lessons/kit/lesson-parts.css'
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-16.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -46,6 +47,7 @@ import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
 import { initQuizzes } from './recall'
+import { initSing } from './sing'
 import { initSteps, TOYS } from './steps'
 import { initWords } from './words'
 
@@ -70,6 +72,9 @@ deck.start()
 // quiz, and the three words, each a small staff in the learner's clef
 initQuizzes(deck)
 initWords()
+// Sing it: two phrases from the page, each found from do, the microphone
+// asked for only by Start, the take's reader loaded with it
+initSing()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(16)
