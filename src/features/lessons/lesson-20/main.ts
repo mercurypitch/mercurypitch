@@ -45,7 +45,9 @@ import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
 import { initSteps, toyFor } from './steps'
+import { initWords } from './words'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -62,6 +64,18 @@ const deck = createStepDeck({
 })
 initSteps(deck)
 deck.start()
+
+// the recall from Lessons 9 and 10 and the quick check, whose step links
+// use the deck: a chunk of their own, after first paint, since the hero
+// never needs the kit's quiz or Lessons 9's and 10's questions (one that
+// cannot load leaves the two lists empty)
+void import('./recall').then(
+  ({ initQuizzes }) => initQuizzes(deck),
+  () => undefined,
+)
+// four words, three of them a figure lit as its play sounds: the run's
+// beads, and the five-note staircase from do and from la
+initWords()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(20)
@@ -85,6 +99,9 @@ initMasthead(
   },
   { lesson: 20, deck },
 )
+// the cold open's run and its predict, in the masthead's task: its choice
+// holds the first visit's tour
+initColdOpen(deck)
 initReveals()
 startFrameLoop()
 // neither celebrates at the reveal, which says what the study found and
