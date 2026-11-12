@@ -286,6 +286,11 @@ function offered(v: LadderVisit, o: LadderOffers, e: LadderEvent): boolean {
       return o.ask && !o.locked
     case 'done':
       return o.done
+    // Lesson 20's faster pass, which this page never offers
+    case 'faster':
+      return o.faster
+    case 'passed':
+      return o.stage === 'faster'
   }
 }
 
@@ -302,6 +307,8 @@ const EVERY_EVENT: readonly LadderEvent[] = [
   ...KINDS.map(took),
   ...FEELINGS.map(feel),
   DONE,
+  { type: 'faster' },
+  { type: 'passed', whole: true },
 ]
 
 /** The rules every visit keeps, however it was reached. */

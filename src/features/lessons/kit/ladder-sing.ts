@@ -189,6 +189,8 @@ export function statusOf(
       return o.noVoiceLine === null ? null : lines[o.noVoiceLine]
     case 'reading':
       return o.locked ? afterLine(o, take.out, words, lines) : lines.feel
+    case 'faster':
+      return lines.passing ?? null
     case 'spent':
       return ''
   }
