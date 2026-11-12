@@ -135,11 +135,9 @@
 }
 
 /* ---------------------------------------------------------------- four words */
-/* each figure a short line in the learner's clef, or the count-in's pads */
-.ticket .stub svg.word-fig {
-  width: 96px;
-  height: 120px;
-}
+/* each figure across the top of its ticket, the rhythm bar's words sheet's
+   (kit/lesson-rhythm.css): a short line in the learner's clef, or the
+   count-in's pads */
 
 /* ---------------------------------------------------------------- the stage */
 /* a figure label is one 16 px line (the stage budget counts on it) */

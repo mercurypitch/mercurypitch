@@ -23,7 +23,7 @@
 // takes taps, sounding the clap and lighting the beat each fell nearest,
 // and from the fourth reads their tempo, never judged.
 
-import type { Run, Spot } from '@/features/lessons/kit/beat-clock'
+import type { Run } from '@/features/lessons/kit/beat-clock'
 import { bars, BeatClock } from '@/features/lessons/kit/beat-clock'
 import { q, qa } from '@/features/lessons/kit/dom'
 import { Motion } from '@/features/lessons/kit/motion-switch'
@@ -34,7 +34,7 @@ import { playLights } from '@/features/lessons/kit/play-lights'
 import type { Bracket, MarkBox, SheetMark, } from '@/features/lessons/kit/read-marks'
 import { createReadMarks } from '@/features/lessons/kit/read-marks'
 import type { PlayPart, RhythmBar, RhythmView, } from '@/features/lessons/kit/rhythm-bar'
-import { mountRhythmBar, WOOD_LEVEL } from '@/features/lessons/kit/rhythm-bar'
+import { mountRhythmBar } from '@/features/lessons/kit/rhythm-bar'
 import { figureSize } from '@/features/lessons/kit/rhythm-draw'
 import { heldSeconds } from '@/features/lessons/kit/rhythm-model'
 import { Sound } from '@/features/lessons/kit/sound'
@@ -44,10 +44,9 @@ import type { Clef } from '@/features/lessons/kit/staff-places'
 import { midiOf } from '@/features/lessons/kit/staff-places'
 import { bindTapPad, createTapTempo } from '@/features/lessons/kit/tap-pad'
 import { VoiceChoice } from '@/features/lessons/kit/voice-choice'
-import { bookWood } from '@/features/lessons/kit/woodblock'
 import { triggerDrumVoice } from '@/lib/drum-voices'
-import type { ByNameHit } from './reads'
-import { bracketsAt, breathAt, byNameBars, COUNT_IN, cursorAt, lateTag, levelAt, marksAt, marksDrawn, nameOf, noteWords, READ_LINES, tapTempoLine, } from './reads'
+import { startByName } from './by-name'
+import { bracketsAt, breathAt, COUNT_IN, cursorAt, levelAt, MARK_LINES, marksAt, marksDrawn, noteWords, READ_LINES, tapTempoLine, TUNE_LINES, } from './reads'
 import type { MarkId, Short, Tune } from './tunes'
 import { beatsOf, BPM, bracketName, breathMarks, COLD, DO, notesOf, SHORTS, shortScene, spaceFor, TUNE_A, TUNE_B, TUNE_C, TUNE_C_BREATH, tuneLabel, tuneScene, tuneShape, } from './tunes'
 
@@ -58,23 +57,6 @@ export const CLAP_LEVEL = 0.7
 
 export type Part = 1 | 2 | 3 | 4
 export type PlayId = 'by-name' | 'way' | 'tune-a' | 'tune-b' | 'count-in'
-
-/** What a polite region says of each mark's example once it has been heard (WEB-SPEC, Toys 2). */
-export const MARK_LINES: Readonly<Record<MarkId, string>> = {
-  dynamics: 'p, then f: the same three notes, quiet then loud.',
-  hairpins: 'Hairpins: so grows louder, then quieter again.',
-  staccato: 'Staccato: do, mi and so, each short, with silence between.',
-  slur: 'Slur: do, re and mi joined, with no gap between them.',
-  breath:
-    'Breath mark: the last do of bar 1 shortened, a breath, and bar 2 on its beat.',
-}
-
-/** What the tunes' plays say once heard. */
-export const TUNE_LINES = {
-  a: 'Tune A: a run of steps, do re mi fa, then a repeated note, so and so.',
-  b: 'Tune B: do-mi-so going down, so mi do, then a repeated note, re and re.',
-  countIn: 'Tune C, counted in: one bar of four clicks, then the two bars.',
-} as const
 
 /** Each step's figure label, after its "Fig. n": one line on a phone, as the stage's budget counts it. */
 export const FIG_LABELS: Readonly<Record<Part, string>> = {
@@ -341,52 +323,15 @@ export function mountReadingStaff(
     fresh()
     show({ kind: 'tune', tune: COLD })
     NowPlaying.claim(stop)
-    const audible = Sound.canPlay()
-    const ns = notesOf(COLD, state.clef)
-    const names: (string | null)[] = []
-    const tags: (string | null)[] = []
-    let sounding: number | null = null
-    let pad: number | null = null
-    const jumps = Motion.paused || Motion.locked
-    const r = BeatClock.start<ByNameHit>({
-      bar: bars(byNameBars(false)),
-      bpm: () => BPM,
-      audible,
-      book: (h, when, bus) => {
-        if (h.k === 'click') bookWood(bus, when, h.high, WOOD_LEVEL)
-        else if (h.k === 'sing')
-          bookNote(hz(midiOf(ns[h.i])), {
-            when,
-            dur: heldSeconds(1, BPM),
-            kind: 'soft',
-            to: bus.node,
-          })
-      },
-      onBeat: (s: Spot) => {
-        if (s.bar === 0) {
-          marks.set({ countIn: { dots: COUNT_IN, lit: s.beat } })
-          return
-        }
-        pad = (s.bar - 1) * 4 + s.beat
-        // a note named on this beat: the one sung before it goes out
-        if (s.beat % 2 === 0) sounding = null
-        marks.set({ countIn: { dots: COUNT_IN, lit: null } })
-        bar.light({ pad, sounding })
-      },
-      onHit: (h) => {
-        if (h.k === 'name') {
-          names[h.i] = nameOf(h.i)
-          marks.set({ names: [...names] })
-        } else if (h.k === 'sing') {
-          sounding = h.i
-          tags[h.i] = lateTag(h.i)
-          marks.set({ tags: [...tags] })
-          bar.light({ pad, sounding })
-        }
-      },
-      onFrame: (s: Spot) => {
-        nowBeats = s.beats - COUNT_IN
-        marks.set({ cursor: cursorAt(s.beats - COUNT_IN, 8, jumps) })
+    const r = startByName({
+      bar,
+      marks,
+      notes: notesOf(COLD, state.clef),
+      withDo: false,
+      kind: 'soft',
+      tags: true,
+      onBeats: (b) => {
+        nowBeats = b
       },
     })
     run = r
@@ -394,10 +339,6 @@ export function mountReadingStaff(
     void r.done.then((heard) => {
       if (run !== r) return
       run = null
-      nowBeats = null
-      bar.light({ pad: null, sounding: null })
-      // the cursor stops at the final bar line; the names and tags stay
-      marks.set({ countIn: null, cursor: heard ? 8 : null })
       NowPlaying.release(stop)
       if (heard) bar.say(READ_LINES.byName)
     })
