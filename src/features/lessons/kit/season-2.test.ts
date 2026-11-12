@@ -43,10 +43,10 @@ describe('Season 2', () => {
     }
   })
 
-  it('has no page, no reading time and no film for Lessons 18, 20 and 25 to 28 yet: each is coming later', () => {
+  it('has no page, no reading time and no film for Lessons 20 and 25 to 28 yet: each is coming later', () => {
     // Assert
     for (const L of LESSONS_2.filter(
-      (L) => ![15, 16, 17, 19, 21, 22, 23, 24].includes(L.n),
+      (L) => ![15, 16, 17, 18, 19, 21, 22, 23, 24].includes(L.n),
     )) {
       expect(L.page, `lesson ${L.n}`).toBeUndefined()
       expect(L.minutes, `lesson ${L.n}`).toBeUndefined()
@@ -132,6 +132,34 @@ describe('Season 2', () => {
     expect(L17?.pr.needs).toMatch(/^The Chart without triplets/)
     // Lesson 15 only helps, so Lesson 8 is its one way in
     expect(SEASON_2.prereq[17]).toEqual([8])
+  })
+
+  it("gives Lesson 18 its page and its reading time, a draft with no film, and the Exercises' link", () => {
+    // Act
+    const L18 = LESSONS_2.find((L) => L.n === 18)
+
+    // Assert: Lesson 18's WEB-SPEC, Explorer and season data
+    expect([L18?.page, L18?.minutes, L18?.film, L18?.len]).toEqual([
+      '/learn/18',
+      16,
+      undefined,
+      undefined,
+    ])
+    // it publishes only after Lessons 16 and 17, whose pages its chips and
+    // recall link
+    expect(DRAFT_LESSONS[18]).toBe(
+      "Lessons 16 and 17's pages at /learn/16 and /learn/17, and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
+    )
+    expect(L18?.pr.link).toEqual({
+      href: '/pitch-training?lesson=18',
+      addr: 'mercurypitch.com/pitch-training',
+      label: 'Exercises',
+      note: 'then tap Sight-Singing',
+    })
+    // the drill it still needs stays the team's
+    expect(L18?.pr.needs).toMatch(/^Sight-singing in time/)
+    // Lesson 16's staff, and Lesson 17's beat grid
+    expect(SEASON_2.prereq[18]).toEqual([16, 17])
   })
 
   it("gives Lesson 19 its page and its reading time, a draft with no film, and the Ear Lab's link", () => {
@@ -268,7 +296,7 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[24]).toEqual([5, 10, 23])
   })
 
-  it('has a page in the repository exactly where an entry has one: Lessons 15, 16, 17, 19, 21, 22, 23 and 24', () => {
+  it('has a page in the repository exactly where an entry has one: Lessons 15 to 19 and 21 to 24', () => {
     // Arrange: learn/NN.html for 15 and up
     const learn = resolve(__dirname, '../../../../learn')
     const pages = readdirSync(learn)
@@ -278,7 +306,7 @@ describe('Season 2', () => {
       .filter((n) => n >= 15)
 
     // Assert
-    expect(pages).toEqual([15, 16, 17, 19, 21, 22, 23, 24])
+    expect(pages).toEqual([15, 16, 17, 18, 19, 21, 22, 23, 24])
     expect(
       LESSONS_2.filter((L) => L.page !== undefined).map((L) => L.n),
     ).toEqual(pages)
