@@ -566,12 +566,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // built in every mode as Lesson 3 is: its own module on the kit, carrying
   // Season 2's map (kit/season-2.ts) as a Season 2 page must; its shell
   // and the steps' two toys, the staircase and the run with its staff;
-  // the cold open's run and predict, the four words' figures, and Sing
-  // it's card on the run chart (kit/ladder-sing.ts, kit/ladder-guide.ts):
-  // 194,945 bytes in build:e2e, the smallest whole KB above, to rise as
-  // each part joins. The recall and quick check, and the take with its
-  // listener, load after first paint.
-  'learn/20.html': 191,
+  // the cold open's run and predict, the four words' figures, Sing it's
+  // card on the run chart (kit/ladder-sing.ts, kit/ladder-guide.ts) and
+  // free play's import: 195,912 bytes in build:e2e, the smallest whole KB
+  // above, to rise as each part joins. The recall and quick check, the
+  // take with its listener, and free play load after first paint.
+  'learn/20.html': 192,
   // Lesson 21, "Keys and the circle of fifths", a Season 2 page and a
   // draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
