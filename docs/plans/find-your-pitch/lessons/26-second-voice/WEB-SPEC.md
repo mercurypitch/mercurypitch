@@ -523,8 +523,8 @@ music bed (FACTS 75 to 79).
 
 - **Two parts note against note.** Every two-part play outside a take, the cold open's, the steps',
   the words' and quick check 4's, is one `playNotes` run holding both parts' notes, which share their
-  onsets, so each pair of notes starts in one timer task (`src/features/lessons/kit/run.ts:13-14`);
-  a chord under a part is the same, its notes in the soft tone (`src/features/lessons/kit/run.ts:44-45`).
+  onsets, so each pair of notes starts in one timer task (`src/features/lessons/kit/run.ts:15-16`);
+  a chord under a part is the same, its notes in the soft tone (`src/features/lessons/kit/run.ts:46-47`).
   Nothing new is needed for these (FACTS 26).
 - **Timbres.** The cold open, the words, the steps but for Merc and Tavi, and quick check 4 play in
   the kit's soft tone; Step 3's Merc and Tavi, the models, the other part in a run, "Just listen

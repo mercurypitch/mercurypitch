@@ -161,7 +161,7 @@ Tavi's is the same an octave up. The master is 0.9 into a compressor at −16 dB
 (`sound.ts:164-168`). Frequencies are f = 440 × 2^((m − 69) / 12) for MIDI note m (`hz`,
 `src/features/lessons/kit/notes.ts:43`), to two decimals, as `verify23.py` printed them. Notes that
 sound together start in one timer task, so their voices share one clock (`playNotes`,
-`src/features/lessons/kit/run.ts:206`; the header, `src/features/lessons/kit/run.ts:13-18`).
+`src/features/lessons/kit/run.ts:215`; the header, `src/features/lessons/kit/run.ts:15-20`).
 
 66. Frequencies of the fixed examples, in pitch order; a pair is Lesson 6's, its first note 0.6 s, then 0.15 s of quiet, then its second note 0.8 s, 1.55 s in all, and two pairs with 0.5 s between take 3.6 s:
 
