@@ -960,3 +960,40 @@ production:
 - Tune 1 and tune 2 cannot be heard anywhere on the page before their takes.
 - On a real phone at 390 px, the staff, its brackets, the beat grid, the cursor and the lines fit
   Sing it's card, G3 is heard through the speaker, and p and f sound clearly apart.
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- The page is held back as a draft (What the kit and the app still need, item 2), and its draft
+  line names the two pages its prerequisite chips and its recall link to, both drafts themselves, as
+  Lessons 16, 19, 21 and 23 name theirs: `18: "Lessons 16 and 17's pages at /learn/16 and
+/learn/17, and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`.
+- Counted by `scripts/lesson-words.mjs`'s rule as the built page shows it, the package's 2,177 words
+  with about 207 more written in the open (the predict's play, its hints and "You said" lines, 19;
+  the lock line on Step 1's toy, 12; the four figures' captions, 28; the toys' labels the steps do
+  not bracket, 29; the readouts on the staff and under the pad, each form once, the lag tags, the
+  brackets' labels and the taps' tempo, 18; Sing it's status lines and the stored voice's line, 82;
+  the lines a take prints that the brief's four examples do not show, right in the middle and close,
+  with the octave tag, 19; the live regions, free play and the sound-off and no-sound lines left
+  out, as the counter leaves them), the page would run about 2,384 words, 5 over the series' cap of
+  2,379. So Length's second cut is made: Step 3's sentence on the Royal Conservatory's voice exams,
+  19 words, whose fact stays in FACTS 19. That leaves the page at about 2,365, 14 under the cap, and
+  Step 3's own text at 82 words. The first cut, the second tune, is not made: it changes the
+  singing's dose (FACTS 57), which is the vocal coach's to sign off, and the page would need an
+  ending for a single tune that LESSON.md does not give, where 19 words close the gap. If the lead's
+  order is kept, the second tune goes and the sentence comes back.
+- The reading staff is the kit's rhythm bar on the learner's clef (`kit/rhythm-bar.ts`), with
+  `kit/read-marks.ts` writing the house, the syllables, the cursor, the count-in's dots, the
+  brackets, the names, the lag tags and the marks over it, not Lesson 15's staff toy: the bar
+  already engraves each note's pitch and stem on a clef, and lights its notes and pads on the beat
+  clock, so one figure carries the staff and the beat grid. The hero's staff and Sing it's two
+  staves are the same figure.
+- A note is a button over the figure (Toys 2) only where every note's button is 44 px wide, the
+  Contract's least target, as on a tablet or a desktop: on a phone two bars leave a beat about 33
+  px, and seven buttons cannot stand side by side at 44 px without overlapping. There the toy's
+  plays and the brackets sound the notes, and the figure's name reads them.
+- Free play has no tap pad (Toys 2, state 5): Step 3 keeps the page's one, where its task is.
+- The recall and the quick check load after first paint as a chunk of their own (`recall.ts`), as
+  free play does (`free-play.ts`), so the page's first paint carries neither; the take's reader and
+  its pitch line load with the microphone at Start (`sing-take.ts`).
