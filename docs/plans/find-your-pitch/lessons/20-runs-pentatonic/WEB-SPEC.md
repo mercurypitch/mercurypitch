@@ -829,6 +829,12 @@ Where the page differs from the text above, the page as built is the reference:
 - The kit's small staircase, drawn in Four words without its two names, names each stair from its
   scale's own degrees (do, me, fa, so, te on the minor five) and lifts its rows when a scale reaches
   past them, as A3's minor five does over C3 (`kit/stairs-words.ts`, `kit/stairs-geometry.ts`).
+- Each step opens its toy as its text begins. Steps 1 and 2 open at Major, so Step 2's Minor never
+  follows the learner back to Step 1, which has no Major · Minor, and Step 2 opens on C at once
+  rather than sliding there from A. Play it smudged's line stays until the next play or until a
+  tempo change moves the beads from under it, since it was sung at 0.2 s. In free play, Minor turns
+  Leave out fa and ti on, as the switch shows while Minor is on, so Major brings back the major five
+  its line names.
 - The tease still is markup, needing no script: Lesson 21's ring as Lesson 21's page draws it at
   first paint, each part's look written in, over a keyboard from D4 to A5 in Lesson 1's colours. A
   change to Lesson 21's opening asks for the still to be drawn again.
