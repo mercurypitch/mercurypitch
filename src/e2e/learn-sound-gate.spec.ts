@@ -41,6 +41,7 @@ const LESSONS = [
   '22',
   '23',
   '24',
+  '25',
 ] as const
 const VIEWPORTS = [
   { width: 344, height: 844 },
