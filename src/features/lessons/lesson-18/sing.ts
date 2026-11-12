@@ -20,8 +20,8 @@
 // Start): from bar 1's first beat the cursor crosses the bars at 60 BPM in
 // silence and the beat grid lights each beat, "Your turn: sing in time
 // with the cursor.", while Merc and Tavi listen in the hero (kit/merc-duo.ts
-// `mercListen`) and nothing else on the page plays: every other play
-// button is disabled until the take ends, and a press on one enabled
+// `mercListen`). Nothing else on the page plays from Start: every other
+// play button is disabled until the take ends, and a press on one enabled
 // since, or a tap on the tap pad, falls on nothing. When bar 2 ends the
 // cursor stops at the final bar line and the take listens on until the
 // last note's window closes. Half a second later come the pitch line,
@@ -355,7 +355,7 @@ export function initSing(
     )
   }
 
-  // the plays a take disabled, given back as it ends
+  // the plays Start disabled, given back as the take ends
   let held: HTMLButtonElement[] = []
   const letFall = (e: Event): void => {
     if (!root.isConnected || !playsElsewhere(e)) return
@@ -363,10 +363,14 @@ export function initSing(
     e.stopImmediatePropagation()
   }
 
-  /** While a take runs Merc and Tavi listen, and nothing else on the page plays. */
+  /** While a take runs Merc and Tavi listen. */
   function listening(on: boolean): void {
     mercListen('blue', on)
     mercListen('orange', on)
+  }
+
+  /** From Start to the take's end nothing else on the page plays. */
+  function hold(on: boolean): void {
     for (const b of held) b.disabled = false
     held = on
       ? qa<HTMLButtonElement>(PAGE_PLAYS).filter(
@@ -409,6 +413,7 @@ export function initSing(
       mic.release()
       return
     }
+    hold(true)
     show(main, tune)
     readings.replaceChildren()
     leaving = false
@@ -447,12 +452,14 @@ export function initSing(
     await r.done
     const opened = take as Promise<TakeEnd> | null
     if (opened === null) {
+      hold(false)
       cut()
       return
     }
     const end = await opened
     mic.release()
     listening(false)
+    hold(false)
     if (cutStart) {
       // sound off as the take opened: the start was cut, no take counted
       cut()
