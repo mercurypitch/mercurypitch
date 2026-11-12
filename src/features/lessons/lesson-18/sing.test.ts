@@ -295,7 +295,7 @@ describe('the start and the take', () => {
     expect(staff().querySelectorAll('.rd-cursor')).toHaveLength(1)
   })
 
-  it('turns Merc and Tavi to listen while a take runs, and lets nothing else on the page play', async () => {
+  it('lets nothing else on the page play from Start to the take’s end, and turns Merc and Tavi to listen while the take runs', async () => {
     // Arrange
     initSing({ loadTake })
     const word = el<HTMLButtonElement>('[data-word-play="slur"]')
@@ -303,14 +303,19 @@ describe('the start and the take', () => {
     word.addEventListener('click', () => heard.push('word'))
 
     // Act
-    await toTake()
+    await toStart()
+    const counting = [[...listens], word.disabled]
+    drive(4)
+    frame(0, 3, 3.5)
+    frame(1, 0, 4)
     const during = [[...listens], word.disabled]
     word.disabled = false
     word.click()
     await endTake(['Do · Right in the middle: on the written note.'])
     word.click()
 
-    // Assert
+    // Assert (WEB-SPEC, Audio, the sound rules 4)
+    expect(counting).toEqual([[], true])
     expect(during).toEqual([
       [
         ['blue', true],
@@ -390,17 +395,20 @@ describe('the start and the take', () => {
       return () => undefined
     })
     initSing({ loadTake })
+    const word = el<HTMLButtonElement>('[data-word-play="slur"]')
     await toStart()
     drive(1)
+    const held = word.disabled
 
     // Act
     for (const fn of subs) fn('off')
     await settle()
 
-    // Assert
+    // Assert: the page's plays given back
     expect(runs[0].stopped).toBe(true)
     expect(takes).toHaveLength(0)
     expect(mic.released).toBe(1)
+    expect([held, word.disabled]).toEqual([true, false])
     expect(shown('[data-sing="start"]')).toBe(true)
     expect(status()).toBe(STATUS.turn)
   })
