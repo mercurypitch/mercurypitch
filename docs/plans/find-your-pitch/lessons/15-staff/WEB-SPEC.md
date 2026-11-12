@@ -369,7 +369,7 @@ staff (Toys 1, state 6). In order:
    each note amber as it sounds. Start the guide waits until Merc's notes have been heard with sound
    on, with Lesson 12's hint, "Play Merc's notes first", and its sound-off line
    (`src/features/lessons/kit/sing-flow.ts:191-196`); then it counts in on do, 0.8 s at 0.065
-   and 0.2 s of quiet (`countIn`, `src/features/lessons/kit/move-do.ts:65-74`), and the sweep runs
+   and 0.2 s of quiet (`countIn`, `src/features/lessons/kit/move-do.ts:68-77`), and the sweep runs
    6.6 s with no voice. No Move do and no readout (FACTS 56). The line under the buttons is
    LESSON.md's, "The guide counts you in on do, then a line sweeps along the notes. Nothing listens
    here and nothing is scored. It's just for you." (FACTS 59a). Your turn's own text adds two

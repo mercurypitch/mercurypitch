@@ -433,7 +433,7 @@ States:
 
 **The visit's rules** (FACTS 65): three takes a visit, every take counted, one with no voice or one
 cut short when the page is left or hidden too, as Lessons 18, 24 and 26 count them (`MAX_TRIES`,
-`src/features/lessons/kit/take.ts:63`); Again sings again, the quiet check first with headphones,
+`src/features/lessons/kit/take.ts:66`); Again sings again, the quiet check first with headphones,
 and records its take in the last one's place; no celebration: the reader's lines say where notes
 sat, and Merc and Tavi only listen after a run; the tricky line follows a run with under half its
 notes in the band.

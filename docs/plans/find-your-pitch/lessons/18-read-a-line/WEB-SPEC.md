@@ -493,7 +493,7 @@ kit and the app still need, item 15).
 - **The line**: the rung line with the note's syllable and "the written note": "So · In the band: 20
   cents above the written note.", "Right in the middle" within 15 cents, with Lesson 3's octave line
   within 50 cents of the note an octave or more away, or "Mi · We didn't hear a steady note there."
-  (`rungLine`, `src/features/lessons/kit/take.ts:301-309`, given whose note it is, as Lesson 16's spec
+  (`rungLine`, `src/features/lessons/kit/take.ts:314-322`, given whose note it is, as Lesson 16's spec
   asks). No count, no score, no word on timing and no celebration on a note.
 - **No voice**: when no window holds a voiced frame, the take reads as no voice (state 7).
 

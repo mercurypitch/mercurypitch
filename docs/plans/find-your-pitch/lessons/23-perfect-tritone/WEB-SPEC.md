@@ -359,7 +359,7 @@ the guide drawn on the staff and no Move do. In order:
    `playContour`, `src/features/lessons/kit/sound.ts:697`), each note lighting as it sounds. Start
    the guide waits until Merc's notes have been heard with sound on, with Lesson 12's two hints
    (`hintFor`, `src/features/lessons/kit/sing-flow.ts:196-202`); then it counts in on do, 0.8 s
-   at 0.065 and 0.2 s of quiet (`countIn`, `src/features/lessons/kit/move-do.ts:65-74`), and a
+   at 0.065 and 0.2 s of quiet (`countIn`, `src/features/lessons/kit/move-do.ts:68-77`), and a
    chrome sweep line runs along the four notes in time, 7.0 s, with no voice and nothing on the
    notes themselves. No Move do and no readout (FACTS 53). The line under the buttons is LESSON.md's
    guide line (FACTS 58a). Your turn's own text adds the line for a top note that feels high (FACTS

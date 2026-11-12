@@ -444,7 +444,7 @@ States:
    sing" only, LESSON.md's line, "If do feels low, move it higher.", and Lesson 4's control as
    Lesson 20's page has it: a group labelled "Move do:" with "lower" and "higher", with the reach
    `{ lower: 0, higher: 5 }` for both voices (`MoveReach`, `src/features/lessons/kit/move-do.ts:29-36`;
-   `clampMove`, `src/features/lessons/kit/move-do.ts:39-42`). "lower" rests at D, `aria-disabled`,
+   `clampMove`, `src/features/lessons/kit/move-do.ts:38-45`). "lower" rests at D, `aria-disabled`,
    never `disabled`, and after any press of "higher" it is the way back
    (`src/features/lessons/kit/move-do.ts:8-12`). Do starts on D every visit, and a move holds for
    the visit, in memory. Do moves with the drone, Merc's model notes, the band, the quiet check's

@@ -225,7 +225,7 @@ SEASON-2 § 6.2 item 4 asks for (What the kit and the app still need, item 4).
   free play in the Wrap, anywhere from E♭ round to A. A bead in the step's part is a button that
   moves the house there and plays its scale. At a stop, Step round or Step back is marked
   `aria-disabled`, as Move do's buttons are at their ends (`setMoveEnds`,
-  `src/features/lessons/kit/move-do.ts:52-63`).
+  `src/features/lessons/kit/move-do.ts:55-66`).
 - **Beads past three sharps or flats**: E, B or C♭, F♯ or G♭, C♯ or D♭, and A♭. They are drawn and
   named, dimmed, and take no tap: the house never goes there, nothing plays, and no signature
   shows beside the circle for them, since the page reads no signature past three. The bottom three
@@ -305,7 +305,7 @@ Lesson 15's flow, with two runs in place of one (Lesson 15 WEB-SPEC, Toys 5).
    or D4 E4 F♯4 G4). 12.8 s in all, Merc's "ooh" (FACTS 56, 64).
 5. **Guide**: enabled once Merc's notes have been heard with sound on, with the hint "Play Merc's
    notes first" until then. A count-in on so (`countIn`, which plays the note it is given,
-   `src/features/lessons/kit/move-do.ts:69-70`), then a line sweeps along the four notes in C with
+   `src/features/lessons/kit/move-do.ts:72-73`), then a line sweeps along the four notes in C with
    no voice; the signature and the house change as in Merc's; a second count-in on the new so in the
    last second of the gap; then the line sweeps along the four notes in G. 13.8 s in all.
 6. **How did that feel?**, after each guide that runs to its end: Lesson 3's four answers through
@@ -346,7 +346,7 @@ play button is pressed (the sound gate).
 
 - **The soft tone** plays every scale, the four words, Find do and the walk; **Merc's "ooh"** sings
   Sing it's runs, Tavi's an octave higher; the count-ins are the kit's, at half a tapped note's level
-  (`COUNT_IN`, `src/features/lessons/kit/move-do.ts:65-66`).
+  (`COUNT_IN`, `src/features/lessons/kit/move-do.ts:68-69`).
 - **Timings** (FACTS 61 to 64): a scale a note every 0.4 s, each note 0.35 s long, 3.15 s, as the
   hero's three plays are (D major from D4, A major from A4 both ways); Step 2's scales a note every
   0.3 s, each 0.27 s long, 2.37 s; the semitones word, thirteen notes 0.3 s apart, each 0.25 s long,

@@ -440,7 +440,7 @@ States:
 - **A set** is one part sung in runs: the learner's part, then, after Easy or Workable, the tune in
   the swap. One run is one take, and each set allows three takes in a visit, every take counted, one
   with no voice or one cut short when the page is left or hidden too, as Lessons 18 and 24 count
-  them (`MAX_TRIES`, `src/features/lessons/kit/take.ts:63`).
+  them (`MAX_TRIES`, `src/features/lessons/kit/take.ts:66`).
 - **Again** sings the set again: the quiet check, the model, the count-in and the run.
 - **The swap** is offered only after Easy or Workable on the learner's part, and never after
   Effortful or Uncomfortable.

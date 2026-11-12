@@ -581,14 +581,14 @@ States:
    from "do is A♭3" to "do is E♭4" for the lower voice (spoken "do is A flat 3"), or A♭4 to E♭5 for
    the higher (FACTS 60). Lesson 4's Move do goes four either way (`MOVE_MAX`,
    `kit/move-do.ts:27`), and the kit's takes a reach for each side (`MoveReach`, `:30-36`), so this
-   page passes four and three. At its limit a button is `aria-disabled` (`setMoveEnds`, `:52`).
+   page passes four and three. At its limit a button is `aria-disabled` (`setMoveEnds`, `:55`).
 5. **Guide**: **Start the guide** is enabled once Merc's notes have played with sound on (hear it
    first: playbook rule 16); until then it is `aria-disabled`, with the hint "Play Merc's notes
    first". With sound off, Play Merc's notes runs its lights silently and the hint says why, in this
    page's form: "Sound is off: nothing played. Turn sound on to hear Merc's notes, then start the
    guide." It is the viewer's turn, so the amber goes, the rows turn plain chrome and Merc's path is
    drawn dashed in chrome. The count-in is Lesson 4's: do, once, softly, at half a tapped note's
-   level, for 0.8 s, then 0.2 s of quiet (`kit/move-do.ts:65-67`; FACTS 73). Then a
+   level, for 0.8 s, then 0.2 s of quiet (`kit/move-do.ts:68-70`; FACTS 73). Then a
    vertical chrome line sweeps the path for 10.0 s while the chords play under it, past each gap,
    with nothing riding the path itself, while the ring breathes through the gaps with the still of
    the Merc last heard at its centre. Merc does not sing in the guide: it is the viewer's turn.
@@ -899,11 +899,11 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
 6. The breath mark on the slide guide (Toys 6): on main, from Lesson 6's page (`breaths`,
    `slide-guide.ts:66-67`). Nothing to add.
 7. Move do and the count-in's note (Toys 6): Lesson 4's, in the kit since #1192 moved it there
-   (`kit/move-do.ts:26-49`; `:65-74`), as Lesson 10's spec planned (its item 7). It sets `disabled`
+   (`kit/move-do.ts:26-52`; `:68-77`), as Lesson 10's spec planned (its item 7). It sets `disabled`
    at its limits; this page needs `aria-disabled`, never `disabled`, so a keyboard user's focus
    stays put, and one thing more: a limit for each side, four lower and three higher, where Lessons
    4, 6, 8 and 10 take four either way (FACTS 60). Both are in the kit's part now, from Lesson 10's
-   page: `aria-disabled` at its ends (`setMoveEnds`, `kit/move-do.ts:52`) and a reach for each side
+   page: `aria-disabled` at its ends (`setMoveEnds`, `kit/move-do.ts:55`) and a reach for each side
    (`MoveReach`, `:30-36`), and Lessons 4, 6 and 8 keep four either way.
 8. The sound rules' helpers (Audio; Toys 3). On main, from Lesson 6's page: the page-wide "now
    playing" owner, `NowPlaying` (`kit/now-playing.ts:17-39`), and a `play` that may resolve `false`
@@ -978,10 +978,10 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     card does not answer the cold open's predict (FACTS 1a).
 14. The first-paint budget, in the change that adds the page: `learn/12.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript (`FIRST_PAINT_BUDGETS_KB`,
-    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:539`), measured, with the
+    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:543`), measured, with the
     lessons' headroom, a quarter over. Every build emits every lesson page, a draft's included
     (`scripts/assert-first-paint-budgets.mjs:127-129`), and a document it emits with no budget
-    fails the check (`assert-first-paint-budgets.mjs:958-961`, and for CSS `:991-994`; FACTS 76),
+    fails the check (`assert-first-paint-budgets.mjs:962-965`, and for CSS `:995-998`; FACTS 76),
     which `build:e2e` runs (`package.json:20`). The page's WebGL renderer, as on every lesson page,
     arrives after first paint (Merc and Tavi).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and

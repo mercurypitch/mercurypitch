@@ -330,7 +330,7 @@ quieter, and Step 2 compares two chords, not two loudnesses (FACTS 73). Every pi
 The lowest, G2 at 98 Hz in the lower voice's V and V7, is checked on a phone's speaker in the lab
 (Edge cases); the highest, G5 at 784 Hz, sounds only in free play (FACTS 72). Chords sound their
 notes together, with no arpeggio, except the Seventh chord word's and Merc's line. The guide's
-count-in is Lesson 25's (`src/features/lessons/kit/move-do.ts:65-74`).
+count-in is Lesson 25's (`src/features/lessons/kit/move-do.ts:68-77`).
 
 ## Merc and Tavi
 
