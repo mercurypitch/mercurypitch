@@ -13,7 +13,9 @@
 // here is the cold open's line or Sing it's second phrase (FACTS 43).
 
 import type { Letter, Spelled } from '@/features/lessons/kit/notes'
+import type { RunNote } from '@/features/lessons/kit/run'
 import type { Clef } from '@/features/lessons/kit/staff-places'
+import { midiOf } from '@/features/lessons/kit/staff-places'
 import type { PlayNote, StaffPlay, StaffState, } from '@/features/lessons/kit/staff-state'
 
 /** A natural note: G3 is `nat('G', 3)`. */
@@ -154,3 +156,15 @@ export const stairsStaff = (clef: Clef, turned: boolean): StaffState =>
         tapSec: TAP_SEC,
         lead: DO[clef],
       }
+
+/** Quick check 4's quiet between do and re, s (FACTS 69). */
+export const QUIZ_GAP_SEC = 1
+
+/** Quick check 4's do, a second of quiet, then re, in `clef`'s octave: 0.8 s each, 2.6 s (FACTS 69). */
+export function quizDoRe(clef: Clef): RunNote[] {
+  const [d, r] = doToSo(clef)
+  return [
+    { t: 0, midi: midiOf(d), dur: TAP_SEC },
+    { t: round(TAP_SEC + QUIZ_GAP_SEC), midi: midiOf(r), dur: TAP_SEC },
+  ]
+}
