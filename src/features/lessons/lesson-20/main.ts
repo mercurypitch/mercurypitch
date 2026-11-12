@@ -81,6 +81,12 @@ initWords()
 // Sing it: the run, or the smaller run, sung back a bead at a time, the
 // take's reader and its pitch line loaded with the microphone at Start
 initSing()
+// free play, the staircase and the run with every switch from the steps: a
+// chunk of its own after first paint, since nothing above the Wrap needs it
+void import('./free-play').then(
+  ({ initFreePlay }) => initFreePlay(),
+  () => undefined,
+)
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(20)

@@ -554,6 +554,42 @@ describe("Lesson 20's page", () => {
     expect(PAGE).not.toContain('/exercises/speed-scales')
   })
 
+  it("draws the tease still as markup: Lesson 21's ring of twelve beads, D major's seven lit, F sharp and C sharp named on the keys, and nothing to press", () => {
+    // Arrange
+    const tease = doc().querySelector('.l20-next .l20-tease')
+    const ring = tease?.querySelector('svg[data-tease-ring]')
+    const parts = Array.from(ring?.children ?? [])
+    const beads = Array.from(
+      parts.find((c) => c.tagName === 'g')?.children ?? [],
+    )
+
+    // Act: a bead lit for D major wears a halo, a second circle behind it
+    const named = beads.map((g) => words(g.querySelector('text')))
+    const lit = beads
+      .filter((g) => g.querySelectorAll('circle').length === 2)
+      .map((g) => words(g.querySelector('text')))
+    const keys = parts.filter((c) => c.tagName === 'text').map((t) => words(t))
+
+    // Assert: WEB-SPEC, Toys 9
+    expect(tease?.getAttribute('aria-hidden')).toBe('true')
+    expect(beads).toHaveLength(12)
+    expect(named.filter((n) => n !== '')).toEqual([
+      'C',
+      'C♯',
+      'D',
+      'E',
+      'F',
+      'F♯',
+      'G',
+      'A',
+      'B',
+    ])
+    expect(lit).toEqual(['C♯', 'D', 'E', 'F♯', 'G', 'A', 'B'])
+    expect(keys).toEqual(['F♯', 'C♯'])
+    expect(tease?.querySelectorAll('a, button, [tabindex]')).toHaveLength(0)
+    expect(tease?.querySelector('script, use')).toBeNull()
+  })
+
   it('names a share card that is in public/, at its size', () => {
     // Arrange
     const image = metaOf('og:image')?.replace('https://mercurypitch.com/', '')
