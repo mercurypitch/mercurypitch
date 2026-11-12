@@ -116,6 +116,47 @@ describe('a note booked ahead (Lesson 8, a sung syllable on the beat)', () => {
     expect(valueAt(ctx.gains[1].gain.events, 2.9, 1)).toBeLessThan(AUDIBLE)
   })
 
+  it("takes a level as it sounds: p's fraction of the voice's own from its start, or a hairpin's glide up and back (Lesson 18)", async () => {
+    // Arrange
+    const { ahead, ctx } = await soundOn()
+    ctx.currentTime = 1
+
+    // Act: a quiet note, then a half note that swells over 1 s and fades
+    ahead.bookNote(A3, { when: 2, dur: 0.9, levels: [{ at: 0, level: 0.3 }] })
+    ahead.bookNote(A3, {
+      when: 3,
+      dur: 1.9,
+      levels: [
+        { at: 0, level: 0.3 },
+        { at: 1, level: 1 },
+        { at: 2, level: 0.3 },
+      ],
+    })
+
+    // Assert: each voice's level is the gain after its envelope; the soft
+    // tone's own level is 0.13
+    const quiet = ctx.gains[2].gain
+    const swell = ctx.gains[4].gain
+    expect(quiet.events).toEqual([['setValueAtTime', 0.039, 2]])
+    expect(swell.events).toEqual([
+      ['setValueAtTime', 0.039, 3],
+      ['linearRampToValueAtTime', 0.13, 4],
+      ['linearRampToValueAtTime', 0.039, 5],
+    ])
+  })
+
+  it('keeps its own level throughout with no levels given', async () => {
+    // Arrange
+    const { ahead, ctx } = await soundOn()
+
+    // Act
+    ahead.bookNote(A3, { when: 0.2, dur: 0.3 })
+
+    // Assert
+    expect(ctx.gains[2].gain.events).toEqual([])
+    expect(ctx.gains[2].gain.value).toBe(0.13)
+  })
+
   it('plays into the bus it is given, not the master', async () => {
     // Arrange
     const { ahead, ctx } = await soundOn()
