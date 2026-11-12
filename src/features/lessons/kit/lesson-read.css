@@ -1,0 +1,89 @@
+/* ============================================================
+   Read marks — the reading staff's marks over its rhythm figure
+   ============================================================
+   kit/read-marks.ts's drawing: the house and the syllables, a note's name
+   and tag as it is read, the cursor, the count-in strip, the gold brackets
+   and a song sheet's marks (Lesson 18 WEB-SPEC, Toys 1 to 3). A page that
+   draws them takes this sheet in by @import, with the rhythm bar's. */
+
+.rd-house {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.9px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.rd-syl,
+.rd-name,
+.rd-tag {
+  font-family: var(--f-display);
+  font-weight: 600;
+}
+.rd-syl {
+  fill: var(--ink-2);
+}
+/* a name as Merc says it, in small ink over its note */
+.rd-name {
+  fill: var(--ink);
+}
+.rd-tag {
+  fill: var(--amber);
+}
+.rd-cursor {
+  stroke: var(--aqua);
+  stroke-width: 2px;
+  stroke-linecap: round;
+}
+.rd-dot {
+  fill: rgba(195, 204, 214, 0.18);
+  stroke: var(--hair-3);
+  stroke-width: 1px;
+}
+.rd-dot.is-lit {
+  fill: var(--ink);
+  stroke: var(--ink);
+}
+.rd-bracket path {
+  fill: none;
+  stroke: var(--gold);
+  stroke-width: 2px;
+  stroke-linejoin: round;
+}
+.rd-bracket text {
+  fill: var(--gold);
+  font-family: var(--f-display);
+  font-weight: 600;
+}
+.rd-bracket.is-fresh {
+  animation: rd-fade 0.2s ease-out both;
+}
+@keyframes rd-fade {
+  from {
+    opacity: 0;
+  }
+}
+.motion-paused .rd-bracket.is-fresh {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .rd-bracket.is-fresh {
+    animation: none;
+  }
+}
+.rd-dyn,
+.rd-breath {
+  fill: var(--ink);
+  font-family: var(--f-serif);
+  font-style: italic;
+  font-weight: 700;
+}
+.rd-hairpin,
+.rd-slur {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.6px;
+  stroke-linecap: round;
+}
+.rd-stacc {
+  fill: var(--ink);
+}
