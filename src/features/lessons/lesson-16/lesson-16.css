@@ -68,6 +68,16 @@
   padding-top: 0;
   border-top: 0;
 }
+/* the choices and the two tries are long: each wraps inside its button
+   rather than running past a phone's edge */
+.l16-hero .choice,
+.l16-hero .hero-plays .btn {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+  padding-block: 8px;
+}
 @media (max-width: 1080px) {
   .l16-duo {
     --merc: clamp(120px, 20vw, 190px);

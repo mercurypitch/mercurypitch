@@ -44,6 +44,7 @@ import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
 import { initSteps, TOYS } from './steps'
 
 // Season 2, before anything draws
@@ -85,6 +86,9 @@ initMasthead(
   },
   { lesson: 16, deck },
 )
+// the cold open, in the masthead's task, so a first visit's tour waits for
+// its choice
+initColdOpen(deck)
 initReveals()
 startFrameLoop()
 // Tavi gives a quiet "oh" as the reveal shows, with no sparkles: the reveal

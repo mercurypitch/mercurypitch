@@ -493,10 +493,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Lesson 16, "Sing what you see", a Season 2 page and a draft, built in
   // every mode as Lesson 3 is: its own module on the kit, carrying Season
   // 2's map (kit/season-2.ts) as a Season 2 page must; its shell and its
-  // steps, the staircase that turns into the staff and the staff toy:
-  // 145,060 bytes in build:e2e, the smallest whole KB above, to rise as each
-  // part joins.
-  'learn/16.html': 142,
+  // steps, the staircase that turns into the staff and the staff toy, and
+  // the cold open's two tries on the kit's predict: 151,500 bytes in
+  // build:e2e, the smallest whole KB above, to rise as each part joins.
+  'learn/16.html': 148,
   // Lesson 17, "How long is a note?", a Season 2 page and a draft, built in
   // every mode as Lesson 3 is: its own module on the kit, carrying Season
   // 2's map (kit/season-2.ts) as a Season 2 page must, with the steps'
