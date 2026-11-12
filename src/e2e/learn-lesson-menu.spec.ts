@@ -262,6 +262,8 @@ const NO_FILM = [
   { n: 16, title: 'Sing what you see' },
   // its sung part is a tapped checkpoint first, so its anchor says so
   { n: 17, title: 'How long is a note?', sing: 'Tap it' },
+  // it teaches in four steps
+  { n: 18, title: 'Read and sing a whole line', steps: 4 },
   // nothing on it is sung: its solo is tapped, so its anchor says so; and
   // it teaches in four steps, not five
   {

@@ -399,7 +399,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // bundler moves it out of Lesson 4's own chunk into one the two pages
   // share (14,203 bytes), and the imports between them cost 611 bytes:
   // 159,267 before, 159,878 with them, against 159,744 at 156.
-  'learn/04.html': 157,
+  // Raised to 158 for Lesson 18's page shell: 160,536 bytes before it,
+  // 160,840 with it, against 160,768 at 157. 117 of the 304 are on every
+  // lesson page: Lesson 18's drafts line (kit/drafts.ts). The other 187 are
+  // the bundler cutting the kit's shared code differently around a shell
+  // that loads the reveal but not the predict, as Lesson 16's shell did;
+  // 157 can be tried once Lesson 18's cold open loads the predict.
+  'learn/04.html': 158,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
@@ -514,6 +520,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // over. The recall and quick check, the checkpoint (take, pad, clap, sung
   // bars) and free play load after first paint.
   'learn/17.html': 178,
+  // Lesson 18, "Read and sing a whole line", a Season 2 page and a draft,
+  // built in every mode as Lesson 3 is: its own module on the kit, carrying
+  // Season 2's map (kit/season-2.ts) as a Season 2 page must; its shell:
+  // 88,983 bytes in build:e2e, the smallest whole KB above, to rise as each
+  // part joins.
+  'learn/18.html': 87,
   // Lesson 19, "Threes, offbeats and syncopation", a Season 2 page and a
   // draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
@@ -730,6 +742,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // shared parts), its own, and the shared Inter and Outfit @font-face
   // rules; a quarter over.
   'learn/17.html': 116,
+  // Lesson 18 (a draft, as above), its shell: 87,238 bytes in build:e2e,
+  // the kit's sheets (the shared parts), its own with the rhythm bar's and
+  // the tap pad's taken in by @import, and the shared Inter and Outfit
+  // @font-face rules; the smallest whole KB above, to rise as each part
+  // joins, the voice lessons' sheets with Sing it.
+  'learn/18.html': 86,
   // Lesson 19 (a draft, as above), with its steps, its cold open, its four
   // words, the take and the Wrap: 86,737 bytes in build:e2e, the kit's
   // sheets (the rhythm bar's and the tap pad's inlined into its own by
