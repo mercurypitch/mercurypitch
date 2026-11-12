@@ -211,7 +211,9 @@ export function mountStairsStep(
     const next = rangeNow()
     if (next.lo !== range.lo || next.hi !== range.hi) {
       range = next
-      core.setRange(next)
+      // new starts stand on the scale's own start at once: Step 2 opens on
+      // C, never sliding there from A, the move it teaches the other way
+      core.setRange(next, tonicNow())
     }
     const d = degreesNow()
     if (!sameDegrees(d, core.degrees)) core.setDegrees(d)

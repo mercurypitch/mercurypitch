@@ -13,10 +13,12 @@
 // only while something it shows moves or has changed, so a still staircase
 // asks the page's frame loop for nothing (frame-loop.ts, `wants`). A page
 // whose staircase changes octave hands it new starts (`setRange`): Lesson
-// 21's stands on G2 or G4 by the learner's clef. A page may draw another
-// scale's stairs and change them as it goes (`degrees`, `setDegrees`):
-// Lesson 20's leaves fa and ti out, then starts the five on la, each stair
-// with both its names and each riser with its size in semitones.
+// 21's stands on G2 or G4 by the learner's clef. It may name the start to
+// stand on, at once: Lesson 20's Step 2 opens on C, not sliding up from A.
+// A page may draw another scale's stairs and change them as it goes
+// (`degrees`, `setDegrees`): Lesson 20's leaves fa and ti out, then starts
+// the five on la, each stair with both its names and each riser with its
+// size in semitones.
 
 import { clamp } from './dom'
 import type { Surface } from './frame-loop'
@@ -78,8 +80,8 @@ export interface StairsCore {
   setTonic(midi: number): void
   /** Other stairs, at once: what plays stops (Lesson 20's fa and ti left out, and its minor five). */
   setDegrees(degrees: Degrees): void
-  /** New starts: what plays stops, and the staircase stands on the lowest at once. */
-  setRange(range: StairsRange): void
+  /** New starts: what plays stops, and the staircase stands at once on `at`, kept within them, or on the lowest. */
+  setRange(range: StairsRange, at?: number): void
   /** Seconds a slide's travel takes (none under reduced motion). */
   readonly travel: number
   /** The scene's switches. */
@@ -341,15 +343,15 @@ export function mountStairs(opts: StairsCoreOptions): StairsCore {
       degrees = next
       changed()
     },
-    setRange(range) {
+    setRange(range, at) {
       const next = floorOf(range)
       clearRun()
       lo = range.lo
       hi = range.hi
       floor = next
-      tonic = lo
-      view = lo
-      travelFrom = lo
+      tonic = clamp(Math.round(at ?? lo), lo, hi)
+      view = tonic
+      travelFrom = tonic
       travelU = 1
       if (sw.white) whiteFrom = tonic
       changed()
