@@ -69,6 +69,21 @@ describe('setRange', () => {
     expect(c.tonic).toBe(67)
   })
 
+  it("stands at once on the start it is given, with no slide up from the lowest (Lesson 20's Step 2, opening on C)", () => {
+    // Arrange: motion on, Step 1's starts
+    still = false
+    const { core: c, drawer } = mount(48, 59)
+    drawer.draw(0, 0.016)
+
+    // Act: Step 2's starts, A2 to C3, standing on C3
+    c.setRange({ lo: 45, hi: 48 }, 48)
+    drawer.draw(0, 0.016)
+
+    // Assert: on C3, and nothing left to travel
+    expect(c.tonic).toBe(48)
+    expect(drawer.wants?.()).toBe(false)
+  })
+
   it('refuses starts that run past one octave from C', () => {
     // Arrange
     const { core: c } = mount(60, 71)
