@@ -240,6 +240,170 @@ const TEXT_WIDTH = 0.56
 const labelSize = (space: number): number => Math.max(11, space * 0.8)
 const smallSize = (space: number): number => Math.max(10, space * 0.7)
 
+/** A song sheet's mark of one kind. */
+type MarkOf<K extends SheetMark['kind']> = Extract<SheetMark, { kind: K }>
+
+/** p or f over its note, in the display face; its button's box, or null where the note is not drawn. */
+function drawDynamic(
+  G: Geometry,
+  g: SVGGElement,
+  m: MarkOf<'p' | 'f'>,
+): MarkBox | null {
+  const h = G.heads[m.at] ?? null
+  if (h === null) return null
+  const s = G.row.space
+  const size = s * 1.6
+  const y = ceilingOf(G, m.at, m.at) - s * 0.6
+  svg(
+    'text',
+    {
+      x: r(h.x),
+      y: r(y),
+      'text-anchor': 'middle',
+      'font-size': r(size),
+      class: 'rd-dyn',
+      'data-mark': m.kind,
+      text: m.kind,
+    },
+    g,
+  )
+  return around(h.x, y - size * 0.35, size, size)
+}
+
+/** A hairpin over its beats, drawn as far as its share; its button's box. */
+function drawHairpin(
+  G: Geometry,
+  g: SVGGElement,
+  m: MarkOf<'cresc' | 'dim'>,
+): MarkBox {
+  const s = G.row.space
+  const x1 = xOf(G.row, m.from) + s * 0.3
+  const x2 = xOf(G.row, m.to) - s * 0.3
+  const first = G.placed.findIndex((p) => p.beat >= m.from - 1e-6)
+  const last = G.placed.reduce(
+    (at, p, i) => (p.beat < m.to - 1e-6 ? i : at),
+    first,
+  )
+  const yc = ceilingOf(G, Math.max(0, first), Math.max(0, last)) - s * 1.4
+  const d = Math.min(1, Math.max(0, m.drawn))
+  const half = s * 0.6
+  // a crescendo opens from its point; a diminuendo closes to its point
+  const open = (t: number): number =>
+    m.kind === 'cresc' ? half * t : half * (1 - t)
+  const xe = x1 + (x2 - x1) * d
+  svg(
+    'path',
+    {
+      d: `M${r(xe)} ${r(yc - open(d))}L${r(x1)} ${r(yc - open(0))}M${r(x1)} ${r(yc + open(0))}L${r(xe)} ${r(yc + open(d))}`,
+      class: 'rd-hairpin',
+      'data-mark': m.kind,
+    },
+    g,
+  )
+  return around((x1 + x2) / 2, yc, x2 - x1, half * 2)
+}
+
+/** A staccato dot on the head's side away from its stem; its button's box, or null where the note is not drawn. */
+function drawStaccato(
+  G: Geometry,
+  g: SVGGElement,
+  m: MarkOf<'staccato'>,
+): MarkBox | null {
+  const h = G.heads[m.at] ?? null
+  if (h === null) return null
+  const s = G.row.space
+  const y = h.down ? h.y - s * 0.95 : h.y + s * 0.95
+  svg(
+    'circle',
+    {
+      cx: r(h.x),
+      cy: r(y),
+      r: r(s * 0.18),
+      class: 'rd-stacc',
+      'data-mark': 'staccato',
+    },
+    g,
+  )
+  return around(h.x, y, 0, 0)
+}
+
+/** A slur from its first head to its last, drawn as far as its share; its button's box, or null where a head is not drawn. */
+function drawSlur(
+  G: Geometry,
+  g: SVGGElement,
+  m: MarkOf<'slur'>,
+): MarkBox | null {
+  const a = G.heads[m.first] ?? null
+  const z = G.heads[m.last] ?? null
+  if (a === null || z === null) return null
+  const s = G.row.space
+  // over the heads when their stems point down, under them otherwise
+  const over = a.down
+  const sign = over ? -1 : 1
+  const ya = a.y + sign * s * 0.75
+  const yz = z.y + sign * s * 0.75
+  const reach = over ? Math.min(ya, yz) - s * 1.0 : Math.max(ya, yz) + s * 1.0
+  svg(
+    'path',
+    {
+      d: `M${r(a.x)} ${r(ya)}Q${r((a.x + z.x) / 2)} ${r(reach)} ${r(z.x)} ${r(yz)}`,
+      class: 'rd-slur',
+      pathLength: '1',
+      'stroke-dasharray': `${Math.min(1, Math.max(0, m.drawn)).toFixed(3)} 1`,
+      'data-mark': 'slur',
+    },
+    g,
+  )
+  const yTop = Math.min(ya, yz, reach)
+  const yBottom = Math.max(ya, yz, reach)
+  return around(
+    (a.x + z.x) / 2,
+    (yTop + yBottom) / 2,
+    z.x - a.x,
+    yBottom - yTop,
+  )
+}
+
+/** A breath mark: a comma over the staff, just before its beat; its button's box. */
+function drawBreath(G: Geometry, g: SVGGElement, m: MarkOf<'breath'>): MarkBox {
+  const s = G.row.space
+  const size = s * 2.4
+  const x = xOf(G.row, m.beat) - s * 0.45
+  const y = G.top - s * 0.5
+  svg(
+    'text',
+    {
+      x: r(x),
+      y: r(y),
+      'text-anchor': 'middle',
+      'font-size': r(size),
+      class: 'rd-breath',
+      'data-mark': 'breath',
+      text: ',',
+    },
+    g,
+  )
+  return around(x, y - size * 0.3, size * 0.5, size * 0.6)
+}
+
+/** Draws one mark into `g`; its button's box, or null where its notes are not drawn. */
+function drawMark(G: Geometry, g: SVGGElement, m: SheetMark): MarkBox | null {
+  switch (m.kind) {
+    case 'p':
+    case 'f':
+      return drawDynamic(G, g, m)
+    case 'cresc':
+    case 'dim':
+      return drawHairpin(G, g, m)
+    case 'staccato':
+      return drawStaccato(G, g, m)
+    case 'slur':
+      return drawSlur(G, g, m)
+    case 'breath':
+      return drawBreath(G, g, m)
+  }
+}
+
 export function createReadMarks(): ReadMarks {
   let state: ReadMarksState = NO_MARKS
   let G: Geometry | null = null
@@ -462,138 +626,9 @@ export function createReadMarks(): ReadMarks {
     const g = layer('marks')
     if (g === null || G === null) return
     const Gm = G
-    const s = Gm.row.space
-    const headAt = (i: number) => Gm.heads[i] ?? null
     for (const m of state.marks) {
-      if (m.kind === 'p' || m.kind === 'f') {
-        const h = headAt(m.at)
-        if (h === null) continue
-        svg(
-          'text',
-          {
-            x: r(h.x),
-            y: r(ceilingOf(Gm, m.at, m.at) - s * 0.6),
-            'text-anchor': 'middle',
-            'font-size': r(s * 1.6),
-            class: 'rd-dyn',
-            'data-mark': m.kind,
-            text: m.kind,
-          },
-          g,
-        )
-        const size = s * 1.6
-        const y = ceilingOf(Gm, m.at, m.at) - s * 0.6
-        drawnMarks.push({
-          box: around(h.x, y - size * 0.35, size, size),
-          mark: m,
-        })
-      } else if (m.kind === 'cresc' || m.kind === 'dim') {
-        const x1 = xOf(Gm.row, m.from) + s * 0.3
-        const x2 = xOf(Gm.row, m.to) - s * 0.3
-        const first = Gm.placed.findIndex((p) => p.beat >= m.from - 1e-6)
-        const last = Gm.placed.reduce(
-          (at, p, i) => (p.beat < m.to - 1e-6 ? i : at),
-          first,
-        )
-        const yc =
-          ceilingOf(Gm, Math.max(0, first), Math.max(0, last)) - s * 1.4
-        const d = Math.min(1, Math.max(0, m.drawn))
-        const half = s * 0.6
-        // a crescendo opens from its point; a diminuendo closes to its point
-        const open = (t: number): number =>
-          m.kind === 'cresc' ? half * t : half * (1 - t)
-        const xe = x1 + (x2 - x1) * d
-        svg(
-          'path',
-          {
-            d: `M${r(xe)} ${r(yc - open(d))}L${r(x1)} ${r(yc - open(0))}M${r(x1)} ${r(yc + open(0))}L${r(xe)} ${r(yc + open(d))}`,
-            class: 'rd-hairpin',
-            'data-mark': m.kind,
-          },
-          g,
-        )
-        drawnMarks.push({
-          box: around((x1 + x2) / 2, yc, x2 - x1, half * 2),
-          mark: m,
-        })
-      } else if (m.kind === 'staccato') {
-        const h = headAt(m.at)
-        if (h === null) continue
-        svg(
-          'circle',
-          {
-            cx: r(h.x),
-            cy: r(h.down ? h.y - s * 0.95 : h.y + s * 0.95),
-            r: r(s * 0.18),
-            class: 'rd-stacc',
-            'data-mark': 'staccato',
-          },
-          g,
-        )
-        drawnMarks.push({
-          box: around(h.x, h.down ? h.y - s * 0.95 : h.y + s * 0.95, 0, 0),
-          mark: m,
-        })
-      } else if (m.kind === 'slur') {
-        const a = headAt(m.first)
-        const z = headAt(m.last)
-        if (a === null || z === null) continue
-        // over the heads when their stems point down, under them otherwise
-        const over = a.down
-        const sign = over ? -1 : 1
-        const ya = a.y + sign * s * 0.75
-        const yz = z.y + sign * s * 0.75
-        const reach = over
-          ? Math.min(ya, yz) - s * 1.0
-          : Math.max(ya, yz) + s * 1.0
-        svg(
-          'path',
-          {
-            d: `M${r(a.x)} ${r(ya)}Q${r((a.x + z.x) / 2)} ${r(reach)} ${r(z.x)} ${r(yz)}`,
-            class: 'rd-slur',
-            pathLength: '1',
-            'stroke-dasharray': `${Math.min(1, Math.max(0, m.drawn)).toFixed(3)} 1`,
-            'data-mark': 'slur',
-          },
-          g,
-        )
-        const yTop = Math.min(ya, yz, reach)
-        const yBottom = Math.max(ya, yz, reach)
-        drawnMarks.push({
-          box: around(
-            (a.x + z.x) / 2,
-            (yTop + yBottom) / 2,
-            z.x - a.x,
-            yBottom - yTop,
-          ),
-          mark: m,
-        })
-      } else if (m.kind === 'breath') {
-        // a breath mark: a comma over the staff, just before its beat
-        svg(
-          'text',
-          {
-            x: r(xOf(Gm.row, m.beat) - s * 0.45),
-            y: r(Gm.top - s * 0.5),
-            'text-anchor': 'middle',
-            'font-size': r(s * 2.4),
-            class: 'rd-breath',
-            'data-mark': 'breath',
-            text: ',',
-          },
-          g,
-        )
-        const size = s * 2.4
-        drawnMarks.push({
-          box: around(
-            xOf(Gm.row, m.beat) - s * 0.45,
-            Gm.top - s * 0.5 - size * 0.3,
-            size * 0.5,
-            size * 0.6,
-          ),
-          mark: m,
-        })
-      }
+      const box = drawMark(Gm, g, m)
+      if (box !== null) drawnMarks.push({ box, mark: m })
     }
   }
 
