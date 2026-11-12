@@ -50,6 +50,7 @@ import { initColdOpen } from './cold-open'
 import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -82,6 +83,16 @@ initWords()
 // Sing it: two tunes read from the page and sung in time, the take's
 // reader and its pitch line loaded with the microphone at Start
 initSing()
+
+// the Wrap's practice card in the version Sing it's ending picks, and the
+// tease still in the next-lesson card's slot
+initWrap()
+// free play, the reading staff with every play from the steps: a chunk of
+// its own after first paint, since nothing above the Wrap needs it
+void import('./free-play').then(
+  ({ initFreePlay }) => initFreePlay(),
+  () => undefined,
+)
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(18)
