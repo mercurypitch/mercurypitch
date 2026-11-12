@@ -108,6 +108,14 @@
   width: 80px;
   height: 120px;
 }
+/* a long label wraps inside its ticket rather than running past it */
+.tickets .btn {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+  padding-block: 8px;
+}
 
 /* ---------------------------------------------------------------- the stage */
 /* a figure label is one 16 px line (the stage budget counts on it) */
