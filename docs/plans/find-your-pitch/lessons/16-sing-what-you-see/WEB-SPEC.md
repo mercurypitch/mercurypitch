@@ -722,3 +722,40 @@ production:
 - The second phrase cannot be heard anywhere on the page before its take.
 - On a real phone at 390 px, the staff, the cursor and the lines fit Sing it's card, and G3 is heard
   through the speaker.
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- The page is held back as a draft (What the kit and the app still need, item 2), and its draft
+  line names the two pages its prerequisite chips and its recall link to, both drafts themselves, as
+  Lessons 10, 12, 17, 19, 21 and 23 name theirs: `16: "Lessons 9 and 15's pages at /learn/09 and
+/learn/15, and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`.
+- Counted by `scripts/lesson-words.mjs`'s rule as the built page shows it, the package's 2,217 words
+  with about 195 more written in the open (the predict's two plays, its hints and "You said" lines,
+  28; the five figures' captions, 39; the toys' labels the steps do not bracket, 17; Sing it's status
+  lines and the stored voice's line, 82; the lines a take prints, each form once, with the octave
+  tag, 29; the figure's "Tavi sang ..." lines left out, since only its live region announces them,
+  and free play and the sound-off and no-sound lines too, as the counter leaves them), less 43 the
+  page does not print (the brief's four example lines, as Length says, with "Added when it applies:"
+  and the lead-in's "such as", 41; the quick check's play reads "Play do, then re", 2), the page is
+  about 2,369 words, 10 under the series' cap of 2,379. Length's two cuts are not made.
+- Step 1's staircase stands over the staff it turns into at every width, not beside it (Toys 2,
+  state 1), as Lesson 21's does, so each takes the stage card's full width and every stair travels
+  down onto its own note; beside the staff, the stairs and the notes would each have half of it.
+- After a take the pitch line stands under the learner's staff at every width (Toys 6, state 7), 200
+  px tall and 160 px on a phone. Its rows name the phrase's notes by syllable and letter ("re · A3"),
+  and the octave tag sits in the chart's top right corner, clear of the rows' names at the left and
+  above the top note's band, since each phrase ends low, on do.
+- The pitch line folds each frame to the nearest written note in any octave, not to the note the
+  cursor has lit: a note passes only after 0.45 s held, so so sung early in the second phrase would
+  be drawn five semitones under do's band. The octave tag takes the octave most of the voice sat in,
+  over the frames within 50 cents of a written note.
+- The singing Merc's still stands beside the learner's staff, 88 px; on a phone, under it, beside
+  the Names switch, 56 px (Merc and Tavi).
+- The take's reader and its pitch line load with the microphone after Start, not with the page; if
+  they cannot load, Sing it goes on as for a listener that failed to load (Toys 6, state 9).
+- During a take every play on the page is disabled and a key or tap on a figure plays nothing, as
+  Lesson 22's take holds them, and the take stops any sound already playing (Tests, item 17).
+- The tease still (Toys 7) is drawn after first paint by the rhythm kit, as Lesson 17's stage draws
+  it (`src/features/lessons/lesson-16/tease.ts`), so the page's first paint does not carry that kit.

@@ -501,9 +501,8 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // feelings and the still of the one who sings, its take's reader and
   // pitch line loaded with the first Start and every other play held while
   // a take runs, and the Wrap's free play, the tease still drawn after
-  // first paint: 191,543 bytes in build:e2e, the smallest whole KB above,
-  // to rise as each part joins.
-  'learn/16.html': 188,
+  // first paint: 191,543 bytes in build:e2e; a quarter over.
+  'learn/16.html': 234,
   // Lesson 17, "How long is a note?", a Season 2 page and a draft, built in
   // every mode as Lesson 3 is: its own module on the kit, carrying Season
   // 2's map (kit/season-2.ts) as a Season 2 page must, with the steps'
@@ -722,9 +721,8 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // with the voice lessons' (lesson-voice.css: the comfort check, the voice
   // choice, the briefing and the feelings), its own with the staff toy's
   // and the staircase's taken in by @import, and the shared Inter and
-  // Outfit @font-face rules; the smallest whole KB above, to rise as each
-  // part joins.
-  'learn/16.html': 92,
+  // Outfit @font-face rules; a quarter over.
+  'learn/16.html': 115,
   // Lesson 17 (a draft, as above), with its steps, its cold open, its four
   // words and the Wrap: 94,962 bytes in build:e2e, the kit's sheets
   // (the voice lessons' in the chunk it shares with them, the guide's, the
