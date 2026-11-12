@@ -568,7 +568,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // and the steps' two toys, the staircase and the run with its staff;
   // the cold open's run and predict, the four words' figures, Sing it's
   // card on the run chart (kit/ladder-sing.ts, kit/ladder-guide.ts) and
-  // free play's import: 195,912 bytes in build:e2e; a quarter over. The
+  // free play's import: 196,214 bytes in build:e2e; a quarter over. The
   // recall and quick check, the take with its listener, and free play load
   // after first paint.
   'learn/20.html': 240,
