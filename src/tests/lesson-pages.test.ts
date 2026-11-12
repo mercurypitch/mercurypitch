@@ -427,3 +427,21 @@ describe.each(DOCUMENTS)("lesson document %i's buttons", (n) => {
     ).toEqual([])
   })
 })
+
+// An icon is a <use> of a symbol in the page's own sprite. One whose symbol
+// the page lacks draws nothing, and its button keeps an empty space where the
+// icon should be, as Lesson 16's two Start buttons did with a microphone the
+// page never defined.
+describe.each(DOCUMENTS)("lesson document %i's icons", (n) => {
+  it("each come from a symbol in the page's sprite", () => {
+    const page = parse(lessonDocument(n))
+    const symbols = new Set(
+      Array.from(page.querySelectorAll('symbol[id]'), (symbol) => symbol.id),
+    )
+    const missing = Array.from(
+      page.querySelectorAll('use'),
+      (use) => use.getAttribute('href') ?? '',
+    ).filter((href) => href.startsWith('#') && !symbols.has(href.slice(1)))
+    expect([...new Set(missing)]).toEqual([])
+  })
+})
