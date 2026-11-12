@@ -461,7 +461,7 @@ and the page has no music bed.
 
 - **Two notes together** (the cold open's last chord, Step 4's B and F, the listening pair, quick
   check 4) start in one timer task, so their voices share one clock (`playNotes`,
-  `src/features/lessons/kit/run.ts:206`); a pair's second note is timed from the play's start, as
+  `src/features/lessons/kit/run.ts:215`); a pair's second note is timed from the play's start, as
   Lesson 6 times its pairs, so the drawing and the sound never drift.
 - **Merc's and Tavi's line** in Sing it is one voice along a contour, held and glided on the audio
   clock (`src/features/lessons/kit/sound.ts:18-23`), so do and so join with no click.

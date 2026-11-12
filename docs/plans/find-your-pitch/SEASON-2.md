@@ -1070,9 +1070,9 @@ left to listening; compound-metre reading drills, since the app writes only 4-be
    it generalised (code with tests).
 4. **A circle-of-fifths toy** (Lesson 21).
 5. **Two-voice playback**: the demo voice plays one line per call (`src/lib/demo-voice.ts:244`) and
-   `allOf` starts runs together (`src/features/lessons/kit/run.ts:260`); two independent parts need
+   `allOf` starts runs together (`src/features/lessons/kit/run.ts:271`); two independent parts need
    one scheduler for both lines. Two parts note against note already play together through
-   `playNotes`, whose notes that share an onset start in one timer task (`run.ts:13-14`); what is
+   `playNotes`, whose notes that share an onset start in one timer task (`run.ts:15-16`); what is
    missing is a part under a take, which Lesson 26 specifies as Lesson 24's kept source widened to
    a sung contour voice, booked on the audio clock, with a level dip for repeated notes (Lesson 26
    WEB-SPEC item 6), for Lesson 28 too.

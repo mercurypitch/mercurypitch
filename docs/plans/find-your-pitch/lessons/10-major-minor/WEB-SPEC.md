@@ -685,7 +685,7 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
   ends where it stands: `playTone` and `playContour` give no way to stop a sound once it starts
   (`src/features/lessons/kit/sound.ts:682-706`). Chords, thirds, triads, the pattern, scales, the
   Four words' plays, the ear game's rounds, the quiz's chord and Merc's notes are tunes through
-  `playNotes` (`run.ts:206-248`), whose visuals run to their end with sound off. The count-in is
+  `playNotes` (`run.ts:215-259`), whose visuals run to their end with sound off. The count-in is
   one voice the page keeps and stops (`countIn`, `kit/move-do.ts:72-77`), and a bead tapped on the
   hero's spiral plays the spiral's own note, through the same owner (Toys 2).
 - **A chord** is three voices that share one onset, so they start in one task and share one start

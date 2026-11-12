@@ -550,8 +550,8 @@ bed (FACTS 81 to 83).
 - **Two parts note against note.** Every two-part play outside a take, the cold open's, the steps',
   the word's, free play's, quick check 4's and "Just listen today"'s, is one `playNotes` run holding
   both parts' notes, each note its own voice, so notes that share an onset start in one timer task
-  (`src/features/lessons/kit/run.ts:13-14`); the tag's chords are notes of the same run in the soft
-  tone (`src/features/lessons/kit/run.ts:44-45`). Bar 7's two D3s are two notes, so the second
+  (`src/features/lessons/kit/run.ts:15-16`); the tag's chords are notes of the same run in the soft
+  tone (`src/features/lessons/kit/run.ts:46-47`). Bar 7's two D3s are two notes, so the second
   sounds as a new note. The alone path's first turn is one part's notes in the same kind of run.
   Nothing new is needed for these.
 - **Timbres.** Both parts sing on Merc's "ooh", Tavi's part at her pitches, in every play, since the

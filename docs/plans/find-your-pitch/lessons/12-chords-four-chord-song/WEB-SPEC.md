@@ -718,7 +718,7 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
 
 - **A chord** is three voices started in one task, so they share one start on the audio clock, each
   at 0.075 alone or at 0.05 under a tune or a voice (FACTS 74), as one of the kit's runs
-  (`playNotes`, `src/features/lessons/kit/run.ts:207`), which can be stopped, where `playTone`
+  (`playNotes`, `src/features/lessons/kit/run.ts:216`), which can be stopped, where `playTone`
   (`src/features/lessons/kit/sound.ts:683`) resolves only once its note has ended; the visuals run
   even when sound is off.
 - **A loop or a tune** is timed from one start, as Lessons 2 and 4 time their examples (`schedule`,
@@ -730,7 +730,7 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
   (`audible`, `ToneOptions`, `sound.ts:677-680`), so it is all sound or all silent. Those two
   pages' `schedule` keeps no handle on its timers; this page's must, so that stopping a play clears
   every timer not yet fired and stops every voice still sounding: the kit's `playNotes`
-  (`kit/run.ts:207-248`) does both (What the kit and the app still need, item 8).
+  (`kit/run.ts:216-259`) does both (What the kit and the app still need, item 8).
 - **Levels**: a tapped note and Step 4's roots at the soft tone's 0.13; a chord's voices at 0.075
   each, or 0.05 under Merc; Merc's "ooh" at the kit's 0.2 (`sound.ts:240`); the count-in at 0.065
   (FACTS 73, 74).
@@ -909,10 +909,10 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
    playing" owner, `NowPlaying` (`kit/now-playing.ts:17-39`), and a `play` that may resolve `false`
    for a play cut short (`kit/predict.ts:31-41`, `:187-188`). A `schedule` that can be stopped is
    built too: the kit's runs (`kit/run.ts`, Lesson 7's, moved into the kit), whose `playNotes`
-   (`:207-248`) starts every note on its own timer from the play's start, the notes that share an
+   (`:216-259`) starts every note on its own timer from the play's start, the notes that share an
    onset in one timer task, so a chord and the tune's note that begins with it share one start, and
    whose `stop` clears every timer not yet fired and stops every voice still sounding, for the owner
-   to call (`Run`, `:51-54`). Lessons 2 and 4 keep their own, which cannot be stopped
+   to call (`Run`, `:53-56`). Lessons 2 and 4 keep their own, which cannot be stopped
    (`lesson-02/examples.ts:124-134`, `lesson-04/examples.ts:30-41`), and may take the kit's later.
 9. `kit/quiz.ts`: `recallStepHref`, built: Lesson 8's page moved it into the kit beside
    `lessonPageHref` (`:141-143`, `:137-139`), as Lesson 10's spec proposed (its item 9), and Lessons
@@ -981,7 +981,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:543`), measured, with the
     lessons' headroom, a quarter over. Every build emits every lesson page, a draft's included
     (`scripts/assert-first-paint-budgets.mjs:127-129`), and a document it emits with no budget
-    fails the check (`assert-first-paint-budgets.mjs:962-965`, and for CSS `:995-998`; FACTS 76),
+    fails the check (`assert-first-paint-budgets.mjs:963-966`, and for CSS `:996-999`; FACTS 76),
     which `build:e2e` runs (`package.json:20`). The page's WebGL renderer, as on every lesson page,
     arrives after first paint (Merc and Tavi).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and

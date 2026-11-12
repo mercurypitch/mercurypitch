@@ -421,10 +421,10 @@ music bed.
 - **The tune with its chords.** The answering plays sound Merc's "ooh" at 0.2 over three soft voices
   at 0.05 each, Lesson 12's levels for chords under "ooh" (`UNDER_GAIN`,
   `src/features/lessons/lesson-12/sounds.ts:45-46`), started together on one clock (`allOf`,
-  `src/features/lessons/kit/run.ts:260`), so a chord change falls on its melody note. A chord heard
+  `src/features/lessons/kit/run.ts:271`), so a chord change falls on its melody note. A chord heard
   alone, Step 1's chord on so and home and the free play's, is three voices at 0.075 each
   (`CHORD_GAIN`, `src/features/lessons/lesson-12/sounds.ts:43-44`). Each chord's three voices start
-  in one timer task (`playNotes`, `src/features/lessons/kit/run.ts:207`), so they share one clock
+  in one timer task (`playNotes`, `src/features/lessons/kit/run.ts:216`), so they share one clock
   and never flam.
 - **Scales and pairs**: a scale is the soft tone at 0.13, a note every 0.4 s, each sounding 0.35 s;
   an interval is Lesson 6's pair, 0.6 s, 0.15 s of quiet and 0.8 s, two notes and no glide
