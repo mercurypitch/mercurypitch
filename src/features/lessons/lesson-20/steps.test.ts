@@ -189,6 +189,38 @@ describe('Step 2: the same five from la', () => {
     expect(pressed('#toyStairs [data-mode="minor"]')).toBe('true')
   })
 
+  it("leaves Minor in Step 2: back in Step 1 the five are C's again, its switch as Step 1 left it, and Step 2 opens at Major", () => {
+    // Arrange: the five in Step 1, then Minor in Step 2
+    const deck = mountSteps()
+    click('#toyStairs [data-stairs-five]')
+    deck.show(2)
+    click('#toyStairs [data-mode="minor"]')
+
+    // Act
+    deck.show(1)
+    const back = {
+      five: pressed('#toyStairs [data-stairs-five]'),
+      slide: !el('#toyStairs [data-slide-row]').hidden,
+      stairs: stairs(),
+    }
+    deck.show(2)
+
+    // Assert: Step 1 has no Major · Minor, and Step 2 opens at Major (WEB-SPEC, Toys 1)
+    expect(back).toEqual({
+      five: 'true',
+      slide: true,
+      stairs: [
+        'Stair 1, do, C3, home',
+        'Stair 2, re, D3',
+        'Stair 3, mi, E3',
+        'Stair 4, so, G3',
+        'Stair 5, la, A3',
+        'Stair 6, do, C4, home',
+      ],
+    })
+    expect(pressed('#toyStairs [data-mode="major"]')).toBe('true')
+  })
+
   it("plays both, C's five, 0.5 s, then A's, the house moving as A's begin, 6.8 s", async () => {
     // Arrange
     const deck = mountSteps()

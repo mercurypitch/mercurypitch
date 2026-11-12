@@ -114,6 +114,31 @@ describe("Lesson 20's free play", () => {
     expect(beads.o.audible).toBe(false)
   })
 
+  it("keeps the five when Major comes back after Minor, the switch on and the stairs as Major's line says", () => {
+    // Arrange: the switch off, as free play opens
+    initFreePlay()
+
+    // Act
+    click('#freeStairs [data-mode="minor"]')
+    click('#freeStairs [data-mode="major"]')
+
+    // Assert
+    expect(
+      el('#freeStairs [data-stairs-five]').getAttribute('aria-pressed'),
+    ).toBe('true')
+    expect(stairs()).toEqual([
+      'Stair 1, do, C3, home',
+      'Stair 2, re, D3',
+      'Stair 3, mi, E3',
+      'Stair 4, so, G3',
+      'Stair 5, la, A3',
+      'Stair 6, do, C4, home',
+    ])
+    expect(el('#freeStairs [data-stairs-said]').textContent).toBe(
+      'Major: the five notes from C, steps of 2, 2, 3, 2 and 3.',
+    )
+  })
+
   it('plays one sound at a time: the run stops the staircase part way, and the staircase the run', async () => {
     // Arrange
     initFreePlay()
