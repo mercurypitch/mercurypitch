@@ -24,7 +24,7 @@
 import type { Bar as ClockBar, Hit } from '@/features/lessons/kit/beat-clock'
 import type { Spelled } from '@/features/lessons/kit/notes'
 import type { Bracket, SheetMark } from '@/features/lessons/kit/read-marks'
-import type { Short, Tune } from './tunes'
+import type { MarkId, Short, Tune } from './tunes'
 import { beatsOf, BPM, BREATH_NOTE_SEC, breathSound, COLD, SYLLABLES, } from './tunes'
 
 /** The count-in: one bar of the click, four beats. */
@@ -106,6 +106,23 @@ export const READ_LINES = {
   byName:
     'Read note by note: four notes sounded, each further behind the beat. Do, mi and so never came.',
   way: "Read Merc's way: a run of steps, then do-mi-so, on the beat.",
+} as const
+
+/** What a polite region says of each mark's example once it has been heard (WEB-SPEC, Toys 2). */
+export const MARK_LINES: Readonly<Record<MarkId, string>> = {
+  dynamics: 'p, then f: the same three notes, quiet then loud.',
+  hairpins: 'Hairpins: so grows louder, then quieter again.',
+  staccato: 'Staccato: do, mi and so, each short, with silence between.',
+  slur: 'Slur: do, re and mi joined, with no gap between them.',
+  breath:
+    'Breath mark: the last do of bar 1 shortened, a breath, and bar 2 on its beat.',
+}
+
+/** What the tunes' plays say once heard. */
+export const TUNE_LINES = {
+  a: 'Tune A: a run of steps, do re mi fa, then a repeated note, so and so.',
+  b: 'Tune B: do-mi-so going down, so mi do, then a repeated note, re and re.',
+  countIn: 'Tune C, counted in: one bar of four clicks, then the two bars.',
 } as const
 
 /** Where the cursor sits `beats` into the bars: at tempo, or on each beat's start under reduced motion; null before bar 1. */

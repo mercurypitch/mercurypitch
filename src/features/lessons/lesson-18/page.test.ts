@@ -260,9 +260,9 @@ describe("Lesson 18's page", () => {
     expect(words(d.querySelector('#predict .lock-hint'))).toBe(
       "Choose an answer to unlock Merc's read.",
     )
-    expect(
-      d.querySelector('[data-hero-staff]')?.getAttribute('aria-label'),
-    ).toBe('Bass staff, two bars of 4/4: G, A, B, A, then G, B and a long D')
+    expect(d.querySelector('#heroStaff')?.getAttribute('aria-label')).toBe(
+      'Bass staff, two bars of 4/4: G, A, B, A, then G, B and a long D',
+    )
     expect(
       Array.from(d.querySelectorAll('[data-play="way"]'), (b) =>
         b.closest('#predict .reveal') === null ? 'outside' : words(b),
@@ -359,7 +359,7 @@ describe("Lesson 18's page", () => {
     expect(
       tickets.map((t) => [
         words(t.querySelector('h3')),
-        t.querySelector('svg.word-fig') !== null,
+        t.querySelector('.word-fig[data-word-fig]') !== null,
         words(t.querySelector('[data-word-play]')),
       ]),
     ).toEqual([
