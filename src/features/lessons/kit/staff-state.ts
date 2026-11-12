@@ -94,4 +94,9 @@ export interface StaffPlay {
   readonly gain?: number
   /** Said as it starts. */
   readonly say?: string
+  /**
+   * Written and lit on time, sounding nothing and claiming no owner:
+   * another voice sings the notes (Lesson 20's run toy, Merc's run as one line).
+   */
+  readonly silent?: boolean
 }

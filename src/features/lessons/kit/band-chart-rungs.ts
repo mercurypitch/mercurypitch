@@ -27,7 +27,9 @@
 // slots follow the tempo (`slotsAt`): a note every so many seconds, each
 // the slot's length, or Staccato's 0.15 s with the gap after it and no
 // string. An illustrated singer's line is the scene's own line, drawn over
-// the beads as any singer's line is.
+// the beads as any singer's line is. Over a fast run's narrow slots two lit
+// edges on one row would print their words over each other: the later
+// keeps its edges and leaves its words to the earlier's.
 
 import type { Arc } from './band-chart-arcs'
 import { drawArcs } from './band-chart-arcs'
@@ -110,13 +112,30 @@ function drawFaint(f: ChartFrame, b: BandSpec): void {
 /** The words beside a lit edge, as the band's (`drawLitEdge`). */
 const IN_THE_BAND = 'IN THE BAND'
 
+/** Rows of words closer than this, px, are one row (the mono face's line). */
+const WORDS_ROW = 12
+
+/** Where a lit slot's words were written: their two ends and their baseline, px. */
+interface Words {
+  readonly x0: number
+  readonly x1: number
+  readonly y: number
+}
+
+/** Whether words at `w` would print over any already written. */
+const over = (written: readonly Words[], w: Words): boolean =>
+  written.some(
+    (o) => Math.abs(o.y - w.y) < WORDS_ROW && o.x0 < w.x1 && w.x0 < o.x1,
+  )
+
 /**
  * A rung's lit edge over its slot, in mint, as the band's (`drawLitEdge`),
  * and its words: they end at the slot's end where they would still start
  * inside the plot, and further right where they would not, so that over a
  * narrow slot they run neither into the gutter's letters nor off the canvas.
+ * Words that would print over words already `written` are left out.
  */
-function drawLitSlot(f: ChartFrame, b: BandSpec): void {
+function drawLitSlot(f: ChartFrame, b: BandSpec, written: Words[]): void {
   const { ctx } = f
   const { x0 = f.x0, x1 = f.x1 } = b
   const yTop = yOf(f, b.c + b.half)
@@ -132,12 +151,12 @@ function drawLitSlot(f: ChartFrame, b: BandSpec): void {
   ctx.fillStyle = BAND_COLOR.mint
   ctx.textAlign = 'right'
   ctx.textBaseline = 'bottom'
-  const earliest = f.x0 + 2 + ctx.measureText(IN_THE_BAND).width
-  ctx.fillText(
-    IN_THE_BAND,
-    Math.min(f.x1, Math.max(x1 - 4, earliest)),
-    yTop - 3,
-  )
+  const width = ctx.measureText(IN_THE_BAND).width
+  const right = Math.min(f.x1, Math.max(x1 - 4, f.x0 + 2 + width))
+  const words = { x0: right - width, x1: right, y: yTop - 3 }
+  if (over(written, words)) return
+  written.push(words)
+  ctx.fillText(IN_THE_BAND, right, words.y)
 }
 
 /** A faint rung shows faint only while it rests: one that glows is sounding. */
@@ -224,11 +243,12 @@ export function paintRungs(
     if (beads.string) drawString(f, rungs)
     rungs.forEach((r) => drawBead(f, r))
   }
+  const written: Words[] = []
   rungs.forEach((r, i) => {
     if (r.lit !== true) return
     // a rung across the plot lights as the band does, its words at the end
     if (r.from === undefined && r.to === undefined) drawLitEdge(f, bands[i])
-    else drawLitSlot(f, bands[i])
+    else drawLitSlot(f, bands[i], written)
   })
   return true
 }

@@ -88,6 +88,22 @@ describe('playNotes', () => {
     ])
   })
 
+  it("gives each note the caller's short attack and release: Lesson 20's staccato", async () => {
+    // Arrange
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    const voice = vi.spyOn(Sound, 'voice').mockReturnValue(null)
+    playNotes(TUNE, { audible: true, attack: 0.025, release: 0.08 })
+
+    // Act
+    await vi.advanceTimersByTimeAsync(1500)
+
+    // Assert
+    expect(voice.mock.calls.map(([, o]) => [o?.attack, o?.release])).toEqual([
+      [0.025, 0.08],
+      [0.025, 0.08],
+    ])
+  })
+
   it('starts no voice and fires no onNote for a note whose onset comes after a stop', async () => {
     // Arrange: C4 has started, D4 is still to come
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })

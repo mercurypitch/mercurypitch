@@ -140,6 +140,31 @@ describe('a rung over its time slot', () => {
     )
   })
 
+  it("writes IN THE BAND once where two narrow lit slots on one row would print it over each other (Lesson 20's smudged run)", async () => {
+    // Arrange: do lit twice and re once, 0.2 s slots across a 6.75 s window
+    const figure: Figure = {
+      opts: { ...ladder([]).opts, window: 6.75 },
+      scene: (s) => {
+        s.rungs = [
+          { c: 0, from: 0, to: 0.2, lit: true },
+          { c: 200, from: 0.2, to: 0.4, lit: true },
+          { c: 0, from: 1.6, to: 1.8, lit: true },
+        ]
+      },
+    }
+
+    // Act
+    const [{ calls }] = await paintCharts(figure)
+
+    // Assert: every edge lit, the words once a row
+    const words = marksOf(calls).filter((m) => m.line.endsWith(' IN THE BAND'))
+    const edges = inColor(marksOf(calls), MINT).filter(
+      (m) => !m.line.endsWith(' IN THE BAND'),
+    )
+    expect(words).toHaveLength(2)
+    expect(edges.length).toBeGreaterThanOrEqual(6)
+  })
+
   it('stands a staircase: each rung over its own slot, at its own note', async () => {
     // Arrange: the compact chart's do and so, over two slots
     const figure = ladder([

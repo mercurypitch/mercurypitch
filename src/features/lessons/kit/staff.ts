@@ -54,6 +54,11 @@
 // do and then the note. A play's note may light a moment before it sounds
 // (`ahead`): Hear it inside, a beat to imagine it in.
 //
+// A play may be silent (`silent`): its notes are written and lit on time
+// and nothing sounds, while another voice sings them (Lesson 20's run toy,
+// Merc's run sung as one line). Such a play is not the page's sound: it
+// claims no owner, and the page that sings the run stops it with its own.
+//
 // "See it on the pitch line" (`[data-staff-lanes]`, a switch, off at first)
 // is one choice for the visit, in memory: every staff toy on the page
 // follows it (`PitchLine`), and a state can leave it out. The clef switch
@@ -364,7 +369,8 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
 
   function start(p: StaffPlay, audible: boolean): Promise<boolean> {
     stop()
-    o.owner.claim(stop)
+    // a silent play is another voice's sound, not the page's: it claims nothing
+    if (p.silent !== true) o.owner.claim(stop)
     const mine = ++plays
     rest()
     gold = null
@@ -740,7 +746,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
     play: (p) => {
       if (p.clef !== undefined && state.staff !== 'grand' && p.clef !== clef)
         setClef(p.clef)
-      return start(p, Sound.canPlay())
+      return start(p, p.silent !== true && Sound.canPlay())
     },
     tapPlace,
     tapKey,

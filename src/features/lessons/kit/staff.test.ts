@@ -310,6 +310,41 @@ describe('a play', () => {
     expect(heads().every((h) => h === 'st-head')).toBe(true)
   })
 
+  it("writes a silent play's notes as they come, sounding nothing and claiming no owner (Lesson 20's run toy)", async () => {
+    // Arrange
+    const toy = mount()
+
+    // Act
+    const heard = toy.play({ ...CLIMB, silent: true })
+    last().note(0)
+    const one = heads()
+    owner.claim(() => undefined)
+    last().note(1)
+    last().note(2)
+    last().end(true)
+
+    // Assert: nothing asked to sound, and a newer sound leaves it to its page
+    expect(last().o.audible).toBe(false)
+    expect(Sound.canPlay).not.toHaveBeenCalled()
+    expect(one).toEqual(['st-head is-lit'])
+    expect(runs[0].stopped).toBe(false)
+    expect(await heard).toBe(true)
+  })
+
+  it('stops a silent play when its page stops the toy', async () => {
+    // Arrange
+    const toy = mount()
+    const heard = toy.play({ ...CLIMB, silent: true })
+    last().note(0)
+
+    // Act
+    toy.stop()
+
+    // Assert
+    expect(runs[0].stopped).toBe(true)
+    expect(await heard).toBe(false)
+  })
+
   it('stops the play before it when the toy plays again', async () => {
     // Arrange
     const toy = mount()
