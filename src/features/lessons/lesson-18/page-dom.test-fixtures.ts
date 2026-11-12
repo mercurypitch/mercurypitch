@@ -51,3 +51,12 @@ export const words = (e: Element | null | undefined): string =>
 export const settle = async (): Promise<void> => {
   for (let i = 0; i < 6; i++) await Promise.resolve()
 }
+
+export type { FakeRun } from '@/features/lessons/kit/beat-clock-recorder.test-fixtures'
+export {
+  drive,
+  FakeBeatClock,
+  finish,
+  resetRuns,
+  runs,
+} from '@/features/lessons/kit/beat-clock-recorder.test-fixtures'
