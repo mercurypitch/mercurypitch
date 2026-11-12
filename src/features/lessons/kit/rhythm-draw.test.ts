@@ -618,6 +618,35 @@ describe('drawRhythm', () => {
     expect(xOf(a, 1)).toBeCloseTo(xOf(b, 2), 5)
     expect(b.top).toBeGreaterThan(a.bottom)
   })
+  it('draws a staff read from at the space its scene gives, with the room its marks ask for above and under it (Lesson 18 FACTS 84)', () => {
+    // Arrange: two bars on the bass staff, at the row count's 10 px and at 16
+    const bars: Bar[] = [times(4, note(1)), [note(1), note(1), note(2)]]
+    const scene = (more: Partial<RhythmScene>): RhythmScene => ({
+      staff: 'bass',
+      rows: [{ bars, bpm: 60 }],
+      ...more,
+    })
+
+    // Act
+    const plain = layoutRhythm(390, 310, scene({})).rows[0]
+    const sized = layoutRhythm(390, 310, scene({ space: 16 })).rows[0]
+    const roomy = layoutRhythm(
+      390,
+      310,
+      scene({ space: 16, headroom: 3, footroom: 1.5 }),
+    ).rows[0]
+
+    // Assert: the middle line sits 4.2 spaces under the row's top, and
+    // three more under it with three spaces of headroom
+    expect([plain.space, sized.space]).toEqual([10, 16])
+    expect(roomy.y - (roomy.top - 2)).toBeCloseTo(16 * 7.2, 5)
+    expect(sized.y - (sized.top - 2)).toBeCloseTo(16 * 4.2, 5)
+    // and the pads' box ends 1.5 spaces lower with its footroom
+    expect(roomy.bottom - roomy.y - (sized.bottom - sized.y)).toBeCloseTo(
+      16 * 1.5,
+      5,
+    )
+  })
 })
 
 describe("every state's bars, at 390 x 844 and at 344 px", () => {
