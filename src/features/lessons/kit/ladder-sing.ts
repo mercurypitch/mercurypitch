@@ -57,23 +57,33 @@
 // ending picks the Wrap's card for the visit, in memory only (comfort.ts's
 // `VisitEnding`). Leaving the section, or the page hidden, stops whatever
 // the card plays.
+//
+// Three options are Lesson 20's (its WEB-SPEC, Toys 6, states 2, 8 and 9):
+// Move do's reach by voice (`reach`), which the flow keeps do inside and
+// the buttons mark at their ends; the faster pass (`faster`), Again,
+// faster, once a visit, with nothing listening, the page's one sound,
+// which the sound going off, another sound or the viewer leaving cuts
+// short, unspent; and with no microphone the guide's sweep after Play
+// Merc's ladder (`sweep`). Both plays are ladder-guide.ts's.
 
 import type { Feeling } from './comfort'
 import { mountComfort, mountFeelings, mountPractiseCard, VisitEnding, } from './comfort'
 import { q, qa, store } from './dom'
 import type { AgainNames, LadderEvent, LadderId, LadderLines, LadderOffers, LadderVisit, } from './ladder-flow'
-import { againName, LADDER_ORDER, next, offers, openVisit } from './ladder-flow'
+import { againName, LADDER_ORDER, next, offers, openVisit, reachOf, } from './ladder-flow'
+import type { FasterPlan, GuidedPlay } from './ladder-guide'
+import { fasterPass, mercLadder } from './ladder-guide'
 import type * as TakeKit from './ladder-take'
-import type { LadderTakePlan, PhraseDrawing, ReadOut, SingChart, TakeEnd, } from './ladder-take'
+import type { LadderTakePlan, ReadOut, SingChart, TakeEnd } from './ladder-take'
 import type { Listener } from './listen'
-import type { Which } from './merc-duo'
 import { mercCelebrate, mercSing } from './merc-duo'
 import type { ListenModule } from './mic-hold'
 import { MicHold } from './mic-hold'
+import type { MoveReach } from './move-do'
 import { nextShift, setMoveEnds } from './move-do'
 import { NowPlaying } from './now-playing'
 import type { Run } from './run'
-import { playLine, playNotes } from './run'
+import { playLine } from './run'
 import type { SoundState } from './sound'
 import { Sound } from './sound'
 import type { Voice } from './voice-choice'
@@ -94,6 +104,12 @@ export interface LadderSingPlan<C extends SingChart = SingChart> {
   readonly lines: LadderLines
   /** The Again buttons' accessible names. */
   readonly againNames: AgainNames
+  /** Move do's reach for each voice, where it is not the kit's four semitones either way (Lesson 20). */
+  readonly reach?: Readonly<Record<Voice, MoveReach>>
+  /** The faster pass, Again, faster, once a visit (Lesson 20); without it the card never offers one. */
+  readonly faster?: FasterPlan
+  /** With no microphone, Play Merc's ladder ends with the guide's sweep at the take's pace (Lesson 20). */
+  readonly sweep?: boolean
 }
 
 /** Whether the browser has Web Audio at all; asking makes no AudioContext. */
@@ -240,6 +256,9 @@ function afterParts(card: HTMLElement) {
     startAgain: q<HTMLButtonElement>('[data-sing="start-again"]', after),
     today: q<HTMLButtonElement>('[data-sing="today"]', after),
     hint: q('[data-again-hint]', after),
+    // Lesson 20's: Again, faster and the line beside it, absent elsewhere
+    faster: after.querySelector<HTMLButtonElement>('[data-sing="faster"]'),
+    fasterHow: after.querySelector<HTMLElement>('[data-faster-how]'),
   }
 }
 
@@ -271,6 +290,8 @@ export function initLadderSing<C extends SingChart>(
     voice: VoiceChoice.voice,
     sound: wouldSound(Sound.state),
     webAudio: hasWebAudio(),
+    reach: plan.reach,
+    fasterPass: plan.faster !== undefined,
   })
   // the ladder and do the chart shows, and whether it shows a take's reading
   let shownLadder: LadderId | null = null
@@ -343,7 +364,7 @@ export function initLadderSing<C extends SingChart>(
       b.setAttribute('aria-pressed', String(id === o.pressed))
     }
     q('.move-do', prepare).hidden = !o.moveDo
-    setMoveEnds(moves, visit.shift)
+    setMoveEnds(moves, visit.shift, reachOf(visit))
     mercBtn.hidden = !o.playMerc
     startBtn.hidden = !o.start
     const hint =
@@ -376,6 +397,8 @@ export function initLadderSing<C extends SingChart>(
       againName('smaller', 'full', plan.againNames),
     )
     parts.startAgain.hidden = !o.startAgain
+    if (parts.faster !== null) parts.faster.hidden = !o.faster
+    if (parts.fasterHow !== null) parts.fasterHow.hidden = !o.faster
     parts.today.hidden = !o.done
     const hint =
       o.hint === 'soundOffStartAgain' || o.hint === 'soundOffAgain'
@@ -413,59 +436,43 @@ export function initLadderSing<C extends SingChart>(
 
   // ------------------------------------------------------------ Merc's ladder
 
-  let merc: {
-    readonly run: Run
-    readonly drawing: PhraseDrawing
-    readonly which: Which
-    midi: number | null
-  } | null = null
+  let merc: GuidedPlay | null = null
 
-  /** Merc at rest, his button too. */
-  function mercRests(m: NonNullable<typeof merc>): void {
-    mercBtn.classList.remove('is-on')
-    if (m.midi !== null) mercSing(m.which, m.midi, false)
-  }
-
-  /** Stops Merc's ladder where it stands: its sound, its drawing, its button. */
+  /** Stops Merc's ladder where it stands: its sound, its drawing, his button. */
   function stopMerc(): void {
     const m = merc
     if (m === null) return
     merc = null
-    m.run.stop()
-    m.drawing.cancel()
-    mercRests(m)
+    m.stop()
+    mercBtn.classList.remove('is-on')
     NowPlaying.release(stopMerc)
   }
 
-  /** Play Merc's ladder: the pressed ladder in the chosen voice, each rung lighting as he sings it. */
+  /**
+   * Play Merc's ladder: the pressed ladder in the chosen voice, each rung
+   * lighting as he sings it; with no microphone, on a plan with the sweep,
+   * then the guide lighting each in turn at the take's pace.
+   */
   async function playMerc(): Promise<void> {
     if (!offers(visit).playMerc) return
     // in the briefing, with the sound off, the hint says why nothing played
     dispatch({ type: 'play' })
     stopPlays()
     NowPlaying.claim(stopMerc)
-    const notes = plan.take.mercNotes(visit.ladder, chart.doMidi)
-    const drawing = chart.play({ notes })
-    const which = mercOf(voiceNow())
-    let mine: NonNullable<typeof merc> | null = null
-    const run = playNotes(notes, {
-      audible: Sound.canPlay(),
-      onNote: (n, i) => {
-        drawing.note(i)
-        if (mine !== null) mine.midi = n.midi
-        mercSing(which, n.midi, true)
-      },
-    })
-    mine = { run, drawing, which, midi: null }
+    const sweep = plan.sweep === true && offers(visit).stage === 'nomic'
+    const mine = mercLadder(
+      chart,
+      plan.take.mercNotes(visit.ladder, chart.doMidi),
+      { which: mercOf(voiceNow()), audible: Sound.canPlay() },
+      sweep ? plan.take.slotSec : null,
+    )
     merc = mine
     mercBtn.classList.add('is-on')
-    const heard = await run.done
+    await mine.done
     // a newer play, or a stop, has taken over
     if (merc !== mine) return
     merc = null
-    if (heard) drawing.end()
-    else drawing.cancel()
-    mercRests(mine)
+    mercBtn.classList.remove('is-on')
     NowPlaying.release(stopMerc)
   }
 
@@ -494,9 +501,54 @@ export function initLadderSing<C extends SingChart>(
     })
   }
 
+  // ------------------------------------------------------------ the faster pass
+
+  let pass: GuidedPlay | null = null
+
+  /** The faster pass over, whole or cut short: the flow hears how it ended. */
+  function passOver(whole: boolean): void {
+    pass = null
+    NowPlaying.release(stopPass)
+    // asked afresh; cut short by another sound or the switch, the
+    // keyboard's place stays where the viewer put it
+    if (whole) feelings.reset()
+    dispatch({ type: 'passed', whole })
+    if (whole) focusText(statusEl)
+  }
+
+  /** Cuts the faster pass short: unspent, the card as it was before its button. */
+  function stopPass(): void {
+    const p = pass
+    if (p === null) return
+    p.stop()
+    passOver(false)
+  }
+
+  /** Again, faster (ladder-guide.ts `fasterPass`): with the sound off nothing plays, and the hint says why. */
+  async function playFaster(): Promise<void> {
+    const f = plan.faster
+    if (f === undefined || !offers(visit).faster || pass !== null) return
+    dispatch({ type: 'faster' })
+    const ladder = visit.passing
+    if (ladder === null) return
+    stopPlays()
+    NowPlaying.claim(stopPass)
+    const mine = fasterPass(chart, f, ladder, {
+      which: mercOf(voiceNow()),
+      audible: Sound.canPlay(),
+    })
+    pass = mine
+    focusText(statusEl)
+    const whole = await mine.done
+    // a stop has taken over
+    if (pass !== mine) return
+    passOver(whole)
+  }
+
   function stopPlays(): void {
     stopMerc()
     stopDemo()
+    stopPass()
   }
 
   // ------------------------------------------------------------ the briefing
@@ -677,6 +729,7 @@ export function initLadderSing<C extends SingChart>(
   on([startBtn, parts.startAgain], () => void begin(visit.ladder))
   on([parts.again], () => void begin(lastLadder()))
   on([parts.smaller], () => void begin('smaller'))
+  if (parts.faster !== null) on([parts.faster], () => void playFaster())
   on([parts.today], () => {
     dispatch({ type: 'done' })
     focusText(statusEl)
@@ -716,7 +769,11 @@ export function initLadderSing<C extends SingChart>(
   })
   window.addEventListener('pagehide', leave)
 
-  Sound.subscribe((s) => dispatch({ type: 'sound', on: wouldSound(s) }))
+  Sound.subscribe((s) => {
+    dispatch({ type: 'sound', on: wouldSound(s) })
+    // the sound gone off mid-pass cuts it short, and the hint says why
+    if (!wouldSound(s)) stopPass()
+  })
   return {
     get visit() {
       return visit
