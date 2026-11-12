@@ -99,17 +99,18 @@ describe("Lesson 9's Sing it: the microphone and Merc's ladder", () => {
   })
 
   it('keeps the listener, the reader and the take out of the first paint: Sing it imports only their types', () => {
-    // Arrange
+    // Arrange: the page's modules, and the kit's card and rule it boots
     const files = [
       'main.ts',
       'sing.ts',
-      'sing-take.ts',
       'ladder-flow.ts',
       'ladder-chart.ts',
       'sounds.ts',
+      '../kit/ladder-sing.ts',
+      '../kit/ladder-flow.ts',
     ]
     const loads =
-      /^import (?!type )[^\n]*from '(@\/features\/lessons\/kit\/(listen|take)|\.\/sing-take)'/m
+      /^import (?!type )[^\n]*from '(@\/features\/lessons\/kit\/|\.\/)(listen|take|ladder-take)'/m
 
     // Act
     const offenders = files.filter((f) =>

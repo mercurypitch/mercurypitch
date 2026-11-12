@@ -1,67 +1,107 @@
 // ============================================================
-// Lesson 9 the take — Merc's ladder, then the viewer's, read a rung at a time
+// Ladder take — Merc's ladder, then the singer's, read a note at a time
 // ============================================================
 //
-// Sing it's moving parts after Start (WEB-SPEC, Toys 4, states 5 to 7),
-// apart from the flow that decides what the card offers (ladder-flow.ts)
-// and the card that shows it (sing.ts). Merc sings the chosen ladder, a
-// note every 1.5 s, each slot's band lighting as he sings it, the other
-// Merc listening. At least 0.4 s after his last note ends, once his "ooh"
-// and its release have died away, the take opens with every sound held off
-// (`Sound.hush`): it waits up to 6 s for the voice, then runs one 1.5 s slot
-// a rung from its first voiced frame, 6.0 s for the full ladder and 7.5 s
-// for the smaller (`takeFrames`; FACTS 76). The guide is the chart itself:
-// do's band glows until the voice starts, then each slot's in turn, a swell
-// as it lights, at once under reduced motion. The violet line draws live
-// on the chart's fixed frame, folded around the glowing rung's note
-// (`foldCents`), with a small "octave lower" or "octave higher" tag while it
-// sits within 50 cents of that rung an octave away; a frame beyond the
-// window pins to its edge (the band chart's arrow). Merc and Tavi both
-// listen. However the take ends, the guide goes out with it, so a chart
-// that heard no voice no longer looks as if it listens.
+// Sing it's moving parts after Start (Lesson 9 WEB-SPEC, Toys 4, states 5
+// to 7; Lesson 20 WEB-SPEC, Toys 6, states 3 to 5), apart from the flow
+// that decides what the card offers (ladder-flow.ts) and the card that
+// shows it (ladder-sing.ts). It began as Lesson 9's and moved into the kit
+// for Lesson 20: a page's ladders, their labels, Merc's notes, the slot
+// and the reader's options are its plan (`LadderTakePlan`). Merc sings the
+// chosen ladder, a note a slot (1.5 s on Lesson 9's page, 0.75 s on Lesson
+// 20's), each slot's band lighting as he sings it, the other Merc
+// listening. At least 0.4 s after his last note ends, once his "ooh" and
+// its release have died away, the take opens with every sound held off
+// (`Sound.hush`): it waits up to 6 s for the voice, then runs one slot a
+// note from its first voiced frame (`takeFrames`; Lesson 9 FACTS 76). The
+// guide is the chart itself: do's band glows until the voice starts, then
+// each slot's in turn, a swell as it lights, at once under reduced motion.
+// The violet line draws live on the chart's fixed frame, folded around the
+// glowing note (`foldCents`), with a small "octave lower" or "octave
+// higher" tag while it sits within 50 cents of that note an octave away; a
+// frame beyond the window pins to its edge (the band chart's arrow). Merc
+// and Tavi both listen. However the take ends, the guide goes out with it,
+// so a chart that heard no voice no longer looks as if it listens.
 //
 // The ladder reader (`readLadder`) reads the take's raw frames against the
-// rungs in sung order, its slots timed from the take's own first voiced
-// frame (`voicedAt`), so each slot is the stretch its band glowed, and 1.5 s
-// long (`LADDER_NOTE_SEC`, the kit's `LADDER_SLOT_SEC`). Each rung's line is
-// `rungLine`, never the reading's own line, which carries advice to try
-// again (FACTS 79); the count is `countLine`, or `NONE_HEARD_LINE` when no
-// note was steady. A take whose listener heard a voiced frame, though the
-// reader kept none, sang a ladder: it is 'unsteady', never 'none'.
+// notes in sung order, its slots timed from the take's own first voiced
+// frame (`voicedAt`), so each slot is the stretch its band glowed, and the
+// plan's slot long, with the plan's attack and steady voice where its slot
+// is shorter than Lesson 9's (`ReadOptions`; Lesson 20 FACTS 56). Each
+// note's line is `rungLine`, never the reading's own line, which carries
+// advice to try again (Lesson 9 FACTS 79); the count is `countLine`, or
+// `NONE_HEARD_LINE` when no note was steady. A take whose listener heard a
+// voiced frame, though the reader kept none, sang a ladder: it is
+// 'unsteady', never 'none'.
 //
-// This module loads inside Start's tap (sing.ts), beside the listener, the
-// pitch stream and the readers (kit/listen.ts, through kit/mic-hold.ts),
-// and imports only their types, calling them through the loaded module: the
-// page's first paint carries none of them. Nothing from a take is stored.
+// This module loads inside Start's tap (ladder-sing.ts), beside the
+// listener, the pitch stream and the readers (listen.ts, through
+// mic-hold.ts), and imports only their types, calling them through the
+// loaded module: the page's first paint carries none of them. Nothing from
+// a take is stored.
 
-import type { BandScene, TracePoint } from '@/features/lessons/kit/band-chart'
-import { BAND_WORDS, inBand, octavesOf, octaveTag, } from '@/features/lessons/kit/band-words'
-import { wait } from '@/features/lessons/kit/dom'
-import { wake } from '@/features/lessons/kit/frame-loop'
-import type { LadderReading, Listener, PitchFrame, } from '@/features/lessons/kit/listen'
-import type { Which } from '@/features/lessons/kit/merc-duo'
-import { mercListen, mercSing } from '@/features/lessons/kit/merc-duo'
-import type { ListenModule } from '@/features/lessons/kit/mic-hold'
-import { reducedMotion } from '@/features/lessons/kit/motion-switch'
-import type { Run } from '@/features/lessons/kit/run'
-import { playNotes } from '@/features/lessons/kit/run'
-import { Sound } from '@/features/lessons/kit/sound'
-import type { LadderChart } from './ladder-chart'
-import type { LadderId } from './ladder-data'
-import { ladderNotes, LADDERS } from './ladder-data'
-import type { TakeKind } from './ladder-flow'
+import type { BandChart, BandScene, TracePoint } from './band-chart'
+import { BAND_WORDS, inBand, octavesOf, octaveTag } from './band-words'
+import { wait } from './dom'
+import { wake } from './frame-loop'
+import type { LadderId, TakeKind } from './ladder-flow'
 import { kindOf } from './ladder-flow'
-import { LADDER_NOTE_SEC, mercLadderNotes } from './sounds'
+import type { LadderReading, Listener, PitchFrame } from './listen'
+import type { Which } from './merc-duo'
+import { mercListen, mercSing } from './merc-duo'
+import type { ListenModule } from './mic-hold'
+import { reducedMotion } from './motion-switch'
+import type { Run, RunNote } from './run'
+import { playNotes } from './run'
+import { Sound } from './sound'
+import type { ReadOptions } from './take'
 
-/** The take's timing, seconds: the gap after Merc's last note, and the wait for the voice (FACTS 76). */
+/** What the take needs of a page's two ladders. */
+export interface LadderTakePlan {
+  /** Each ladder's notes from do, MIDI, in sung order. */
+  readonly notes: (id: LadderId, doMidi: number) => readonly number[]
+  /** Each ladder's labels, a note each, as its reading lines open them: "Do", "Mi again". */
+  readonly labels: Readonly<Record<LadderId, readonly string[]>>
+  /** Merc's ladder from do: a note a slot. */
+  readonly mercNotes: (id: LadderId, doMidi: number) => RunNote[]
+  /** Seconds of each note's slot, Merc's and the take's. */
+  readonly slotSec: number
+  /** The reader's attack and steady voice, for a slot shorter than Lesson 9's (Lesson 20 FACTS 56). */
+  readonly read?: ReadOptions
+  /** What the chart's words call the sung line's ladder: "ladder", "run". */
+  readonly noun: string
+}
+
+/** The drawing of Merc's ladder in flight: the card tells it as each note starts, and how it ended. */
+export interface PhraseDrawing {
+  note(i: number): void
+  end(): void
+  cancel(): void
+}
+
+/** What the card and the take need of the chart in `#singChart`. */
+export interface SingChart {
+  /** The band chart the take draws on: its rungs, the live line and its head. */
+  readonly chart: BandChart
+  /** Do as Move do left it, MIDI. */
+  readonly doMidi: number
+  /** The live frame on a ladder: Merc's notes faint, no line, no lit edge. */
+  showLive(id: LadderId): void
+  /** Do moved `shift` semitones from the voice's. */
+  move(shift: number): void
+  /** Merc's notes, drawn as he sings them. */
+  play(phrase: { readonly notes: readonly RunNote[] }): PhraseDrawing
+}
+
+/** The take's timing, seconds: the gap after Merc's last note, and the wait for the voice (Lesson 9 FACTS 76). */
 export const TAKE = { gap: 0.4, wait: 6 } as const
 
 /** A guide's band swells in over this long as it lights. */
 const SWELL_MS = 150
 
-/** A take's seconds once the voice has started: a slot a rung. */
-export const runSec = (ladder: LadderId): number =>
-  LADDERS[ladder].length * LADDER_NOTE_SEC
+/** A take's seconds once the voice has started: a slot a note. */
+export const runSec = (plan: LadderTakePlan, id: LadderId): number =>
+  plan.labels[id].length * plan.slotSec
 
 /** What a take came to. */
 export type TakeEnd =
@@ -100,41 +140,43 @@ export interface ReadOut {
 }
 
 /**
- * The chart's words after a take, in the ladder's order (WEB-SPEC, Toys 4,
- * "Accessibility and motion"): "Your ladder, drawn as a line: do in the
- * band, mi close, so in the band, top do with no steady note".
+ * The chart's words after a take, in the ladder's order (Lesson 9
+ * WEB-SPEC, Toys 4, "Accessibility and motion"): "Your ladder, drawn as a
+ * line: do in the band, mi close, so in the band, top do with no steady
+ * note", the plan's noun for "ladder".
  */
 export function ladderSaid(
-  ladder: LadderId,
+  plan: LadderTakePlan,
+  id: LadderId,
   slots: readonly Pick<Slot, 'band'>[],
 ): string {
-  const parts = LADDERS[ladder].map((n, k) => {
+  const parts = plan.labels[id].map((label, k) => {
     const band = slots[k]?.band ?? null
-    const name = n.label.toLowerCase()
+    const name = label.toLowerCase()
     return band === null
       ? `${name} with no steady note`
       : `${name} ${BAND_WORDS[band]}`
   })
-  return `Your ladder, drawn as a line: ${parts.join(', ')}`
+  return `Your ${plan.noun}, drawn as a line: ${parts.join(', ')}`
 }
 
 /** A take that heard a voice, read out through the loaded reader's own lines. */
 export function readOut(
   mod: ListenModule,
-  ladder: LadderId,
+  plan: LadderTakePlan,
+  id: LadderId,
   r: LadderReading,
 ): ReadOut {
-  const slots: readonly Slot[] = r.heard
-    ? r.slots
-    : LADDERS[ladder].map(() => NO_STEADY)
+  const labels = plan.labels[id]
+  const slots: readonly Slot[] = r.heard ? r.slots : labels.map(() => NO_STEADY)
   const count = r.heard ? r.count : null
   return {
-    lines: LADDERS[ladder].map((n, k) => mod.rungLine(n.label, slots[k])),
+    lines: labels.map((label, k) => mod.rungLine(label, slots[k])),
     count:
       (count === null ? null : mod.countLine(count)) ?? mod.NONE_HEARD_LINE,
     tricky: count !== null && mod.trickyAfter(count),
     landed: slots.map((s) => s.landed),
-    said: ladderSaid(ladder, slots),
+    said: ladderSaid(plan, id, slots),
   }
 }
 
@@ -153,7 +195,7 @@ function setRungs(
 }
 
 /** The chart after a take: the line kept, the head gone, each landed rung's edge lit. */
-export function showReading(chart: LadderChart, out: ReadOut): void {
+export function showReading(chart: SingChart, out: ReadOut): void {
   const s = chart.chart.scene
   s.head = null
   setRungs(s, null, 0, (k) => out.landed[k] === true)
@@ -164,7 +206,8 @@ export function showReading(chart: LadderChart, out: ReadOut): void {
 export interface TakeContext {
   readonly mod: ListenModule
   readonly listener: Listener
-  readonly chart: LadderChart
+  readonly plan: LadderTakePlan
+  readonly chart: SingChart
   readonly ladder: LadderId
   /** The Merc who sings: blue for the lower voice, orange for the higher. */
   readonly which: Which
@@ -180,7 +223,7 @@ export interface TakeContext {
 
 /** Merc sings the ladder, each slot lighting; true when it was heard to its end. */
 async function mercFirst(c: TakeContext): Promise<boolean> {
-  const notes = mercLadderNotes(c.ladder, c.chart.doMidi)
+  const notes = c.plan.mercNotes(c.ladder, c.chart.doMidi)
   const other: Which = c.which === 'blue' ? 'orange' : 'blue'
   const drawing = c.chart.play({ notes })
   let midi: number | null = null
@@ -260,7 +303,7 @@ function liveDrawer(
       const t = frame.t - voicedAt
       k = Math.min(
         rungs.length - 1,
-        Math.max(0, Math.floor(t / LADDER_NOTE_SEC)),
+        Math.max(0, Math.floor(t / c.plan.slotSec)),
       )
       if (t >= 0) push(frame, t, k)
       c.chart.chart.scene.line = [...line]
@@ -274,13 +317,13 @@ function liveDrawer(
 async function listenFor(
   c: TakeContext,
 ): Promise<{ frames: PitchFrame[] | null; voicedAt: number | null }> {
-  const rungs = ladderNotes(c.ladder, c.chart.doMidi)
+  const rungs = c.plan.notes(c.ladder, c.chart.doMidi)
   const draw = liveDrawer(c, rungs)
   let voicedAt: number | null = null
   draw(null, null)
   const frames = await c.mod.takeFrames(c.listener, {
     wait: TAKE.wait,
-    run: runSec(c.ladder),
+    run: runSec(c.plan, c.ladder),
     cancelled: c.cancelled,
     onFrame(frame, at) {
       voicedAt = at
@@ -313,8 +356,8 @@ export async function takeLadder(c: TakeContext): Promise<TakeEnd> {
     if (frames === null) return { kind: 'left', voiced }
     const reading = c.mod.readLadder(
       frames,
-      ladderNotes(c.ladder, c.chart.doMidi),
-      { slotSec: LADDER_NOTE_SEC, start: voicedAt },
+      c.plan.notes(c.ladder, c.chart.doMidi),
+      { ...c.plan.read, slotSec: c.plan.slotSec, start: voicedAt },
     )
     return { kind: 'read', reading, voiced }
   } finally {

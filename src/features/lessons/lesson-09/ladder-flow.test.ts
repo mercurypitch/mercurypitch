@@ -17,10 +17,11 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import type { LadderEvent } from '@/features/lessons/kit/ladder-flow'
+import { next, offers } from '@/features/lessons/kit/ladder-flow'
 import { MOVE_MAX } from '@/features/lessons/kit/move-do'
 import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
-import type { LadderEvent } from './ladder-flow'
-import { AGAIN_NAMES, LADDER_LINES, next, offers } from './ladder-flow'
+import { AGAIN_NAMES, LADDER_LINES } from './ladder-flow'
 import { begin, briefed, HIGHER, LISTEN, NOMIC, run, SING, visit, } from './ladder-flow.test-fixtures'
 
 /** Both paths, with Web Audio and without. */

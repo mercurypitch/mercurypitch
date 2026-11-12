@@ -360,7 +360,7 @@ Lesson 9's (Lesson 9 WEB-SPEC, Toys 4).
      Both buttons stay: the kit marks an end `aria-disabled` so that the keyboard's place stays on
      it (`src/features/lessons/kit/move-do.ts:8-12`), and Lesson 9's flow keeps Move do at its ends
      as the one exception to "absent, never disabled"
-     (`src/features/lessons/lesson-09/ladder-flow.ts:15-18`). The rungs, their names and the
+     (`src/features/lessons/kit/ladder-flow.ts:20-23`). The rungs, their names and the
      chart's window move with do.
    - With sound off, Play Merc's run, Start, Start again, Again, Again, smaller and Again, faster
      play nothing and ask for nothing, and one hint shows for all of them: "Sound is off, so nothing
