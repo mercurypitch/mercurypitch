@@ -1,0 +1,574 @@
+// ============================================================
+// Read marks — what a reading staff writes over its rhythm figure
+// ============================================================
+//
+// Lesson 18's reading staff (its WEB-SPEC, Toys 1 to 3) is Lesson 17's
+// rhythm on the staff (kit/rhythm-draw.ts) with what a reader's eye and a
+// song sheet add to it, drawn here into the figure's own SVG, in its
+// pixels, over the notes:
+//
+// - the house under the first note on do, and each note's syllable under
+//   the staff, counted from that do, while Names is on (Lesson 16's);
+// - a note's name over it as it is read, and a small tag under it, the
+//   note-by-note read's "1 beat late";
+// - the cursor, a line that crosses each note's head on its beat and stops
+//   at the final bar line;
+// - the count-in strip, four small dots before bar 1, one lit a click;
+// - a gold bracket over a pattern's notes, with its label, fading in as it
+//   is drawn, and the box its button takes (at least 44 px tall);
+// - a song sheet's marks, each written as its sound plays: p or f over a
+//   note, a hairpin over its beats drawn open or closed as far as the
+//   level has moved, a staccato dot on a head, a slur over its notes drawn
+//   as far as they have sounded, and a breath mark over a bar line.
+//
+// The rhythm bar draws its figure afresh on every resize and every view, so
+// the marks hold their own state and draw it all again into each new SVG
+// (`draw`, the rhythm bar's `onDraw`); `set` changes what shows and draws
+// again only the layers it touches, so the cursor moves every frame without
+// the rest being touched. A bracket fades in only the first time it is
+// drawn, never on a redraw.
+//
+// Pure drawing: no sound, no timer. The page decides what shows and when,
+// from the beats its plays have reached (kit/rhythm-bar.ts `onFrame`).
+
+import { svg } from './dom'
+import { HOME_PATH } from './home-glyph'
+import type { Spelled } from './notes'
+import type { RhythmFigure } from './rhythm-draw'
+import { r } from './rhythm-glyphs'
+import type { RhythmScene, RowLayout } from './rhythm-layout'
+import { headInset, STAFF_A, symbolX, xOf } from './rhythm-layout'
+import type { PlacedSymbol } from './rhythm-model'
+import { midiOf, placeOf, syllableOf } from './staff-places'
+
+/** A pattern the eye takes in at once: its first and last symbol, and its label. */
+export interface Bracket {
+  readonly first: number
+  readonly last: number
+  readonly label: string
+}
+
+/** A song sheet's mark, at a symbol or across beats of the row. */
+export type SheetMark =
+  | { readonly kind: 'p' | 'f'; readonly at: number }
+  | {
+      readonly kind: 'cresc' | 'dim'
+      readonly from: number
+      readonly to: number
+      /** How much of it is drawn, 0 to 1, as the level moves. */
+      readonly drawn: number
+    }
+  | { readonly kind: 'staccato'; readonly at: number }
+  | {
+      readonly kind: 'slur'
+      readonly first: number
+      readonly last: number
+      /** How much of its curve is drawn, 0 to 1, as its notes sound. */
+      readonly drawn: number
+    }
+  | { readonly kind: 'breath'; readonly beat: number }
+
+/** What the marks show at a moment. */
+export interface ReadMarksState {
+  /** Do: the house under the first note on it, and the syllables counted from it; null for neither. */
+  readonly home: Spelled | null
+  /** Each note's syllable under the staff (Names on). */
+  readonly syllables: boolean
+  /** A name over each symbol, by index, as it is read. */
+  readonly names: readonly (string | null)[]
+  /** A tag under each symbol, by index: "1 beat late". */
+  readonly tags: readonly (string | null)[]
+  /** The cursor at a beat of the row, from 0, or none. */
+  readonly cursor: number | null
+  /** The count-in strip, its dots and the one lit, or none. */
+  readonly countIn: {
+    readonly dots: number
+    readonly lit: number | null
+  } | null
+  readonly brackets: readonly Bracket[]
+  readonly marks: readonly SheetMark[]
+}
+
+/** A box in the figure's pixels. */
+export interface MarkBox {
+  readonly x: number
+  readonly y: number
+  readonly w: number
+  readonly h: number
+}
+
+export interface ReadMarks {
+  /** Draws every mark shown into a freshly drawn figure: the rhythm bar's `onDraw`. */
+  draw(figure: RhythmFigure, el: SVGSVGElement, scene: RhythmScene): void
+  /** Changes what shows, and draws the layers that change. */
+  set(next: Partial<ReadMarksState>): void
+  readonly state: ReadMarksState
+  /** Where each bracket shown is, and its button's box: at least 44 px tall. */
+  bracketBoxes(): readonly MarkBox[]
+}
+
+/** The tap target's least height, px (WCAG 2.5.8, the kit's 44). */
+const TARGET = 44
+
+export const NO_MARKS: ReadMarksState = {
+  home: null,
+  syllables: false,
+  names: [],
+  tags: [],
+  cursor: null,
+  countIn: null,
+  brackets: [],
+  marks: [],
+}
+
+/** Where a figure's row puts its notes: each symbol's head and stem, and the staff. */
+interface Geometry {
+  readonly row: RowLayout
+  readonly placed: readonly PlacedSymbol[]
+  /** Per symbol: its head's centre and place, its stem's direction, its note; null for a rest. */
+  readonly heads: readonly ({
+    readonly x: number
+    readonly y: number
+    readonly down: boolean
+    readonly note: Spelled
+  } | null)[]
+  /** The staff's top and bottom lines. */
+  readonly top: number
+  readonly bottom: number
+}
+
+/** A place's height: the middle line is place 4. */
+const yAt = (row: RowLayout, place: number): number =>
+  row.y - ((place - 4) * row.space) / 2
+
+function geometryOf(fig: RhythmFigure, scene: RhythmScene): Geometry | null {
+  const row = fig.layout.rows[0] as RowLayout | undefined
+  const rowScene = scene.rows[0] as RhythmScene['rows'][number] | undefined
+  if (row === undefined || rowScene === undefined || scene.staff === 'line')
+    return null
+  const staff = scene.staff
+  const placed = fig.rows[0].placed
+  let sound = -1
+  const heads = placed.map((p) => {
+    if (p.kind !== 'note') return null
+    if (p.onset !== null) sound++
+    const note = rowScene.notes?.[Math.max(0, sound)] ?? STAFF_A[staff]
+    const place = placeOf(note, staff)
+    return { x: symbolX(row, p), y: yAt(row, place), down: place >= 4, note }
+  })
+  return { row, placed, heads, top: yAt(row, 8), bottom: yAt(row, 0) }
+}
+
+/** The highest ink over symbols `first` to `last`: the staff's top line, a head, or an up stem's end. */
+function ceilingOf(G: Geometry, first: number, last: number): number {
+  const s = G.row.space
+  let top = G.top
+  for (let i = first; i <= last; i++) {
+    const h = G.heads[i]
+    if (h !== null && h !== undefined)
+      top = Math.min(top, h.down ? h.y - s * 0.6 : h.y - s * 3.6)
+  }
+  return top
+}
+
+/** The cursor's place at `beat`: on the head of a note that starts there, never past the final bar line. */
+export function cursorX(row: RowLayout, beat: number): number {
+  return Math.min(row.x1, xOf(row, beat) + headInset(row, 1))
+}
+
+/** A bracket's line, its label's baseline and its button's box. */
+function bracketShape(
+  G: Geometry,
+  b: Bracket,
+): {
+  x1: number
+  x2: number
+  y: number
+  labelY: number
+  box: MarkBox
+} | null {
+  const a = G.heads[b.first]
+  const z = G.heads[b.last]
+  if (a === null || a === undefined || z === null || z === undefined)
+    return null
+  const s = G.row.space
+  const x1 = a.x - s * 0.75
+  const x2 = z.x + s * 0.75
+  const y = ceilingOf(G, b.first, b.last) - s * 0.9
+  const labelY = y - s * 0.45
+  const size = labelSize(s)
+  const top = labelY - size
+  const bottom = y + s * 0.7
+  const grow = Math.max(0, TARGET - (bottom - top)) / 2
+  return {
+    x1,
+    x2,
+    y,
+    labelY,
+    box: { x: x1, y: top - grow, w: x2 - x1, h: bottom - top + grow * 2 },
+  }
+}
+
+const labelSize = (space: number): number => Math.max(11, space * 0.8)
+const smallSize = (space: number): number => Math.max(10, space * 0.7)
+
+export function createReadMarks(): ReadMarks {
+  let state: ReadMarksState = NO_MARKS
+  let G: Geometry | null = null
+  let root: SVGGElement | null = null
+  const layers = new Map<string, SVGGElement>()
+  // brackets already drawn once: a redraw never fades them in again
+  const seen = new Set<string>()
+
+  const keyOf = (b: Bracket): string => `${b.first}-${b.last}-${b.label}`
+
+  function layer(name: string): SVGGElement | null {
+    if (root === null) return null
+    let g = layers.get(name)
+    if (g === undefined) {
+      g = svg('g', { 'data-layer': name, 'aria-hidden': 'true' }, root)
+      layers.set(name, g)
+    }
+    g.replaceChildren()
+    return g
+  }
+
+  function drawHome(): void {
+    const g = layer('home')
+    if (g === null || G === null) return
+    const home = state.home
+    if (home === null) return
+    const s = G.row.space
+    const at = G.heads.findIndex(
+      (h) => h !== null && midiOf(h.note) === midiOf(home),
+    )
+    const h = G.heads[at]
+    if (h !== null && h !== undefined) {
+      const size = s * 1.05
+      svg(
+        'path',
+        {
+          d: HOME_PATH,
+          class: 'rd-house',
+          'data-i': at,
+          transform: `translate(${r(h.x - size / 2)} ${r(h.y + s * 0.85)}) scale(${(size / 24).toFixed(4)})`,
+        },
+        g,
+      )
+    }
+  }
+
+  function drawUnder(): void {
+    const g = layer('under')
+    if (g === null || G === null) return
+    const s = G.row.space
+    const size = smallSize(s)
+    const line = Math.max(G.bottom, ...G.heads.map((h) => h?.y ?? 0))
+    const y1 = line + s * 0.6 + size
+    const home = state.home
+    G.heads.forEach((h, i) => {
+      if (h === null) return
+      const tag = state.tags[i] ?? null
+      if (tag !== null) {
+        // two short lines, so a tag keeps to its beat's column on a phone
+        const words = tag.split(' ')
+        const cut = Math.ceil(words.length / 2)
+        const t = svg(
+          'text',
+          {
+            x: r(h.x),
+            y: r(y1),
+            'text-anchor': 'middle',
+            'font-size': r(size),
+            class: 'rd-tag',
+            'data-i': i,
+          },
+          g,
+        )
+        ;[words.slice(0, cut), words.slice(cut)].forEach((part, k) => {
+          if (part.length === 0) return
+          svg(
+            'tspan',
+            {
+              x: r(h.x),
+              dy: k === 0 ? '0' : r(size * 1.1),
+              text: part.join(' '),
+            },
+            t,
+          )
+        })
+      } else if (state.syllables && home !== null)
+        svg(
+          'text',
+          {
+            x: r(h.x),
+            y: r(y1),
+            'text-anchor': 'middle',
+            'font-size': r(size),
+            class: 'rd-syl',
+            'data-i': i,
+            text: syllableOf(h.note, home),
+          },
+          g,
+        )
+    })
+  }
+
+  function drawNames(): void {
+    const g = layer('names')
+    if (g === null || G === null) return
+    const s = G.row.space
+    G.heads.forEach((h, i) => {
+      const name = state.names[i] ?? null
+      if (h === null || name === null) return
+      svg(
+        'text',
+        {
+          x: r(h.x),
+          y: r(ceilingOf(G as Geometry, i, i) - s * 0.5),
+          'text-anchor': 'middle',
+          'font-size': r(smallSize(s)),
+          class: 'rd-name',
+          'data-i': i,
+          text: name,
+        },
+        g,
+      )
+    })
+  }
+
+  function drawCursor(): void {
+    const g = layer('cursor')
+    if (g === null || G === null || state.cursor === null) return
+    const s = G.row.space
+    const x = r(cursorX(G.row, state.cursor))
+    svg(
+      'line',
+      {
+        x1: x,
+        x2: x,
+        y1: r(G.top - s * 1.2),
+        y2: r(G.bottom + s * 1.2),
+        class: 'rd-cursor',
+      },
+      g,
+    )
+  }
+
+  function drawCountIn(): void {
+    const g = layer('count')
+    const c = state.countIn
+    if (g === null || G === null || c === null || c.dots < 1) return
+    const s = G.row.space
+    // before bar 1: across the clef's margin, level with the pads' numbers
+    const left = s * 0.9
+    const right = G.row.x0 - s * 0.9
+    const step = c.dots > 1 ? (right - left) / (c.dots - 1) : 0
+    const y = G.row.numberY - s * 0.35
+    for (let k = 0; k < c.dots; k++)
+      svg(
+        'circle',
+        {
+          cx: r(left + step * k),
+          cy: r(y),
+          r: r(Math.max(2.5, s * 0.28)),
+          class: c.lit === k ? 'rd-dot is-lit' : 'rd-dot',
+          'data-dot': k,
+        },
+        g,
+      )
+  }
+
+  function drawBrackets(fresh: boolean): void {
+    const g = layer('brackets')
+    if (g === null || G === null) return
+    const s = G.row.space
+    for (const b of state.brackets) {
+      const shape = bracketShape(G, b)
+      if (shape === null) continue
+      const key = keyOf(b)
+      const isNew = fresh && !seen.has(key)
+      seen.add(key)
+      const bg = svg(
+        'g',
+        {
+          class: isNew ? 'rd-bracket is-fresh' : 'rd-bracket',
+          'data-first': b.first,
+          'data-last': b.last,
+        },
+        g,
+      )
+      const foot = shape.y + s * 0.6
+      svg(
+        'path',
+        {
+          d: `M${r(shape.x1)} ${r(foot)}V${r(shape.y)}H${r(shape.x2)}V${r(foot)}`,
+        },
+        bg,
+      )
+      svg(
+        'text',
+        {
+          x: r((shape.x1 + shape.x2) / 2),
+          y: r(shape.labelY),
+          'text-anchor': 'middle',
+          'font-size': r(labelSize(s)),
+          text: b.label,
+        },
+        bg,
+      )
+    }
+  }
+
+  function drawMarks(): void {
+    const g = layer('marks')
+    if (g === null || G === null) return
+    const Gm = G
+    const s = Gm.row.space
+    const headAt = (i: number) => Gm.heads[i] ?? null
+    for (const m of state.marks) {
+      if (m.kind === 'p' || m.kind === 'f') {
+        const h = headAt(m.at)
+        if (h === null) continue
+        svg(
+          'text',
+          {
+            x: r(h.x),
+            y: r(ceilingOf(Gm, m.at, m.at) - s * 0.6),
+            'text-anchor': 'middle',
+            'font-size': r(s * 1.6),
+            class: 'rd-dyn',
+            'data-mark': m.kind,
+            text: m.kind,
+          },
+          g,
+        )
+      } else if (m.kind === 'cresc' || m.kind === 'dim') {
+        const x1 = xOf(Gm.row, m.from) + s * 0.3
+        const x2 = xOf(Gm.row, m.to) - s * 0.3
+        const first = Gm.placed.findIndex((p) => p.beat >= m.from - 1e-6)
+        const last = Gm.placed.reduce(
+          (at, p, i) => (p.beat < m.to - 1e-6 ? i : at),
+          first,
+        )
+        const yc =
+          ceilingOf(Gm, Math.max(0, first), Math.max(0, last)) - s * 1.4
+        const d = Math.min(1, Math.max(0, m.drawn))
+        const half = s * 0.6
+        // a crescendo opens from its point; a diminuendo closes to its point
+        const open = (t: number): number =>
+          m.kind === 'cresc' ? half * t : half * (1 - t)
+        const xe = x1 + (x2 - x1) * d
+        svg(
+          'path',
+          {
+            d: `M${r(xe)} ${r(yc - open(d))}L${r(x1)} ${r(yc - open(0))}M${r(x1)} ${r(yc + open(0))}L${r(xe)} ${r(yc + open(d))}`,
+            class: 'rd-hairpin',
+            'data-mark': m.kind,
+          },
+          g,
+        )
+      } else if (m.kind === 'staccato') {
+        const h = headAt(m.at)
+        if (h === null) continue
+        svg(
+          'circle',
+          {
+            cx: r(h.x),
+            cy: r(h.down ? h.y - s * 0.95 : h.y + s * 0.95),
+            r: r(s * 0.18),
+            class: 'rd-stacc',
+            'data-mark': 'staccato',
+          },
+          g,
+        )
+      } else if (m.kind === 'slur') {
+        const a = headAt(m.first)
+        const z = headAt(m.last)
+        if (a === null || z === null) continue
+        // over the heads when their stems point down, under them otherwise
+        const over = a.down
+        const sign = over ? -1 : 1
+        const ya = a.y + sign * s * 0.75
+        const yz = z.y + sign * s * 0.75
+        const reach = over
+          ? Math.min(ya, yz) - s * 1.0
+          : Math.max(ya, yz) + s * 1.0
+        svg(
+          'path',
+          {
+            d: `M${r(a.x)} ${r(ya)}Q${r((a.x + z.x) / 2)} ${r(reach)} ${r(z.x)} ${r(yz)}`,
+            class: 'rd-slur',
+            pathLength: '1',
+            'stroke-dasharray': `${Math.min(1, Math.max(0, m.drawn)).toFixed(3)} 1`,
+            'data-mark': 'slur',
+          },
+          g,
+        )
+      } else if (m.kind === 'breath') {
+        // a breath mark: a comma over the staff, just before its beat
+        svg(
+          'text',
+          {
+            x: r(xOf(Gm.row, m.beat) - s * 0.45),
+            y: r(Gm.top - s * 0.5),
+            'text-anchor': 'middle',
+            'font-size': r(s * 2.4),
+            class: 'rd-breath',
+            'data-mark': 'breath',
+            text: ',',
+          },
+          g,
+        )
+      }
+    }
+  }
+
+  function drawAll(fresh: boolean): void {
+    drawHome()
+    drawUnder()
+    drawNames()
+    drawBrackets(fresh)
+    drawMarks()
+    drawCountIn()
+    drawCursor()
+  }
+
+  return {
+    draw(fig, el, scene) {
+      G = geometryOf(fig, scene)
+      layers.clear()
+      // a figure drawn afresh holds none of the old marks; one drawn over
+      // again in place drops them first
+      root?.remove()
+      root = svg('g', { class: 'rd-marks' }, el)
+      drawAll(false)
+    },
+    set(next) {
+      const was = state
+      state = { ...state, ...next }
+      if (root === null) return
+      const changed = (k: keyof ReadMarksState): boolean =>
+        k in next && next[k] !== was[k]
+      if (changed('home')) drawHome()
+      if (changed('home') || changed('syllables') || changed('tags'))
+        drawUnder()
+      if (changed('names')) drawNames()
+      if (changed('brackets')) drawBrackets(true)
+      if (changed('marks')) drawMarks()
+      if (changed('countIn')) drawCountIn()
+      if (changed('cursor')) drawCursor()
+    },
+    get state() {
+      return state
+    },
+    bracketBoxes() {
+      if (G === null) return []
+      const Gb = G
+      return state.brackets.flatMap((b) => {
+        const shape = bracketShape(Gb, b)
+        return shape === null ? [] : [shape.box]
+      })
+    },
+  }
+}
