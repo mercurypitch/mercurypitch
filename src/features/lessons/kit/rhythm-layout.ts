@@ -69,6 +69,12 @@ export interface RhythmScene {
    * 4/4, and only its first beat knocking higher, so it need not fill a bar.
    */
   readonly bare?: boolean
+  /** The staff's space, px, in place of the one the rows' count sets: a staff read from, sized to its figure (Lesson 18 FACTS 84). */
+  readonly space?: number
+  /** Spaces of room kept above a written row, for the marks written over it: Lesson 18's brackets and their labels. None by default. */
+  readonly headroom?: number
+  /** Spaces of room kept under a written row, for what is written under its notes: Lesson 18's syllables and tags. None by default. */
+  readonly footroom?: number
 }
 
 /** A row in the figure's pixels. */
@@ -161,8 +167,9 @@ function rowParts(
   if (!shown.written)
     return { above: 0, below: 0, padsH: pads ? Math.max(space * 4, room) : 0 }
   return {
-    above: space * (shown.staffed ? 4.2 : 4.4),
-    below: space * (scene.counts === true ? 5.2 : 3.4),
+    above: space * ((shown.staffed ? 4.2 : 4.4) + (scene.headroom ?? 0)),
+    below:
+      space * ((scene.counts === true ? 5.2 : 3.4) + (scene.footroom ?? 0)),
     padsH: pads ? space * 1.9 : 0,
   }
 }
@@ -178,7 +185,7 @@ export function layoutRhythm(
   scene: RhythmScene,
 ): RhythmLayout {
   const n = scene.rows.length
-  const space = scene.compact === true ? 7 : n > 1 ? 8 : 10
+  const space = scene.space ?? (scene.compact === true ? 7 : n > 1 ? 8 : 10)
   const written = scene.notation !== false
   const staffed = written && scene.staff !== 'line' && scene.lanes !== true
   const margin = staffed ? 6.2 : scene.bare === true || !written ? 0.6 : 2.6
