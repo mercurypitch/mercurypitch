@@ -8,9 +8,8 @@
 // button and its end.
 
 import type { Feeling } from '@/features/lessons/kit/comfort'
-import type { LadderId } from './ladder-data'
-import type { LadderEvent, LadderVisit, TakeKind, VisitStart, } from './ladder-flow'
-import { next, openVisit } from './ladder-flow'
+import type { LadderEvent, LadderId, LadderVisit, TakeKind, VisitStart, } from '@/features/lessons/kit/ladder-flow'
+import { next, openVisit } from '@/features/lessons/kit/ladder-flow'
 
 export const run = (
   events: readonly LadderEvent[],

@@ -29,9 +29,8 @@ import { isDeepStrictEqual } from 'node:util'
 import { describe, expect, it } from 'vitest'
 import type { Feeling } from '@/features/lessons/kit/comfort'
 import { FEELINGS } from '@/features/lessons/kit/comfort'
-import type { LadderId } from './ladder-data'
-import type { LadderEvent, LadderOffers, LadderVisit, SoundHint, TakeKind, } from './ladder-flow'
-import { LADDER_ORDER, next, offers, openVisit } from './ladder-flow'
+import type { LadderEvent, LadderId, LadderOffers, LadderVisit, SoundHint, TakeKind, } from '@/features/lessons/kit/ladder-flow'
+import { LADDER_ORDER, next, offers, openVisit, } from '@/features/lessons/kit/ladder-flow'
 import { begin, DONE, feel, HIGHER, KINDS, LISTEN, NOMIC, run, SILENCED, SING, SOUND_OFF, SOUND_ON, took, } from './ladder-flow.test-fixtures'
 
 /** The buttons that begin a take. */
