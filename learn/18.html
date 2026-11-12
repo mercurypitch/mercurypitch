@@ -1243,19 +1243,22 @@
                     note.”
                   </li>
                 </ul>
+                <p class="nomic-line" data-nomic hidden>
+                  No microphone? Play the start, read and sing anyway, then play
+                  Merc's tunes to check. Nothing listens.
+                </p>
                 <!-- the learner's staff (the reading staff's sing state): the
                      tune in the learner's clef and octave, its breath mark at
                      the bar line, the house on do, the beat grid and the
                      count-in strip; it takes no taps; beside it, the still of
                      the one who sings (sing.ts) -->
                 <div class="l18-sing-staff" id="singStaff">
-                  <div class="viz read-viz" data-sing-viz>
-                    <svg
-                      class="rb-svg"
-                      data-sing-svg
-                      role="group"
-                      aria-label="Bass staff, two bars of 4/4: G, A, B, D, then D, B and a long G, with a breath mark at the bar line"
-                    ></svg>
+                  <div
+                    class="viz read-viz rb l18-staff"
+                    data-sing-viz="1"
+                    role="group"
+                    aria-label="Bass staff, two bars of 4/4: G, A, B, D, then D, B and a long G, with a breath mark at the bar line"
+                  >
                     <p class="sr" aria-live="polite" data-sing-said></p>
                   </div>
                   <img
@@ -1290,22 +1293,43 @@
                     </button>
                   </div>
                 </div>
-                <p class="nomic-line" data-nomic hidden>
-                  No microphone? Play the start, read and sing anyway, then play
-                  Merc's tunes to check. Nothing listens.
-                </p>
-                <div class="sing-btns">
-                  <button
-                    class="btn tint"
-                    type="button"
-                    data-sing="play-start"
-                    style="--c: var(--amber)"
-                    hidden
+                <button
+                  class="btn tint play-start"
+                  type="button"
+                  data-sing="play-start"
+                  data-tune="1"
+                  style="--c: var(--amber)"
+                  hidden
+                >
+                  <svg class="ico" aria-hidden="true">
+                    <use href="#i-play" /></svg
+                  >Play the start
+                </button>
+                <!-- with no microphone, the second tune drawn under the
+                     first, with its own Play the start (sing.ts) -->
+                <div class="l18-sing-staff" id="singStaff2" hidden>
+                  <div
+                    class="viz read-viz rb l18-staff"
+                    data-sing-viz="2"
+                    role="group"
+                    aria-label="Bass staff, two bars of 4/4: G, G, B, B, then a long D and a long G, with a breath mark at the bar line"
                   >
-                    <svg class="ico" aria-hidden="true">
-                      <use href="#i-play" /></svg
-                    >Play the start
-                  </button>
+                    <p class="sr" aria-live="polite" data-sing-said></p>
+                  </div>
+                </div>
+                <button
+                  class="btn tint play-start"
+                  type="button"
+                  data-sing="play-start"
+                  data-tune="2"
+                  style="--c: var(--amber)"
+                  hidden
+                >
+                  <svg class="ico" aria-hidden="true">
+                    <use href="#i-play" /></svg
+                  >Play the start
+                </button>
+                <div class="sing-btns">
                   <button
                     class="btn primary lg"
                     type="button"
