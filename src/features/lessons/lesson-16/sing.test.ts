@@ -299,6 +299,69 @@ describe('the start and the take', () => {
     ])
   })
 
+  it('lets nothing else on the page play while a take runs, and gives its plays back after', async () => {
+    // Arrange
+    initSing({ loadTake })
+    press('[data-comfort="sing"]')
+    const word = el<HTMLButtonElement>('[data-word-play="sight"]')
+    const other = el<HTMLButtonElement>('[data-word-play="triad"]')
+    // a try locked until the predict's choice, as the markup has it
+    const locked = el<HTMLButtonElement>('#heroPlay')
+    const figure = el('#toyStaff [data-staff-viz]')
+    const heard: string[] = []
+    word.addEventListener('click', () => heard.push('word'))
+    figure.addEventListener('pointerdown', () => heard.push('figure'))
+    figure.addEventListener('keydown', (e) => heard.push(`key ${e.key}`))
+
+    // Act: a play enabled since the take opened, a tap and a key on a figure
+    await toTake()
+    const during = [word.disabled, other.disabled]
+    word.disabled = false
+    word.click()
+    figure.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+    const key = (target: Element, name: string): boolean =>
+      target.dispatchEvent(
+        new KeyboardEvent('keydown', {
+          key: name,
+          bubbles: true,
+          cancelable: true,
+        }),
+      )
+    // an arrow moves a figure, and falls; Tab only moves the focus on
+    const keys = [key(figure, 'ArrowUp'), key(figure, 'Tab'), key(word, 'Tab')]
+    await endTake(['Do · Right in the middle.'])
+    word.click()
+    figure.dispatchEvent(new Event('pointerdown', { bubbles: true }))
+
+    // Assert: test 17
+    expect(during).toEqual([true, true])
+    expect(keys).toEqual([false, true, true])
+    expect([word.disabled, other.disabled]).toEqual([false, false])
+    expect(locked.disabled).toBe(true)
+    expect(heard).toEqual(['key Tab', 'word', 'figure'])
+  })
+
+  it('stops a sound still going as the take opens', async () => {
+    // Arrange: the start heard to its end, then another sound in the quiet before the take
+    initSing({ loadTake })
+    press('[data-comfort="sing"]')
+    press('[data-sing="start"]')
+    await settle()
+    runs.at(-1)?.end(true)
+    await settle()
+    const stopped = vi.fn()
+    NowPlaying.claim(stopped)
+
+    // Act
+    vi.advanceTimersByTime(OPEN_SEC * 1000)
+    await settle()
+    await settle()
+
+    // Assert
+    expect(takes).toHaveLength(1)
+    expect(stopped).toHaveBeenCalledTimes(1)
+  })
+
   it('says it did not hear a start, with Start again, after a take with no voice', async () => {
     // Arrange
     initSing({ loadTake })
