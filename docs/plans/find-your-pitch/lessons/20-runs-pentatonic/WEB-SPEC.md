@@ -792,3 +792,46 @@ production:
 - The app-check sweep at phone and desktop width, with Sing it open in each state and with each
   run, the staircase in each state with its printed names, the run toy at every notch with the
   staff on and after Play it smudged, and the cold open before and after its reveal.
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- Counted by `scripts/lesson-words.mjs`'s rule as the built page shows it, the package's 2,226 words
+  with about 116 more written in the open (the two figures' captions, 15; the toys' labels the steps
+  do not bracket, "Play up", "Start lower", the Slide's "Do is C3", "Start higher", "An
+  illustration", Tempo's two fastest notches and "See it on the staff", 20; Sing it's status lines
+  and the stored voice's line, 55; the lines a take prints that the brief's examples do not show,
+  right in the middle, close and a semitone away, 24, with the octave tag, 2), the sound-off and
+  no-sound lines, the next-lesson card and free play left out, as the counter leaves them and as
+  Lessons 16 and 18 counted theirs: about 2,342, 37 under the series' cap of 2,379. Length's
+  estimate of 151 counted the cold open's sound-off hint and the next-lesson card's words, which
+  that rule leaves out, so no further cut is made.
+- The flow is the kit's (`kit/ladder-flow.ts`), Lesson 9's rule, with this page's two options in
+  its plan: Move do's reach by voice and the faster pass. `lesson-20/run-flow.ts` holds only this
+  page's words for it, the Again buttons' names and the card's lines, and the rule's every branch
+  stays unit-tested in the kit (`kit/ladder-flow.test.ts`).
+- Merc's run, the guide's sweep and the faster pass are one kit module the card calls
+  (`kit/ladder-guide.ts`): Merc's notes lit as he sings, then the count-in and the guide's silent
+  sweep, a drawing of its own, each optional. With no microphone the sweep starts after the take's
+  own 0.4 s gap after Merc (`TAKE`), a quiet state 9 does not give a length.
+- The faster pass clears the last take's line from the chart while it plays and keeps the lit edges,
+  reading state 8's "the chart draws no line" as no line on the chart: an old line under the guide's
+  moving glow would read as a live one. The reading lines under the chart stay.
+- The reader's late start: the one-take reader reads in 16 ms frames, so a note held 0.6 s, the
+  0.15 s attack and 0.45 s of steady voice, measures 0.448 s, a frame short of steady. A slot's room
+  for a late start is about 0.14 s, not quite FACTS 56's 0.15; the lab tunes both numbers, as Toys 6
+  says.
+- A bead is a button over the drawing (Toys 5) only where every bead's button is 44 px wide, the
+  Contract's least target, as on a tablet or a desktop: on a phone nine beads leave about 25 px
+  each, and nine buttons cannot stand side by side at 44 px without overlapping. There the toy's
+  plays sound the beads, and the chart's summary reads them.
+- The kit's small staircase, drawn in Four words without its two names, names each stair from its
+  scale's own degrees (do, me, fa, so, te on the minor five) and lifts its rows when a scale reaches
+  past them, as A3's minor five does over C3 (`kit/stairs-words.ts`, `kit/stairs-geometry.ts`).
+- The tease still is markup, needing no script: Lesson 21's ring as Lesson 21's page draws it at
+  first paint, each part's look written in, over a keyboard from D4 to A5 in Lesson 1's colours. A
+  change to Lesson 21's opening asks for the still to be drawn again.
+- The recall and the quick check load after first paint as a chunk of their own (`recall.ts`), as
+  free play does (`free-play.ts`), so the page's first paint carries neither; the take's reader and
+  its pitch line load with the microphone at Start, as on Lesson 9's page.

@@ -981,7 +981,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:547`), measured, with the
     lessons' headroom, a quarter over. Every build emits every lesson page, a draft's included
     (`scripts/assert-first-paint-budgets.mjs:127-129`), and a document it emits with no budget
-    fails the check (`assert-first-paint-budgets.mjs:968-971`, and for CSS `:1001-1004`; FACTS 76),
+    fails the check (`assert-first-paint-budgets.mjs:969-972`, and for CSS `:1002-1005`; FACTS 76),
     which `build:e2e` runs (`package.json:20`). The page's WebGL renderer, as on every lesson page,
     arrives after first paint (Merc and Tavi).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and

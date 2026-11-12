@@ -568,10 +568,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // and the steps' two toys, the staircase and the run with its staff;
   // the cold open's run and predict, the four words' figures, Sing it's
   // card on the run chart (kit/ladder-sing.ts, kit/ladder-guide.ts) and
-  // free play's import: 195,912 bytes in build:e2e, the smallest whole KB
-  // above, to rise as each part joins. The recall and quick check, the
-  // take with its listener, and free play load after first paint.
-  'learn/20.html': 192,
+  // free play's import: 195,912 bytes in build:e2e; a quarter over. The
+  // recall and quick check, the take with its listener, and free play load
+  // after first paint.
+  'learn/20.html': 240,
   // Lesson 21, "Keys and the circle of fifths", a Season 2 page and a
   // draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
@@ -790,12 +790,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // @import, and the shared parts), its own, and the shared Inter and Outfit
   // @font-face rules; a quarter over.
   'learn/19.html': 106,
-  // Lesson 20 (a draft, as above), its shell and Sing it: 93,973 bytes in
-  // build:e2e, the kit's sheets (the shared parts and the comfort check's),
-  // its own with the staircase's, the staff toy's and the voice lessons'
-  // taken in, and the shared Inter and Outfit @font-face rules; the
-  // smallest whole KB above, to rise as each part joins.
-  'learn/20.html': 92,
+  // Lesson 20 (a draft, as above): 94,173 bytes in build:e2e, the kit's
+  // sheets (the shared parts and the comfort check's), its own with the
+  // staircase's, the staff toy's and the voice lessons' taken in, and the
+  // shared Inter and Outfit @font-face rules; a quarter over.
+  'learn/20.html': 115,
   // Lesson 21 (a draft, as above): 95,757 bytes in build:e2e, the kit's
   // sheets (the guide's and the voice lessons' in the chunks the quizzes and
   // Sing it share, the staff toy's, the staircase's and the circle's
