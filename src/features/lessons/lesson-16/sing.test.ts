@@ -453,6 +453,23 @@ describe('the still beside the staff', () => {
 })
 
 describe('listening and no microphone', () => {
+  it('takes the no-microphone path when the take’s module fails to load, and sings nothing', async () => {
+    // Arrange
+    initSing({ loadTake: () => Promise.reject(new Error('no chunk')) })
+    press('[data-comfort="sing"]')
+
+    // Act
+    press('[data-sing="start"]')
+    await settle()
+
+    // Assert: state 9, the listener failed to load
+    expect(shown('[data-nomic]')).toBe(true)
+    expect(shown('[data-sing="play-start"]')).toBe(true)
+    expect(shown('[data-sing="start"]')).toBe(false)
+    expect(runs).toHaveLength(0)
+    expect(mic.released).toBe(1)
+  })
+
   it('offers Play the start and Play Merc’s phrases when the microphone is refused', async () => {
     // Arrange
     mic.ok = false
