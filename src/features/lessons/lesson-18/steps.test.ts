@@ -284,9 +284,31 @@ describe('Steps 2 to 4', () => {
   })
 })
 
+/** The staff's figure drawn at `w` px wide, as a desktop's stage or a tablet's draws it. */
+function figureWide(w: number): void {
+  vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockImplementation(
+    function (this: HTMLElement) {
+      const h = this.matches('[data-read-viz]') ? 250 : 0
+      const width = h > 0 ? w : 0
+      return {
+        x: 0,
+        y: 0,
+        top: 0,
+        left: 0,
+        width,
+        height: h,
+        right: width,
+        bottom: h,
+        toJSON: () => ({}),
+      }
+    },
+  )
+}
+
 describe('the staff itself', () => {
   it('plays a tapped note for 0.8 s and says it', async () => {
-    // Arrange
+    // Arrange: a desktop's stage
+    figureWide(720)
     mountSteps()
 
     // Act
@@ -301,6 +323,20 @@ describe('the staff itself', () => {
     expect(notes[2].getAttribute('aria-label')).toBe('B3, mi, a quarter note')
     expect(said()).toBe('B3, mi, a quarter note')
     expect(voices).toEqual([hz(B3)])
+  })
+
+  it('makes no note a button on a figure too narrow for each to be 44 px wide, as on a phone, where the brackets still are', () => {
+    // Arrange: the figure at a phone's 356 px (jsdom measures none)
+    const deck = mountSteps()
+    deck.show(2)
+
+    // Act
+    play('tune-a').click()
+    frame(8)
+
+    // Assert (WEB-SPEC, Contract: touch targets of at least 44 px, none overlapping)
+    expect(toy().querySelectorAll('.read-spot.is-note')).toHaveLength(0)
+    expect(toy().querySelectorAll('.read-spot.is-bracket')).toHaveLength(2)
   })
 
   it('moves the staff and the sound to the treble, and writes each note’s syllable while Names is on', () => {
