@@ -290,6 +290,9 @@ export function mountStairsStep(
     if (on === minor) return
     halt()
     minor = on
+    // free play's switch shows the five while Minor is on (`fives`), and
+    // keeps them when Major comes back, as Major's line says
+    if (on && state.fiveSwitch) five = true
     apply()
     say(modeSaid(on, core.tonic))
   }
@@ -458,6 +461,10 @@ export function mountStairsStep(
     setState(next) {
       halt()
       state = next
+      // each step opens at Major, Step 2 as at first and Step 1, which has
+      // no Major · Minor, never in Step 2's Minor, as the run toy opens each
+      // step at Legato; the switch keeps where Step 1 left it
+      minor = false
       apply()
     },
     setVoice(v) {
