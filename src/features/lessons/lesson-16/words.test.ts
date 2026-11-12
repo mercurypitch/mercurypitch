@@ -22,6 +22,9 @@ import { VoiceChoice } from '@/features/lessons/kit/voice-choice'
 import { el, loadPage, settle, soundOn, words } from './page-dom.test-fixtures'
 import { initWords, playLength, WORD_IDS, wordPlay } from './words'
 
+/** Do, G, in each clef's octave, MIDI: G3 and G4. */
+const DO_MIDI = { bass: 55, treble: 67 } as const
+
 vi.mock('@/features/lessons/kit/run', async (actual) => ({
   ...(await actual<typeof RunModule>()),
   ...(await import('@/features/lessons/kit/run-recorder.test-fixtures'))
@@ -49,6 +52,14 @@ const button = (w: string): HTMLButtonElement =>
 /** A play's notes as [onset, MIDI note, length, tone]. */
 const heard = (w: (typeof WORD_IDS)[number], clef: 'bass' | 'treble') =>
   wordPlay(w, clef).notes.map((n) => [n.t, n.midi, n.dur, n.kind ?? null])
+
+/** Whether `notes` (MIDI) sound `line` in a row, in any octave. */
+const soundsLine = (notes: readonly number[], line: readonly number[]) =>
+  [-24, -12, 0, 12, 24].some((shift) =>
+    notes
+      .map((_, i) => notes.slice(i, i + line.length).join(' '))
+      .includes(line.map((m) => m + shift).join(' ')),
+  )
 
 describe('the three plays', () => {
   it('give Sight-singing do alone in the soft tone, then do to so sung, 4.4 s, in the bass octave', () => {
@@ -195,5 +206,23 @@ describe('the three figures', () => {
     expect(words(button('sight'))).toBe(
       'Play: do first, then Tavi sings do to so',
     )
+  })
+})
+
+describe('the second phrase, never heard in a word', () => {
+  it('sounds G, D, B, A, G in no word’s play, in either clef', () => {
+    for (const clef of ['bass', 'treble'] as const) {
+      // Arrange: do, so, mi, re, do in the clef's octave
+      const [g, a, b, , d] = [0, 2, 4, 5, 7].map((s) => DO_MIDI[clef] + s)
+      const second = [g, d, b, a, g]
+
+      for (const w of WORD_IDS) {
+        // Act
+        const notes = wordPlay(w, clef).notes.map((n) => n.midi)
+
+        // Assert: FACTS 43, WEB-SPEC Tests 9
+        expect(soundsLine(notes, second), `${w} in the ${clef}`).toBe(false)
+      }
+    }
   })
 })
