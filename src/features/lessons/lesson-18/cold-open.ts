@@ -31,6 +31,7 @@ import { mercListen, mercSing, mercsReady, } from '@/features/lessons/kit/merc-d
 import { Motion } from '@/features/lessons/kit/motion-switch'
 import { hz } from '@/features/lessons/kit/notes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
+import { playLights } from '@/features/lessons/kit/play-lights'
 import type { Predict } from '@/features/lessons/kit/predict'
 import { mountPredict } from '@/features/lessons/kit/predict'
 import { createReadMarks } from '@/features/lessons/kit/read-marks'
@@ -158,6 +159,10 @@ export function initColdOpen(deck: StepDeck): ColdOpen {
     })
   }
 
+  // Read Merc's way lit while it plays, as the predict lights the read
+  const light = playLights()
+  const wayBtn = q<HTMLButtonElement>('#predict [data-play="way"]')
+
   /** Read Merc's way, in the reveal: the tune on the beat, its brackets as the cursor reaches them. */
   function way(): void {
     stop()
@@ -193,6 +198,7 @@ export function initColdOpen(deck: StepDeck): ColdOpen {
       [{ view: bar.view ?? view(), bpm: () => BPM, countIn: COUNT_IN }],
       { kind: 'merc', line: READ_LINES.heroWay },
     )
+    light(wayBtn, done)
     void done.then((heard) => {
       frame = null
       rest()
@@ -219,10 +225,7 @@ export function initColdOpen(deck: StepDeck): ColdOpen {
       Choice.make()
     },
   })
-  q<HTMLButtonElement>('#predict [data-play="way"]').addEventListener(
-    'click',
-    way,
-  )
+  wayBtn.addEventListener('click', way)
 
   // leaving the hero ends its play: a step change of the deck, by any
   // route, or the hero off screen for 600 ms, a hidden page or a page gone

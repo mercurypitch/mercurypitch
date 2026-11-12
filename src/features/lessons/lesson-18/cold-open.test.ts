@@ -128,7 +128,7 @@ describe('the cold open', () => {
     expect(words(el('#predict .reveal'))).toContain('You said: all seven')
   })
 
-  it('reads Merc’s way from the reveal, each bracket fading in as the cursor reaches its pattern', async () => {
+  it('reads Merc’s way from the reveal, its button lit while it plays, each bracket fading in as the cursor reaches its pattern', async () => {
     // Arrange
     mountHero()
     choose('four')
@@ -136,14 +136,18 @@ describe('the cold open', () => {
     await finish()
 
     // Act
-    el<HTMLButtonElement>('#predict [data-play="way"]').click()
+    const way = el<HTMLButtonElement>('#predict [data-play="way"]')
+    way.click()
+    const lit = way.classList.contains('is-on')
     const onFrame = runs[runs.length - 1].o.onFrame
     onFrame?.({ bar: 1, beat: 0, beats: 4 })
     const one = texts('.rd-bracket text')
     onFrame?.({ bar: 2, beat: 0, beats: 8 })
     await finish()
 
-    // Assert: the names of the read go, the brackets come
+    // Assert: lit while it plays, as every play is; the names of the read
+    // go, the brackets come
+    expect([lit, way.classList.contains('is-on')]).toEqual([true, false])
     expect(one).toEqual(['a run of steps'])
     expect(texts('.rd-bracket text')).toEqual(['a run of steps', 'do-mi-so'])
     expect(texts('.rd-name')).toEqual([])
