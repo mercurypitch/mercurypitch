@@ -560,10 +560,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'learn/19.html': 187,
   // Lesson 20, "Runs and the pentatonic scale", a Season 2 page and a draft,
   // built in every mode as Lesson 3 is: its own module on the kit, carrying
-  // Season 2's map (kit/season-2.ts) as a Season 2 page must; its shell:
-  // 89,109 bytes in build:e2e, the smallest whole KB above, to rise as each
-  // part joins.
-  'learn/20.html': 88,
+  // Season 2's map (kit/season-2.ts) as a Season 2 page must; its shell
+  // and the steps' two toys, the staircase and the run with its staff:
+  // 165,437 bytes in build:e2e, the smallest whole KB above, to rise as
+  // each part joins.
+  'learn/20.html': 162,
   // Lesson 21, "Keys and the circle of fifths", a Season 2 page and a
   // draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with

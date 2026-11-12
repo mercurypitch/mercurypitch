@@ -45,6 +45,7 @@ import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initSteps, toyFor } from './steps'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -56,9 +57,10 @@ Motion.init()
 // four steps on two toys: the staircase for Steps 1 and 2, the run for
 // Steps 3 and 4
 const deck = createStepDeck({
-  toyFor: (step) => (step <= 2 ? 1 : 2),
+  toyFor,
   after: { label: 'Sing it', selector: '#sing' },
 })
+initSteps(deck)
 deck.start()
 
 // the next lesson's card first: the explorer binds its link to the map

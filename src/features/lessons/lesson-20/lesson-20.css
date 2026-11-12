@@ -219,14 +219,22 @@
 .controls .seg .btn {
   min-width: 44px;
 }
-.tempo-seg {
+/* Tempo: its label, then the five notches as one pill, each notch's "0.75
+   s" on one line; on a narrow phone the label sits over the pill */
+.tempo {
+  display: flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: 6px 8px;
+  max-width: 100%;
 }
-.tempo-seg .seg-lbl {
-  margin-right: 6px;
+.tempo .seg-lbl {
   font-size: var(--fs-14);
   color: var(--ink-2);
+}
+.tempo-seg .btn {
+  padding: 0 9px;
+  white-space: nowrap;
 }
 
 /* ---------------------------------------------------------------- Sing it */
