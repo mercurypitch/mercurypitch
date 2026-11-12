@@ -291,6 +291,31 @@
   width: 100%;
   height: auto;
 }
+/* the still's parts as Lesson 17's rhythm bar draws them (tease.ts): its
+   sheet, kit/lesson-rhythm.css, is that page's, so the few rules a still
+   at rest needs are here, under the still's own class */
+.l16-tease .rb-line {
+  stroke: rgba(195, 204, 214, 0.62);
+  stroke-width: 1.6px;
+}
+.l16-tease .rb-pad-box,
+.l16-tease .rb-cell-box {
+  fill: rgba(195, 204, 214, 0.04);
+  stroke: var(--hair-2);
+  stroke-width: 1px;
+}
+.l16-tease .rb-pad-n {
+  fill: var(--chrome);
+  font: 600 var(--fs-18) / 1 var(--f-display);
+  font-variant-numeric: tabular-nums;
+}
+.l16-tease .rb-pad.one .rb-pad-n {
+  font-size: var(--fs-22);
+}
+.l16-tease .rb-fill,
+.l16-tease .is-hidden {
+  opacity: 0;
+}
 .l16-free > .eyebrow {
   margin: 0 0 10px;
   line-height: 16px;
