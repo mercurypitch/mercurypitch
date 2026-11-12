@@ -57,7 +57,7 @@ import { beatsOf, metreOf, placeRow } from './rhythm-layout'
 import { barQuarters, beatQuarters, countsOf, heldSeconds, soundsOf, stripCells, } from './rhythm-model'
 import { padWords } from './rhythm-words'
 import { Sound } from './sound'
-import type { Bus } from './sound-ahead'
+import type { Bus, NoteLevel } from './sound-ahead'
 import { bookNote } from './sound-ahead'
 import { midiOf } from './staff-places'
 import { bookWood } from './woodblock'
@@ -80,6 +80,21 @@ export interface RhythmView {
   readonly pads?: 'choose' | 'press' | null
 }
 
+/**
+ * How one sound of a part is shaped, as a song sheet's marks ask (Lesson 18
+ * WEB-SPEC, Toys 2 and 3): each field changes only what it names.
+ */
+export interface SoundShape {
+  /** Its level, a fraction of the voice's own: p's 0.3, f's 1.0. */
+  readonly level?: number
+  /** Its level as it sounds, in place of `level`: a hairpin's swell or fade (kit/sound-ahead.ts `NoteLevel`). */
+  readonly levels?: readonly NoteLevel[]
+  /** Seconds it sounds, in place of its length less the gap: a staccato note's 0.15, the note before a breath's 0.6. */
+  readonly seconds?: number
+  /** Held its whole length, with no gap before the next sound: each of a slur's notes but its last. */
+  readonly joined?: boolean
+}
+
 /** One stretch of a play: a row of a view, at a tempo read beat by beat. */
 export interface PlayPart {
   readonly view: RhythmView
@@ -96,6 +111,8 @@ export interface PlayPart {
   readonly click?: boolean
   /** Drums struck in place of its notes, one a sound of its row in order (a tied run is one sound), null for one that strikes nothing. */
   readonly drums?: readonly (DrumHit | null)[]
+  /** Each sound's shape, by its place among the row's sounds from 0 (a tied run is one); as written where it gives none. */
+  readonly shape?: (sound: number) => SoundShape | undefined
 }
 
 /** What runs ahead of chosen sounds, as heard: Merc's hop, landing on a kick or a snare. */
@@ -140,6 +157,8 @@ export interface RhythmBarOptions {
   readonly onFrame?: (beats: number | null) => void
   /** Strikes a part's drum into its run's bus: kit/drum-hits.ts `bookDrum`, passed by a page whose plays have drums, so no other page carries the voices. */
   readonly drum?: (hit: DrumHit, when: number, bus: Bus) => void
+  /** After each drawing, into a fresh SVG: a page draws its own marks over the figure again (Lesson 18's, kit/read-marks.ts). */
+  readonly onDraw?: (figure: RhythmFigure, svg: SVGSVGElement) => void
 }
 
 /** How the bar is seen, whatever its view: on the pitch line, and with each note's count under it. */
@@ -206,6 +225,8 @@ type RbHit =
       readonly drum?: DrumHit | null
       /** Its own note, where its row gives one. */
       readonly note?: Spelled
+      /** Its place among the row's sounds, from 0, when it starts one. */
+      readonly sound?: number
     }
   | { readonly k: 'end'; readonly part: number; readonly cell: number }
   | { readonly k: 'count'; readonly part: number; readonly c: number }
@@ -223,6 +244,23 @@ interface PlanBar {
 }
 
 const isWhole = (x: number): boolean => Math.abs(x - Math.round(x)) < 1e-6
+
+/** A sound's length and level as its part shapes it: its length less the gap at the part's tempo, at the voice's own level, unless its shape says otherwise. */
+export function shaped(
+  held: number,
+  part: PlayPart,
+  sound?: number,
+): { dur: number; levels?: readonly NoteLevel[] } {
+  const shape = sound === undefined ? undefined : part.shape?.(sound)
+  const bpm = part.bpm()
+  const dur =
+    shape?.seconds ??
+    (shape?.joined === true ? (held * 60) / bpm : heldSeconds(held, bpm))
+  const levels =
+    shape?.levels ??
+    (shape?.level === undefined ? undefined : [{ at: 0, level: shape.level }])
+  return levels === undefined ? { dur } : { dur, levels }
+}
 
 /** The hits of one part's row, at their beats from the row's start; a cue may fall before it. */
 function partHits(
@@ -266,6 +304,7 @@ function partHits(
         part: index,
         i,
         held: n === -1 ? null : sounds[n].beats,
+        ...(n === -1 ? {} : { sound: n }),
         ...(part.drums === undefined ? {} : { drum: drumOf(n) }),
         ...(n === -1 || row.notes?.[n] === undefined
           ? {}
@@ -458,6 +497,7 @@ export function mountRhythmBar(o: RhythmBarOptions): RhythmBar {
     paint()
     if (tickMarks !== null) figure.ticks(0, tickMarks)
     placePads()
+    o.onDraw?.(figure, svgEl)
   }
 
   function show(
@@ -558,7 +598,7 @@ export function mountRhythmBar(o: RhythmBarOptions): RhythmBar {
       if (h.drum === undefined)
         bookNote(h.note === undefined ? freq : hz(midiOf(h.note)), {
           when,
-          dur: heldSeconds(h.held, parts[h.part].bpm()),
+          ...shaped(h.held, parts[h.part], h.sound),
           kind: po.kind ?? 'soft',
           to: bus.node,
         })
