@@ -7,7 +7,8 @@
 // 0.45 s, then do for 1.2 s; Slow doubles every length. Times are seconds
 // from the press, every note timed from that one press so nothing drifts.
 
-import { scaleNotes, whiteKeysFrom } from './major-scale'
+import { MAJOR_DEGREES, scaleNotes, whiteKeysFrom } from './major-scale'
+import type { Degrees } from './stairs-scales'
 
 /** One note of an example: its MIDI number, its onset and its length, seconds. */
 export interface NoteEvent {
@@ -35,9 +36,17 @@ export function run(
   }))
 }
 
-/** Play up and Play down: do to do, and back. */
-export const scaleUp = (tonic: number, slow = 1): NoteEvent[] =>
-  run(scaleNotes(tonic), LAST_SEC, slow)
+/** Play up and Play down: do to do, and back; up another scale's stairs where a page draws them (Lesson 20's five). */
+export const scaleUp = (
+  tonic: number,
+  slow = 1,
+  degrees: Degrees = MAJOR_DEGREES,
+): NoteEvent[] =>
+  run(
+    degrees.map((d) => tonic + d),
+    LAST_SEC,
+    slow,
+  )
 export const scaleDown = (tonic: number, slow = 1): NoteEvent[] =>
   run([...scaleNotes(tonic)].reverse(), LAST_SEC, slow)
 

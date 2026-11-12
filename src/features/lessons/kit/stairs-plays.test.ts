@@ -4,6 +4,7 @@
 
 import { describe, expect, it } from 'vitest'
 import { groupOf, landOnDo, lengthOf, scaleDown, scaleUp, stopOnTi, whiteKeysRun, } from './stairs-plays'
+import { MAJOR_FIVE } from './stairs-scales'
 
 const midis = (events: readonly { midi: number }[]): number[] =>
   events.map((e) => e.midi)
@@ -54,5 +55,16 @@ describe('the staircase plays', () => {
   it('plays the white keys from a white start (Lesson 4 FACTS 60), and nothing from a black one', () => {
     expect(midis(whiteKeysRun(62))).toEqual([62, 64, 65, 67, 69, 71, 72, 74])
     expect(whiteKeysRun(63)).toEqual([])
+  })
+})
+
+describe("Play up on another scale's stairs (Lesson 20)", () => {
+  it('plays the five with the top do at the same pace: 3.15 s', () => {
+    // Act
+    const events = scaleUp(48, 1, MAJOR_FIVE)
+
+    // Assert
+    expect(events.map((e) => e.midi)).toEqual([48, 50, 52, 55, 57, 60])
+    expect(lengthOf(events)).toBeCloseTo(3.15, 9)
   })
 })

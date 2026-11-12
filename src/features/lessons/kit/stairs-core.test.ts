@@ -16,6 +16,7 @@ import type { Drawer } from './frame-loop'
 import type * as MotionSwitch from './motion-switch'
 import type { StairsCore } from './stairs-core'
 import { mountStairs } from './stairs-core'
+import { MAJOR_FIVE, MINOR_FIVE } from './stairs-scales'
 
 const drawers: Drawer[] = []
 
@@ -74,6 +75,56 @@ describe('setRange', () => {
 
     // Act and assert
     expect(() => c.setRange({ lo: 67, hi: 74 })).toThrow(/one octave from C/)
+  })
+})
+
+describe("another scale's stairs (Lesson 20)", () => {
+  it('draws the stairs it is given, and others at once when they change, asking for a frame', () => {
+    // Arrange: the major scale on C3
+    const { core: c, drawer } = mount(48, 59)
+    drawer.draw(0, 0.016)
+    const eight = c.layout?.stairs.length
+
+    // Act: fa and ti left out
+    c.setDegrees(MAJOR_FIVE)
+    const asked = drawer.wants?.()
+    drawer.draw(0, 0.016)
+
+    // Assert
+    expect([eight, asked, c.layout?.stairs.length]).toEqual([8, true, 6])
+    expect(c.degrees).toEqual(MAJOR_FIVE)
+  })
+
+  it("takes Step 2's starts, A2 and C3 over C2, and stands the minor five on A2", () => {
+    // Arrange: Step 1's starts
+    const { core: c, drawer } = mount(48, 59)
+
+    // Act
+    c.setRange({ lo: 45, hi: 48 })
+    c.setDegrees(MINOR_FIVE)
+    c.setTonic(45)
+    drawer.draw(0, 0.016)
+
+    // Assert: the top do, A3, on its own row
+    const L = c.layout
+    expect(c.tonic).toBe(45)
+    expect(L?.stairs[5].top).toBeCloseTo(
+      (L?.yOfRow(57) ?? 0) - (L?.rowH ?? 0) / 2,
+      9,
+    )
+  })
+
+  it('stops what plays when its stairs change', async () => {
+    // Arrange
+    const { core: c } = mount(48, 59)
+    const played = c.play([{ midi: 48, at: 0, dur: 5 }], false)
+
+    // Act
+    c.setDegrees(MAJOR_FIVE)
+
+    // Assert: the run resolves at once, and the staircase is free
+    await played
+    expect(c.busy).toBe(false)
   })
 })
 

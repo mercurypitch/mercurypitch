@@ -416,7 +416,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // that loads the reveal but not the predict, as Lesson 16's shell did.
   // With Lesson 18's cold open on the predict it is 160,785, still 17
   // bytes over 157, so 158 stays.
-  'learn/04.html': 158,
+  // Raised to 159 for the staircase's other scales (Lesson 20's pentatonic,
+  // kit/stairs-scales.ts): 161,072 bytes before them, 162,409 with them,
+  // against 161,792 at 158. The page draws its staircase at first paint, so
+  // it carries the degrees, the spelling and both names' drawing.
+  'learn/04.html': 159,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
