@@ -516,7 +516,7 @@ States:
    (`:56-87`) with its `restAfterEffort`, proposed here and built by #1192 (needs 10).
    - Easy or Workable: Merc `celebrate`s if the take was in the band for at least 80 % of its ten
      seconds, at most once a visit; rule 15's line, "If that felt tricky, good: that's learning."
-     (`TRICKY_LINE`, `kit/take.ts:193`), if it was in the band for under half; then Lesson 5's
+     (`TRICKY_LINE`, `kit/take.ts:206`), if it was in the band for under half; then Lesson 5's
      "Rest for a few easy breaths. Ready when you are.", with **Again** (named "Again: one more
      hold") while the visit has had fewer than three takes, and **Done for today**. The Wrap shows
      the practice card.
@@ -874,9 +874,9 @@ and the four-words strip in the kit.
    unnecessary.
 4. First-paint ceilings for `learn/13.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:243`, `:350`;
-   `:563`, `:573`). Every build emits every lesson page, and the check fails a document with no
-   ceiling (`:936`, `:969`), so without them the Browser jobs fail before any spec runs. Each is the
-   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:437-447`),
+   `:567`, `:577`). Every build emits every lesson page, and the check fails a document with no
+   ceiling (`:940`, `:973`), so without them the Browser jobs fail before any spec runs. Each is the
+   page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:441-451`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:270-272`). The vowel model
    and the strip load at first paint, since the hero's still needs them; the listener and the hold

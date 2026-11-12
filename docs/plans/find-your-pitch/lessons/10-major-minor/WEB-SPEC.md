@@ -553,7 +553,7 @@ States:
    4's group, "Move do:" with lower and higher (`learn/04.html:1254-1263`), in the kit since #1192
    (What the kit and the app still need, item 7): a semitone each, up to four either way
    (`MOVE_MAX`,
-   `kit/move-do.ts:26-27`, `:38-49`), moving Merc's notes, the guide's count-in and its readout
+   `kit/move-do.ts:26-27`, `:38-52`), moving Merc's notes, the guide's count-in and its readout
    together, from "do is C3" to "do is A♭3" for the lower voice (spoken "do is A flat 3"), or C4 to
    A♭4 for the higher (FACTS 64). At four either way its button is `aria-disabled`.
 5. **Guide**: **Start the guide** is enabled once Merc's notes have played with sound on (hear it
@@ -562,7 +562,7 @@ States:
    series' form: "Sound is off, so nothing played. Turn sound on to hear Merc's notes, then start
    the guide." It is the viewer's turn, so the amber goes, the rows turn plain chrome and Merc's
    path is drawn dashed in chrome. The count-in is Lesson 4's: do, once, softly, at half a tapped
-   note's level, for 0.8 s, then 0.2 s of quiet (`kit/move-do.ts:65-67`; FACTS 80). Then a
+   note's level, for 0.8 s, then 0.2 s of quiet (`kit/move-do.ts:68-70`; FACTS 80). Then a
    vertical chrome line sweeps the path for 10.0 s, past the gap, with nothing riding the path
    itself, while the ring breathes through the gap with the still of the Merc last heard at its
    centre. Merc does not sing in the guide: it is the viewer's turn. Space never starts the guide,
@@ -686,7 +686,7 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
   (`src/features/lessons/kit/sound.ts:682-706`). Chords, thirds, triads, the pattern, scales, the
   Four words' plays, the ear game's rounds, the quiz's chord and Merc's notes are tunes through
   `playNotes` (`run.ts:206-248`), whose visuals run to their end with sound off. The count-in is
-  one voice the page keeps and stops (`countIn`, `kit/move-do.ts:69-74`), and a bead tapped on the
+  one voice the page keeps and stops (`countIn`, `kit/move-do.ts:72-77`), and a bead tapped on the
   hero's spiral plays the spiral's own note, through the same owner (Toys 2).
 - **A chord** is three voices that share one onset, so they start in one task and share one start
   on the audio clock, each at 0.075, about 1.7 times one tapped note under the master's compressor
@@ -853,12 +853,12 @@ at `85e23a1af` changed there, and that page's own lines are cited at `d59c00ad6`
    seed for each run (`freshSeed`, `kit/ear-game.ts:95-96`). The page's deal balances its rounds, so
    the game needs nothing more.
 7. Move do and the count-in's note (Toys 6): Lesson 4's, in the kit beside the slide guide since
-   #1192 (`kit/move-do.ts:26-49`; `:65-74`), as Lesson 6's spec listed it, Lesson 6's copy with it.
+   #1192 (`kit/move-do.ts:26-52`; `:68-77`), as Lesson 6's spec listed it, Lesson 6's copy with it.
    Lessons 4, 6, 8 and 9 use the kit's, as this page does. The kit's guide waits through a count-in
    before its sweep (`sweep`, `src/features/lessons/kit/slide-guide.ts:81-82`). Since #1206 the
    kit's `setMoveEnds` marks the button at a limit `aria-disabled`, never `disabled`, so a keyboard
    user's focus stays on it, with a reach for each side (`MoveReach`, `kit/move-do.ts:29-36`;
-   `:51-63`), on every page that uses it.
+   `:54-66`), on every page that uses it.
 8. The breath mark on the slide guide (Toys 6): the kit's, from Lesson 6's page (`breaths`,
    `kit/slide-guide.ts:66-67`), on main with it; this page passes one mark, at the start of the gap
    (FACTS 66).

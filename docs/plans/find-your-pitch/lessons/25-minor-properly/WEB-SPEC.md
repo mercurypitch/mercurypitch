@@ -337,7 +337,7 @@ the guide drawn on the staff and no Move do. In order:
    each note lighting as it sounds. Start the guide waits until Merc's notes have been heard with
    sound on, with Lesson 12's two hints (`hintFor`, `src/features/lessons/kit/sing-flow.ts:196-202`);
    then it counts in on so, the line's first note, 0.8 s at 0.065 and 0.2 s of quiet (`countIn`,
-   `src/features/lessons/kit/move-do.ts:65-74`; FACTS 46a), and a chrome sweep line runs along the six
+   `src/features/lessons/kit/move-do.ts:68-77`; FACTS 46a), and a chrome sweep line runs along the six
    notes in time, 9.4 s, with no voice and nothing on the notes themselves. No Move do and no readout
    (FACTS 43).
 4. **How did that feel?** after each sweep run to its end, through the kit's `mountFeelings`

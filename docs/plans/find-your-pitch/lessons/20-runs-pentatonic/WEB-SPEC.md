@@ -195,13 +195,13 @@ staying on the practice card under "For short notes" (FACTS 3, 31).
 Lesson 4's staircase as the kit holds it after Lesson 21's kit work (What the kit and the app still
 need, item 4), on C in the learner's octave: C3 for the lower voice, C4 for the higher (FACTS 8, 26).
 It plays as Lesson 4's does, the soft tone at 0.45 s a note with the last note 0.9 s
-(`src/features/lessons/kit/stairs-plays.ts:20-21`), each stair lighting as it sounds, and each
+(`src/features/lessons/kit/stairs-plays.ts:21-22`), each stair lighting as it sounds, and each
 stair is a real button that plays its note and says its syllable and name on focus ("Stair 3, mi, E
 3"), as Lesson 4's do (`src/features/lessons/kit/stairs-toy.ts:9-11`).
 
 - **What each stair shows**: its syllable, and under it its letter, both printed, with no names
   switch. Lesson 4's stairs show one name in the page's names mode, Letters, Numbers or Do-re-mi
-  (`src/features/lessons/kit/stairs-words.ts:5-11`); this page needs two at once, since Step
+  (`src/features/lessons/kit/stairs-words.ts:5-13`); this page needs two at once, since Step
   1's text speaks in syllables and its Notice in letters, and Step 2 speaks in both. Letters follow
   each scale's own spelling as the kit spells it: from D, F♯ and C♯; on the Slide's other black-key
   starts, the kit's D♭, E♭, A♭ and B♭ major with flats, and F major's B♭
@@ -217,7 +217,7 @@ stair is a real button that plays its note and says its syllable and name on foc
   semitone each go: mi to so and la to do are drawn as single risers of three semitones. Every
   riser carries its size as a number, 2 or 3 (1 for a semitone, with the switch off), in place of
   Lesson 4's T and S, since a riser of three is neither
-  (`src/features/lessons/kit/stairs-draw.ts:36`). Play up then plays the five with the top
+  (`src/features/lessons/kit/stairs-draw.ts:47-51`). Play up then plays the five with the top
   do, 3.15 s. The inline play, Play C major, then the five, plays the major scale (4.05 s), 0.5 s of
   quiet and the five (3.15 s), 7.7 s, with the switch moving as it plays. Slide is silent, as in
   Lesson 4; from D the five print do, re, mi, so and la over D, E, F♯, A and B, as Step 1's Notice
@@ -395,7 +395,7 @@ Lesson 9's (Lesson 9 WEB-SPEC, Toys 4).
    tempo, Move do free to change before it. Once a smaller run has been sung, the full run is
    offered no more, as Lesson 9's ladder can only get smaller within a visit (FACTS 57).
 8. **Again, faster**: the run last sung, at 0.45 s a note, 4.05 s (3.15 s for the smaller), then the
-   count-in on do (`COUNT_IN`, `src/features/lessons/kit/move-do.ts:65-67`), then the guide lights
+   count-in on do (`COUNT_IN`, `src/features/lessons/kit/move-do.ts:68-70`), then the guide lights
    each bead in turn at 0.45 s; 9.1 s in all (7.3 s). The status reads "Sing along as each bead
    lights, if you like." Nothing listens: the microphone is not opened, the chart draws no line,
    the beads keep the lit edges the last take left them, and nothing is counted (FACTS 63). Then
@@ -409,11 +409,11 @@ Lesson 9's (Lesson 9 WEB-SPEC, Toys 4).
    the practice card.
 
 **The flow rule**: `lesson-20/run-flow.ts`, pure, in the moved flow's form (Lesson 9's
-`ladder-flow.ts`, `src/features/lessons/lesson-09/ladder-flow.ts:1-40`): from the comfort answer,
-the voice, the sound, the microphone, the run pressed, Move do's place, the takes so far (each one's
-run and what it came to), whether Again and the faster pass have gone and the answers to "How did
-that feel?", it gives the card's stage, its controls, its lines and the Wrap's card, so every branch
-is unit-tested without a microphone.
+`ladder-flow.ts`, now the kit's, `src/features/lessons/kit/ladder-flow.ts:1-23`): from the
+comfort answer, the voice, the sound, the microphone, the run pressed, Move do's place, the takes
+so far (each one's run and what it came to), whether Again and the faster pass have gone and the
+answers to "How did that feel?", it gives the card's stage, its controls, its lines and the Wrap's
+card, so every branch is unit-tested without a microphone.
 
 ### 7. Go deeper drawers
 
@@ -578,10 +578,10 @@ are listed so this page's needs are in one place.
    labels, the offers after Easy or Workable and Move do's reach as options; Lesson 9's page then
    imports them. This page adds a second offer, Again, faster, an unscored guide with the count-in.
 6. **The reader's two options** (FACTS 56): `readLadder`
-   (`src/features/lessons/kit/take.ts:342-359`) reads each slot through `readTake`
-   (`src/features/lessons/kit/take.ts:145-166`), which drops the kit's 0.3 s attack and needs 0.6 s
-   of steady voice itself (`ATTACK_SEC` and `STEADY_SEC`, `src/features/lessons/kit/take.ts:58-61`,
-   read at `:152-153`), more than a 0.75 s slot holds. So `readTake` takes an options argument with
+   (`src/features/lessons/kit/take.ts:355-373`) reads each slot through `readTake`
+   (`src/features/lessons/kit/take.ts:156-179`), which drops the kit's 0.3 s attack and needs 0.6 s
+   of steady voice itself (`ATTACK_SEC` and `STEADY_SEC`, `src/features/lessons/kit/take.ts:61-64`,
+   read at `:164-166`), more than a 0.75 s slot holds. So `readTake` takes an options argument with
    `attackSec` and `steadySec`, defaulting to the two constants, and `LadderOptions` gains the same
    two, which `readLadder` passes on to it; Lessons 3 and 9's readings do not change. Unit tests on
    synthetic frames: a steady 0.6 s note in a 0.75 s slot reads, a 0.4 s one does not, and the
