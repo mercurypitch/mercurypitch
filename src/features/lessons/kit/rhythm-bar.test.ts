@@ -79,14 +79,26 @@ vi.mock('./beat-clock', async (actual) => {
   }
 })
 
-const notes: { freq: number; dur: number; kind?: string }[] = []
+const notes: {
+  freq: number
+  dur: number
+  kind?: string
+  levels?: readonly { at: number; level: number }[]
+}[] = []
 const knocks: { high: boolean }[] = []
 vi.mock('./sound-ahead', async (actual) => {
   const real = await actual<typeof SoundAheadModule>()
   return {
     ...real,
-    bookNote: (freq: number, o: { dur: number; kind?: string }) => {
-      notes.push({ freq, dur: o.dur, kind: o.kind })
+    bookNote: (
+      freq: number,
+      o: {
+        dur: number
+        kind?: string
+        levels?: readonly { at: number; level: number }[]
+      },
+    ) => {
+      notes.push({ freq, dur: o.dur, kind: o.kind, levels: o.levels })
       return null
     },
   }
@@ -442,6 +454,39 @@ describe('mountRhythmBar', () => {
       [220, 2.92],
     ])
     expect(notes.every((n) => n.kind === 'soft')).toBe(true)
+  })
+
+  it("shapes each sound as its part asks: p's level, a hairpin's swell, a staccato note's 0.15 s, a slur's notes held with no gap but the last, and the note before a breath (Lesson 18)", () => {
+    // Arrange: five quarters, then rests, as written but for their shapes
+    const { bar } = mount()
+    const view = viewOf([times(4, note(1)), [note(1), rest(1), rest(2)]])
+    const swell = [
+      { at: 0, level: 0.3 },
+      { at: 1, level: 1 },
+    ]
+    const shapes = [
+      { level: 0.3 },
+      { levels: swell },
+      { seconds: 0.15 },
+      { joined: true },
+      undefined,
+    ]
+    bar.show(view)
+
+    // Act
+    void bar.play([{ view, bpm: () => 60, shape: (sound) => shapes[sound] }])
+    drive()
+
+    // Assert: a sound with no shape keeps its length less the gap (FACTS 63)
+    expect(
+      notes.map((n) => [Number(n.dur.toFixed(2)), n.levels ?? null]),
+    ).toEqual([
+      [0.92, [{ at: 0, level: 0.3 }]],
+      [0.92, swell],
+      [0.15, null],
+      [1, null],
+      [0.92, null],
+    ])
   })
 
   it("holds each note at its part's tempo as it is booked", () => {

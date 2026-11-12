@@ -73,6 +73,20 @@ export interface NoteOptions extends Omit<VoiceOptions, 'at' | 'dur'> {
   readonly dur: number
   /** A bus of the caller's, in place of the master. */
   readonly to?: AudioNode
+  /**
+   * Its level as it sounds: at each point, `at` seconds after its start, a
+   * fraction of the voice's own level, gliding in a straight line from one
+   * point to the next and held after the last; a dynamic mark's level, or a
+   * hairpin's swell and fade (Lesson 18 WEB-SPEC, Toys 2). The voice's own
+   * level throughout by default.
+   */
+  readonly levels?: readonly NoteLevel[]
+}
+
+/** A point of a note's level: seconds after its start, and a fraction of the voice's own level. */
+export interface NoteLevel {
+  readonly at: number
+  readonly level: number
 }
 
 /**
@@ -88,6 +102,14 @@ export function bookNote(freq: number, o: NoteOptions): Voice | null {
   if (o.to !== undefined) {
     g.level.disconnect()
     g.level.connect(o.to)
+  }
+  const levels = o.levels ?? []
+  if (levels.length > 0) {
+    const gain = g.level.gain
+    const own = gain.value
+    gain.setValueAtTime(own * levels[0].level, g.t + levels[0].at)
+    for (const p of levels.slice(1))
+      gain.linearRampToValueAtTime(own * p.level, g.t + p.at)
   }
   const { handle, retire } = handleOf(g)
   const end = g.t + Math.max(o.dur, g.attack)
