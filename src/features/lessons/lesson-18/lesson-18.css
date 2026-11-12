@@ -16,6 +16,36 @@
 
 @import '../kit/lesson-rhythm.css';
 @import '../kit/lesson-tap-pad.css';
+@import '../kit/lesson-read.css';
+
+/* every staff on the page lights a sung note in the app's target amber, as
+   Lessons 15 and 16 do, whoever sings it (WEB-SPEC, Look) */
+.rb.l18-staff,
+.rb.l18-staff[data-voice] {
+  --rb-voice: var(--amber);
+}
+/* the buttons over a figure: each note, each drawn bracket and each written
+   mark, placed by kit/read-marks.ts's boxes */
+.read-spots {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.read-spot {
+  position: absolute;
+  pointer-events: auto;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.read-spot:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
 
 /* ---------------------------------------------------------------- hero: the staff between Merc and Tavi */
 /* five chips, which wrap: rows 16 px apart keep each prerequisite link's
