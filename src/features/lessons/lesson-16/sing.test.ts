@@ -7,13 +7,16 @@
 // comfort check first; the staff in the learner's clef; Start opens the
 // microphone, then the start sings do and do, mi, so, mi, do, lighting
 // only the written do's; 0.4 s later the first note lights and the take
-// reads along the phrase; its lines, the feeling question, phrase 2 with
-// its Names switch, Stop here and Play Merc's phrases; no microphone, no
-// voice, sound off and leaving (WEB-SPEC, Toys 6; FACTS 42, 49 to 51, 70).
+// reads along the phrase while Merc and Tavi listen; the pitch line and
+// its lines after it, never during it; the feeling question, phrase 2 with
+// its Names switch, Stop here and Play Merc's phrases; the still of the one
+// who sings; no microphone, no voice, sound off and leaving (WEB-SPEC,
+// Toys 6; FACTS 42, 46, 49 to 51, 70).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { VisitEnding } from '@/features/lessons/kit/comfort'
+import type * as MercDuo from '@/features/lessons/kit/merc-duo'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type * as RunModule from '@/features/lessons/kit/run'
 import { resetRuns, runs, } from '@/features/lessons/kit/run-recorder.test-fixtures'
@@ -23,7 +26,7 @@ import { el, loadPage, settle, soundOn, words } from './page-dom.test-fixtures'
 import { initSing, OPEN_SEC } from './sing'
 import { STATUS } from './sing-flow'
 import type * as TakeKit from './sing-take'
-import type { TakeContext, TakeEnd } from './sing-take'
+import type { PitchLine, TakeContext, TakeEnd } from './sing-take'
 
 vi.mock('@/features/lessons/kit/run', async (actual) => ({
   ...(await actual<typeof RunModule>()),
@@ -47,16 +50,43 @@ vi.mock('@/features/lessons/kit/mic-hold', () => ({
   },
 }))
 
-/** The takes the page ran, and how the test ends each. */
+/** Merc's and Tavi's turns to listen, and back, in order. */
+const listens = vi.hoisted(() => [] as (readonly [string, boolean])[])
+vi.mock('@/features/lessons/kit/merc-duo', async (actual) => ({
+  ...(await actual<typeof MercDuo>()),
+  mercListen: (which: string, on: boolean) => listens.push([which, on]),
+}))
+
+/** The takes the page ran, how the test ends each, and the pitch lines it drew. */
 let takes: TakeContext[] = []
 let ends: ((e: TakeEnd) => void)[] = []
+let drawn: {
+  root: HTMLElement
+  pitch: PitchLine
+  notes: readonly number[]
+  labels: readonly string[]
+}[] = []
 const loadTake = async (): Promise<typeof TakeKit> =>
   ({
     runTake: (c: TakeContext) => {
       takes.push(c)
       return new Promise<TakeEnd>((r) => ends.push(r))
     },
+    drawPitchLine: (
+      root: HTMLElement,
+      pitch: PitchLine,
+      notes: readonly number[],
+      labels: readonly string[],
+    ) => drawn.push({ root, pitch, notes, labels }),
   }) as unknown as typeof TakeKit
+
+/** A take's pitch line, as the take's module would hand it over. */
+const PITCH: PitchLine = {
+  seconds: 3,
+  rungs: [{ c: 0, from: 0, to: 3 }],
+  line: [{ t: 0, c: 0 }],
+  octaves: 0,
+}
 
 beforeEach(() => {
   // a browser with Web Audio: the take's path, not the no-microphone one
@@ -71,6 +101,8 @@ beforeEach(() => {
   mic.released = 0
   takes = []
   ends = []
+  drawn = []
+  listens.length = 0
   VoiceChoice.set('lower')
   loadPage()
 })
@@ -100,9 +132,10 @@ async function toTake(): Promise<void> {
   await settle()
 }
 
-/** The open take ends, read with `lines`, or with no voice when there are none. */
+/** The open take ends, read with `lines` and its pitch line, or with no voice when there are none. */
 async function endTake(lines: readonly string[]): Promise<void> {
-  ends.at(-1)?.({ kind: 'read', voiced: lines.length > 0, lines })
+  const voiced = lines.length > 0
+  ends.at(-1)?.({ kind: 'read', voiced, lines, pitch: voiced ? PITCH : null })
   await settle()
 }
 
@@ -225,6 +258,47 @@ describe('the start and the take', () => {
     expect(status()).toBe(STATUS.feel)
   })
 
+  it('draws the pitch line over the phrase only once a take with voice ends, never during it', async () => {
+    // Arrange
+    initSing({ loadTake })
+    press('[data-comfort="sing"]')
+    await toTake()
+    const during = [shown('#singLive'), drawn.length]
+
+    // Act
+    await endTake(['Do · Right in the middle.'])
+
+    // Assert: states 6 and 7, test 16 (FACTS 46)
+    expect(during).toEqual([false, 0])
+    expect(shown('#singLive')).toBe(true)
+    expect(drawn).toHaveLength(1)
+    expect(drawn[0].root).toBe(el('#singChart'))
+    expect(drawn[0].pitch).toBe(PITCH)
+    expect(drawn[0].notes).toEqual([55, 57, 59, 57, 55])
+    expect(drawn[0].labels).toEqual(['Do', 'Re', 'Mi', 'Re', 'Do'])
+  })
+
+  it('turns Merc and Tavi to listen while a take runs, and back after it', async () => {
+    // Arrange
+    initSing({ loadTake })
+    press('[data-comfort="sing"]')
+
+    // Act
+    await toTake()
+    const during = [...listens]
+    await endTake(['Do · Right in the middle.'])
+
+    // Assert: Merc and Tavi (WEB-SPEC)
+    expect(during).toEqual([
+      ['blue', true],
+      ['orange', true],
+    ])
+    expect(listens.slice(during.length)).toEqual([
+      ['blue', false],
+      ['orange', false],
+    ])
+  })
+
   it('says it did not hear a start, with Start again, after a take with no voice', async () => {
     // Arrange
     initSing({ loadTake })
@@ -239,6 +313,7 @@ describe('the start and the take', () => {
     expect(shown('[data-after-cue]')).toBe(true)
     expect(shown('[data-sing="again"]')).toBe(true)
     expect(shown('[data-panel="feel"]')).toBe(false)
+    expect(shown('#singLive')).toBe(false)
   })
 
   it('counts a take abandoned when the page is hidden', async () => {
@@ -316,6 +391,24 @@ describe('after the first phrase', () => {
     expect(offered).toEqual([true, true, true, false])
     expect(takes[1].notes).toEqual([55, 62, 59, 57, 55])
     expect(shown('[data-sing-names]')).toBe(true)
+    // the first phrase's pitch line goes while the second's take runs
+    expect(shown('#singLive')).toBe(false)
+  })
+
+  it('takes the pitch line and the lines away after Uncomfortable', async () => {
+    // Arrange
+    initSing({ loadTake })
+    press('[data-comfort="sing"]')
+    await toTake()
+    await endTake(['Do · Right in the middle.'])
+
+    // Act
+    press('[data-feel="uncomfortable"]')
+
+    // Assert: state 8 (REQ-GVC-023)
+    expect(shown('#singLive')).toBe(false)
+    expect(shown('[data-sing="phrase-2"]')).toBe(false)
+    expect(VisitEnding.ending).toBe('rest')
   })
 
   it('ends the singing at Stop here, and Play Merc’s phrases sings both, 12.0 s, keeping the practice card', async () => {
@@ -336,6 +429,26 @@ describe('after the first phrase', () => {
     expect(merc?.notes).toHaveLength(16)
     expect(Math.max(...(merc?.notes ?? []).map((n) => n.t + n.dur))).toBe(12)
     expect(VisitEnding.ending).toBe('practise')
+  })
+})
+
+describe('the still beside the staff', () => {
+  it('stands the one who sings beside the staff: Tavi for a stored higher voice, then Merc once the lower is chosen', () => {
+    // Arrange
+    VoiceChoice.set('higher')
+    initSing({ loadTake })
+    press('[data-comfort="sing"]')
+    const still = el<HTMLImageElement>('#singStaff .sing-merc')
+    const higher = [still.getAttribute('src'), still.alt]
+
+    // Act
+    press('[data-voice="lower"]')
+
+    // Assert: Merc and Tavi (WEB-SPEC)
+    expect(higher[0]).toMatch(/merc-orange/)
+    expect(higher[1]).toBe('Tavi, who sings the start for the higher voice')
+    expect(still.getAttribute('src')).toMatch(/merc-blue/)
+    expect(still.alt).toBe('Merc, who sings the start for the lower voice')
   })
 })
 

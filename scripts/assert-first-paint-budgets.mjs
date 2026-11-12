@@ -497,12 +497,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // cold open's two tries on the kit's predict, the recall's Lesson 9 and
   // 15 questions, imported with the questions theirs import, and the quick
   // check on the kit's quiz, the three words' figures and plays, and Sing
-  // it on its flow, with the comfort check, the voice choice and the
-  // feelings, its take's reader loaded with the first Start, and the
-  // Wrap's free play, the tease still drawn after first paint: 189,916
-  // bytes in build:e2e, the smallest whole KB above, to rise as each part
-  // joins.
-  'learn/16.html': 186,
+  // it on its flow, with the comfort check, the voice choice, the
+  // feelings and the still of the one who sings, its take's reader and
+  // pitch line loaded with the first Start, and the Wrap's free play, the
+  // tease still drawn after first paint: 190,684 bytes in build:e2e, the
+  // smallest whole KB above, to rise as each part joins.
+  'learn/16.html': 187,
   // Lesson 17, "How long is a note?", a Season 2 page and a draft, built in
   // every mode as Lesson 3 is: its own module on the kit, carrying Season
   // 2's map (kit/season-2.ts) as a Season 2 page must, with the steps'
@@ -717,7 +717,7 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // rules; a quarter over.
   'learn/15.html': 111,
   // Lesson 16 (a draft, as above), its shell, its steps, Sing it and the
-  // Wrap: 93,502 bytes in build:e2e, the kit's sheets (the shared parts)
+  // Wrap: 94,065 bytes in build:e2e, the kit's sheets (the shared parts)
   // with the voice lessons' (lesson-voice.css: the comfort check, the voice
   // choice, the briefing and the feelings), its own with the staff toy's
   // and the staircase's taken in by @import, and the shared Inter and
