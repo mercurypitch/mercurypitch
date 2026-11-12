@@ -121,8 +121,8 @@ export interface ReadMarks {
   markBoxes(): readonly { readonly box: MarkBox; readonly mark: SheetMark }[]
 }
 
-/** The tap target's least height, px (WCAG 2.5.8, the kit's 44). */
-const TARGET = 44
+/** The tap target's least size each way, px (WCAG 2.5.5, the kit's 44). */
+export const TARGET = 44
 
 export const NO_MARKS: ReadMarksState = {
   home: null,

@@ -32,7 +32,7 @@ import { hz } from '@/features/lessons/kit/notes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import { playLights } from '@/features/lessons/kit/play-lights'
 import type { Bracket, MarkBox, SheetMark, } from '@/features/lessons/kit/read-marks'
-import { createReadMarks } from '@/features/lessons/kit/read-marks'
+import { createReadMarks, TARGET } from '@/features/lessons/kit/read-marks'
 import type { PlayPart, RhythmBar, RhythmView, } from '@/features/lessons/kit/rhythm-bar'
 import { mountRhythmBar } from '@/features/lessons/kit/rhythm-bar'
 import { figureSize } from '@/features/lessons/kit/rhythm-draw'
@@ -230,7 +230,13 @@ export function mountReadingStaff(
     if (bar.seen.lanes) return spots.replaceChildren()
     const out: HTMLButtonElement[] = []
     const shown = state.shown
-    // a tapped note plays alone (the steps and free play)
+    // a tapped note plays alone (the steps and free play); each note is a
+    // button only where every one is the tap target's 44 px wide, as on a
+    // tablet or a desktop: on a phone two bars leave a beat about 33 px,
+    // so there the plays and the brackets sound the notes, and the
+    // figure's name reads them
+    const boxes = marks.noteBoxes()
+    const tappable = boxes.every((box) => box.w >= TARGET)
     const ns = notes()
     const sounds =
       shown.kind === 'tune'
@@ -238,9 +244,9 @@ export function mountReadingStaff(
         : shown.short.bars.flat().map((w) => ({ beat: 0, beats: w.value }))
     const degrees =
       shown.kind === 'tune' ? shown.tune.degrees : shown.short.degrees
-    marks.noteBoxes().forEach((box, i) => {
+    boxes.forEach((box, i) => {
       const n = ns[i]
-      if (n === undefined) return
+      if (n === undefined || !tappable) return
       const b = spot(
         'is-note',
         noteWords(n, degrees[i], sounds[i]?.beats ?? 1),
