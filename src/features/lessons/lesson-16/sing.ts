@@ -24,6 +24,10 @@
 // the staff stands the still of the one who sings: Merc for the lower
 // voice, Tavi for the higher. Nothing celebrates a note.
 //
+// The take's module loads with the microphone at Start: one that fails to
+// load, as after a new release while the page was open, is a listener
+// that failed, and Sing it takes the no-microphone path (state 9).
+//
 // The start, Play the start and Play Merc's phrases are the page's one
 // sound (kit/now-playing.ts). Sound turned off during the start ends it
 // with no take counted. Leaving the section or hiding the page during a
@@ -286,7 +290,12 @@ export function initSing(
     }
     quiet()
     send({ type: 'sound', on: true })
-    if (!(await mic.open(Sound.context()))) {
+    const [ok, kit] = await Promise.all([
+      mic.open(Sound.context()),
+      loadTake().catch(() => null),
+    ])
+    if (!ok || kit === null) {
+      mic.release(true)
       send({ type: 'nomic' })
       return
     }
@@ -309,15 +318,14 @@ export function initSing(
       cut()
       return
     }
-    await take(phrase)
+    await take(phrase, kit)
   }
 
   /** The take: the first note lit, the reader along the phrase, then its lines. */
-  async function take(phrase: PhraseId): Promise<void> {
+  async function take(phrase: PhraseId, kit: typeof TakeKit): Promise<void> {
     staff.light(0)
     send({ type: 'listen' })
     listening(true)
-    const kit = await loadTake()
     const notes = phraseOf(phrase, clef()).map(midiOf)
     const labels = labelsOf(phrase)
     const end =
