@@ -22,13 +22,13 @@
 // 77). Every note is a MIDI number and sounds at hz(m), so every frequency
 // is FACTS 70's.
 
+import type { Quality, Role } from '@/features/lessons/kit/chords'
+import { DEGREES, ROLES, THIRD_OF, triad } from '@/features/lessons/kit/chords'
 import { hz } from '@/features/lessons/kit/notes'
 import { pair } from '@/features/lessons/kit/pair'
 import type { RunNote } from '@/features/lessons/kit/run'
 import type { ContourPoint } from '@/features/lessons/kit/sound'
 import { contourLength, contourOf } from '@/features/lessons/kit/sound'
-import type { Quality, Role } from './chords'
-import { DEGREES, ROLES, THIRD_OF, triad } from './chords'
 
 /** A chord's voices, each (FACTS 81). */
 export const CHORD_GAIN = 0.075

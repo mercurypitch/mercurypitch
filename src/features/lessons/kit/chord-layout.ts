@@ -1,13 +1,16 @@
 // ============================================================
-// Lesson 10 chord layout — where the chord beads' targets, names, bracket and strip sit
+// Chord layout — where the chord beads' targets, names, bracket and strip sit
 // ============================================================
 //
-// The chord beads (WEB-SPEC, Toys 1) draw pitch as height, each note a bead
-// on faint semitone rows 15 px apart, so the closest two beads, a minor
-// third apart, sit 45 px apart and their 44 px targets never overlap; the
-// two gap buttons' centres sit 3.5 rows, 52.5 px, apart in either quality
-// (FACTS 82). This file only measures, from the figure's size, the toy's
-// state and the notes it shows; the toy draws and plays.
+// Lesson 10's layout, moved into the kit with its chords and its painter
+// (Lesson 25's WEB-SPEC, What the kit and the app still need, item 4); its
+// states, the WEB-SPEC and the FACTS cited are Lesson 10's. The chord beads
+// (WEB-SPEC, Toys 1) draw pitch as height, each note a bead on faint semitone
+// rows 15 px apart, so the closest two beads, a minor third apart, sit 45 px
+// apart and their 44 px targets never overlap; the two gap buttons' centres
+// sit 3.5 rows, 52.5 px, apart in either quality (FACTS 82). This file only
+// measures, from the figure's size, the toy's state and the notes it shows;
+// the toy draws and plays.
 //
 // - Full, from 340 px tall: the window from C4 to F♯5, every note a slide
 //   reaches, 18 semitones, 270 px, with 22 px above and below for the
@@ -27,9 +30,9 @@
 // spaces 300 px, which the narrowest figure, 310 px on a 344 px page, holds
 // (FACTS 82). The row is centred on a wider figure.
 
-import type { Rect } from '@/features/lessons/kit/tune-line-layout'
-import { MIN_TARGET } from '@/features/lessons/kit/tune-line-layout'
 import { FIFTH, WINDOW } from './chords'
+import type { Rect } from './tune-line-layout'
+import { MIN_TARGET } from './tune-line-layout'
 
 /** The toy's states (WEB-SPEC, Toys 1, States): Steps 1 to 5, and free play in the Wrap. */
 export type BeadState =

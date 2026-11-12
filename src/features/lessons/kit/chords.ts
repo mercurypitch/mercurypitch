@@ -1,24 +1,26 @@
 // ============================================================
-// Lesson 10 chords — the triads and scales the page draws, spelled by letter
+// Chords — the triads and scales the chord beads draw, spelled by letter
 // ============================================================
 //
-// The chord and scale facts every Lesson 10 toy reads, pure. A triad is a
-// third and a fifth above its root by letter, so C minor's third is E♭4,
-// never D♯4 (FACTS 10, 19): its notes are its scale's first, third and
-// fifth, do, mi and so in major, do, me and so in natural minor (FACTS 28),
-// each spelled through the kit's `spellScale`, one letter per degree. The
-// roots are the seven white keys from C4 to B4, so every chord a slide
-// reaches is one of FACTS 19's fourteen, with no double sign and no E♯, B♯,
-// C♭ or F♭, and every note lies in the window from C4 to F♯5, B major's
-// fifth (FACTS 70a). Natural minor climbs 2, 1, 2, 2, 1, 2, 2 semitones
-// and sits a semitone under the major scale on degrees 3, 6 and 7 (FACTS
-// 22, 24). Stacking in thirds goes by letter as well, so B, E, G is E, G,
-// B, E minor (FACTS 41a), and C, E, G♭ stacks but is neither major nor
-// minor, its fifth 6 semitones (FACTS 41b).
+// Lesson 10's chord and scale facts, pure, moved into the kit with its chord
+// beads' drawing and layout (Lesson 25's WEB-SPEC, What the kit and the app
+// still need, item 4); the FACTS cited are Lesson 10's. A triad is a third
+// and a fifth above its root by letter, so C minor's third is E♭4, never D♯4
+// (FACTS 10, 19): its notes are its scale's first, third and fifth, do, mi
+// and so in major, do, me and so in natural minor (FACTS 28), each spelled
+// through the kit's `spellScale`, one letter per degree. The roots are the
+// seven white keys from C4 to B4, so every chord a slide reaches is one of
+// FACTS 19's fourteen, with no double sign and no E♯, B♯, C♭ or F♭, and every
+// note lies in the window from C4 to F♯5, B major's fifth (FACTS 70a).
+// Natural minor climbs 2, 1, 2, 2, 1, 2, 2 semitones and sits a semitone
+// under the major scale on degrees 3, 6 and 7 (FACTS 22, 24). Stacking in
+// thirds goes by letter as well, so B, E, G is E, G, B, E minor (FACTS 41a),
+// and C, E, G♭ stacks but is neither major nor minor, its fifth 6 semitones
+// (FACTS 41b).
 
-import { MAJOR_DEGREES } from '@/features/lessons/kit/major-scale'
-import type { Letter, Spelled } from '@/features/lessons/kit/notes'
-import { letterOf, spellOn, spellScale } from '@/features/lessons/kit/notes'
+import { MAJOR_DEGREES } from './major-scale'
+import type { Letter, Spelled } from './notes'
+import { letterOf, spellOn, spellScale } from './notes'
 
 /** The two qualities this lesson teaches (FACTS 20). */
 export type Quality = 'major' | 'minor'

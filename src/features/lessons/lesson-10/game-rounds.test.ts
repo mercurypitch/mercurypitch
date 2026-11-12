@@ -14,11 +14,11 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { describe, expect, it } from 'vitest'
+import type { Quality } from '@/features/lessons/kit/chords'
 import { mulberry32 } from '@/features/lessons/kit/dom'
 import type { EarRound } from '@/features/lessons/kit/ear-game'
 import { slowerBy } from '@/features/lessons/kit/ear-game'
 import { validateGuidedDynamicClaim } from '@/lib/guided-voice/claims'
-import type { Quality } from './chords'
 import { CHORD_WORDS, chordRoundNotes, CHORDS_ROUNDS, dealChords, dealThirds, halfEach, MISS_SLOWER, ROOT_HI, ROOT_LO, THIRD_WORDS, thirdRoundNotes, THIRDS_ROUNDS, } from './game-rounds'
 
 const SEEDS = [1, 2, 3, 42, 20261024, 987654321]

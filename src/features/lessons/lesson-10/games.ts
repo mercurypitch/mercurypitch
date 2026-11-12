@@ -21,6 +21,7 @@
 // only reads the sound switch: with sound off it plays silently and shows
 // no sound-off note. The Play button's first words are the markup's.
 
+import type { Quality } from '@/features/lessons/kit/chords'
 import { q } from '@/features/lessons/kit/dom'
 import type { EarGame, EarNote, EarPlaying, EarRound, } from '@/features/lessons/kit/ear-game'
 import { mountEarGame } from '@/features/lessons/kit/ear-game'
@@ -28,7 +29,6 @@ import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type { RunNote } from '@/features/lessons/kit/run'
 import { playNotes } from '@/features/lessons/kit/run'
 import { Sound } from '@/features/lessons/kit/sound'
-import type { Quality } from './chords'
 import { ANSWERS, dealChords, dealThirds, MISS_SLOWER } from './game-rounds'
 import { CHORD_GAIN } from './sounds'
 

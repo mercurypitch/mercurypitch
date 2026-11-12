@@ -1,22 +1,25 @@
 // ============================================================
-// Lesson 10 chord beads painter — rows, halo, beads, names, gaps, bracket, strip and stairs
+// Chord beads painter — rows, halo, beads, names, gaps, bracket, strip and stairs
 // ============================================================
 //
-// Paints one frame of the chord beads (WEB-SPEC, Toys 1) from a scene the
-// toy keeps (chord-beads.ts): every place is already worked out, so this
-// file only draws, each part in its own small function, in paint order.
-// The series' colour code: every bead and stair is chrome, the one that is
-// sounding ink and lit; gold marks only the chord's third, its bead and,
-// spread into a scale, its stair, in both qualities (Look; FACTS 40). Major
-// and minor are drawn alike: the change between them is the halo's light,
-// the gap numbers and the chord's name, never a hue. Words are the scene's,
-// signs allowed (the canvas is hidden from a screen reader, which hears
-// the toy's buttons and its summary instead).
+// Lesson 10's painter, moved into the kit with its chords and its layout
+// (Lesson 25's WEB-SPEC, What the kit and the app still need, item 4); the
+// WEB-SPEC and the FACTS cited are Lesson 10's. Paints one frame of the chord
+// beads (WEB-SPEC, Toys 1) from a scene the toy keeps (Lesson 10's
+// chord-beads.ts): every place is already worked out, so this file only
+// draws, each part in its own small function, in paint order. The series'
+// colour code: every bead and stair is chrome, the one that is sounding ink
+// and lit; gold marks only the chord's third, its bead and, spread into a
+// scale, its stair, in both qualities (Look; FACTS 40). Major and minor are
+// drawn alike: the change between them is the halo's light, the gap numbers
+// and the chord's name, never a hue. Words are the scene's, signs allowed
+// (the canvas is hidden from a screen reader, which hears the toy's buttons
+// and its summary instead).
 
-import { TAU } from '@/features/lessons/kit/dom'
-import { COLOR, rgba } from '@/features/lessons/kit/notes'
-import type { Rect } from '@/features/lessons/kit/tune-line-layout'
 import type { ChordLayout } from './chord-layout'
+import { TAU } from './dom'
+import { COLOR, rgba } from './notes'
+import type { Rect } from './tune-line-layout'
 
 /** A bead's radius, px: two beads a minor third apart, 45 px, never touch. */
 export const BEAD_R = 11

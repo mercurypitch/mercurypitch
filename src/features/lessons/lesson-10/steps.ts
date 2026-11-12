@@ -49,6 +49,9 @@
 // change once in its polite line. The games sit in Steps 1 and 3's text
 // (games.ts).
 
+import type { BeadState } from '@/features/lessons/kit/chord-layout'
+import type { Quality } from '@/features/lessons/kit/chords'
+import { nextRoot, QUALITIES } from '@/features/lessons/kit/chords'
 import { q, qa } from '@/features/lessons/kit/dom'
 import type { ModeStore } from '@/features/lessons/kit/names'
 import { bindModeToggle } from '@/features/lessons/kit/names'
@@ -63,9 +66,6 @@ import { registerToy } from '@/features/lessons/kit/step-deck'
 import { showParts } from '@/features/lessons/kit/step-parts'
 import type { BeadsSettings, ChordBeads } from './chord-beads'
 import { mountChordBeads } from './chord-beads'
-import type { BeadState } from './chord-layout'
-import type { Quality } from './chords'
-import { nextRoot, QUALITIES } from './chords'
 import { initGames } from './games'
 import type { ScaleChoice } from './lines'
 import { SCALE_PREDICT } from './lines'
