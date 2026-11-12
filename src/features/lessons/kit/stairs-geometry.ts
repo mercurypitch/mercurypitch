@@ -26,7 +26,9 @@
 //   so the staircase keeps its slope.
 // - compact: Lesson 4's cold open and hero. Fifteen rows from the floor, C4
 //   to D5 there, so a scale on C and one on D both fit unscaled; no strip,
-//   nothing that takes taps.
+//   nothing that takes taps. A scale that reaches past them lifts the rows
+//   until its top stair is the top row: Lesson 20's minor five on A3, over
+//   C3.
 //
 // Every stair is a block from its tread down to a foot below do, and its
 // tap zone is its column, at least 44 px tall: columns never overlap, so no
@@ -282,8 +284,13 @@ export function stairsLayout(
   const topDeg = degrees[count - 1]
   const rowCount = narrow ? topDeg + 1 : s.rows
   const rowH = (H - s.pad - s.stripH - s.drop - s.depth - s.top) / rowCount
-  // the pitch at the top row's centre
-  const high = narrow ? start + topDeg : floor + s.rows - 1
+  // the pitch at the top row's centre; a compact scale reaching past the
+  // floor's rows lifts them to its top stair
+  const high = narrow
+    ? start + topDeg
+    : mode === 'compact'
+      ? Math.max(floor + s.rows - 1, start + topDeg)
+      : floor + s.rows - 1
   const yOfRow = (midi: number): number =>
     s.top + rowH / 2 + (high - midi) * rowH
   const yOfStair = (deg: number): number =>

@@ -182,6 +182,16 @@ describe('the compact layout', () => {
     expect(onD.stairs[7].top).toBeCloseTo(onC.rowsTop, 9)
     expect(onC.stairs[0].bottom).toBeCloseTo(220 - 6, 9)
   })
+
+  it("lifts its rows for a scale that reaches past them, its top stair the top row: the minor five on A3 over C3 (Lesson 20's words)", () => {
+    // Act
+    const onA = stairsLayout('compact', 320, 220, 57, 48, MINOR_FIVE)
+
+    // Assert
+    expect(onA.rows).toEqual(Array.from({ length: 15 }, (_, k) => 55 + k))
+    expect(onA.stairs[5].top).toBeCloseTo(onA.rowsTop, 9)
+    expect(onA.stairs[0].bottom).toBeLessThanOrEqual(220 - 6 + 1e-9)
+  })
 })
 
 describe('a staircase on other starts', () => {

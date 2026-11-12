@@ -175,6 +175,27 @@ describe("another scale's staircase", () => {
     )
   })
 
+  it("prints each stair's one name from the scale's own degrees: the minor five on A, sung from do (Lesson 20's words)", () => {
+    // Act
+    const s = scene({
+      tonic: 57,
+      degrees: MINOR_FIVE,
+      both: false,
+      names: 'solfege',
+    })
+    const { L, texts } = paint(s)
+
+    // Assert
+    expect(L.stairs.map((_st, i) => namesOver(L, texts, i))).toEqual([
+      ['do'],
+      ['me'],
+      ['fa'],
+      ['so'],
+      ['te'],
+      ['do'],
+    ])
+  })
+
   it("reads the degrees it is given: Lesson 16's five, do to so, keep one house", () => {
     // Act
     const { L } = paint(

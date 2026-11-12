@@ -250,7 +250,7 @@ function paintNames(
     const y = st.top - (L.mode === 'compact' ? 5 : 7)
     ctx.fillStyle = lit > 0.3 ? '#ffffff' : COLOR.ink
     if (!s.both) {
-      ctx.fillText(stairName(i, s.tonic, s.names), x, y)
+      ctx.fillText(stairName(i, s.tonic, s.names, s.degrees), x, y)
       return
     }
     // the sung name over the letter
