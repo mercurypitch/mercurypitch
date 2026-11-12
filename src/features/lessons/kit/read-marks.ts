@@ -87,6 +87,12 @@ export interface ReadMarksState {
   } | null
   readonly brackets: readonly Bracket[]
   readonly marks: readonly SheetMark[]
+  /**
+   * The sounding note's level, 0 to 1, as its light: loudness as
+   * brightness, never size or place (Lesson 18 WEB-SPEC, Look). Null for
+   * the singer's full colour.
+   */
+  readonly level: number | null
 }
 
 /** A box in the figure's pixels. */
@@ -105,6 +111,14 @@ export interface ReadMarks {
   readonly state: ReadMarksState
   /** Where each bracket shown is, and its button's box: at least 44 px tall. */
   bracketBoxes(): readonly MarkBox[]
+  /**
+   * Each sound's button box, in order: from midway to the note before to
+   * midway to the one after, so no two overlap, over the staff and at
+   * least 44 px tall.
+   */
+  noteBoxes(): readonly MarkBox[]
+  /** Each written mark's button box, at least 44 px each way, with its mark. */
+  markBoxes(): readonly { readonly box: MarkBox; readonly mark: SheetMark }[]
 }
 
 /** The tap target's least height, px (WCAG 2.5.8, the kit's 44). */
@@ -119,7 +133,11 @@ export const NO_MARKS: ReadMarksState = {
   countIn: null,
   brackets: [],
   marks: [],
+  level: null,
 }
+
+/** The share of the singer's colour a sounding note takes at no level: the rest is its ink. */
+const LIGHT_FLOOR = 0.4
 
 /** Where a figure's row puts its notes: each symbol's head and stem, and the staff. */
 interface Geometry {
@@ -209,6 +227,16 @@ function bracketShape(
   }
 }
 
+/** A box at least the tap target each way, centred on a point. */
+function around(cx: number, cy: number, w: number, h: number): MarkBox {
+  const bw = Math.max(w, TARGET)
+  const bh = Math.max(h, TARGET)
+  return { x: cx - bw / 2, y: cy - bh / 2, w: bw, h: bh }
+}
+
+/** A line of the display face's width per character, as a share of its size: a tag's estimate. */
+const TEXT_WIDTH = 0.56
+
 const labelSize = (space: number): number => Math.max(11, space * 0.8)
 const smallSize = (space: number): number => Math.max(10, space * 0.7)
 
@@ -216,9 +244,12 @@ export function createReadMarks(): ReadMarks {
   let state: ReadMarksState = NO_MARKS
   let G: Geometry | null = null
   let root: SVGGElement | null = null
+  let host: SVGSVGElement | null = null
   const layers = new Map<string, SVGGElement>()
   // brackets already drawn once: a redraw never fades them in again
   const seen = new Set<string>()
+  // the marks as last drawn, with their buttons' boxes
+  let drawnMarks: { box: MarkBox; mark: SheetMark }[] = []
 
   const keyOf = (b: Bracket): string => `${b.first}-${b.last}-${b.label}`
 
@@ -266,37 +297,43 @@ export function createReadMarks(): ReadMarks {
     const line = Math.max(G.bottom, ...G.heads.map((h) => h?.y ?? 0))
     const y1 = line + s * 0.6 + size
     const home = state.home
-    G.heads.forEach((h, i) => {
+    const heads = G.heads
+    // a tag is one line; where tagged heads sit closer than the widest tag
+    // needs, as on a phone, the tags alternate between two rows, so none
+    // runs into the next
+    const tagged = heads.flatMap((h, i) =>
+      h !== null && (state.tags[i] ?? null) !== null ? [i] : [],
+    )
+    const widest =
+      Math.max(0, ...tagged.map((i) => (state.tags[i] ?? '').length)) *
+      size *
+      TEXT_WIDTH
+    const nearest = Math.min(
+      Infinity,
+      ...tagged
+        .slice(1)
+        .map((i, k) => (heads[i]?.x ?? 0) - (heads[tagged[k]]?.x ?? 0)),
+    )
+    const stagger = widest + size * 0.5 > nearest
+    heads.forEach((h, i) => {
       if (h === null) return
       const tag = state.tags[i] ?? null
       if (tag !== null) {
-        // two short lines, so a tag keeps to its beat's column on a phone
-        const words = tag.split(' ')
-        const cut = Math.ceil(words.length / 2)
-        const t = svg(
+        const row = stagger ? tagged.indexOf(i) % 2 : 0
+        svg(
           'text',
           {
             x: r(h.x),
-            y: r(y1),
+            y: r(y1 + row * size * 1.15),
             'text-anchor': 'middle',
             'font-size': r(size),
             class: 'rd-tag',
             'data-i': i,
+            'data-row': row,
+            text: tag,
           },
           g,
         )
-        ;[words.slice(0, cut), words.slice(cut)].forEach((part, k) => {
-          if (part.length === 0) return
-          svg(
-            'tspan',
-            {
-              x: r(h.x),
-              dy: k === 0 ? '0' : r(size * 1.1),
-              text: part.join(' '),
-            },
-            t,
-          )
-        })
       } else if (state.syllables && home !== null)
         svg(
           'text',
@@ -421,6 +458,7 @@ export function createReadMarks(): ReadMarks {
   }
 
   function drawMarks(): void {
+    drawnMarks = []
     const g = layer('marks')
     if (g === null || G === null) return
     const Gm = G
@@ -443,6 +481,12 @@ export function createReadMarks(): ReadMarks {
           },
           g,
         )
+        const size = s * 1.6
+        const y = ceilingOf(Gm, m.at, m.at) - s * 0.6
+        drawnMarks.push({
+          box: around(h.x, y - size * 0.35, size, size),
+          mark: m,
+        })
       } else if (m.kind === 'cresc' || m.kind === 'dim') {
         const x1 = xOf(Gm.row, m.from) + s * 0.3
         const x2 = xOf(Gm.row, m.to) - s * 0.3
@@ -468,6 +512,10 @@ export function createReadMarks(): ReadMarks {
           },
           g,
         )
+        drawnMarks.push({
+          box: around((x1 + x2) / 2, yc, x2 - x1, half * 2),
+          mark: m,
+        })
       } else if (m.kind === 'staccato') {
         const h = headAt(m.at)
         if (h === null) continue
@@ -482,6 +530,10 @@ export function createReadMarks(): ReadMarks {
           },
           g,
         )
+        drawnMarks.push({
+          box: around(h.x, h.down ? h.y - s * 0.95 : h.y + s * 0.95, 0, 0),
+          mark: m,
+        })
       } else if (m.kind === 'slur') {
         const a = headAt(m.first)
         const z = headAt(m.last)
@@ -505,6 +557,17 @@ export function createReadMarks(): ReadMarks {
           },
           g,
         )
+        const yTop = Math.min(ya, yz, reach)
+        const yBottom = Math.max(ya, yz, reach)
+        drawnMarks.push({
+          box: around(
+            (a.x + z.x) / 2,
+            (yTop + yBottom) / 2,
+            z.x - a.x,
+            yBottom - yTop,
+          ),
+          mark: m,
+        })
       } else if (m.kind === 'breath') {
         // a breath mark: a comma over the staff, just before its beat
         svg(
@@ -520,7 +583,30 @@ export function createReadMarks(): ReadMarks {
           },
           g,
         )
+        const size = s * 2.4
+        drawnMarks.push({
+          box: around(
+            xOf(Gm.row, m.beat) - s * 0.45,
+            Gm.top - s * 0.5 - size * 0.3,
+            size * 0.5,
+            size * 0.6,
+          ),
+          mark: m,
+        })
       }
+    }
+  }
+
+  /** The sounding note's light: a share of its singer's colour over its ink, set on the figure's SVG. */
+  function drawLevel(): void {
+    if (host === null) return
+    const level = state.level
+    host.classList.toggle('rd-loud', level !== null)
+    if (level === null) host.style.removeProperty('--rd-light')
+    else {
+      const share =
+        LIGHT_FLOOR + (1 - LIGHT_FLOOR) * Math.min(1, Math.max(0, level))
+      host.style.setProperty('--rd-light', `${Math.round(share * 100)}%`)
     }
   }
 
@@ -542,7 +628,9 @@ export function createReadMarks(): ReadMarks {
       // again in place drops them first
       root?.remove()
       root = svg('g', { class: 'rd-marks' }, el)
+      host = el
       drawAll(false)
+      drawLevel()
     },
     set(next) {
       const was = state
@@ -558,9 +646,31 @@ export function createReadMarks(): ReadMarks {
       if (changed('marks')) drawMarks()
       if (changed('countIn')) drawCountIn()
       if (changed('cursor')) drawCursor()
+      if (changed('level')) drawLevel()
     },
     get state() {
       return state
+    },
+    noteBoxes() {
+      if (G === null) return []
+      const Gn = G
+      const s = Gn.row.space
+      const sounds = Gn.placed.flatMap((p, i) => {
+        const h = Gn.heads[i]
+        return p.kind === 'note' && p.onset !== null && h !== null ? [h] : []
+      })
+      return sounds.map((h, k) => {
+        const before = sounds[k - 1] as (typeof sounds)[number] | undefined
+        const after = sounds[k + 1] as (typeof sounds)[number] | undefined
+        const left = before === undefined ? h.x - s * 1.6 : (before.x + h.x) / 2
+        const right = after === undefined ? h.x + s * 1.6 : (h.x + after.x) / 2
+        const top = Math.min(Gn.top - s, h.y - TARGET / 2)
+        const bottom = Math.max(Gn.bottom + s, h.y + TARGET / 2)
+        return { x: left, y: top, w: right - left, h: bottom - top }
+      })
+    },
+    markBoxes() {
+      return drawnMarks
     },
     bracketBoxes() {
       if (G === null) return []

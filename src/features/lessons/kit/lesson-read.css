@@ -29,9 +29,10 @@
 .rd-tag {
   fill: var(--amber);
 }
+/* a thin ink line across the staff and the beat grid (Lesson 18 WEB-SPEC, Look) */
 .rd-cursor {
-  stroke: var(--aqua);
-  stroke-width: 2px;
+  stroke: var(--ink);
+  stroke-width: 1.5px;
   stroke-linecap: round;
 }
 .rd-dot {
@@ -86,4 +87,21 @@
 }
 .rd-stacc {
   fill: var(--ink);
+}
+
+/* loudness as brightness: the sounding note takes a share of its singer's
+   colour by its level, over its ink, from 40% at none to all of it at full;
+   it never moves or grows (Lesson 18 WEB-SPEC, Look). kit/read-marks.ts
+   sets the share on the figure's SVG. */
+.rd-loud .rb-sym.is-sounding .rb-ink,
+.rd-loud .rb-sym.is-sounding .rb-head,
+.rd-loud .rb-tie.is-sounding {
+  fill: color-mix(in srgb, var(--rb-voice) var(--rd-light, 100%), var(--ink));
+}
+.rd-loud .rb-sym.is-sounding .rb-head.rb-open {
+  fill: none;
+  stroke: color-mix(in srgb, var(--rb-voice) var(--rd-light, 100%), var(--ink));
+}
+.rd-loud .rb-sym.is-sounding .rb-stem {
+  stroke: color-mix(in srgb, var(--rb-voice) var(--rd-light, 100%), var(--ink));
 }

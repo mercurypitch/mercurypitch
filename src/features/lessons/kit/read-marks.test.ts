@@ -94,7 +94,7 @@ describe('the reading staff’s marks', () => {
     expect(all(el, '.rd-house')).toHaveLength(1)
   })
 
-  it('writes a name over a note and a tag under it as it is read, the tag in its syllable’s place, in two short lines', () => {
+  it('writes a name over a note and a tag under it as it is read, the tag in its syllable’s place', () => {
     // Arrange
     const { el, fig, marks } = drawn()
     marks.set({ home: DO, syllables: true })
@@ -102,23 +102,56 @@ describe('the reading staff’s marks', () => {
     // Act: Merc named do on beat 1 and sang it on beat 2
     marks.set({ names: ['do'], tags: ['1 beat late'] })
 
-    // Assert: the name sits over the head, the tag under the staff
+    // Assert: the name sits over the head, the tag under the staff, on one line above the pads' numbers
     const name = el.querySelector('.rd-name')
     const tag = el.querySelector('.rd-tag')
     expect(name?.textContent).toBe('do')
-    expect(
-      Array.from(tag?.querySelectorAll('tspan') ?? [], (t) => t.textContent),
-    ).toEqual(['1 beat', 'late'])
+    expect(tag?.textContent).toBe('1 beat late')
     expect(num(name, 'y')).toBeLessThan(num(tag, 'y'))
-    // its second line ends above the pads' numbers
-    const second = tag?.querySelectorAll('tspan')[1]
-    expect(num(tag, 'y') + num(second, 'dy')).toBeLessThan(
+    expect(num(tag, 'y')).toBeLessThan(
       fig.layout.rows[0].numberY - fig.layout.rows[0].space,
     )
     expect(
       all(el, '.rd-syl').map((t) => t.getAttribute('data-i')),
     ).not.toContain('0')
     expect(all(el, '.rd-syl')).toHaveLength(6)
+  })
+
+  it('stacks the tags of notes a phone’s beat apart in two rows, so none runs into the next, and keeps one row where there is room', () => {
+    // Arrange
+    const tags = ['1 beat late', '2 beats late', '3 beats late', '4 beats late']
+    const { el, fig, marks } = drawn()
+    const wide = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    const roomy = createReadMarks()
+    const wideFig = drawRhythm(wide, scene(), { w: 900, h: 310 })
+    roomy.draw(wideFig, wide, scene())
+
+    // Act
+    marks.set({ tags })
+    roomy.set({ tags })
+
+    // Assert: on a phone, alternate rows, each row's tags clear of each other
+    const drawnTags = all(el, '.rd-tag')
+    expect(drawnTags.map((t) => t.getAttribute('data-row'))).toEqual([
+      '0',
+      '1',
+      '0',
+      '1',
+    ])
+    for (const row of ['0', '1']) {
+      const xs = drawnTags
+        .filter((t) => t.getAttribute('data-row') === row)
+        .map((t) => num(t, 'x'))
+      const width = 12 * 10 * 0.56
+      expect(xs[1] - xs[0]).toBeGreaterThan(width)
+    }
+    const lowest = Math.max(...drawnTags.map((t) => num(t, 'y')))
+    expect(lowest).toBeLessThan(
+      fig.layout.rows[0].numberY - fig.layout.rows[0].space,
+    )
+    expect(all(wide, '.rd-tag').map((t) => t.getAttribute('data-row'))).toEqual(
+      ['0', '0', '0', '0'],
+    )
   })
 
   it('moves the cursor onto each note’s head on its beat, and stops it at the final bar line', () => {
@@ -253,6 +286,86 @@ describe('the reading staff’s marks', () => {
     expect(el.querySelector('.rd-bracket')).toBe(bracket)
     expect(el.querySelector('.rd-house')).toBe(house)
     expect(all(el, '.rd-cursor')).toHaveLength(1)
+  })
+
+  it('gives each note a button box from midway to its neighbours, none overlapping, each at least 44 px tall over its head', () => {
+    // Arrange
+    const { fig, marks } = drawn()
+
+    // Act
+    const boxes = marks.noteBoxes()
+
+    // Assert
+    expect(boxes).toHaveLength(7)
+    boxes.forEach((b, i) => {
+      const x = headX(fig, i)
+      expect(b.h).toBeGreaterThanOrEqual(44)
+      expect(b.x).toBeLessThan(x)
+      expect(b.x + b.w).toBeGreaterThan(x)
+      if (i > 0) expect(b.x).toBeCloseTo(boxes[i - 1].x + boxes[i - 1].w, 6)
+    })
+  })
+
+  it('gives each written mark a button box at least 44 px each way, over the mark', () => {
+    // Arrange
+    const { el, marks } = drawn()
+
+    // Act
+    marks.set({
+      marks: [
+        { kind: 'p', at: 0 },
+        { kind: 'cresc', from: 6, to: 7, drawn: 1 },
+        { kind: 'staccato', at: 1 },
+        { kind: 'slur', first: 0, last: 2, drawn: 1 },
+        { kind: 'breath', beat: 4 },
+      ],
+    })
+    const boxes = marks.markBoxes()
+
+    // Assert
+    expect(boxes.map((b) => b.mark.kind)).toEqual([
+      'p',
+      'cresc',
+      'staccato',
+      'slur',
+      'breath',
+    ])
+    for (const { box } of boxes) {
+      expect(box.w).toBeGreaterThanOrEqual(44)
+      expect(box.h).toBeGreaterThanOrEqual(44)
+    }
+    const dot = el.querySelector('[data-mark="staccato"]')
+    const [cx, cy] = [num(dot, 'cx'), num(dot, 'cy')]
+    const stacc = boxes[2].box
+    expect(cx).toBeGreaterThan(stacc.x)
+    expect(cx).toBeLessThan(stacc.x + stacc.w)
+    expect(cy).toBeGreaterThan(stacc.y)
+    expect(cy).toBeLessThan(stacc.y + stacc.h)
+    marks.set({ marks: [] })
+    expect(marks.markBoxes()).toEqual([])
+  })
+
+  it('lights a sounding note by its level, as a share of its singer’s colour, on every fresh drawing', () => {
+    // Arrange
+    const { el, fig, marks, sc } = drawn()
+
+    // Act: p, then full, then a figure drawn afresh at p
+    marks.set({ level: 0.3 })
+    const quiet = el.style.getPropertyValue('--rd-light')
+    marks.set({ level: 1 })
+    const full = el.style.getPropertyValue('--rd-light')
+    marks.set({ level: 0.3 })
+    const next = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
+    marks.draw(fig, next, sc)
+    const redrawn = next.style.getPropertyValue('--rd-light')
+    const loud = next.classList.contains('rd-loud')
+    marks.set({ level: null })
+
+    // Assert
+    expect([quiet, full, redrawn]).toEqual(['58%', '100%', '58%'])
+    expect(loud).toBe(true)
+    expect(next.style.getPropertyValue('--rd-light')).toBe('')
+    expect(next.classList.contains('rd-loud')).toBe(false)
   })
 
   it('writes the treble staff’s marks too: the house on G4’s line, a name over an up stem', () => {
