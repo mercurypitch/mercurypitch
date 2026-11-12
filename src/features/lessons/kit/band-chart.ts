@@ -56,7 +56,7 @@ import type { DroneScene } from './band-chart-drone-scene'
 import type { LevelPoint } from './band-chart-hold'
 import { drawLevelStrip, drawTimeTicks, STRIP_GAP, stripHeight, TICKS_ROOM, } from './band-chart-hold'
 import type { RungNames } from './band-chart-names'
-import type { Rung } from './band-chart-rungs'
+import type { Beads, Rung } from './band-chart-rungs'
 import type { SongScene } from './band-chart-song-scene'
 import type { MiddleLine, WaveLine, WaveRuler } from './band-chart-wave-scene'
 import { HIT_TOLERANCE_CENTS } from './band-words'
@@ -169,6 +169,8 @@ export interface BandScene {
   rungs?: Rung[]
   /** Merc's leaps as arcs between his rungs, drawn while the scene has rungs (band-chart-arcs.ts). */
   arcs?: Arc[]
+  /** His rungs as beads on a string, Lesson 20's run: none unless a page asks (band-chart-rungs.ts). */
+  beads?: Beads | null
   /** The spectrum strip under the plot, on a chart given its `under` (spectrum-strip.ts). */
   spectrum?: SpectrumScene
   /**

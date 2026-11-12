@@ -18,6 +18,16 @@
 //
 // Merc's leaps, the scene's arcs (kit/band-chart-arcs.ts), are drawn over
 // every band and under every lit edge.
+//
+// Lesson 20's run draws its rungs in the bead style (its WEB-SPEC, Toys 5;
+// `beads`): a bead on Merc's steady line at the start of each slot, and,
+// for a run sung joined, the string from bead to bead. A bead swells and
+// glows with its rung while Merc's note sounds and shows its rung's label,
+// its sung name, over the band only then; a faint rung's bead is faint. The
+// slots follow the tempo (`slotsAt`): a note every so many seconds, each
+// the slot's length, or Staccato's 0.15 s with the gap after it and no
+// string. An illustrated singer's line is the scene's own line, drawn over
+// the beads as any singer's line is.
 
 import type { Arc } from './band-chart-arcs'
 import { drawArcs } from './band-chart-arcs'
@@ -28,6 +38,8 @@ import { rgba } from './notes'
 
 /** One of Merc's notes on the chart. */
 export interface Rung {
+  /** Its sung name, shown over its bead while it glows (the bead style). */
+  readonly label?: string
   /** Its note, in cents from the chart's target, do: 0, 400, 700, 1200. */
   readonly c: number
   /** Its time slot, seconds across the window; a rung without either end runs to the plot's edge. */
@@ -40,6 +52,23 @@ export interface Rung {
   /** Drawn faint while it rests: a rung before its turn. */
   readonly faint?: boolean
 }
+
+/** The bead style: a bead at the start of each slot, joined by the string unless the run is staccato. */
+export interface Beads {
+  /** The string from bead to bead: the run sung joined. */
+  readonly string: boolean
+}
+
+/** Each of `count` notes' slots at a tempo, from 0: a note every `slotSec`, each `holdSec` long (the slot unless staccato). */
+export const slotsAt = (
+  count: number,
+  slotSec: number,
+  holdSec = slotSec,
+): { from: number; to: number }[] =>
+  Array.from({ length: count }, (_, i) => ({
+    from: i * slotSec,
+    to: i * slotSec + holdSec,
+  }))
 
 /** A rung as the kit's band: its note, Voice Mirror's hit band either side, over its slot. */
 function bandOf(f: ChartFrame, r: Rung): BandSpec {
@@ -114,15 +143,68 @@ function drawLitSlot(f: ChartFrame, b: BandSpec): void {
 /** A faint rung shows faint only while it rests: one that glows is sounding. */
 const showsFaint = (r: Rung): boolean => r.faint === true && (r.glow ?? 0) <= 0
 
+/** A bead's radius at rest, and how much it swells while its note sounds, px. */
+const BEAD_R = 4.5
+const BEAD_SWELL = 2
+
+/** Where a slotted rung's bead sits: its slot's start, on Merc's steady line; none across the plot. */
+const beadAt = (f: ChartFrame, r: Rung): { x: number; y: number } | null =>
+  r.from === undefined ? null : { x: xOf(f, r.from), y: yOf(f, r.c) }
+
+/** The string from bead to bead, under the beads. */
+function drawString(f: ChartFrame, rungs: readonly Rung[]): void {
+  const at = rungs.flatMap((r) => beadAt(f, r) ?? [])
+  if (at.length < 2) return
+  const { ctx } = f
+  ctx.strokeStyle = rgba(BAND_COLOR.target, 0.55)
+  ctx.lineWidth = 1.5
+  ctx.beginPath()
+  at.forEach((p, i) => {
+    if (i === 0) ctx.moveTo(p.x, p.y)
+    else ctx.lineTo(p.x, p.y)
+  })
+  ctx.stroke()
+}
+
+/** A rung's bead: faint before its turn, swelling with a halo while it glows, its label over the band then. */
+function drawBead(f: ChartFrame, r: Rung): void {
+  const at = beadAt(f, r)
+  if (at === null) return
+  const { ctx } = f
+  const glow = r.glow ?? 0
+  const radius = BEAD_R + BEAD_SWELL * glow
+  if (glow > 0) {
+    ctx.fillStyle = rgba(BAND_COLOR.target, 0.25 * glow)
+    ctx.beginPath()
+    ctx.arc(at.x, at.y, radius * 2.2, 0, Math.PI * 2)
+    ctx.fill()
+  }
+  ctx.fillStyle = rgba(BAND_COLOR.target, showsFaint(r) ? 0.5 : 1)
+  ctx.beginPath()
+  ctx.arc(at.x, at.y, radius, 0, Math.PI * 2)
+  ctx.fill()
+  if (glow <= 0 || r.label === undefined) return
+  ctx.font = MONO
+  ctx.fillStyle = BAND_COLOR.target
+  ctx.textAlign = 'center'
+  ctx.textBaseline = 'bottom'
+  ctx.fillText(r.label, at.x, yOf(f, r.c + HIT_TOLERANCE_CENTS) - 3)
+}
+
 /**
- * Paints the scene's rungs: every band, then Merc's arcs, then every lit
- * edge, so that no band covers an arc, a neighbour's edge or its words. A
- * chart calls it in place of its own band (`paintRungs`, kit/band-chart.ts):
- * false for a scene with no rungs, which keeps the band.
+ * Paints the scene's rungs: every band, then Merc's arcs, then in the bead
+ * style the string and the beads, then every lit edge, so that no band
+ * covers an arc, a bead, a neighbour's edge or its words. A chart calls it
+ * in place of its own band (`paintRungs`, kit/band-chart.ts): false for a
+ * scene with no rungs, which keeps the band.
  */
 export function paintRungs(
   f: ChartFrame,
-  scene: { readonly rungs?: readonly Rung[]; readonly arcs?: readonly Arc[] },
+  scene: {
+    readonly rungs?: readonly Rung[]
+    readonly arcs?: readonly Arc[]
+    readonly beads?: Beads | null
+  },
 ): boolean {
   const { rungs } = scene
   if (rungs === undefined) return false
@@ -137,6 +219,11 @@ export function paintRungs(
     else drawBand(f, bands[i])
   })
   if (scene.arcs !== undefined) drawArcs(f, scene.arcs)
+  const { beads } = scene
+  if (beads !== undefined && beads !== null) {
+    if (beads.string) drawString(f, rungs)
+    rungs.forEach((r) => drawBead(f, r))
+  }
   rungs.forEach((r, i) => {
     if (r.lit !== true) return
     // a rung across the plot lights as the band does, its words at the end
