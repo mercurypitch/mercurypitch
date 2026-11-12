@@ -220,6 +220,91 @@ describe('readLadder', () => {
   })
 })
 
+describe("the reader's two options: Lesson 20's run, a note every 0.75 s", () => {
+  // Lesson 20's run from do D3: do, re, mi, so, la, so, mi, re, do, its
+  // labels as Sing it gives them (Lesson 20 WEB-SPEC, Toys 6, state 5)
+  const E3 = 52
+  const B3 = 59
+  const RUN = [D3, E3, FS3, A3, B3, A3, FS3, E3, D3]
+  const RUN_LABELS = [
+    'Do',
+    'Re',
+    'Mi',
+    'So',
+    'La',
+    'So again',
+    'Mi again',
+    'Re again',
+    'Do again',
+  ]
+  const RUN_OPTIONS = { slotSec: 0.75, attackSec: 0.15, steadySec: 0.45 }
+
+  it('reads a run sung at 0.75 s a note, each note through its slot, as nine notes right in the middle, 9 of 9', () => {
+    // Act
+    const r = readLadder(take(notes(RUN, 0.75)), RUN, RUN_OPTIONS)
+
+    // Assert (Lesson 20 FACTS 56 and 61)
+    expect(linesOf(r, RUN_LABELS)).toEqual(allInTheMiddle(RUN_LABELS))
+    expect(countOf(r)).toBe('This time, 9 of your 9 notes landed in the band.')
+  })
+
+  it('reads a note only 0.4 s long in its slot as no steady note, and leaves it out of the count', () => {
+    // Arrange: la held 0.4 s, then silence to the end of its slot
+    const parts = notes(RUN, 0.75)
+    const frames = take([
+      ...parts.slice(0, 4),
+      { midi: B3, sec: 0.4 },
+      { rest: 0.35 },
+      ...parts.slice(5),
+    ])
+
+    // Act
+    const r = readLadder(frames, RUN, RUN_OPTIONS)
+
+    // Assert
+    expect(linesOf(r, RUN_LABELS)[4]).toBe(`La · ${NOT_STEADY_RUNG_LINE}`)
+    expect(countOf(r)).toBe(
+      'This time, 8 of the 8 notes we heard landed in the band.',
+    )
+  })
+
+  it('reads a note sung an octave down as the same note, within 50 cents, and counts it landed', () => {
+    // Arrange: la, B3, sung as B2
+    const parts = notes(RUN, 0.75)
+    const frames = take([
+      ...parts.slice(0, 4),
+      { midi: B3 - 12, sec: 0.75 },
+      ...parts.slice(5),
+    ])
+
+    // Act
+    const r = readLadder(frames, RUN, RUN_OPTIONS)
+
+    // Assert
+    expect(linesOf(r, RUN_LABELS)[4]).toBe(
+      "La · Right in the middle: on Merc's note. You sang it an octave lower: same note.",
+    )
+    expect(countOf(r)).toBe('This time, 9 of your 9 notes landed in the band.')
+  })
+
+  it("reads a 0.65 s note with the options as steady and landed, and without them, at the kit's 0.3 s and 0.6 s, as too short", () => {
+    // Arrange: one note, 0.65 s, in the 16 ms frames the detector hands over
+    const frames = take([{ midi: D3, sec: 0.65 }])
+
+    // Act
+    const options = readTake(frames, D3, {
+      attackSec: 0.15,
+      steadySec: 0.45,
+    })
+    const plain = readTake(frames, D3)
+
+    // Assert: about 0.5 s is left after a 0.15 s attack; about 0.35 s after
+    // 0.3 s, short of the 0.6 s Lesson 9's reading needs
+    expect([options.steady, options.landed]).toEqual([true, true])
+    expect(plain.steady).toBe(false)
+  })
+})
+
 describe('where the slots start', () => {
   it('starts at the first voiced frame preprocess keeps, after silence and a sound under the confidence floor', () => {
     // Arrange: 0.5 s of silence, then 1 s the detector is unsure of, then the ladder
