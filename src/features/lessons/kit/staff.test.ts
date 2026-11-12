@@ -785,6 +785,30 @@ describe('reading along a written line (Lesson 16)', () => {
     expect(heads().every((h) => h === 'st-head')).toBe(true)
   })
 
+  it("lights a line that comes back down on its own later notes, not on the first of each pitch (Lesson 20's run)", () => {
+    // Arrange: do, re, mi, re and do written
+    const line = [G4, A4, B4, A4, G4]
+    const toy = mount({
+      ...PLACE,
+      tap: 'none',
+      score: line.map((note) => ({ note })),
+    })
+
+    // Act: the same five played, re and do again sounding
+    void toy.play({
+      show: 'score',
+      notes: line.map((note, i) => ({ t: i * 0.5, dur: 0.4, note })),
+    })
+    last().note(3)
+    const reAgain = heads()
+    last().note(4)
+    const doAgain = heads()
+
+    // Assert: re's and do's later heads, never the first re or do
+    expect([reAgain[1], reAgain[3]]).toEqual(['st-head', 'st-head is-lit'])
+    expect([doAgain[0], doAgain[4]]).toEqual(['st-head', 'st-head is-lit'])
+  })
+
   it('lights a note its beat before it sounds, silent, when it plays ahead: Hear it inside', () => {
     // Arrange
     vi.useFakeTimers()

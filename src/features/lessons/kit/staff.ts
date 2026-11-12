@@ -49,7 +49,8 @@
 // each note then shows its syllable in a row under the staff, counted up
 // from do, while Names is on (`[data-staff-names]`, Names on · off, or
 // `setNames`); off hides the syllables and keeps the house. A state that
-// writes a score lights its notes as they play (`show: 'score'`) and as a
+// writes a score lights its notes as they play (`show: 'score'`), each the
+// next written note of its pitch, so a run back down lights its own, and as a
 // tap sounds one; a state with a `lead` plays it before each tapped place,
 // do and then the note. A play's note may light a moment before it sounds
 // (`ahead`): Hear it inside, a beat to imagine it in.
@@ -385,14 +386,22 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
       dur: n.dur,
       kind: n.kind ?? p.kind ?? 'soft',
     }))
-    // the score's note each sounds, or none
-    const cols = p.notes.map((n) =>
-      p.show !== 'score'
-        ? -1
-        : (state.score ?? []).findIndex(
-            (m) => midiOf(m.note) === midiOf(n.note),
-          ),
-    )
+    // the score's note each sounds, or none: the next of its pitch after
+    // the last found, so a line that comes back down lights its own later
+    // notes (Lesson 20's run), else the first of its pitch
+    const score = state.score ?? []
+    let after = 0
+    const cols = p.notes.map((n) => {
+      if (p.show !== 'score') return -1
+      const midi = midiOf(n.note)
+      const next = score.findIndex(
+        (m, c) => c >= after && midiOf(m.note) === midi,
+      )
+      const col =
+        next >= 0 ? next : score.findIndex((m) => midiOf(m.note) === midi)
+      if (col >= 0) after = col + 1
+      return col
+    })
     /** Shows note `i` of the play in `tone`: in its column, as the one note, or on the score. */
     const show = (i: number, tone: Tone): void => {
       const n = p.notes[i]
