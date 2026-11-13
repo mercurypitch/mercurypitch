@@ -656,7 +656,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // its signature, the cold open's staircase on the kit's predict, the four
   // words' staircases, the recall and the quick check on the kit's quiz
   // with Lesson 10's and Lesson 21's questions, Sing it on the kit's sing
-  // flow with its comfort check and voice choice, and free play: 203,405
+  // flow with its comfort check and voice choice, and free play: 203,428
   // bytes in build:e2e; a quarter over.
   'learn/25.html': 249,
 

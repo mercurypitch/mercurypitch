@@ -886,4 +886,4 @@ Where the page differs from the text above, the page as built is the reference:
 - The five chips wrap to four rows at 390 px, not two or three: the three prerequisite chips are
   each wider than half the column, and Lesson 23's runs to two lines.
 - The first-paint ceilings are the page's measured build a quarter over, as every lesson's are:
-  249 KB of JavaScript (203,405 bytes) and 114 KB of CSS (92,872 bytes) in `build:e2e`.
+  249 KB of JavaScript (203,428 bytes) and 114 KB of CSS (92,872 bytes) in `build:e2e`.
