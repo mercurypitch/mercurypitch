@@ -195,7 +195,7 @@ staying on the practice card under "For short notes" (FACTS 3, 31).
 Lesson 4's staircase as the kit holds it after Lesson 21's kit work (What the kit and the app still
 need, item 4), on C in the learner's octave: C3 for the lower voice, C4 for the higher (FACTS 8, 26).
 It plays as Lesson 4's does, the soft tone at 0.45 s a note with the last note 0.9 s
-(`src/features/lessons/kit/stairs-plays.ts:21-22`), each stair lighting as it sounds, and each
+(`src/features/lessons/kit/stairs-plays.ts:27-28`), each stair lighting as it sounds, and each
 stair is a real button that plays its note and says its syllable and name on focus ("Stair 3, mi, E
 3"), as Lesson 4's do (`src/features/lessons/kit/stairs-toy.ts:9-11`).
 

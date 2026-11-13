@@ -283,7 +283,7 @@ page: Lesson 12 draws its chords as rooms on the spiral and needs no chord's not
   5 the toy draws it disabled until the predict's `onChoice` says a choice is in, and the predict's
   `unlocks` enables it (`src/features/lessons/kit/predict.ts:64-67`), so the stage cannot answer the
   predict first. The scale state draws no name strip: Drawing gives it to Steps 1 to 4 only
-  (`STRIP_IN`, `lesson-10/chord-layout.ts:86-92`).
+  (`STRIP_IN`, `kit/chord-layout.ts:89-95`).
 - **Free play** (Wrap): its own copy of the toy in a card, as Lesson 4's is
   (`lesson-04/main.ts:97-105`), with every control: Root lower and Root higher, Major · Minor, Chord
   · Scale, **Play** (the chord, note by note and together, or the scale, whichever shows), **Play
@@ -683,7 +683,7 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
 - **What it plays through.** Every play is one of the kit's runs
   (`src/features/lessons/kit/run.ts`), which a stop, leaving the step or the page's one-sound owner
   ends where it stands: `playTone` and `playContour` give no way to stop a sound once it starts
-  (`src/features/lessons/kit/sound.ts:682-706`). Chords, thirds, triads, the pattern, scales, the
+  (`src/features/lessons/kit/sound.ts:692-716`). Chords, thirds, triads, the pattern, scales, the
   Four words' plays, the ear game's rounds, the quiz's chord and Merc's notes are tunes through
   `playNotes` (`run.ts:215-259`), whose visuals run to their end with sound off. The count-in is
   one voice the page keeps and stops (`countIn`, `kit/move-do.ts:72-77`), and a bead tapped on the
@@ -695,14 +695,14 @@ each note its own voice; the guide's count-in in the soft tone at half a tapped 
   contour, `contourOf(329.63, [{ hold: 1.2 }, { glide: 0.4, to: 311.13 }, { hold: 1.5 }])` for mi,
   or from 392.00 to 369.99 for so: the held notes through `playNotes` and the line through
   `playLine`, one run through `allOf` (`run.ts:120-141`, `:194-216`; `contourOf`,
-  `sound.ts:361-384`), whose pitch glides on the audio clock (`:390-423`; FACTS 73). The bead's
+  `sound.ts:371-394`), whose pitch glides on the audio clock (`:400-433`; FACTS 73). The bead's
   slide is timed from the same start, so it lands as the note lands.
 - **Levels**: a tapped note at the soft tone's 0.13; a chord's voices at 0.075 each; Merc's "ooh" at
   the kit's level; the count-in at 0.065 (FACTS 80, 81).
-- **Sound off or none.** Every play asks the kit's `Sound.canPlay` (`sound.ts:620-632`): the first
+- **Sound off or none.** Every play asks the kit's `Sound.canPlay` (`sound.ts:630-642`): the first
   tap turns sound on; with sound off the kit's toast says so and the visuals play silently; with no
   Web Audio nothing sounds and the visuals still play. The kit stops every sound when the page is
-  hidden (`sound.ts:585-587`).
+  hidden (`sound.ts:595-597`).
 
 ## Merc and Tavi
 

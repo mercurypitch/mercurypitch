@@ -520,7 +520,7 @@ kit's sound module and its house envelopes (`.claude/memory/audio-pop-free-playb
 started only by a tap: Merc's notes, leaps, paths and ladders in Merc's "ooh"; the illustrated
 landing, the recall's two notes and the rung taps in free play in the soft tone (FACTS 90 to 96). A
 leap is two notes, each its own voice, so a repeated note is heard as two; Step 5's slide is one
-voice that glides, the kit's `contourVoice` (`kit/sound.ts:397`). Nothing autoplays, nothing plays
+voice that glides, the kit's `contourVoice` (`kit/sound.ts:407`). Nothing autoplays, nothing plays
 while a take is open, and the page has no music bed.
 
 One sound plays at a time, page-wide. Every source, the cold open, the Four words, the step toys,
@@ -707,10 +707,10 @@ table):
    between Merc and Tavi. It shows no middle note, so it does not answer the cold open's
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:151-243`, `:564-567`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:906-910`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:151-243`, `:574-577`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:922-926`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
-   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:445-455`),
+   is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:455-465`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener, the pitch detector and Voice
    Mirror's scorer arrive through a dynamic import when Start is pressed
