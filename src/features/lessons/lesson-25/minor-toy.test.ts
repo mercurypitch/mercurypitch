@@ -10,8 +10,9 @@
 // minor turns Raise le on and comes down plain; Step 4's staircase stays
 // where its play leaves it, do gliding from C to A, and C minor's flats
 // travel into both signatures, B flat first, landing at once when a play
-// is cut short; the clef moves the whole toy an octave; and a sound
-// anywhere stops a play, between its figures too. Every sound is one of
+// is cut short; the clef moves the whole toy an octave; a sound anywhere
+// stops a play, between its figures too; and a tap on the staff ends a
+// play where it stands, its own note sounding on. Every sound is one of
 // the kit's runs, here the recorder, and the clock is a fake one.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -208,6 +209,28 @@ describe('Step 1: why raise te?', () => {
     expect(line).toBe('So, ti, do: te lifts to ti, a semitone under do.')
     expect(await played).toBe(true)
     expect(toy.core.degrees).toEqual(NATURAL_MINOR_DEGREES)
+  })
+
+  it('ends a play where it stands at a tap on the staff, the tapped note sounding on as the page’s one sound', async () => {
+    // Arrange
+    const toy = mount()
+    const played = toy.play('so-ti-do')
+    await wait(300)
+    const figure = last()
+
+    // Act: a tap during the first figure, then a sound elsewhere
+    toy.staff.tapPlace(0)
+    const tapped = last()
+    await settle()
+    const sounding = !tapped.stopped
+    NowPlaying.claim(() => undefined)
+
+    // Assert: the play over, the tap heard until a newer sound stops it
+    expect(figure.stopped).toBe(true)
+    expect(await played).toBe(false)
+    expect(tapped).not.toBe(figure)
+    expect(sounding).toBe(true)
+    expect(tapped.stopped).toBe(true)
   })
 
   it('plays the chord on so, then home, as two stacked chords, the column’s beads lit while the first sounds', () => {

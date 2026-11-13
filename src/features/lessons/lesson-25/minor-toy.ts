@@ -14,7 +14,9 @@
 // blue on the bass staff and orange on the treble, and the column lights
 // its beads while its chord sounds. Every sound is the page's one
 // (`NowPlaying`): the staff claims it with the toy's own stop, so a sound
-// anywhere stops a play here, between its figures too.
+// anywhere stops a play here, between its figures too, and a tap on the
+// staff ends a play where it stands, the tapped note sounding on as the
+// toy's.
 //
 // Raise te (Step 1, free play) lifts te a semitone to ti, harmonic minor,
 // and slides the column's middle bead a row, G to G♯, its gaps and its
@@ -324,19 +326,28 @@ export function mountMinorToy(
 
   /** Stops what plays, a wait between figures too, and lands a Step 4 play where it was going. */
   function halt(): void {
+    end(true)
+    NowPlaying.release(halt)
+  }
+
+  /**
+   * Ends a play where it stands: its later figures and waits never come,
+   * the staircase and the column stop, and a Step 4 play lands where it was
+   * going. `quiet` stops the staff's sound too, which a tap keeps.
+   */
+  function end(quiet: boolean): void {
     token += 1
     timers.forEach((id) => window.clearTimeout(id))
     timers = []
     const waiting = wakes
     wakes = []
     waiting.forEach((wake) => wake())
-    staff.stop()
+    if (quiet) staff.stop()
     core.stop()
     column.clear()
     const going = landing
     landing = null
     if (going !== null) land(going)
-    NowPlaying.release(halt)
   }
 
   /** Step 4's play cut short: the staircase and the house where it was going, and C minor's flats in the signature. */
@@ -380,8 +391,10 @@ export function mountMinorToy(
       notes: f.notes.map((n) => ({ ...n, tone: lit })),
       gain: f.gain,
     })
-    // a tap on the staff cuts a sounding figure short: the play ends there
-    if (audible && !heard && mine === token) halt()
+    // a tap on the staff cuts a sounding figure short: the play ends there,
+    // and the tapped note, sounding now, is the toy's, which keeps the
+    // page's owner
+    if (audible && !heard && mine === token) end(false)
     return heard
   }
 
