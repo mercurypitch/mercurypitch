@@ -158,22 +158,37 @@
   height: 100%;
 }
 .minor-toy .staff-viz {
-  height: 150px;
+  --staff-h: 150px;
+  height: var(--staff-h);
 }
-/* Step 4's small staff in the other clef, the signature alone, under the
-   learner's staff */
-.minor-toy .staff-viz .staff-small {
-  display: block;
+/* Step 4's and free play's small staff in the other clef, the signature
+   alone, under the learner's staff. The kit lays each staff's drawing over
+   its whole figure (kit/lesson-staff.css), which would put one staff on the
+   other, so while the small staff shows, the figure grows by 70 px, the
+   small staff's 64 and room around it, and the learner's staff keeps the
+   rest at the top: all of --staff-h, or less on a phone held sideways,
+   where the kit caps the figure's height (kit/lesson-stage.css) */
+.minor-toy .staff-viz:has(> .staff-small:not([hidden])) {
+  height: calc(var(--staff-h) + 70px);
+}
+.minor-toy .staff-viz:has(> .staff-small:not([hidden])) > [data-staff-svg] {
+  height: calc(100% - 68px);
+}
+.minor-toy .staff-viz > .staff-small {
+  top: auto;
+  right: auto;
+  bottom: 2px;
   width: min(100%, 220px);
   height: 64px;
-  margin-top: 4px;
+  /* drawn, never tapped: a tap there is the figure's */
+  pointer-events: none;
 }
-.minor-toy .staff-viz .staff-small[hidden] {
+.minor-toy .staff-viz > .staff-small[hidden] {
   display: none;
 }
 @media (min-width: 961px) and (max-height: 720px) {
   .minor-toy .staff-viz {
-    height: 116px;
+    --staff-h: 116px;
   }
 }
 /* on a phone the two figures stand one above the other, each the card's
@@ -183,7 +198,7 @@
     height: 250px;
   }
   .minor-toy .staff-viz {
-    height: 140px;
+    --staff-h: 140px;
   }
 }
 /* a phone held sideways: the two figures side by side, each down to the
