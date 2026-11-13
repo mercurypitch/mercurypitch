@@ -336,7 +336,7 @@ The kit's quiz, as on Lesson 24's page. The recall imports Lesson 12's `l12-q3`
 (`src/features/lessons/lesson-12/quiz-questions.ts:89-107`) and Lesson 24's question 1, `l24-q1`,
 once Lesson 24's questions are a module, each with its away links, "Try Lesson 12, Step 4 again"
 becoming plain words where Lesson 12 is not live (`linkAway`,
-`src/features/lessons/kit/quiz.ts:191-205`); its keys are `fyp-l26-recall-seed` and
+`src/features/lessons/kit/quiz.ts:201-215`); its keys are `fyp-l26-recall-seed` and
 `fyp-l26-recall-v1`. The quick check's ids are `l26-q1` to `l26-q4`, its keys `fyp-l26-seed` and
 `fyp-l26-quiz-v1`, its words LESSON.md's, in authored order, each ♯ made speakable (FACTS 71 to 74).
 Question 4's **Play** plays do re mi re do on C4 with the part four semitones up, then, after 1.0 s,

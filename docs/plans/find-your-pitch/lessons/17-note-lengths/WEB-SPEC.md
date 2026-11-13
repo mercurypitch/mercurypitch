@@ -516,7 +516,7 @@ and `away` for another lesson's step links).
 - **The recall** imports Lesson 8's question objects, `l08-q2` and `l08-q4`, filtered by id as
   Lesson 8 imports Lesson 6's (`src/features/lessons/lesson-08/recall.ts:33-35`), never
   copied; its "Try Step N again" links become "Try Lesson 8, Step N again" to `/learn/08#step-N`, in
-  a new tab, through `recallStepHref` (`src/features/lessons/kit/quiz.ts:142`). Question 2's "Play
+  a new tab, through `recallStepHref` (`src/features/lessons/kit/quiz.ts:152`). Question 2's "Play
   two bars" is Lesson 8's quiz play, bound on the recall's host (FACTS 7). Everyone sees it. Lesson
   8's question 1 is left out: its right answer, "two a second", would answer the predict for a
   learner who reads on before choosing (FACTS 1a).
@@ -731,7 +731,7 @@ and season data; FACTS 5b), and the voice choice's words, Lesson 15's buttons wi
 - **Step 5's Clef switch** changes that toy only, never the stored voice.
 - **Lesson 8's page not live** where this page is served: the prerequisite chip shows as a plain chip
   and the recall's step links keep their words with no link (`linkAway`,
-  `src/features/lessons/kit/quiz.ts:191`). The console asks before it publishes this page while
+  `src/features/lessons/kit/quiz.ts:201`). The console asks before it publishes this page while
   Lesson 8's is not published.
 - **`?lesson=17` before the marker reads it**: First Light opens on a first visit to the Ear Lab
   (FACTS 47); the page is not built before item 9.

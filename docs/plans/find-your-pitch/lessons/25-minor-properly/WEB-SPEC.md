@@ -362,7 +362,7 @@ only: no sound and no figure. Its bold lead-in is its summary line's words.
 ### 7. Recall and quick check
 
 Two quizzes share this page through the kit's quiz (`createQuiz`,
-`src/features/lessons/kit/quiz.ts:218`), each with its own prefix and keys.
+`src/features/lessons/kit/quiz.ts:228`), each with its own prefix and keys.
 
 - **Recall**: Lesson 10's question 4 and Lesson 21's question 2 (FACTS 7), imported from their pages
   and filtered by id, `l10-q4` and Lesson 21's second question's id, as Lesson 10's page filters
@@ -372,13 +372,13 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
   keys `fyp-l25-recall-seed` and `fyp-l25-recall-v1`, no `lesson`, so it marks nothing done. Its step
   links read "Try Lesson 10, Step 5 again" and "Try Lesson 21, Step 4 again" and open
   `/learn/10#step-5` and `/learn/21#step-4` in a new tab, through `away: { href: recallStepHref }`
-  (`src/features/lessons/kit/quiz.ts:142`, `src/features/lessons/kit/quiz.ts:191`). Neither question
+  (`src/features/lessons/kit/quiz.ts:152`, `src/features/lessons/kit/quiz.ts:201`). Neither question
   has a play.
 - **Quick check**: LESSON.md's four questions, ids `l25-q1` to `l25-q4`, keys `fyp-l25-seed` and
   `fyp-l25-quiz-v1`, and `lesson: 25`, so answering all four marks Lesson 25 done. Three answers
   each, shuffled per question from the stored seed, one-line feedback for every answer, and a check
   icon and ink, not gold, on the right one. The kit prints "Right." or "Not quite." before each line
-  (`src/features/lessons/kit/quiz.ts:315`). Question 1's "Try Step 3 again", question 2's "Try Step
+  (`src/features/lessons/kit/quiz.ts:335`). Question 1's "Try Step 3 again", question 2's "Try Step
   1 again", question 3's "Try Step 4 again" and question 4's "Try Step 3 again" go to that step on
   this page. Question 4's slot holds its play, "Play", which plays A melodic minor going up in the
   learner's octave, 3.15 s, the same on every visit (FACTS 65, 69), handled by one listener on the

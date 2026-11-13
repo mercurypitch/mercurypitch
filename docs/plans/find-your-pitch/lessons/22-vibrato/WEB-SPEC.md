@@ -371,11 +371,11 @@ Two quizzes through the kit's quiz, each with its own prefix and keys.
   `fyp-l22-recall-v1`; no `lesson`, so it marks nothing done. Its step links read "Try Lesson 5, Step
   4 again" and "Try Lesson 14, Step 3 again" and open that page at the step in a new tab, or keep
   their words with no link where the lesson is not live, through `linkAway`
-  (`src/features/lessons/kit/quiz.ts:186-212`).
+  (`src/features/lessons/kit/quiz.ts:196-222`).
 - **Quick check**: LESSON.md's four questions, ids `l22-q1` to `l22-q4`, keys `fyp-l22-seed` and
   `fyp-l22-quiz-v1`, and `lesson: 22`, so answering all four marks Lesson 22 done. Three answers
   each, shuffled from the stored seed, one line of feedback for every answer, with "Right." or "Not
-  quite." before it (`src/features/lessons/kit/quiz.ts:315`). Its step links stay on this page.
+  quite." before it (`src/features/lessons/kit/quiz.ts:335`). Its step links stay on this page.
 - **Question 3's play**: ±50 cents at two swings a second on A3, grown in over 0.3 s, 3.0 s (FACTS
   71); it draws nothing, so the question is answered by ear. It is Step 3's slow wave, and the quick
   check is a scroll from Step 3, so the play is disabled until Step 3's choice, under the line

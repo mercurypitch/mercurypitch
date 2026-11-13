@@ -427,8 +427,8 @@ The kit's quiz. The recall imports Lesson 9's question object `l09-q2`
 (`src/features/lessons/lesson-10/quiz-questions.ts:105`), never copied, as Lesson 23 imports Lesson
 6's; their "Try Step N again" links become "Try Lesson 9, Step 3 again" and "Try Lesson 10, Step 5
 again", opening `/learn/09#step-3` and `/learn/10#step-5` in a new tab (`recallStepHref`,
-`src/features/lessons/kit/quiz.ts:142`), as words while that page is not live (`linkAway`,
-`src/features/lessons/kit/quiz.ts:191`). The quick check's ids are `l20-q1` to `l20-q4`, three
+`src/features/lessons/kit/quiz.ts:152`), as words while that page is not live (`linkAway`,
+`src/features/lessons/kit/quiz.ts:201`). The quick check's ids are `l20-q1` to `l20-q4`, three
 answers each in a shuffled order, LESSON.md's words; question 4 plays E4, G4, A4, B4, D5 and E5 in
 the soft tone, 3.15 s, E minor pentatonic, not the sound the Minor pentatonic word plays (FACTS
 76). Storage keys: `fyp-l20-recall-seed`, `fyp-l20-recall-v1`, `fyp-l20-seed`, `fyp-l20-quiz-v1`.

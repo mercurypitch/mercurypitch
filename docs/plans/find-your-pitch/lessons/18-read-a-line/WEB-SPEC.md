@@ -335,12 +335,12 @@ Two quizzes through the kit's quiz, each with its own prefix and keys.
   `fyp-l18-recall-seed` and `fyp-l18-recall-v1`; no `lesson`, so it marks nothing done. Step links
   read "Try Lesson 16, Step 4 again" and "Try Lesson 17, Step 1 again" and open that page at the step
   in a new tab, the quiz's `away` address set to `recallStepHref`
-  (`src/features/lessons/kit/quiz.ts:140-142`), or keep their words with no link where the lesson is
-  not live (`linkAway`, `src/features/lessons/kit/quiz.ts:186-212`).
+  (`src/features/lessons/kit/quiz.ts:150-152`), or keep their words with no link where the lesson is
+  not live (`linkAway`, `src/features/lessons/kit/quiz.ts:196-222`).
 - **Quick check**: LESSON.md's four questions, ids `l18-q1` to `l18-q4`, keys `fyp-l18-seed` and
   `fyp-l18-quiz-v1`, and `lesson: 18`, so answering all four marks Lesson 18 done. Three answers each,
   shuffled from the stored seed, one line of feedback for every answer, "Right." or "Not quite."
-  before it (`src/features/lessons/kit/quiz.ts:315`). Question 4's slot holds its play, a button
+  before it (`src/features/lessons/kit/quiz.ts:335`). Question 4's slot holds its play, a button
   reading "Play", which plays so, fa, mi loud, then after a beat the same three notes quiet, in
   quarter notes at 60 BPM in the learner's octave, 7.0 s, drawn as nothing. It is not the four
   words' clip, mi, re, do quiet then loud, so the ear answers and not the memory of a labelled sound

@@ -398,7 +398,7 @@ names are.
 ### 7. Recall and quick check
 
 Two quizzes share this page through the kit's quiz (`createQuiz`,
-`src/features/lessons/kit/quiz.ts:218`), each with its own prefix and keys.
+`src/features/lessons/kit/quiz.ts:228`), each with its own prefix and keys.
 
 - **Recall**: Lesson 6's questions 3 and 4 (FACTS 7), imported from Lesson 6's page and filtered by
   id, `l06-q3` and `l06-q4`, as Lesson 10's page filters its two
@@ -408,7 +408,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
   `fyp-l23-recall-seed` and `fyp-l23-recall-v1`, no `lesson`, so it marks nothing done. Its step
   links read "Try Lesson 6, Step 2 again" and "Try Lesson 6, Step 4 again" and open
   `/learn/06#step-2` and `/learn/06#step-4` in a new tab, through `away: { href: recallStepHref }`
-  (`src/features/lessons/kit/quiz.ts:142`, `src/features/lessons/kit/quiz.ts:191`). The first
+  (`src/features/lessons/kit/quiz.ts:152`, `src/features/lessons/kit/quiz.ts:201`). The first
   question, `l06-q3`, keeps Lesson 6's own slot and Play, handled by Lesson 6's `bindQuizPlays` on
   this quiz's host (`src/features/lessons/lesson-06/quiz-play.ts:18`), which plays Lesson 6's pair
   and already claims the page's one sound (FACTS 68); the second, `l06-q4`, has no play.
@@ -416,7 +416,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
   `fyp-l23-quiz-v1`, and `lesson: 23`, so answering all four marks Lesson 23 done. Three answers
   each, shuffled per question from the stored seed, one-line feedback for every answer, and a check
   icon and ink, not gold, on the right one. The kit prints "Right." or "Not quite." before each line
-  (`src/features/lessons/kit/quiz.ts:315`). Question 1's "Try Step 2 again", question 2's "Try Step
+  (`src/features/lessons/kit/quiz.ts:335`). Question 1's "Try Step 2 again", question 2's "Try Step
   3 again", question 3's "Try Step 1 again" and question 4's "Try Step 4 again" go to that step on
   this page. Question 4's slot holds its play, "Play", which plays B3 and F4 together for 1.5 s, for
   everyone, the same on every visit (FACTS 73, 78), handled by one listener on the quiz's host in
