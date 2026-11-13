@@ -9,10 +9,10 @@
 // learner's staff; the root's distance to the seventh in the readout; V7's
 // rooms drawn as V until the choice; Step 3's diagonal; Step 4's chips and
 // Turn over held until its own choice, each press moving the lowest note
-// up an octave, climbing on the staff, and the press after the last
-// inversion bringing back the first pitches; the positions, and a turned
-// chord's name, said only after Step 4's reveal; and free play's controls
-// held under their lines.
+// up an octave, climbing on the staff, the bass mark moving from the
+// corner it leaves, and the press after the last inversion bringing back
+// the first pitches; the positions, and a turned chord's name, said only
+// after Step 4's reveal; and free play's controls held under their lines.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { signName } from '@/features/lessons/kit/notes'
@@ -262,6 +262,31 @@ describe("the steps' toy, Step 4", () => {
     // Assert
     expect(before).toBe('V')
     expect(words(chip)).toBe('V7')
+  })
+
+  it('moves the bass mark from the corner it leaves to the new bass’s as Turn over plays (WEB-SPEC, Look)', async () => {
+    // Arrange
+    const toy = steps()
+    toy.setState(RING_STATES[4])
+    toy.unlock()
+    toy.unlock4()
+    const turn = button('#toyRing [data-turn]')
+
+    // Act: C to E, then, once heard, E to G
+    turn.click()
+    const first = toy.view().bass
+    vi.advanceTimersByTime(1)
+    const sounding = toy.view().bass
+    last().end(true)
+    await settle()
+    turn.click()
+    const second = toy.view().bass
+
+    // Assert: each from the corner it left, as the chord starts too; the
+    // view's clock moves it there in 0.3 s (ring-view.test.ts)
+    expect(first).toMatchObject({ at: 4, from: 0 })
+    expect(sounding).toMatchObject({ at: 4, from: 0 })
+    expect(second).toMatchObject({ at: 7, from: 4 })
   })
 
   it('says a turned chord’s letters, not its name, until Step 4’s reveal, in its live line and the figure’s name (FACTS 1b, 48)', async () => {

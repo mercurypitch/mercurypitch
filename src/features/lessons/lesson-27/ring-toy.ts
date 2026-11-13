@@ -101,6 +101,8 @@ export interface RingToy {
   /** Plays `id`; true when heard to its end with nothing cutting it short. */
   play(id: PlayId): Promise<boolean>
   stop(): void
+  /** What the ring shows now, as its next frame draws it. */
+  view(): RingView
 }
 
 export function mountRingToy(
@@ -467,14 +469,16 @@ export function mountRingToy(
   function turnOver(): Promise<boolean> {
     const all = positionsIn(CHORDS[litId()], clef)
     const before = all[position % all.length]
+    // the corner the mark shows: a sounding chord's, or the lit chord's
+    const was = (showing?.chord === undefined ? before : showing.notes)[0]
     position = (position + 1) % all.length
     const climb = position === 0 ? undefined : climbOf(before)
-    bassFrom = {
-      pc: pcOf(midiOf(before[0])),
-      since: performance.now(),
-    }
+    const heard = soundLit(climb)
+    // after the play has begun, which lands every move where it stands:
+    // the mark leaves that corner for the new bass's, in 0.3 s
+    bassFrom = { pc: pcOf(midiOf(was)), since: performance.now() }
     changed()
-    return soundLit(climb)
+    return heard
   }
 
   for (const b of chipBtns) {
@@ -554,5 +558,6 @@ export function mountRingToy(
     },
     play,
     stop: halt,
+    view,
   }
 }
