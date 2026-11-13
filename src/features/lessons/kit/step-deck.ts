@@ -124,10 +124,12 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
 
   /**
    * The page scroll that centres step `n` under the masthead, as
-   * `scrollIntoView({ block: 'center' })` would, but never short of the
-   * scroll at which the stage sticks: centring a step near the top of the
-   * column left the stage lower down, its foot below the fold. The stage's
-   * place in the flow is the top of its grid row.
+   * `scrollIntoView({ block: 'center' })` would, but never past the step's
+   * own head, where centring a step taller than the screen would leave its
+   * kicker and heading under the masthead, and never short of the scroll at
+   * which the stage sticks: centring a step near the top of the column left
+   * the stage lower down, its foot below the fold. The stage's place in the
+   * flow is the top of its grid row.
    */
   function stepScroll(n: number): number {
     const r = steps[n - 1].getBoundingClientRect()
@@ -136,10 +138,11 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
         window.getComputedStyle(document.documentElement).scrollPaddingTop,
       ) || 0
     const centre = r.top + r.height / 2 - (pad + window.innerHeight) / 2
+    const head = r.top - pad
     const flowTop = stage.parentElement?.getBoundingClientRect().top ?? 0
     const sticks =
       flowTop - (parseFloat(window.getComputedStyle(stage).top) || 0)
-    return window.scrollY + Math.max(centre, sticks)
+    return window.scrollY + Math.max(Math.min(centre, head), sticks)
   }
 
   function show(n: number, o: { scroll?: boolean } = {}): void {
