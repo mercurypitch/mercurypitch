@@ -24,12 +24,12 @@
 import { TAU } from '@/features/lessons/kit/dom'
 import { MAJOR_SOLFEGE } from '@/features/lessons/kit/names-modes'
 import { COLOR, rgba } from '@/features/lessons/kit/notes'
+import type { Point, Ring } from '@/features/lessons/kit/ring-rooms-draw'
+import { HALO, ringOf } from '@/features/lessons/kit/ring-rooms-draw'
 import type { SpiralFrame } from '@/features/lessons/kit/spiral'
 import { pulseOf } from '@/features/lessons/kit/spiral-keys'
 import type { KeyName } from './music'
 import { KEY } from './music'
-import type { Point, Ring } from './rooms-draw'
-import { ringOf } from './rooms-draw'
 
 /** A syllable beside one of the key's scale notes: its pitch class, C = 0, and its syllable. */
 export interface SyllableMark {
@@ -58,8 +58,7 @@ export interface RingMarks {
 /** The roots' line while its play runs, and once it has ended. */
 const LINE_FULL = 0.8
 const LINE_FAINT = 0.3
-/** How far past a bead's halo a syllable starts, px; the halo is the painter's, 1.6 beads. */
-const HALO = 1.6
+/** How far past a bead's halo a syllable starts, px; the halo is the ring's, `HALO` beads (kit/ring-rooms-draw.ts). */
 const GAP = 4
 
 /** The key's seven scale notes and their syllables, do on its tonic (FACTS 8). */
