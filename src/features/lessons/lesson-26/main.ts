@@ -47,7 +47,9 @@ import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
+import { initQuizzes } from './recall'
 import { initSteps } from './steps'
+import { initWords } from './words'
 import { initWrap } from './wrap'
 
 // Season 2, before anything draws
@@ -67,6 +69,15 @@ const deck = createStepDeck({
 const wrap = initWrap()
 const steps = initSteps(deck)
 deck.start()
+
+// the recall from Lessons 12 and 24 and the quick check, each on the kit's
+// quiz: question 2's answers and question 4's Play wait for the cold
+// open's choice
+const quizzes = initQuizzes(deck)
+
+// three words, each a small figure of beads that draws its play as it
+// sounds
+initWords()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(26)
@@ -96,6 +107,7 @@ initColdOpen(deck, {
   onChoice: () => {
     steps.unlock()
     wrap.free.unlock()
+    quizzes.unlock()
   },
   onReveal: () => steps.reveal(),
 })

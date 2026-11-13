@@ -1,0 +1,128 @@
+// ============================================================
+// Lesson 26 wrap tests — free play and the practice card
+// ============================================================
+//
+// FACTS 40 and 63 to 66 and the WEB-SPEC's Toys 2 (free play): the steps'
+// toy again, on plain "Twinkle" with every control and its state switch
+// held under the lock line until the cold open's choice; the switch
+// drawing each step's state; the card off screen for 600 ms stopping what
+// it plays; and the practice card's rest line after an ending that rests
+// the voice.
+
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { scrollOutOfView } from '@/features/lessons/kit/browser-doubles.test-fixtures'
+import { VisitEnding } from '@/features/lessons/kit/comfort'
+import { NowPlaying } from '@/features/lessons/kit/now-playing'
+import type * as RunModule from '@/features/lessons/kit/run'
+import { resetRuns, runs, } from '@/features/lessons/kit/run-recorder.test-fixtures'
+import { el, loadPage, settle, soundOn } from './page-dom.test-fixtures'
+import { PLAIN_SAID } from './part-shapes'
+import { initWrap } from './wrap'
+
+vi.mock('@/features/lessons/kit/run', async (actual) => ({
+  ...(await actual<typeof RunModule>()),
+  ...(await import('@/features/lessons/kit/run-recorder.test-fixtures'))
+    .recordedRuns,
+}))
+
+beforeEach(() => {
+  vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'performance'] })
+  loadPage()
+  soundOn()
+  resetRuns()
+})
+
+afterEach(() => {
+  // a newer sound stops what the test started, before its timers are real again
+  NowPlaying.claim(() => undefined)
+  vi.useRealTimers()
+  vi.restoreAllMocks()
+  VisitEnding.set('practise')
+  document.body.textContent = ''
+})
+
+const free = (sel: string): HTMLElement[] =>
+  Array.from(document.querySelectorAll<HTMLElement>(`#freePlay ${sel}`))
+const usable = (sel: string): boolean[] =>
+  free(sel).map((b) => !(b as HTMLButtonElement).disabled)
+const canvasSaid = (): string | null =>
+  el('#freePlay [data-tune-canvas]').getAttribute('aria-label')
+
+describe('free play', () => {
+  it('draws plain "Twinkle" and holds its switch and every control under the lock line until the cold open\'s choice (FACTS 40)', () => {
+    // Arrange
+    const wrap = initWrap()
+    const before = {
+      states: usable('[data-state]'),
+      plays: usable('[data-toy-play]'),
+      lock: free('[data-lock-line]').map((l) => l.hidden),
+      said: canvasSaid(),
+    }
+
+    // Act
+    wrap.free.unlock()
+
+    // Assert
+    expect(before).toEqual({
+      states: [false, false, false, false],
+      plays: free('[data-toy-play]').map(() => false),
+      lock: [false],
+      said: PLAIN_SAID,
+    })
+    expect(usable('[data-state]')).toEqual([true, true, true, true])
+    expect(usable('[data-toy-play]').every(Boolean)).toBe(true)
+    expect(free('[data-lock-line]').map((l) => l.hidden)).toEqual([true])
+    expect(canvasSaid()).not.toBe(PLAIN_SAID)
+  })
+
+  it("draws each step's state from its switch, the pressed one marked", () => {
+    // Arrange
+    const wrap = initWrap()
+    wrap.free.unlock()
+
+    // Act
+    el<HTMLButtonElement>('#freePlay [data-state="4"]').click()
+
+    // Assert
+    expect(wrap.free.state).toBe(4)
+    expect(
+      free('[data-state]').map((b) => b.getAttribute('aria-pressed')),
+    ).toEqual(['false', 'false', 'false', 'true'])
+    expect(canvasSaid()).toContain('C major chord')
+  })
+
+  it('stops what it plays once the card has been off screen for 600 ms', async () => {
+    // Arrange
+    const wrap = initWrap()
+    wrap.free.unlock()
+    free('[data-toy-play]')[0].click()
+    await settle()
+
+    // Act
+    scrollOutOfView(el('#freePlay'))
+    vi.advanceTimersByTime(600)
+
+    // Assert
+    expect(runs[runs.length - 1].stopped).toBe(true)
+  })
+})
+
+describe('the practice card', () => {
+  it('shows the rest line in its place after an ending that rests the voice, and the card again after one that does not', () => {
+    // Arrange
+    initWrap()
+    const rest = el('#practiseCard [data-ending="rest"]')
+    const practise = el('#practiseCard [data-ending="practise"]')
+    const first = [rest.hidden, practise.hidden]
+
+    // Act
+    VisitEnding.set('rest')
+    const rested = [rest.hidden, practise.hidden]
+    VisitEnding.set('practise')
+
+    // Assert
+    expect(first).toEqual([true, false])
+    expect(rested).toEqual([false, true])
+    expect([rest.hidden, practise.hidden]).toEqual([true, false])
+  })
+})
