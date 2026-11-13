@@ -30,11 +30,13 @@
 // line, and every V7 room is drawn with three corners, growing its fourth
 // as the choice comes in (FACTS 39). Step 4's chips and Turn over, and free
 // play's Turn over, wait for Step 4's choice (`unlock4`), and the bass mark
-// with them; the positions' names, and a turned chord's name in the
-// centre, wait for Step 4's reveal (`reveal4`), so its plays sound their
-// evidence without naming its answer (FACTS 1b, 48). The clef follows the
-// learner's voice and the Clef switch, the whole toy an octave apart, as
-// Lesson 25's does. Every sound is the page's one (`NowPlaying`).
+// with them; the positions' names, and a turned chord's name, in the
+// centre, the figure's name and its live line alike, wait for Step 4's
+// reveal (`reveal4`), its letters standing in for it until then, so its
+// plays sound their evidence without naming its answer (FACTS 1b, 48). The
+// clef follows the learner's voice and the Clef switch, the whole toy an
+// octave apart, as Lesson 25's does. Every sound is the page's one
+// (`NowPlaying`).
 
 import { q, qa } from '@/features/lessons/kit/dom'
 import { wake } from '@/features/lessons/kit/frame-loop'
@@ -261,10 +263,14 @@ export function mountRingToy(
   /** The figure's name in words: the lit room, the others faint, the diagonal and the bass. */
   function nameFigure(): void {
     const id = litId()
-    const lit = figureSaid(CHORDS[id], litNotes(), {
-      position: bassShown() && named ? position : null,
-      seventh: state.chips === 'seventh' || state.chips === 'free',
-    })
+    // a turned chord's name waits for Step 4's reveal, as the centre's does
+    const lit =
+      position > 0 && !named
+        ? lettersSaid(litNotes())
+        : figureSaid(CHORDS[id], litNotes(), {
+            position: bassShown() && named ? position : null,
+            seventh: state.chips === 'seventh' || state.chips === 'free',
+          })
     const faint = restRooms()
       .filter((r) => !r.lit)
       .map((r) => figureSaid(r.chord, r.chord.notes))
@@ -360,8 +366,9 @@ export function mountRingToy(
         bassFrom = { pc: pcOf(midiOf(was)), since: now }
     }
     showing = f
+    // two notes alone, or a turned chord before Step 4's reveal: its letters
     said.textContent =
-      f.chord === undefined
+      f.chord === undefined || ((f.position ?? 0) > 0 && !named)
         ? lettersSaid(f.notes)
         : figureSaid(f.chord, f.notes, {
             position: bassShown() && named ? (f.position ?? 0) : null,
