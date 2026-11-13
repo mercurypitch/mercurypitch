@@ -684,9 +684,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // (kit/season-2.ts) as a Season 2 page must; with the steps' toy and free
   // play on the kit's tune line, dressed, the cold open's on the kit's
   // predict, the three words' figures, and the recall and the quick check on
-  // the kit's quiz with Lesson 12's and Lesson 24's questions: 162,011 bytes
-  // in build:e2e, the smallest whole KB above, to rise as each part joins.
-  'learn/26.html': 159,
+  // the kit's quiz with Lesson 12's and Lesson 24's questions; Sing it in a
+  // chunk of its own after first paint, whose import brings the preload
+  // helper and the chunk's list of what it needs: 163,040 bytes in
+  // build:e2e, the smallest whole KB above, to rise as each part joins.
+  'learn/26.html': 160,
   // Lesson 27, "Seventh chords and inversions", a Season 2 page and a draft,
   // built in every mode as Lesson 3 is: its own module on the kit, carrying
   // Season 2's map (kit/season-2.ts) as a Season 2 page must; with the steps'

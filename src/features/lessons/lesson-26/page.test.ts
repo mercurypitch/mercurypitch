@@ -518,6 +518,46 @@ describe("Lesson 26's page", () => {
       expect(m).not.toMatch(/DRAFT_LESSONS|DRAFTS_SHOWN|import\.meta\.env/)
   })
 
+  it('loads Sing it after first paint, and the listener, the take and the quiet check only from its Start', () => {
+    // Arrange: the page's modules main.ts loads up front, by their static imports
+    const source = (f: string): string =>
+      readFileSync(resolve(DIR, `${f}.ts`), 'utf8')
+    const upFront = new Set<string>()
+    const visit = (f: string): void => {
+      if (upFront.has(f)) return
+      upFront.add(f)
+      for (const [, local] of source(f).matchAll(
+        /^import (?!type )[^\n]*? from '\.\/([\w-]+)'$/gm,
+      ))
+        visit(local)
+    }
+    visit('main')
+    const sing = new Set<string>()
+    const visitSing = (f: string): void => {
+      if (sing.has(f)) return
+      sing.add(f)
+      for (const [, local] of source(f).matchAll(
+        /^import (?!type )[^\n]*? from '\.\/([\w-]+)'$/gm,
+      ))
+        visitSing(local)
+    }
+    visitSing('sing')
+
+    // Assert: WEB-SPEC, Toys 5, state 5
+    expect(upFront.has('sing')).toBe(false)
+    expect(source('main')).toMatch(/import\('\.\/sing'\)/)
+    for (const f of [...upFront, ...sing])
+      expect(source(f), f).not.toMatch(
+        /^import (?!type )[^\n]*? from '@\/features\/lessons\/kit\/(listen|take-in-time|read-in-time|quiet-check)'$/m,
+      )
+    expect(source('sing')).toMatch(
+      /import\('@\/features\/lessons\/kit\/take-in-time'\)/,
+    )
+    expect(source('sing')).toMatch(
+      /import\('@\/features\/lessons\/kit\/quiet-check'\)/,
+    )
+  })
+
   it('carries Season 2 before anything draws', () => {
     // Arrange
     const main = readFileSync(resolve(DIR, 'main.ts'), 'utf8')

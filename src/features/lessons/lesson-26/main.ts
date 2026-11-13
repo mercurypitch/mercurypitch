@@ -83,6 +83,16 @@ initWords()
 createNextCard(26)
 createExplorer({ current: 26 })
 
+// Sing it: a chunk of its own, after first paint, since its figure brings
+// the band chart and its run the beat clock (sing.ts); the take, its reader
+// and the quiet check load with the microphone at Start
+void import('./sing').then(
+  ({ initSing }) => {
+    initSing()
+  },
+  () => undefined,
+)
+
 // the last screen's way back to the plan, for someone who answered its
 // questions: a chunk of its own, after first paint (one that cannot load
 // leaves the link hidden)
