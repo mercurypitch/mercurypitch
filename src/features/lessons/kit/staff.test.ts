@@ -1022,3 +1022,60 @@ describe('reading along a written line (Lesson 16)', () => {
     )
   })
 })
+
+describe('room and levels (Lesson 27)', () => {
+  it('keeps room for the places a state names, so G3 under the treble staff stays in the figure', () => {
+    // Arrange: G3 is place -5, under the second ledger line below
+    const G3: Spelled = { letter: 'G', alter: 0, octave: 3 }
+    const tight = mount()
+    void tight.play({ show: 'run', notes: [{ t: 0, dur: 1, note: G3 }] })
+    last().note(0)
+    const low = (): number =>
+      Number(
+        /translate\([-\d.]+ ([-\d.]+)\)/.exec(
+          root().querySelector('.st-head')?.getAttribute('transform') ?? '',
+        )?.[1],
+      )
+    const height = (): number =>
+      Number(
+        root().querySelector('svg')?.getAttribute('viewBox')?.split(' ')[3],
+      )
+    const before = low() / height()
+
+    // Act: the same note in a state that keeps room for it
+    document.body.innerHTML = MARKUP
+    const roomy = mount({ ...PLACE, room: [-5, 12] })
+    void roomy.play({ show: 'run', notes: [{ t: 0, dur: 1, note: G3 }] })
+    last().note(0)
+
+    // Assert: drawn higher in its figure, inside it
+    expect(low() / height()).toBeLessThan(before)
+    expect(low()).toBeLessThan(height())
+  })
+
+  it("plays each note at its own level where a play's chords differ in size", () => {
+    // Arrange
+    const toy = mount()
+    const C4: Spelled = { letter: 'C', alter: 0, octave: 4 }
+    const B4: Spelled = { letter: 'B', alter: 0, octave: 4 }
+
+    // Act: a three-note chord, then a four-note one
+    void toy.play({
+      show: 'run',
+      notes: [
+        { t: 0, dur: 1.2, note: C4, col: 0, gain: 0.075 },
+        { t: 0, dur: 1.2, note: E4, col: 0, gain: 0.075 },
+        { t: 0, dur: 1.2, note: G4, col: 0, gain: 0.075 },
+        { t: 1.2, dur: 1.2, note: C4, col: 1, gain: 0.056 },
+        { t: 1.2, dur: 1.2, note: E4, col: 1, gain: 0.056 },
+        { t: 1.2, dur: 1.2, note: G4, col: 1, gain: 0.056 },
+        { t: 1.2, dur: 1.2, note: B4, col: 1, gain: 0.056 },
+      ],
+    })
+
+    // Assert
+    expect(last().notes.map((n) => n.gain)).toEqual([
+      0.075, 0.075, 0.075, 0.056, 0.056, 0.056, 0.056,
+    ])
+  })
+})

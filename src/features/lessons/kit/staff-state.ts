@@ -35,6 +35,8 @@ export interface StaffState {
   }[]
   /** The places a tap or a step reaches; the toy's range by default (staff-places.ts `placeRange`). */
   readonly reach?: readonly [number, number]
+  /** The places the figure keeps room for, its ledger lines with them; the toy's range by default: Lesson 27's G3 under the treble staff and G4 over the bass. */
+  readonly room?: readonly [number, number]
   /** Said when a step or a tap meets the reach's end. */
   readonly endLine?: string
   /** No pitch line beside it, whatever the switch says. */
@@ -80,6 +82,8 @@ export interface PlayNote {
   readonly col?: number
   /** The note it climbs from as it shows, up the staff to its own place: a chord's bottom note turned over (Lesson 27). */
   readonly from?: Spelled
+  /** Its own level, for a play whose chords differ in size: three notes at 0.075 a voice, four at 0.056 (Lesson 27); the play's otherwise. */
+  readonly gain?: number
 }
 
 /** A page's play on the toy. */

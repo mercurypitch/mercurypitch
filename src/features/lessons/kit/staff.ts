@@ -227,7 +227,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
 
   function scene(): Scene {
     const kind = kindOf()
-    const room = placeRange(kind)
+    const room = state.room ?? placeRange(kind)
     // a score note with a sign the signature does not give it asks for room
     const signs =
       state.score?.some(
@@ -377,6 +377,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
       midi: midiOf(n.note),
       dur: n.dur,
       kind: n.kind ?? p.kind ?? 'soft',
+      gain: n.gain,
     }))
     // the score's note each sounds, or none: the next of its pitch after
     // the last found, so a line that comes back down lights its own later
