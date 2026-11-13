@@ -179,13 +179,13 @@ const KEY_MIN = 44
 
 /**
  * The staff spaces a score asks across (staff-draw.ts `across`): the clef
- * and the margins, and two and a quarter for each note, so its noteheads,
- * their signs and the house under do never touch on a narrow screen; on a
- * narrow figure the staff draws smaller instead. Never fewer than the
- * drawing's own 9.
+ * and the margins, and two and a quarter for each note, or two and seven
+ * tenths where a note may carry a sign, so noteheads, signs and the house
+ * under do never touch on a narrow screen; on a narrow figure the staff
+ * draws smaller instead. Never fewer than the drawing's own 9.
  */
-export const scoreAcross = (notes: number): number =>
-  Math.max(9, 5 + 2.25 * notes)
+export const scoreAcross = (notes: number, signs = false): number =>
+  Math.max(9, 5 + (signs ? 2.7 : 2.25) * notes)
 
 // ---------------------------------------------------------------- the toy
 
@@ -248,6 +248,11 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
   function scene(): Scene {
     const kind = kindOf()
     const room = placeRange(kind)
+    // a score note with a sign the signature does not give it asks for room
+    const signs =
+      state.score?.some(
+        (n) => n.note.alter !== keyed({ ...n.note, alter: 0 }).alter,
+      ) ?? false
     const marks: Mark[] =
       state.score !== undefined
         ? state.score.map((n, i) => ({
@@ -279,7 +284,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
       across:
         state.score === undefined
           ? state.across
-          : scoreAcross(state.score.length),
+          : scoreAcross(state.score.length, signs),
       letters: [...letters],
       gold,
       lanes: PitchLine.on && state.noLanes !== true ? { lo, hi } : null,
