@@ -76,6 +76,8 @@ export interface PlayNote {
   readonly home?: boolean
   /** Lit this long before it sounds, s, silent until then: Hear it inside (Lesson 16's Step 3). */
   readonly ahead?: number
+  /** A run's column for it, its place in the play unless given: a chord's notes share one (Lesson 25). */
+  readonly col?: number
 }
 
 /** A page's play on the toy. */

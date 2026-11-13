@@ -10,6 +10,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
+import { Motion } from './motion-switch'
 import type { Spelled } from './notes'
 import { createSoundOwner } from './now-playing'
 import type * as RunModule from './run'
@@ -308,6 +309,42 @@ describe('a play', () => {
     expect(runs[0].stopped).toBe(true)
     expect(await heard).toBe(false)
     expect(heads().every((h) => h === 'st-head')).toBe(true)
+  })
+
+  it("writes a chord's notes in one column, two chords side by side: Lesson 25's chord on so, then home", () => {
+    // Arrange: E, G sharp and B, then A, C and E, in the treble clef
+    const chord = (t: number, col: number, notes: readonly Spelled[]) =>
+      notes.map((note) => ({ t, dur: 1.2, note, col }))
+    const toy = mount()
+
+    // Act
+    void toy.play({
+      show: 'run',
+      notes: [
+        ...chord(0, 0, [
+          E4,
+          { letter: 'G', alter: 1, octave: 4 },
+          { letter: 'B', alter: 0, octave: 4 },
+        ]),
+        ...chord(1.2, 1, [
+          { letter: 'A', alter: 0, octave: 4 },
+          { letter: 'C', alter: 0, octave: 5 },
+          { letter: 'E', alter: 0, octave: 5 },
+        ]),
+      ],
+    })
+    for (let i = 0; i < 6; i++) last().note(i)
+    const xs = Array.from(root().querySelectorAll('.st-head'), (h) =>
+      Number(
+        /translate\(([-\d.]+)/.exec(h.getAttribute('transform') ?? '')?.[1],
+      ),
+    )
+
+    // Assert: three heads in each of two columns
+    expect(xs).toHaveLength(6)
+    expect(new Set(xs.slice(0, 3)).size).toBe(1)
+    expect(new Set(xs.slice(3)).size).toBe(1)
+    expect(xs[3]).toBeGreaterThan(xs[0])
   })
 
   it("writes a silent play's notes as they come, sounding nothing and claiming no owner (Lesson 20's run toy)", async () => {
@@ -619,6 +656,47 @@ describe('a key signature', () => {
     // Assert
     expect(fresh).toBe(1)
     expect(root().querySelectorAll('.st-keysign.is-fresh').length).toBe(0)
+  })
+
+  it("travels a joining sign from the note that carried it in the time a page gives: Lesson 25's flats take 0.6 s, Lesson 21's 0.45", () => {
+    // Arrange: motion on, a figure that animates, and C minor's run
+    // written, its E flat in column 2 and its B flat in column 6
+    vi.spyOn(Motion, 'paused', 'get').mockReturnValue(false)
+    const moves: number[] = []
+    Object.defineProperty(SVGElement.prototype, 'animate', {
+      configurable: true,
+      value: (_frames: Keyframe[], o: KeyframeAnimationOptions) => {
+        moves.push(Number(o.duration))
+        return {} as Animation
+      },
+    })
+    const letters = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'] as const
+    const flat = [2, 5, 6]
+    const notes = letters.map((letter, i) => ({
+      t: i * 0.4,
+      dur: 0.35,
+      note: {
+        letter,
+        alter: flat.includes(i) ? -1 : 0,
+        octave: i === 7 ? 5 : 4,
+      } as Spelled,
+    }))
+    const toy = mount({ ...PLACE, keyRoom: 3 })
+    void toy.play({ show: 'run', notes })
+    notes.forEach((_n, i) => last().note(i))
+    last().end(true)
+
+    try {
+      // Act: B flat into the signature, then E flat
+      toy.setKey({ sign: 'flat', count: 1 }, { from: 6, sec: 0.6 })
+      toy.setKey({ sign: 'flat', count: 2 }, { from: 2 })
+
+      // Assert
+      expect(moves).toEqual([600, 450])
+      expect(said()).toBe('Key signature: two flats, B flat and E flat')
+    } finally {
+      Reflect.deleteProperty(SVGElement.prototype, 'animate')
+    }
   })
 
   it('drops the signature, saying so, and says nothing when it stays the same', () => {
