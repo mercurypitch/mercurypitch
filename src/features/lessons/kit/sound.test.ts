@@ -12,6 +12,7 @@
 // play that runs silently will be seen, one that needs sound can't play.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { partContour } from './part-contour'
 import type * as SoundKit from './sound'
 import type { FakeGain } from './sound-doubles.test-fixtures'
 import { AUDIBLE, FakeContext, FakeNode, valueAt, } from './sound-doubles.test-fixtures'
@@ -633,6 +634,45 @@ describe("a voice's vibrato (Lesson 22 WEB-SPEC, What the kit and the app still 
     expect(kit.VIBRATO_GLIDE).toBeLessThanOrEqual(0.05)
     expect(ctx.oscillators).toHaveLength(made)
     expect(ctx.oscillators.map((o) => o.stops)).toEqual(stops)
+  })
+})
+
+describe('a part under a take (Lesson 26 WEB-SPEC, What the kit and the app still need, item 6)', () => {
+  it('keeps a part booked to start later sounding through the hush, each note on its onset on the audio clock, and nothing else', async () => {
+    // Arrange: the part built before the take opens, booked 0.5 s ahead, on bar 1
+    const { kit, ctx } = await soundOn()
+    ctx.currentTime = 3
+    const part = kit.contourVoice(
+      partContour([
+        { midi: 55, sec: 1 },
+        { midi: 57, sec: 1 },
+        { midi: 59, sec: 2 },
+      ]),
+      { kind: 'merc', at: 0.5 },
+    )
+
+    // Act: the take opens
+    const hushed = kit.Sound.hush(true, part)
+    const play = kit.Sound.voice(330)
+
+    // Assert: G3 from 3.5 s, A3 reached on 4.5 s and B3 on 5.5 s, held to 7.5 s
+    expect([hushed, part?.alive, play]).toEqual([true, true, null])
+    expect(
+      ctx.oscillators[0].frequency.events.map(([m, f, t]) => [
+        m,
+        Number(f.toFixed(2)),
+        Number(t.toFixed(3)),
+      ]),
+    ).toEqual([
+      ['setValueAtTime', 196, 3.5],
+      ['exponentialRampToValueAtTime', 196, 4.45],
+      ['exponentialRampToValueAtTime', 220, 4.5],
+      ['exponentialRampToValueAtTime', 220, 5.45],
+      ['exponentialRampToValueAtTime', 246.94, 5.5],
+      ['exponentialRampToValueAtTime', 246.94, 7.5],
+    ])
+    // the hush stops nothing of it: its only stop is its own, after its last note
+    expect(Math.min(...ctx.oscillators[0].stops)).toBeGreaterThanOrEqual(7.5)
   })
 })
 

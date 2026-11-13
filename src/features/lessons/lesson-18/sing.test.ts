@@ -167,7 +167,13 @@ async function endTake(lines: readonly string[]): Promise<void> {
   runs.at(-1)?.end(true)
   await settle()
   const voiced = lines.length > 0
-  ends.at(-1)?.({ kind: 'read', voiced, lines, pitch: voiced ? PITCH : null })
+  ends.at(-1)?.({
+    kind: 'read',
+    voiced,
+    lines,
+    pitch: voiced ? PITCH : null,
+    inBand: 0,
+  })
   await settle()
   vi.advanceTimersByTime(AFTER_SEC * 1000)
   await settle()
@@ -347,6 +353,7 @@ describe('the start and the take', () => {
       voiced: true,
       lines: ['Do · In the band: 20 cents above the written note.'],
       pitch: PITCH,
+      inBand: 1,
     })
     await settle()
     const soon = [drawn.length, shown('[data-panel="feel"]')]

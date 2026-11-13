@@ -199,6 +199,29 @@ describe('readNotes and readingLines', () => {
     expect(lines[1]).toBe("Re · We didn't hear a steady note there.")
   })
 
+  it('measures a gap from the note it is given, and names the other part’s note a note was sung on (Lesson 26)', () => {
+    // Act
+    const lines = readingLines(
+      ['Ti', 'Do', 'La'],
+      [
+        { d: -20, octaveLine: null },
+        { d: null, octaveLine: null, other: 2 },
+        { d: null, octaveLine: null },
+      ],
+      {
+        whose: "your part's note",
+        other: { whose: "Merc's", labels: ['do', 're', 'mi'] },
+      },
+    )
+
+    // Assert: Lesson 26's LESSON.md, Sing it
+    expect(lines).toEqual([
+      "Ti · In the band: 20 cents below your part's note.",
+      "Do · That was Merc's note: mi.",
+      "La · We didn't hear a steady note there.",
+    ])
+  })
+
   it('reads a take with no voice as none heard', () => {
     // Act
     const lines = readingLines(LABELS, readNotes(readAlong(PHRASE), PHRASE, []))
