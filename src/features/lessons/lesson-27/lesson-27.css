@@ -201,7 +201,8 @@
   min-width: 52px;
   font: 600 var(--fs-16) / 1 var(--f-mono);
 }
-.ring-toy .ring-chip.is-on {
+/* the lit chord's chip, while its chord is the ring's lit room */
+.ring-toy .ring-chip.is-lit {
   border-color: var(--chrome);
   background: color-mix(in srgb, var(--chrome) 14%, transparent);
 }
