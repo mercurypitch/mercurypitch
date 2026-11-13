@@ -303,12 +303,12 @@ until the cold open's reveal, and Step 4's "Figures", held until Step 4's reveal
 
 ### 7. Recall and quick check
 
-The kit's quiz (`src/features/lessons/kit/quiz.ts:218`), "Right." or "Not quite." before each
-feedback line (`src/features/lessons/kit/quiz.ts:315`), answers shuffled. The recall imports `l12-q3`
+The kit's quiz (`src/features/lessons/kit/quiz.ts:228`), "Right." or "Not quite." before each
+feedback line (`src/features/lessons/kit/quiz.ts:335`), answers shuffled. The recall imports `l12-q3`
 (`src/features/lessons/lesson-12/quiz-questions.ts:89-107`) and Lesson 23's first question once
 Lesson 23's page registers it, its step links rewritten to the other lesson's page, opening in a new
-tab (`recallStepHref`, `src/features/lessons/kit/quiz.ts:142-143`; `linkAway`,
-`src/features/lessons/kit/quiz.ts:186-194`; FACTS 7). The quick check's four questions are
+tab (`recallStepHref`, `src/features/lessons/kit/quiz.ts:152-153`; `linkAway`,
+`src/features/lessons/kit/quiz.ts:196-204`; FACTS 7). The quick check's four questions are
 LESSON.md's (FACTS 75 to 78); question 4's Play sounds G3, B3, D4 and F4 for 1.5 s, for everyone.
 
 ### 8. Tease stills

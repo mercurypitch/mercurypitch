@@ -404,7 +404,7 @@ lead-in is its summary line's words.
 ### 7. Recall and quick check
 
 Two quizzes share this page through the kit's quiz (`createQuiz`,
-`src/features/lessons/kit/quiz.ts:218`), each with its own prefix and keys.
+`src/features/lessons/kit/quiz.ts:228`), each with its own prefix and keys.
 
 - **Recall**: Lesson 2's questions 2 and 3 (FACTS 7), imported from Lesson 2's page and filtered by
   id, `l02-q2` and `l02-q3`, as Lesson 4's page takes Lesson 2's questions 1 and 3
@@ -413,7 +413,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
   since Lesson 2 is a prerequisite. Prefix `recall-`, keys `fyp-l15-recall-seed` and
   `fyp-l15-recall-v1`; no `lesson`, so it marks nothing done. Its step links read "Try Lesson 2,
   Step 3 again" and "Try Lesson 2, Step 5 again" and open `/learn/02#step-3` and `/learn/02#step-5`
-  in a new tab, through `away: { href: recallStepHref }` (`quiz.ts:141-143`, `:186-216`); the step
+  in a new tab, through `away: { href: recallStepHref }` (`quiz.ts:151-153`, `:196-226`); the step
   deck opens a page at the step its address names (`src/features/lessons/kit/step-deck.ts:21-23`).
   Question 2's slot is Lesson 2's own, its play button and its "1st" and "2nd" chips
   (`QUIZ_PAIR_SLOT`), handled by `bindQuizPair` on this quiz's host
@@ -424,7 +424,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
   `fyp-l15-quiz-v1`, and `lesson: 15`, so answering all four marks Lesson 15 done. Three answers
   each, shuffled per question from the stored seed, one-line feedback for every answer, and a check
   icon and ink, not gold, on the right one. The kit prints "Right." or "Not quite." before each line
-  (`quiz.ts:315`). Question 2's slot holds its play, "Play the three notes", which plays E4, F4 and
+  (`quiz.ts:335`). Question 2's slot holds its play, "Play the three notes", which plays E4, F4 and
   G4 and lights them on a small treble staff in the slot (FACTS 65); it never shares a name with
   Step 2's plays. Question 1's wording stays as it is: Lesson 16 plans to ask it, word for word, as
   its recall (`lessons/16-sing-what-you-see/ARTICLE-PLAN.md:50`).

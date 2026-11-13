@@ -321,13 +321,13 @@ Two quizzes share this page through the kit's quiz, each with its own prefix and
 - **Recall**: Lesson 6's question object `l06-q2` and Lesson 15's `l15-q2`, imported, never copied,
   under their ids, with `away: { href: recallStepHref }`, so "Try Step 5 again" and "Try Step 2 again"
   read "Try Lesson 6, Step 5 again" and "Try Lesson 15, Step 2 again" and open that lesson's page at
-  the step in a new tab (`recallStepHref`, `src/features/lessons/kit/quiz.ts:141-143`; FACTS 7).
+  the step in a new tab (`recallStepHref`, `src/features/lessons/kit/quiz.ts:151-153`; FACTS 7).
   Lesson 15's question keeps its slot, "Play the three notes", E4, F4 and G4 on a small treble staff,
   which takes this page's sound owner.
 - **Quick check**: LESSON.md's four questions, ids `l21-q1` to `l21-q4`, keys `fyp-l21-seed` and
   `fyp-l21-quiz-v1`, and `lesson: 21`, so answering all four marks Lesson 21 done. Three answers
   each, shuffled per question from the stored seed, one-line feedback for every answer; the kit
-  prints "Right." or "Not quite." before each line (`quiz.ts:315`).
+  prints "Right." or "Not quite." before each line (`quiz.ts:335`).
 
 ### 9. Tease still
 
@@ -514,7 +514,7 @@ For the vocal coach), not the owner's.
   Step down as well as by tap (Toys 4).
 - **A tap on a bead past three sharps or flats**: nothing happens; it is not a button (Toys 3).
 - **Lessons 6 and 15 not live**: the recall links keep their words and do not link, as the kit's
-  quiz does for a lesson that is not live (`linkAway`, `src/features/lessons/kit/quiz.ts:186-216`);
+  quiz does for a lesson that is not live (`linkAway`, `src/features/lessons/kit/quiz.ts:196-226`);
   the page publishes only after both are live.
 - **Compose hidden**: in the app's simple mode, or set to guitar, Compose is not a tab, and the link
   lands on Home (Lesson 15 FACTS 46). **Compose on a later visit** opens on the last melody open, not

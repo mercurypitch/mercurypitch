@@ -607,10 +607,10 @@ without a playhead, and Merc and Tavi skip their reactions (REQ-GVC-083).
 ### 5. Recall and quick check
 
 The kit's quiz as it stands carries everything two quizzes on one page need (`kit/quiz.ts`): an id
-`prefix` for each quiz's elements (`:88-93`), question ids, from which a question's lesson is read
-(`:42-47`, `lessonOfQuestion` `:131-135`), an optional `lesson` (`:82-83`) and links that leave this
-page for a question from another lesson (`linkAway`, `:186-216`), which keep their words and drop
-the link where that lesson is not live (`:186-190`).
+`prefix` for each quiz's elements (`:96-101`), question ids, from which a question's lesson is read
+(`:42-47`, `lessonOfQuestion` `:141-145`), an optional `lesson` (`:90-91`) and links that leave this
+page for a question from another lesson (`linkAway`, `:196-226`), which keep their words and drop
+the link where that lesson is not live (`:196-200`).
 
 - **Recall**: Lesson 5's questions 2 and 4, word for word with their feedback (LESSON.md; 7), under
   their Lesson 5 ids, `l05-q2` and `l05-q4`, with the prefix `rc-`, as Lessons 3 and 5's recalls
@@ -622,15 +622,15 @@ the link where that lesson is not live (`:186-190`).
   again" and "Try Lesson 5, Step 5 again", links that open Lesson 5's page at that step,
   `/learn/05#step-1` and `/learn/05#step-5` (its step ids, `learn/05.html:1052`, `:1269`), in a new
   tab so the viewer keeps their place here, never `data-goto-step`, which would move this page's own
-  deck (`quiz.ts:186-216`); where Lesson 5 is not live, each keeps its words with no link
-  (`:206-209`; Edge cases). The address is the quiz's `away.href` (`quiz.ts:94-101`), the kit's
-  `recallStepHref` (`:141-143`) in place of the default `/learn/05#lesson`, and the kit's step deck
+  deck (`quiz.ts:196-226`); where Lesson 5 is not live, each keeps its words with no link
+  (`:216-219`; Edge cases). The address is the quiz's `away.href` (`quiz.ts:102-109`), the kit's
+  `recallStepHref` (`:151-153`) in place of the default `/learn/05#lesson`, and the kit's step deck
   opens at the step an address names (`kit/step-deck.ts:18-23`, `:308-316`).
 - **Quick check**: LESSON.md's four questions, ids `l14-q1` to `l14-q4`, keys `fyp-l14-seed` and
   `fyp-l14-quiz-v1` (`lesson-04/main.ts:91`), and `lesson: 14`, so answering all four marks Lesson
   14 done in the explorer. Three answers each, shuffled per question from the stored seed, one-line
   feedback for every answer, and a check icon and ink (not gold) on the right one. The kit prints
-  "Right." or "Not quite." before each line (`quiz.ts:315`), so no feedback line starts with
+  "Right." or "Not quite." before each line (`quiz.ts:335`), so no feedback line starts with
   "Right", "Yes" or "Correct". "Try Step 2 again", "Try Step 3 again" and "Try Step 4 again" use the
   kit's `data-goto-step`. LESSON.md's note on the shuffle is editorial and never printed. Answers
   stay local; #1193 sends each first answer in a visit, anonymously.
@@ -831,7 +831,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:151-377`,
    `:330-338`; `:605-608`, `:618-622`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:1013-1017`), so without them the Browser jobs fail before any spec
+   document with no ceiling (`:1015-1019`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
    quarter, the tables' rule (`:47-58`, `:466-476`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
@@ -889,7 +889,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     every other sound, a breath is a gap, as here.
 14. The four-words strip, built: promoted from Lesson 1's page (`lesson-01/words.ts`) into
     `kit/words-strip.ts` with Lesson 7's page. `recallStepHref`, built too: Lesson 8's page moved it
-    into the kit's quiz (`kit/quiz.ts:141-143`), beside `lessonPageHref` (`:137-139`), so Lessons 9
+    into the kit's quiz (`kit/quiz.ts:151-153`), beside `lessonPageHref` (`:147-149`), so Lessons 9
     and 14 take it from there.
 15. The hook and the tease: done in this package (1, 2).
 16. `src/e2e/helpers/tone-wav.ts`: Lesson 9's `writeStepsWav(steps, leadSilence)`, built (`:156`),
@@ -991,7 +991,7 @@ What the page does where nothing above says:
   `kit/page-state.ts:64-127`, called by `initMasthead`, `kit/page-chrome.ts:131`): each "After
   Lesson N" chip for such a lesson stays as a plain chip, and any other link keeps its words. The
   kit's quiz does the same for the recall's step links, which keep their words, "Try Lesson 5, Step
-  1 again", with no link (`kit/quiz.ts:186-216`). Step 4's "as in Lesson 12" names a lesson that may
+  1 again", with no link (`kit/quiz.ts:196-226`). Step 4's "as in Lesson 12" names a lesson that may
   not be live, and is not a link. End to end 14 holds it.
 - **The season's close after a rest ending**: after "Effortful", "Uncomfortable" or "Just listen
   today" it keeps "You've seen every note you sing." and "See the season map", and shows neither

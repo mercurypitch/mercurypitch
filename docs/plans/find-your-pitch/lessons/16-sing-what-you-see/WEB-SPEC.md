@@ -265,11 +265,11 @@ Two quizzes through the kit's quiz, each with its own prefix and keys.
   for word (FACTS 7). Shown to everyone. Prefix `recall-`, keys `fyp-l16-recall-seed` and
   `fyp-l16-recall-v1`; no `lesson`, so it marks nothing done. Step links read "Try Lesson 9, Step 3
   again" and "Try Lesson 15, Step 1 again" and open that page at the step in a new tab, or keep their
-  words with no link where the lesson is not live (`linkAway`, `src/features/lessons/kit/quiz.ts:186-212`).
+  words with no link where the lesson is not live (`linkAway`, `src/features/lessons/kit/quiz.ts:196-222`).
 - **Quick check**: LESSON.md's four questions, ids `l16-q1` to `l16-q4`, keys `fyp-l16-seed` and
   `fyp-l16-quiz-v1`, and `lesson: 16`, so answering all four marks Lesson 16 done. Three answers each,
   shuffled from the stored seed, one line of feedback for every answer, "Right." or "Not quite."
-  before it (`src/features/lessons/kit/quiz.ts:315`). Question 4's slot holds its play, "Play do,
+  before it (`src/features/lessons/kit/quiz.ts:335`). Question 4's slot holds its play, "Play do,
   then re", in the learner's octave (FACTS 69). Question 3 is the one Lesson 18's recall plans to ask
   word for word (`docs/plans/find-your-pitch/lessons/18-read-a-line/ARTICLE-PLAN.md:45-50`), so
   LESSON.md's wording is the one to carry: it says "places" for the plan's "positions" and "leaps"

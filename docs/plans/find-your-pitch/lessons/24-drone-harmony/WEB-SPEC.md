@@ -412,7 +412,7 @@ answers in a shuffled order. The recall asks Lesson 10's question object `l10-q1
 (`src/features/lessons/lesson-10/quiz-questions.ts:41-61`) and Lesson 23's question 3, once Lesson
 23's questions are a module (What the kit and the app still need), imported and never copied; their
 step links read "Try Lesson 10, Step 1 again" and "Try Lesson 23, Step 1 again" through `linkAway`
-(`src/features/lessons/kit/quiz.ts:191-205`), plain words where that page is not live (FACTS 7). The
+(`src/features/lessons/kit/quiz.ts:201-215`), plain words where that page is not live (FACTS 7). The
 quick check's questions are `l24-q1` to `l24-q4`, in a module of their own, so Lesson 26's recall
 can import `l24-q1` word for word (FACTS 74). Quick check 4's Play, by ear only, plays A3 with E4
 at 330 Hz, 4.0 s; it is disabled until the cold open's choice under the line "Choose an answer at
