@@ -363,6 +363,10 @@ export function initColdOpen(
     // Step 1's paragraph on the chord on so, which waited for it
     reveal: [q('#predict .reveal'), q('[data-chord-para]')],
     onChoice: (c) => {
+      // the choice ends the tune: the predict moves focus to Play ending 1,
+      // which would otherwise wait out the tune's 17 s while a press on it
+      // did nothing
+      stop()
       choiceIn = true
       core.redraw()
       chose(c)
