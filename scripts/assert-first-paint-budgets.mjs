@@ -440,7 +440,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // and room, and a drawing over the stairs. 162,675 bytes before them,
   // 163,838 with them and the kit's chord levels, against 162,816 at 159:
   // 2 bytes under 160, so the next kit change it carries raises it again.
-  'learn/04.html': 160,
+  // Raised to 161 with Lesson 25's steps' toy, which changes nothing of
+  // the kit: 164,037 bytes with it, 199 more and 197 over 160, all of them
+  // the bundler cutting the shared staircase code differently around a page
+  // that draws a staircase with a chord column over a staff.
+  'learn/04.html': 161,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
@@ -647,10 +651,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   'learn/24.html': 218,
   // Lesson 25, "Minor, properly", a Season 2 page and a draft, built in
   // every mode as Lesson 3 is: its own module on the kit, carrying Season
-  // 2's map (kit/season-2.ts) as a Season 2 page must; its shell: 89,274
-  // bytes in build:e2e, the smallest whole KB above, to rise as each part
-  // joins.
-  'learn/25.html': 88,
+  // 2's map (kit/season-2.ts) as a Season 2 page must; with the steps'
+  // toy, the kit's staircase with its chord column over the staff toy with
+  // its signature: 158,183 bytes in build:e2e, the smallest whole KB above,
+  // to rise as each part joins.
+  'learn/25.html': 155,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
