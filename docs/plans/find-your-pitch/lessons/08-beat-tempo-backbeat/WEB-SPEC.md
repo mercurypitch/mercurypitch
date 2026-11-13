@@ -367,14 +367,14 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   (Step 5); free play, every control together. Any state can be playing or still. Leaving a step by
   any route stops the step's sound and anything queued to play after it, a miss's replay in Count
   the bar included (Toys 4). Every route goes through the deck's `show`, which tells each registered
-  toy the new step and the one before (`kit/step-deck.ts:172`): Next and Previous (`:218-228`), a
-  swipe (`:230-256`), scrolling another step into view on the wide page (`:201-216`), the lesson
-  menu's jump (`:287-291`, called at `kit/lesson-menu.ts:542`), a `#step-N` address
-  (`kit/step-deck.ts:268-276`, `:298-305`) and a quiz's step link (`kit/quiz.ts:361`, `:366`). The
-  page registers one toy (`registerToy`, `kit/step-deck.ts:92-96`), as `lesson-03/main.ts:80-87`
+  toy the new step and the one before (`kit/step-deck.ts:182`): Next and Previous (`:228-238`), a
+  swipe (`:240-266`), scrolling another step into view on the wide page (`:211-226`), the lesson
+  menu's jump (`:297-301`, called at `kit/lesson-menu.ts:542`), a `#step-N` address
+  (`kit/step-deck.ts:278-286`, `:308-315`) and a quiz's step link (`kit/quiz.ts:361`, `:366`). The
+  page registers one toy (`registerToy`, `kit/step-deck.ts:99-103`), as `lesson-03/main.ts:80-87`
   does, whose `onStep(step, previous)` (`kit/step-deck.ts:45-47`) stops the stage, Count the bar and
   Step 5's predict plays whenever the two differ; a layout change that shows the same step again
-  (`kit/step-deck.ts:193-196`) stops nothing. Any other play on the page stops it too: one sound at
+  (`kit/step-deck.ts:203-206`) stops nothing. Any other play on the page stops it too: one sound at
   a time (Audio).
 - **Free play** (Wrap): its own copy of the object in a card, as Lesson 2's free play is
   (`lesson-02/free-play.ts:1-13`), with every control: Play, Bars, the Click switch, March, Rock
@@ -1123,7 +1123,7 @@ parts:
     `show` as a quiz's step link calls it) stops the stage's sound, Count the bar's round and Step
     5's predict plays; a miss in Count the bar and then a step change within its 700 ms start
     nothing once the clock passes 700 ms; a re-show of the same step, as a layout change makes
-    (`kit/step-deck.ts:193-196`), stops nothing.
+    (`kit/step-deck.ts:203-206`), stops nothing.
 18. Heard means finished: for the cold open's predict and Step 5's, a play cut short, by its stop,
     by another play or, in Step 5, by leaving the step, resolves `false` and leaves the reveal
     hidden, and a play that runs to its end reveals; starting any sound on the page stops the one
