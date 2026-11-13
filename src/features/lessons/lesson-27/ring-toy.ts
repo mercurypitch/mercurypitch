@@ -402,11 +402,14 @@ export function mountRingToy(
 
   // ------------------------------------------------------------ the controls
 
-  function syncControls(): void {
+  /** The chips, each held as its choice holds it, the lit chord's marked. */
+  function syncChips(): void {
     for (const b of chipBtns) {
       const v = b.dataset.chip !== 'I'
       const row4 = b.closest('[data-part="4"]') !== null
       b.disabled = (v && held) || (row4 && held4)
+      // Step 4's V7 says V until the cold open's choice, as its room is drawn
+      if (b.dataset.chip === 'V7') b.textContent = held ? 'V' : 'V7'
       // the lit chord's chip, marked while its chord is the ring's lit room;
       // `is-on` is the play light's, lit only while a chip's chord sounds
       b.classList.toggle(
@@ -414,12 +417,17 @@ export function mountRingToy(
         b.dataset.chip === chip || (b.dataset.chip === 'V7' && chip === 'V'),
       )
     }
+  }
+
+  function syncControls(): void {
+    syncChips()
     if (seventhBtn !== null)
       seventhBtn.setAttribute('aria-pressed', String(seventh))
     if (turnBtn !== null) turnBtn.disabled = held4
     for (const b of playBtns)
       b.disabled = held && b.dataset.ringPlay !== 'i-seventh'
-    // Step 1's line shows on its step alone (kit/step-parts.ts); the choice puts it away
+    // the steps' line shows on Steps 1 to 4 (kit/step-parts.ts), each
+    // holding V7's room as V; the choice puts it away
     if (lockLine !== null) {
       if (!lockLine.hasAttribute('data-part')) lockLine.hidden = !held
       else if (!held) lockLine.hidden = true

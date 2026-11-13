@@ -314,13 +314,14 @@ describe("Lesson 27's page", () => {
     // Arrange
     const page = doc()
 
-    // Assert: WEB-SPEC, Toys 1; Step 4's row shows with its step
+    // Assert: WEB-SPEC, Toys 1; Step 4's row shows with its step, its V7
+    // chip reading V until the choice, as V7's room is drawn
     expect(controlsOf(page.querySelector('#toyRing'))).toEqual([
       ['I', true, true],
       ['V', true, false],
       ['Add the seventh', true, true],
       ['I', false, false],
-      ['V7', false, false],
+      ['V', false, false],
       ['Turn over', false, false],
       ['Treble', true, true],
       ['Bass', true, true],
