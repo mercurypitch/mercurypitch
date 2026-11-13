@@ -31,7 +31,7 @@ page in four more steps, with an X and a Skip for people who know their way arou
 
 One list serves every lesson. A step whose targets are all missing or hidden on a page is left out
 there, and the count follows ("1 of 4"). Every target of a step that shows is lit together. All
-twenty-five pages show five steps, at 390 px and at 1440 px: twenty-four show the five below, and
+twenty-six pages show five steps, at 390 px and at 1440 px: twenty-five show the five below, and
 Lesson 19, where nothing is sung, shows "Your turn to tap" in place of step 3.
 
 | #   | Lights                                                                                                             | Title              | Words                                                                                                                                                                                                              |
@@ -239,12 +239,12 @@ left, 780 bytes.
   own scroll to step 3 is remembered; Tab stays in, Escape closes and focus returns to the menu
   after a replay; the question mark plays it from step 1 on a return visit, at 390x844 and 1440x900,
   as tall as the menu button, and takes the focus back; a deep link skips it and the next page
-  offers it; all twenty-five pages offer five steps, and Lessons 10 to 18 and 20 to 25 light
+  offers it; all twenty-six pages offer five steps, and Lessons 10 to 18, 20 to 25 and 27 light
   their targets at 390x844 and 1440x900, and Lesson 19 its five there, the first saying
   nothing of singing and the third, "Your turn to tap", lighting the take on `#tap`; on Lesson 1's
   first visit the wheel and the keys leave the page at the top with no scrollbar, and the card
   comes with nothing moving, before the cap, as the hold lifts; Lesson 3 never holds; Lessons 15's,
-  16's, 18's, 19's, 20's, 21's, 22's, 23's, 24's and 25's first visits hold the card until the
+  16's, 18's, 19's, 20's, 21's, 22's, 23's, 24's, 25's and 27's first visits hold the card until the
   predict's choice, and their lesson menus' tours come at once; under reduced motion nothing
   glides.
 - Each test added on 25 October was checked by mutation: with the behaviour it covers taken out,

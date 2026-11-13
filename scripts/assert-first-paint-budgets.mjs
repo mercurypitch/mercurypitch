@@ -355,7 +355,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // shell that loads the reveal but not the predict, as on Lessons 21's and
   // 22's; they come back once Lesson 16's cold open loads the predict, but
   // the 116 alone leave no room at 148.
-  'learn/05.html': 149,
+  // Raised to 150 for Lesson 27's page shell: 152,337 bytes before it,
+  // 152,900 with it, against 152,576 at 149. About 360 of the 563 are on
+  // every lesson page: Lesson 27's drafts line (kit/drafts.ts), its page and
+  // reading time in the season's map, and Lessons 27 and 28's teases
+  // (kit/lesson-copy.ts). The rest are the bundler cutting the kit's shared
+  // code differently around a shell that loads the reveal but not the
+  // predict, as Lesson 25's shell did; 149 can be tried again once Lesson
+  // 27's cold open loads the predict.
+  'learn/05.html': 150,
 
   // Lesson 4, "The major scale and home": its own module on the same kit,
   // the staircase drawn on canvas. Measured 114 with the lesson menu and the
@@ -444,7 +452,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // the kit: 164,037 bytes with it, 199 more and 197 over 160, all of them
   // the bundler cutting the shared staircase code differently around a page
   // that draws a staircase with a chord column over a staff.
-  'learn/04.html': 161,
+  // Raised to 162 for Lesson 27's page shell, as on Lesson 5: 164,590
+  // bytes before it, 165,153 with it, against 164,864 at 161; 161 can be
+  // tried again once Lesson 27's cold open loads the predict.
+  'learn/04.html': 162,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
@@ -659,6 +670,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // flow with its comfort check and voice choice, and free play: 203,428
   // bytes in build:e2e; a quarter over.
   'learn/25.html': 249,
+  // Lesson 27, "Seventh chords and inversions", a Season 2 page and a
+  // draft, built in every mode as Lesson 3 is: its own module on the kit,
+  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must; its
+  // shell: 90,043 bytes in build:e2e, the smallest whole KB above, to rise
+  // as each part joins.
+  'learn/27.html': 88,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -855,6 +872,12 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // over. The recall reaches no sheet, its questions being words alone, so
   // the guide's stays out.
   'learn/25.html': 114,
+  // Lesson 27 (a draft, as above), its shell: 85,531 bytes in build:e2e,
+  // the kit's sheets (the shared parts), its own with the staff toy's taken
+  // in by @import, and the shared Inter and Outfit @font-face rules; the
+  // smallest whole KB above, to rise as each part joins, the voice lessons'
+  // sheet with Sing it.
+  'learn/27.html': 84,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter

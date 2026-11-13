@@ -503,7 +503,7 @@ describe('createNextCard on a Season 2 page (page-state.ts carrySeason)', () => 
     document.body.textContent = ''
   })
 
-  it("closes Season 2 on Lesson 28's page, and names Lesson 26, still coming, on Lesson 25's", async () => {
+  it("closes Season 2 on Lesson 28's page, and names Lesson 26, still coming, on Lesson 25's, and Lesson 28 on Lesson 27's", async () => {
     // Arrange: fresh modules, so the season carried here stays in this test
     const page = await import('./page-state')
     const card: typeof Card = await import('./next-card')
@@ -532,6 +532,16 @@ describe('createNextCard on a Season 2 page (page-state.ts carrySeason)', () => 
     const next = document.querySelector<HTMLElement>('[data-next-card]')
     expect(next?.dataset.nextCard).toBe('26')
     expect(next?.dataset.selectLesson).toBe('26')
+
+    // Act: Lesson 27's Wrap
+    document.body.innerHTML =
+      '<div class="next-card card" data-next-card hidden></div>'
+    card.createNextCard(27)
+
+    // Assert
+    const last = document.querySelector<HTMLElement>('[data-next-card]')
+    expect(last?.dataset.nextCard).toBe('28')
+    expect(last?.dataset.selectLesson).toBe('28')
   })
 
   it("closes Season 1 on Lesson 14's page of a build that carries Season 2", async () => {
