@@ -20,11 +20,15 @@ import type { StairsLayout } from './stairs-geometry'
 import { stairsLayout } from './stairs-geometry'
 import { MAJOR_FIVE, MINOR_FIVE } from './stairs-scales'
 
-const homes = vi.hoisted(() => ({ at: [] as number[] }))
+const homes = vi.hoisted(() => ({
+  at: [] as number[],
+  box: [] as { cx: number; cy: number; size: number }[],
+}))
 
 vi.mock('./home-glyph', () => ({
-  drawHome: (_ctx: unknown, cx: number) => {
+  drawHome: (_ctx: unknown, cx: number, cy: number, size: number) => {
     homes.at.push(cx)
+    homes.box.push({ cx, cy, size })
   },
 }))
 
@@ -37,7 +41,11 @@ interface Text {
   readonly font: string
 }
 
-/** A context that keeps the words it is asked to write, with their font, and the rectangles it outlines. */
+/**
+ * A context that keeps the words it is asked to write, with their font, and
+ * the rectangles it outlines. It measures a word as a 12 px monospaced face
+ * sets it, 0.6 of an em a character.
+ */
 function wordsContext(
   texts: Text[],
   rects: number[][] = [],
@@ -56,7 +64,8 @@ function wordsContext(
                 y: Number(args[2]),
                 font: String(target.font),
               })
-            if (key === 'measureText') return { width: 0 }
+            if (key === 'measureText')
+              return { width: 7.2 * String(args[0]).length }
             if (
               key === 'createRadialGradient' ||
               key === 'createLinearGradient'
@@ -96,6 +105,7 @@ const scene = (o: Partial<StairsScene> = {}): StairsScene => ({
 function paint(s: StairsScene): { L: StairsLayout; texts: Text[] } {
   const texts: Text[] = []
   homes.at = []
+  homes.box = []
   const L = stairsLayout('narrow', 356, 424, s.tonic, C3, s.degrees)
   paintStairs(wordsContext(texts), L, s, s.tonic)
   return { L, texts }
@@ -182,6 +192,17 @@ describe("another scale's staircase", () => {
     )
   })
 
+  it("centres each house in the height of do's block where the label beside it is clear of it", () => {
+    // Act: the phone's figure, each block wide enough for a label and a house
+    const { L } = paint(scene({ degrees: MAJOR_FIVE }))
+    const room = L.stairs[0].bottom - L.stairs[0].top
+
+    // Assert
+    expect(homes.box.map((h) => h.cy)).toEqual(
+      [0, 5].map((i) => L.stairs[i].top + 2 + room / 2),
+    )
+  })
+
   it("prints each stair's one name from the scale's own degrees: the minor five on A, sung from do (Lesson 20's words)", () => {
     // Act
     const s = scene({
@@ -224,6 +245,7 @@ describe('a stair that slides, and an outlined riser (Lesson 25)', () => {
     const texts: Text[] = []
     const rects: number[][] = []
     homes.at = []
+    homes.box = []
     const L = stairsLayout('compact', 420, 280, s.tonic, 36, s.degrees, {
       right: 104,
       rows: { lo: 45, hi: 60 },
@@ -305,6 +327,27 @@ describe('a stair that slides, and an outlined riser (Lesson 25)', () => {
     expect(riserLabels(texts.filter((t) => !t.font.startsWith('700')))).toEqual(
       ['2', '1', '2', '2', '1', '3', '1'],
     )
+  })
+
+  it("keeps the top do's house under the label in its block's corner, the two otherwise meeting in a narrow block", () => {
+    // Act: harmonic minor's ti to do, "1", in the top do's corner
+    const { L, texts } = paintMinor(
+      scene({ ...sung, degrees: HARMONIC_MINOR_DEGREES }),
+    )
+    const top = L.stairs[7]
+    const label = texts.find(
+      (t) => t.text === '1' && t.x > top.x && t.x < top.x + top.w,
+    )
+    const high = homes.box[1]
+    const room = L.stairs[0].bottom - L.stairs[0].top
+
+    // Assert: the label's 12 px line clear above the house, which stays in
+    // its block, as wide as before; the bottom do's house keeps its centre
+    expect(label?.y).toBeDefined()
+    expect(high.cx - high.size / 2).toBeLessThan((label?.x ?? 0) + 7.2 + 2)
+    expect(high.cy - high.size / 2).toBeGreaterThan((label?.y ?? Infinity) + 6)
+    expect(high.cy + high.size / 2).toBeLessThanOrEqual(top.bottom)
+    expect(homes.box[0].cy).toBe(L.stairs[0].top + 2 + room / 2)
   })
 
   it('outlines nothing when given no outline', () => {
