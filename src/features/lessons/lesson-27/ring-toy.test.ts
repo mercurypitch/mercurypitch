@@ -12,7 +12,8 @@
 // up an octave, climbing on the staff, the bass mark moving from the
 // corner it leaves, and the press after the last inversion bringing back
 // the first pitches; the positions, and a turned chord's name, said only
-// after Step 4's reveal; and free play's controls held under their lines.
+// after Step 4's reveal; a tap on the staff cutting a play short; and free
+// play's controls held under their lines.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { signName } from '@/features/lessons/kit/notes'
@@ -393,6 +394,33 @@ describe("the steps' toy, Step 4", () => {
     expect(label()).toContain(
       'C major, first inversion, E in the bass: E, G and C',
     )
+  })
+})
+
+describe("the steps' toy and its staff", () => {
+  it('a tap on the staff cuts a play short where it stands: its later chord never shows, and the tapped note is the page’s one sound', async () => {
+    // Arrange
+    const toy = steps()
+    toy.setState(RING_STATES[2])
+    toy.unlock()
+    void toy.play('dom-home')
+    vi.advanceTimersByTime(500)
+    const playing = said()
+
+    // Act: a tap 0.5 s in, then past where I would have sounded
+    toy.staff.tapPlace(0)
+    await settle()
+    vi.advanceTimersByTime(1500)
+    const after = { said: said(), sounding: toy.view().sounding }
+    const tapped = last()
+    NowPlaying.claim(() => undefined)
+
+    // Assert: V7's chord cut, I never shown, and a newer sound stops the tap
+    expect(playing).toBe('V7: G, B, D and F')
+    expect(runs[0].stopped).toBe(true)
+    expect(after).toEqual({ said: 'V7: G, B, D and F', sounding: [] })
+    expect(tapped).not.toBe(runs[0])
+    expect(tapped.stopped).toBe(true)
   })
 })
 

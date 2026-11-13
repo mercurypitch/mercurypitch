@@ -36,7 +36,8 @@
 // plays sound their evidence without naming its answer (FACTS 1b, 48). The
 // clef follows the learner's voice and the Clef switch, the whole toy an
 // octave apart, as Lesson 25's does. Every sound is the page's one
-// (`NowPlaying`).
+// (`NowPlaying`); the staff's own, a tapped note, is the toy's, so a tap
+// cuts a play short where it stands.
 
 import { q, qa } from '@/features/lessons/kit/dom'
 import { wake } from '@/features/lessons/kit/frame-loop'
@@ -47,6 +48,7 @@ import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type { PlayLight } from '@/features/lessons/kit/play-lights'
 import { playLights } from '@/features/lessons/kit/play-lights'
 import { mountRing } from '@/features/lessons/kit/ring-rooms'
+import { Sound } from '@/features/lessons/kit/sound'
 import type { Spiral } from '@/features/lessons/kit/spiral'
 import type { PlayNote, StaffState, StaffToy, } from '@/features/lessons/kit/staff'
 import { mountStaff } from '@/features/lessons/kit/staff'
@@ -383,6 +385,7 @@ export function mountRingToy(
     halt()
     NowPlaying.claim(halt)
     const mine = token
+    const audible = Sound.canPlay()
     for (const f of figures)
       timers.push(
         window.setTimeout(() => {
@@ -394,12 +397,20 @@ export function mountRingToy(
       notes: staffNotes(figures, tone()),
     })
     if (mine !== token) return false
+    // heard with sound on and still not to its end: a tap on the staff cut
+    // it short, so its later chords never show, and the tapped note,
+    // sounding now, is the toy's, which keeps the page's owner
+    const tapped = audible && !heard
+    if (tapped) {
+      timers.forEach((id) => window.clearTimeout(id))
+      timers = []
+    }
     // back to the chips' chord, the mark on its bass at once
     showing = null
     arrows = null
     bassFrom = null
     changed()
-    NowPlaying.release(halt)
+    if (!tapped) NowPlaying.release(halt)
     return heard
   }
 
