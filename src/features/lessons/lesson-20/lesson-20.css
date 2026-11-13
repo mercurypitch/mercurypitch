@@ -144,8 +144,11 @@
   left: auto;
   right: -10px;
 }
+/* the stub centres what it holds, so each figure takes the stub's width,
+   or it would shrink to its canvas's own 2:1 */
 .l20-words .word-chart,
 .l20-words .word-stairs {
+  width: 100%;
   height: 92px;
 }
 .l20-words .word-chart canvas,
