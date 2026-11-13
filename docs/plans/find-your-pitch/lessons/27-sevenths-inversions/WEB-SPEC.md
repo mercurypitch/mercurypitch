@@ -324,7 +324,7 @@ The kit's soft tone through the page's one audio context, sound off until the le
 nothing playing until a press, and one sound at a time: a new play stops the one before
 (`src/features/lessons/kit/now-playing.ts:39`). The levels are Lesson 12's, moved into the kit with
 its ring: a single note at 0.13, each voice of a three-note chord at 0.075, Merc's "ooh" at 0.2
-(`src/features/lessons/kit/sound.ts:53-60`); each voice of a four-note chord at 0.056, so a
+(`src/features/lessons/kit/sound.ts:53-62`); each voice of a four-note chord at 0.056, so a
 seventh chord sounds no louder in all than a triad, 0.224 against 0.225, and in power about 1.3 dB
 quieter, and Step 2 compares two chords, not two loudnesses (FACTS 73). Every pitch is FACTS 72's.
 The lowest, G2 at 98 Hz in the lower voice's V and V7, is checked on a phone's speaker in the lab
@@ -590,3 +590,53 @@ naming the two rules it breaks (48, 49); Go deeper keeping two of three items (4
 check's reworded stems and feedback (75 to 78); the practice card's account of Chord Stacker and
 Stack (62 to 70); the run time at 15 minutes, not 14 (3); and both teases the lead's, the plan's
 lines withdrawn (5, 5b).
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- Counted by `scripts/lesson-words.mjs`'s rule as the built page shows it, the package's 2,177 words
+  with about 218 more written in the open (the cold open's two answering plays' names and its
+  predict's two hints, 17; the steps' figure label, the toy's labels and its lock line, 40; the
+  three held lines, 42; Step 4's predict's two plays and its four hints, 38; Sing it's status lines,
+  its hint, its pitch-line switch and the stored voice's line, 81, as on Lesson 25's page), the
+  sound-off lines, the readouts under the ring, the next-lesson card and free play left out, as the
+  counter leaves them and as Lessons 16, 18, 20 and 25 counted theirs: about 2,395, about 16 over
+  the series' cap of 2,379, where Length, counting about 150 for these before the held lines and
+  Step 4's hints were written, put the page at 2,327. The held lines show only until the reveal, and
+  Step 4's hints only around its choice. No cut is made here: the owner's review can take one.
+- The steps' toy plays in the learner's voice, and the Clef switch moves the whole toy an octave
+  with the clef, as Lesson 25's toy does: Treble sounds and writes the higher voice's pitches and
+  Bass the lower voice's, so the staff always writes what sounds (FACTS 72).
+- The ring's centre names the lit room in Outfit, as Lesson 12's ring does (`kit/ring-rooms-draw.ts`
+  `drawCentre`), not in JetBrains Mono; I with its seventh, for which the page teaches no numeral,
+  is named by its letters, "C E G B".
+- Step 1's plays from its text sound each chord for 1.2 s, a chip's length, and Step 3's V7, then I,
+  1.5 s each, as its pair does: FACTS 42 and 44 give them no length. Step 3's two notes together
+  play at 0.13 a note, a single note's level, since FACTS 73 names none for two.
+- A fourth corner grows from the middle of the edge it splits out to its bead in 0.3 s, so the room
+  stays closed as it grows (`kit/ring-marks.ts` `grownAt`). The arrows carry their heads once they
+  land, and the ring draws one more frame after a growth or an arrow ends, so what lands is seen.
+- The bass mark's word sits inside the ring, past the mark towards the centre, clear of the names
+  the black piano keys carry outside their beads. Where a corner level with the centre, C, would put
+  it on the centre's name, as on a phone's ring, it stands just above the name, or below it when the
+  mark is on its way to a corner below the centre (`kit/ring-marks.ts` `drawBassMark`).
+- Step 4's choice brings the bass mark and Turn over; the positions' names, under the ring and in
+  the figure's name, wait for its reveal, so its two plays sound their evidence without naming its
+  answer (FACTS 1b, 48).
+- Lesson 12's own marks and plays, the key turn, the corner slide, the walk, the roots' line and the
+  syllables, stay on Lesson 12's page: the kit took the ring, its rooms, halos and centre and its
+  mount (`kit/ring-rooms-draw.ts`, `kit/ring-rooms.ts`), and this page's marks are new to the kit
+  (`kit/ring-marks.ts`).
+- On a phone the hero's ring spans the stage's whole width, behind Merc and Tavi: between them it
+  came out half the steps' ring, its centre's name running into F♯'s.
+- The lit chord's chip stays marked while its room is lit; a chip's play light shows only while its
+  chord sounds. Free play's longest plays wrap their words at a phone's width, left-aligned as the
+  plays above them start.
+- The recall imports Lesson 23's question 1 from Lesson 23's page, built since FACTS 7 was written
+  (`lesson-23/quiz-questions.ts`).
+- This lesson's tease still, the two rooms with V lit and no fourth corner, belongs on Lesson 26's
+  card, so it is drawn with Lesson 26's page, which is not built yet; the Tests' item 18 waits for
+  it.
+- The first-paint ceilings are the page's measured build a quarter over, as every lesson's are: 254
+  KB of JavaScript (207,333 bytes) and 113 KB of CSS (92,284 bytes) in `build:e2e`.
