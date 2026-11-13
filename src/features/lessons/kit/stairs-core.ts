@@ -161,9 +161,13 @@ interface Lit {
   readonly color: string
 }
 
-/** Eases `from` towards `to` by `dt` seconds of a `sec`-second move; lands at once under reduced motion. */
+/**
+ * Eases `from` towards `to` by `dt` seconds of a `sec`-second move; lands at
+ * once under reduced motion, and for a move of no time, which a frame of no
+ * time would otherwise turn into 0 / 0 and leave the stairs nowhere.
+ */
 function approach(from: number, to: number, dt: number, sec: number): number {
-  if (reducedMotion()) return to
+  if (reducedMotion() || sec <= 0) return to
   const step = dt / sec
   return from < to ? Math.min(to, from + step) : Math.max(to, from - step)
 }
