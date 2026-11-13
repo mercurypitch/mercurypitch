@@ -44,6 +44,7 @@ import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
 import { initSteps } from './steps'
 
 // Season 2, before anything draws
@@ -59,7 +60,7 @@ const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
-initSteps(deck)
+const steps = initSteps(deck)
 deck.start()
 
 // the next lesson's card first: the explorer binds its link to the map
@@ -84,6 +85,15 @@ initMasthead(
   },
   { lesson: 25, deck },
 )
+// the hero's tune on the minor staircase and the predict its two endings
+// answer; the choice opens what the steps' toy held back, and the welcome
+// tour waits for it, since the steps' stop would answer it, so this runs
+// after the masthead has started the tour, in the same task
+// (kit/tour-gate.ts `holdTour`)
+initColdOpen(deck, {
+  unlocks: [q<HTMLButtonElement>('#toyMinor [data-raise="te"]')],
+  onChoice: () => steps.toy.unlock(),
+})
 initReveals()
 startFrameLoop()
 // Tavi celebrates at the reveal with no sparkles, as on Lesson 23's page

@@ -39,6 +39,8 @@ describe("the toy's words", () => {
       names: ['E4', 'G♯4', 'B4'],
       label: 'E major',
     })
+    // the hero's, its letters alone
+    expect(columnChord(57, true, false).names).toEqual(['E', 'G♯', 'B'])
   })
 
   it('says the chord on so with its gaps and its name', () => {

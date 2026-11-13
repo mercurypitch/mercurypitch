@@ -80,13 +80,17 @@
   }
 }
 /* on a phone Merc and Tavi stand smaller either side of the staircase's
-   foot, so neither covers do's stair, the lowest, nor the chord column at
-   its right */
+   foot, so neither covers do's stair, the lowest; the staircase's canvas
+   spans Tavi's column too, its stairs kept clear of it (cold-open.ts), so
+   after the choice the chord column draws over Tavi's head */
 @media (max-width: 560px) {
   .l25-duo {
     --merc: min(19vw, 76px);
     --stairs-h: 250px;
     margin-top: 2px;
+  }
+  .l25-duo .hero-stairs {
+    grid-column: 2 / 4;
   }
 }
 
