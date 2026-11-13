@@ -7,12 +7,13 @@
 // free from the start; the two answering plays locked until a choice; the
 // hint staying "Locked in. Play both." after one, with no `next`; the
 // reveal after both heard, in either order, showing Step 1's paragraph and
-// Steps 2 and 3's text and putting their held lines away, the guess's
-// sharp said as a word; a play cut short revealing nothing; and the choice
-// reaching the page and the tour.
+// Steps 2 and 3's text and putting their held lines away, the status line
+// reading the reveal alone, the guess's sharp said as a word; a play cut
+// short revealing nothing; and the choice reaching the page and the tour.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
+import { ANNOUNCE_DELAY_MS, spokenText } from '@/features/lessons/kit/announce'
 import type * as MercDuoModule from '@/features/lessons/kit/merc-duo'
 import { signName } from '@/features/lessons/kit/notes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
@@ -171,13 +172,17 @@ describe('the cold open', () => {
     // Act
     await hear('fsharp')
     await hear('f')
+    vi.advanceTimersByTime(ANNOUNCE_DELAY_MS)
 
-    // Assert
+    // Assert: the steps' text shows, and the status line reads the reveal alone
     expect(el('#predict .reveal').hidden).toBe(false)
     for (const n of [1, 2, 3]) {
       expect(el(`[data-held="${n}"]`).hidden).toBe(false)
       expect(el(`[data-held-line="${n}"]`).hidden).toBe(true)
     }
+    expect(words(el('[data-announcer]'))).toBe(
+      spokenText(el('#predict .reveal')),
+    )
     // the guess's sharp said as a word
     const line = el('#predict .reveal .mono')
     expect(words(line)).toBe('You said: F♯ sharp')

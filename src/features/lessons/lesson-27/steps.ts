@@ -17,8 +17,9 @@
 // "Choose an answer to unlock the two comparisons.", enables the choices
 // and only then mounts the predict, which keeps the hint it finds, as
 // Lesson 22's page wires its second predict (FACTS 48). Its plays sound on
-// the toy, and its reveal, the text after it with Try, Notice and the
-// drawer, waits for both heard to their end. Its choice opens Step 4's
+// the toy, and its reveal waits for both heard to their end, the text
+// after it, with Try, Notice and the drawer, showing with it, not read
+// out: the status line reads the reveal alone. Its choice opens Step 4's
 // chips and Turn over, and free play's Turn over (`onChoice4`); its
 // reveal names the positions (`onReveal4`).
 
@@ -127,12 +128,12 @@ export function initSteps(deck: StepDeck, o: StepsOptions = {}): Steps {
       revealAfter: 'all',
       hints: STEP4_PREDICT.hints,
       guess: (c) => (isChoice4(c) ? STEP4_PREDICT.guess[c] : 'You said'),
-      reveal: [q('.reveal', box), q('[data-reveal4]')],
       onChoice: () => {
         toy.unlock4()
         o.onChoice4?.()
       },
       onReveal: () => {
+        q('[data-reveal4]').hidden = false
         toy.reveal4()
         o.onReveal4?.()
       },
