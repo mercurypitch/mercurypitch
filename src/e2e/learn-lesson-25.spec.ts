@@ -419,7 +419,7 @@ test('the four words each play on their own staircase and say their scale once h
     ],
     [
       'relative',
-      'C major, do on C. A minor on the same white keys: do moves from C down to A, which was la.',
+      'C major, do on C. A minor on the same white piano keys: do moves from C down to A, which was la.',
     ],
   ] as const) {
     await play(w).click()

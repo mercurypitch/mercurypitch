@@ -101,24 +101,42 @@ export function raiseSaid(
     : `La back down to le: ${wordName(natural)}.`
 }
 
-/** What a play says as each of its figures starts, where it changes what the staircase shows. */
+/**
+ * What a play says as each of its figures starts: what it sounds, and what
+ * it changes on the staircase. The chord on so's line is the column's own
+ * (`chordHomeSaid`), and Play the scale says the form the switches set, so
+ * the toy picks those (minor-toy.ts `figureLine`).
+ */
 export const FIGURE_SAID: Readonly<
   Partial<Record<PlayId, readonly (string | null)[]>>
 > = {
+  'so-te-do': ['So, te, do: te a tone under do.'],
+  'so-ti-do': ['So, ti, do: te lifts to ti, a semitone under do.'],
+  harmonic: ['A harmonic minor: te raised to ti, and le to ti is 3 semitones.'],
   'le-pairs': [
     'Le to te, F to G: 2 semitones.',
     'Le to ti, F to G sharp: 3 semitones.',
   ],
-  melodic: [null, 'Coming down, la and ti fall back to le and te.'],
+  melodic: [
+    'A melodic minor, going up: le and te lift to la and ti.',
+    'Coming down, la and ti fall back to le and te.',
+  ],
   'major-melodic': [
     'A major: its third stair is mi, C sharp.',
     'A melodic minor, going up: me, C, where major has mi.',
   ],
   relative: [
     'C major, do on C.',
-    'A minor on the same white keys: do moves from C down to A, which was la.',
+    'A minor on the same white piano keys: do moves from C down to A, which was la.',
   ],
   'c-minor': [
     'C minor: E flat, A flat and B flat, each written with its own sign.',
   ],
 }
+
+/** Play the scale, up and down, in the form the switches set: natural minor's line. */
+export const NATURAL_SCALE_SAID = 'A natural minor, up and down.'
+
+/** The chord on so, then home: its column's chord, then home's. */
+export const chordHomeSaid = (tonic: number, raised: boolean): string =>
+  `${chordSaid(tonic, raised)} Then home: A, C, E, A minor.`
