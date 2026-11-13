@@ -27,11 +27,14 @@ import '@/features/lessons/kit/lesson-fonts.css'
 import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
-// the guide's and the voice lessons' sheets join with the recall and Sing
-// it, the modules whose chunks they share: taken before them, each leaves
-// its chunk for one of its own, which every lesson page would then link
-// after its own sheet (MISTAKES.md, on the lessons' base stylesheet)
 import '@/features/lessons/kit/lesson-parts.css'
+// Sing it brings the kit's comfort check and voice choice, so taking the
+// voice lessons' sheet here keeps it in the chunk it shares with them: a
+// sheet left out leaves that chunk for one of its own, which every lesson
+// page would then link after its own sheet (MISTAKES.md, on the lessons'
+// base stylesheet). The recall reaches no sheet: Lesson 12's and Lesson
+// 23's questions are words alone, so the guide's sheet stays out.
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-27.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -46,8 +49,10 @@ import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
 import { initQuizzes } from './recall'
+import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -62,9 +67,14 @@ const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
-// the toy holds back what would answer the cold open's predict, and Step
-// 4's predict waits for that choice
-const steps = initSteps(deck)
+// free play's toy first: Step 4's predict opens its Turn over, and its
+// reveal names its positions; the Wrap's practice card follows Sing it's
+// ending
+const wrap = initWrap()
+const steps = initSteps(deck, {
+  onChoice4: () => wrap.free.unlock4(),
+  onReveal4: () => wrap.free.reveal4(),
+})
 deck.start()
 
 // the recall from Lessons 12 and 23 and the quick check, each on the
@@ -74,6 +84,9 @@ initQuizzes(deck)
 // three words, each figure a small staff in the learner's clef, writing
 // its notes as they play
 initWords()
+
+// Sing it on the kit's flow, with nothing listening
+initSing()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(27)
@@ -98,11 +111,16 @@ initMasthead(
   { lesson: 27, deck },
 )
 // V going home and the predict its two answering plays answer; the choice
-// opens what the toy held back and Step 4's predict, and the welcome tour
-// waits for it, since the steps' stop would answer it, so this runs after
-// the masthead has started the tour, in the same task (kit/tour-gate.ts
-// `holdTour`)
-initColdOpen(deck, { onChoice: () => steps.unlock() })
+// opens what the toys held back and Step 4's predict, and the welcome
+// tour waits for it, since the steps' stop would answer it, so this runs
+// after the masthead has started the tour, in the same task
+// (kit/tour-gate.ts `holdTour`)
+initColdOpen(deck, {
+  onChoice: () => {
+    steps.unlock()
+    wrap.free.unlock()
+  },
+})
 initReveals()
 startFrameLoop()
 // Tavi celebrates at the reveal with no sparkles, as on Lesson 25's page
