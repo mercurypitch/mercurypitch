@@ -864,5 +864,26 @@ Where the page differs from the text above, the page as built is the reference:
   touching (`kit/stairs-draw.ts`).
 - A play inside a step's sentence wraps its words at a phone's width: Step 3's "Play A major, then
   melodic minor, going up" is wider than the column at 344 px.
+- Step 4's and free play's small staff stands under the learner's, the figure growing by 70 px
+  while it shows; on a phone held sideways, where the kit caps the figure's height, the learner's
+  staff takes what the small one leaves.
+- On a phone, where the stage stands above the steps' text, a play from a step's text brings the
+  stage back into view (`kit/step-deck.ts` `showToy`), and a free play button pressed with the
+  figures scrolled away above the screen brings them back, so what a play lights is seen as it
+  sounds. On a wide page the stage is stuck beside the text and nothing moves.
+- The step deck never scrolls a step taller than the screen past its own head, so Step 3's kicker
+  and heading stay clear of the masthead at 1440 by 900 (`kit/step-deck.ts`).
+- A staff whose notes may carry a sharp or a flat gives each note two and seven tenths spaces, not
+  two and a quarter, so Sing it's G♯ and the steps' F♯, G♯ and C minor's flats stand clear of the
+  note before them at a phone's width (`kit/staff.ts` `scoreAcross`).
+- Free play's Play A melodic minor, up and down, before the choice sounds with le and te raised for
+  the play alone, leaving its held switches off; in Step 3 it switches Raise le on as above.
+- The choice ends the tune, so Play ending 1, which takes the focus, plays at the first press
+  rather than waiting out the tune's 17 s.
+- Every play of the toy says what it sounds as it starts, the chord on so its column's line then
+  home's, and a switch that moves the other says both, te first; the figure's name adds the chord
+  column once the choice draws it, as the hero's does.
+- The five chips wrap to four rows at 390 px, not two or three: the three prerequisite chips are
+  each wider than half the column, and Lesson 23's runs to two lines.
 - The first-paint ceilings are the page's measured build a quarter over, as every lesson's are:
-  247 KB of JavaScript (202,301 bytes) and 114 KB of CSS (92,621 bytes) in `build:e2e`.
+  249 KB of JavaScript (203,405 bytes) and 114 KB of CSS (92,872 bytes) in `build:e2e`.

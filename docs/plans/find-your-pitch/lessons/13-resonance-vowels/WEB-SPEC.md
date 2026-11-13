@@ -412,7 +412,7 @@ an optional `lesson`, and links that leave this page for a question from another
   page's own deck; where Lesson 11 is not live, each keeps its words with no link (Edge cases). The
   address is the quiz's `away.href`, the kit's `recallStepHref`, which Lesson 8's page moved into
   `kit/quiz.ts` (`:141-143`; needs 11), and the kit's step deck opens at the step an address names
-  (`stepFromHash`, `kit/step-deck.ts:84-90`), as Lesson 11's will.
+  (`stepFromHash`, `kit/step-deck.ts:91-97`), as Lesson 11's will.
 - **Quick check**: LESSON.md's four questions, ids `l13-q1` to `l13-q4`, keys `fyp-l13-seed` and
   `fyp-l13-quiz-v1`, and `lesson: 13`, so answering all four marks Lesson 13 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
@@ -677,8 +677,8 @@ reset as they do when it is stopped. Leaving a step stops its sound and anything
 rest of Step 4's five vowels, or a harmonic still to play), whatever the route: Previous or Next, a
 swipe, the wide page's scroll, the lesson menu's jump, a `#step-N` address and a quick-check step
 link all reach the deck's `show`, which calls each toy's `onStep(step, previous)`
-(`kit/step-deck.ts:45-47`, `:145-186`), and the page stops the step's sound whenever `step` differs
-from `previous`; a layout switch calls it with the same step (`:193-196`) and stops nothing, as
+(`kit/step-deck.ts:45-47`, `:155-196`), and the page stops the step's sound whenever `step` differs
+from `previous`; a layout switch calls it with the same step (`:203-206`) and stops nothing, as
 Lesson 6's steps do (`lesson-06/steps.ts:78-89`). A play cut short, by a new play or a stop, never
 counts as heard: the cold open's `play` resolves `false` for it, and the predict counts only a play
 that runs to its end (Toys 2; `kit/predict.ts:31-41`, `:184-188`). Both parts came with PR #1149,
