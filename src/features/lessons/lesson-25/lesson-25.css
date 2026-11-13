@@ -362,6 +362,29 @@
   width: 100%;
   height: auto;
 }
+.l25-tease-label {
+  font: 500 9px / 1 var(--f-mono);
+  fill: var(--ink-2);
+  text-anchor: middle;
+}
+.l25-tease-band {
+  fill: color-mix(in srgb, var(--chrome) 7%, transparent);
+}
+.l25-tease-bead {
+  fill: var(--chrome);
+}
+.l25-tease-house {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+}
+.l25-tease-merc.b {
+  fill: color-mix(in srgb, var(--signal-blue) 70%, transparent);
+}
+.l25-tease-merc.o {
+  fill: color-mix(in srgb, var(--orange) 70%, transparent);
+}
 .l25-free > .eyebrow {
   margin: 0 0 10px;
   line-height: 16px;
