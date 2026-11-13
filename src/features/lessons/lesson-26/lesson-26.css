@@ -9,8 +9,8 @@
 
    Here: the hero's tune line between Merc and Tavi, with its two plays
    under it (WEB-SPEC, Toys 1); the three words' small figures; the steps'
-   toy, Lesson 6's tune line in four states (Toys 2), its readout, its lock
-   line and its rows of controls; the held text of Steps 1 and 2; Sing it's
+   toy, Lesson 6's tune line in four states (Toys 2), its lock line and its
+   rows of controls; the held text of Steps 1 and 2; Sing it's
    figure beside the still of the one who sings; and the Wrap's cards, with
    the next card's tease still and free play. No staff and no decorative
    one: the section heads carry none, and the body's season-2 class drops
@@ -134,16 +134,6 @@
     --viz-min: 150px;
     height: 220px;
   }
-}
-/* Step 1's bracket in words, under the figure: "C up to E: 4 semitones" */
-.l26-toy .tune-readout {
-  margin: 8px 0 0;
-  font: 500 var(--fs-14) / 1.2 var(--f-mono);
-  color: var(--ink);
-  text-align: center;
-}
-.l26-toy .tune-readout[hidden] {
-  display: none;
 }
 /* the steps' line until the cold open's choice, under the figure */
 .lock-line {
