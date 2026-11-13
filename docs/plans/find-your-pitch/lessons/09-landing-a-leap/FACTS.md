@@ -201,8 +201,8 @@ Full references. The facts below use the short names in bold, with the page or s
 Every example is synthesised in the page by the kit's sound module and started only by a tap, in
 Merc's "ooh" unless noted (partials 1, .62, .38, .24, .14, .08, .045, .025 through a 2,600 Hz
 lowpass, with a 5.5 Hz vibrato of ±14 cents grown in over 0.35 s;
-`src/features/lessons/kit/sound.ts:144-146`, `:246`, `:257-268`); a tapped note uses the soft tone
-(partials 1, .3, .11, .05, .024, .012 through 3,400 Hz; `sound.ts:184`, `:246`). Frequencies are
+`src/features/lessons/kit/sound.ts:146-148`, `:248`, `:259-270`); a tapped note uses the soft tone
+(partials 1, .3, .11, .05, .024, .012 through 3,400 Hz; `sound.ts:186`, `:248`). Frequencies are
 f = 440 × 2^((m − 69) / 12) for MIDI note m (`hz`, `src/features/lessons/kit/notes.ts:43`), to two
 decimals, as `verify09.py` printed them. Merc sings in Merc's voice for the lower choice and
 Tavi's an octave up for the higher; the steps sing in the stored voice, or the lower.

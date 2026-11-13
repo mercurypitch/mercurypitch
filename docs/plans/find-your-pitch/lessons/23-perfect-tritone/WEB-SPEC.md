@@ -355,8 +355,8 @@ the guide drawn on the staff and no Move do. In order:
    line. The stop line on its own line, then two buttons. Play Merc's notes plays Merc's line
    (lower) or Tavi's (higher) as two contours a breath apart, each one voice: do held 1.15 s and a
    0.05 s glide to so, held 1.8 s; 1.0 s of quiet; then so held 1.15 s, a 0.05 s glide to do, held
-   1.8 s; 7.0 s in all (FACTS 55, 72; `contourOf`, `src/features/lessons/kit/sound.ts:376`;
-   `playContour`, `src/features/lessons/kit/sound.ts:707`), each note lighting as it sounds. Start
+   1.8 s; 7.0 s in all (FACTS 55, 72; `contourOf`, `src/features/lessons/kit/sound.ts:378`;
+   `playContour`, `src/features/lessons/kit/sound.ts:709`), each note lighting as it sounds. Start
    the guide waits until Merc's notes have been heard with sound on, with Lesson 12's two hints
    (`hintFor`, `src/features/lessons/kit/sing-flow.ts:196-202`); then it counts in on do, 0.8 s
    at 0.065 and 0.2 s of quiet (`countIn`, `src/features/lessons/kit/move-do.ts:68-77`), and a

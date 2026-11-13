@@ -364,8 +364,8 @@ staff (Toys 1, state 6). In order:
 3. **Your turn**, the stop line on its own line, then two buttons: Play Merc's notes and Start the
    guide. Play Merc's notes plays Merc's line (lower) or Tavi's (higher) as one voice along a
    contour, each of the first four notes a 1.15 s hold and a 0.05 s glide, the top note 1.8 s
-   (FACTS 57, 69; `contourOf` and `playContour`, `src/features/lessons/kit/sound.ts:366-394`,
-   `:703-716`), lighting
+   (FACTS 57, 69; `contourOf` and `playContour`, `src/features/lessons/kit/sound.ts:368-396`,
+   `:705-718`), lighting
    each note amber as it sounds. Start the guide waits until Merc's notes have been heard with sound
    on, with Lesson 12's hint, "Play Merc's notes first", and its sound-off line
    (`src/features/lessons/kit/sing-flow.ts:191-196`); then it counts in on do, 0.8 s at 0.065
@@ -572,7 +572,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    next-lesson card draws the lesson after the page's own wherever the data holds one, and the
    season's end only where it holds none (`nextCard`, `src/features/lessons/kit/next-card.ts:92-122`),
    so once Lesson 15 is in the data, Lesson 14's page would draw Lesson 15's card in place of
-   Season 1's close, `SEASON_END` (`src/features/lessons/kit/lesson-copy.ts:225-240`), which SEASON-2
+   Season 1's close, `SEASON_END` (`src/features/lessons/kit/lesson-copy.ts:237-252`), which SEASON-2
    § 1.4 item 3 and § 7 item 8 keep, with CURIOSITY-MOMENTS' Lesson 14 entry (FACTS 5b). The card
    for Lesson 15 would answer nothing, but Season 1's end would be gone. `LESSONS[n].n === n` (`src/features/lessons/kit/season.ts:108-110`) and the head
    test's `LESSONS[n]?.minutes` (`src/tests/lesson-pages.test.ts:191-211`) read one list by number;

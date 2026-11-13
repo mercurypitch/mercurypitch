@@ -200,7 +200,7 @@ Full references. The facts below use the short names in bold, with the page or s
 
 Every example is synthesised in the page by the kit's sound module and started only by a tap,
 in Merc's "ooh" unless noted (partials 1, .62, .38, .24, .14, .08, .045, .025 through a 2,600 Hz
-lowpass, with 42's vibrato; `sound.ts:144-146`, `:246`, `:47-48`). Frequencies are
+lowpass, with 42's vibrato; `sound.ts:146-148`, `:248`, `:47-48`). Frequencies are
 f = 440 × 2^((m − 69) / 12) (`hz`, `src/features/lessons/kit/notes.ts:43`; Lesson 2 FACTS 6).
 
 71. The notes the page plays: F3 174.61, F♯3 185.00, G3 196.00, G♯3 207.65, A3 220.00, A♯3 233.08, B3 246.94, C4 261.63, C♯4 277.18, F4 349.23, F♯4 369.99, G4 392.00, G♯4 415.30, A4 440.00, A♯4 466.16, B4 493.88, C5 523.25, C♯5 554.37 Hz; the warm-up's E4 329.63 and E5 659.26 Hz | Lesson 2 FACTS 6 (its table); `verify05.py` | arithmetic

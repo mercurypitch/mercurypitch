@@ -215,8 +215,8 @@ Full references. The facts below use the short names in bold, with the page or s
 Every example is synthesised in the page by the kit's sound module and started only by a tap, in
 Merc's "ooh" unless noted (partials 1, .62, .38, .24, .14, .08, .045, .025 through a 2,600 Hz
 lowpass, with a 5.5 Hz vibrato of ±14 cents grown in over 0.35 s;
-`src/features/lessons/kit/sound.ts:144-146`, `:246`, `:47-48`); a tapped note uses the soft tone
-(`sound.ts:239-241`). Frequencies are f = 440 × 2^((m − 69) / 12) for MIDI note m (`hz`,
+`src/features/lessons/kit/sound.ts:146-148`, `:248`, `:47-48`); a tapped note uses the soft tone
+(`sound.ts:241-243`). Frequencies are f = 440 × 2^((m − 69) / 12) for MIDI note m (`hz`,
 `src/features/lessons/kit/notes.ts:43`), to two decimals, as `verify07.py` printed them.
 
 81. The fixed notes: E2 82.41, G2 98.00, A2 110.00, C3 130.81, E3 164.81, F♯3 185.00, G3 196.00, G♯3 207.65, A3 220.00, B3 246.94, C4 261.63, C♯4 277.18, E4 329.63, F4 349.23, F♯4 369.99, G♯4 415.30, A4 440.00, B4 493.88, C5 523.25, C♯5 554.37, E5 659.26 Hz | `hz`; `verify07.py` | arithmetic
