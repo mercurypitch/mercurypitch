@@ -20,12 +20,15 @@
 //   ring a corner level with the centre, C or F sharp, would put the word
 //   on the centre's name, so there it moves just clear of it, above, or
 //   below when the corner it goes to sits below the centre: chosen by
-//   where the mark is going, it moves at most once on its way.
+//   where the mark is going, it moves at most once on its way. The ring
+//   stops short of the octave name the spiral writes beside C, "C4", so a
+//   mark on C leaves it whole.
 
 import { lerp, TAU } from './dom'
-import { COLOR, rgba } from './notes'
+import { COLOR, nameOf, rgba } from './notes'
 import type { Point, Ring } from './ring-rooms-draw'
-import { CENTRE_FONT, onRing } from './ring-rooms-draw'
+import { CENTRE_FONT, onRing, RING } from './ring-rooms-draw'
+import { C_NAME } from './spiral-draw'
 
 /** A new corner grows out to its bead in this long, s. */
 export const GROW_SEC = 0.3
@@ -42,6 +45,8 @@ const WORD_FONT = '600 12px Outfit, sans-serif'
 const CLEAR = (12 + 14) / 2 + 2
 /** How far outside the ring the arrows run, against a bead's radius. */
 const ARROW_OUT = 2
+/** How far the bass mark's ring stops short of C's octave name, px. */
+const NAME_CLEAR = 3
 
 /** A new corner's place as it grows, `k` from 0 to 1: from the middle of the edge it splits to its bead. */
 export function grownAt(
@@ -145,6 +150,23 @@ export function bassLabelAt(ring: Ring, at: number): Point | undefined {
   return outside(ring, at, -ring.bead * (MARK + 1.7))
 }
 
+/** C's octave name beside its bead on the lit turn, as the spiral writes it, with room round it. */
+function cNameBox(
+  ctx: CanvasRenderingContext2D,
+  ring: Ring,
+): { x: number; y: number; w: number; h: number } | undefined {
+  const c = ring.beadAt(0)
+  if (c === undefined) return undefined
+  ctx.font = C_NAME.font
+  const w = ctx.measureText(nameOf(RING) ?? '').width
+  return {
+    x: c.x + c.r + C_NAME.gap - NAME_CLEAR,
+    y: c.y - C_NAME.size / 2 - NAME_CLEAR,
+    w: w + 2 * NAME_CLEAR,
+    h: C_NAME.size + 2 * NAME_CLEAR,
+  }
+}
+
 /** What the bass mark keeps clear of, and where it is going. */
 export interface BassMarkOptions {
   /** The name the centre shows, drawn in `CENTRE_FONT`; none in a compact layout. */
@@ -167,11 +189,21 @@ export function drawBassMark(
   const p = onRing(ring, at)
   const inside = bassLabelAt(ring, at)
   if (p === undefined || inside === undefined) return
+  // the ring is drawn round C's octave name, cut out of where it draws
+  const octave = cNameBox(ctx, ring)
+  ctx.save()
+  if (octave !== undefined) {
+    ctx.beginPath()
+    ctx.rect(-1e5, -1e5, 2e5, 2e5)
+    ctx.rect(octave.x, octave.y, octave.w, octave.h)
+    ctx.clip('evenodd')
+  }
   ctx.strokeStyle = rgba(COLOR.chrome, 0.95)
   ctx.lineWidth = 2
   ctx.beginPath()
   ctx.arc(p.x, p.y, ring.bead * MARK, 0, TAU)
   ctx.stroke()
+  ctx.restore()
   const centre = o.centre ?? ''
   ctx.font = CENTRE_FONT
   const name = centre === '' ? 0 : ctx.measureText(centre).width

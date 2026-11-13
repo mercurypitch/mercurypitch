@@ -11,7 +11,8 @@
 // once it lands; and the bass mark rings its corner, with its word inside
 // the ring, clear of the black keys' names drawn outside their beads and of
 // the centre's name, moving above it, or below for a corner below the
-// centre (Lesson 27's WEB-SPEC, Toys 1 and Look).
+// centre, and its ring stops short of C's octave name (Lesson 27's
+// WEB-SPEC, Toys 1 and Look).
 
 import { describe, expect, it } from 'vitest'
 import './browser-doubles.test-fixtures'
@@ -21,7 +22,7 @@ import { RING_BLACK } from './ring-rooms'
 import type { Point, Ring } from './ring-rooms-draw'
 import { pcOf, ringOf } from './ring-rooms-draw'
 import type { BeadHit } from './spiral-draw'
-import { drawSpiral } from './spiral-draw'
+import { C_NAME, drawSpiral } from './spiral-draw'
 import { LO } from './spiral-keys'
 
 interface Call {
@@ -209,6 +210,29 @@ describe('the ring marks', () => {
     if (half === undefined) throw new Error('no moving mark')
     expect(dist(at(half), RING.c)).toBeCloseTo(RING.radius, 6)
     expect(dist(at(half), bead(7))).toBeCloseTo(dist(at(half), bead(8)), 6)
+  })
+
+  it('stops its ring short of C’s octave name, so a mark on C leaves "C4" whole', () => {
+    // Arrange: each letter of the name 7 px wide
+    const r = recorder((text) => text.length * 7)
+    const c = bead(0)
+
+    // Act
+    drawBassMark(r.ctx, RING, 0)
+
+    // Assert: the name's box, 3 px round it, cut out of where the ring draws
+    const clip = r.calls.findIndex((k) => k.name === 'clip')
+    const arc = r.calls.findIndex((k) => k.name === 'arc')
+    const box = r.calls.filter((k) => k.name === 'rect')[1]
+    expect(clip).toBeGreaterThan(-1)
+    expect(clip).toBeLessThan(arc)
+    expect(r.calls[clip].args).toEqual(['evenodd'])
+    expect(box.args[0]).toBeCloseTo(c.x + c.r + C_NAME.gap - 3, 9)
+    expect(box.args[1]).toBeCloseTo(c.y - C_NAME.size / 2 - 3, 9)
+    expect(box.args.slice(2)).toEqual([14 + 6, C_NAME.size + 6])
+    // the ring would reach the name: it runs past where the name starts
+    const ring = r.calls[arc].args[2] as number
+    expect(c.x + ring).toBeGreaterThan(c.x + c.r + C_NAME.gap)
   })
 
   it("moves the word just clear of the centre's name where a corner level with the centre would put it on it: above, or below when the mark goes to a corner below the centre", () => {
