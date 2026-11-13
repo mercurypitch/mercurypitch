@@ -23,7 +23,7 @@
 // other play button is disabled until the take ends, and a press on one
 // enabled since, or a tap on a figure, falls on nothing, as on Lesson 22's
 // page (WEB-SPEC, Tests 17). Then the pitch line, drawn only now
-// (sing-chart.ts), the lines, one a note, and "How did that feel?". Beside
+// (kit/pitch-line.ts), the lines, one a note, and "How did that feel?". Beside
 // the staff stands the still of the one who sings: Merc for the lower
 // voice, Tavi for the higher. Nothing celebrates a note.
 //

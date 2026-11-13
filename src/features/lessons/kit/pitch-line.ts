@@ -1,34 +1,35 @@
 // ============================================================
-// Lesson 16 Sing it's pitch line — a take drawn over its written notes
+// Pitch line — a take drawn over its written notes, after the take
 // ============================================================
 //
-// Drawn after a take, never during one (WEB-SPEC, Toys 6, state 7; FACTS
-// 46), as Lesson 9's chart draws a take: the kit's band chart with a lane
-// a semitone, each written note the take reached an amber band over the
-// stretch it was lit (kit/band-chart-rungs.ts), and the learner's line in
+// Drawn after a take, never during one (Lesson 16 WEB-SPEC, Toys 6, state
+// 7; FACTS 46), as Lesson 9's chart draws a take: the kit's band chart with
+// a lane a semitone, each written note the take reached an amber band over
+// the stretch it was lit (band-chart-rungs.ts), and the learner's line in
 // violet over them, folded into the written notes' octave. When most of
 // the voice sat an octave or more away, the tag says so: "octave lower"
-// (kit/band-words.ts `octaveTag`). The rows name the phrase's notes as
-// Lesson 9 names its ladder's: "re · A3". Nothing lights and nothing
-// celebrates a note: the lines under the chart do the reading (FACTS 47).
-// Loaded with the take's module on the first Start, so first paint
-// carries no chart.
+// (band-words.ts `octaveTag`). The rows name the phrase's notes as Lesson
+// 9 names its ladder's: "re · A3". Nothing lights and nothing celebrates a
+// note: the lines under the chart do the reading (FACTS 47). Lesson 16's
+// read-along take and the in-time take (take-in-time.ts, Lessons 18 and
+// 26) both hand one over, and each loads with its take's module on the
+// first Start, so first paint carries no chart.
 
-import type { BandChart, TracePoint } from '@/features/lessons/kit/band-chart'
-import { mountBandChart } from '@/features/lessons/kit/band-chart'
-import { rungNames } from '@/features/lessons/kit/band-chart-names'
-import type { Rung } from '@/features/lessons/kit/band-chart-rungs'
-import { paintRungs } from '@/features/lessons/kit/band-chart-rungs'
-import { octaveTag } from '@/features/lessons/kit/band-words'
-import { q } from '@/features/lessons/kit/dom'
-import { nameOf } from '@/features/lessons/kit/notes'
-import { octaveLine } from '@/features/lessons/kit/take'
+import type { BandChart, TracePoint } from './band-chart'
+import { mountBandChart } from './band-chart'
+import { rungNames } from './band-chart-names'
+import type { Rung } from './band-chart-rungs'
+import { paintRungs } from './band-chart-rungs'
+import { octaveTag } from './band-words'
+import { q } from './dom'
+import { nameOf } from './notes'
+import { octaveLine } from './take'
 
-/** A take's pitch line, in seconds from its first voiced frame and cents from do (sing-take.ts `pitchLineOf`). */
+/** A take's pitch line, in seconds across its window and cents from do (a take's `pitchLineOf`). */
 export interface PitchLine {
-  /** Seconds across: from the first voiced frame to the take's end. */
+  /** Seconds across: from the first voiced frame to the take's end, or an in-time take's bars, half a beat before bar 1 to the last window's close. */
   readonly seconds: number
-  /** Each written note the take reached: a band over the stretch it was lit. */
+  /** Each written note: a band over the stretch the take lit it, or over its own beats. */
   readonly rungs: readonly Rung[]
   /** The voice, each frame folded into the octave of the written note nearest it; a gap where none was heard. */
   readonly line: readonly TracePoint[]

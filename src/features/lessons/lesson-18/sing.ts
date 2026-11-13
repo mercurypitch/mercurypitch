@@ -16,7 +16,7 @@
 // takes no taps and has no pitch-line switch. Start opens the microphone,
 // then the voice sings do, 1.0 s, the house's note lit, and after 0.4 s of
 // quiet the click counts in one bar, "Counting in: one bar.". The take
-// opens half a beat before bar 1 (sing-take.ts, loaded on the first
+// opens half a beat before bar 1 (kit/take-in-time.ts, loaded on the first
 // Start): from bar 1's first beat the cursor crosses the bars at 60 BPM in
 // silence and the beat grid lights each beat, "Your turn: sing in time
 // with the cursor.", while Merc and Tavi listen in the hero (kit/merc-duo.ts
@@ -63,15 +63,15 @@ import { figureSize } from '@/features/lessons/kit/rhythm-draw'
 import { Sound } from '@/features/lessons/kit/sound'
 import type { Clef } from '@/features/lessons/kit/staff-places'
 import { clefForVoice, midiOf } from '@/features/lessons/kit/staff-places'
+import type * as TakeKit from '@/features/lessons/kit/take-in-time'
+import type { TakeEnd } from '@/features/lessons/kit/take-in-time'
 import type { Voice } from '@/features/lessons/kit/voice-choice'
 import { bindVoiceButtons, VoiceChoice, } from '@/features/lessons/kit/voice-choice'
 import mercBlue from '@/features/lessons/lesson-01/assets/merc-blue.png'
 import mercOrange from '@/features/lessons/lesson-01/assets/merc-orange.png'
-import { COUNT_IN, OPEN_BEATS } from './reads'
+import { COUNT_IN } from './reads'
 import type { SingEvent, SingView, SingVisit, TuneNo } from './sing-flow'
 import { HINT, nextVisit, openVisit, viewOf } from './sing-flow'
-import type * as TakeKit from './sing-take'
-import type { TakeEnd } from './sing-take'
 import type { SungPart, SungStaff } from './sung'
 import { startSung } from './sung'
 import type { Tune } from './tunes'
@@ -171,7 +171,8 @@ export function initSing(
     q<HTMLButtonElement>(`[data-sing="${name}"]`, root)
   const playStart = (n: TuneNo): HTMLButtonElement =>
     q<HTMLButtonElement>(`[data-sing="play-start"][data-tune="${n}"]`, root)
-  const loadTake = o.loadTake ?? (() => import('./sing-take'))
+  const loadTake =
+    o.loadTake ?? (() => import('@/features/lessons/kit/take-in-time'))
 
   let visit = openVisit({
     voice: VoiceChoice.voice,
@@ -427,7 +428,7 @@ export function initSing(
       onCount: () => send({ type: 'count' }),
       onBeats: (_part, beats) => {
         // the take opens half a beat before bar 1, 0.5 s after the last click starts
-        if (take === null && beats >= -OPEN_BEATS - 1e-6 && !cutStart) {
+        if (take === null && beats >= -kit.OPEN_BEATS - 1e-6 && !cutStart) {
           const first = started?.pageTimeOfBeat(0) ?? null
           if (first === null || mic.mod === null || mic.listener === null)
             return
