@@ -106,6 +106,42 @@
   width: 96px;
   height: 96px;
 }
+/* the figure's beads (words.ts): faint chrome at rest; a play clears them
+   and draws each as its note starts, ink while it sounds, gold for a chord
+   note over the chord, then chrome. A passing note's bead is an outline, so
+   colour never carries its meaning alone */
+.word-fig .w-bead {
+  fill: var(--chrome);
+  opacity: 0.35;
+  transition:
+    fill 160ms ease,
+    opacity 160ms ease;
+}
+.word-fig .w-bead.hollow {
+  fill: none;
+  stroke: var(--chrome);
+  stroke-width: 1.5;
+}
+.word-fig .w-bead[data-state='off'] {
+  opacity: 0;
+}
+.word-fig .w-bead[data-state='lit'],
+.word-fig .w-bead[data-state='gold'] {
+  opacity: 1;
+}
+.word-fig .w-bead[data-state='lit'] {
+  fill: var(--ink);
+}
+.word-fig .w-bead[data-state='gold'] {
+  fill: var(--gold);
+}
+.word-fig .w-bead.hollow[data-state='lit'] {
+  fill: none;
+  stroke: var(--ink);
+}
+.word-fig .w-bead[data-state='drawn'] {
+  opacity: 0.8;
+}
 
 /* ---------------------------------------------------------------- the steps' toy */
 /* a figure label is one 16 px line (the stage budget counts on it) */
