@@ -78,6 +78,38 @@ afterEach(() => {
   vi.useRealTimers()
 })
 
+describe('a move of no time', () => {
+  it("lands at once, even on a frame that takes no time: do set with no glide, as Lesson 25's words set it", () => {
+    // Arrange: motion on, a compact staircase on A3 over still rows, whose
+    // stairs stand where do stands, drawn once
+    still = false
+    const canvas = document.createElement('canvas')
+    document.body.replaceChildren(canvas)
+    const c = mountStairs({
+      canvas,
+      compact: true,
+      active: () => true,
+      range: { lo: 57, hi: 60 },
+      room: { rows: { lo: 57, hi: 72 } },
+    })
+    core = c
+    const drawer = drawers[drawers.length - 1]
+    drawer.draw(0, 0.016)
+
+    // Act: do on C4 with no glide, then a frame of no time, as the loop's
+    // first frame after a rest can be
+    c.setTonic(60, 0)
+    drawer.draw(0, 0)
+
+    // Assert: every stair stands somewhere, on C4's, and nothing is left moving
+    const tops = c.layout?.stairs.map((st) => st.top) ?? []
+    expect(tops.length).toBeGreaterThan(0)
+    expect(tops.every((y) => Number.isFinite(y))).toBe(true)
+    expect(c.tonic).toBe(60)
+    expect(drawer.wants?.()).toBe(false)
+  })
+})
+
 describe('setRange', () => {
   it('stands on the new lowest start at once and keeps a slide within the new starts', () => {
     // Arrange: Lesson 21's lower voice, G2
