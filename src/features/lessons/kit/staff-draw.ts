@@ -115,8 +115,9 @@ export interface Scene {
   readonly key?: KeySig | null
   /** The first sign that has just joined the signature, by its place in the order: it and those after it fade in. */
   readonly keyFresh?: number | null
-  /** The run column whose note carried that sign: the sign travels from beside the note into the signature. */
+  /** The run column whose note carried that sign: the sign travels from beside the note into the signature, in `keyMs` (450 ms unless given). */
   readonly keyFrom?: number | null
+  readonly keyMs?: number
   /** The signs the staff keeps room for past the clef, so its notes stay put as a signature grows. */
   readonly keyRoom?: number
   /** A sign lit with the note it covers as that note sounds: its place in the order, and the note's tone. */
@@ -462,15 +463,15 @@ function signAt(
   return { x: right - width * k, y: y + NOTO_GLYPHS.head.cy * k }
 }
 
-/** Moves a sign from (dx, dy) away to where it is drawn; held still while motion is paused. */
-function travel(el: SVGGElement, dx: number, dy: number): void {
+/** Moves a sign from (dx, dy) away to where it is drawn, in `ms`; held still while motion is paused. */
+function travel(el: SVGGElement, dx: number, dy: number, ms = SLIDE_MS): void {
   if (Motion.paused || typeof el.animate !== 'function') return
   el.animate(
     [
       { transform: `translate(${r(dx)}px, ${r(dy)}px)` },
       { transform: 'translate(0px, 0px)' },
     ],
-    { duration: SLIDE_MS, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)' },
+    { duration: ms, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)' },
   )
 }
 
@@ -514,7 +515,7 @@ function keySig(s: Scene, L: Layout, parent: Element): void {
       L.yOf(placeOf(from.note, s.staff)),
       L.space,
     )
-    travel(holder, was.x - x, was.y - y)
+    travel(holder, was.x - x, was.y - y, s.keyMs)
   })
 }
 

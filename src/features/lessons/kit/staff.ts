@@ -102,11 +102,16 @@ export interface StaffToy {
   /**
    * Changes the key signature and keeps what the staff shows, saying it in
    * words unless `quiet`; a sign that joins fades in, or travels from beside
-   * the note in run column `from` that carried it.
+   * the note in run column `from` that carried it, in `sec` seconds (0.45
+   * unless given; Lesson 25's flats take 0.6).
    */
   setKey(
     key: KeySig | null,
-    how?: { readonly from?: number; readonly quiet?: boolean },
+    how?: {
+      readonly from?: number
+      readonly quiet?: boolean
+      readonly sec?: number
+    },
   ): void
   /** Plays `p`; resolves true when heard to its end with nothing cutting it short. */
   play(p: StaffPlay): Promise<boolean>
@@ -217,6 +222,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
   let key: KeySig | null = state.key ?? null
   let keyFresh: number | null = null
   let keyFrom: number | null = null
+  let keyMs: number | undefined
   // what sounds: a play or a tap, and the timers that put its notes back to rest
   let playing: Run | null = null
   let timers: number[] = []
@@ -286,6 +292,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
       key,
       keyFresh,
       keyFrom,
+      keyMs,
       keyRoom: state.keyRoom,
     }
   }
@@ -377,7 +384,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
     gold = null
     if (p.show === 'run') {
       run = []
-      runCols = p.notes.length
+      runCols = Math.max(...p.notes.map((n, i) => n.col ?? i)) + 1
       cursor = null
     } else run = []
     const notes: RunNote[] = p.notes.map((n) => ({
@@ -413,7 +420,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
         const next = run.slice()
         next[i] = {
           note: n.note,
-          col: i,
+          col: n.col ?? i,
           tone,
           on: n.on,
           outline: n.outline,
@@ -637,7 +644,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
 
   function setKey(
     next: KeySig | null,
-    how: { readonly from?: number; readonly quiet?: boolean } = {},
+    how: Parameters<StaffToy['setKey']>[1] = {},
   ): void {
     const was = key
     key =
@@ -646,11 +653,13 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
       was?.sign === key?.sign && (was?.count ?? 0) === (key?.count ?? 0)
     keyFresh = joining(was, key)
     keyFrom = keyFresh === null ? null : (how.from ?? null)
+    keyMs = how.sec === undefined ? undefined : how.sec * 1000
     el.setAttribute('aria-label', labelOf())
     draw()
     // drawn once: a later redraw shows the signature as it stands
     keyFresh = null
     keyFrom = null
+    keyMs = undefined
     if (how.quiet !== true && !same) say(keyWords(key ?? NO_KEY))
   }
 
