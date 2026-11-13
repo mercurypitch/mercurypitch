@@ -50,6 +50,15 @@ export const MERC_VIBRATO: Vibrato = { rate: 5.5, extent: 14, growIn: 0.35 }
 /** Seconds a sounding voice's vibrato takes to glide to a new rate and extent (`Voice.setVibrato`). */
 export const VIBRATO_GLIDE = 0.05
 
+/** A single soft note's level, the soft tone's own: a tapped bead, a root, a scale's note (Lesson 12 FACTS 74). */
+export const NOTE_GAIN = 0.13
+/** Each voice of a chord heard alone (Lesson 12 FACTS 74). */
+export const CHORD_GAIN = 0.075
+/** Each voice of a chord under Merc's "ooh" or under the guide, so the tune or the root stands clear of it (Lesson 12 FACTS 74). */
+export const UNDER_GAIN = 0.05
+/** Merc's "ooh", its own level. */
+export const MERC_GAIN = 0.2
+
 export interface VoiceOptions {
   /** 'merc' is Merc's "ooh": brighter partials and his vibrato, `MERC_VIBRATO`. */
   kind?: 'soft' | 'merc'
@@ -59,6 +68,7 @@ export interface VoiceOptions {
    * modulator built. Set, that rate, extent and grow-in, on either kind.
    */
   vibrato?: Vibrato | null
+  /** Its level: `MERC_GAIN` for Merc's "ooh" and `NOTE_GAIN` for the soft tone unless given. */
   gain?: number
   /** Attack and release, seconds. */
   attack?: number
@@ -237,7 +247,7 @@ function build(freq: number, o: VoiceOptions): Graph | null {
   lp.Q.value = 0.5
   const env = context.createGain()
   const level = context.createGain()
-  level.gain.value = o.gain ?? (merc ? 0.2 : 0.13)
+  level.gain.value = o.gain ?? (merc ? MERC_GAIN : NOTE_GAIN)
   const parts: AudioScheduledSourceNode[] = [osc]
   osc.connect(lp)
   if (o.timbre) o.timbre(lp, env, t, parts)
