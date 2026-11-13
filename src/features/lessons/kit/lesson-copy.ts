@@ -210,6 +210,16 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       },
     ],
   },
+  26: {
+    tease:
+      '‘Twinkle’, and the same tune four semitones higher, played together.',
+    teaseAlts: [
+      {
+        id: 'plan',
+        text: "Lesson 24's other part was a drone. What if it's a tune?",
+      },
+    ],
+  },
 }
 
 /**

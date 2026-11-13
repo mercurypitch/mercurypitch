@@ -474,7 +474,7 @@ describe('Season 2', () => {
     ])
   })
 
-  it('teases each of Lessons 16 to 25 on the card before it, and carries no other copy of its own yet', () => {
+  it('teases each of Lessons 16 to 26 on the card before it, and carries no other copy of its own yet', () => {
     // Arrange
     const L16 = LESSONS_2.find((L) => L.n === 16)
     const L17 = LESSONS_2.find((L) => L.n === 17)
@@ -574,6 +574,18 @@ describe('Season 2', () => {
         text: 'Do, mi and so made a major chord. Minor keys hide another change.',
       },
     ])
+    // Lesson 25 FACTS 5: on Lesson 25's card, Lesson 26's opening in
+    // miniature, and Lesson 25's planned line mended
+    const L26 = LESSONS_2.find((L) => L.n === 26)
+    expect(L26?.tease).toBe(
+      '‘Twinkle’, and the same tune four semitones higher, played together.',
+    )
+    expect(L26?.teaseAlts).toEqual([
+      {
+        id: 'plan',
+        text: "Lesson 24's other part was a drone. What if it's a tune?",
+      },
+    ])
     // Lesson 21 FACTS 5b: on Lesson 20's card, Lesson 21's opening in
     // miniature, and Lesson 20's planned line, cut to fit
     const L21 = LESSONS_2.find((L) => L.n === 21)
@@ -586,12 +598,12 @@ describe('Season 2', () => {
         text: 'Lesson 4 slid the scale to G, with one sharp, and to D, with two.',
       },
     ])
-    for (const L of [L19, L20, L21, L22, L23, L24, L25])
+    for (const L of [L19, L20, L21, L22, L23, L24, L25, L26])
       for (const line of [L?.tease, ...(L?.teaseAlts ?? []).map((a) => a.text)])
         expect(line?.length ?? 0).toBeLessThanOrEqual(TEASE_MAX)
     for (const L of LESSONS_2) {
       expect(L.hookAlts, `lesson ${L.n}`).toBeUndefined()
-      if (L.n >= 16 && L.n <= 25) continue
+      if (L.n >= 16 && L.n <= 26) continue
       expect(L.tease, `lesson ${L.n}`).toBeUndefined()
       expect(L.teaseAlts, `lesson ${L.n}`).toBeUndefined()
     }

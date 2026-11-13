@@ -27,13 +27,16 @@ import '@/features/lessons/kit/lesson-fonts.css'
 import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
-// the guide's and the voice lessons' sheets join with the recall and Sing
-// it, the modules whose chunks they share: taken before them, each leaves
-// its chunk for one of its own, which every lesson page would then link
-// after its own sheet (MISTAKES.md, on the lessons' base stylesheet)
 import '@/features/lessons/kit/lesson-parts.css'
+// Sing it brings the kit's comfort check and voice choice, so taking the
+// voice lessons' sheet here keeps it in the chunk it shares with them: a
+// sheet left out leaves that chunk for one of its own, which every lesson
+// page would then link after its own sheet (MISTAKES.md, on the lessons'
+// base stylesheet). The recall reaches no sheet: Lesson 10's and Lesson
+// 21's questions are words alone, so the guide's sheet stays out.
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-25.css'
-import { q } from '@/features/lessons/kit/dom'
+import { q, qa } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
 import { startFrameLoop } from '@/features/lessons/kit/frame-loop'
 import { initMercs } from '@/features/lessons/kit/merc-duo'
@@ -46,8 +49,10 @@ import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
 import { initQuizzes } from './recall'
+import { initSing } from './sing'
 import { initSteps } from './steps'
 import { initWords } from './words'
+import { initWrap } from './wrap'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -72,6 +77,12 @@ initQuizzes(deck)
 // four words, each figure a small staircase in the learner's octave, lit
 // as its scale plays
 initWords()
+
+// Sing it on the kit's flow, with nothing listening; the Wrap's card in
+// the version its ending picks, and free play, holding back what the cold
+// open's choice opens
+initSing()
+const wrap = initWrap()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(25)
@@ -101,8 +112,16 @@ initMasthead(
 // after the masthead has started the tour, in the same task
 // (kit/tour-gate.ts `holdTour`)
 initColdOpen(deck, {
-  unlocks: [q<HTMLButtonElement>('#toyMinor [data-raise="te"]')],
-  onChoice: () => steps.toy.unlock(),
+  unlocks: [
+    q<HTMLButtonElement>('#toyMinor [data-raise="te"]'),
+    ...qa<HTMLButtonElement>(
+      '#freePlay [data-raise], #freePlay [data-minor-play="chord-home"]',
+    ),
+  ],
+  onChoice: () => {
+    steps.toy.unlock()
+    wrap.free.unlock()
+  },
 })
 initReveals()
 startFrameLoop()
