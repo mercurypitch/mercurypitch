@@ -57,12 +57,21 @@ export function lookSaid(look: Look): string {
   return `${name}, do to do: ${notes}. Steps of ${risersSaid(look.degrees)} semitones.`
 }
 
-/** The chord column's chord on so, on `tonic`'s minor key: "E3, G♯3, B3", "E major". */
-export function columnChord(tonic: number, raised: boolean): ColumnChord {
+/**
+ * The chord column's chord on so, on `tonic`'s minor key: "E3, G♯3, B3",
+ * "E major". With `octave` false its names have none, "E, G♯, B": the
+ * hero's column stands on its staircase's rows, an octave over the chord
+ * its endings sound (cold-open.ts).
+ */
+export function columnChord(
+  tonic: number,
+  raised: boolean,
+  octave = true,
+): ColumnChord {
   const tones = chordOnSo(tonic, raised)
   return {
     notes: tones.map((n) => n.midi),
-    names: tones.map((n) => signName(n.spelled)),
+    names: tones.map((n) => signName(n.spelled, { octave })),
     label: `${signName(tones[0].spelled, { octave: false })} ${qualityOf(tones)}`,
   }
 }
