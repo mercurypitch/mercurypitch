@@ -996,4 +996,5 @@ Where the page differs from the text above, the page as built is the reference:
 - Free play has no tap pad (Toys 2, state 5): Step 3 keeps the page's one, where its task is.
 - The recall and the quick check load after first paint as a chunk of their own (`recall.ts`), as
   free play does (`free-play.ts`), so the page's first paint carries neither; the take's reader and
-  its pitch line load with the microphone at Start (`sing-take.ts`).
+  its pitch line load with the microphone at Start (`kit/take-in-time.ts`, which Lesson 26's take
+  shares).

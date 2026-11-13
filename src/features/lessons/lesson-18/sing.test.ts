@@ -24,13 +24,14 @@ import type * as MercDuo from '@/features/lessons/kit/merc-duo'
 import { hz } from '@/features/lessons/kit/notes'
 import { Sound } from '@/features/lessons/kit/sound'
 import type * as SoundAheadModule from '@/features/lessons/kit/sound-ahead'
+import type * as TakeKit from '@/features/lessons/kit/take-in-time'
+import type { PitchLine, TakeContext, TakeEnd, } from '@/features/lessons/kit/take-in-time'
+import { OPEN_BEATS } from '@/features/lessons/kit/take-in-time'
 import { VoiceChoice } from '@/features/lessons/kit/voice-choice'
 import type * as WoodblockModule from '@/features/lessons/kit/woodblock'
 import { drive, el, loadPage, resetRuns, runs, settle, soundOn, words, } from './page-dom.test-fixtures'
 import { AFTER_SEC, initSing } from './sing'
 import { STATUS } from './sing-flow'
-import type * as TakeKit from './sing-take'
-import type { PitchLine, TakeContext, TakeEnd } from './sing-take'
 
 vi.mock('@/features/lessons/kit/beat-clock', async (actual) => ({
   ...(await actual<typeof BeatClockModule>()),
@@ -81,6 +82,7 @@ let ends: ((e: TakeEnd) => void)[] = []
 let drawn: { notes: readonly number[]; labels: readonly string[] }[] = []
 const loadTake = async (): Promise<typeof TakeKit> =>
   ({
+    OPEN_BEATS,
     runTake: (c: TakeContext) => {
       takes.push(c)
       return new Promise<TakeEnd>((r) => ends.push(r))

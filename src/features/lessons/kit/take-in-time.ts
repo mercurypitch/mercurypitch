@@ -1,47 +1,51 @@
 // ============================================================
-// Lesson 18 Sing it's take — two bars sung in time, read note by note
+// Take in time — written notes sung in time, read note by note
 // ============================================================
 //
-// Loaded on the first Start, so first paint carries no reader (sing.ts).
-// The take opens half a beat before bar 1's first beat, 0.5 s after the
-// last click starts, and listens until the last note's window closes, a
-// quarter of a beat after bar 2 ends, moved by the anchor: up to 2.25 s
-// after the final bar line for a singer who came in two beats late
-// (WEB-SPEC, Toys 5, state 6; FACTS 52, 82). Nothing plays while it runs.
-// The in-time reader (kit/read-in-time.ts) reads each written note in its
-// own beats, anchored on the singer's first note, and each note's line
-// names "the written note", its syllable first: "So · In the band: 20
-// cents above the written note.", or "Mi · We didn't hear a steady note
-// there.", with no count, no score and nothing on timing (FACTS 54).
+// Lesson 18's take (its WEB-SPEC, Toys 5, state 6; FACTS 52, 82), which
+// Lesson 26 sings against a part: loaded on the first Start, so first
+// paint carries no reader. The take opens half a beat before bar 1's
+// first beat, 0.5 s after the count-in's last click starts (`OPEN_BEATS`,
+// which the page reads from this module once it has loaded, to know when
+// to open it), and listens until the last note's window closes, a quarter
+// of a beat after the last bar ends, moved by the anchor: up to 2.25 s
+// after the final bar line for a singer who came in two beats late. The
+// in-time reader (read-in-time.ts) reads each written note in its own
+// beats, anchored on the singer's first note, and each note's line names
+// "the written note", its syllable first: "So · In the band: 20 cents
+// above the written note.", or "Mi · We didn't hear a steady note there.",
+// with no count, no score and nothing on timing (Lesson 18 FACTS 54).
 //
-// The frames' clock starts with the take (kit/listen.ts `takeFrames`), on
-// the page's clock; the beat clock gives bar 1's first beat on that clock
+// The frames' clock starts with the take (listen.ts `takeFrames`), on the
+// page's clock; the beat clock gives bar 1's first beat on that clock
 // (`pageTimeOfBeat`), so the take knows where bar 1 falls in its frames.
 //
 // The pitch line comes with the lines, for the page to draw after the take
-// and never during it (Lesson 16's sing-chart.ts): on the bars' time axis,
-// moved by the anchor as the reader moves the beats, each written note an
-// amber band over its own beats, as long as the note sounds, and the voice
-// in violet, each frame folded into the octave of the written note nearest
-// it, with the octave named in a tag when most of the voice sat an octave
-// or more away (FACTS 53).
+// and never during it (pitch-line.ts): on the bars' time axis, moved by the
+// anchor as the reader moves the beats, each written note an amber band
+// over its own beats, as long as the note sounds, and the voice in violet,
+// each frame folded into the octave of the written note nearest it, with
+// the octave named in a tag when most of the voice sat an octave or more
+// away (Lesson 18 FACTS 53).
 
-import type { TracePoint } from '@/features/lessons/kit/band-chart'
-import type { Rung } from '@/features/lessons/kit/band-chart-rungs'
-import { octavesOf } from '@/features/lessons/kit/band-words'
-import type { Listener } from '@/features/lessons/kit/listen'
-import type { ListenModule } from '@/features/lessons/kit/mic-hold'
-import { readingLines } from '@/features/lessons/kit/read-along'
-import type { InTimeOptions, InTimeReading, WrittenNote, } from '@/features/lessons/kit/read-in-time'
-import { readInTime, WINDOW_BEATS, windowsClose, } from '@/features/lessons/kit/read-in-time'
-import { heldSeconds } from '@/features/lessons/kit/rhythm-model'
-import type { PitchLine } from '@/features/lessons/lesson-16/sing-chart'
 import type { F0Frame } from '@/lib/mirror/metrics'
 import { foldCents, median, preprocess } from '@/lib/mirror/metrics'
-import { OPEN_BEATS } from './reads'
+import type { TracePoint } from './band-chart'
+import type { Rung } from './band-chart-rungs'
+import { octavesOf } from './band-words'
+import type { Listener } from './listen'
+import type { ListenModule } from './mic-hold'
+import type { PitchLine } from './pitch-line'
+import { readingLines } from './read-along'
+import type { InTimeOptions, InTimeReading, WrittenNote } from './read-in-time'
+import { readInTime, WINDOW_BEATS, windowsClose } from './read-in-time'
+import { heldSeconds } from './rhythm-model'
 
-export type { PitchLine } from '@/features/lessons/lesson-16/sing-chart'
-export { drawPitchLine } from '@/features/lessons/lesson-16/sing-chart'
+export type { PitchLine } from './pitch-line'
+export { drawPitchLine } from './pitch-line'
+
+/** The take opens this many beats before bar 1's first beat: 0.5 s after the count-in's last click starts (Lesson 18 FACTS 82). */
+export const OPEN_BEATS = 0.5
 
 /** The longest a take runs once the voice has begun, s: a cap, since the last window's close ends it first. */
 const RUN_CAP_SEC = 30
@@ -136,7 +140,7 @@ export function pitchLineOf(
   }
 }
 
-/** One take of two bars in time: listened for until the last window closes, then read note by note. */
+/** One take of written notes in time: listened for until the last window closes, then read note by note. */
 export async function runTake(c: TakeContext): Promise<TakeEnd> {
   const spb = 60 / c.bpm
   // the frames' clock starts here, with the take

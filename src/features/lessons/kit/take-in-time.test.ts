@@ -1,27 +1,27 @@
 // ============================================================
-// Lesson 18 Sing it's take tests — two bars in time, read note by note
+// Take in time tests — Lesson 18's two bars in time, read note by note
 // ============================================================
 //
-// On synthetic takes, a frame every 10 ms (WEB-SPEC, Toys 5, states 6 and
-// 7; FACTS 52 to 54, 82): the take opens on its own clock half a beat
-// before bar 1, waits with no voice until an unmoved last window would
-// close, and with voice listens until the last window closes, moved by the
-// anchor; each note's line names the written note; a take that heard no
-// voice in any window has no lines and no pitch line; one abandoned is
-// left. The pitch line sits on the bars' time axis, moved by the anchor:
-// each written note an amber band over its own beats, the voice folded
-// into the written notes' octave, a gap where it stopped, and the octave
-// named when it sat an octave away.
+// On synthetic takes, a frame every 10 ms (Lesson 18 WEB-SPEC, Toys 5,
+// states 6 and 7; FACTS 52 to 54, 82): the take opens on its own clock
+// half a beat before bar 1, waits with no voice until an unmoved last
+// window would close, and with voice listens until the last window closes,
+// moved by the anchor; each note's line names the written note; a take
+// that heard no voice in any window has no lines and no pitch line; one
+// abandoned is left. The pitch line sits on the bars' time axis, moved by
+// the anchor: each written note an amber band over its own beats, the
+// voice folded into the written notes' octave, a gap where it stopped, and
+// the octave named when it sat an octave away.
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import '@/features/lessons/kit/browser-doubles.test-fixtures'
-import type { Listener, TakeOptions } from '@/features/lessons/kit/listen'
-import type { ListenModule } from '@/features/lessons/kit/mic-hold'
-import type { InTimeOptions, WrittenNote, } from '@/features/lessons/kit/read-in-time'
-import { readInTime } from '@/features/lessons/kit/read-in-time'
-import { heldSeconds } from '@/features/lessons/kit/rhythm-model'
+import './browser-doubles.test-fixtures'
 import type { F0Frame } from '@/lib/mirror/metrics'
-import { pitchLineOf, runTake } from './sing-take'
+import type { Listener, TakeOptions } from './listen'
+import type { ListenModule } from './mic-hold'
+import type { InTimeOptions, WrittenNote } from './read-in-time'
+import { readInTime } from './read-in-time'
+import { heldSeconds } from './rhythm-model'
+import { pitchLineOf, runTake } from './take-in-time'
 
 const HOP = 0.01
 /** Bar 1's first beat on the take's clock: half a beat after it opens, a beat 1 s at 60 BPM. */

@@ -14,7 +14,7 @@
 // no count, no score and no celebration (FACTS 47).
 //
 // The take's pitch line comes with its lines, for the page to draw after
-// it and never during it (sing-chart.ts): each written note the take
+// it and never during it (kit/pitch-line.ts): each written note the take
 // reached is a band over the stretch it was lit, and each frame of the
 // voice is folded into the octave of the written note nearest it, so a
 // learner who sings an octave lower sees their line on the bands, with the
@@ -28,14 +28,14 @@ import type { Rung } from '@/features/lessons/kit/band-chart-rungs'
 import { octavesOf } from '@/features/lessons/kit/band-words'
 import type { Listener } from '@/features/lessons/kit/listen'
 import type { ListenModule } from '@/features/lessons/kit/mic-hold'
+import type { PitchLine } from '@/features/lessons/kit/pitch-line'
 import type { NoteRun } from '@/features/lessons/kit/read-along'
 import { readAlong, readingLines, readNotes, } from '@/features/lessons/kit/read-along'
 import type { VoicedFrame } from '@/lib/mirror/metrics'
 import { foldCents, median, preprocess } from '@/lib/mirror/metrics'
-import type { PitchLine } from './sing-chart'
 
-export type { PitchLine } from './sing-chart'
-export { drawPitchLine } from './sing-chart'
+export type { PitchLine } from '@/features/lessons/kit/pitch-line'
+export { drawPitchLine } from '@/features/lessons/kit/pitch-line'
 
 /** The take's timing, s: the wait for the voice, and the longest take once it has begun (FACTS 45, 46). */
 export const TAKE = { wait: 8, run: 40 } as const
