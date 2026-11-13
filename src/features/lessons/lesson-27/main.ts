@@ -44,6 +44,7 @@ import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initSteps } from './steps'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -58,6 +59,9 @@ const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
+// the toy holds back what would answer the cold open's predict, and Step
+// 4's predict waits for that choice
+initSteps(deck)
 deck.start()
 
 // the next lesson's card first: the explorer binds its link to the map
