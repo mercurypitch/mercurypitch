@@ -677,7 +677,7 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // and its marks) beside the staff toy, the cold open's ring on the kit's
   // predict, the three words' staves, the recall and the quick check on the
   // kit's quiz with Lesson 12's and Lesson 23's questions, Sing it on the kit's
-  // sing flow with its comfort check and voice choice, and free play: 207,333
+  // sing flow with its comfort check and voice choice, and free play: 207,966
   // bytes in build:e2e; a quarter over.
   'learn/27.html': 254,
 
@@ -876,7 +876,7 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // over. The recall reaches no sheet, its questions being words alone, so
   // the guide's stays out.
   'learn/25.html': 114,
-  // Lesson 27 (a draft, as above): 92,284 bytes in build:e2e, the kit's sheets
+  // Lesson 27 (a draft, as above): 92,302 bytes in build:e2e, the kit's sheets
   // (the voice lessons' in the chunk Sing it's comfort check shares, and the
   // shared parts), its own with the staff toy's taken in by @import, and the
   // shared Inter and Outfit @font-face rules; a quarter over. The recall
