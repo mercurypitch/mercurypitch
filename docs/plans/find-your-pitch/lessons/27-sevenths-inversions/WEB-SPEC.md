@@ -620,10 +620,15 @@ Where the page differs from the text above, the page as built is the reference:
 - The bass mark's word sits inside the ring, past the mark towards the centre, clear of the names
   the black piano keys carry outside their beads. Where a corner level with the centre, C, would put
   it on the centre's name, as on a phone's ring, it stands just above the name, or below it when the
-  mark is on its way to a corner below the centre (`kit/ring-marks.ts` `drawBassMark`).
-- Step 4's choice brings the bass mark and Turn over; the positions' names, under the ring and in
-  the figure's name, wait for its reveal, so its two plays sound their evidence without naming its
-  answer (FACTS 1b, 48).
+  mark is on its way to a corner below the centre (`kit/ring-marks.ts` `drawBassMark`). Its ring
+  stops short of the octave name the spiral writes beside C, "C4", so a mark on C leaves it whole.
+- Step 4's choice brings the bass mark and Turn over; the positions' names, and a turned chord's
+  name, in the readout, the ring's centre, the figure's name and its live line, wait for its reveal,
+  the chord's letters standing in until then, so its two plays sound their evidence without naming
+  its answer (FACTS 1b, 48).
+- Until the cold open's choice, Step 4's V7 chip reads V, as V7's room is drawn as V on every step,
+  and the steps' line shows under the figure on all four steps, under Step 4's chips there: Toys 1
+  gives Step 2 the same line, and a chip reading V7 would name the cold open's answer (FACTS 1a).
 - Lesson 12's own marks and plays, the key turn, the corner slide, the walk, the roots' line and the
   syllables, stay on Lesson 12's page: the kit took the ring, its rooms, halos and centre and its
   mount (`kit/ring-rooms-draw.ts`, `kit/ring-rooms.ts`), and this page's marks are new to the kit
@@ -632,11 +637,11 @@ Where the page differs from the text above, the page as built is the reference:
   came out half the steps' ring, its centre's name running into F♯'s.
 - The lit chord's chip stays marked while its room is lit; a chip's play light shows only while its
   chord sounds. Free play's longest plays wrap their words at a phone's width, left-aligned as the
-  plays above them start.
+  plays above them start, their two lines balanced so no letter stands alone on the second.
 - The recall imports Lesson 23's question 1 from Lesson 23's page, built since FACTS 7 was written
   (`lesson-23/quiz-questions.ts`).
 - This lesson's tease still, the two rooms with V lit and no fourth corner, belongs on Lesson 26's
   card, so it is drawn with Lesson 26's page, which is not built yet; the Tests' item 18 waits for
   it.
 - The first-paint ceilings are the page's measured build a quarter over, as every lesson's are: 254
-  KB of JavaScript (207,333 bytes) and 113 KB of CSS (92,284 bytes) in `build:e2e`.
+  KB of JavaScript (207,966 bytes) and 113 KB of CSS (92,302 bytes) in `build:e2e`.
