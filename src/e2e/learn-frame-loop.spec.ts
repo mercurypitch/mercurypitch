@@ -6,7 +6,7 @@
 // (kit/frame-loop.ts), and it stops asking for frames once every figure
 // has nothing new to draw. The ring, the slide guide and the explorer never
 // said so, and kept it asking every frame for as long as the page was open.
-// On every lesson page, Lessons 1 to 13, 15 to 25 and 27, each figure that uses one of the
+// On every lesson page, Lessons 1 to 13 and 15 to 27, each figure that uses one of the
 // three is scrolled into view and left to settle, and then it changes
 // nothing for a whole second: no paint of its canvas, no change to the
 // ring's drawing. A run of the figure (a sung note, Merc's slide, scale or
@@ -706,6 +706,26 @@ test("Lesson 25: the hero's staircase, the steps' stage, the four words, Sing it
   await open(page, 25)
 
   // its staircases and staffs paint only when what they show changes;
+  // Season 2's map, with no plate on it, rests too
+  for (const at of [
+    '#heroStage',
+    '#words',
+    '#stepsStage',
+    '#sing',
+    '#freePlay',
+    '#explorer',
+  ]) {
+    await scrollTo(page, at)
+    await expectRest(page, null)
+  }
+})
+
+test("Lesson 26: the hero's tune line, the three words, the steps' stage, Sing it, free play and the explorer on Season 2's tab rest, and so does the whole page", async ({
+  page,
+}) => {
+  await open(page, 26)
+
+  // its tune lines and figures paint only when what they show changes;
   // Season 2's map, with no plate on it, rests too
   for (const at of [
     '#heroStage',

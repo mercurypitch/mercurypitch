@@ -285,6 +285,8 @@ const NO_FILM = [
   // it teaches in four steps
   { n: 25, title: 'Minor, properly', steps: 4 },
   // it teaches in four steps
+  { n: 26, title: 'A second voice', steps: 4 },
+  // it teaches in four steps
   { n: 27, title: 'Seventh chords and inversions', steps: 4 },
 ] as const
 

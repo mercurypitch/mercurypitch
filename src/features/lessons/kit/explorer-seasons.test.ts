@@ -525,6 +525,32 @@ describe('the explorer, a tab per season', () => {
     ).not.toBeNull()
   })
 
+  it("opens Lesson 26's page on its own card, Ready, with the Jam link", async () => {
+    // Arrange: Lesson 26's page carries Season 2 before it draws (main.ts)
+    vi.resetModules()
+    const { carrySeason } = await import('./page-state')
+    const { SEASON_2: S2 } = await import('./season-2')
+    const { createExplorer: explorerBuilt } = await import('./explorer')
+    carrySeason(S2)
+    explorerPage()
+
+    // Act
+    explorerBuilt({ current: 26 })
+
+    // Assert: a draft with a page, shown in this build, whose card on its own
+    // page goes back to its top (Lesson 26's WEB-SPEC, Explorer and season data)
+    const card = document.querySelector('#exCardHost .ex-card')
+    expect(openTitle()).toBe('A second voice')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Lesson 26')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Ready')
+    expect(
+      Array.from(card?.querySelectorAll('a.btn') ?? [], (a) =>
+        a.getAttribute('href'),
+      ),
+    ).toEqual(['#top'])
+    expect(card?.querySelector('a.addr[href="/jam?lesson=26"]')).not.toBeNull()
+  })
+
   it("opens Lesson 27's page on its own card, Ready, with the Exercises link", async () => {
     // Arrange: Lesson 27's page carries Season 2 before it draws (main.ts)
     vi.resetModules()
@@ -647,7 +673,7 @@ describe('the explorer, a tab per season', () => {
     ).toBe('Ready · after 10, 21, 23')
     expect(
       document.querySelector('#exList [data-n="26"] small')?.textContent,
-    ).toBe('Coming later · after 12, 24')
+    ).toBe('Ready · after 12, 24')
     expect(
       document.querySelector('#exList [data-n="27"] small')?.textContent,
     ).toBe('Ready · after 12, 23')

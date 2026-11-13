@@ -1,0 +1,334 @@
+/* ============================================================
+   Lesson 26 — A second voice: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's: lesson-base, lesson-sections, lesson-stage
+   and lesson-parts, imported by main.ts, and the tune line's sheet, taken
+   in here by @import so it inlines into this page's own sheet and splits no
+   chunk the other lessons share (MISTAKES.md, on the lessons' base
+   stylesheet).
+
+   Here: the hero's tune line between Merc and Tavi, with its two plays
+   under it (WEB-SPEC, Toys 1); the three words' small figures; the steps'
+   toy, Lesson 6's tune line in four states (Toys 2), its readout, its lock
+   line and its rows of controls; the held text of Steps 1 and 2; Sing it's
+   figure beside the still of the one who sings; and the Wrap's cards, with
+   the next card's tease still and free play. No staff and no decorative
+   one: the section heads carry none, and the body's season-2 class drops
+   the background's (kit/lesson-base.css). */
+
+@import '../kit/lesson-tune-line.css';
+
+/* ---------------------------------------------------------------- hero: the tune line between Merc and Tavi */
+/* six chips, which wrap: rows 16 px apart keep each prerequisite link's
+   44 px tap box whole (lesson-base.css, `.chip-link::after`) */
+.l26-hero .meta {
+  row-gap: 16px;
+}
+.l26-duo {
+  --merc: clamp(120px, 11vw, 168px);
+  --line-h: clamp(250px, 23vw, 320px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  height: calc(var(--line-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the tune line, where Merc and Tavi stand */
+.l26-duo .floor {
+  top: var(--line-h);
+}
+.l26-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l26-duo .merc-blue {
+  grid-column: 1;
+}
+.l26-duo .merc-orange {
+  grid-column: 3;
+}
+.l26-hero-tune {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  height: var(--line-h);
+  margin: 0;
+}
+/* the label over the stage, "'Twinkle' in C major" */
+.l26-hero-tune .tune-label {
+  margin: 0 0 4px;
+  font: 500 var(--fs-12) / 16px var(--f-mono);
+  letter-spacing: 0.06em;
+  color: var(--ink-2);
+  text-align: center;
+}
+.l26-hero-tune canvas {
+  display: block;
+  flex: 1 1 auto;
+  width: 100%;
+  min-height: 0;
+}
+/* the two plays sit under the stage, outside the predict card */
+.l26-hero .hero-plays {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+}
+@media (max-width: 1080px) {
+  .l26-duo {
+    --merc: clamp(120px, 20vw, 190px);
+    --line-h: clamp(250px, 40vw, 340px);
+  }
+  /* Play the tune sits right under the stage, before the sound gate (the
+     kit orders the hero's parts at this width) */
+  .l26-hero .hero-plays {
+    order: 4;
+  }
+}
+/* on a phone Merc and Tavi stand smaller either side of the line's foot,
+   so neither covers a bead */
+@media (max-width: 560px) {
+  .l26-duo {
+    --merc: min(17vw, 68px);
+    --line-h: 250px;
+    margin-top: 2px;
+  }
+}
+
+/* ---------------------------------------------------------------- three words */
+/* three tickets, each a small figure that draws its play as it sounds,
+   with no rows and no numbers (WEB-SPEC, Toys 3) */
+.ticket .stub svg.word-fig {
+  width: 96px;
+  height: 96px;
+}
+
+/* ---------------------------------------------------------------- the steps' toy */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+.l26-toy .tune-viz {
+  --viz-min: 220px;
+  position: relative;
+  height: 350px;
+}
+.l26-toy .tune-viz canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+@media (min-width: 961px) and (max-height: 720px) {
+  .l26-toy .tune-viz {
+    height: 300px;
+  }
+}
+/* a phone held sideways: the figure shares the screen with the toy's first
+   row of controls (kit/lesson-stage.css) */
+@media (orientation: landscape) and (max-height: 500px) {
+  .l26-toy .tune-viz {
+    --viz-min: 150px;
+    height: 220px;
+  }
+}
+/* Step 1's bracket in words, under the figure: "C up to E: 4 semitones" */
+.l26-toy .tune-readout {
+  margin: 8px 0 0;
+  font: 500 var(--fs-14) / 1.2 var(--f-mono);
+  color: var(--ink);
+  text-align: center;
+}
+.l26-toy .tune-readout[hidden] {
+  display: none;
+}
+/* the steps' line until the cold open's choice, under the figure */
+.lock-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-2);
+}
+.lock-line[hidden] {
+  display: none;
+}
+/* each step's controls, a row that wraps on a phone */
+.l26-toy .controls {
+  margin-top: 10px;
+}
+.l26-toy .controls[hidden] {
+  display: none;
+}
+.l26-toy .controls .btn {
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.2;
+}
+/* the switches' two halves, and free play's 1 to 4: each a 44 px target */
+.l26-toy .seg .btn {
+  min-width: 44px;
+}
+
+/* ---------------------------------------------------------------- the step text */
+/* Steps 1 and 2 under their headings wait for the cold open's reveal
+   behind their held lines (WEB-SPEC, Toys 1) */
+.held-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  color: var(--ink-2);
+}
+.held-line[hidden] {
+  display: none;
+}
+/* a play in a step's sentence wraps its words at a phone's width, as
+   Lesson 25's do */
+.steps-text .btn.inline {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}
+/* Tavi's line in Step 3, her still beside it, as Lesson 23's steps have */
+.l26-says {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+.l26-says img {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  object-fit: contain;
+}
+.l26-says .bubble {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.l26-says .bubble::after {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.l26-sing .sing-card .turn {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--hair);
+}
+.l26-sing .sing-card .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l26-sing .sing-card .guide-hint {
+  margin: 0 0 8px;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+/* the figure, the still of the one who sings beside it */
+.sing-fig {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 12px;
+  align-items: center;
+  margin: 16px 0;
+}
+.sing-fig[hidden] {
+  display: none;
+}
+.sing-fig .sing-chart {
+  position: relative;
+  height: 240px;
+}
+.sing-fig .sing-chart canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.sing-fig .sing-merc {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+}
+/* on a phone the figure takes the card's width, the still under it */
+@media (max-width: 560px) {
+  .sing-fig {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .sing-fig .sing-merc {
+    width: 56px;
+    height: 56px;
+    justify-self: end;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l26-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l26-app .second-drill {
+  margin-top: 14px;
+  color: var(--ink-2);
+}
+.l26-app .addr-line {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l26-app a.addr {
+  text-decoration: none;
+}
+.l26-next {
+  margin-top: 18px;
+}
+/* the tease still in the next-lesson card: Lesson 27's opening, under a
+   class of its own, apart from .next-tease; nothing moves and nothing
+   glows (WEB-SPEC, Toys 6) */
+.l26-tease {
+  width: min(100%, 320px);
+  margin-top: 12px;
+}
+.l26-tease svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.l26-tease-ring {
+  fill: none;
+  stroke: color-mix(in srgb, var(--chrome) 22%, transparent);
+  stroke-width: 1px;
+}
+.l26-tease-bead {
+  fill: color-mix(in srgb, var(--chrome) 70%, transparent);
+}
+.l26-tease-room {
+  stroke-linejoin: round;
+}
+.l26-tease-room.i {
+  fill: color-mix(in srgb, var(--chrome) 5%, transparent);
+  stroke: color-mix(in srgb, var(--chrome) 28%, transparent);
+  stroke-width: 1px;
+}
+.l26-tease-room.v {
+  fill: color-mix(in srgb, var(--chrome) 16%, transparent);
+  stroke: var(--chrome);
+  stroke-width: 1.5px;
+}
+.l26-tease-merc.b {
+  fill: color-mix(in srgb, var(--signal-blue) 70%, transparent);
+}
+.l26-tease-merc.o {
+  fill: color-mix(in srgb, var(--orange) 70%, transparent);
+}
+.l26-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}
+.l26-free .state-row {
+  margin-top: 10px;
+}
