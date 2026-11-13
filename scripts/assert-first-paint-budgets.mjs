@@ -656,10 +656,9 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // its signature, the cold open's staircase on the kit's predict, the four
   // words' staircases, the recall and the quick check on the kit's quiz
   // with Lesson 10's and Lesson 21's questions, Sing it on the kit's sing
-  // flow with its comfort check and voice choice, and free play: 201,869
-  // bytes in build:e2e, the smallest whole KB above, to rise as each part
-  // joins.
-  'learn/25.html': 198,
+  // flow with its comfort check and voice choice, and free play: 202,301
+  // bytes in build:e2e; a quarter over.
+  'learn/25.html': 247,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -849,13 +848,13 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // questions and Sing it share, and the shared parts), its own, and the
   // shared Inter and Outfit @font-face rules; a quarter over.
   'learn/24.html': 110,
-  // Lesson 25 (a draft, as above): 92,484 bytes in build:e2e, the kit's
+  // Lesson 25 (a draft, as above): 92,621 bytes in build:e2e, the kit's
   // sheets (the voice lessons' in the chunk Sing it's comfort check shares,
   // and the shared parts), its own with the staff toy's taken in by
-  // @import, and the shared Inter and Outfit @font-face rules; the smallest
-  // whole KB above, to rise as each part joins. The recall reaches no sheet,
-  // its questions being words alone, so the guide's stays out.
-  'learn/25.html': 91,
+  // @import, and the shared Inter and Outfit @font-face rules; a quarter
+  // over. The recall reaches no sheet, its questions being words alone, so
+  // the guide's stays out.
+  'learn/25.html': 114,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter
