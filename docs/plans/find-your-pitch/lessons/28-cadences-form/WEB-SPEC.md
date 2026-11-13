@@ -508,7 +508,7 @@ null; the card is not drawn, and the mark stays as the page wrote it, its figure
 (`nextCard`, `src/features/lessons/kit/next-card.ts:92-122`; `createNextCard`,
 `src/features/lessons/kit/next-card.ts:176-210` at `ad0a099f7`). With Season 2's lessons in the same list it would
 draw the close in Season 1's words, "End of Season 1" and "You've seen every note you sing. Now sing
-a whole song." (`SEASON_END`, `src/features/lessons/kit/lesson-copy.ts:205-216`), and Lesson 14's
+a whole song." (`SEASON_END`, `src/features/lessons/kit/lesson-copy.ts:225-240`), and Lesson 14's
 page would draw Lesson 15's card instead of its own close. Either way it draws once and never
 redraws
 (`src/features/lessons/kit/next-card.ts:224-227`), so it cannot follow Sing it's ending (FACTS 5).
@@ -558,11 +558,11 @@ bed (FACTS 81 to 83).
   cold open says Merc and Tavi sing; the tag's chords are in the soft tone; do in Sing it is the
   chosen voice's "ooh"; the count-in is the woodblock.
 - **A part under a take.** The kit holds every sound off while a take is open
-  (`src/features/lessons/kit/sound.ts:643-662`). The other part is the one exception, as Lesson
+  (`src/features/lessons/kit/sound.ts:653-672`). The other part is the one exception, as Lesson
   26's item 6 has it for this page: one voice along a contour (`contourVoice`,
-  `src/features/lessons/kit/sound.ts:391-423`), each note a held point at its pitch, joined to the
+  `src/features/lessons/kit/sound.ts:401-433`), each note a held point at its pitch, joined to the
   next by a glide of 0.05 s, built before the take opens and booked on the audio clock to start on
-  bar 1's first beat through the voice's `at` (`src/features/lessons/kit/sound.ts:68-72`). Its two
+  bar 1's first beat through the voice's `at` (`src/features/lessons/kit/sound.ts:78-82`). Its two
   D3s in bar 7, for the higher voice, are struck again by a dip in the contour's level, to a quarter
   for 0.08 s between them; and at each breath mark, after bars 2, 4 and 6, its level falls to a
   quarter for the last half beat, 0.42 s, of the note before the mark, so it breathes where the
@@ -571,8 +571,8 @@ bed (FACTS 81 to 83).
   audio clock so that the take's first voiced onset plays as far after the part's bar 1 as it came
   in the run, through the page's owner as one sound (Toys 6).
 - **Levels.** A note at the kit's 0.13 and Merc's "ooh" at 0.2
-  (`src/features/lessons/kit/sound.ts:240`); in a two-part play each part at 0.2, the master bus's
-  compressor holding the two (`src/features/lessons/kit/sound.ts:163-172`); the tag's chords at 0.13
+  (`src/features/lessons/kit/sound.ts:250`); in a two-part play each part at 0.2, the master bus's
+  compressor holding the two (`src/features/lessons/kit/sound.ts:173-182`); the tag's chords at 0.13
   a voice. In a run the other part sits at a level the lab sets, so the singer's own voice stays
   clear in the headphones; the playback sets the take's peak to one level, the same for every take,
   and the part under it at the run's level.
@@ -686,7 +686,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
      Lesson 14's page would draw Lesson 15's card, and Lesson 28's draws nothing until it is in the
      list;
    - a close per season: `SEASON_END` is one, "End of Season 1"
-     (`src/features/lessons/kit/lesson-copy.ts:215-226`); Season 2's is LESSON.md's, its eyebrow,
+     (`src/features/lessons/kit/lesson-copy.ts:225-236`); Season 2's is LESSON.md's, its eyebrow,
      its line and its rest line, with the same two ways on, kept free of the team's words as the
      copy's test asks;
    - the rest-aware close Lesson 14's item 12 requires, for both seasons: after "Effortful",

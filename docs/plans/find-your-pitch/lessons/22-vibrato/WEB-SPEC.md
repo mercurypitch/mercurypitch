@@ -583,9 +583,9 @@ Sing it's notes in the chosen voice's octave, each with the vibrato its play nam
 - **Drift and the swell are contours.** Drift glides the voice's pitch from the note to 50 cents
   above over 3.0 s, and the swell holds a straight note while its level moves through its three
   points, both scheduled on the audio clock (`src/features/lessons/kit/sound.ts:18-23`; `contourVoice`,
-  `src/features/lessons/kit/sound.ts:397-423`).
+  `src/features/lessons/kit/sound.ts:407-433`).
 - **Merc's model notes** in Sing it are timed notes with the default vibrato, before both holds, as
-  Lesson 5's are (`playTone`, `src/features/lessons/kit/sound.ts:677-685`;
+  Lesson 5's are (`playTone`, `src/features/lessons/kit/sound.ts:687-695`;
   `src/features/lessons/kit/hold-sing.ts:216`).
 - **One low note.** The page's lowest sound is D3, 146.83 Hz, the Straight note word, which a
   phone's speaker carries through the "ooh"'s overtones, as Lesson 14's D3 does (FACTS, Layout).
@@ -682,16 +682,16 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    then names Season 2, where today its season is a constant
    (`src/features/lessons/kit/lesson-menu.ts:111`).
 4. **Merc's voice with its vibrato as a parameter** (SEASON-2 § 6.1 item 6), code with tests:
-   - `VoiceOptions` (`src/features/lessons/kit/sound.ts:53-81`) gains a `vibrato` option of a rate,
+   - `VoiceOptions` (`src/features/lessons/kit/sound.ts:62-91`) gains a `vibrato` option of a rate,
      an extent either side and a grow-in time, or null, in the demo voice's form
      (`src/lib/demo-voice.ts:33-37`). Absent, a voice keeps today's, Merc's "ooh" its 5.5 swings a
      second at ±14 cents over 0.35 s and the soft tone none
-     (`src/features/lessons/kit/sound.ts:247-262`); null, a straight note, with no modulator built;
+     (`src/features/lessons/kit/sound.ts:257-272`); null, a straight note, with no modulator built;
      set, that rate, extent and grow-in, its phase 0 at the voice's start.
    - The voice's handle gains a vibrato setter that glides the modulator's rate and depth to new
      values over 50 ms, for Step 2's and Step 3's sliders.
    - The timed note, the sung line and the contour pass the option through
-     (`src/features/lessons/kit/sound.ts:397-423`, `:683-706`).
+     (`src/features/lessons/kit/sound.ts:407-433`, `:693-716`).
    - Tests: a voice built with null has no modulator; one with 6, 50 and 0.3 has a modulator at 6 Hz
      whose depth reaches 50 cents at 0.3 s; with no option every Season 1 play builds what it builds
      today; the setter moves rate and depth within 50 ms without restarting the voice.

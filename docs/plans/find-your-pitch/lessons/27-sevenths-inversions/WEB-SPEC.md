@@ -324,7 +324,7 @@ The kit's soft tone through the page's one audio context, sound off until the le
 nothing playing until a press, and one sound at a time: a new play stops the one before
 (`src/features/lessons/kit/now-playing.ts:39`). The levels are Lesson 12's, moved into the kit with
 its ring: a single note at 0.13, each voice of a three-note chord at 0.075, Merc's "ooh" at 0.2
-(`src/features/lessons/lesson-12/sounds.ts:41-48`); each voice of a four-note chord at 0.056, so a
+(`src/features/lessons/kit/sound.ts:53-60`); each voice of a four-note chord at 0.056, so a
 seventh chord sounds no louder in all than a triad, 0.224 against 0.225, and in power about 1.3 dB
 quieter, and Step 2 compares two chords, not two loudnesses (FACTS 73). Every pitch is FACTS 72's.
 The lowest, G2 at 98 Hz in the lower voice's V and V7, is checked on a phone's speaker in the lab

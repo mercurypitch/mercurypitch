@@ -333,7 +333,7 @@ the guide drawn on the staff and no Move do. In order:
    buttons. Play Merc's notes plays Merc's line (lower) or Tavi's (higher) as two contours a breath
    apart, each one voice: so held 1.15 s and a 0.05 s glide, te the same, do held 1.8 s; 1.0 s of
    quiet; then so, ti and do the same way; 9.4 s in all (FACTS 45, 65; `contourOf`,
-   `src/features/lessons/kit/sound.ts:366`; `playContour`, `src/features/lessons/kit/sound.ts:697`),
+   `src/features/lessons/kit/sound.ts:376`; `playContour`, `src/features/lessons/kit/sound.ts:707`),
    each note lighting as it sounds. Start the guide waits until Merc's notes have been heard with
    sound on, with Lesson 12's two hints (`hintFor`, `src/features/lessons/kit/sing-flow.ts:196-202`);
    then it counts in on so, the line's first note, 0.8 s at 0.065 and 0.2 s of quiet (`countIn`,
@@ -420,10 +420,10 @@ music bed.
 
 - **The tune with its chords.** The answering plays sound Merc's "ooh" at 0.2 over three soft voices
   at 0.05 each, Lesson 12's levels for chords under "ooh" (`UNDER_GAIN`,
-  `src/features/lessons/lesson-12/sounds.ts:45-46`), started together on one clock (`allOf`,
+  `src/features/lessons/kit/sound.ts:57-58`), started together on one clock (`allOf`,
   `src/features/lessons/kit/run.ts:271`), so a chord change falls on its melody note. A chord heard
   alone, Step 1's chord on so and home and the free play's, is three voices at 0.075 each
-  (`CHORD_GAIN`, `src/features/lessons/lesson-12/sounds.ts:43-44`). Each chord's three voices start
+  (`CHORD_GAIN`, `src/features/lessons/kit/sound.ts:55-56`). Each chord's three voices start
   in one timer task (`playNotes`, `src/features/lessons/kit/run.ts:216`), so they share one clock
   and never flam.
 - **Scales and pairs**: a scale is the soft tone at 0.13, a note every 0.4 s, each sounding 0.35 s;
@@ -556,7 +556,7 @@ first; they are listed so this page's needs are in one place.
 4. **Lesson 10's chord beads and staircase in the kit**: `lesson-10/chord-beads.ts`, its drawing and
    its layout move into the kit, and Lesson 10's page then imports them from there. Today they take
    only the seven white-key roots from C4 to B4 and a window of C4 to F♯5, and refuse any other root
-   (`ROOTS`, `WINDOW` and `rootLetter`, `src/features/lessons/lesson-10/chords.ts:68-82`). They gain:
+   (`ROOTS`, `WINDOW` and `rootLetter`, `src/features/lessons/kit/chords.ts:82-95`). They gain:
    roots and a window set per page, this page's white-key roots from A2 to B4, which take in every
    root it uses (A2, C3, E3, A3, C4 and E4), and a window from A2 to C5, every note it sounds, with
    Lesson 10's C4 to B4 and C4 to F♯5 kept for its own page; the scale state and the chord state
@@ -574,7 +574,7 @@ first; they are listed so this page's needs are in one place.
    signature (0.6 s); a second, small staff in the other clef that shows the signature only; and a
    bar per figure, so the page never needs a natural sign.
 6. **Lesson 12's chord levels in the kit**: `NOTE_GAIN`, `CHORD_GAIN`, `UNDER_GAIN` and `MERC_GAIN`
-   (`src/features/lessons/lesson-12/sounds.ts:41-48`) move into the kit's sound module, with the way
+   (`src/features/lessons/kit/sound.ts:53-60`) move into the kit's sound module, with the way
    Lesson 12's page plays chords under "ooh" on one clock, and Lesson 12's page imports them.
 7. **Lesson 6's pair in the kit**, as Lesson 23's page needs it too: `PAIR` and `pair`, moved
    there for Lesson 23's page (`src/features/lessons/kit/pair.ts:16`, `src/features/lessons/kit/pair.ts:28-38`).

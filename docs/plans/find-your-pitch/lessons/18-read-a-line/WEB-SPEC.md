@@ -704,7 +704,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    - the pitch line drawn after a take on the bars' time axis: Lesson 17's pitch-line view of a rhythm
      (its item 8) given a take's frames.
 8. **Dynamics, staccato, slurs and breaths in the kit's runs**: a run's note takes a level, which a
-   contour already carries (`src/features/lessons/kit/sound.ts:346-354`), a sounding length shorter
+   contour already carries (`src/features/lessons/kit/sound.ts:356-364`), a sounding length shorter
    than its value, a join to the next note with no gap, and a silence taken from its end, all booked
    on the beat clock.
 9. **No decorative staff** (Lesson 15's item 7).
