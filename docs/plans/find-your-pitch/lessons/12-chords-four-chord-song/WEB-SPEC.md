@@ -978,7 +978,7 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     card does not answer the cold open's predict (FACTS 1a).
 14. The first-paint budget, in the change that adds the page: `learn/12.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript (`FIRST_PAINT_BUDGETS_KB`,
-    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:568`), measured, with the
+    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:569`), measured, with the
     lessons' headroom, a quarter over. Every build emits every lesson page, a draft's included
     (`scripts/assert-first-paint-budgets.mjs:127-129`), and a document it emits with no budget
     fails the check (`assert-first-paint-budgets.mjs:1016-1019`, and for CSS `:1049-1052`; FACTS 76),

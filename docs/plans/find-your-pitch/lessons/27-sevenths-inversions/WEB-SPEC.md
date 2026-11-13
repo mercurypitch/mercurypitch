@@ -641,7 +641,7 @@ Where the page differs from the text above, the page as built is the reference:
 - The recall imports Lesson 23's question 1 from Lesson 23's page, built since FACTS 7 was written
   (`lesson-23/quiz-questions.ts`).
 - This lesson's tease still, the two rooms with V lit and no fourth corner, belongs on Lesson 26's
-  card, so it is drawn with Lesson 26's page, which is not built yet; the Tests' item 18 waits for
-  it.
+  card, so it is drawn with Lesson 26's page, and the Tests' item 18 is checked there
+  (`lesson-26/wrap.test.ts`).
 - The first-paint ceilings are the page's measured build a quarter over, as every lesson's are: 254
   KB of JavaScript (207,966 bytes) and 113 KB of CSS (92,302 bytes) in `build:e2e`.
