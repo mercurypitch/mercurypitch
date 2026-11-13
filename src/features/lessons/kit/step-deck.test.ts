@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import { ANNOUNCE_DELAY_MS } from './announce'
 import type * as MotionSwitch from './motion-switch'
+import type { StepDeck } from './step-deck'
 import { createStepDeck, DECK_QUERY, registerToy, stepFromHash, } from './step-deck'
 
 /** The system's reduced-motion setting, as the deck reads it. */
@@ -348,6 +349,45 @@ describe('createStepDeck', () => {
     frames.mockRestore()
     scroll.mockRestore()
     document.documentElement.style.scrollPaddingTop = ''
+  })
+
+  it("brings the stage into view for a play from a step's text on a phone, and moves nothing on a wide page or with the stage in view", () => {
+    // Arrange: the stage's head 400 px up, off the screen, on a phone's
+    // deck and on a wide page's
+    deckPage(2)
+    const stage = document.getElementById('stepsStage') as HTMLElement
+    let top = -400
+    stage.getBoundingClientRect = () => ({ top, height: 700 }) as DOMRect
+    const brought = vi.fn()
+    stage.scrollIntoView = brought
+    const make = (query: string): StepDeck => {
+      const media = vi
+        .spyOn(window, 'matchMedia')
+        .mockImplementation(onlyMatching(query))
+      const made = createStepDeck({
+        toyFor: (n) => n,
+        after: { label: 'The quick check', selector: '#quiz' },
+      })
+      media.mockRestore()
+      return made
+    }
+    const phone = make(DECK_QUERY)
+    const wide = make('(min-width: 1px) and (max-width: 0px)')
+
+    // Act
+    wide.showToy()
+    const fromWide = brought.mock.calls.length
+    phone.showToy()
+    const fromPhone = brought.mock.calls.length - fromWide
+    top = 20
+    phone.showToy()
+    const inView = brought.mock.calls.length - fromWide - fromPhone
+
+    // Assert
+    expect(fromWide).toBe(0)
+    expect(fromPhone).toBe(1)
+    expect(brought).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
+    expect(inView).toBe(0)
   })
 
   it("brings a step taller than the screen's room to its head under the masthead, never centred past it", () => {
