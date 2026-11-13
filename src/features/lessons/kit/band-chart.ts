@@ -192,6 +192,12 @@ export interface BandScene {
    * Merc's band, as rungs do.
    */
   drone?: DroneScene | null
+  /**
+   * What a page's own `paintOver` draws from, when it is none of the
+   * above: kept in the scene, so a change to it alone draws again (Lesson
+   * 26's lit bead and count-in strip). Anything JSON holds.
+   */
+  over?: unknown
 }
 
 export interface BandChart {

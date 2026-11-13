@@ -303,6 +303,29 @@ describe('the band chart at rest', () => {
     expect(hand.asked).toHaveLength(0)
   })
 
+  it('draws when only what a page’s painter keeps in the scene changes, and hands it to the painter', async () => {
+    // Arrange: a painter over the plot that keeps what it draws in `over`
+    const over: unknown[] = []
+    const { hand, painted } = await mountCharts([
+      {
+        ...SING_3,
+        opts: { ...SING_3.opts, paintOver: (_f, s) => over.push(s.over) },
+      },
+    ])
+    hand.settle()
+    const { chart, calls } = painted[0]
+
+    // Act: a count-in's click, and nothing else on the chart moves
+    chart.scene.over = { counted: 1 }
+    hand.loop.wake()
+    const frames = hand.settle()
+
+    // Assert
+    expect(frames).toBe(1)
+    expect(paintsIn(calls)).toBe(2)
+    expect(over).toEqual([undefined, { counted: 1 }])
+  })
+
   it('draws a line grown in place, with no wake, in the frame the next input asks for', async () => {
     // Arrange: the line grows by a point, and time passes with no input
     const { hand, chart, calls } = await restingChart()
