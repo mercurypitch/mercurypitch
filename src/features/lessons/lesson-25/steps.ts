@@ -53,10 +53,14 @@ export function initSteps(deck: StepDeck): Steps {
     light,
   })
 
-  // each step's plays in its text play on the toy
+  // each step's plays in its text play on the toy, which a phone brings
+  // back into view from above the text, so what it lights is seen
   for (const b of qa<HTMLButtonElement>('[data-step-play]')) {
     const id = b.dataset.stepPlay as PlayId
-    b.addEventListener('click', () => light(b, toy.play(id)))
+    b.addEventListener('click', () => {
+      deck.showToy()
+      light(b, toy.play(id))
+    })
   }
 
   // the toy follows Sing it's voice choice at once
