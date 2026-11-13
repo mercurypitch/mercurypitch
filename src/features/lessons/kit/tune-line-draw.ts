@@ -184,6 +184,9 @@ function paintBeads(
   })
 }
 
+/** How far a serif "?" rises above its baseline, as a share of its size. */
+const MARK_RISE = 0.75
+
 function paintOverlay(
   ctx: CanvasRenderingContext2D,
   T: TuneLayout,
@@ -215,9 +218,13 @@ function paintOverlay(
       ctx.fill()
     })
     if (k > 0) return
-    // the "?" by the swapped version's highest bead, on the first band
+    // the "?" by the swapped version's highest bead, on the first band: 24
+    // px where the band leaves room above that bead, as on Lesson 6's line,
+    // and smaller, down to 12, where it leaves less, never past the top
     const top = pitches.reduce((a, p, i) => (p > pitches[a] ? i : a), 0)
-    ctx.font = FONT.serif(24)
+    const y = pitchY(L, hi, pitches[top]) - L.bead / 2 - 4
+    const size = Math.max(12, Math.min(24, Math.round(y / MARK_RISE)))
+    ctx.font = FONT.serif(size)
     ctx.textAlign = 'left'
     ctx.textBaseline = 'alphabetic'
     ctx.fillStyle = COLOR.ink2
@@ -225,7 +232,7 @@ function paintOverlay(
     ctx.fillText(
       '?',
       col.x + col.w - Math.min(14, col.w * 0.3),
-      pitchY(L, hi, pitches[top]) - L.bead / 2 - 4,
+      Math.max(y, size * MARK_RISE),
     )
   })
   ctx.globalAlpha = 1

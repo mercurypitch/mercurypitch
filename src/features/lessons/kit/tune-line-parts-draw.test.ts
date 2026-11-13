@@ -36,6 +36,7 @@ interface Call {
   readonly align: unknown
   readonly baseline: unknown
   readonly shadow: unknown
+  readonly font: unknown
 }
 
 /**
@@ -51,6 +52,7 @@ function recorder(): { ctx: CanvasRenderingContext2D; calls: Call[] } {
     textAlign: 'start',
     textBaseline: 'alphabetic',
     shadowColor: '',
+    font: '',
   }
   const saved: Record<string, unknown>[] = []
   const ctx = new Proxy(style, {
@@ -73,6 +75,7 @@ function recorder(): { ctx: CanvasRenderingContext2D; calls: Call[] } {
           align: t.textAlign,
           baseline: t.textBaseline,
           shadow: t.shadowColor,
+          font: t.font,
         })
     },
     set: (t, k, v: unknown) => {
@@ -93,10 +96,10 @@ const TWINKLE2 = [65, 65, 64, 64, 62, 62, 60]
 const BEATS = [1, 1, 1, 1, 1, 1, 2]
 
 /** One or two bands of C4 to D5 at 390 px, the gutter for the house. */
-function layout(bands = 1, gutter = 24, width = 390): TuneLayout {
+function layout(bands = 1, gutter = 24, width = 390, height = 350): TuneLayout {
   return tuneLayout({
     width,
-    height: 350,
+    height,
     beats: Array.from({ length: bands }, () => BEATS),
     rows: 15,
     names: false,
@@ -438,6 +441,49 @@ describe('paintTune, dressed', () => {
       (c) => c.fill === rgba(COLOR.ink2, 0.75),
     )
     expect(lit).toHaveLength(14)
+  })
+
+  it('sizes the contrast case\'s "?" to the room above its highest bead, never past the figure\'s top', () => {
+    // Arrange: the copy four semitones up, its C sharp 5 a row under the
+    // band's top, on the hero's compact two bands and on a roomy one
+    const up4 = [...TWINKLE, ...TWINKLE2].map((p) => p + 4)
+    const mark = (T: TuneLayout, windows: [number, number][]) => {
+      const r = recorder()
+      paintTune(
+        r.ctx,
+        T,
+        scene({
+          lines: [TWINKLE, TWINKLE2].slice(0, T.lines.length),
+          first: [0, 7].slice(0, T.lines.length),
+          windows,
+          overlay: { pitches: up4, amount: 1, changed: [] },
+        }),
+        DRESS,
+      )
+      const call = named(r.calls, 'fillText').find((c) => c.args[0] === '?')
+      const size = Number(/(\d+)px/.exec(String(call?.font))?.[1])
+      const L = T.lines[0]
+      const beadTop = pitchY(L, windows[0][1], 73) - L.bead / 2
+      return { size, y: Number(call?.args[2]), beadTop }
+    }
+
+    // Act
+    const tight = mark(layout(2, 24, 390, 250), [
+      [60, 74],
+      [60, 74],
+    ])
+    const roomy = mark(layout(1, 24, 390, 350), [[60, 86]])
+
+    // Assert: inside the figure and clear of its bead; Lesson 6's 24 px with room
+    expect(tight.size).toBeGreaterThanOrEqual(12)
+    expect(tight.size).toBeLessThan(24)
+    expect(tight.y - tight.size * 0.75).toBeGreaterThanOrEqual(0)
+    expect(tight.y).toBeLessThanOrEqual(tight.beadTop)
+    expect(roomy).toEqual({
+      size: 24,
+      y: roomy.beadTop - 4,
+      beadTop: roomy.beadTop,
+    })
   })
 
   it('draws none of a dress on a line given no painter for it: Lesson 6’s line as it was', () => {
