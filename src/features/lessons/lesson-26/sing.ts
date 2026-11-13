@@ -580,10 +580,14 @@ export function initSing(o: SingOptions = {}): void {
     view.focusText(q('[data-panel="feel"]', card))
   }
 
+  // how many listening plays have begun, so one cut short by the next leaves the button and Merc to it
+  let listens = 0
+
   /** "Just listen today"'s play: the tune, the part, then both, again on each tap. */
   async function playListen(b: HTMLButtonElement): Promise<void> {
     if (b.disabled) return
     sounding?.stop()
+    const mine = ++listens
     const v = voiceNow()
     const tune = tuneOf(v)
     const part = partOf(v)
@@ -597,6 +601,7 @@ export function initSing(o: SingOptions = {}): void {
         flash(isTune ? 'other' : 'mine', k, n.dur)
       }),
     )
+    if (mine !== listens) return
     mercSing(singer(), tune.midis[0], false)
     b.classList.remove('is-on')
   }
