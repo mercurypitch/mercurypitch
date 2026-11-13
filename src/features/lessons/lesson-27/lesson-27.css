@@ -363,11 +363,13 @@
   line-height: 16px;
 }
 /* free play's longest play wraps its words at a phone's width, left-aligned
-   as the plays above it start, still a 44 px target */
+   as the plays above it start, still a 44 px target; its lines balanced,
+   so no letter is left alone on the second */
 .l27-free .staff-plays .btn {
   max-width: 100%;
   white-space: normal;
   text-align: left;
+  text-wrap: balance;
   line-height: 1.25;
   padding-block: 8px;
 }
