@@ -190,6 +190,25 @@ describe('tuneLayout', () => {
           tuneLayout({ ...state, width }),
         )
   })
+
+  it("starts every line's columns after a gutter for the house, sharing what is left, to the same right edge", () => {
+    // Arrange: two stacked lines with no buttons, the house's 24 px at the left
+    const spec = { ...STATES[1], width: 390, targets: false }
+
+    // Act
+    const plain = tuneLayout(spec)
+    const housed = tuneLayout({ ...spec, gutter: 24 })
+
+    // Assert
+    for (const L of housed.lines) {
+      expect(L.cols[0].x).toBe(24)
+      expect(L.cols[6].x + L.cols[6].w).toBe(390)
+      expect(L.cols[0].w).toBeCloseTo((390 - 24) / 8, 5)
+    }
+    expect(housed.lines.map((L) => L.bandTop)).toEqual(
+      plain.lines.map((L) => L.bandTop),
+    )
+  })
 })
 
 describe('columnsOf', () => {

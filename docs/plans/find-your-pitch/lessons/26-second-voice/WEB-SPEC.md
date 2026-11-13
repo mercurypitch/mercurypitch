@@ -248,7 +248,7 @@ a bead (FACTS 31, 32). It takes no taps.
   E, 8.0 s, its beads drawing on the lanes as they sound; as it starts the copy moved four
   semitones fades to the kit's contrast case, dashed ink-2, with its "?" over its first line's off-
   lane beads, as Lesson 6's swapped version is drawn (`TuneOverlay`,
-  `src/features/lessons/kit/tune-line.ts:85-89`).
+  `src/features/lessons/kit/tune-line.ts:102-106`).
 - **Spoken summary** of the figure, in words, never signs: at first, "‘Twinkle’ in C major: two
   lines of seven notes, from C 4 up to A 4."; after the answering play, "The copy: six of its notes,
   on C sharp 5, G sharp 4 and F sharp 4, are off C major's rows."; after the reveal's play, "The
@@ -314,7 +314,7 @@ at the top to unlock this step." in their place (FACTS 41). Every play is the pa
 Layout: the stage takes the kit's tune line layout at every width from 344 px up. No bead and no
 bracket is a button in any state: `beadButtons` is off, and the kit's `brackets`, a button each, are
 not used, since this page's brackets stand between two lines and are drawn only (item 7;
-`src/features/lessons/kit/tune-line.ts:70-73`). The targets are the controls, each at least 44 px,
+`src/features/lessons/kit/tune-line.ts:82-85`). The targets are the controls, each at least 44 px,
 no two overlapping: Step up and Step down, the switches, the plays and free play's state switch.
 Step 2's two lines stack, each on a band of fifteen rows with no gap strip, so the figure keeps
 about the 350 px Lesson 6 measured at 390 by 844, though two of its beads and their bracket can

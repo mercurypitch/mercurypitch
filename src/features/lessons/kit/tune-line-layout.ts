@@ -62,6 +62,11 @@ export interface TuneLayoutSpec {
    * a column keeps no MIN_TARGET floor, so a narrow line still fits.
    */
   readonly targets?: boolean
+  /**
+   * Room at the left of every line, px, before its first column: where the
+   * house on do sits (tune-line-parts.ts). None by default.
+   */
+  readonly gutter?: number
 }
 
 /** One drawn line: its band of rows, its columns and strips, and its targets. */
@@ -180,7 +185,10 @@ function lineBox(spec: TuneLayoutSpec, v: Vertical, k: number): LineBox {
   const bandBottom = bandTop + v.band
   const namesY = spec.names ? bandBottom + NAMES_H / 2 : null
   const belowTop = bandBottom + (spec.names ? NAMES_H : 0)
-  const cols = columnsOf(spec.width, spec.beats[k], floorOf(spec))
+  const gutter = spec.gutter ?? 0
+  const cols = columnsOf(spec.width - gutter, spec.beats[k], floorOf(spec)).map(
+    (c) => ({ x: c.x + gutter, w: c.w }),
+  )
   return {
     bandTop,
     bandBottom,

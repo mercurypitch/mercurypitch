@@ -10,11 +10,17 @@
 // (Lesson 6's swapped version) is dashed ink-2 with a "?", since violet is
 // the singer's in the app's canvas set. Step and leap are words beside the
 // numbers, never a colour alone. Each part draws in its own small function,
-// in paint order.
+// in paint order, and a shape's dress (tune-line-parts.ts) draws around
+// them: the lanes, a held chord's bar and the house under the beads, the
+// tune's beads in the dress's colour, hollow or one alone, and the part,
+// its brackets and the lines' labels over them (tune-line-parts-draw.ts).
+// A contrast case covers every band it has notes for, each its own.
 
 import { COLOR, rgba } from './notes'
+import { beadX, pill } from './tune-line-bead'
 import type { LineBox, TuneLayout } from './tune-line-layout'
 import { pitchY } from './tune-line-layout'
+import type { DressPainter, DressScene } from './tune-line-parts'
 
 /** A bead's light: how strongly (0 to 1) and in whose colour. */
 export interface BeadLight {
@@ -68,6 +74,8 @@ export interface TuneScene {
   readonly lift: number
   /** 0 to 1: the gap numbers' gold glow as a slide lands. */
   readonly glow: number
+  /** What the shape dresses the line with beyond Lesson 6's states (tune-line-parts.ts), or null. */
+  readonly dress: DressScene | null
 }
 
 const FONT = {
@@ -76,24 +84,6 @@ const FONT = {
   word: (px: number): string => `500 ${px}px Inter, sans-serif`,
   mono: (px: number): string => `500 ${px}px "JetBrains Mono", monospace`,
   serif: (px: number): string => `400 ${px}px "Instrument Serif", serif`,
-}
-
-/** The x of a note's bead centre on its line. */
-const beadX = (L: LineBox, i: number): number => L.cols[i].x + L.cols[i].w / 2
-
-/** A bead's pill: its column less a margin, centred on its pitch. */
-function pill(
-  ctx: CanvasRenderingContext2D,
-  L: LineBox,
-  i: number,
-  y: number,
-): void {
-  const col = L.cols[i]
-  const inset = Math.min(8, col.w * 0.16)
-  const w = Math.max(10, col.w - 2 * inset)
-  const r = L.bead / 2
-  ctx.beginPath()
-  ctx.roundRect(col.x + (col.w - w) / 2, y - r, w, L.bead, r)
 }
 
 function paintRows(
@@ -201,34 +191,43 @@ function paintOverlay(
 ): void {
   const o = s.overlay
   if (o === null || o.amount <= 0) return
-  const L = T.lines[0]
-  const hi = s.windows[0][1]
   ctx.globalAlpha = o.amount
-  paintLine(ctx, L, hi, o.pitches, {
-    stroke: COLOR.ink2,
-    fill: COLOR.ink2,
-    dash: [5, 5],
-    width: 1.8,
+  // its notes follow the shown lines in order, each band's its own; a case
+  // shorter than the lines covers the first band alone, as Lesson 6's does
+  let from = 0
+  T.lines.forEach((L, k) => {
+    const hi = s.windows[k][1]
+    const at = from
+    const pitches = o.pitches.slice(at, at + L.cols.length)
+    from += L.cols.length
+    if (pitches.length === 0) return
+    paintLine(ctx, L, hi, pitches, {
+      stroke: COLOR.ink2,
+      fill: COLOR.ink2,
+      dash: [5, 5],
+      width: 1.8,
+    })
+    pitches.forEach((p, i) => {
+      const lit = s.light(at + i, true)
+      if (lit === null) return
+      pill(ctx, L, i, pitchY(L, hi, p))
+      ctx.fillStyle = rgba(COLOR.ink2, 0.25 + 0.5 * lit.amount)
+      ctx.fill()
+    })
+    if (k > 0) return
+    // the "?" by the swapped version's highest bead, on the first band
+    const top = pitches.reduce((a, p, i) => (p > pitches[a] ? i : a), 0)
+    ctx.font = FONT.serif(24)
+    ctx.textAlign = 'left'
+    ctx.textBaseline = 'alphabetic'
+    ctx.fillStyle = COLOR.ink2
+    const col = L.cols[top]
+    ctx.fillText(
+      '?',
+      col.x + col.w - Math.min(14, col.w * 0.3),
+      pitchY(L, hi, pitches[top]) - L.bead / 2 - 4,
+    )
   })
-  o.pitches.forEach((p, i) => {
-    const lit = s.light(i, true)
-    if (lit === null) return
-    pill(ctx, L, i, pitchY(L, hi, p))
-    ctx.fillStyle = rgba(COLOR.ink2, 0.25 + 0.5 * lit.amount)
-    ctx.fill()
-  })
-  // the "?" by the swapped version's highest bead
-  const top = o.pitches.reduce((a, p, i) => (p > o.pitches[a] ? i : a), 0)
-  ctx.font = FONT.serif(24)
-  ctx.textAlign = 'left'
-  ctx.textBaseline = 'alphabetic'
-  ctx.fillStyle = COLOR.ink2
-  const col = L.cols[top]
-  ctx.fillText(
-    '?',
-    col.x + col.w - Math.min(14, col.w * 0.3),
-    pitchY(L, hi, o.pitches[top]) - L.bead / 2 - 4,
-  )
   ctx.globalAlpha = 1
 }
 
@@ -401,11 +400,17 @@ export function paintTune(
   ctx: CanvasRenderingContext2D,
   T: TuneLayout,
   s: TuneScene,
+  dress: DressPainter | null = null,
 ): void {
+  // a dressed shape's own painting, from the painter the line was given
+  const d = s.dress === null ? null : dress
   paintRows(ctx, T, s)
+  d?.under(ctx, T, s)
   paintGhost(ctx, T, s)
-  paintBeads(ctx, T, s)
+  if (d === null) paintBeads(ctx, T, s)
+  else d.beads(ctx, T, s)
   paintOverlay(ctx, T, s)
+  d?.over(ctx, T, s)
   paintNames(ctx, T, s)
   paintBelow(ctx, T, s)
   paintBrackets(ctx, T, s)
