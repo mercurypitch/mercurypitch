@@ -54,6 +54,8 @@ export const VIBRATO_GLIDE = 0.05
 export const NOTE_GAIN = 0.13
 /** Each voice of a chord heard alone (Lesson 12 FACTS 74). */
 export const CHORD_GAIN = 0.075
+/** Each voice of a four-note chord heard alone: four at 0.056 sum as three at 0.075 do, so a seventh adds a note, not loudness (Lesson 27 FACTS 73). */
+export const CHORD4_GAIN = 0.056
 /** Each voice of a chord under Merc's "ooh" or under the guide, so the tune or the root stands clear of it (Lesson 12 FACTS 74). */
 export const UNDER_GAIN = 0.05
 /** Merc's "ooh", its own level. */
