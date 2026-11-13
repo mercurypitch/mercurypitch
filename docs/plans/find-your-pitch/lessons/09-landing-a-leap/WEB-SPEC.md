@@ -708,7 +708,7 @@ table):
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lesson 3's (`:151-243`, `:574-577`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:922-926`),
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:921-925`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
    is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:455-465`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page

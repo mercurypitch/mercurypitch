@@ -820,3 +820,49 @@ production:
 - On a real phone, by ear and by eye (`docs/agent/DEVICE-DEBUGGING.md`): A2 audible on the
   speaker; a chord heard as one, with no flam; the tune's "ooh" clear over its chords; Merc's line
   joined, with no click; the stairs and beads sliding in time with their sounds.
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- Counted by `scripts/lesson-words.mjs`'s rule as the built page shows it, the package's 2,160 words
+  with about 155 more written in the open (the two endings' names and the predict's two hints, 20;
+  the steps' figure label, the toy's labels, its lock line and Step 1's held line, 54; Sing it's
+  status lines, its hint, its pitch-line switch and the stored voice's line, 81), the sound-off
+  lines, the next-lesson card and free play left out, as the counter leaves them and as Lessons 16,
+  18 and 20 counted theirs: about 2,315, 64 under the series' cap of 2,379, as Length estimated. No
+  cut is made.
+- The steps' toy is the kit's staircase, Lessons 4 and 21's, in its compact drawing on the
+  learner's rows, with the chord column drawn on the same canvas at its right in Lesson 10's beads
+  (`kit/stairs-core.ts`, `kit/chord-column.ts`), rather than Lesson 10's chord beads in their scale
+  state: one drawing slides a stair, keeps room for the column and outlines a riser for every
+  step. The staff stands under the staircase at every width, not beside it: eight stairs and a
+  column in half the stage card would come out narrower than a fingertip, as Lesson 21's did.
+- Step 2 counts each pair's semitones in the riser's own label, which the staircase prints for
+  every riser, and in the polite line as each pair sounds ("Le to ti, F to G sharp: 3
+  semitones."), with the outlined riser's "3" in bold; nothing more is drawn under the stairs.
+- The hero's column stands on the staircase's own rows, E4, G4 and B4, an octave over the chord the
+  ending sounds, E3, G3 and B3, and names its tones by letter alone, so it reads true for the
+  chord heard. It stays through the next ending, which redraws it or slides G to G♯, and leaves
+  when the tune plays, since the tune plays no chord. On a phone the staircase's canvas reaches over
+  Tavi's column, so the column stands above her head, clear of both singers.
+- Sing it's staff writes so, te, do, so, ti, do as one run of six notes with no bar line between the
+  two figures, as the kit's sing-along staff writes every line. The G before the G♯ needs no sign
+  in one bar, so nothing a learner reads is lost.
+- Harmonic minor's word lifts te to ti as its play starts, before ti sounds, and the staircase
+  settles back when it ends; Relative keys stays on A minor, where its play left it.
+- Quick check question 4's play reads "Play" and is named "Play the question's scale" for a screen
+  reader, which no step's play shares.
+- The live region says "Key signature: three flats, B flat, E flat and A flat", with "and" before
+  the last.
+- The hero's and the toys' chord columns are drawn on their canvases, so "no chord column in the
+  DOM" (Tests 3 and 18) holds by construction; the page tests read the figures' names and the held
+  controls instead, and no line above the quick check puts "major" beside the chord on so before
+  the choice.
+- The kit's staircase keeps do's house under the label in its block's corner where the two would
+  meet, as Lesson 25's compact staircases and every major staircase at a phone's width had them
+  touching (`kit/stairs-draw.ts`).
+- A play inside a step's sentence wraps its words at a phone's width: Step 3's "Play A major, then
+  melodic minor, going up" is wider than the column at 344 px.
+- The first-paint ceilings are the page's measured build a quarter over, as every lesson's are:
+  247 KB of JavaScript (202,301 bytes) and 114 KB of CSS (92,621 bytes) in `build:e2e`.
