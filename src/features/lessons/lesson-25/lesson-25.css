@@ -226,6 +226,16 @@
 }
 
 /* ---------------------------------------------------------------- the step text */
+/* a play inside a step's sentence wraps its words rather than running past
+   a phone's edge: Step 3's "Play A major, then melodic minor, going up" is
+   wider than the column at 344 px */
+.steps-text .btn.inline {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+  padding-block: 8px;
+}
 /* Step 1's paragraph on the chord on so waits for the reveal behind its
    held line (WEB-SPEC, Toys 1 and 3) */
 .held-line {
