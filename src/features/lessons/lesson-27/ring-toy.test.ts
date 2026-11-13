@@ -10,8 +10,9 @@
 // rooms drawn as V until the choice; Step 3's diagonal; Step 4's chips and
 // Turn over held until its own choice, each press moving the lowest note
 // up an octave, climbing on the staff, and the press after the last
-// inversion bringing back the first pitches; the positions named only
-// after Step 4's reveal; and free play's controls held under their lines.
+// inversion bringing back the first pitches; the positions, and a turned
+// chord's name, said only after Step 4's reveal; and free play's controls
+// held under their lines.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { signName } from '@/features/lessons/kit/notes'
@@ -49,6 +50,8 @@ const label = (root = '#toyRing'): string =>
   el(`${root} [data-ring-canvas]`).getAttribute('aria-label') ?? ''
 const readout = (root = '#toyRing'): string =>
   words(el(`${root} [data-ring-readout]`))
+const said = (root = '#toyRing'): string =>
+  words(el(`${root} [data-ring-said]`))
 const button = (sel: string): HTMLButtonElement => el<HTMLButtonElement>(sel)
 
 beforeEach(() => {
@@ -259,6 +262,40 @@ describe("the steps' toy, Step 4", () => {
     // Assert
     expect(before).toBe('V')
     expect(words(chip)).toBe('V7')
+  })
+
+  it('says a turned chord’s letters, not its name, until Step 4’s reveal, in its live line and the figure’s name (FACTS 1b, 48)', async () => {
+    // Arrange
+    const toy = steps()
+    toy.setState(RING_STATES[4])
+    toy.unlock()
+    toy.unlock4()
+
+    // Act: the predict's C, E, G, then E, G, C; then Turn over
+    void toy.play('turn')
+    vi.advanceTimersByTime(1)
+    const root = said()
+    vi.advanceTimersByTime(1200)
+    const turned = said()
+    last().end(true)
+    await settle()
+    button('#toyRing [data-turn]').click()
+    vi.advanceTimersByTime(1)
+    const heard = { said: said(), label: label() }
+    last().end(true)
+    await settle()
+    toy.reveal4()
+
+    // Assert: root position keeps Lesson 12's name; the turned chord its letters
+    expect(root).toBe('I, C major: C, E and G')
+    expect(turned).toBe('E, G and C')
+    expect(heard.said).toBe('E, G and C')
+    expect(heard.label).toBe(
+      "Lesson 12's ring of rooms: E, G and C; faint, V7: G, B, D and F",
+    )
+    expect(label()).toContain(
+      'C major, first inversion, E in the bass: E, G and C',
+    )
   })
 
   it('turns I over, its lowest note up an octave, and back to its first pitches on the third press (FACTS 50, 72)', async () => {
