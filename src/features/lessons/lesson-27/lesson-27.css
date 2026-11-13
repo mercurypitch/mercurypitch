@@ -87,6 +87,13 @@
     --ring-h: 250px;
     margin-top: 2px;
   }
+  /* the ring takes the stage's whole width, behind Merc and Tavi: its
+     radius follows the canvas's width (kit/spiral-draw.ts), and between
+     them it came out half the steps' ring, its centre's name running into
+     F sharp's. Centred, every bead and name stays clear of them */
+  .l27-duo .hero-ring {
+    grid-column: 1 / -1;
+  }
 }
 
 /* ---------------------------------------------------------------- three words */

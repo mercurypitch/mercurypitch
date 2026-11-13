@@ -44,6 +44,7 @@ import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
 import { initSteps } from './steps'
 
 // Season 2, before anything draws
@@ -61,7 +62,7 @@ const deck = createStepDeck({
 })
 // the toy holds back what would answer the cold open's predict, and Step
 // 4's predict waits for that choice
-initSteps(deck)
+const steps = initSteps(deck)
 deck.start()
 
 // the next lesson's card first: the explorer binds its link to the map
@@ -86,6 +87,12 @@ initMasthead(
   },
   { lesson: 27, deck },
 )
+// V going home and the predict its two answering plays answer; the choice
+// opens what the toy held back and Step 4's predict, and the welcome tour
+// waits for it, since the steps' stop would answer it, so this runs after
+// the masthead has started the tour, in the same task (kit/tour-gate.ts
+// `holdTour`)
+initColdOpen(deck, { onChoice: () => steps.unlock() })
 initReveals()
 startFrameLoop()
 // Tavi celebrates at the reveal with no sparkles, as on Lesson 25's page
