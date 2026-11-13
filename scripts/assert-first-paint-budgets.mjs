@@ -434,7 +434,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // kit/stairs-scales.ts): 161,072 bytes before them, 162,409 with them,
   // against 161,792 at 158. The page draws its staircase at first paint, so
   // it carries the degrees, the spelling and both names' drawing.
-  'learn/04.html': 159,
+  // Raised to 160 for Lesson 25's staircase (kit/stairs-core.ts,
+  // stairs-draw.ts and stairs-geometry.ts): a stair sliding to new degrees
+  // with its name kept until it lands, an outlined riser, a page's own rows
+  // and room, and a drawing over the stairs. 162,675 bytes before them,
+  // 163,838 with them and the kit's chord levels, against 162,816 at 159:
+  // 2 bytes under 160, so the next kit change it carries raises it again.
+  'learn/04.html': 160,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and

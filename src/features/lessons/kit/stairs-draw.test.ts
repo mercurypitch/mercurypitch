@@ -6,10 +6,13 @@
 // size in semitones, 2, 2, 3, 2 and 3 for the major five, where Lesson 4's
 // say T and S; each stair's sung name over its letter; the keys named as
 // the scale spells them, E♭ and B♭ in the minor five on C; and do's house
-// on both do stairs. A context that keeps every call stands in for the
-// canvas.
+// on both do stairs. And Lesson 25's (its WEB-SPEC, Look): le named on
+// natural minor's sixth; a stair sliding a semitone keeps its name and its
+// riser's size until it lands; the le-to-ti riser outlined with "3" beside
+// it. A context that keeps every call stands in for the canvas.
 
 import { describe, expect, it, vi } from 'vitest'
+import { HARMONIC_MINOR_DEGREES, NATURAL_MINOR_DEGREES } from './chords'
 import { MAJOR_DEGREES } from './major-scale'
 import type { StairsScene } from './stairs-draw'
 import { paintStairs } from './stairs-draw'
@@ -34,14 +37,18 @@ interface Text {
   readonly font: string
 }
 
-/** A context that keeps the words it is asked to write, with their font. */
-function wordsContext(texts: Text[]): CanvasRenderingContext2D {
+/** A context that keeps the words it is asked to write, with their font, and the rectangles it outlines. */
+function wordsContext(
+  texts: Text[],
+  rects: number[][] = [],
+): CanvasRenderingContext2D {
   const props: Record<PropertyKey, unknown> = {}
   return new Proxy(props, {
     get: (target, key) =>
       key in target
         ? target[key]
         : (...args: unknown[]): unknown => {
+            if (key === 'strokeRect') rects.push(args.map(Number))
             if (key === 'fillText')
               texts.push({
                 text: String(args[0]),
@@ -204,5 +211,111 @@ describe("another scale's staircase", () => {
 
     // Assert
     expect(homes.at).toEqual([L.stairs[0].x + L.stairs[0].w / 2])
+  })
+})
+
+describe('a stair that slides, and an outlined riser (Lesson 25)', () => {
+  /** One frame of Lesson 25's figure: A minor on A2, over rows A2 to C4, the chord column's room kept. */
+  function paintMinor(s: StairsScene): {
+    L: StairsLayout
+    texts: Text[]
+    rects: number[][]
+  } {
+    const texts: Text[] = []
+    const rects: number[][] = []
+    homes.at = []
+    const L = stairsLayout('compact', 420, 280, s.tonic, 36, s.degrees, {
+      right: 104,
+      rows: { lo: 45, hi: 60 },
+    })
+    paintStairs(wordsContext(texts, rects), L, s, s.tonic)
+    return { L, texts, rects }
+  }
+
+  /** Lesson 25's names: one syllable a stair, each riser's size in semitones. */
+  const sung = {
+    tonic: 45,
+    both: false,
+    names: 'solfege',
+    numbers: true,
+  } as const
+
+  /** Bold, as an outline's label is: the risers' own sizes are not. */
+  const bold = (texts: readonly Text[]): Text[] =>
+    texts.filter((t) => t.font.startsWith('700'))
+
+  /** The rectangles outlined other than the blocks' own edges, each drawn from its tread. */
+  const outlines = (L: StairsLayout, rects: number[][]): number[][] =>
+    rects.filter(([, y]) => !L.stairs.some((st) => st.top + 0.5 === y))
+
+  it("names natural minor's sixth le, and sizes its risers 2, 1, 2, 2, 1, 2, 2", () => {
+    // Act
+    const { L, texts } = paintMinor(
+      scene({ ...sung, degrees: NATURAL_MINOR_DEGREES }),
+    )
+
+    // Assert
+    expect(L.stairs.map((_st, i) => namesOver(L, texts, i))).toEqual([
+      ['do'],
+      ['re'],
+      ['me'],
+      ['fa'],
+      ['so'],
+      ['le'],
+      ['te'],
+      ['do'],
+    ])
+    expect(riserLabels(texts)).toEqual(['2', '1', '2', '2', '1', '2', '2'])
+  })
+
+  it('names a sliding stair, and sizes its risers, from the stairs it left until it lands', () => {
+    // Act: te halfway up to ti
+    const { L, texts } = paintMinor(
+      scene({
+        ...sung,
+        degrees: [0, 2, 3, 5, 7, 8, 10.5, 12],
+        named: NATURAL_MINOR_DEGREES,
+      }),
+    )
+
+    // Assert: its tread between the rows, its name and its risers as they were
+    expect(L.stairs[6].top).toBeCloseTo(L.yOfRow(55.5) - L.rowH / 2, 9)
+    expect(namesOver(L, texts, 6)).toEqual(['te'])
+    expect(riserLabels(texts)).toEqual(['2', '1', '2', '2', '1', '2', '2'])
+  })
+
+  it('outlines the riser it is given, the higher block from tread to tread, and labels it in bold: harmonic minor\'s le to ti, "3"', () => {
+    // Act
+    const { L, texts, rects } = paintMinor(
+      scene({
+        ...sung,
+        degrees: HARMONIC_MINOR_DEGREES,
+        outline: { riser: 5, label: '3' },
+      }),
+    )
+    const drawn = outlines(L, rects)
+    const [, y, w, h] = drawn[0] ?? []
+
+    // Assert
+    expect(drawn).toHaveLength(1)
+    expect(y).toBeCloseTo(L.stairs[6].top + 0.75, 9)
+    expect(y + h).toBeCloseTo(L.stairs[5].top - 0.75, 9)
+    expect(w).toBeGreaterThan(0)
+    expect(bold(texts).map((t) => t.text)).toEqual(['3'])
+    expect(riserLabels(texts.filter((t) => !t.font.startsWith('700')))).toEqual(
+      ['2', '1', '2', '2', '1', '3', '1'],
+    )
+  })
+
+  it('outlines nothing when given no outline', () => {
+    // Act
+    const { L, texts, rects } = paintMinor(
+      scene({ ...sung, degrees: HARMONIC_MINOR_DEGREES, outline: null }),
+    )
+
+    // Assert
+    expect(rects).toHaveLength(8)
+    expect(outlines(L, rects)).toEqual([])
+    expect(bold(texts)).toEqual([])
   })
 })

@@ -41,6 +41,8 @@ export interface BeadMark {
   readonly lit: number
   /** 0 to 1: a stacked bead fades in as it drops. */
   readonly alpha: number
+  /** Its radius where rows sit closer than Lesson 10's 15 px (Lesson 25's chord column); `BEAD_R` unless given. */
+  readonly r?: number
 }
 
 /** One stair of a spread scale. */
@@ -174,8 +176,9 @@ function paintStairs(ctx: CanvasRenderingContext2D, s: BeadsScene): void {
 }
 
 /** A bead: a lit sphere, chrome, gold for the third, or ink while it sounds. */
-function paintBead(ctx: CanvasRenderingContext2D, b: BeadMark): void {
+export function paintBead(ctx: CanvasRenderingContext2D, b: BeadMark): void {
   if (b.alpha <= 0) return
+  const r = b.r ?? BEAD_R
   const rest = b.gold ? COLOR.gold : COLOR.chrome
   const tone = b.lit > 0 ? COLOR.ink : rest
   ctx.save()
@@ -185,19 +188,19 @@ function paintBead(ctx: CanvasRenderingContext2D, b: BeadMark): void {
     ctx.shadowBlur = 16 * b.lit
   }
   const g = ctx.createRadialGradient(
-    b.x - BEAD_R * 0.35,
-    b.y - BEAD_R * 0.35,
-    BEAD_R * 0.1,
+    b.x - r * 0.35,
+    b.y - r * 0.35,
+    r * 0.1,
     b.x,
     b.y,
-    BEAD_R,
+    r,
   )
   g.addColorStop(0, '#ffffff')
   g.addColorStop(0.45, tone)
   g.addColorStop(1, b.gold && b.lit === 0 ? '#8a6d10' : '#4a5563')
   ctx.fillStyle = g
   ctx.beginPath()
-  ctx.arc(b.x, b.y, BEAD_R, 0, TAU)
+  ctx.arc(b.x, b.y, r, 0, TAU)
   ctx.fill()
   ctx.restore()
 }

@@ -67,6 +67,19 @@ export interface StairsScene {
   readonly arrow: number
   /** The top stair's house, lit by Land on do (0 to 1). */
   readonly home: number
+  /**
+   * The stairs' names while a slide has not landed: the stairs it left, so
+   * a stair's name changes as it lands (Lesson 25's Raise te).
+   */
+  readonly named?: Degrees
+  /** A riser outlined from tread to tread, its label beside it (Lesson 25's le-to-ti stair, "3"). */
+  readonly outline?: StairsOutline | null
+}
+
+/** One riser outlined: the rise from stair `riser` to the next, and its label. */
+export interface StairsOutline {
+  readonly riser: number
+  readonly label: string
 }
 
 const FONT = {
@@ -175,7 +188,7 @@ function paintRisers(
   L: StairsLayout,
   s: StairsScene,
 ): void {
-  risersOf(s.degrees).forEach((size, i) => {
+  risersOf(s.named ?? s.degrees).forEach((size, i) => {
     const r = riser(L, i)
     const gold = s.gold && size === 1
     ctx.strokeStyle = gold ? COLOR.gold : rgba(COLOR.chrome, 0.4)
@@ -214,7 +227,8 @@ function paintStepLabels(
   s: StairsScene,
 ): void {
   if (!s.steps || s.white > 0.5) return
-  risersOf(s.degrees).forEach((size, i) => {
+  // a sliding stair's riser keeps its size until it lands, as its name does
+  risersOf(s.named ?? s.degrees).forEach((size, i) => {
     const gold = s.gold && size === 1
     // with Group on, the tone that joins the two groups speaks up
     const joint = i === 3 && s.group > 0.5
@@ -234,6 +248,27 @@ function paintStepLabels(
   })
 }
 
+/**
+ * The outlined riser: the higher block's width, from its tread down to the
+ * lower one's, in chrome, and its label in ink at its side, as a riser's
+ * size is labelled.
+ */
+function paintOutline(
+  ctx: CanvasRenderingContext2D,
+  L: StairsLayout,
+  s: StairsScene,
+): void {
+  const o = s.outline
+  const next = o === undefined || o === null ? undefined : L.stairs[o.riser + 1]
+  if (o === undefined || o === null || next === undefined) return
+  const { x, w } = block(next)
+  const h = Math.max(2, L.stairs[o.riser].top - next.top)
+  ctx.strokeStyle = rgba(COLOR.chrome, 0.85)
+  ctx.lineWidth = 1.5
+  ctx.strokeRect(x + 0.75, next.top + 0.75, w - 1.5, h - 1.5)
+  stepLabel(ctx, L, o.riser, o.label, COLOR.ink, 700)
+}
+
 function paintNames(
   ctx: CanvasRenderingContext2D,
   L: StairsLayout,
@@ -250,7 +285,7 @@ function paintNames(
     const y = st.top - (L.mode === 'compact' ? 5 : 7)
     ctx.fillStyle = lit > 0.3 ? '#ffffff' : COLOR.ink
     if (!s.both) {
-      ctx.fillText(stairName(i, s.tonic, s.names, s.degrees), x, y)
+      ctx.fillText(stairName(i, s.tonic, s.names, s.named ?? s.degrees), x, y)
       return
     }
     // the sung name over the letter
@@ -466,6 +501,7 @@ export function paintStairs(
   )
   paintRisers(ctx, L, s)
   paintStepLabels(ctx, L, s)
+  paintOutline(ctx, L, s)
   paintNames(ctx, L, s)
   paintHomes(ctx, L, s)
   paintOverlay(ctx, L, s)
