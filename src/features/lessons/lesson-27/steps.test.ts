@@ -9,11 +9,12 @@
 // top first." until the cold open's choice, then asks for its own, which
 // opens Step 4's chips and Turn over and tells free play; its two plays
 // turn C major over and play E minor after it; and its reveal, the text
-// after it, waits for both heard, then names the positions (FACTS 48 to
-// 50).
+// after it, waits for both heard, the status line reading the reveal
+// alone, then names the positions (FACTS 48 to 50).
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
+import { ANNOUNCE_DELAY_MS, spokenText } from '@/features/lessons/kit/announce'
 import { signName } from '@/features/lessons/kit/notes'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type * as RunModule from '@/features/lessons/kit/run'
@@ -238,11 +239,15 @@ describe("Step 4's predict", () => {
     await hear('#predict4 [data-play="eminor"]')
     const half = el('#predict4 .reveal').hidden
     await hear('#predict4 [data-play="turn"]')
+    vi.advanceTimersByTime(ANNOUNCE_DELAY_MS)
 
-    // Assert
+    // Assert: the status line reads the reveal, not the text after it
     expect(half).toBe(true)
     expect(el('#predict4 .reveal').hidden).toBe(false)
     expect(el('[data-reveal4]').hidden).toBe(false)
+    expect(words(el('[data-announcer]'))).toBe(
+      spokenText(el('#predict4 .reveal')),
+    )
     expect(words(el('#predict4 .reveal .mono'))).toBe(STEP4_PREDICT.guess.still)
     expect(reveals4).toBe(1)
     expect(before).toBe('')

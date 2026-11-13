@@ -22,10 +22,11 @@
 // on, in either order (the kit's predict, `revealAfter: 'all'`); there is
 // no `next` hint, so "Locked in. Play both." stays until then (FACTS 37).
 // A play cut short, by another sound, a step change of the deck or the
-// hero off screen, is not heard. Its reveal is four elements: the reveal
-// under the predict, Step 1's paragraph on so with its play, and Steps 2
-// and 3's text, each held line put away as they show, none announced but
-// the first (FACTS 39, 40). The choice tells the page (`onChoice`): the
+// hero off screen, is not heard. Its reveal is the one under the predict,
+// which the page's status line reads; with it Step 1's paragraph on so
+// with its play, and Steps 2 and 3's text, show, each held line put away,
+// none of them announced as it appears (FACTS 39, 40; WEB-SPEC, Toys 3).
+// The choice tells the page (`onChoice`): the
 // toys open their V controls and Step 4's predict its choices. On a first
 // visit the welcome tour waits for the choice (kit/tour-gate.ts
 // `holdTour`), since its steps' stop would answer it.
@@ -224,6 +225,7 @@ export function initColdOpen(
   const heldLines = qa(
     '[data-held-line="1"], [data-held-line="2"], [data-held-line="3"]',
   )
+  const heldTexts = qa('[data-held="1"], [data-held="2"], [data-held="3"]')
   const predict = mountPredict(q('#predict'), {
     play,
     // the three plays sit under the stage, outside the predict card
@@ -232,14 +234,6 @@ export function initColdOpen(
     revealAfter: 'all',
     hints: COLD_PREDICT.hints,
     guess: (c) => (isChoice(c) ? COLD_PREDICT.guess[c] : 'You said'),
-    // the hero's own reveal first, where the kit writes "You said", then
-    // Step 1's paragraph on so and Steps 2 and 3's text, which waited for it
-    reveal: [
-      q('#predict .reveal'),
-      q('[data-held="1"]'),
-      q('[data-held="2"]'),
-      q('[data-held="3"]'),
-    ],
     onChoice: (c) => {
       // the choice ends Play V, then I: the predict moves focus to the
       // answering plays
@@ -249,8 +243,14 @@ export function initColdOpen(
     },
     onReveal: () => {
       revealed = true
+      // Step 1's paragraph on so and Steps 2 and 3's text, which waited for
+      // it, in place of their held lines: shown, not read out, since the
+      // status line reads the reveal alone
       heldLines.forEach((l) => {
         l.hidden = true
+      })
+      heldTexts.forEach((t) => {
+        t.hidden = false
       })
       // the guess line's sharp, said as a word
       const line = q('#predict .reveal .mono')
