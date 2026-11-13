@@ -10,9 +10,10 @@
 
 import { describe, expect, it } from 'vitest'
 import { hz } from '@/features/lessons/kit/notes'
+import { CHORD_GAIN, MERC_GAIN, NOTE_GAIN, UNDER_GAIN, } from '@/features/lessons/kit/sound'
 import { TUNE_IDS } from './music'
 import type { SoundNotes } from './sounds'
-import { chip, CHORD_GAIN, GUIDE, I_THEN_VI_SLIDE, inKey, iThenVi, lengthOf, loop, MERC_GAIN, NOTE_GAIN, roots, singAlong, slow, tune, UNDER_GAIN, WORD_SOUNDS, } from './sounds'
+import { chip, GUIDE, I_THEN_VI_SLIDE, inKey, iThenVi, lengthOf, loop, roots, singAlong, slow, tune, WORD_SOUNDS, } from './sounds'
 
 /** FACTS 66: the fixed examples' notes, MIDI to hertz, to two decimals. */
 const FACTS_66: Readonly<Record<number, number>> = {
