@@ -166,7 +166,7 @@ step, hear, ladder, order, landing and free play, plus live mode at the checkpoi
 
 - **Drawing.** Pitch is height (playbook rule 20): one faint row per semitone, bottom to top,
   through the kit's notes axis (`axis: { notes: [lo, hi] }`, `kit/band-chart.ts:70-86`), with its 40
-  px gutter on the left (`:272`). Only the rungs' rows are named, each by its syllable and its
+  px gutter on the left (`:278`). Only the rungs' rows are named, each by its syllable and its
   spelled note in Lesson 4's spelling ("so · A3"), through a new rung-names option beside `named`,
   since the kit's grid letters every natural row and names its `named` notes in full
   (`drawNotesGrid`, `kit/band-chart-draw.ts:113-141`; FACTS 22). Time runs left to right. Each of
@@ -708,7 +708,7 @@ table):
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lesson 3's (`:151-243`, `:585-588`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:951-955`),
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:953-957`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
    is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:466-476`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page

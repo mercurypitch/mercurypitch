@@ -831,7 +831,7 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:151-377`,
    `:330-338`; `:605-608`, `:618-622`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:1015-1019`), so without them the Browser jobs fail before any spec
+   document with no ceiling (`:1017-1021`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
    quarter, the tables' rule (`:47-58`, `:466-476`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
