@@ -119,7 +119,10 @@
   left: auto;
   right: -10px;
 }
+/* the stub centres what it holds, so the figure takes the stub's width,
+   or it would shrink to its canvas's own 2:1 */
 .l25-words .word-stairs {
+  width: 100%;
   height: 92px;
 }
 .l25-words .word-stairs canvas {
