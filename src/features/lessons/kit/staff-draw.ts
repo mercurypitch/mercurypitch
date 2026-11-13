@@ -24,7 +24,10 @@
 // note an F major written with A sharp would need a natural sign under a
 // signature is never written: a page drops the signature first (Lesson
 // 21's white keys). An outlined note, one a step has just changed, is ringed
-// in ink, never coloured. The
+// in ink, never coloured. Two notes a second apart in one column sit side by
+// side, the upper a head to the right, and their signs stay at the column's
+// left (`besideOf`); a note that climbs, a chord's bottom note turned over,
+// travels up the staff from the place it left (Lesson 27). The
 // line weight and colour are the toy's tokens (lesson-staff.css), ink at
 // 3:1 or more against the figure at every stop of its gradient (FACTS 72).
 // A lit note is ink with a halo, never colour alone; Merc's sung note is
@@ -39,7 +42,7 @@
 import { svg } from './dom'
 import { G_CLEF_PATH } from './glyphs'
 import { HOME_PATH } from './home-glyph'
-import type { Strip, StripKey, StripSpec } from './key-strip'
+import type { Strip } from './key-strip'
 import { stripLayout } from './key-strip'
 import { Motion } from './motion-switch'
 import type { Spelled } from './notes'
@@ -47,8 +50,9 @@ import { isBlack, signName } from './notes'
 import { F_CLEF_PATH, FLAT_PATH, NOTEHEAD_PATH, NOTO_GLYPHS, SHARP_PATH, } from './staff-glyphs'
 import type { KeySig } from './staff-key'
 import { covered, keyLetters, keyPlaces } from './staff-key'
+import { drawKeyStrip } from './staff-keys-draw'
 import type { Clef, StaffKind } from './staff-places'
-import { clefPlace, isLine, ledgersOf, LINES, midiOf, noteAt, placeOf, writtenOf, } from './staff-places'
+import { clefPlace, isLine, ledgersOf, LINES, midiOf, noteAt, placeOf, } from './staff-places'
 
 /**
  * How a notehead is lit: at rest, sounding, the sung model, Merc's sung
@@ -72,6 +76,13 @@ export interface Mark {
   readonly named?: boolean
   /** Ringed in ink, with its sign: a note a step has just changed (Lesson 21). */
   readonly outline?: boolean
+  /**
+   * Climbing to its place from another note's, and when it left, ms on
+   * `performance.now()`'s clock: a chord's bottom note turned over an
+   * octave up (Lesson 27). Its head travels in `CLIMB_MS`; a scene drawn
+   * again on the way picks the travel up where it was.
+   */
+  readonly climb?: { readonly from: Spelled; readonly at: number }
 }
 
 /** The key strip under the staff: its range, and the window of white keys showing. */
@@ -189,6 +200,8 @@ const KEY_X = 3.6
 const KEY_GAP = 0.5
 /** How long a sign takes to travel from its note into the signature, ms. */
 const SLIDE_MS = 450
+/** A note's climb up the staff to its new place, ms (Lesson 27's Turn over, 0.4 s). */
+export const CLIMB_MS = 400
 
 /** The key signature a scene draws: none on the grand staff, or with no clef. */
 const keyOf = (s: Scene): KeySig | null =>
@@ -463,15 +476,28 @@ function signAt(
   return { x: right - width * k, y: y + NOTO_GLYPHS.head.cy * k }
 }
 
-/** Moves a sign from (dx, dy) away to where it is drawn, in `ms`; held still while motion is paused. */
-function travel(el: SVGGElement, dx: number, dy: number, ms = SLIDE_MS): void {
+/**
+ * Moves a sign or a note from (dx, dy) away to where it is drawn, in `ms`,
+ * `done` ms of it already gone; held still while motion is paused.
+ */
+function travel(
+  el: SVGGElement,
+  dx: number,
+  dy: number,
+  ms = SLIDE_MS,
+  done = 0,
+): void {
   if (Motion.paused || typeof el.animate !== 'function') return
   el.animate(
     [
       { transform: `translate(${r(dx)}px, ${r(dy)}px)` },
       { transform: 'translate(0px, 0px)' },
     ],
-    { duration: ms, easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)' },
+    {
+      duration: ms,
+      delay: -done,
+      easing: 'cubic-bezier(0.2, 0.7, 0.2, 1)',
+    },
   )
 }
 
@@ -590,15 +616,49 @@ const TONE_CLASS: Readonly<Record<Tone, string>> = {
   orange: 'st-head is-orange',
 }
 
-/** One notehead with its ledger lines, its sign, its halo while it sounds, its name and its house. */
-function mark(s: Scene, L: Layout, m: Mark, parent: Element): void {
+/**
+ * Which marks sit a head to the right: in a column, the upper of two notes
+ * a second apart, so neither head covers the other; up a cluster of
+ * seconds the heads take turns, the lowest on the left.
+ */
+export function besideOf(marks: readonly Mark[], staff: StaffKind): boolean[] {
+  const out = marks.map(() => false)
+  const cols = new Map<string, number[]>()
+  marks.forEach((m, i) => {
+    const id = `${m.col ?? '-'} ${m.on ?? ''}`
+    cols.set(id, [...(cols.get(id) ?? []), i])
+  })
+  const at = (i: number): number => placeOf(marks[i].note, staff)
+  for (const ids of cols.values()) {
+    const up = ids.slice().sort((a, b) => at(a) - at(b))
+    up.forEach((i, k) => {
+      const below = up[k - 1]
+      out[i] = below !== undefined && !out[below] && at(i) - at(below) === 1
+    })
+  }
+  return out
+}
+
+/**
+ * One notehead with its ledger lines, its sign, its halo while it sounds,
+ * its name and its house; `beside`, a head to the right of its column, its
+ * sign and name staying at the column's left.
+ */
+function mark(
+  s: Scene,
+  L: Layout,
+  m: Mark,
+  parent: Element,
+  beside = false,
+): void {
   const g = svg('g', { class: 'st-mark' }, parent)
   const place = placeOf(m.note, s.staff)
-  const cx = L.colX(m.col)
+  const col = L.colX(m.col)
+  const cx = beside ? col + 2 * headHalf(L.space) : col
   const y = L.yOf(place)
   const ledger = L.space * 0.95
   for (const p of ledgersOf(place, s.staff))
-    hline(cx - ledger, cx + ledger, L.yOf(p), 'st-ledger', g)
+    hline(col - ledger, cx + ledger, L.yOf(p), 'st-ledger', g)
   if (m.tone !== 'rest')
     svg(
       'circle',
@@ -613,7 +673,7 @@ function mark(s: Scene, L: Layout, m: Mark, parent: Element): void {
   const sign = signOf(s, m)
   if (m.outline === true) {
     // round the head, and its sign where one is written
-    const left = cx - headHalf(L.space) - L.space * (sign === 0 ? 0.35 : 1.45)
+    const left = col - headHalf(L.space) - L.space * (sign === 0 ? 0.35 : 1.45)
     const right = cx + headHalf(L.space) + L.space * 0.35
     svg(
       'rect',
@@ -628,7 +688,7 @@ function mark(s: Scene, L: Layout, m: Mark, parent: Element): void {
       g,
     )
   }
-  engraveSign(sign, cx, y, L.space, g)
+  engraveSign(sign, col, y, L.space, g)
   engraveHead(cx, y, L.space, TONE_CLASS[m.tone], g)
   if (m.home === true) {
     const size = L.space * 1.05
@@ -643,8 +703,13 @@ function mark(s: Scene, L: Layout, m: Mark, parent: Element): void {
       g,
     )
   }
+  if (m.climb !== undefined) {
+    const done = performance.now() - m.climb.at
+    const from = L.yOf(placeOf(m.climb.from, s.staff))
+    if (done < CLIMB_MS) travel(g, 0, from - y, CLIMB_MS, Math.max(0, done))
+  }
   if (m.named !== true || s.small === true) return
-  const left = cx - headHalf(L.space) - L.space * (sign === 0 ? 0.45 : 1.55)
+  const left = col - headHalf(L.space) - L.space * (sign === 0 ? 0.45 : 1.55)
   svg(
     'text',
     {
@@ -700,72 +765,6 @@ function sweepLine(s: Scene, L: Layout, parent: Element): void {
   )
 }
 
-/**
- * One key of the strip, clipped to the strip's edges (a white key inset a
- * little from its neighbours), dim or lit: the width drawn, or 0 where none
- * of it shows.
- */
-function keyRect(
-  k: StripKey,
-  spec: StripSpec,
-  lit: ReadonlySet<number>,
-  g: Element,
-): number {
-  const inset = k.white ? 0.75 : 0
-  const x = Math.max(spec.x0, k.x + inset)
-  const right = Math.min(spec.x1, k.x + k.w - inset)
-  if (right <= x) return 0
-  const tone = k.white ? 'st-key is-white' : 'st-key is-black'
-  svg(
-    'rect',
-    {
-      x: r(x),
-      y: r(k.y),
-      width: r(right - x),
-      height: r(k.h),
-      rx: k.white ? 3 : 2,
-      class: lit.has(k.midi) ? `${tone} is-lit` : tone,
-    },
-    g,
-  )
-  return right - x
-}
-
-/** A white key's name, for each C and the lit key, where the key drawn is wide enough. */
-function keyName(
-  k: StripKey,
-  width: number,
-  lit: ReadonlySet<number>,
-  g: Element,
-): void {
-  const named = lit.has(k.midi) || k.midi % 12 === 0
-  if (!named || width < 18) return
-  svg(
-    'text',
-    {
-      x: r(k.cx),
-      y: r(k.y + k.h - 8),
-      'text-anchor': 'middle',
-      'font-size': r(Math.max(10, Math.min(13, k.w * 0.3))),
-      class: 'st-key-name',
-      text: signName(writtenOf(k.midi)),
-    },
-    g,
-  )
-}
-
-/** The key strip: white keys dim but for the lit ones, each C named, the lit key named too. */
-function keyStrip(s: Scene, L: Layout, parent: Element): void {
-  if (s.keys === null || L.strip === null) return
-  const g = svg('g', { class: 'st-keys' }, parent)
-  const lit = new Set(s.keys.lit)
-  const { spec, keys } = L.strip
-  // the white keys first, so the black keys sit over them
-  for (const k of keys)
-    if (k.white) keyName(k, keyRect(k, spec, lit, g), lit, g)
-  for (const k of keys) if (!k.white) keyRect(k, spec, lit, g)
-}
-
 /** The figure's size: its box, or a phone's figure where nothing lays it out (jsdom). */
 export function figureSize(el: Element): { w: number; h: number } {
   const b = el.getBoundingClientRect()
@@ -792,7 +791,8 @@ export function drawScene(
   letters(s, L, el)
   sweepLine(s, L, el)
   const marks = svg('g', { class: 'st-marks' }, el)
-  for (const m of s.marks) mark(s, L, m, marks)
-  keyStrip(s, L, el)
+  const beside = besideOf(s.marks, s.staff)
+  s.marks.forEach((m, i) => mark(s, L, m, marks, beside[i]))
+  if (s.keys !== null && L.strip !== null) drawKeyStrip(L.strip, s.keys.lit, el)
   return L
 }

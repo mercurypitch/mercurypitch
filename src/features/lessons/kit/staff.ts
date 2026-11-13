@@ -77,10 +77,12 @@ import type { Layout, Mark, Scene, Tone } from './staff-draw'
 import { drawScene, figureSize } from './staff-draw'
 import type { KeySig } from './staff-key'
 import { keyAlter, keyWords, NO_KEY } from './staff-key'
+import { PitchLine } from './staff-pitch-line'
 import type { Clef, StaffKind } from './staff-places'
 import { midiOf, noteAt, placeOf, placeRange, sayPlace, staffName, syllableOf, writtenOf, } from './staff-places'
 import type { StaffPlay, StaffState } from './staff-state'
 
+export { PitchLine } from './staff-pitch-line'
 export type { PlayNote, StaffPlay, StaffState } from './staff-state'
 
 export interface StaffToy {
@@ -144,28 +146,6 @@ export interface StaffOptions {
    * nothing of its own.
    */
   readonly onClef?: (clef: Clef) => void
-}
-
-// ---------------------------------------------------------------- the switch
-
-const lanesListeners = new Set<(on: boolean) => void>()
-let lanesOn = false
-
-/** "See it on the pitch line": one choice for the visit, in memory, which every staff toy on the page follows. */
-export const PitchLine = {
-  get on(): boolean {
-    return lanesOn
-  },
-  set(on: boolean): void {
-    if (on === lanesOn) return
-    lanesOn = on
-    lanesListeners.forEach((fn) => fn(on))
-  },
-  /** Calls `fn` now and after every change. */
-  subscribe(fn: (on: boolean) => void): void {
-    lanesListeners.add(fn)
-    fn(lanesOn)
-  },
 }
 
 /** How long a tapped note sounds, s, unless the state says (Lesson 15 FACTS 64). */
@@ -430,6 +410,10 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
           on: n.on,
           outline: n.outline,
           home: n.home,
+          climb:
+            n.from === undefined
+              ? undefined
+              : { from: n.from, at: performance.now() },
         }
         run = next
       } else cursor = { note: n.note, tone, on: n.on }

@@ -6,14 +6,17 @@
 // in either clef or the grand staff, ledger lines only as far as a note
 // needs, a sign to the left of its note's head, a lit note's halo, the gold
 // line of a clef, the letters kept beside the staff, the pitch line's lanes
-// joined to a sounding note, and the key strip with its C keys named.
+// joined to a sounding note, and the key strip with its C keys named; and a
+// chord in one column, a second's heads side by side and a note climbing
+// up the staff as a chord turns over (Lesson 27).
 
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
+import { Motion } from './motion-switch'
 import type { Spelled } from './notes'
 import { scoreAcross } from './staff'
 import type { Mark, Scene } from './staff-draw'
-import { drawScene, emptyScene, headHalf, layoutScene } from './staff-draw'
+import { besideOf, CLIMB_MS, drawScene, emptyScene, headHalf, layoutScene, } from './staff-draw'
 import { NOTO_GLYPHS } from './staff-glyphs'
 import { placeRange } from './staff-places'
 
@@ -376,5 +379,125 @@ describe('layoutScene', () => {
     expect(lanes.x0).toBeGreaterThan(plain.x0)
     expect(keys.strip).not.toBeNull()
     expect(keys.yOf(0)).toBeLessThan(keys.strip?.spec.top ?? 0)
+  })
+})
+
+describe('a chord in one column', () => {
+  const F4: Spelled = { letter: 'F', alter: 0, octave: 4 }
+  const B4: Spelled = { letter: 'B', alter: 0, octave: 4 }
+  const C5: Spelled = { letter: 'C', alter: 0, octave: 5 }
+  const D5: Spelled = { letter: 'D', alter: 0, octave: 5 }
+
+  /** Notes in column 0, at rest. */
+  const column = (notes: readonly Spelled[]): Mark[] =>
+    notes.map((note) => ({ note, col: 0, tone: 'rest' }))
+
+  /** The left edges of what `sel` picks, from their transforms, in drawing order. */
+  const xs = (el: Element, sel: string): number[] =>
+    Array.from(el.querySelectorAll(sel)).map((n) =>
+      Number(
+        /translate\(([-\d.]+)/.exec(n.getAttribute('transform') ?? '')?.[1],
+      ),
+    )
+
+  it("writes two notes a second apart side by side, the upper a head to the right, and a cluster's heads taking turns", () => {
+    // Arrange: V7 turned over once, F, G, B and D, in one column
+    const chord = column([F4, G4, B4, D5])
+    const el = figure()
+
+    // Act
+    const L = drawScene(el, treble(chord, { cols: 1 }), SIZE)
+
+    // Assert: G beside F; B and D in the column
+    expect(besideOf(chord, 'treble')).toEqual([false, true, false, false])
+    const heads = xs(el, '.st-head')
+    // the drawing rounds to a hundredth of a pixel
+    expect(heads[1] - heads[0]).toBeCloseTo(2 * headHalf(L.space), 1)
+    expect(heads[2]).toBeCloseTo(heads[0], 6)
+    expect(heads[3]).toBeCloseTo(heads[0], 6)
+    // up a cluster the heads take turns, whatever order they come in
+    expect(besideOf(column([G4, E4, F4]), 'treble')).toEqual([
+      false,
+      false,
+      true,
+    ])
+    // a second across two columns stays in each
+    expect(
+      besideOf(
+        [
+          { note: F4, col: 0, tone: 'rest' },
+          { note: G4, col: 1, tone: 'rest' },
+        ],
+        'treble',
+      ),
+    ).toEqual([false, false])
+  })
+
+  it("keeps a beside note's sign at its column's left, where a note alone in the column has it", () => {
+    // Arrange: F sharp 4 a second over E4, and alone
+    const beside = figure()
+    const alone = figure()
+
+    // Act
+    drawScene(beside, treble(column([E4, F_SHARP_4]), { cols: 1 }), SIZE)
+    drawScene(alone, treble(column([F_SHARP_4]), { cols: 1 }), SIZE)
+
+    // Assert: the head moves, the sign does not
+    expect(xs(beside, '.st-head')[1]).toBeGreaterThan(xs(alone, '.st-head')[0])
+    expect(xs(beside, '.st-sign')[0]).toBeCloseTo(xs(alone, '.st-sign')[0], 6)
+    // and the pair of B and C, I with its seventh turned over three times
+    const pair = figure()
+    const L = drawScene(pair, treble(column([B4, C5]), { cols: 1 }), SIZE)
+    const heads = xs(pair, '.st-head')
+    // the drawing rounds to a hundredth of a pixel
+    expect(heads[1] - heads[0]).toBeCloseTo(2 * headHalf(L.space), 1)
+  })
+
+  it('travels a climbing note up from the place it left, and picks the travel up when the scene draws again', () => {
+    // Arrange: motion on, a figure that animates; C turned over, C4 up to C5
+    vi.spyOn(Motion, 'paused', 'get').mockReturnValue(false)
+    const now = vi.spyOn(performance, 'now').mockReturnValue(1000)
+    const moves: { dy: number; delay: number; ms: number }[] = []
+    Object.defineProperty(SVGElement.prototype, 'animate', {
+      configurable: true,
+      value: (frames: Keyframe[], o: KeyframeAnimationOptions) => {
+        const dy = Number(
+          /translate\([-\d.]+px, ([-\d.]+)px\)/.exec(
+            String(frames[0].transform),
+          )?.[1],
+        )
+        moves.push({ dy, delay: Number(o.delay), ms: Number(o.duration) })
+        return {} as Animation
+      },
+    })
+    const scene = treble(
+      [
+        { note: E4, col: 0, tone: 'lit' },
+        { note: G4, col: 0, tone: 'lit' },
+        { note: C5, col: 0, tone: 'lit', climb: { from: C4, at: 1000 } },
+      ],
+      { cols: 1 },
+    )
+    const el = figure()
+
+    try {
+      // Act: drawn as it leaves, again 0.1 s on, and after it lands
+      const L = drawScene(el, scene, SIZE)
+      now.mockReturnValue(1100)
+      drawScene(el, scene, SIZE)
+      now.mockReturnValue(1400)
+      drawScene(el, scene, SIZE)
+
+      // Assert: up from C4's place to C5's, seven places, in 0.4 s; then still
+      expect(CLIMB_MS).toBe(400)
+      expect(moves).toHaveLength(2)
+      expect(moves[0].dy).toBeCloseTo(L.yOf(-2) - L.yOf(5), 1)
+      expect(moves[0].ms).toBe(400)
+      expect(moves[0].delay).toBeCloseTo(0, 9)
+      expect(moves[1].delay).toBeCloseTo(-100, 9)
+    } finally {
+      Reflect.deleteProperty(SVGElement.prototype, 'animate')
+      vi.restoreAllMocks()
+    }
   })
 })
