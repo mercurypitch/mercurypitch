@@ -20,6 +20,13 @@
 // page's clock; the beat clock gives bar 1's first beat on that clock
 // (`pageTimeOfBeat`), so the take knows where bar 1 falls in its frames.
 //
+// Lesson 26 sings it against a part another voice sings from bar 1
+// (`other`): the reader hears a note sung on that part's note as theirs,
+// "Do · That was Merc's note: mi.", and the lines measure a gap from "your
+// part's note" (`whose`). The page draws its cursor every frame of the take
+// (`onFrame`), since the hush that keeps the part sounding stops the beat
+// clock that counted in.
+//
 // The pitch line comes with the lines, for the page to draw after the take
 // and never during it (pitch-line.ts): on the bars' time axis, moved by the
 // anchor as the reader moves the beats, each written note an amber band
@@ -32,7 +39,7 @@ import type { F0Frame } from '@/lib/mirror/metrics'
 import { foldCents, median, preprocess } from '@/lib/mirror/metrics'
 import type { TracePoint } from './band-chart'
 import type { Rung } from './band-chart-rungs'
-import { octavesOf } from './band-words'
+import { inBand, octavesOf } from './band-words'
 import type { Listener } from './listen'
 import type { ListenModule } from './mic-hold'
 import type { PitchLine } from './pitch-line'
@@ -62,6 +69,20 @@ export interface TakeContext {
   readonly bar1: number
   /** Abandoned: the section left or the page hidden. */
   readonly cancelled: () => boolean
+  /** The note a gap is measured from, in the lines: "the written note" unless given. */
+  readonly whose?: string
+  /**
+   * The part another voice sings under the take (Lesson 26): its notes,
+   * booked from bar 1's first beat; whose it is, "Merc's"; and each of its
+   * notes' syllables, for the line of a note sung on one of them.
+   */
+  readonly other?: {
+    readonly notes: readonly WrittenNote[]
+    readonly whose: string
+    readonly labels: readonly string[]
+  }
+  /** Every animation frame while the take is open. */
+  readonly onFrame?: () => void
 }
 
 /** How a take ended. */
@@ -75,6 +96,8 @@ export type TakeEnd =
       readonly lines: readonly string[]
       /** The pitch line to draw after the take; null when no voice came. */
       readonly pitch: PitchLine | null
+      /** How many notes read in the band, within 35 cents of their own note: a page's tricky line counts them. */
+      readonly inBand: number
     }
 
 /** A stretch this long with no voiced frame breaks the line, s: several frames missed in a row, a breath or a stop. */
@@ -150,6 +173,7 @@ export async function runTake(c: TakeContext): Promise<TakeEnd> {
     bpm: c.bpm,
     bar1: (c.bar1 - opened) / 1000,
     opened: 0,
+    ...(c.other === undefined ? {} : { other: c.other.notes }),
   }
   const end = Math.max(...c.notes.map((n) => n.beat + n.beats))
   const frames = await c.mod.takeFrames(c.listener, {
@@ -158,15 +182,20 @@ export async function runTake(c: TakeContext): Promise<TakeEnd> {
     run: RUN_CAP_SEC,
     until: (fs) => (fs.at(-1)?.t ?? 0) >= windowsClose(fs, o),
     cancelled: c.cancelled,
+    onFrame: () => c.onFrame?.(),
   })
   if (frames === null) return { kind: 'left' }
   const reading = readInTime(frames, o)
   if (!reading.voice)
-    return { kind: 'read', voiced: false, lines: [], pitch: null }
+    return { kind: 'read', voiced: false, lines: [], pitch: null, inBand: 0 }
   return {
     kind: 'read',
     voiced: true,
-    lines: readingLines(c.labels, reading.notes),
+    lines: readingLines(c.labels, reading.notes, {
+      whose: c.whose,
+      other: c.other,
+    }),
     pitch: pitchLineOf(frames, o, reading),
+    inBand: reading.notes.filter((n) => n.d !== null && inBand(n.d)).length,
   }
 }

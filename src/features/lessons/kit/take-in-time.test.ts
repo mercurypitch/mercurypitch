@@ -222,7 +222,68 @@ describe('the take', () => {
     const end = await run(mod)
 
     // Assert
-    expect(end).toEqual({ kind: 'read', voiced: false, lines: [], pitch: null })
+    expect(end).toEqual({
+      kind: 'read',
+      voiced: false,
+      lines: [],
+      pitch: null,
+      inBand: 0,
+    })
+  })
+
+  it('counts the notes read in the band', async () => {
+    // Arrange: tune 1 sung 40 cents sharp, but for its first note
+    const sharp = sung().map((f) =>
+      f.t < BAR1 + 1 ? f : { ...f, f0: f.f0 * 2 ** (40 / 1200) },
+    )
+    const { mod } = module([...quiet(BAR1), ...sharp])
+
+    // Act
+    const end = await run(mod)
+
+    // Assert: the first in the band; the others close, outside it
+    expect(end.kind === 'read' ? end.inBand : -1).toBe(1)
+  })
+
+  it('reads a note sung on the other part’s note as theirs, measures gaps from the note it is given, and asks after every frame (Lesson 26)', async () => {
+    // Arrange: tune 1 sung as written, under a part a third above, its first note sung on the part's
+    vi.spyOn(performance, 'now').mockReturnValue(1000)
+    const above = TUNE_1.map((n) => ({ ...n, midi: n.midi + 4 }))
+    const frames = [
+      ...quiet(BAR1),
+      ...sung().map((f) =>
+        f.t < BAR1 + 1 ? { ...f, f0: f.f0 * 2 ** (4 / 12) } : f,
+      ),
+    ]
+    const { mod, asked } = module(frames)
+    let ticks = 0
+
+    // Act
+    const end = await runTake({
+      mod,
+      listener: {} as Listener,
+      notes: TUNE_1,
+      labels: LABELS,
+      bpm: 60,
+      bar1: 1500,
+      cancelled: () => false,
+      whose: "your part's note",
+      other: {
+        notes: above,
+        whose: "Tavi's",
+        labels: ['mi', 'fa', 'so', 'ti', 'ti', 'so', 'mi'],
+      },
+      onFrame: () => {
+        ticks += 1
+      },
+    })
+    asked[0].onFrame?.(null, null)
+
+    // Assert
+    const lines = end.kind === 'read' ? end.lines : []
+    expect(lines[0]).toBe("Do · That was Tavi's note: mi.")
+    expect(lines[1]).toBe("Re · Right in the middle: on your part's note.")
+    expect(ticks).toBe(1)
   })
 
   it('is left when the take was abandoned', async () => {

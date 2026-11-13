@@ -248,6 +248,26 @@ describe('beat clock', () => {
     expect(run.pageTimeOfBeat(1)).toBeNull()
   })
 
+  it('gives a beat’s time on the audio clock as booked, for a sound booked with it, and none for a silent run', () => {
+    // Arrange: the audio clock reads -4.0 as the run starts, 0.1 s before beat 0
+    const f = fakeEnv({ stamp: { contextTime: -4, performanceTime: 1090 } })
+    const run = createBeatClock(f.env).start({
+      bar: bars([bar4([0])]),
+      bpm: () => 60,
+      audible: true,
+    })
+    const silent = createBeatClock(fakeEnv({ sound: false }).env).start({
+      bar: bars([bar4([0])]),
+      bpm: () => 60,
+      audible: true,
+    })
+
+    // Assert: Lesson 26 books its part on bar 1 from beat 0's time
+    expect(run.audioTimeOfBeat(0)).toBeCloseTo(-3.9, 6)
+    expect(run.audioTimeOfBeat(1)).toBeNull()
+    expect(silent.audioTimeOfBeat(0)).toBeNull()
+  })
+
   it('keeps time on the page clock with no sound, and still shows every hit', () => {
     const f = fakeEnv({ sound: false })
     const clock = createBeatClock(f.env)

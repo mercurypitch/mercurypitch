@@ -70,6 +70,7 @@ export const FakeBeatClock = {
         run.end(false)
       },
       pageTimeOfBeat: (n: number) => n * 1000,
+      audioTimeOfBeat: (n: number) => n,
     }
   },
 }

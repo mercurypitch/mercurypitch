@@ -10,6 +10,10 @@
 // 0.45 s within 60 cents and not at 0.44; one not heard is read only from
 // its own beats, and reads "We didn't hear a steady note there." where its
 // voice is another written note's, never a gap measured from it.
+// Lesson 26's rule for a part sung against another (its WEB-SPEC, Tests
+// 7): a note sung on the note the other part was sounding, compared by
+// clock time and never by the anchored beat, reads as that part's note,
+// before the neighbour rule.
 
 import { describe, expect, it } from 'vitest'
 import type { F0Frame } from '@/lib/mirror/metrics'
@@ -537,5 +541,190 @@ describe('the in-time reader’s lines', () => {
         /\bof \d|\d+\s*\/\s*\d|score|try|again|listen|late|early|beat|tim(e|ing)|great|well done|perfect/i,
       )
     }
+  })
+})
+
+describe('the other part’s note (Lesson 26)', () => {
+  // Lesson 26 WEB-SPEC, Tests 7: the parts in G, a beat each, the last two
+  const E3 = 52
+  const FS3 = 54
+  const GS3 = 56
+  const G4 = 67
+  const A4 = 69
+  const B4 = 71
+  const C5 = 72
+  const D5 = 74
+  const part = (midis: readonly number[]): WrittenNote[] =>
+    midis.map((midi, i) => ({ midi, beat: i, beats: i === 4 ? 2 : 1 }))
+  /** The lower voice's part, la ti do ti la, under Merc's tune, do re mi re do. */
+  const LOWER = part([E3, FS3, G3, FS3, E3])
+  const TUNE = part([G3, A3, B3, A3, G3])
+  /** The higher voice's part, mi fa so fa mi, over Tavi's tune. */
+  const HIGHER = part([B4, C5, D5, C5, B4])
+  const HIGH_TUNE = part([G4, A4, B4, A4, G4])
+  const options = (
+    notes: readonly WrittenNote[],
+    other: readonly WrittenNote[],
+  ): InTimeOptions => ({ ...OPTIONS, notes, other })
+  /** Each note sung for its full length from `late` s after its beat, a pitch a note. */
+  const singing = (midis: readonly number[], late = 0): Part[] =>
+    midis.map((midi, i) => ({ midi, from: i + late, sec: i === 4 ? 2 : 1 }))
+  const lines = (
+    r: InTimeReading,
+    labels: readonly string[],
+    whose: string,
+    otherLabels: readonly string[],
+  ): string[] =>
+    readingLines(labels, voiced(r).notes, {
+      whose: "your part's note",
+      other: { whose, labels: otherLabels },
+    })
+  const LA_TI = ['La', 'Ti', 'Do', 'Ti', 'La']
+  const DO_RE = ['do', 're', 'mi', 're', 'do']
+  const lower = (r: InTimeReading): string[] => lines(r, LA_TI, "Merc's", DO_RE)
+
+  it('reads the part sung on pitch and on time, or a whole beat late, as heard on each note', () => {
+    for (const late of [0, 1]) {
+      // Act
+      const r = readInTime(
+        take(singing([E3, FS3, G3, FS3, E3], late)),
+        options(LOWER, TUNE),
+      )
+
+      // Assert
+      expect(voiced(r).notes.every((n) => n.heard)).toBe(true)
+      expect(lower(r)).toEqual(
+        LA_TI.map((l) => `${l} · Right in the middle: on your part's note.`),
+      )
+    }
+  })
+
+  it('reads a singer a beat late on Merc’s sounding notes as his, by the note he sounds at each frame’s time', () => {
+    // Arrange: A3, B3, A3, G3 and G3 from beat 1, stopping with him
+    const frames = take([
+      { midi: A3, from: 1, sec: 1 },
+      { midi: B3, from: 2, sec: 1 },
+      { midi: A3, from: 3, sec: 1 },
+      { midi: G3, from: 4, sec: 2 },
+    ])
+
+    // Act
+    const r = readInTime(frames, options(LOWER, TUNE))
+
+    // Assert: the anchor moves la to beat 1, where Merc sounds re
+    expect(voiced(r).shift).toBeCloseTo(1, 6)
+    expect(lower(r)).toEqual([
+      "La · That was Merc's note: re.",
+      "Ti · That was Merc's note: mi.",
+      "Do · That was Merc's note: re.",
+      "Ti · That was Merc's note: do.",
+      "La · That was Merc's note: do.",
+    ])
+    expect(voiced(r).notes.map((n) => [n.heard, n.d, n.other])).toEqual([
+      [false, null, 1],
+      [false, null, 2],
+      [false, null, 3],
+      [false, null, 4],
+      [false, null, 4],
+    ])
+  })
+
+  it('reads do sung on Merc’s mi as his mi', () => {
+    // Act
+    const r = readInTime(
+      take(singing([E3, FS3, B3, FS3, E3])),
+      options(LOWER, TUNE),
+    )
+
+    // Assert
+    expect(lower(r)[2]).toBe("Do · That was Merc's note: mi.")
+    expect(lower(r).filter((l) => l.includes('That was'))).toHaveLength(1)
+  })
+
+  it('reads la sung on G3 in the first beat as Merc’s do before the neighbour rule, though do is la’s note two places on', () => {
+    // Act
+    const r = readInTime(
+      take(singing([G3, FS3, G3, FS3, E3])),
+      options(LOWER, TUNE),
+    )
+
+    // Assert
+    expect(lower(r)[0]).toBe("La · That was Merc's note: do.")
+  })
+
+  it('reads ti sung on G♯3, off both parts, as its gap from ti', () => {
+    // Act
+    const r = readInTime(
+      take(singing([E3, GS3, G3, FS3, E3])),
+      options(LOWER, TUNE),
+    )
+
+    // Assert
+    const ti = voiced(r).notes[1]
+    expect([ti.heard, ti.other]).toEqual([false, undefined])
+    expect(ti.d).toBeCloseTo(200, 6)
+    expect(lower(r)[1]).not.toContain('That was')
+  })
+
+  it('reads the higher part’s so sung on B4 as Tavi’s mi', () => {
+    // Act
+    const r = readInTime(
+      take(singing([B4, C5, B4, C5, B4])),
+      options(HIGHER, HIGH_TUNE),
+    )
+
+    // Assert
+    expect(lines(r, ['Mi', 'Fa', 'So', 'Fa', 'Mi'], "Tavi's", DO_RE)[2]).toBe(
+      "So · That was Tavi's note: mi.",
+    )
+  })
+
+  it('reads the swap’s do sung on E3 as Merc’s la', () => {
+    // Act: the learner sings the tune; Merc sings the part
+    const r = readInTime(
+      take(singing([E3, A3, B3, A3, G3])),
+      options(TUNE, LOWER),
+    )
+
+    // Assert
+    expect(
+      lines(r, ['Do', 'Re', 'Mi', 'Re', 'Do'], "Merc's", [
+        'la',
+        'ti',
+        'do',
+        'ti',
+        'la',
+      ])[0],
+    ).toBe("Do · That was Merc's note: la.")
+  })
+
+  it('reads Merc’s part alone, the voice silent, as every note his, and never in the band', () => {
+    // Act: the frames hold his part as booked, as a speaker would play it into the microphone
+    const r = readInTime(
+      take(singing([G3, A3, B3, A3, G3])),
+      options(LOWER, TUNE),
+    )
+
+    // Assert
+    expect(lower(r)).toEqual([
+      "La · That was Merc's note: do.",
+      "Ti · That was Merc's note: re.",
+      "Do · That was Merc's note: mi.",
+      "Ti · That was Merc's note: re.",
+      "La · That was Merc's note: do.",
+    ])
+    expect(lower(r).some((l) => l.includes('band'))).toBe(false)
+  })
+
+  it('reads as Lesson 18 does with no other part', () => {
+    // Act: do on B3, with no part given
+    const r = readInTime(take(singing([E3, FS3, B3, FS3, E3])), {
+      ...OPTIONS,
+      notes: LOWER,
+    })
+
+    // Assert
+    expect(voiced(r).notes[2].other).toBeUndefined()
+    expect(readingLines(LA_TI, voiced(r).notes)[2]).not.toContain('That was')
   })
 })

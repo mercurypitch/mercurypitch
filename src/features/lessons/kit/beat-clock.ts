@@ -82,6 +82,12 @@ export interface Run {
   stop(): void
   /** When beat `n` (from 0) sounded or will sound, ms on the page's clock; null for a beat not yet timed. */
   pageTimeOfBeat(n: number): number | null
+  /**
+   * When beat `n` (from 0) sounds, s on the audio clock as booked: a sound
+   * of the page's own booked to start with it (Lesson 26's part on bar 1);
+   * null for a beat not yet timed, or a run with no sound.
+   */
+  audioTimeOfBeat(n: number): number | null
 }
 
 /** A moment on the audio timeline paired with when the device played it. */
@@ -201,6 +207,11 @@ class BeatRun<T> implements Run {
   pageTimeOfBeat(n: number): number | null {
     const b = this.timed[n]
     return b === undefined ? null : this.map.toPage(b.t)
+  }
+
+  audioTimeOfBeat(n: number): number | null {
+    const b = this.timed[n]
+    return b === undefined || this.bus === null ? null : b.t
   }
 
   /** The run's clock now: the audio clock, or the page's for a silent run. */
