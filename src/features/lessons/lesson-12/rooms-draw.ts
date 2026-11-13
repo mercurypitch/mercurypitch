@@ -2,15 +2,12 @@
 // Lesson 12 rooms — the chords as rooms on the ring, the key turn, the corner slide and the walk
 // ============================================================
 //
-// The ring of rooms is the kit's spiral seen from above, so one turn is a
-// ring of twelve and C4 to B4 sit on it (WEB-SPEC, Toys 1 and 2; FACTS 22).
-// A room is a chord's three notes joined as a triangle, drawn each frame in
-// the spiral's overlay from where its beads landed, so it stays on the ring
-// however a drag, Shift with an arrow or a flick has turned it:
-// `setTurning(false)` stops only the drift. A note's bead is picked by its
-// name on the lit turn, `s = m - LO` for m from 60 to 71, whatever octave
-// sounds, since until the camera reaches the top the frame also holds the
-// other turns' beads.
+// The ring of rooms is the kit's (kit/ring-rooms-draw.ts): the kit's spiral seen
+// from above, so one turn is a ring of twelve and C4 to B4 sit on it
+// (WEB-SPEC, Toys 1 and 2; FACTS 22). A room is a chord's three notes
+// joined as a triangle, drawn each frame in the spiral's overlay from where
+// its beads landed, so it stays on the ring however a drag, Shift with an
+// arrow or a flick has turned it: `setTurning(false)` stops only the drift.
 //
 // Every room is chrome, whatever its quality, with a halo round each
 // corner; the lit room has a brighter line and a faint fill, the others are
@@ -43,9 +40,10 @@
 
 import { clamp, lerp, TAU } from '@/features/lessons/kit/dom'
 import { COLOR, rgba } from '@/features/lessons/kit/notes'
+import type { Point, Ring } from '@/features/lessons/kit/ring-rooms-draw'
+import { drawCentre, drawHalos, drawRoom, HALO, onRing, pcOf, ringOf, } from '@/features/lessons/kit/ring-rooms-draw'
 import type { SpiralFrame } from '@/features/lessons/kit/spiral'
-import type { BeadHit } from '@/features/lessons/kit/spiral-draw'
-import { LO, pulseOf } from '@/features/lessons/kit/spiral-keys'
+import { pulseOf } from '@/features/lessons/kit/spiral-keys'
 import { GLOW_SEC } from '@/features/lessons/kit/tune-line-motion'
 import { centreLabel, cornerCount } from './lines'
 import type { KeyName, TuneId, TuneNote } from './music'
@@ -61,10 +59,6 @@ export const WALK_FADE_SEC = GLOW_SEC
 /** The walk's newest stretch draws on over 0.3 s from its note's start, as the newest stretch of Lesson 2's trail does. */
 export const STRETCH_SEC = 0.3
 
-/** The turn lit from above starts on C4 (Toys 1 and 2, `ring: 60`). */
-const RING_FROM = 60
-/** A corner's halo radius, against a bead's; a room's edges stop at it. */
-const HALO = 1.6
 /** The gold ring a corner note grows round its bead, against a bead's radius. */
 const GOLD_RING = 2.3
 /** The line's alpha while a tune plays, and once it has faded. */
@@ -113,13 +107,6 @@ export interface RoomsState {
   readonly walk: WalkPlay | null
   readonly reduced: boolean
 }
-
-export interface Point {
-  readonly x: number
-  readonly y: number
-}
-
-const pcOf = (n: number): number => ((n % 12) + 12) % 12
 
 // -------------------------------------------------------------- time, pure
 
@@ -222,60 +209,6 @@ export function roomsAnimating(state: RoomsState, now: number): boolean {
   return turning || sliding || walking
 }
 
-// -------------------------------------------------------------- the ring this frame
-
-export interface Ring {
-  readonly c: Point
-  readonly radius: number
-  /** The largest of the ring's beads, for the halos. */
-  readonly bead: number
-  /** A note's bead on the lit turn, by its name: whole semitones from C. */
-  readonly beadAt: (n: number) => BeadHit | undefined
-}
-
-/** The lit turn's bead for a place on the ring, semitones from C, in any octave. */
-const beadFor = (beads: readonly BeadHit[], n: number): BeadHit | undefined =>
-  beads.find((b) => b.s === RING_FROM + pcOf(n) - LO)
-
-/** The ring this frame, from the lit turn's beads: null until it has drawn at least three. */
-export function ringOf(beads: readonly BeadHit[]): Ring | null {
-  const ring = beads.filter(
-    (b) => b.s >= RING_FROM - LO && b.s < RING_FROM - LO + 12,
-  )
-  if (ring.length < 3) return null
-  const c = {
-    x: ring.reduce((n, b) => n + b.x, 0) / ring.length,
-    y: ring.reduce((n, b) => n + b.y, 0) / ring.length,
-  }
-  const radius =
-    ring.reduce((n, b) => n + Math.hypot(b.x - c.x, b.y - c.y), 0) / ring.length
-  const bead = Math.max(...ring.map((b) => b.r))
-  return { c, radius, bead, beadAt: (n) => beadFor(beads, n) }
-}
-
-/** A place on the ring, semitones from C: a bead, or round the centre between two neighbours. */
-function onRing(ring: Ring, at: number): Point | undefined {
-  const lo = Math.floor(at)
-  const f = at - lo
-  const a = ring.beadAt(lo)
-  const b = ring.beadAt(lo + 1)
-  if (a === undefined || b === undefined) return undefined
-  if (f < 1e-9) return a
-  if (f > 1 - 1e-9) return b
-  const { c } = ring
-  const a0 = Math.atan2(a.y - c.y, a.x - c.x)
-  const a1 = Math.atan2(b.y - c.y, b.x - c.x)
-  // neighbours are a semitone apart, so the short way between them is the ring's
-  const turn = ((((a1 - a0) % TAU) + TAU + Math.PI) % TAU) - Math.PI
-  const angle = a0 + turn * f
-  const r = lerp(
-    Math.hypot(a.x - c.x, a.y - c.y),
-    Math.hypot(b.x - c.x, b.y - c.y),
-    f,
-  )
-  return { x: c.x + r * Math.cos(angle), y: c.y + r * Math.sin(angle) }
-}
-
 // -------------------------------------------------------------- which rooms, where
 
 /** A room as drawn this frame: its corners as places on the ring, and whether it is lit. */
@@ -347,57 +280,6 @@ function placeRooms(
 }
 
 // -------------------------------------------------------------- drawing
-
-/** A room's triangle: a faint fill when lit, then its edges, each stopping at the corners' halos. */
-function drawRoom(
-  ctx: CanvasRenderingContext2D,
-  at: readonly Point[],
-  halo: number,
-  lit: boolean,
-): void {
-  if (lit) {
-    ctx.fillStyle = rgba(COLOR.chrome, 0.08)
-    ctx.beginPath()
-    ctx.moveTo(at[0].x, at[0].y)
-    at.slice(1).forEach((p) => ctx.lineTo(p.x, p.y))
-    ctx.closePath()
-    ctx.fill()
-  }
-  ctx.strokeStyle = rgba(COLOR.chrome, lit ? 0.9 : 0.35)
-  ctx.lineWidth = lit ? 1.5 : 1
-  ctx.beginPath()
-  at.forEach((a, i) => {
-    const b = at[(i + 1) % at.length]
-    const d = Math.hypot(b.x - a.x, b.y - a.y)
-    if (d <= 2 * halo) return
-    const ux = (b.x - a.x) / d
-    const uy = (b.y - a.y) / d
-    ctx.moveTo(a.x + ux * halo, a.y + uy * halo)
-    ctx.lineTo(b.x - ux * halo, b.y - uy * halo)
-  })
-  ctx.stroke()
-}
-
-/** The halos round every corner drawn, each once, bright where a corner of the lit room. */
-function drawHalos(
-  ctx: CanvasRenderingContext2D,
-  placed: readonly { at: readonly Point[]; lit: boolean }[],
-  halo: number,
-): void {
-  const halos = new Map<string, { p: Point; lit: boolean }>()
-  for (const room of placed)
-    for (const p of room.at) {
-      const id = `${p.x.toFixed(1)},${p.y.toFixed(1)}`
-      halos.set(id, { p, lit: room.lit || halos.get(id)?.lit === true })
-    }
-  ctx.lineWidth = 1.5
-  for (const { p, lit } of halos.values()) {
-    ctx.strokeStyle = rgba(COLOR.chrome, lit ? 0.85 : 0.35)
-    ctx.beginPath()
-    ctx.arc(p.x, p.y, halo, 0, TAU)
-    ctx.stroke()
-  }
-}
 
 /** The walk's blue line, bead to bead, each segment stopping at the beads' edges; the newest draws on. */
 function drawLine(ctx: CanvasRenderingContext2D, ring: Ring, w: WalkNow): void {
@@ -492,12 +374,7 @@ function drawLabel(
   lit: number,
 ): void {
   const text = centreLabel(chordsOf(state.key)[lit], state.label === 'numeral')
-  ctx.font = '600 14px Outfit, sans-serif'
-  ctx.fillStyle = COLOR.ink
-  ctx.textBaseline = 'middle'
-  ctx.textAlign = state.compact ? 'left' : 'center'
-  if (state.compact) ctx.fillText(text, 10, 14)
-  else ctx.fillText(text, ring.c.x, ring.c.y)
+  drawCentre(ctx, ring, text, state.compact)
 }
 
 /**
