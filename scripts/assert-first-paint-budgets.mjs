@@ -680,10 +680,12 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // bytes in build:e2e; a quarter over.
   'learn/25.html': 249,
   // Lesson 26, "A second voice", a Season 2 page and a draft, built in every
-  // mode as Lesson 3 is: its page shell, carrying Season 2's map
-  // (kit/season-2.ts) as a Season 2 page must: 90,279 bytes in build:e2e,
-  // the smallest whole KB above, to rise as each part joins.
-  'learn/26.html': 89,
+  // mode as Lesson 3 is: its own module on the kit, carrying Season 2's map
+  // (kit/season-2.ts) as a Season 2 page must; with the steps' toy and free
+  // play on the kit's tune line, dressed, and the cold open's on the kit's
+  // predict: 131,175 bytes in build:e2e, the smallest whole KB above, to
+  // rise as each part joins.
+  'learn/26.html': 129,
   // Lesson 27, "Seventh chords and inversions", a Season 2 page and a draft,
   // built in every mode as Lesson 3 is: its own module on the kit, carrying
   // Season 2's map (kit/season-2.ts) as a Season 2 page must; with the steps'
@@ -890,11 +892,13 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // over. The recall reaches no sheet, its questions being words alone, so
   // the guide's stays out.
   'learn/25.html': 114,
-  // Lesson 26 (a draft, as above), its shell: 83,587 bytes in build:e2e,
-  // the kit's sheets (the shared parts), its own with the tune line's taken
-  // in by @import, and the shared Inter and Outfit @font-face rules; the
-  // smallest whole KB above, to rise as each part joins.
-  'learn/26.html': 82,
+  // Lesson 26 (a draft, as above), its steps, cold open and free play:
+  // 90,002 bytes in build:e2e, the kit's sheets (the voice lessons' in the
+  // chunk the Wrap's comfort check shares, and the shared parts), its own
+  // with the tune line's taken in by @import, and the shared Inter and
+  // Outfit @font-face rules; the smallest whole KB above, to rise as each
+  // part joins.
+  'learn/26.html': 88,
   // Lesson 27 (a draft, as above): 92,302 bytes in build:e2e, the kit's sheets
   // (the voice lessons' in the chunk Sing it's comfort check shares, and the
   // shared parts), its own with the staff toy's taken in by @import, and the

@@ -27,11 +27,13 @@ import '@/features/lessons/kit/lesson-fonts.css'
 import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
-// the guide's and the voice lessons' sheets join with the recall and Sing
-// it, the modules whose chunks they share: taken before them, each leaves
-// its chunk for one of its own, which every lesson page would then link
-// after its own sheet (MISTAKES.md, on the lessons' base stylesheet)
 import '@/features/lessons/kit/lesson-parts.css'
+// the Wrap's rest line brings the kit's comfort check, and Sing it its
+// voice choice, so taking the voice lessons' sheet here keeps it in the
+// chunk it shares with them: a sheet left out leaves that chunk for one of
+// its own, which every lesson page would then link after its own sheet
+// (MISTAKES.md, on the lessons' base stylesheet)
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-26.css'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
@@ -44,6 +46,9 @@ import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
+import { initSteps } from './steps'
+import { initWrap } from './wrap'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -58,6 +63,9 @@ const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
+// free play first, so the steps' choice and the cold open's reach it
+const wrap = initWrap()
+const steps = initSteps(deck)
 deck.start()
 
 // the next lesson's card first: the explorer binds its link to the map
@@ -82,6 +90,15 @@ initMasthead(
   },
   { lesson: 26, deck },
 )
+// the cold open after the masthead, in the same task, so a first visit's
+// tour waits for its choice (kit/tour-gate.ts)
+initColdOpen(deck, {
+  onChoice: () => {
+    steps.unlock()
+    wrap.free.unlock()
+  },
+  onReveal: () => steps.reveal(),
+})
 initReveals()
 startFrameLoop()
 // Tavi gives a quiet "oh" at the reveal with no sparkles (WEB-SPEC, Merc

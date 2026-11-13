@@ -55,12 +55,13 @@ const FIRST_CHOICE = [
   [23, 'g'],
   [24, 'stops'],
   [25, 'major'],
+  [26, 'leaves'],
   [27, 'f'],
 ] as const
 
 /**
  * Opens lesson `n` on a first visit: Lessons 15's, 16's, 18's, 19's, 20's,
- * 21's, 22's, 23's, 24's, 25's and 27's cards wait for the predict's choice (kit/tour-gate.ts `holdTour`), since
+ * 21's, 22's, 23's, 24's, 25's, 26's and 27's cards wait for the predict's choice (kit/tour-gate.ts `holdTour`), since
  * a step the tour shows would answer it, so there the choice comes first,
  * made where the page stands: a first visit's tour opens only at the top,
  * and on a phone the predict sits below the first screen.
@@ -489,6 +490,12 @@ test('a deep link skips the tour this time, and the next lesson page opened at t
 })
 
 test('every lesson page offers the same five steps', async ({ page }) => {
+  // Every lesson page in turn, Lessons 1 and 2 holding their card for their
+  // opening: 24.9 s for 27 pages alone on a developer box, so the default
+  // 30 s fails once other specs share the machine. About 5x, growing with
+  // each page the season adds (TESTING.md § 3.7)
+  test.setTimeout(2 * HOLD_CAP + LESSONS.length * 4_000)
+
   // Arrange
   await page.setViewportSize(DESKTOP)
   const counts: string[] = []

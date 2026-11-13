@@ -14,7 +14,9 @@
 // before the first tap, and nothing plays before a play button; and a
 // visitor with the studio installed still gets the lesson, not the shell.
 // It carries Season 2, so its masthead and its map are Season 2's, and it
-// draws no staff at all (WEB-SPEC, Look).
+// draws no staff at all (WEB-SPEC, Look). A hero play pressed with the
+// drawing scrolled away brings it back by the page's own scroll, never the
+// stage's, which clips its bubbles.
 
 import type { Page } from '@playwright/test'
 import { expect, test } from './helpers/lesson-page'
@@ -148,6 +150,51 @@ for (const viewport of [
       expect(background).not.toContain('repeating-linear-gradient')
       expect(background).toContain('radial-gradient')
       await expect(page.locator('.mv-staff')).toHaveCount(0)
+    })
+
+    test("brings the hero's drawing back by the page's scroll when a play is pressed with it scrolled away, and never scrolls the stage", async ({
+      page,
+    }) => {
+      // Arrange: the choice made, the drawing scrolled away above the screen
+      await page.goto('/learn/26')
+      await page.locator('#predict [data-choice="leaves"]').click()
+      await page.evaluate(() => {
+        const figure = document.querySelector('#heroTune')
+        if (figure === null) throw new Error('no #heroTune')
+        // at once: the page's own scroll is smooth
+        window.scrollBy({
+          top: figure.getBoundingClientRect().bottom + 40,
+          behavior: 'instant',
+        })
+      })
+
+      // Act: Play them together, pressed where it sits, as a finger would
+      await page.evaluate(() =>
+        document
+          .querySelector<HTMLButtonElement>(
+            '.hero-plays [data-play="together"]',
+          )
+          ?.click(),
+      )
+
+      // Assert: the drawing in view again, the stage's bubbles where they were
+      await expect
+        .poll(() =>
+          page.evaluate(() => {
+            const r = document
+              .querySelector('#heroTune')
+              ?.getBoundingClientRect()
+            return (
+              r !== undefined && r.top >= 0 && r.bottom <= window.innerHeight
+            )
+          }),
+        )
+        .toBe(true)
+      expect(
+        await page.evaluate(
+          () => document.querySelector('#heroStage')?.scrollTop ?? -1,
+        ),
+      ).toBe(0)
     })
   })
 }
