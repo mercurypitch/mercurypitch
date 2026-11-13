@@ -638,4 +638,18 @@ describe('the sing-along and listening', () => {
       [null, null],
     ])
   })
+
+  it('starts Play the two parts again on a second press, still lit, the first play stopped', async () => {
+    // Arrange: two seconds into the play
+    await loadCard()
+    await press('[data-comfort="listen"]')
+    await press('[data-listen-play]', 2000)
+
+    // Act: pressed again while it plays
+    await press('[data-listen-play]', 100)
+
+    // Assert: the first one's end leaves the new one's light alone
+    expect(played.runs.map((r) => r.stopped)).toEqual([true, false])
+    expect(el('[data-listen-play]').classList.contains('is-on')).toBe(true)
+  })
 })
