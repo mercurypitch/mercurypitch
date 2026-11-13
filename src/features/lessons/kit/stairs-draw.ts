@@ -200,6 +200,14 @@ function paintRisers(
   })
 }
 
+/** The middle of a riser's label: the riser's mid-height, and clear of the tread above it. */
+const labelY = (r: { y0: number; y1: number }): number =>
+  Math.max((r.y0 + r.y1) / 2, r.y0 + 11)
+
+/** A riser's label's font: 12 px, in the weight given. */
+const labelFont = (weight: number): string =>
+  `${weight} 12px "JetBrains Mono", monospace`
+
 /** A step's size label, inside the next block's top corner, at the riser's mid-height and clear of its tread. */
 function stepLabel(
   ctx: CanvasRenderingContext2D,
@@ -211,10 +219,10 @@ function stepLabel(
 ): void {
   const r = riser(L, i)
   ctx.fillStyle = color
-  ctx.font = `${weight} 12px "JetBrains Mono", monospace`
+  ctx.font = labelFont(weight)
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.fillText(text, r.x + 6, Math.max((r.y0 + r.y1) / 2, r.y0 + 11))
+  ctx.fillText(text, r.x + 6, labelY(r))
 }
 
 /** A riser's label: its size in semitones, or T for a tone and S for a semitone. */
@@ -294,13 +302,52 @@ function paintNames(
   })
 }
 
+/** The label drawn in stair i's block, the outline's or its riser's size, if any. */
+function labelIn(s: StairsScene, i: number): string | null {
+  if (i === 0) return null
+  if (s.outline?.riser === i - 1) return s.outline.label
+  if (!s.steps || s.white > 0.5) return null
+  return riserText(risersOf(s.named ?? s.degrees)[i - 1], s.numbers)
+}
+
+/**
+ * A house's centre on stair i: `centred`, or, where the label in the
+ * block's top corner would touch it, just under that label's line and
+ * still inside the block. A narrow block's top do needs it, as on Lesson
+ * 25's compact staircases, whose blocks are not much wider than the house.
+ */
+function homeY(
+  ctx: CanvasRenderingContext2D,
+  L: StairsLayout,
+  s: StairsScene,
+  i: number,
+  size: number,
+  centred: number,
+): number {
+  const text = labelIn(s, i)
+  if (text === null) return centred
+  const st = L.stairs[i]
+  const r = riser(L, i - 1)
+  const y = labelY(r)
+  // the bold weight is the wider: an outline's label, or a gold or joining one
+  ctx.font = labelFont(700)
+  const right = r.x + 6 + ctx.measureText(text).width
+  const clear =
+    st.x + st.w / 2 - size / 2 >= right + 2 ||
+    centred - size / 2 >= y + 8 ||
+    centred + size / 2 <= y - 8
+  if (clear) return centred
+  return Math.min(Math.max(centred, y + 9 + size / 2), st.bottom - 2 - size / 2)
+}
+
 /** Do's house inside each do block; the top one lights as Land on do lands. */
 function paintHomes(
   ctx: CanvasRenderingContext2D,
   L: StairsLayout,
   s: StairsScene,
 ): void {
-  // centred in the height of do's own block, on both do stairs, and inside it
+  // centred in the height of do's own block, on both do stairs, and inside
+  // it, under the label in its corner where the two would meet
   const room = L.stairs[0].bottom - L.stairs[0].top
   const size =
     L.mode === 'compact' ? Math.min(18, L.rowH * 1.45) : Math.min(18, room - 4)
@@ -309,7 +356,7 @@ function paintHomes(
     const st = L.stairs[i]
     const lit = i > 0 ? s.home : 0
     const color = i > 0 && s.waiting ? rgba(COLOR.chrome, 0.6) : COLOR.ink
-    const cy = st.top + 2 + room / 2
+    const cy = homeY(ctx, L, s, i, size, st.top + 2 + room / 2)
     if (lit > 0) {
       const halo = ctx.createRadialGradient(
         st.x + st.w / 2,
