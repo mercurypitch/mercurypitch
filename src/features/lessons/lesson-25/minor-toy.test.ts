@@ -116,16 +116,54 @@ describe('the lock until the cold open’s choice', () => {
     const chord = button('#freePlay [data-minor-play="chord-home"]')
     const before = [te.disabled, le.disabled, chord.disabled]
 
+    const line = (): string => words(el('#freePlay [data-beads-said]'))
+
     // Act: Raise le alone raises te with it, and te down takes le down
     toy.unlock()
     le.click()
     const melodic = toy.raises
+    const up = line()
     te.click()
+    const down = line()
 
     // Assert: WEB-SPEC, Edge cases
     expect(before).toEqual([true, true, true])
     expect(el('#freePlay [data-lock-line]').hidden).toBe(true)
     expect(melodic).toEqual({ te: true, le: true })
+    expect(toy.raises).toEqual({ te: false, le: false })
+    expect(toy.core.degrees).toEqual(NATURAL_MINOR_DEGREES)
+    // each switch that moved is said, te first
+    expect(up).toBe(
+      'Te raised to ti: G sharp 3. Le raised to la, going up: F sharp 3. Coming down, both fall back. E, G sharp, B: 4 and 3 semitones, E major.',
+    )
+    expect(down).toBe(
+      'Ti back down to te: G3. La back down to le: F3. E, G, B: 3 and 4 semitones, E minor.',
+    )
+  })
+
+  it('sounds free play’s melodic minor before the choice with le and te raised for the play alone, its held switches left off', async () => {
+    // Arrange
+    const toy = mount(MINOR_STATES.free, 'bass', '#freePlay')
+    const switches = (): (string | null)[] =>
+      ['te', 'le'].map((r) =>
+        button(`#freePlay [data-raise="${r}"]`).getAttribute('aria-pressed'),
+      )
+
+    // Act
+    const played = toy.play('melodic')
+    const up = midis(last())
+    const during = switches()
+    await hear()
+    await wait(3200)
+    await hear()
+    const heard = await played
+
+    // Assert: WEB-SPEC, Free play; a switch moved while held could not be
+    // moved back until the choice
+    expect(heard).toBe(true)
+    expect(up).toEqual([45, 47, 48, 50, 52, 54, 56, 57])
+    expect(during).toEqual(['false', 'false'])
+    expect(switches()).toEqual(['false', 'false'])
     expect(toy.raises).toEqual({ te: false, le: false })
     expect(toy.core.degrees).toEqual(NATURAL_MINOR_DEGREES)
   })
@@ -158,6 +196,7 @@ describe('Step 1: why raise te?', () => {
     // Act
     const played = toy.play('so-ti-do')
     const during = toy.core.degrees
+    const line = said()
     last().note(0)
     const blue = document.querySelectorAll('#toyMinor .st-head.is-blue').length
     await hear()
@@ -166,6 +205,7 @@ describe('Step 1: why raise te?', () => {
     expect(midis(last())).toEqual([52, 56, 57])
     expect(blue).toBe(1)
     expect(during).toEqual(HARMONIC_MINOR_DEGREES)
+    expect(line).toBe('So, ti, do: te lifts to ti, a semitone under do.')
     expect(await played).toBe(true)
     expect(toy.core.degrees).toEqual(NATURAL_MINOR_DEGREES)
   })
@@ -183,6 +223,30 @@ describe('Step 1: why raise te?', () => {
     expect(midis(last())).toEqual([52, 55, 59, 45, 48, 52])
     expect(last().o.gain).toBe(0.075)
     expect(lights.mock.calls.map((c) => c[0])).toEqual([0, 1, 2])
+    expect(said()).toBe(
+      'E, G, B: 3 and 4 semitones, E minor. Then home: A, C, E, A minor.',
+    )
+  })
+
+  it('names the column in the figure once the choice draws it, and says what each play sounds', () => {
+    // Arrange
+    const toy = mount()
+    const canvas = el('#toyMinor [data-beads-canvas]')
+    const before = canvas.getAttribute('aria-label') ?? ''
+
+    // Act
+    toy.unlock()
+    const after = canvas.getAttribute('aria-label') ?? ''
+    void toy.play('so-te-do')
+    const soTeDo = said()
+
+    // Assert: WEB-SPEC, Readouts and names; the hero's figure names its
+    // column the same way
+    expect(before).not.toContain('chord on so')
+    expect(after).toBe(
+      `${before} Beside it, the chord on so: E, G, B: 3 and 4 semitones, E minor.`,
+    )
+    expect(soTeDo).toBe('So, te, do: te a tone under do.')
   })
 })
 

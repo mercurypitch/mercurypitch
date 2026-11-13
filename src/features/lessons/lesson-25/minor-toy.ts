@@ -60,7 +60,7 @@ import { mountStairs } from '@/features/lessons/kit/stairs-core'
 import type { StairsRoom } from '@/features/lessons/kit/stairs-geometry'
 import type { NoteEvent } from '@/features/lessons/kit/stairs-plays'
 import { sameDegrees } from '@/features/lessons/kit/stairs-scales'
-import { chordSaid, columnChord, FIGURE_SAID, lookSaid, raiseSaid, } from './minor-words'
+import { chordHomeSaid, chordSaid, columnChord, FIGURE_SAID, lookSaid, NATURAL_SCALE_SAID, raiseSaid, } from './minor-words'
 import type { Figure, Look, PlayId } from './sounds'
 import { C_MINOR_KEY, cDo, FLAT_COLUMNS, GLIDE_SEC, minorDo, playOf, rowsOf, } from './sounds'
 
@@ -240,7 +240,9 @@ export function mountMinorToy(
     staff: 'single',
     clef,
     tap: 'place',
-    across: scoreAcross(8),
+    // the scales' F sharp and G sharp, and C minor's flats, each before
+    // its note
+    across: scoreAcross(8, true),
     keyRoom: state.signature ? 3 : undefined,
     key,
   })
@@ -271,6 +273,9 @@ export function mountMinorToy(
     )
   }
 
+  // the look the staircase was last told to show, for the figure's name
+  let named: Look | null = null
+
   /** The staircase shows `look`: its changed stairs slide, do glides to a new do (0.6 s), at once when `now`. */
   function show(look: Look, now = false): void {
     const glide = look.tonic !== core.tonic
@@ -282,12 +287,24 @@ export function mountMinorToy(
         ? WIDE
         : null,
     )
-    canvas.setAttribute('aria-label', lookSaid(look))
+    named = look
+    nameFigure()
+  }
+
+  /** The figure's name: its staircase, and once drawn the chord column beside it. */
+  function nameFigure(): void {
+    if (named === null) return
+    const beside =
+      state.column && !held
+        ? ` Beside it, the chord on so: ${chordSaid(minorDo(clef), raises.te)}`
+        : ''
+    canvas.setAttribute('aria-label', `${lookSaid(named)}${beside}`)
   }
 
   function syncColumn(): void {
     column.set(columnChord(minorDo(clef), raises.te))
     column.show(state.column && !held)
+    nameFigure()
   }
 
   function syncControls(): void {
@@ -387,21 +404,33 @@ export function mountMinorToy(
   }
 
   /** Before a play: Step 3's melodic minor turns Raise le on, and Step 4's plays start from empty signatures. */
-  function prepare(id: PlayId): void {
-    if (id === 'melodic' && !raises.le) {
-      raises = { te: true, le: true }
-      syncColumn()
-      syncControls()
-    }
+  /**
+   * Sets the toy up for play `id` and hands back the raises it sounds with:
+   * melodic minor switches Raise le on as it starts (Toys 1, Step 3), but
+   * while the switches wait for the cold open's choice it borrows both for
+   * its own figures and leaves them as they were, since a held switch
+   * moved by a play could not be moved back until the choice.
+   */
+  function prepare(id: PlayId): Raises {
     if ((id === 'relative' || id === 'c-minor') && staff.key !== null) {
       staff.setKey(null, { quiet: true })
       drawSmall()
     }
+    if (id !== 'melodic' || raises.le) return raises
+    if (holds()) return { te: true, le: true }
+    raises = { te: true, le: true }
+    syncColumn()
+    syncControls()
+    return raises
   }
 
-  /** The line a figure says as it starts, where it changes what the staircase shows. */
-  function figureLine(id: PlayId, i: number): string | null {
-    const lines = FIGURE_SAID[id === 'scale' && raises.le ? 'melodic' : id]
+  /** The line a figure says as it starts: what it sounds, and what it changes on the staircase. */
+  function figureLine(id: PlayId, i: number, sounding: Raises): string | null {
+    if (id === 'chord-home') return chordHomeSaid(minorDo(clef), sounding.te)
+    if (id === 'scale' && !sounding.te)
+      return i === 0 ? NATURAL_SCALE_SAID : null
+    const form = sounding.le ? 'melodic' : 'harmonic'
+    const lines = FIGURE_SAID[id === 'scale' ? form : id]
     return lines?.[i] ?? null
   }
 
@@ -409,8 +438,8 @@ export function mountMinorToy(
     halt()
     NowPlaying.claim(halt)
     const mine = token
-    prepare(id)
-    const figures = playOf(id, clef, raises)
+    const sounding = prepare(id)
+    const figures = playOf(id, clef, sounding)
     const last = figures[figures.length - 1].look
     if (state.stays) landing = { look: last, flats: id === 'c-minor' }
     const t0 = performance.now()
@@ -418,7 +447,7 @@ export function mountMinorToy(
     for (const [i, f] of figures.entries()) {
       // the first figure starts with the press; each later one at its time
       if (i > 0 && !(await waitUntil(t0 + f.at * 1000, mine))) return false
-      const line = figureLine(id, i)
+      const line = figureLine(id, i, sounding)
       if (line !== null) say(line)
       heard = (await sound(f, mine)) && heard
       if (mine !== token) return false
@@ -433,15 +462,21 @@ export function mountMinorToy(
 
   // ---------------------------------------------------------------- the switches and the clef
 
-  function setRaises(next: Raises, which: 'te' | 'le', on: boolean): void {
+  function setRaises(next: Raises): void {
     halt()
+    const before = raises
     raises = next
     show(rest())
     syncColumn()
     syncControls()
     const tonic = minorDo(clef)
+    // each switch that moved, te first: Raise le brings te up with it, and
+    // Raise te down takes le down
+    const moved = (['te', 'le'] as const)
+      .filter((r) => before[r] !== next[r])
+      .map((r) => raiseSaid(r, next[r], tonic))
     const chord = state.column && !held ? ` ${chordSaid(tonic, raises.te)}` : ''
-    say(`${raiseSaid(which, on, tonic)}${chord}`)
+    say(`${moved.join(' ')}${chord}`)
   }
 
   /** The staff's clef changed, by its switch or by the learner's voice: the whole toy moves an octave. */
@@ -473,11 +508,11 @@ export function mountMinorToy(
   teBtn.addEventListener('click', () => {
     const on = !raises.te
     // melodic minor never raises le without te
-    setRaises({ te: on, le: on && raises.le }, 'te', on)
+    setRaises({ te: on, le: on && raises.le })
   })
   leBtn.addEventListener('click', () => {
     const on = !raises.le
-    setRaises({ te: on || raises.te, le: on }, 'le', on)
+    setRaises({ te: on || raises.te, le: on })
   })
   for (const b of playBtns) {
     const id = b.dataset.minorPlay as PlayId
