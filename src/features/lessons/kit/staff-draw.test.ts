@@ -11,8 +11,10 @@
 import { describe, expect, it } from 'vitest'
 import './browser-doubles.test-fixtures'
 import type { Spelled } from './notes'
+import { scoreAcross } from './staff'
 import type { Mark, Scene } from './staff-draw'
 import { drawScene, emptyScene, headHalf, layoutScene } from './staff-draw'
+import { NOTO_GLYPHS } from './staff-glyphs'
 import { placeRange } from './staff-places'
 
 const SIZE = { w: 356, h: 310 }
@@ -21,6 +23,9 @@ const C4: Spelled = { letter: 'C', alter: 0, octave: 4 }
 const G4: Spelled = { letter: 'G', alter: 0, octave: 4 }
 const F_SHARP_4: Spelled = { letter: 'F', alter: 1, octave: 4 }
 const B_FLAT_4: Spelled = { letter: 'B', alter: -1, octave: 4 }
+const E4: Spelled = { letter: 'E', alter: 0, octave: 4 }
+const A4: Spelled = { letter: 'A', alter: 0, octave: 4 }
+const G_SHARP_4: Spelled = { letter: 'G', alter: 1, octave: 4 }
 
 function figure(): SVGSVGElement {
   const el = document.createElementNS('http://www.w3.org/2000/svg', 'svg')
@@ -146,6 +151,32 @@ describe('drawScene', () => {
     expect(sharp.querySelector('.st-sign')?.getAttribute('d')).not.toBe(
       flat.querySelector('.st-sign')?.getAttribute('d'),
     )
+  })
+
+  it("keeps a score's sharp clear of the note before it at a phone's width, in the room a score with a sign asks", () => {
+    // Arrange: Lesson 25's sung line in the treble, E, G and A, then E, G
+    // sharp and A, in a 344 px screen's figure, 276 by 208 px
+    const line = [E4, G4, A4, E4, G_SHARP_4, A4]
+    const el = figure()
+    const scene = treble(
+      line.map((note, col) => ({ note, tone: 'rest' as const, col })),
+      { cols: line.length, across: scoreAcross(line.length, true) },
+    )
+
+    // Act
+    const L = drawScene(el, scene, { w: 276, h: 208 })
+
+    // Assert: the sharp's left edge stands a fifth of a space clear of the
+    // E before it; each glyph's ink runs from 50 font units to its width
+    const x = (node: Element | null | undefined): number =>
+      Number(
+        /translate\(([-\d.]+)/.exec(node?.getAttribute('transform') ?? '')?.[1],
+      )
+    const k = L.space / NOTO_GLYPHS.space
+    const before =
+      x(el.querySelectorAll('.st-head')[3]) + NOTO_GLYPHS.head.width * k
+    const sign = x(el.querySelector('.st-sign')) + 50 * k
+    expect(sign - before).toBeGreaterThan(L.space * 0.2)
   })
 
   it('lights a sounding note with a halo, never by colour alone, and names it beside it', () => {
