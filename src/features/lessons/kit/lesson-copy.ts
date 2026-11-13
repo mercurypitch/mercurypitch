@@ -220,6 +220,18 @@ export const LESSON_COPY: Readonly<Partial<Record<number, CuriosityCopy>>> = {
       },
     ],
   },
+  27: {
+    tease: 'G, B and D going home to C, E and G. Now add one note on top.',
+    teaseAlts: [
+      {
+        id: 'three-notes',
+        text: 'Three notes make a chord. Add one more to V, and hear where it goes.',
+      },
+    ],
+  },
+  28: {
+    tease: 'A song in two parts. At bar 8 it seems to end, then keeps going.',
+  },
 }
 
 /**

@@ -43,10 +43,10 @@ describe('Season 2', () => {
     }
   })
 
-  it('has no page, no reading time and no film for Lessons 26 to 28 yet: each is coming later', () => {
+  it('has no page, no reading time and no film for Lessons 26 and 28 yet: each is coming later', () => {
     // Assert
     for (const L of LESSONS_2.filter(
-      (L) => ![15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25].includes(L.n),
+      (L) => ![15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27].includes(L.n),
     )) {
       expect(L.page, `lesson ${L.n}`).toBeUndefined()
       expect(L.minutes, `lesson ${L.n}`).toBeUndefined()
@@ -353,7 +353,38 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[25]).toEqual([10, 21, 23])
   })
 
-  it('has a page in the repository exactly where an entry has one: Lessons 15 to 25', () => {
+  it('gives Lesson 27 its page and its reading time, a draft with no film, and the Exercises link to Chord Stacker', () => {
+    // Act
+    const L27 = LESSONS_2.find((L) => L.n === 27)
+
+    // Assert: Lesson 27's WEB-SPEC, Explorer and season data
+    expect([L27?.page, L27?.minutes, L27?.film, L27?.len]).toEqual([
+      '/learn/27',
+      15,
+      undefined,
+      undefined,
+    ])
+    // it publishes only after Lessons 12 and 23, whose pages its chips link
+    // and whose questions its recall asks (Lesson 27's WEB-SPEC, What the
+    // kit and the app still need, item 2)
+    expect(DRAFT_LESSONS[27]).toBe(
+      "Lessons 12 and 23's pages at /learn/12 and /learn/23, and the vocal coach's look at the sung checkpoint and the sung drill",
+    )
+    expect(L27?.pr.link).toEqual({
+      href: '/pitch-training?lesson=27',
+      addr: 'mercurypitch.com/pitch-training',
+      label: 'Exercises',
+      note: 'then tap Chord Stacker',
+    })
+    // the drills it still needs stay the team's
+    expect(L27?.pr.needs).toMatch(
+      /^Chord Stacker opening on the dominant seventh/,
+    )
+    // Lesson 12 from Season 1, and Lesson 23
+    expect(SEASON_2.prereq[27]).toEqual([12, 23])
+  })
+
+  it('has a page in the repository exactly where an entry has one: Lessons 15 to 25 and 27', () => {
     // Arrange: learn/NN.html for 15 and up
     const learn = resolve(__dirname, '../../../../learn')
     const pages = readdirSync(learn)
@@ -363,7 +394,7 @@ describe('Season 2', () => {
       .filter((n) => n >= 15)
 
     // Assert
-    expect(pages).toEqual([15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25])
+    expect(pages).toEqual([15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 27])
     expect(
       LESSONS_2.filter((L) => L.page !== undefined).map((L) => L.n),
     ).toEqual(pages)
@@ -474,7 +505,7 @@ describe('Season 2', () => {
     ])
   })
 
-  it('teases each of Lessons 16 to 26 on the card before it, and carries no other copy of its own yet', () => {
+  it('teases each of Lessons 16 to 28 on the card before it, and carries no other copy of its own', () => {
     // Arrange
     const L16 = LESSONS_2.find((L) => L.n === 16)
     const L17 = LESSONS_2.find((L) => L.n === 17)
@@ -586,6 +617,25 @@ describe('Season 2', () => {
         text: "Lesson 24's other part was a drone. What if it's a tune?",
       },
     ])
+    // Lesson 27 FACTS 5b: on Lesson 26's card, Lesson 27's opening in
+    // miniature, and an alternative that restates the cold open's play
+    const L27 = LESSONS_2.find((L) => L.n === 27)
+    expect(L27?.tease).toBe(
+      'G, B and D going home to C, E and G. Now add one note on top.',
+    )
+    expect(L27?.teaseAlts).toEqual([
+      {
+        id: 'three-notes',
+        text: 'Three notes make a chord. Add one more to V, and hear where it goes.',
+      },
+    ])
+    // Lesson 27 FACTS 5: on Lesson 27's card, Lesson 28's opening in
+    // miniature, the lead's line with no alternative
+    const L28 = LESSONS_2.find((L) => L.n === 28)
+    expect(L28?.tease).toBe(
+      'A song in two parts. At bar 8 it seems to end, then keeps going.',
+    )
+    expect(L28?.teaseAlts).toBeUndefined()
     // Lesson 21 FACTS 5b: on Lesson 20's card, Lesson 21's opening in
     // miniature, and Lesson 20's planned line, cut to fit
     const L21 = LESSONS_2.find((L) => L.n === 21)
@@ -598,12 +648,12 @@ describe('Season 2', () => {
         text: 'Lesson 4 slid the scale to G, with one sharp, and to D, with two.',
       },
     ])
-    for (const L of [L19, L20, L21, L22, L23, L24, L25, L26])
+    for (const L of [L19, L20, L21, L22, L23, L24, L25, L26, L27, L28])
       for (const line of [L?.tease, ...(L?.teaseAlts ?? []).map((a) => a.text)])
         expect(line?.length ?? 0).toBeLessThanOrEqual(TEASE_MAX)
     for (const L of LESSONS_2) {
       expect(L.hookAlts, `lesson ${L.n}`).toBeUndefined()
-      if (L.n >= 16 && L.n <= 26) continue
+      if (L.n >= 16 && L.n <= 28) continue
       expect(L.tease, `lesson ${L.n}`).toBeUndefined()
       expect(L.teaseAlts, `lesson ${L.n}`).toBeUndefined()
     }

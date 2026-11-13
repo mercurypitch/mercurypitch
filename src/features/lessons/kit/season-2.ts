@@ -14,7 +14,7 @@
 // (Lesson 16 needs Lesson 9) is a plain edge, and the explorer draws it as
 // a line in from the season before.
 //
-// Lessons 15 to 25 have their pages, drafts (drafts.ts); every other
+// Lessons 15 to 25 and 27 have their pages, drafts (drafts.ts); every other
 // lesson is coming later, with no page, no reading time and no film, as
 // Lesson 14 was before its page. A lesson's page, its reading time, its
 // tease and its figure land with the page. Each entry takes its lesson's copy from lesson-copy.ts, as
@@ -319,6 +319,10 @@ const ENTRIES_2: readonly Lesson[] = [
     title: 'Seventh chords and inversions',
     short: 'Sevenths',
     topics: ['T24', 'T25'],
+    // A draft until Lessons 12 and 23 are live and the vocal coach's look
+    // at the sung checkpoint and the sung drill (drafts.ts).
+    minutes: 15,
+    page: '/learn/27',
     hook: 'Add one note to the V chord and it pulls towards home. Which note, and why?',
     pr: {
       needs:
