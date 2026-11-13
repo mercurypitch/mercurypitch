@@ -397,6 +397,24 @@ describe('the cold open', () => {
     expect(label()).toBe(HERO_LABEL.rest)
   })
 
+  it('ends the tune at the choice, so Play ending 1, which takes the focus, plays at the first press', async () => {
+    // Arrange
+    mountHero()
+    const tune = await start('tune')
+
+    // Act
+    choose('major')
+    await settle()
+    const focused = document.activeElement === play('end1')
+    const ending = await start('end1')
+
+    // Assert: the predict lets one of its plays sound at a time
+    expect(tune.stopped).toBe(true)
+    expect(focused).toBe(true)
+    expect(ending).not.toBe(tune)
+    expect(ending.stopped).toBe(false)
+  })
+
   it('stops its play at a step change of the deck', async () => {
     // Arrange
     const { deck } = mountHero()
