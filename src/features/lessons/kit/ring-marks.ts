@@ -15,14 +15,17 @@
 //   (`drawArrow`);
 // - the bass mark: a chrome ring round the corner in the bass, with "bass"
 //   beside it inside the ring, clear of the names the black keys carry
-//   outside their beads and of the centre's, moving round the ring to the
-//   next corner in 0.3 s (`drawBassMark`, at a place between beads while it
-//   moves).
+//   outside their beads, moving round the ring to the next corner in 0.3 s
+//   (`drawBassMark`, at a place between beads while it moves). On a small
+//   ring a corner level with the centre, C or F sharp, would put the word
+//   on the centre's name, so there it moves just clear of it, above, or
+//   below when the corner it goes to sits below the centre: chosen by
+//   where the mark is going, it moves at most once on its way.
 
 import { lerp, TAU } from './dom'
 import { COLOR, rgba } from './notes'
 import type { Point, Ring } from './ring-rooms-draw'
-import { onRing } from './ring-rooms-draw'
+import { CENTRE_FONT, onRing } from './ring-rooms-draw'
 
 /** A new corner grows out to its bead in this long, s. */
 export const GROW_SEC = 0.3
@@ -33,6 +36,10 @@ export const BASS_SEC = 0.3
 
 /** The bass mark's ring, against a bead's radius. */
 const MARK = 2.25
+/** The bass mark's word's type, 12 px. */
+const WORD_FONT = '600 12px Outfit, sans-serif'
+/** How far the bass mark's word and the centre's name stand apart, each line as tall as its type, px. */
+const CLEAR = (12 + 14) / 2 + 2
 /** How far outside the ring the arrows run, against a bead's radius. */
 const ARROW_OUT = 2
 
@@ -138,23 +145,55 @@ export function bassLabelAt(ring: Ring, at: number): Point | undefined {
   return outside(ring, at, -ring.bead * (MARK + 1.7))
 }
 
-/** The bass mark at `at`, semitones from C, between two beads while it moves: a ring and "bass" beside it. */
+/** What the bass mark keeps clear of, and where it is going. */
+export interface BassMarkOptions {
+  /** The name the centre shows, drawn in `CENTRE_FONT`; none in a compact layout. */
+  readonly centre?: string
+  /** The corner the mark is going to, semitones from C: where it stops. */
+  readonly to?: number
+}
+
+/**
+ * The bass mark at `at`, semitones from C, between two beads while it
+ * moves: a ring and "bass" beside it, moved just clear of the centre's
+ * name where it would run into it.
+ */
 export function drawBassMark(
   ctx: CanvasRenderingContext2D,
   ring: Ring,
   at: number,
+  o: BassMarkOptions = {},
 ): void {
   const p = onRing(ring, at)
-  const word = bassLabelAt(ring, at)
-  if (p === undefined || word === undefined) return
+  const inside = bassLabelAt(ring, at)
+  if (p === undefined || inside === undefined) return
   ctx.strokeStyle = rgba(COLOR.chrome, 0.95)
   ctx.lineWidth = 2
   ctx.beginPath()
   ctx.arc(p.x, p.y, ring.bead * MARK, 0, TAU)
   ctx.stroke()
-  ctx.font = '600 12px Outfit, sans-serif'
+  const centre = o.centre ?? ''
+  ctx.font = CENTRE_FONT
+  const name = centre === '' ? 0 : ctx.measureText(centre).width
+  ctx.font = WORD_FONT
+  const wide = (ctx.measureText('bass').width + name) / 2 + 2
+  const word =
+    name > 0 &&
+    Math.abs(inside.x - ring.c.x) < wide &&
+    Math.abs(inside.y - ring.c.y) < CLEAR
+      ? {
+          x: inside.x,
+          y: ring.c.y + (goesBelow(ring, o.to ?? at) ? CLEAR : -CLEAR),
+        }
+      : inside
   ctx.fillStyle = COLOR.ink
   ctx.textAlign = 'center'
   ctx.textBaseline = 'middle'
   ctx.fillText('bass', word.x, word.y)
+}
+
+/** Whether the corner at `to` sits below the ring's centre; one level with it does not. */
+function goesBelow(ring: Ring, to: number): boolean {
+  const q = onRing(ring, to)
+  return q !== undefined && q.y > ring.c.y + 0.5
 }

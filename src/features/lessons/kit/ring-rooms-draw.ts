@@ -138,6 +138,9 @@ export function drawHalos(
   }
 }
 
+/** The centre's name's type, 14 px, so a mark beside it can measure it. */
+export const CENTRE_FONT = '600 14px Outfit, sans-serif'
+
 /** The lit room's name in the ring's centre, or in the figure's top-left corner in a compact layout. */
 export function drawCentre(
   ctx: CanvasRenderingContext2D,
@@ -145,7 +148,7 @@ export function drawCentre(
   text: string,
   compact = false,
 ): void {
-  ctx.font = '600 14px Outfit, sans-serif'
+  ctx.font = CENTRE_FONT
   ctx.fillStyle = COLOR.ink
   ctx.textBaseline = 'middle'
   ctx.textAlign = compact ? 'left' : 'center'

@@ -9,11 +9,13 @@
 // straight across the centre to F, a halo short of each; an arrow runs just
 // outside the ring from a bead towards the next and carries its head only
 // once it lands; and the bass mark rings its corner, with its word inside
-// the ring, clear of the black keys' names drawn outside their beads
-// (Lesson 27's WEB-SPEC, Toys 1 and Look).
+// the ring, clear of the black keys' names drawn outside their beads and of
+// the centre's name, moving above it, or below for a corner below the
+// centre (Lesson 27's WEB-SPEC, Toys 1 and Look).
 
 import { describe, expect, it } from 'vitest'
 import './browser-doubles.test-fixtures'
+import type { BassMarkOptions } from './ring-marks'
 import { bassLabelAt, drawArrow, drawBassMark, drawDiagonal, grownAt, } from './ring-marks'
 import { RING_BLACK } from './ring-rooms'
 import type { Point, Ring } from './ring-rooms-draw'
@@ -28,8 +30,11 @@ interface Call {
   readonly dash: readonly number[]
 }
 
-/** A context that records every call, with the line dash set when it was made. */
-function recorder(): { ctx: CanvasRenderingContext2D; calls: Call[] } {
+/** A context that records every call, with the line dash set when it was made; `widthOf` measures a text. */
+function recorder(widthOf: (text: string) => number = () => 10): {
+  ctx: CanvasRenderingContext2D
+  calls: Call[]
+} {
   const calls: Call[] = []
   let dash: number[] = []
   const style = { fillStyle: '', strokeStyle: '' } as Record<string, unknown>
@@ -39,7 +44,8 @@ function recorder(): { ctx: CanvasRenderingContext2D; calls: Call[] } {
       if (k in t) return t[k]
       if (k === 'createRadialGradient' || k === 'createLinearGradient')
         return () => ({ addColorStop: () => undefined })
-      if (k === 'measureText') return () => ({ width: 10 })
+      if (k === 'measureText')
+        return (text: string) => ({ width: widthOf(text) })
       if (k === 'setLineDash')
         return (d: number[]) => {
           dash = [...d]
@@ -203,5 +209,38 @@ describe('the ring marks', () => {
     if (half === undefined) throw new Error('no moving mark')
     expect(dist(at(half), RING.c)).toBeCloseTo(RING.radius, 6)
     expect(dist(at(half), bead(7))).toBeCloseTo(dist(at(half), bead(8)), 6)
+  })
+
+  it("moves the word just clear of the centre's name where a corner level with the centre would put it on it: above, or below when the mark goes to a corner below the centre", () => {
+    // Arrange: where "bass" is written, each letter 8 px wide, and a centre
+    // name wide enough to reach the word C's corner puts level with it
+    const wordAt = (n: number, o: BassMarkOptions): Point => {
+      const r = recorder((text) => text.length * 8)
+      drawBassMark(r.ctx, RING, n, o)
+      const word = r.calls.find((c) => c.name === 'fillText')
+      if (word === undefined) throw new Error('no word')
+      return { x: word.args[1] as number, y: word.args[2] as number }
+    }
+    const level = bassLabelAt(RING, 0)
+    const high = bassLabelAt(RING, 4)
+    if (level === undefined || high === undefined) throw new Error('no label')
+    const name = 'x'.repeat(Math.ceil(Math.abs(level.x - RING.c.x) / 4) + 1)
+
+    // Act: C in the bass with no name, with the name, and on its way from B
+    // to C, then on its way through C to E, and from C towards G; E with the name
+    const bare = wordAt(0, {})
+    const resting = wordAt(0, { centre: name, to: 0 })
+    const arriving = wordAt(11.9, { centre: name, to: 0 })
+    const rising = wordAt(0.1, { centre: name, to: 4 })
+    const falling = wordAt(0.1, { centre: name, to: 7 })
+    const clear = wordAt(4, { centre: name, to: 4 })
+
+    // Assert: the two lines 15 px apart, centre to centre
+    expect(bare).toEqual(level)
+    expect(resting).toEqual({ x: level.x, y: RING.c.y - 15 })
+    expect(arriving.y).toBe(RING.c.y - 15)
+    expect(rising.y).toBe(RING.c.y - 15)
+    expect(falling.y).toBe(RING.c.y + 15)
+    expect(clear).toEqual(high)
   })
 })
