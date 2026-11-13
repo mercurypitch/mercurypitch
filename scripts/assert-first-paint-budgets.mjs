@@ -653,9 +653,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // every mode as Lesson 3 is: its own module on the kit, carrying Season
   // 2's map (kit/season-2.ts) as a Season 2 page must; with the steps'
   // toy, the kit's staircase with its chord column over the staff toy with
-  // its signature: 158,183 bytes in build:e2e, the smallest whole KB above,
-  // to rise as each part joins.
-  'learn/25.html': 155,
+  // its signature, the cold open's staircase on the kit's predict, the four
+  // words' staircases, and the recall and the quick check on the kit's
+  // quiz with Lesson 10's and Lesson 21's questions: 191,763 bytes in
+  // build:e2e, the smallest whole KB above, to rise as each part joins.
+  'learn/25.html': 188,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on

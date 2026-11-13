@@ -45,7 +45,9 @@ import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
 import { initColdOpen } from './cold-open'
+import { initQuizzes } from './recall'
 import { initSteps } from './steps'
+import { initWords } from './words'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -62,6 +64,14 @@ const deck = createStepDeck({
 })
 const steps = initSteps(deck)
 deck.start()
+
+// the recall from Lessons 10 and 21 and the quick check, each on the
+// kit's quiz
+initQuizzes(deck)
+
+// four words, each figure a small staircase in the learner's octave, lit
+// as its scale plays
+initWords()
 
 // the next lesson's card first: the explorer binds its link to the map
 createNextCard(25)
