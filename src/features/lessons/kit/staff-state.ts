@@ -78,6 +78,8 @@ export interface PlayNote {
   readonly ahead?: number
   /** A run's column for it, its place in the play unless given: a chord's notes share one (Lesson 25). */
   readonly col?: number
+  /** The note it climbs from as it shows, up the staff to its own place: a chord's bottom note turned over (Lesson 27). */
+  readonly from?: Spelled
 }
 
 /** A page's play on the toy. */

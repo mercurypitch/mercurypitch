@@ -426,6 +426,49 @@ describe('a play', () => {
     expect(last().o.kind).toBe('merc')
     expect(heads()).toEqual(['st-head is-blue'])
   })
+
+  it('writes a chord in one column and climbs the note a play turns over from where it was', () => {
+    // Arrange: motion on, a figure that animates; C major turned over, E, G
+    // and C5, its C climbing from C4 (Lesson 27's Turn over)
+    vi.spyOn(Motion, 'paused', 'get').mockReturnValue(false)
+    const climbs: number[] = []
+    Object.defineProperty(SVGElement.prototype, 'animate', {
+      configurable: true,
+      value: (frames: Keyframe[], o: KeyframeAnimationOptions) => {
+        if (/px, -?[1-9]/.test(String(frames[0].transform)))
+          climbs.push(Number(o.duration))
+        return {} as Animation
+      },
+    })
+    const C4: Spelled = { letter: 'C', alter: 0, octave: 4 }
+    const C5: Spelled = { letter: 'C', alter: 0, octave: 5 }
+    const toy = mount()
+
+    try {
+      // Act
+      void toy.play({
+        show: 'run',
+        notes: [
+          { t: 0, dur: 1.2, note: E4, col: 0 },
+          { t: 0, dur: 1.2, note: G4, col: 0 },
+          { t: 0, dur: 1.2, note: C5, col: 0, from: C4 },
+        ],
+      })
+      for (const i of [0, 1, 2]) last().note(i)
+
+      // Assert: three heads in one column, and the climb, each time the
+      // staff drew while it ran
+      const xs = Array.from(root().querySelectorAll('.st-head'), (h) =>
+        h.getAttribute('transform')?.replace(/ .*/, ''),
+      )
+      expect(new Set(xs).size).toBe(1)
+      expect(xs).toHaveLength(3)
+      expect(climbs.length).toBeGreaterThan(0)
+      expect(new Set(climbs)).toEqual(new Set([400]))
+    } finally {
+      Reflect.deleteProperty(SVGElement.prototype, 'animate')
+    }
+  })
 })
 
 describe('the pitch-line switch', () => {
