@@ -23,8 +23,11 @@ import { pcOf } from './tune-line-parts'
 const MONO = (px: number): string => `600 ${px}px "JetBrains Mono", monospace`
 const WORD = (px: number): string => `500 ${px}px Inter, sans-serif`
 
-/** The bar under a band that names a held chord: its gap below the band, and its height. */
-export const CHORD_BAR = { gap: 8, h: 22 } as const
+/**
+ * The bar under a band that names a held chord: its gap below the band,
+ * clear of a line's label under the band's lowest bead, and its height.
+ */
+export const CHORD_BAR = { gap: 20, h: 22 } as const
 
 /** The key's lanes, a step brighter than the other rows, and a held chord's, glowing gold. */
 export function paintLanes(
