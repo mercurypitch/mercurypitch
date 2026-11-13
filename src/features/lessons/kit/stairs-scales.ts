@@ -43,7 +43,7 @@ export function rotation(degrees: Degrees, from: number): number[] {
   return [...turned.map((d) => d - from), 12]
 }
 
-/** The sung names from do: the major scale's, with me and te for the minor third and seventh. */
+/** The sung names from do: the major scale's, with me, le and te for natural minor's third, sixth and seventh. */
 const SYLLABLES: Readonly<Record<number, string>> = {
   0: 'do',
   2: 're',
@@ -51,6 +51,7 @@ const SYLLABLES: Readonly<Record<number, string>> = {
   4: 'mi',
   5: 'fa',
   7: 'so',
+  8: 'le',
   9: 'la',
   10: 'te',
   11: 'ti',

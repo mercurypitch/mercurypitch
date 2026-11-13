@@ -15,6 +15,12 @@ export interface NoteEvent {
   readonly midi: number
   readonly at: number
   readonly dur: number
+  /**
+   * The stair it lights, where its note is not on the stairs as they stand
+   * when the play starts: melodic minor's way down, whose le and te the
+   * stairs have only once they settle (Lesson 25).
+   */
+  readonly stair?: number
 }
 
 /** A scale's pace (Lesson 4 FACTS 57). */

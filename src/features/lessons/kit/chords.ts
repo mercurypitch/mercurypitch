@@ -8,15 +8,20 @@
 // and a fifth above its root by letter, so C minor's third is E♭4, never D♯4
 // (FACTS 10, 19): its notes are its scale's first, third and fifth, do, mi
 // and so in major, do, me and so in natural minor (FACTS 28), each spelled
-// through the kit's `spellScale`, one letter per degree. The roots are the
-// seven white keys from C4 to B4, so every chord a slide reaches is one of
-// FACTS 19's fourteen, with no double sign and no E♯, B♯, C♭ or F♭, and every
-// note lies in the window from C4 to F♯5, B major's fifth (FACTS 70a).
-// Natural minor climbs 2, 1, 2, 2, 1, 2, 2 semitones and sits a semitone
-// under the major scale on degrees 3, 6 and 7 (FACTS 22, 24). Stacking in
-// thirds goes by letter as well, so B, E, G is E, G, B, E minor (FACTS 41a),
-// and C, E, G♭ stacks but is neither major nor minor, its fifth 6 semitones
-// (FACTS 41b).
+// through the kit's `spellScale`, one letter per degree. Lesson 10's slide
+// takes the seven white keys from C4 to B4 (`ROOTS`), so every chord it
+// reaches is one of FACTS 19's fourteen, with no double sign and no E♯, B♯,
+// C♭ or F♭, and every note lies in the window from C4 to F♯5, B major's fifth
+// (FACTS 70a); any white key is a root, a page taking its own (`whiteRoots`:
+// Lesson 25's A2 to B4), and no black key is one. Natural minor climbs 2, 1,
+// 2, 2, 1, 2, 2 semitones and sits a semitone under the major scale on
+// degrees 3, 6 and 7 (FACTS 22, 24). Stacking in thirds goes by letter as
+// well, so B, E, G is E, G, B, E minor (FACTS 41a), and C, E, G♭ stacks but
+// is neither major nor minor, its fifth 6 semitones (FACTS 41b).
+//
+// Lesson 25 adds minor's other two forms, harmonic and melodic, the stairs
+// its Raise te and Raise le lift going up and coming down, a chord's gaps,
+// and a minor key's chord on so, minor or, te raised, major.
 
 import { MAJOR_DEGREES } from './major-scale'
 import type { Letter, Spelled } from './notes'
@@ -67,8 +72,15 @@ export const DEGREES: Readonly<Record<Quality, readonly number[]>> = {
   minor: NATURAL_MINOR_DEGREES,
 }
 
-/** The white-key roots a slide steps through, C4 to B4 (WEB-SPEC, Toys 1, Slide; FACTS 19). */
-export const ROOTS: readonly number[] = [60, 62, 64, 65, 67, 69, 71]
+/** Every white key from `lo` to `hi`, MIDI: the roots a page takes. */
+export function whiteRoots(lo: number, hi: number): number[] {
+  const roots: number[] = []
+  for (let m = lo; m <= hi; m++) if (letterOf(m) !== null) roots.push(m)
+  return roots
+}
+
+/** The white-key roots Lesson 10's slide steps through, C4 to B4 (its WEB-SPEC, Toys 1, Slide; FACTS 19). */
+export const ROOTS: readonly number[] = whiteRoots(60, 71)
 
 /** The chord beads' window, C4 to F♯5: every note of every chord a slide reaches (FACTS 70a). */
 export const WINDOW = { lo: 60, hi: 78 } as const
@@ -78,8 +90,7 @@ const LETTER_ORDER = 'CDEFGAB'
 /** A white-key root's letter; a black key is no root here. */
 function rootLetter(root: number): Letter {
   const letter = letterOf(root)
-  if (letter === null || !ROOTS.includes(root))
-    throw new Error(`lesson 10: ${root} is not a white-key root from C4 to B4`)
+  if (letter === null) throw new Error(`chords: ${root} is not a white key`)
   return letter as Letter
 }
 
@@ -108,11 +119,15 @@ export function triad(root: number, quality: Quality): ChordTone[] {
 export const thirdOf = (root: number, quality: Quality): ChordTone[] =>
   triad(root, quality).slice(0, 2)
 
-/** The next white-key root lower (-1) or higher (1), or null past C4 or B4 (WEB-SPEC, Edge cases). */
-export function nextRoot(root: number, dir: -1 | 1): number | null {
-  const i = ROOTS.indexOf(root)
+/** The next root lower (-1) or higher (1) among `roots`, or null past their ends: Lesson 10's past C4 or B4 (its WEB-SPEC, Edge cases). */
+export function nextRoot(
+  root: number,
+  dir: -1 | 1,
+  roots: readonly number[] = ROOTS,
+): number | null {
+  const i = roots.indexOf(root)
   if (i < 0) return null
-  return ROOTS[i + dir] ?? null
+  return roots[i + dir] ?? null
 }
 
 const letterIndex = (s: Spelled): number => LETTER_ORDER.indexOf(s.letter)
@@ -157,3 +172,83 @@ export function qualityOf(notes: readonly ChordTone[]): ChordQuality {
   if (gap === THIRD_OF.minor) return 'minor'
   return 'neither'
 }
+
+// ---------------------------------------------------------------- minor's three forms (Lesson 25)
+
+/** Harmonic minor, do to do: natural minor with te raised to ti (Lesson 25 FACTS 12). */
+export const HARMONIC_MINOR_DEGREES: readonly number[] = [
+  0, 2, 3, 5, 7, 8, 11, 12,
+]
+
+/** Melodic minor going up, do to do: le and te raised to la and ti; coming down it is natural minor (Lesson 25 FACTS 13). */
+export const MELODIC_MINOR_UP_DEGREES: readonly number[] = [
+  0, 2, 3, 5, 7, 9, 11, 12,
+]
+
+/** A minor staircase's two switches: Raise te, and Raise le. */
+export interface Raises {
+  readonly te: boolean
+  readonly le: boolean
+}
+
+/** Le's stair and te's, counted from do's (0). */
+export const LE_STAIR = 5
+export const TE_STAIR = 6
+
+/**
+ * The stairs a minor staircase's switches lift, going up or coming down:
+ * Raise te lifts te to ti both ways, harmonic minor; Raise le makes it
+ * melodic, le and te lifted going up only, so coming down none is lifted
+ * (Lesson 25 FACTS 12, 13).
+ */
+export function lifted(raises: Raises, going: 'up' | 'down' = 'up'): number[] {
+  if (raises.le) return going === 'up' ? [LE_STAIR, TE_STAIR] : []
+  return raises.te ? [TE_STAIR] : []
+}
+
+/** A minor staircase's stairs, do to do, as its switches set them, going up or coming down. */
+export function minorDegrees(
+  raises: Raises,
+  going: 'up' | 'down' = 'up',
+): number[] {
+  const up = lifted(raises, going)
+  return NATURAL_MINOR_DEGREES.map((d, i) => (up.includes(i) ? d + 1 : d))
+}
+
+/**
+ * A minor scale on a white-key root as its switches set it, do to do, one
+ * letter per degree: A harmonic minor is A B C D E F G♯ A both ways, and A
+ * melodic minor A B C D E F♯ G♯ A going up and A B C D E F G A coming down
+ * (Lesson 25 FACTS 12, 13).
+ */
+export function minorScale(
+  root: number,
+  raises: Raises,
+  going: 'up' | 'down' = 'up',
+): ChordTone[] {
+  const degrees = minorDegrees(raises, going)
+  return spellScale(rootLetter(root), root, degrees).map((spelled, i) => ({
+    midi: root + degrees[i],
+    spelled,
+  }))
+}
+
+/** A scale's notes, MIDI, from its root and its steps in semitones: harmonic minor climbs 2, 1, 2, 2, 1, 3, 1. */
+export function stairsOf(root: number, steps: readonly number[]): number[] {
+  const notes = [root]
+  for (const s of steps) notes.push(notes[notes.length - 1] + s)
+  return notes
+}
+
+/** A chord's gaps, semitones, from its notes low to high: 3 and 4 for a minor triad, 4 and 3 for a major one. */
+export const gapsOf = (notes: readonly number[]): number[] =>
+  notes.slice(1).map((m, i) => m - notes[i])
+
+/**
+ * The chord on so of the minor key on `tonic` (a white key): so, te and re,
+ * a minor chord, or with te raised to ti, so, ti and re, a major one, each
+ * spelled one letter per chord tone, so A minor's reads E, G, B or E, G♯, B
+ * (Lesson 25 FACTS 1a, 36).
+ */
+export const chordOnSo = (tonic: number, raised: boolean): ChordTone[] =>
+  triad(tonic + FIFTH, raised ? 'major' : 'minor')

@@ -11,13 +11,21 @@
 // minor steps 2, 1, 2, 2, 1, 2, 2 and lowers degrees 3, 6 and 7 (FACTS 22,
 // 24). And the slide's roots and the window every chord stays inside (FACTS
 // 70a).
+//
+// Lesson 25's, from its FACTS: any white key a root, A2 to B4 there; Raise
+// te lifting te to ti both ways, harmonic minor, A B C D E F G♯ A climbing
+// 2, 1, 2, 2, 1, 3, 1 (FACTS 12); Raise le lifting le and te going up only,
+// melodic minor, A B C D E F♯ G♯ A up and natural minor down (FACTS 13);
+// and the chord on so, E, G, B, E minor, 3 and 4, or with te raised E, G♯,
+// B, E major, 4 and 3 (FACTS 1a).
 
 import { describe, expect, it } from 'vitest'
-import type { ChordTone, Quality } from './chords'
-import { LOWERED_DEGREES, NATURAL_MINOR_DEGREES, nextRoot, QUALITIES, qualityOf, ROOTS, scaleOf, stackInThirds, thirdOf, tone, triad, WINDOW, } from './chords'
+import type { ChordTone, Quality, Raises } from './chords'
+import { chordOnSo, gapsOf, HARMONIC_MINOR_DEGREES, LE_STAIR, lifted, LOWERED_DEGREES, MELODIC_MINOR_UP_DEGREES, minorDegrees, minorScale, NATURAL_MINOR_DEGREES, nextRoot, QUALITIES, qualityOf, ROOTS, scaleOf, stackInThirds, stairsOf, TE_STAIR, thirdOf, tone, triad, whiteRoots, WINDOW, } from './chords'
 import { MAJOR_DEGREES } from './major-scale'
 import type { Spelled } from './notes'
 import { signName } from './notes'
+import { risersOf } from './stairs-scales'
 
 /** A note's letters with any sign, no octave: "E♭". */
 const letters = (notes: readonly ChordTone[]): string =>
@@ -269,5 +277,118 @@ describe('the slide and the window', () => {
 
     // Assert
     expect(black).toThrow()
+  })
+})
+
+describe("minor's three forms and the chord on so (Lesson 25)", () => {
+  const NATURAL: Raises = { te: false, le: false }
+  const HARMONIC: Raises = { te: true, le: false }
+  const MELODIC: Raises = { te: true, le: true }
+
+  it('takes any white key as a root, A2 to B4 on Lesson 25, spelled one letter per chord tone, and still no black key', () => {
+    // Act
+    const roots = whiteRoots(45, 71)
+
+    // Assert
+    expect(roots).toEqual([
+      45, 47, 48, 50, 52, 53, 55, 57, 59, 60, 62, 64, 65, 67, 69, 71,
+    ])
+    expect(ROOTS).toEqual([60, 62, 64, 65, 67, 69, 71])
+    expect(triad(45, 'minor').map(named)).toEqual(['A2', 'C3', 'E3'])
+    expect(triad(52, 'major').map(named)).toEqual(['E3', 'G♯3', 'B3'])
+    expect(() => triad(46, 'major')).toThrow(/not a white key/)
+  })
+
+  it("steps a page's own roots, and no further than their ends", () => {
+    // Arrange: Lesson 25's starts for the lower voice, A2 to C3
+    const roots = whiteRoots(45, 48)
+
+    // Act
+    const steps = [
+      nextRoot(45, -1, roots),
+      nextRoot(45, 1, roots),
+      nextRoot(48, 1, roots),
+    ]
+
+    // Assert
+    expect(steps).toEqual([null, 47, null])
+  })
+
+  it('lifts te both ways for Raise te, and le and te going up only once Raise le is on', () => {
+    // Act
+    const each = [NATURAL, HARMONIC, MELODIC].map((r) => [
+      lifted(r),
+      lifted(r, 'down'),
+    ])
+
+    // Assert
+    expect([LE_STAIR, TE_STAIR]).toEqual([5, 6])
+    expect(each).toEqual([
+      [[], []],
+      [[TE_STAIR], [TE_STAIR]],
+      [[LE_STAIR, TE_STAIR], []],
+    ])
+  })
+
+  it('climbs harmonic minor 2, 1, 2, 2, 1, 3, 1, A B C D E F G♯ A, the same both ways (FACTS 12)', () => {
+    // Act
+    const up = minorDegrees(HARMONIC)
+
+    // Assert
+    expect(up).toEqual(HARMONIC_MINOR_DEGREES)
+    expect(minorDegrees(HARMONIC, 'down')).toEqual(HARMONIC_MINOR_DEGREES)
+    expect(risersOf(up)).toEqual([2, 1, 2, 2, 1, 3, 1])
+    expect(letters(minorScale(57, HARMONIC))).toBe('A B C D E F G♯ A')
+    expect(stairsOf(57, [2, 1, 2, 2, 1, 3, 1])).toEqual(
+      midis(minorScale(57, HARMONIC)),
+    )
+  })
+
+  it('goes up melodic minor, A B C D E F♯ G♯ A, and comes down natural minor (FACTS 13)', () => {
+    // Act
+    const up = minorScale(57, MELODIC)
+    const down = minorScale(57, MELODIC, 'down')
+
+    // Assert
+    expect(minorDegrees(MELODIC)).toEqual(MELODIC_MINOR_UP_DEGREES)
+    expect(minorDegrees(MELODIC, 'down')).toEqual(NATURAL_MINOR_DEGREES)
+    expect(minorDegrees(NATURAL)).toEqual(NATURAL_MINOR_DEGREES)
+    expect(risersOf(MELODIC_MINOR_UP_DEGREES)).toEqual([2, 1, 2, 2, 2, 2, 1])
+    expect([letters(up), letters(down)]).toEqual([
+      'A B C D E F♯ G♯ A',
+      'A B C D E F G A',
+    ])
+  })
+
+  it("counts a chord's gaps: 3 and 4 for E minor, 4 and 3 for E major", () => {
+    expect(gapsOf([52, 55, 59])).toEqual([3, 4])
+    expect(gapsOf([52, 56, 59])).toEqual([4, 3])
+  })
+
+  it("builds A minor's chord on so, E, G, B, or with te raised E, G♯, B, and C minor's, G, B♭, D or G, B, D (FACTS 1a)", () => {
+    // Act
+    const chords = [
+      chordOnSo(45, false),
+      chordOnSo(45, true),
+      chordOnSo(57, true),
+      chordOnSo(48, false),
+      chordOnSo(48, true),
+    ]
+
+    // Assert
+    expect(chords.map((c) => c.map(named).join(' '))).toEqual([
+      'E3 G3 B3',
+      'E3 G♯3 B3',
+      'E4 G♯4 B4',
+      'G3 B♭3 D4',
+      'G3 B3 D4',
+    ])
+    expect(chords.map(qualityOf)).toEqual([
+      'minor',
+      'major',
+      'major',
+      'minor',
+      'major',
+    ])
   })
 })

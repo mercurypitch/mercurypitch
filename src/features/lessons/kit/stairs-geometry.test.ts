@@ -3,6 +3,7 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import { NATURAL_MINOR_DEGREES } from './chords'
 import { MAJOR_DEGREES } from './major-scale'
 import { floorOf, fullMode, overlaps, stairAt, stairsLayout, stripWindow, TARGET, } from './stairs-geometry'
 import { MAJOR_FIVE, MINOR_FIVE } from './stairs-scales'
@@ -332,5 +333,116 @@ describe("a pentatonic's six stairs (Lesson 20)", () => {
     expect(L.rows.filter((m) => m > 73)).toEqual([])
     expect(L.stairs.every((st) => st.w >= TARGET)).toBe(true)
     expect(L.x1 - L.x0).toBe(356)
+  })
+})
+
+describe("a compact staircase's own rows and room (Lesson 25)", () => {
+  /** Lesson 25's steps' figure for the lower voice: rows A2 to C4, 104 px kept for the chord column. */
+  const ROOM = { right: 104, rows: { lo: 45, hi: 60 } }
+  const C2 = 36
+  const minorOnA = stairsLayout(
+    'compact',
+    420,
+    280,
+    45,
+    C2,
+    NATURAL_MINOR_DEGREES,
+    ROOM,
+  )
+
+  it('keeps 104 px at its right for the chord column, the stairs sharing the rest', () => {
+    // Arrange
+    const plain = stairsLayout(
+      'compact',
+      420,
+      280,
+      45,
+      C2,
+      NATURAL_MINOR_DEGREES,
+    )
+    const top = minorOnA.stairs[7]
+
+    // Assert
+    expect(plain.x1 - minorOnA.x1).toBe(104)
+    expect(top.x + top.w).toBeCloseTo(minorOnA.x1, 9)
+  })
+
+  it("shows its own sixteen rows, A2 to C4, do on the lowest and the chord on so's B3 inside them", () => {
+    // Assert
+    expect(minorOnA.rows).toEqual(Array.from({ length: 16 }, (_, k) => 45 + k))
+    expect(minorOnA.stairs[0].top).toBeCloseTo(
+      minorOnA.yOfRow(45) - minorOnA.rowH / 2,
+      9,
+    )
+    expect(minorOnA.yOfRow(59) - minorOnA.rowH / 2).toBeGreaterThan(
+      minorOnA.rowsTop,
+    )
+  })
+
+  it("holds C major on C3 and A minor on A2 on the same still rows, so do's house can glide between them (Step 4)", () => {
+    // Act
+    const majorOnC = stairsLayout(
+      'compact',
+      420,
+      280,
+      48,
+      C2,
+      MAJOR_DEGREES,
+      ROOM,
+    )
+
+    // Assert: one row per pitch on both, do three rows apart, and C
+    // major's la, A3, A minor's top do
+    expect(majorOnC.yOfRow(57)).toBeCloseTo(minorOnA.yOfRow(57), 9)
+    expect(minorOnA.stairs[0].top - majorOnC.stairs[0].top).toBeCloseTo(
+      3 * minorOnA.rowH,
+      9,
+    )
+    expect(majorOnC.stairs[5].top).toBeCloseTo(minorOnA.stairs[7].top, 9)
+  })
+
+  it('lifts its rows for a scale that reaches past them, as past the fifteen from its floor', () => {
+    // Act: A minor on A3 over rows that stop at C4
+    const L = stairsLayout(
+      'compact',
+      420,
+      280,
+      57,
+      C2,
+      NATURAL_MINOR_DEGREES,
+      ROOM,
+    )
+
+    // Assert: its top do, A4, the top row
+    expect(L.stairs[7].top).toBeCloseTo(L.rowsTop, 9)
+  })
+
+  it('takes no room in the wide and narrow layouts', () => {
+    // Act
+    const wideRoomy = stairsLayout(
+      'wide',
+      650,
+      476,
+      60,
+      C4,
+      MAJOR_DEGREES,
+      ROOM,
+    )
+    const narrowRoomy = stairsLayout(
+      'narrow',
+      356,
+      424,
+      60,
+      C4,
+      MAJOR_DEGREES,
+      ROOM,
+    )
+
+    // Assert
+    expect([wideRoomy.x1, wideRoomy.rows]).toEqual([wide(60).x1, wide(60).rows])
+    expect([narrowRoomy.x1, narrowRoomy.rows]).toEqual([
+      narrow(60).x1,
+      narrow(60).rows,
+    ])
   })
 })

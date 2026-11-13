@@ -28,7 +28,8 @@
 //   to D5 there, so a scale on C and one on D both fit unscaled; no strip,
 //   nothing that takes taps. A scale that reaches past them lifts the rows
 //   until its top stair is the top row: Lesson 20's minor five on A3, over
-//   C3.
+//   C3. A page may give its own rows and keep room at the right (Lesson
+//   25's A2 to C4, its chord column beside the stairs; `StairsRoom`).
 //
 // Every stair is a block from its tread down to a foot below do, and its
 // tap zone is its column, at least 44 px tall: columns never overlap, so no
@@ -166,14 +167,52 @@ const MAX_COLUMN = 64
 const specFor = (mode: StairsMode, H: number): ModeSpec =>
   mode === 'narrow' && H < SHORT_BELOW ? SHORT : SPEC[mode]
 
+/**
+ * Room a page keeps around a compact staircase: `right` px at its right
+ * (Lesson 25's chord column), and the rows it shows, `rows.lo` to
+ * `rows.hi`, in place of the fifteen from its floor, so the rows stand
+ * still while the staircase slides between starts they hold: Lesson 25's
+ * A2 to C4 hold A minor on A2 with its chord on so up to B3, and C major
+ * and C minor on C3, its house gliding from C3 down to A2 over rows that
+ * never move. A scale reaching past `rows.hi` lifts them, as past the
+ * floor's fifteen. Other layouts take no room.
+ */
+export interface StairsRoom {
+  readonly right?: number
+  readonly rows?: { readonly lo: number; readonly hi: number }
+}
+
+/**
+ * The rows a layout shows, how many, and the pitch at the top row's centre:
+ * narrow, do to the top stair; wide, the floor's 25; compact, the floor's
+ * fifteen or a page's own, lifted until a scale reaching past them has its
+ * top stair on the top row.
+ */
+function rowsOf(
+  mode: StairsMode,
+  s: ModeSpec,
+  start: number,
+  floor: number,
+  topDeg: number,
+  room: StairsRoom,
+): { count: number; high: number } {
+  if (mode === 'narrow') return { count: topDeg + 1, high: start + topDeg }
+  if (mode === 'wide') return { count: s.rows, high: floor + s.rows - 1 }
+  const own = room.rows
+  if (own === undefined)
+    return { count: s.rows, high: Math.max(floor + s.rows - 1, start + topDeg) }
+  return { count: own.hi - own.lo + 1, high: Math.max(own.hi, start + topDeg) }
+}
+
 /** The stairs' and the strip's left and right edges, for `count` stairs. */
 function spanOf(
   mode: StairsMode,
   W: number,
   count: number,
+  right = 0,
 ): { x0: number; x1: number } {
   const s = SPEC[mode]
-  if (mode !== 'narrow') return { x0: s.left, x1: W - s.right }
+  if (mode !== 'narrow') return { x0: s.left, x1: W - s.right - right }
   const span = Math.min(W, count * MAX_COLUMN)
   const x0 = (W - span) / 2
   return { x0, x1: x0 + span }
@@ -276,26 +315,20 @@ export function stairsLayout(
   start: number,
   floor: number,
   degrees: Degrees = MAJOR_DEGREES,
+  room: StairsRoom = {},
 ): StairsLayout {
   const s = specFor(mode, H)
   const narrow = mode === 'narrow'
   const count = degrees.length
   // the top stair's degree: narrow rows run from do up to it
   const topDeg = degrees[count - 1]
-  const rowCount = narrow ? topDeg + 1 : s.rows
+  const { count: rowCount, high } = rowsOf(mode, s, start, floor, topDeg, room)
   const rowH = (H - s.pad - s.stripH - s.drop - s.depth - s.top) / rowCount
-  // the pitch at the top row's centre; a compact scale reaching past the
-  // floor's rows lifts them to its top stair
-  const high = narrow
-    ? start + topDeg
-    : mode === 'compact'
-      ? Math.max(floor + s.rows - 1, start + topDeg)
-      : floor + s.rows - 1
   const yOfRow = (midi: number): number =>
     s.top + rowH / 2 + (high - midi) * rowH
   const yOfStair = (deg: number): number =>
     narrow ? s.top + rowH / 2 + (topDeg - deg) * rowH : yOfRow(start + deg)
-  const { x0, x1 } = spanOf(mode, W, count)
+  const { x0, x1 } = spanOf(mode, W, count, mode === 'compact' ? room.right : 0)
   const cw = (x1 - x0) / count
   const bottom = yOfStair(0) + rowH / 2 + s.depth
   const stairs = degrees.map((deg, i): StairBox => {
