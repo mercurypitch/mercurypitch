@@ -384,6 +384,72 @@ describe('createQuiz', () => {
     expect(after?.nextElementSibling?.classList.contains('opts')).toBe(true)
     expect(quiz.host.querySelector('h3')?.textContent).toBe('Question l02-q2')
   })
+
+  it("holds a question's answers, disabled with their words kept, until the page releases it, and again the next visit", () => {
+    // Arrange
+    quizBox()
+    const held = (): QuizQuestion => ({
+      ...question(
+        'l26-q2',
+        '<p class="lock-hint" data-quiz-held>Choose an answer at the top to try this.</p>',
+      ),
+      held: true,
+    })
+    const quiz = createQuiz({
+      questions: [question('l26-q1'), held()],
+      lesson: 26,
+      keys: KEYS,
+    })
+    const options = (i: number): HTMLButtonElement[] =>
+      Array.from(quiz.host.querySelectorAll('.q')[i].querySelectorAll('.opt'))
+    const line = (): HTMLElement | null =>
+      quiz.host.querySelector('[data-quiz-held]')
+
+    // Assert: question 2 waits with its words; question 1 is open
+    expect(options(1).map((b) => b.disabled)).toEqual([true, true])
+    expect(
+      options(1)
+        .map((b) => b.querySelector('.opt-t')?.textContent)
+        .sort(),
+    ).toEqual(['A wrong answer', 'The right answer'])
+    expect(options(0).some((b) => b.disabled)).toBe(false)
+    expect(line()?.hidden).toBe(false)
+
+    // Act
+    quiz.release('l26-q2')
+
+    // Assert
+    expect(options(1).some((b) => b.disabled)).toBe(false)
+    expect(line()?.hidden).toBe(true)
+    answer(quiz.host, 1, 'The right answer')
+    expect(text('scoreN')).toBe('1')
+    // the next visit holds it again
+    document.body.textContent = ''
+    quizBox()
+    const again = createQuiz({ questions: [held()], lesson: 26, keys: KEYS })
+    expect(
+      Array.from(again.host.querySelectorAll<HTMLButtonElement>('.opt')).map(
+        (b) => b.disabled,
+      ),
+    ).toEqual([true, true])
+  })
+
+  it('releases nothing for a question it never held', () => {
+    // Arrange
+    quizBox()
+    const quiz = createQuiz({
+      questions: [question('l26-q1')],
+      lesson: 26,
+      keys: KEYS,
+    })
+    const before = quiz.host.querySelector('.q')
+
+    // Act
+    quiz.release('l26-q1')
+
+    // Assert: no render, the same element
+    expect(quiz.host.querySelector('.q')).toBe(before)
+  })
 })
 
 describe('linkAway', () => {

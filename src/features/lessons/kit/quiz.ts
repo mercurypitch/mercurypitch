@@ -56,6 +56,14 @@ export interface QuizQuestion {
    * its state; handle its events with a listener on the quiz's `host`.
    */
   readonly slot?: string
+  /**
+   * Its answers wait, disabled with their words kept, until the page
+   * releases it (`Quiz.release`): a question that would state an answer
+   * the page holds back, a predict's asked again. Its slot carries the line
+   * that says why, marked `data-quiz-held`, which the release hides. Each
+   * visit holds it again. Not held by default.
+   */
+  readonly held?: boolean
 }
 
 /** One answer, as the quiz hears it; telemetry.ts sends some of it. */
@@ -106,6 +114,8 @@ export interface QuizOptions {
 export interface Quiz {
   /** The element the questions render into: listen here for a slot's controls. */
   readonly host: HTMLElement
+  /** Opens a held question's answers, and hides its slot's held line; nothing for any other. */
+  release(id: string): void
 }
 
 /** Question index to option index (in authored order). */
@@ -226,6 +236,10 @@ export function createQuiz(opts: QuizOptions): Quiz {
   rec.visits += 1
   store.set(keys.record, rec)
   let answers: Answers = {}
+  // the questions whose answers wait for the page (`held`), by id
+  const held = new Set(
+    questions.filter((question) => question.held === true).map((x) => x.id),
+  )
   // the questions answered in this visit: Reset clears the answers, not this
   const answeredThisVisit = new Set<string>()
   // a question asked on another lesson's page links to that lesson's page
@@ -277,6 +291,12 @@ export function createQuiz(opts: QuizOptions): Quiz {
     b.type = 'button'
     b.className = 'opt'
     b.innerHTML = `<span class="mk" aria-hidden="true">${String.fromCharCode(65 + pos)}</span><span class="opt-t">${option.text}</span>`
+    // a held question's answers keep their words and wait, disabled,
+    // stepped back as the options nobody chose are
+    if (chosen === undefined && held.has(questions[i].id)) {
+      b.disabled = true
+      b.classList.add('dim')
+    }
     if (chosen !== undefined) {
       b.disabled = true
       if (option.correct === true) {
@@ -373,5 +393,16 @@ export function createQuiz(opts: QuizOptions): Quiz {
     host.querySelector<HTMLElement>('.opt')?.focus({ preventScroll: true })
   })
   render()
-  return { host }
+  return {
+    host,
+    release(id) {
+      if (!held.delete(id)) return
+      const i = questions.findIndex((question) => question.id === id)
+      for (const line of slots[i]?.querySelectorAll<HTMLElement>(
+        '[data-quiz-held]',
+      ) ?? [])
+        line.hidden = true
+      render()
+    },
+  }
 }
