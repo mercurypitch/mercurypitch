@@ -79,6 +79,13 @@ export interface StepDeck {
   start(): void
   /** True while toy `n`'s stage is on screen and one of its steps is showing. */
   toyActive(n: number): () => boolean
+  /**
+   * Brings the stage into view on a phone, where the deck's stage stands
+   * above its steps' text, when its head has scrolled away above the
+   * screen, so a play started from a step's text is seen as it sounds. On
+   * a wide page the stage is stuck beside the text, and nothing moves.
+   */
+  showToy(): void
 }
 
 /** The step an address names (`#step-3` is 3), or null for none of the deck's `count` steps. */
@@ -309,6 +316,10 @@ export function createStepDeck(opts: StepDeckOptions): StepDeck {
     },
     toyActive(n) {
       return () => stageSeen() && opts.toyFor(current) === n
+    },
+    showToy() {
+      if (deck && stage.getBoundingClientRect().top < 0)
+        stage.scrollIntoView({ behavior: behavior(), block: 'start' })
     },
   }
 }
