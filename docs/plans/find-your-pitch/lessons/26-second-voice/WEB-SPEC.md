@@ -915,3 +915,49 @@ production:
   Nothing plays; each part's boxes name its own notes; a note sung an octave from its box scores
   nothing. Once more with the guest in before the pick, the repo's two-peer check's own order, so
   both orders are seen to work (items 15 and 16; FACTS 63a, 63b, 64).
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- Counted by `scripts/lesson-words.mjs`'s rule as the built page shows it: the package's 2,044
+  words; the 168 Length lists, less its three status lines (14), which the next count holds; Sing
+  it's status lines that LESSON.md does not write, about 154 in the lower voice's forms (the comfort
+  and voice prompts, the listening path's two lines, the headphones and briefing prompts, the
+  microphone's ask, the count-in, the model's and the run's lines, the sing-along's two lines, the
+  run left, both parts, the sing-along's ending, the set spent, Done for today and Start's sound-off
+  hint); and the cold open's hint after a choice and its "Play them together" (8). That is about
+  2,360 in place of Length's 2,362 on the brief's 150, about 19 under the series' cap of 2,379, and
+  the page still runs about 16 minutes.
+- Sing it loads as a chunk of its own after first paint, and its take, its reader and the quiet
+  check load with the microphone at Start, so first paint carries none of them.
+- The voice choice stays beside the panel after it, the headphones check, the briefing, the
+  sing-along or "Just listen today"'s play, until the first run, so the voice can still change; a
+  run hides it. On the listening path it asks "Choose a voice: it picks who sings."
+- The hush that keeps every other sound off begins at bar 1's first beat, when the count-in's run
+  ends, not as the take opens half a beat before it, so the count-in sounds to its end; from bar 1
+  the cursor and the other part's lit beads follow the take's frames.
+- Levels: the other part in a run, and in the quiet check, at 0.1, half Merc's model at 0.2, so the
+  singer's own voice stays clear in the headphones; "Just listen today"'s play at the note level,
+  0.13, for each part; the count-in's woodblock at 0.1. The lab sets the run's level (Audio).
+- The figure's zero is the first note of the part sung, as the take's pitch line has it, and a
+  black key's row is named with its sharp, "ti · F♯3". After a run the take's anchor moves the
+  learner's pitch line onto the bands, as Lesson 18's does; the other part's beads keep their
+  written beats.
+- The tricky line counts the run's notes read in the band, which the kit's take now reports
+  (`kit/take-in-time.ts`, `inBand`).
+- The count-in's dots, and the other part's lit bead, are kept in the band chart's scene, which the
+  kit now gives a page's own painter (`over`, `kit/band-chart.ts`), so each click draws its dot as
+  it sounds; a chart draws only when its scene changes.
+- A hero play pressed with the drawing scrolled away brings it back by the page's own scroll,
+  never the stage's, which clips Merc and Tavi's bubbles; leaving the hero, its stage and its
+  predict, stops what it plays.
+- Step 4's chord bar keeps 20 px clear of the lower part's label, and the contrast mark's "?" is
+  sized to the room above its bead, 12 to 24 px (`kit/tune-line-parts-draw.ts`,
+  `kit/tune-line-draw.ts`).
+- On a phone, after No headphones or the briefing, the panel's Start can sit below the first screen:
+  the card keeps its top in view, as Lesson 24's does, and the learner scrolls to it.
+- The tease still is drawn as Toys 6 gives it, and its test checks Lesson 27's Tests item 18, the V
+  room with three corners (`lesson-26/wrap.test.ts`).
+- The first-paint ceilings are the page's measured build a quarter over, as every lesson's are: 200
+  KB of JavaScript (163,040 bytes) and 111 KB of CSS (90,501 bytes) in `build:e2e`.
