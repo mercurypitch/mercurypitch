@@ -24,9 +24,10 @@
 // Lesson 26's opening, "Twinkle"'s two lines in C, which plays nothing.
 
 import { VisitEnding } from '@/features/lessons/kit/comfort'
-import { q } from '@/features/lessons/kit/dom'
+import { q, qa } from '@/features/lessons/kit/dom'
 import { watch } from '@/features/lessons/kit/frame-loop'
 import { onLeave } from '@/features/lessons/kit/leave'
+import { reducedMotion } from '@/features/lessons/kit/motion-switch'
 import { VoiceChoice } from '@/features/lessons/kit/voice-choice'
 import type { MinorToy } from './minor-toy'
 import { MINOR_STATES, mountMinorToy } from './minor-toy'
@@ -45,6 +46,18 @@ export function initFreePlay(): MinorToy {
   onLeave(root, () => {
     toy.stop()
   })
+  // a play pressed with the figures scrolled away above the screen brings
+  // them back into view, so what it lights is seen as it sounds: on a
+  // phone the card's plays run on for more than a screen under them
+  const figs = q('.minor-figs', root)
+  for (const b of qa<HTMLButtonElement>('[data-minor-play]', root))
+    b.addEventListener('click', () => {
+      if (figs.getBoundingClientRect().top < 0)
+        figs.scrollIntoView({
+          behavior: reducedMotion() ? 'instant' : 'smooth',
+          block: 'start',
+        })
+    })
   return toy
 }
 
