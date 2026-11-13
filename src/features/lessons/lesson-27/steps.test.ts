@@ -3,8 +3,8 @@
 // ============================================================
 //
 // On the page's own markup and its own deck (WEB-SPEC, Toys 1 and 3): each
-// step shows its own chip row, Step 1's held line only before the cold
-// open's choice; the plays in the steps' text sound on the toy in the
+// step shows its own chip row, and every step the steps' line until the
+// cold open's choice; the plays in the steps' text sound on the toy in the
 // learner's voice; Step 4's predict is held under "Choose an answer at the
 // top first." until the cold open's choice, then asks for its own, which
 // opens Step 4's chips and Turn over and tells free play; its two plays
@@ -97,7 +97,7 @@ async function hear(sel: string): Promise<void> {
 }
 
 describe('the stage, step by step', () => {
-  it("shows each step's own chip row: Step 1's and Step 4's, none on Steps 2 and 3", () => {
+  it("shows each step's own chip row, Step 1's and Step 4's, none on Steps 2 and 3, and on every step the steps' line", () => {
     // Arrange
     const { deck } = mount()
     const rows: boolean[][] = []
@@ -112,24 +112,29 @@ describe('the stage, step by step', () => {
       ])
     }
 
-    // Assert: Step 1's held line shows with its row
+    // Assert: V7's room is drawn as V on each step until the choice
     expect(rows).toEqual([
       [true, false, true],
-      [false, false, false],
-      [false, false, false],
-      [false, true, false],
+      [false, false, true],
+      [false, false, true],
+      [false, true, true],
     ])
   })
 
-  it("puts Step 1's held line away with the cold open's choice", () => {
+  it("puts the steps' line away with the cold open's choice, on every step", () => {
     // Arrange
-    const { steps } = mount()
+    const { deck, steps } = mount()
 
     // Act
     steps.unlock()
+    const lines: boolean[] = []
+    for (const n of [1, 2, 3, 4]) {
+      deck.show(n)
+      lines.push(shows(el('#toyRing [data-lock-line]')))
+    }
 
     // Assert
-    expect(el('#toyRing [data-lock-line]').hidden).toBe(true)
+    expect(lines).toEqual([false, false, false, false])
     expect(button('#toyRing [data-part="1"] [data-chip="V"]').disabled).toBe(
       false,
     )

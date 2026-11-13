@@ -727,8 +727,10 @@
                      every step. Each step's other plays sit in its text, where
                      LESSON.md writes them, and play here. Until the cold
                      open's choice the toy holds back the V chip, which would
-                     answer it, under the steps' line; Step 4's controls wait
-                     for Step 4's own choice (WEB-SPEC, Toys 1). The ring's
+                     answer it, under the steps' line, which every step shows
+                     while V7's room is drawn as V, and Step 4's V7 chip reads
+                     V; Step 4's controls wait for Step 4's own choice
+                     (WEB-SPEC, Toys 1). The ring's
                      beads and rooms are drawn, never tapped (WEB-SPEC,
                      Contract). -->
                 <div class="toy is-active ring-toy" data-toy="1" id="toyRing">
@@ -787,12 +789,6 @@
                       seventh
                     </button>
                   </div>
-                  <p class="lock-line" data-lock-line data-part="1">
-                    <svg class="ico" aria-hidden="true">
-                      <use href="#i-lock" /></svg
-                    >Choose an answer at the top to unlock the rest of this
-                    figure.
-                  </p>
                   <div class="controls chord-row" data-part="4" hidden>
                     <button
                       class="btn sm ring-chip"
@@ -808,7 +804,7 @@
                       data-chip="V7"
                       disabled
                     >
-                      V7
+                      V
                     </button>
                     <button class="btn sm" type="button" data-turn disabled>
                       <svg class="ico" aria-hidden="true">
@@ -816,6 +812,12 @@
                       ><span>Turn over</span>
                     </button>
                   </div>
+                  <p class="lock-line" data-lock-line data-part="1 2 3 4">
+                    <svg class="ico" aria-hidden="true">
+                      <use href="#i-lock" /></svg
+                    >Choose an answer at the top to unlock the rest of this
+                    figure.
+                  </p>
                   <div class="controls staff-row">
                     <div
                       class="seg"

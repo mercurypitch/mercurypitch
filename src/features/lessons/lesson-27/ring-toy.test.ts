@@ -246,6 +246,21 @@ describe("the steps' toy, Step 4", () => {
     )
   })
 
+  it('labels its V7 chip V until the cold open’s choice, as V7’s room is drawn (FACTS 1a)', () => {
+    // Arrange
+    const toy = steps()
+    toy.setState(RING_STATES[4])
+    const chip = button('#toyRing [data-part="4"] [data-chip="V7"]')
+    const before = words(chip)
+
+    // Act
+    toy.unlock()
+
+    // Assert
+    expect(before).toBe('V')
+    expect(words(chip)).toBe('V7')
+  })
+
   it('turns I over, its lowest note up an octave, and back to its first pitches on the third press (FACTS 50, 72)', async () => {
     // Arrange
     const toy = steps()

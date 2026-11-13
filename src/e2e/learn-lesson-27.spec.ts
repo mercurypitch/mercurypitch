@@ -272,7 +272,7 @@ test("the cold open: V, then I, free from the start; the answering plays locked 
   await expect(figure).toHaveAttribute('aria-label', RING_LABEL)
 })
 
-test("nothing answers the predict before the choice: no line above Sing it names V7 or V's four notes with F, the held controls wait, the choice opens them and Step 4's choices, and the reveal shows Step 1's paragraph on so and Steps 2 and 3's text (WEB-SPEC, Tests 3)", async ({
+test("nothing answers the predict before the choice: no line above Sing it names V7 or V's four notes with F, on any step, the held controls wait, the choice opens them and Step 4's choices, and the reveal shows Step 1's paragraph on so and Steps 2 and 3's text (WEB-SPEC, Tests 3)", async ({
   page,
 }) => {
   // Arrange
@@ -296,28 +296,36 @@ test("nothing answers the predict before the choice: no line above Sing it names
   const hidden = (): Promise<boolean[]> =>
     Promise.all(texts.map((t) => t.isHidden()))
 
-  // Act: every line a learner can read above Sing it, then the choice and
-  // both answering plays
-  const leaks = await page.evaluate(() => {
-    const top =
-      (document.querySelector('#sing')?.getBoundingClientRect().top ?? 0) +
-      window.scrollY
-    // V7 by name, or V's four notes with F and not F sharp; Step 3's heading
-    // names the dominant seventh, and none of its notes (FACTS 1a)
-    const answer = /\bV7\b|G, B, D and F\b(?!♯| sharp)/
-    return [
-      ...document.querySelectorAll<HTMLElement>(
-        'p, li, h1, h2, h3, h4, button, figcaption, [aria-label]',
-      ),
-    ]
-      .filter(
-        (el) =>
-          el.getBoundingClientRect().top + window.scrollY < top &&
-          el.checkVisibility(),
-      )
-      .map((el) => `${el.innerText} ${el.getAttribute('aria-label') ?? ''}`)
-      .filter((text) => answer.test(text))
-  })
+  /** Every line a learner can read above Sing it that answers the predict. */
+  const answering = (): Promise<string[]> =>
+    page.evaluate(() => {
+      const top =
+        (document.querySelector('#sing')?.getBoundingClientRect().top ?? 0) +
+        window.scrollY
+      // V7 by name, or V's four notes with F and not F sharp; Step 3's
+      // heading names the dominant seventh, and none of its notes (FACTS 1a)
+      const answer = /\bV7\b|G, B, D and F\b(?!♯| sharp)/
+      return [
+        ...document.querySelectorAll<HTMLElement>(
+          'p, li, h1, h2, h3, h4, button, figcaption, [aria-label]',
+        ),
+      ]
+        .filter(
+          (el) =>
+            el.getBoundingClientRect().top + window.scrollY < top &&
+            el.checkVisibility(),
+        )
+        .map((el) => `${el.innerText} ${el.getAttribute('aria-label') ?? ''}`)
+        .filter((text) => answer.test(text))
+    })
+
+  // Act: those lines with the toy on each step, each showing its own
+  // controls, then the choice and both answering plays
+  const leaks = await answering()
+  for (const n of [2, 3, 4]) {
+    await nextStep(page, n)
+    leaks.push(...(await answering()))
+  }
   const before = await disabled()
   const hiddenBefore = await hidden()
   await page.locator('#predict [data-choice="f"]').click()
