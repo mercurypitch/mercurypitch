@@ -350,6 +350,49 @@ describe('createStepDeck', () => {
     document.documentElement.style.scrollPaddingTop = ''
   })
 
+  it("brings a step taller than the screen's room to its head under the masthead, never centred past it", () => {
+    // Arrange: a 768 px screen under a 70 px scroll padding, and step 2
+    // 900 px tall, more than the 698 px under the padding
+    deckPage(3)
+    document.documentElement.style.scrollPaddingTop = '70px'
+    const stage = document.getElementById('stepsStage') as HTMLElement
+    stage.style.top = '76px'
+    const box =
+      (top: number, height = 0): (() => DOMRect) =>
+      () =>
+        ({ top, height }) as DOMRect
+    ;(stage.parentElement as HTMLElement).getBoundingClientRect = box(300)
+    const steps = document.querySelectorAll<HTMLElement>('.step')
+    steps[1].getBoundingClientRect = box(1000, 900)
+    const frames = vi
+      .spyOn(globalThis, 'requestAnimationFrame')
+      .mockImplementation((frame) => {
+        frame(0)
+        return 0
+      })
+    const scroll = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => undefined)
+    const deck = createStepDeck({
+      toyFor: (n) => n,
+      after: { label: 'The quick check', selector: '#quiz' },
+    })
+    deck.start()
+
+    // Act
+    window.location.hash = '#step-2'
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+
+    // Assert: its head just under the padding, not its middle at the
+    // screen's, which would put the head 101 px up under the masthead
+    const tops = scroll.mock.calls.map(([to]) => (to as ScrollToOptions).top)
+    expect(tops).toContain(1000 - 70)
+    expect(tops).not.toContain(1000 + 900 / 2 - (70 + 768) / 2)
+    frames.mockRestore()
+    scroll.mockRestore()
+    document.documentElement.style.scrollPaddingTop = ''
+  })
+
   it("goes to the step an address names at once: 'auto' would take the page's smooth scroll, and a press could stop it short", () => {
     // Arrange
     deckPage(3)
