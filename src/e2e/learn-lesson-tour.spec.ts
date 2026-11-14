@@ -57,11 +57,12 @@ const FIRST_CHOICE = [
   [25, 'major'],
   [26, 'leaves'],
   [27, 'f'],
+  [28, 'tavi'],
 ] as const
 
 /**
  * Opens lesson `n` on a first visit: Lessons 15's, 16's, 18's, 19's, 20's,
- * 21's, 22's, 23's, 24's, 25's, 26's and 27's cards wait for the predict's choice (kit/tour-gate.ts `holdTour`), since
+ * 21's, 22's, 23's, 24's, 25's, 26's, 27's and 28's cards wait for the predict's choice (kit/tour-gate.ts `holdTour`), since
  * a step the tour shows would answer it, so there the choice comes first,
  * made where the page stands: a first visit's tour opens only at the top,
  * and on a phone the predict sits below the first screen.

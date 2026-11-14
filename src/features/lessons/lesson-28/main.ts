@@ -29,12 +29,15 @@ import '@/features/lessons/kit/lesson-fonts.css'
 import '@/features/lessons/kit/lesson-base.css'
 import '@/features/lessons/kit/lesson-sections.css'
 import '@/features/lessons/kit/lesson-stage.css'
-// the guide's and the voice lessons' sheets join with the recall and Sing
-// it, the modules whose chunks they share: taken before them, each leaves
-// its chunk for one of its own, which every lesson page would then link
-// after its own sheet (MISTAKES.md, on the lessons' base stylesheet)
 import '@/features/lessons/kit/lesson-parts.css'
+// the Wrap's rest line brings the kit's comfort check, and Sing it its
+// voice choice, so taking the voice lessons' sheet here keeps it in the
+// chunk it shares with them: a sheet left out leaves that chunk for one of
+// its own, which every lesson page would then link after its own sheet
+// (MISTAKES.md, on the lessons' base stylesheet)
+import '@/features/lessons/kit/lesson-voice.css'
 import './lesson-28.css'
+import { VisitEnding } from '@/features/lessons/kit/comfort'
 import { q } from '@/features/lessons/kit/dom'
 import { createExplorer } from '@/features/lessons/kit/explorer'
 import { startFrameLoop } from '@/features/lessons/kit/frame-loop'
@@ -46,6 +49,11 @@ import { carrySeason } from '@/features/lessons/kit/page-state'
 import { initReveals } from '@/features/lessons/kit/reveal'
 import { SEASON_2 } from '@/features/lessons/kit/season-2'
 import { createStepDeck } from '@/features/lessons/kit/step-deck'
+import { initColdOpen } from './cold-open'
+import { initQuizzes } from './recall'
+import { initSteps } from './steps'
+import { initWords } from './words'
+import { initWrap } from './wrap'
 
 // Season 2, before anything draws
 carrySeason(SEASON_2)
@@ -59,11 +67,23 @@ const deck = createStepDeck({
   toyFor: () => 1,
   after: { label: 'Sing it', selector: '#sing' },
 })
+// free play first, so the steps' choice and the cold open's reach it
+const wrap = initWrap()
+const steps = initSteps(deck)
 deck.start()
 
+// the recall from Lessons 18 and 26 and the quick check, each on the kit's
+// quiz: question 4's answers and Play wait for the cold open's choice
+const quizzes = initQuizzes(deck)
+
+// three words: Cadence's small strip of bars 3 and 4, Section's still and
+// Form's four blocks
+initWords()
+
 // the season's close first, where other pages name the next lesson: the
-// explorer binds its link to the map
-createNextCard(28)
+// explorer binds its link to the map. It follows Sing it's ending: after a
+// rest it keeps its answer and the map alone (WEB-SPEC, Toys 7)
+createNextCard(28, VisitEnding)
 createExplorer({ current: 28 })
 
 // the last screen's way back to the plan, for someone who answered its
@@ -84,6 +104,16 @@ initMasthead(
   },
   { lesson: 28, deck },
 )
+// the cold open after the masthead, in the same task, so a first visit's
+// tour waits for its choice (kit/tour-gate.ts)
+initColdOpen(deck, {
+  onChoice: () => {
+    steps.unlock()
+    wrap.free.unlock()
+    quizzes.unlock()
+  },
+  onReveal: () => steps.reveal(),
+})
 initReveals()
 startFrameLoop()
 // Tavi gives a quiet "oh" at the reveal with no sparkles (WEB-SPEC, Merc
