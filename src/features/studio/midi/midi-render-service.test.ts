@@ -206,12 +206,13 @@ describe('a render of notes that changed while it ran', () => {
 })
 
 describe("the editor's drafts", () => {
-  it('render the last draft a quarter second after the drafts rest, and say rendering until it lands', async () => {
+  it('render the last draft, on its clip’s own time, a quarter second after the drafts rest, and say rendering until it lands', async () => {
     // Arrange
     const ui = mount()
     const sequence = ui.fixture.sequence
+    // A gesture's draft, as the note engine hands it over: notes and next id.
     const draft = (pitch: number) => ({
-      ...sequence,
+      nextNoteId: sequence.nextNoteId,
       notes: sequence.notes.map((note) => ({ ...note, pitch })),
     })
     const state = () => ui.service.renderState('clip-midi')
@@ -232,13 +233,20 @@ describe("the editor's drafts", () => {
     expect(drafting).toBe('rendering')
     expect(resting).toBe(0)
     expect(ui.renderer.calls).toHaveLength(1)
+    expect(ui.renderer.calls[0].input).toMatchObject({
+      tempoBpm: 120,
+      lengthTicks: 3840,
+      sound: 'piano',
+    })
     expect(ui.renderer.calls[0].input.notes.map((note) => note.pitch)).toEqual([
       72, 72,
     ])
     expect(rendering).toBe('rendering')
     expect(state()).toBe('idle')
     expect(playedAsset(ui.service)).toBe(
-      studioMidiPreviewId(studioMidiRenderKey(draft(72), 'piano')),
+      studioMidiPreviewId(
+        studioMidiRenderKey({ ...sequence, ...draft(72) }, 'piano'),
+      ),
     )
   })
 

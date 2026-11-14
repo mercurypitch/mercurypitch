@@ -7,20 +7,22 @@
 // already previewed, play that render without another.
 import type { Accessor } from 'solid-js'
 import { createContext, useContext } from 'solid-js'
-import type { StudioSequence } from '@/lib/studio/model/types'
+import type { StudioNoteSet } from '@/lib/studio/midi/notes'
 import type { StudioMidiRenderService, StudioMidiRenderState, } from './midi-render-service'
 
 export type { StudioMidiRenderState } from './midi-render-service'
 
 export interface StudioMidiEditorApi {
   /**
-   * Notes being edited, not committed yet: the clip's sequence with the
-   * draft's notes. Rendered once no draft has come for a quarter second,
-   * and played in the clip's place through its lane's chain. Call it as
-   * often as a gesture moves; null ends the draft, as a cancelled gesture
-   * does. A commit or an undo of the clip's notes ends it too.
+   * Notes being edited, not committed yet: a gesture's draft
+   * (`NoteDraft['sequence']` in features/studio/notes), its notes and next
+   * id, laid on the clip's own sequence. Rendered once no draft has come
+   * for a quarter second, and played in the clip's place through its lane's
+   * chain. Call it as often as a gesture moves; null ends the draft, as a
+   * gesture that changes nothing or is cancelled does. A commit or an undo
+   * of the clip's notes ends it too.
    */
-  preview(clipId: string, draft: StudioSequence | null): void
+  preview(clipId: string, draft: StudioNoteSet | null): void
   /**
    * The editor closed: drafts end, and every MIDI clip whose audio is stale
    * gets its render kept as its audio, without an undo step. Resolves once
