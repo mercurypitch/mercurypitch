@@ -10,6 +10,7 @@ S=/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scr
 REF=refs/heads/feat/lead-notes
 FILES=(
   NEXT.md PAUSED.md audit/audit.cjs audit/sheet.py steptext/look.cjs branches/check.py
+  audit/probe.cjs audit/hub.cjs steptext/plays.cjs steptext/held.cjs
   l9/PLAN.md l9/DECISIONS.md l9/FOLLOWUPS.md l9/BUILDER-RULES.md l9/REVIEWER-RULES.md
   l9/a1b-brief.md l9/a1b-design.md
   l10/PLAN.md l10/DECISIONS.md l10/FOLLOWUPS.md l10/k5k4-brief.md l10/k5k4-handback.md
