@@ -955,9 +955,17 @@ Where the page differs from the text above, the page as built is the reference:
 - Step 4's chord bar keeps 20 px clear of the lower part's label, and the contrast mark's "?" is
   sized to the room above its bead, 12 to 24 px (`kit/tune-line-parts-draw.ts`,
   `kit/tune-line-draw.ts`).
+- A bead off the lanes carries its name inside it, in the page's dark ink
+  (`kit/tune-line-parts-draw.ts` `paintBeadName`), not beside it: beside, the name would land on
+  the bracket's number or on the next bead.
+- The Chord note and Passing note words' figures light a chord note gold as it sounds, as Step 4
+  does, since they draw the same fit; Look keeps gold to Step 4.
+- The figure's summary goes into its live line when the learner changes what it draws; a step
+  change, or the cold open's choice, puts it on the figure's name only, since the deck says the step
+  itself.
 - On a phone, after No headphones or the briefing, the panel's Start can sit below the first screen:
   the card keeps its top in view, as Lesson 24's does, and the learner scrolls to it.
 - The tease still is drawn as Toys 6 gives it, and its test checks Lesson 27's Tests item 18, the V
   room with three corners (`lesson-26/wrap.test.ts`).
-- The first-paint ceilings are the page's measured build a quarter over, as every lesson's are: 200
-  KB of JavaScript (163,040 bytes) and 111 KB of CSS (90,501 bytes) in `build:e2e`.
+- The first-paint ceilings are the page's measured build a quarter over, as every lesson's are: 199
+  KB of JavaScript (162,965 bytes) and 111 KB of CSS (90,584 bytes) in `build:e2e`.
