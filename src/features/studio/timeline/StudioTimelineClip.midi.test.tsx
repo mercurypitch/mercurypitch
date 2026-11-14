@@ -164,8 +164,9 @@ describe('opening the notes', () => {
   it('does not count Enter on the focused clip as a tap', () => {
     const { button, onOpenNotes } = renderClip({ id: 'keys' })
 
-    tap(button, 'touch')
-    fireEvent.click(button, { detail: 0 })
+    // A keyboard's click comes at 0, 0: the tap before it lands there too.
+    tap(button, 'touch', { x: 0, y: 0 })
+    fireEvent.click(button, { detail: 0, clientX: 0, clientY: 0 })
 
     expect(onOpenNotes).not.toHaveBeenCalled()
   })

@@ -1,6 +1,6 @@
 // Studio double tap tests — a second tap on the same target within 300 ms and 24 px is a double tap; a slower, farther or other-target tap is not; a third quick tap starts again; and a reset forgets the first tap.
 import { describe, expect, it } from 'vitest'
-import { createStudioDoubleTap, STUDIO_DOUBLE_TAP_MS, STUDIO_DOUBLE_TAP_PX, } from './double-tap'
+import { createStudioDoubleTap } from './double-tap'
 
 const tap = (time: number, x = 100, y = 40, target = 'clip-a') => ({
   target,
@@ -10,27 +10,28 @@ const tap = (time: number, x = 100, y = 40, target = 'clip-a') => ({
 })
 
 describe('createStudioDoubleTap', () => {
-  it('counts a second tap on the same target, soon and near the first, as a double tap', () => {
+  it('counts a second tap on the same target, up to 300 ms and 24 px from the first, as a double tap', () => {
     const taps = createStudioDoubleTap()
 
     expect(taps.tap(tap(1000))).toBe(false)
-    expect(taps.tap(tap(1000 + STUDIO_DOUBLE_TAP_MS, 110, 50))).toBe(true)
+    // 24 px away, straight down.
+    expect(taps.tap(tap(1300, 100, 64))).toBe(true)
   })
 
-  it('does not count a second tap that came too late', () => {
+  it('does not count a second tap that came more than 300 ms later', () => {
     const taps = createStudioDoubleTap()
 
     taps.tap(tap(1000))
 
-    expect(taps.tap(tap(1001 + STUDIO_DOUBLE_TAP_MS))).toBe(false)
+    expect(taps.tap(tap(1301))).toBe(false)
   })
 
-  it('does not count a second tap that landed too far away', () => {
+  it('does not count a second tap that landed more than 24 px away', () => {
     const taps = createStudioDoubleTap()
 
     taps.tap(tap(1000))
 
-    expect(taps.tap(tap(1100, 100 + STUDIO_DOUBLE_TAP_PX + 1))).toBe(false)
+    expect(taps.tap(tap(1100, 125))).toBe(false)
   })
 
   it('does not count a tap on another target, and starts from it instead', () => {
