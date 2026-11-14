@@ -38,6 +38,16 @@ afterEach(() => {
   frames.clear()
 })
 
+/** Every canvas draws into `context`. */
+function drawInto(context: CanvasRenderingContext2D): void {
+  vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockImplementation(((
+    kind: string,
+  ) =>
+    kind === '2d'
+      ? context
+      : null) as unknown as typeof HTMLCanvasElement.prototype.getContext)
+}
+
 /** A take as loud as half scale all through, at ten frames a peak. */
 const loud = {
   get: () =>
@@ -69,9 +79,7 @@ describe('a MIDI clip’s waveform', () => {
     // Arrange
     const { assets, clip, sequence } = studioMidiFixture()
     const recording = recordingRollContext()
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-      recording.context,
-    )
+    drawInto(recording.context)
 
     // Act
     const { container } = render(() => (
@@ -97,9 +105,7 @@ describe('a MIDI clip’s waveform', () => {
   it('leaves an audio clip’s waveform at full strength', async () => {
     const { assets, clip } = studioMidiFixture()
     const recording = recordingRollContext()
-    vi.spyOn(HTMLCanvasElement.prototype, 'getContext').mockReturnValue(
-      recording.context,
-    )
+    drawInto(recording.context)
 
     const { container } = render(() => (
       <StudioWaveform
