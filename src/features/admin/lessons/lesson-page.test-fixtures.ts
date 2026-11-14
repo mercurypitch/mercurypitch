@@ -4,11 +4,36 @@
 //
 // The season table by row and column, a lesson's card, the live region,
 // and the moment the page has settled: the site checked and the lesson
-// state read. Shared by the page's two test files, so a change to the
-// page's shape is fixed in one place.
+// state read. And the rows to give the page when a test needs a lesson
+// with no page yet. Shared by the page's two test files, so a change to
+// the page's shape is fixed in one place.
 
 import { screen, waitFor, within } from '@solidjs/testing-library'
 import { expect } from 'vitest'
+import type { LessonRow } from './lesson-admin'
+import { lessonRows } from './lesson-admin'
+
+/** The lesson `rowsWithPlanned` leaves without a page: Season 2's last. */
+export const PLANNED = 28
+
+/**
+ * The seasons' rows with Lesson 28's page taken away, as it was before the
+ * page landed. With it both seasons are written, so none of the seasons'
+ * own rows is planned, and a test gives the page these to draw one.
+ */
+export function rowsWithPlanned(): LessonRow[] {
+  return lessonRows().map((row) =>
+    row.lesson.n === PLANNED
+      ? {
+          ...row,
+          build: 'planned',
+          built: false,
+          written: false,
+          waitingOn: null,
+        }
+      : row,
+  )
+}
 
 /** The season table's body rows, the trailer first. */
 export function seasonRows(): HTMLElement[] {

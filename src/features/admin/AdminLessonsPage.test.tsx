@@ -19,8 +19,7 @@ import { ALL_LESSONS } from '@/features/lessons/kit/seasons'
 import { SIGNATURES } from '@/features/lessons/kit/team-notes'
 import { AdminLessonsPage } from './AdminLessonsPage'
 import { BEAT_SHEET, FILES, planFileUrl } from './lessons/blueprint-data'
-import { lessonRows } from './lessons/lesson-admin'
-import { card, cellOf, column, openCard, seasonRows, settled, } from './lessons/lesson-page.test-fixtures'
+import { card, cellOf, column, openCard, PLANNED, rowsWithPlanned, seasonRows, settled, } from './lessons/lesson-page.test-fixtures'
 import type { SiteAnswer } from './lessons/lesson-site.test-fixtures'
 import { ADMIN_KEY, fakeLessonApi, logged, sitePathsAsked, stubLessonSite, } from './lessons/lesson-site.test-fixtures'
 
@@ -223,13 +222,12 @@ describe('AdminLessonsPage', () => {
 
   it("says each lesson's state on this site and why: the code's default where nothing is set here", async () => {
     stubLessonSite({})
-    render(() => <AdminLessonsPage adminKey={ADMIN_KEY} />)
+    render(() => (
+      <AdminLessonsPage adminKey={ADMIN_KEY} rows={rowsWithPlanned()} />
+    ))
     await settled()
 
     const draft = Number(Object.keys(DRAFT_LESSONS)[0])
-    const planned =
-      lessonRows().find((row) => row.path !== null && !row.written)?.lesson.n ??
-      -1
     expect(cellOf(0, 0)).toHaveTextContent(
       /^No pageA film, with no page of its own$/,
     )
@@ -239,13 +237,13 @@ describe('AdminLessonsPage', () => {
     expect(cellOf(draft, 0)).toHaveTextContent(
       /^PublishedDefault: this site shows drafts/,
     )
-    expect(cellOf(planned, 0)).toHaveTextContent(
-      new RegExp(`^Publish Lesson ${planned}: No page yet$`),
+    expect(cellOf(PLANNED, 0)).toHaveTextContent(
+      new RegExp(`^Publish Lesson ${PLANNED}: No page yet$`),
     )
     expect(within(cellOf(0, 0)).queryAllByRole('button')).toEqual([])
     expect(
-      within(cellOf(planned, 0)).getByRole('button', {
-        name: `Publish Lesson ${planned}: No page yet`,
+      within(cellOf(PLANNED, 0)).getByRole('button', {
+        name: `Publish Lesson ${PLANNED}: No page yet`,
       }),
     ).toBeDisabled()
   })
