@@ -288,6 +288,8 @@ const NO_FILM = [
   { n: 26, title: 'A second voice', steps: 4 },
   // it teaches in four steps
   { n: 27, title: 'Seventh chords and inversions', steps: 4 },
+  // it teaches in four steps
+  { n: 28, title: 'Cadences, form and a song in two parts', steps: 4 },
 ] as const
 
 for (const entry of NO_FILM) {

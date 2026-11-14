@@ -579,6 +579,34 @@ describe('the explorer, a tab per season', () => {
     ).not.toBeNull()
   })
 
+  it("opens Lesson 28's page on its own card, Ready, with the Karaoke Night link", async () => {
+    // Arrange: Lesson 28's page carries Season 2 before it draws (main.ts)
+    vi.resetModules()
+    const { carrySeason } = await import('./page-state')
+    const { SEASON_2: S2 } = await import('./season-2')
+    const { createExplorer: explorerBuilt } = await import('./explorer')
+    carrySeason(S2)
+    explorerPage()
+
+    // Act
+    explorerBuilt({ current: 28 })
+
+    // Assert: a draft with a page, shown in this build, whose card on its own
+    // page goes back to its top (Lesson 28's WEB-SPEC, Explorer and season data)
+    const card = document.querySelector('#exCardHost .ex-card')
+    expect(openTitle()).toBe('Cadences, form and a song in two parts')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Lesson 28')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Ready')
+    expect(
+      Array.from(card?.querySelectorAll('a.btn') ?? [], (a) =>
+        a.getAttribute('href'),
+      ),
+    ).toEqual(['#top'])
+    expect(
+      card?.querySelector('a.addr[href="/karaoke-night?lesson=28"]'),
+    ).not.toBeNull()
+  })
+
   it("lights a Season 2 lesson's lines in from Season 1, and its Season 1 lessons on its path", async () => {
     // Arrange
     explorerPage()
@@ -679,7 +707,7 @@ describe('the explorer, a tab per season', () => {
     ).toBe('Ready · after 12, 23')
     expect(
       document.querySelector('#exList [data-n="28"] small')?.textContent,
-    ).toBe('Coming later · after 18, 26')
+    ).toBe('Ready · after 18, 26')
     expect(document.querySelectorAll('#exList .ex-row')).toHaveLength(14)
   })
 
