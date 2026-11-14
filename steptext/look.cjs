@@ -12,10 +12,12 @@ const BASE = `http://127.0.0.1:${PORT}`
 const WIDE = [
   [20, 1, 'both'],
   [20, 3, 'touch'],
-  [24, 2, 'mi-pure'],
+  // Step 3's plays wait for Step 2's own predict to be heard out
+  [24, 2, 'mi-pure', { choice: '#predict2 [data-choice]', plays: '#predict2 [data-play], [data-step="2"] [data-play]', shown: '[data-reveal2]' }],
   [24, 3, 'wave'],
   [25, 2, 'melodic'],
-  [27, 2, 'v7-home'],
+  // Steps 2 and 3's text waits for the cold open's reveal
+  [27, 2, 'v7-home', { plays: '.hero-plays [data-play]', shown: '[data-held="3"]' }],
 ]
 // lesson, step, play
 const PHONE = [
@@ -50,13 +52,45 @@ async function open(browser, n, w, h, dsf) {
   return { ctx, page, errors }
 }
 
+// Presses each of a predict's plays and waits for it to end, until `shown` is no longer hidden:
+// a held play in a step's text opens only at the reveal, once every answering play is heard.
+async function hearAll(page, plays, shown) {
+  const open = () =>
+    page.evaluate((sel) => {
+      const e = document.querySelector(sel)
+      return !!e && e.offsetParent !== null
+    }, shown)
+  const count = await page.locator(plays).count()
+  for (let i = 0; i < count && !(await open()); i++) {
+    const b = page.locator(plays).nth(i)
+    if (!(await b.isVisible()) || (await b.isDisabled())) continue
+    await b.click({ timeout: 3000 }).catch(() => {})
+    // heard to its end: the play lights (`is-on`) and goes dark again, or the reveal shows
+    let wasLit = false
+    for (let t = 0; t < 60; t++) {
+      await page.waitForTimeout(250)
+      if (await open()) break
+      const lit = await b.evaluate((e) => e.classList.contains('is-on'))
+      wasLit = wasLit || lit
+      if ((wasLit && !lit) || (!wasLit && t > 8)) break
+    }
+    await page.waitForTimeout(300)
+  }
+  return open()
+}
+
 ;(async () => {
   const browser = await chromium.launch({
     executablePath: '/opt/pw-browsers/chromium',
     args: ['--autoplay-policy=no-user-gesture-required'],
   })
-  for (const [n, k, play] of WIDE) {
+  for (const [n, k, play, reveal] of WIDE) {
     const { ctx, page, errors } = await open(browser, n, 1440, 900, 1)
+    if (reveal) {
+      if (reveal.choice) await page.locator(reveal.choice).first().click({ timeout: 2000 }).catch(() => {})
+      const opened = await hearAll(page, reveal.plays, reveal.shown)
+      console.log(`    L${n} ${play}: held text ${opened ? 'opened' : 'DID NOT open'} after its plays`)
+    }
     await page.evaluate((k) => { location.hash = `#step-${k}` }, k)
     await page.waitForTimeout(900)
     // the next step's play low on the screen, the deck's band still on step k

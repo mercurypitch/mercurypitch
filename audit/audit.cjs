@@ -186,7 +186,8 @@ fs.mkdirSync(OUT, { recursive: true })
       await page.waitForTimeout(500)
       // some listening paths ask the voice first, when none is stored
       if (await clickFirst('#sing [data-voice="lower"]')) await page.waitForTimeout(500)
-      const played = await clickFirst('#sing [data-panel="listen"] button, #sing [data-listen-play], #sing [data-listen-len]')
+      // the listening path's own play: whatever Sing it offers that is neither a voice nor the comfort choice
+      const played = await clickFirst('#sing button:not([data-voice]):not([data-comfort])')
       await page.waitForTimeout(2500)
       note(`sing: listening path "${await status()}"${played ? ', its play pressed' : ', NO play found'}`)
       await shot('sing-listen')
