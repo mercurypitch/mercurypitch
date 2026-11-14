@@ -23,6 +23,14 @@ export function inNoteWindow(tick: number, window: StudioTickWindow): boolean {
   return tick >= window.startTick && tick < window.endTick
 }
 
+/** The notes the clip plays: those starting inside its window. */
+export function playedNotes(
+  sequence: Pick<StudioNoteSet, 'notes'>,
+  window: StudioTickWindow,
+): StudioNote[] {
+  return sequence.notes.filter((note) => inNoteWindow(note.startTick, window))
+}
+
 /** Every field a note has, its defaults left out when it holds them. */
 const NOTE_FIELDS = [
   'id',
