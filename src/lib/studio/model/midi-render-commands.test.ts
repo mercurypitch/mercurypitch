@@ -81,6 +81,25 @@ describe('keeping a MIDI render', () => {
     expect(kept).toBe(undone)
   })
 
+  it('leaves a stale clip whose notes changed again since the render began', () => {
+    // Arrange
+    const edited = apply(fixture.project, EDIT)
+    const key = editedKey(edited)
+    const again = apply(edited, {
+      ...EDIT,
+      notes: fixture.sequence.notes.map((note) => ({
+        ...note,
+        pitch: note.pitch + 2,
+      })),
+    } as StudioCommand)
+
+    // Act
+    const kept = apply(again, swap(key))
+
+    // Assert
+    expect(kept).toBe(again)
+  })
+
   it('leaves a clip whose audio already matches its notes, such as a recorded take', () => {
     // Arrange
     const { project, clip } = fixture

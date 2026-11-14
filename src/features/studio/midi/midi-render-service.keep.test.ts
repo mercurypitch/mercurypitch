@@ -181,6 +181,8 @@ describe('keeping a MIDI render', () => {
 
     // Act
     const closed = ui.service.editorClosed()
+    // The keep has picked the render and waits on its ready preview.
+    await Promise.resolve()
     ui.setProject(ui.fixture.project)
     await closed
 
