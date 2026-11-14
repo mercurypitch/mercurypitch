@@ -260,6 +260,51 @@ budgets and a local e2e run. New UI loads lazily.
   clip's window is drawn dimmed and never picked, and the roll's zoom and
   pan stay inside the window, a zoom closing in to a sixteenth note.
 
+### Design decisions made while building D's engine
+
+The engine (`src/features/studio/notes/edit-*.ts`) is pure: an input and
+its context in, a state and its effects out. Its scripts are the tests.
+
+- **A press on a note acts at once.** No long press: a finger on a note
+  drags it, with the selection when it was selected and alone when it was
+  not, and a tap selects it alone. This is the owner's ask after trying the
+  mockups.
+- **Resizing is the grip's.** A selected note shows a grip on its right
+  end, inside a note 24 px wide or more and beside a shorter one. Its zone
+  is 20 px wide for a finger, so a short note's body always moves it. A
+  finger resizes only a selected note; a mouse also resizes any note from
+  its last 6 px.
+- **A finger reaches 12 px.** It picks the note under it, else the nearest
+  one within reach, so a note a few pixels tall is still a target. A tap
+  or a drag is told apart by the Studio ruler's slop: 4 px, and 10 px for a
+  finger.
+- **A drag snaps where the note lands.** The pressed note stays put for
+  half a grid step, so a drag up or down keeps the time it was played at,
+  then its start goes to the nearest line; the rest of the selection moves
+  by as much and keeps its offsets. Alt places freely.
+- **The rows move too.** roll.ts fits the rows once; `roll-rows.ts` pans
+  and zooms them in fractions of a semitone, between notes 0 and 127. One
+  finger on empty grid pans both ways in Select, and draws in Draw; the
+  wheel scrolls rows and Shift with it time.
+- **A pinch zooms each axis by the fingers' spread along it**, about the
+  point between them: sideways for time, up and down for rows. An axis the
+  fingers are not spread along keeps its zoom, and a row stays from 14 to
+  48 px, so a pinch at a slight angle cannot make notes too thin to touch.
+- **A second finger takes over.** It undoes the first finger's drag and
+  the two pinch; a cancel undoes too. A mouse or a pen ignores other
+  pointers while down, so a palm cannot undo a pen's drag.
+- **A drag held at an edge scrolls**, toward the side it went, on each
+  animation frame the host sends while the engine wants them.
+- **One commit a gesture or a key press.** A held arrow repeats, a commit
+  each, as in a DAW; a held Delete or Ctrl+D acts once. Undo and redo stay
+  the Studio's.
+- **A duplicate or a paste must land inside the clip.** One whose notes
+  would start past the clip's end is refused with a reason to announce.
+  A paste goes to the playhead over the clip, else after the selection,
+  else to the clip's start.
+- **Drawn notes take the velocity of the last note pressed**, 100 of 127
+  until one is, so a note added to a soft take sounds like its neighbours.
+
 ## 3. How the big DAWs do it (research, 9 Nov 2026)
 
 |                       | REAPER                                        | FL Studio                                | Ableton Live                    | DAWproject (Bitwig, Studio One)                  |
@@ -332,3 +377,16 @@ on either.
 | `src/lib/studio/midi/notes.ts`              | A2: the note edits over a sequence and a selection of ids, the selection helpers, and the velocity rule.                                                               |
 | `src/lib/studio/midi/roll.ts`               | A2: the note editor's roll in ticks over a clip's window: its viewport, zoom, pan, hit test and the point under a pointer.                                             |
 | `src/lib/roll-geometry.ts`                  | A2: a piano roll's geometry in the caller's time unit, moved from the Lab's `transcription-roll.ts`, which the Lab's bench now draws with in seconds.                  |
+
+## 5. Where D's engine lives
+
+| File                                                         | What it answers                                                                                                    |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
+| `src/lib/studio/midi/roll-rows.ts`                           | The roll's rows panned and zoomed between notes 0 and 127, the pitch under a point, and the window's notes cached. |
+| `src/features/studio/notes/edit-engine.ts`                   | `stepNoteEditor` and `createNoteEditState`: one input and its context in, a state and its effects out.             |
+| `src/features/studio/notes/edit-view.ts`                     | `noteEditView`: the notes, selection, grips, marquee, hover, readout and cursor to draw.                           |
+| `src/features/studio/notes/edit-pointer.ts`                  | Presses, drags, taps, a second finger's pinch, cancels, edge scrolling and hover.                                  |
+| `src/features/studio/notes/edit-press.ts`, `edit-drag.ts`    | What a press starts, by tool, pointer and what is under it, and what a drag drafts.                                |
+| `src/features/studio/notes/edit-pick.ts`, `edit-velocity.ts` | The note, grip or lollipop a press takes, sized for a finger, and velocity in 127 steps.                           |
+| `src/features/studio/notes/edit-snap.ts`, `edit-viewport.ts` | The grid in ticks, and how fingers, the wheel and edges move the roll.                                             |
+| `src/features/studio/notes/edit-commands.ts`, `edit-keys.ts` | The toolbar's edits and the keys that call them.                                                                   |
