@@ -619,16 +619,21 @@ export function initSing(o: SingOptions = {}): void {
     view.focusText(q('#singStatus'))
   }
 
-  /** Start: the microphone's question, unless sound is off, when it asks for nothing and says why. */
-  function start(): void {
+  /**
+   * A run of set `s`, from Start, Start again, Again or Swap parts: the
+   * microphone's question, unless sound is off, when it asks for nothing
+   * and says why ("Start waits for sound", WEB-SPEC, Edge cases).
+   */
+  function begin(s: SetId): void {
     const silent = !Sound.canPlay({ needsSound: true })
     view.startHint(silent ? startSoundOff(voiceNow()) : '')
     if (silent) {
-      // said on the status line too: Start under the sing-along has no hint of its own
+      // said on the status line too: Start under the sing-along, and the
+      // buttons after a run, have no hint of their own
       view.status(startSoundOff(voiceNow()))
       return
     }
-    void runSet(set)
+    void runSet(s)
   }
 
   /** After the voice choice: listening only, the headphones check, or where the visit had got to. */
@@ -672,12 +677,18 @@ export function initSing(o: SingOptions = {}): void {
         fn(b)
       })
   }
-  on('[data-sing="start"]', start)
-  on('[data-sing="again"]', () => void runSet(set))
-  on('[data-sing="restart"]', () => void runSet(set))
+  on('[data-sing="start"]', () => {
+    begin(set)
+  })
+  on('[data-sing="again"]', () => {
+    begin(set)
+  })
+  on('[data-sing="restart"]', () => {
+    begin(set)
+  })
   on('[data-sing="swap"]', () => {
     if (mode === 'along') void runAlong('swap')
-    else void runSet('swap')
+    else begin('swap')
   })
   on('[data-sing="along"]', () => void runAlong(set))
   on('[data-sing="along-again"]', () => {
