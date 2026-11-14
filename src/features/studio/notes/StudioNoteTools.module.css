@@ -1,0 +1,167 @@
+/* Studio note tools — the note editor's toolbar, in the Studio's buttons:
+   the tools as one segmented control, the grid as a menu, the selection's
+   edits as icon buttons; 44 px targets on a phone. */
+.tools {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+.cluster {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.button {
+  appearance: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 11px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 13px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease-out,
+    color 0.12s ease-out;
+}
+.button svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+}
+.iconOnly {
+  width: 34px;
+  padding: 0;
+  border-color: transparent;
+  color: var(--studio-text-2);
+}
+.button:disabled {
+  cursor: default;
+  opacity: 0.38;
+}
+.button:focus-visible,
+.select:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
+}
+@media (hover: hover) {
+  .button:hover:not(:disabled) {
+    background: var(--studio-hover);
+    color: var(--studio-text);
+  }
+}
+
+/* Select and Draw: one control, the chosen tool raised. */
+.segment {
+  display: inline-flex;
+  gap: 2px;
+  padding: 3px;
+  border: 1px solid var(--studio-line);
+  border-radius: 10px;
+  background: var(--studio-control);
+}
+.segment .button {
+  min-height: 28px;
+  border-color: transparent;
+  border-radius: 7px;
+  color: var(--studio-text-2);
+}
+.segment .button[aria-pressed='true'] {
+  background: var(--studio-raised);
+  color: var(--studio-text);
+  font-weight: 600;
+  box-shadow: 0 1px 3px rgb(0 0 0 / 0.22);
+}
+@media (hover: hover) {
+  .segment .button[aria-pressed='true']:hover {
+    background: var(--studio-raised);
+  }
+}
+
+/* The grid: its magnet, its word and a menu of note values. */
+.snap {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 34px;
+  padding: 0 4px 0 10px;
+  border: 1px solid var(--studio-line-strong);
+  border-radius: 8px;
+  color: var(--studio-text);
+  font-size: 13px;
+  font-weight: 500;
+}
+.snap svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  color: var(--studio-text-2);
+}
+.select {
+  appearance: none;
+  min-height: 28px;
+  padding: 0 22px 0 6px;
+  border: 0;
+  border-radius: 6px;
+  background: var(--studio-control)
+    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='10' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='3' stroke-linecap='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E")
+    no-repeat right 6px center;
+  color: var(--studio-text);
+  /* 16 px on a phone keeps iOS from zooming the page as the menu opens. */
+  font: inherit;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* The selection's velocity: softer, the value, louder. */
+.velocity {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding-left: 6px;
+  color: var(--studio-text-2);
+}
+.velocity > svg {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin-right: 2px;
+}
+.value {
+  min-width: 30px;
+  color: var(--studio-text);
+  font-size: 13px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+/* A phone: icons alone, and every target a finger's 44 px. */
+.compact {
+  gap: 4px;
+}
+.compact .button,
+.compact .segment .button {
+  min-width: 44px;
+  min-height: 44px;
+}
+.compact .snap {
+  min-height: 44px;
+}
+.compact .select {
+  min-height: 36px;
+  font-size: 16px;
+}

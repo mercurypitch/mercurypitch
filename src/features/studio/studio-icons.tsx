@@ -343,3 +343,59 @@ export const CompPasses: Component<{ size?: number }> = (p) => (
     <path d="M3 6h6v12h6v-6h6" stroke-width="2.5" />
   </svg>
 )
+
+/** A 24-unit outline icon's own attributes, `size` pixels square. */
+const outline = (size: number | undefined) => ({
+  viewBox: '0 0 24 24',
+  fill: 'none',
+  stroke: 'currentColor',
+  'stroke-width': '2',
+  'stroke-linecap': 'round' as const,
+  'stroke-linejoin': 'round' as const,
+  width: size ?? 24,
+  height: size ?? 24,
+  'aria-hidden': true as const,
+})
+
+// Pointer arrow — the note editor's Select tool.
+export const PointerArrow: Component<{ size?: number }> = (p) => (
+  <svg {...outline(p.size)}>
+    <path d="M5 3l6.5 17 2.6-7.4L21.5 10z" />
+  </svg>
+)
+
+// Lines pulled to a bar — Quantize: the notes' starts moved onto the grid.
+export const QuantizeLines: Component<{ size?: number }> = (p) => (
+  <svg {...outline(p.size)}>
+    <path d="M4 6h8" />
+    <path d="M4 12h12" />
+    <path d="M4 18h6" />
+    <path d="M20 3v18" />
+  </svg>
+)
+
+// Two chevrons up — up an octave.
+export const ChevronsUp: Component<{ size?: number }> = (p) => (
+  <svg {...outline(p.size)}>
+    <path d="m17 11-5-5-5 5" />
+    <path d="m17 18-5-5-5 5" />
+  </svg>
+)
+
+// Two chevrons down — down an octave.
+export const ChevronsDown: Component<{ size?: number }> = (p) => (
+  <svg {...outline(p.size)}>
+    <path d="m7 6 5 5 5-5" />
+    <path d="m7 13 5 5 5-5" />
+  </svg>
+)
+
+// Bars of rising height — velocity, how hard a note was played.
+export const VelocityBars: Component<{ size?: number }> = (p) => (
+  <svg {...outline(p.size)}>
+    <path d="M5 20v-6" />
+    <path d="M10 20V9" />
+    <path d="M15 20v-8" />
+    <path d="M20 20V5" />
+  </svg>
+)

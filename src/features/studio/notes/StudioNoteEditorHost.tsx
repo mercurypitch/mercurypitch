@@ -39,6 +39,8 @@ export function StudioNoteEditorHost(props: StudioNoteEditorHostProps) {
                 phone={props.phone}
                 tablet={props.tablet}
                 transport={props.transport}
+                dispatch={props.dispatch}
+                writable={props.writable}
               />
             )}
           </Show>

@@ -9,6 +9,7 @@
 // desk's is; whether it fills the arrangement is not kept, so the editor
 // always opens as a drawer under the lanes.
 import { batch, createEffect, createMemo, createSignal } from 'solid-js'
+import type { StudioNoteClipboard } from '@/lib/studio/midi/notes'
 import type { StudioClip, StudioProject } from '@/lib/studio/model/types'
 
 export const STUDIO_NOTE_EDITOR_HEIGHT_KEY =
@@ -51,6 +52,10 @@ export function createStudioNoteEditorState(
     projectId: string
   } | null>(null)
   const [expanded, setExpanded] = createSignal(false)
+  // Notes copied in one clip's editor paste in the next one opened.
+  const [clipboard, setClipboard] = createSignal<StudioNoteClipboard | null>(
+    null,
+  )
   const [height, setHeightSignal] = createSignal(storedHeight())
 
   /** The open clip as the song holds it now; null once it is gone or plays no MIDI. */
@@ -99,6 +104,9 @@ export function createStudioNoteEditorState(
     /** The drawer's chosen height in CSS pixels; null for the automatic one. */
     height,
     setHeight,
+    /** Notes copied, kept while the Studio is open, from one clip's editor to the next. */
+    clipboard,
+    setClipboard,
   }
 }
 
