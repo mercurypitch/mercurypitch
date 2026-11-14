@@ -259,6 +259,30 @@ export async function encodeCanonicalPcm(
     if (steps !== null)
       return encodePcm16(audio, channels, steps, limits, options.signal)
   }
+  const bytes = await float32Bytes(audio, limits, options.signal)
+  return new Blob([bytes], { type: CANONICAL_PCM_MIME })
+}
+
+/**
+ * The canonical copy at full quality as bytes, not a Blob: audio held in
+ * memory (a MIDI render's preview) hashes them in place and reads them
+ * back without another copy.
+ */
+export async function encodeCanonicalPcmBytes(
+  audio: PcmAudio,
+  options: CanonicalPcmOptions = {},
+): Promise<ArrayBuffer> {
+  checkImportCancelled(options.signal)
+  const limits = importLimits(options.limits)
+  validatePcmDimensions(audio, limits)
+  return float32Bytes(audio, limits, options.signal)
+}
+
+async function float32Bytes(
+  audio: PcmAudio,
+  limits: StudioImportLimits,
+  signal?: AbortSignal,
+): Promise<ArrayBuffer> {
   const size = canonicalPcmByteLength(
     audio.length,
     audio.numberOfChannels,
@@ -277,11 +301,11 @@ export async function encodeCanonicalPcm(
       await writeChannel(
         samples,
         new Float32Array(bytes, offset, audio.length),
-        options.signal,
+        signal,
       )
-    else await writeChannelByValue(samples, view, offset, options.signal)
+    else await writeChannelByValue(samples, view, offset, signal)
   }
-  return new Blob([bytes], { type: CANONICAL_PCM_MIME })
+  return bytes
 }
 
 function validateHeader(
