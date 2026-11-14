@@ -305,6 +305,65 @@ its context in, a state and its effects out. Its scripts are the tests.
 - **Drawn notes take the velocity of the last note pressed**, 100 of 127
   until one is, so a note added to a soft take sounds like its neighbours.
 
+### Design decisions made while building B
+
+The render service (B2):
+
+- **A clip is stale when its key no longer names its notes on its lane's
+  sound** (`clip-keys.ts`). What a lane plays MIDI as moved to
+  `src/lib/studio/midi/lane-sound.ts`, so an arm, a render, a key and a
+  command read it in one place. A lane renamed or given a drum instrument
+  makes its MIDI clips stale, as a move to a drum lane does.
+- **Keys are hashed once per content, not once per object.** Every command
+  and every undo hands back a whole new song, because validation clones it,
+  sequences included. Keys are cached per sequence object (a WeakMap), and a
+  new object that holds the same notes as the last one seen under its id
+  takes that one's keys after a plain comparison of fields. The last object
+  per id is held weakly. An edit elsewhere in a song with a 10,000-note
+  sequence hashes nothing again.
+- **A draft is hashed once it rests.** `preview()` may come with every
+  pointer move; its key is computed only when no draft has come for a
+  quarter second, and the render starts then.
+- **`set-midi-render` swaps only stale clips.** It names an asset and a
+  key. A clip whose audio already matches its notes keeps it, so a take
+  recorded live is never replaced by a render of the same notes. A clip
+  whose notes changed while the render ran keeps its audio, and an
+  amendment that changes nothing keeps no asset. The validator refuses a
+  render shorter than a clip's window or passes.
+- **A preview is prepared as the asset it becomes.** The same loudness gain
+  a take of those samples gets (`sourcePreparation`), a hashed float32
+  canonical copy, and the id `midi-render-<key>`, so keeping it changes
+  nothing heard. The transport's graph holds buffers by asset id, so an id
+  is never used again for other audio. A preview holds its bytes and each
+  read gets a Blob of them; the encoder hands them over so the hash reads
+  them in place.
+- **The transport follows the song by object, not by revision.** A preview
+  landing changes the transport's song without an edit. A run cannot
+  replan onto audio it does not hold, so it hands over to a run built with
+  the preview, on the same frame, about a build after the render.
+- **A render is kept the way a take is kept.** A 16-bit WAV goes through
+  the importer's preparation with `recording` provenance and its storage
+  choice, takes its turn with imports (one preparation runs at a time), but
+  shows no import notice and does not hold editing. Identical audio reuses
+  its asset. The asset keeps its clip's name, so the clip keeps its label.
+- **A song opening keeps what it was left stale with,** not an edit made a
+  moment later, which waits for its own moment.
+- **A render is cut at the Studio's longest take,** five minutes. A take
+  can be that long, and keeping a render with its tail past it would be
+  refused; the cut is past every clip's window.
+- **Failure.** A key is tried at most twice a session (the page's), the
+  second time only when a keep asks for it or when a clip wants the key
+  again after letting it go. The lane says, for example, "Keys still plays
+  its earlier audio: Studio couldn't render the new notes. Studio couldn't
+  start the drum kit for this render." A refusal by the memory budget is a
+  failure like any other.
+- **An export keeps first.** It waits for the keeps before it takes the
+  song, says "Rendering edited MIDI clips first…", and takes the revision
+  the keeps leave. Cancel works while it waits.
+- **The lane freezer leaves a waiting lane alone.** A lane whose MIDI clip
+  waits for its render to be kept is not rendered ahead until it is kept,
+  and the Sound panel says how many lanes wait.
+
 ## 3. How the big DAWs do it (research, 9 Nov 2026)
 
 |                       | REAPER                                        | FL Studio                                | Ableton Live                    | DAWproject (Bitwig, Studio One)                  |
@@ -390,3 +449,19 @@ on either.
 | `src/features/studio/notes/edit-pick.ts`, `edit-velocity.ts` | The note, grip or lollipop a press takes, sized for a finger, and velocity in 127 steps.                           |
 | `src/features/studio/notes/edit-snap.ts`, `edit-viewport.ts` | The grid in ticks, and how fingers, the wheel and edges move the roll.                                             |
 | `src/features/studio/notes/edit-commands.ts`, `edit-keys.ts` | The toolbar's edits and the keys that call them.                                                                   |
+
+## 6. Where B lives
+
+| File                                                    | What it answers                                                                                           |
+| ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
+| `src/features/studio/midi/render/render-studio-midi.ts` | B1: a sequence rendered offline through its lane's own sound, as the audio its clip plays.                |
+| `src/lib/studio/midi/clip-keys.ts`                      | B2: which MIDI clips are stale, and each sequence's key, hashed once per content.                         |
+| `src/lib/studio/midi/lane-sound.ts`                     | B2: what a lane plays MIDI as: the kit or the piano.                                                      |
+| `src/lib/studio/model/midi-render-commands.ts`          | B2: `set-midi-render`: a kept render swapped into the stale clips with its key.                           |
+| `src/features/studio/controller/edit-commits.ts`        | B2: commit, amend, undo and redo; undo and redo counted.                                                  |
+| `src/features/studio/controller/imports.ts`             | B2: `addRender`: a render kept as a take is, in the imports' turn.                                        |
+| `src/features/studio/midi/midi-render-service.ts`       | B2: previews, debouncing, aborting, keeping, failures and the transport's snapshot.                       |
+| `src/features/studio/midi/midi-preview-audio.ts`        | B2: a render held in memory as an asset the transport plays.                                              |
+| `src/features/studio/midi/midi-preview-snapshot.ts`     | B2: the song as the transport plays it, stale clips on their previews.                                    |
+| `src/features/studio/midi/midi-render-editor.ts`        | B2: the note editor's API: `preview`, `editorClosed`, `renderState`, and its context.                     |
+| `src/features/studio/midi/useStudioMidiRenders.ts`      | B2: the service on the open song: the transport's song and reader, the export's wait, the notice, a hook. |
