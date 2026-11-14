@@ -129,6 +129,25 @@ export function fitStudioRollRows(
   })
 }
 
+/**
+ * The viewport at a new height with its rows as tall as they were and its
+ * top row where it was: a drawer pulled taller shows more rows below, not
+ * bigger ones. Kept on the keyboard.
+ */
+export function resizeStudioRollRows(
+  viewport: RollViewport,
+  height: number,
+): RollViewport {
+  const row = rowHeight(viewport)
+  if (height <= 0 || row <= 0) return { ...viewport, height }
+  const rows = Math.min(ALL_ROWS, height / row)
+  return onKeyboard({
+    ...viewport,
+    height,
+    minMidi: viewport.maxMidi - rows + 1,
+  })
+}
+
 interface WindowNotes {
   readonly startTick: number
   readonly endTick: number
