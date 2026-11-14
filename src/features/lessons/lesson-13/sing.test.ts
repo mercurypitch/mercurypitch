@@ -19,7 +19,7 @@
 // strip is dark while the take is open; nothing is stored but `fyp-voice`
 // and `fyp-l13-warmup`.
 
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { VisitEnding } from '@/features/lessons/kit/comfort'
 import type * as HoldRun from '@/features/lessons/kit/hold-run'
@@ -187,6 +187,13 @@ async function takeWith(r: HoldReading | null, again = false): Promise<void> {
 }
 
 const feel = (f: string): void => btn(`[data-feel="${f}"]`).click()
+
+// Start loads the hold reader on a visit's first take (sing.ts `openMic`).
+// It is loaded here first, so no test's wait for a hold spans a cold load of
+// it: on a cold cache that load once took 1.2 s, past the wait's one second.
+beforeAll(async () => {
+  await import('@/features/lessons/kit/hold-take')
+})
 
 beforeEach(() => {
   localStorage.clear()
