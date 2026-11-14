@@ -559,7 +559,7 @@ on either.
 | `src/features/studio/notes/edit-snap.ts`, `edit-viewport.ts` | The grid in ticks, and how fingers, the wheel and edges move the roll.                                             |
 | `src/features/studio/notes/edit-commands.ts`, `edit-keys.ts` | The toolbar's edits and the keys that call them.                                                                   |
 
-## 6. Where B lives
+## 7. Where B lives
 
 | File                                                    | What it answers                                                                                           |
 | ------------------------------------------------------- | --------------------------------------------------------------------------------------------------------- |
