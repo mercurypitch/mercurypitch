@@ -213,12 +213,16 @@
 .held-line[hidden] {
   display: none;
 }
-/* a play in a step's sentence wraps its words at a phone's width, as
-   Lesson 25's do */
-.steps-text .btn.inline {
+/* a play in a step's sentence, or in the reveal's, wraps its words at a
+   phone's width, as Lesson 25's do: the reveal's "Play the copy that stays
+   in the key" is wider than its card below 390 px */
+.steps-text .btn.inline,
+.reveal .btn.inline {
   max-width: 100%;
   white-space: normal;
   text-align: left;
+  line-height: 1.25;
+  padding-block: 8px;
 }
 /* Tavi's line in Step 3, her still beside it, as Lesson 23's steps have */
 .l26-says {

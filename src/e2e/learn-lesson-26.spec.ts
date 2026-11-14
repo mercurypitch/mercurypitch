@@ -576,6 +576,16 @@ for (const width of [390, 344]) {
       // Act, Assert
       counts.hero = await expectTargets(page, '.hero-plays', 'The hero')
       counts.predict = await expectTargets(page, '#predict', 'The predict')
+      // the reveal's play wraps its words inside its card, never past it
+      const past = await page
+        .locator('#predict .reveal [data-play="key"]')
+        .evaluate((b) => {
+          const card = b.closest('.reveal')?.getBoundingClientRect()
+          return card === undefined
+            ? Number.NaN
+            : Math.round(b.getBoundingClientRect().right - card.right)
+        })
+      expect(past).toBeLessThanOrEqual(0)
       await openStep(page, '/learn/26', 1)
       for (let n = 1; n <= 4; n++) {
         if (n > 1) await nextStep(page, n)
