@@ -325,8 +325,11 @@ tools and keys on top without changing what C draws with.
   on its top edge is kept on the device; Expand is not, so the editor always
   opens as a drawer.
 - **The editor loads on its first open.** The roll, its drawing and the
-  General MIDI names load with `import()`; Drum Night's first paint stays
-  at 522,828 bytes.
+  General MIDI names load with `import()`. Every page's first paint is
+  main's, byte for byte but for the build's id: the editor names its notes
+  itself (`notes/note-names.ts`), because two exports of `lib/note-utils`,
+  a chunk the rooms load before their first paint, grew it by 49 bytes
+  when the editor first used them.
 - **The focus follows the editor**: into it on open, back to the clip on
   close, unless it went somewhere on purpose. Escape closes it only while
   the focus is inside it.
@@ -534,6 +537,7 @@ on either.
 | `src/features/studio/notes/note-roll-theme.ts`           | The roll's colours read from the editor's stylesheet.                                                                 |
 | `src/features/studio/notes/roll-navigation.ts`           | The wheel, a trackpad, one finger and a pinch over the roll.                                                          |
 | `src/features/studio/notes/note-editor-words.ts`         | The roll's text alternative and the status line.                                                                      |
+| `src/features/studio/notes/note-names.ts`                | A pitch as the editor names it, kept out of the rooms' first paint.                                                   |
 
 ## 6. Where D's engine lives
 
