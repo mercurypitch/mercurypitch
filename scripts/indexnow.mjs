@@ -11,7 +11,7 @@
 // fetches that file to check that a submission came from the site. This
 // script finds the key by that file, so the key is written down once.
 //
-// What it sends:
+// What it sends, one of:
 //   --since <git-ref>  The sitemap URLs added, removed or given a new
 //                      <lastmod> since that commit. The release workflow runs
 //                      this after a production deploy, against the previous
@@ -19,8 +19,11 @@
 //                      was not live then, so this is the first submission and
 //                      it sends every sitemap URL.
 //   <url> ...          Exactly these URLs, e.g. a page fixed by hand.
-//   (nothing)          Every URL in the sitemap.
-// --dry-run prints the request instead of sending it.
+//   --all              Every URL in the sitemap.
+// --dry-run prints the request instead of sending it, and --help the usage.
+// A run that names none of the three sends nothing and says so, and an
+// option it does not know is an error, never ignored: a bare run used to
+// send the whole sitemap, so a mistyped command did too.
 //
 // Re-sending unchanged URLs on every release is noise
 // (docs/plans/search-and-answer-engines.md §3.4), so a page's <lastmod> is
@@ -33,7 +36,7 @@
 // feature's page (/studio-night first) while VITE_EXPERIMENTAL_FEATURES is
 // off (tools/experimental-features.ts).
 //
-// Usage: node scripts/indexnow.mjs [--dry-run] [--since <git-ref> | <url> ...]
+// Usage: node scripts/indexnow.mjs [--dry-run] (--since <git-ref> | --all | <url> ...)
 
 import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync } from 'node:fs'
@@ -203,27 +206,63 @@ export function urlsSince(
   return changedUrls(before, now)
 }
 
+export const USAGE = `Usage: node scripts/indexnow.mjs [--dry-run] (--since <git-ref> | --all | <url> ...)
+  --since <git-ref>  the sitemap URLs added, removed or re-dated since that commit
+  --all              every URL in the sitemap
+  <url> ...          exactly these URLs
+  --dry-run          print the request instead of sending it
+  --help             print this`
+
+const OPTIONS = new Set(['--dry-run', '--since', '--all', '--help'])
+
+/** What the command line asks for. It refuses an option it does not know,
+ *  and a run that names nothing to send: only --all sends every URL. */
 export function parseArgs(args) {
+  const unknown = args.filter((arg) => arg.startsWith('-') && !OPTIONS.has(arg))
+  if (unknown.length > 0) {
+    throw new Error(`Unknown option: ${unknown.join(', ')}\n${USAGE}`)
+  }
+  const help = args.includes('--help')
   const dryRun = args.includes('--dry-run')
+  const all = args.includes('--all')
   const sinceAt = args.indexOf('--since')
   const since = sinceAt === -1 ? undefined : args[sinceAt + 1]
-  if (sinceAt !== -1 && (since === undefined || since.startsWith('--'))) {
+  if (sinceAt !== -1 && (since === undefined || since.startsWith('-'))) {
     throw new Error('--since needs a git ref, e.g. --since v0.9.21')
   }
   const urls = args.filter(
     (arg, index) =>
-      !arg.startsWith('--') && (sinceAt === -1 || index !== sinceAt + 1),
+      !arg.startsWith('-') && (sinceAt === -1 || index !== sinceAt + 1),
   )
-  if (since !== undefined && urls.length > 0) {
-    throw new Error('Pass --since or URLs, not both.')
+  const notUrls = urls.filter((url) => !URL.canParse(url))
+  if (notUrls.length > 0) throw new Error(`Not a URL: ${notUrls.join(', ')}`)
+  if (help) return { help, dryRun, all, since, urls }
+  const named = [since !== undefined, all, urls.length > 0].filter(Boolean)
+  if (named.length > 1) {
+    throw new Error('Pass only one of --since, --all and URLs.')
   }
-  return { dryRun, since, urls }
+  if (named.length === 0) {
+    throw new Error(
+      `Nothing to send: pass --since <git-ref>, URLs, or --all for every sitemap URL.\n${USAGE}`,
+    )
+  }
+  return { help, dryRun, all, since, urls }
 }
 
 const invokedPath = process.argv[1] ? resolve(process.argv[1]) : ''
 if (invokedPath === fileURLToPath(import.meta.url)) {
   try {
-    const { dryRun, since, urls: given } = parseArgs(process.argv.slice(2))
+    const {
+      help,
+      dryRun,
+      all,
+      since,
+      urls: given,
+    } = parseArgs(process.argv.slice(2))
+    if (help) {
+      console.log(USAGE)
+      process.exit(0)
+    }
     if (since !== undefined && !refExists(since)) {
       throw new Error(`--since ${since} is not a commit in this checkout.`)
     }
@@ -231,11 +270,15 @@ if (invokedPath === fileURLToPath(import.meta.url)) {
     const urls =
       since !== undefined
         ? urlsSince(since, key)
-        : given.length > 0
-          ? given
-          : [...listedEntries(currentSitemap(), currentEnvProduction()).keys()]
+        : all
+          ? [...listedEntries(currentSitemap(), currentEnvProduction()).keys()]
+          : given
     if (urls.length === 0) {
-      console.log(`[indexnow] Nothing changed in the sitemap since ${since}.`)
+      console.log(
+        since !== undefined
+          ? `[indexnow] Nothing changed in the sitemap since ${since}.`
+          : '[indexnow] The sitemap lists no URL.',
+      )
       process.exit(0)
     }
     const body = indexNowRequest(key, urls)

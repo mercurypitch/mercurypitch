@@ -184,8 +184,11 @@ Amazonbot the moment a URL changes. Google does not use it.
   sent as an addition or a removal.
 - So `<lastmod>` is the record of change: bump it when a page's words change
   (§4.3). Re-sending unchanged URLs on every release is noise.
-- By hand, `pnpm indexnow <url> ...` sends exactly those URLs, and
-  `--dry-run` prints the request instead.
+- By hand, `pnpm indexnow <url> ...` sends exactly those URLs,
+  `pnpm indexnow --all` sends every URL the sitemap lists, and `--dry-run`
+  prints the request instead. A bare `pnpm indexnow` sends nothing, and an
+  option the script does not know is an error: until November 2026 both sent
+  the whole sitemap.
 
 ### 3.5 Measurement **[open]**
 
