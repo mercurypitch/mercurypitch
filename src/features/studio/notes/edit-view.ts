@@ -13,6 +13,7 @@ import type { RollRect, RollViewport } from '@/lib/roll-geometry'
 import { noteRect, timeToX } from '@/lib/roll-geometry'
 import { studioRollYOf, studioWindowRollNotes, } from '@/lib/studio/midi/roll-rows'
 import type { StudioNote } from '@/lib/studio/model/types'
+import { holdGesture } from './edit-hold'
 import { noteGripRect } from './edit-pick'
 import { singleGesture } from './edit-pointer'
 import type { NoteDragIntent, NoteEditContext, NoteEditHover, NoteEditState, NoteMarquee, NoteSingleGesture, NoteVelocityReadout, } from './edit-types'
@@ -97,7 +98,7 @@ export function noteEditView(
   ctx: NoteEditContext,
 ): NoteEditView {
   const gesture = singleGesture(state)
-  const draft = gesture?.draft ?? null
+  const draft = gesture?.draft ?? holdGesture(state)?.draft ?? null
   const notes = draft?.sequence?.notes ?? ctx.sequence.notes
   const selection = draft?.selection ?? state.selection
   return {

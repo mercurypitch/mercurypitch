@@ -117,6 +117,8 @@ export type NoteEditInput =
   | { readonly type: 'frame'; readonly time: number }
   | ({ readonly type: 'wheel' } & NoteEditWheel)
   | ({ readonly type: 'key' } & NoteEditKey)
+  /** A key let go: the last held arrow commits its move. */
+  | { readonly type: 'keyup'; readonly key: string }
   | { readonly type: 'command'; readonly command: NoteEditCommand }
 
 /** One finished edit: the sequence's notes after it, for one `set-sequence-notes`. */
@@ -224,7 +226,17 @@ export interface NotePinchGesture {
   readonly pointerIds: readonly [number, number]
 }
 
-export type NoteGesture = NoteSingleGesture | NotePinchGesture
+/** Arrows held down: their moves drafted from the notes as they were at the first press, committed when the last is let go. */
+export interface NoteHoldGesture {
+  readonly kind: 'hold'
+  readonly base: StudioNoteSet
+  readonly before: readonly number[]
+  /** The arrows down now, by KeyboardEvent.key. */
+  readonly held: readonly string[]
+  readonly draft: NoteDraft
+}
+
+export type NoteGesture = NoteSingleGesture | NotePinchGesture | NoteHoldGesture
 
 /** A finger on the editor, where it is now. */
 export interface NoteTouch {

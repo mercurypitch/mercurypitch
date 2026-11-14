@@ -53,12 +53,11 @@ export function singleGesture(state: NoteEditState): NoteSingleGesture | null {
   return state.gesture?.kind === 'single' ? state.gesture : null
 }
 
-/** A single-pointer gesture let go and undone: no draft, the selection it found. */
+/** A gesture that drafts, a pointer's or held arrows', let go and undone: no draft, the selection it found. A pinch drafts nothing. */
 export function revertNoteGesture(state: NoteEditState): NoteEditState {
-  const gesture = singleGesture(state)
-  return gesture === null
-    ? state
-    : { ...state, gesture: null, selection: gesture.before }
+  const gesture = state.gesture
+  if (gesture === null || gesture.kind === 'pinch') return state
+  return { ...state, gesture: null, selection: gesture.before }
 }
 
 function hasTouch(state: NoteEditState, pointerId: number): boolean {
@@ -179,7 +178,8 @@ function primaryPress(
 function pinchFrom(state: NoteEditState): NoteEditState {
   const owner = state.gesture
   if (owner?.kind === 'pinch') return state
-  if (owner !== null && owner.anchor.pointerType !== 'touch') return state
+  if (owner?.kind === 'single' && owner.anchor.pointerType !== 'touch')
+    return state
   const [a, b] = state.touches
   return {
     ...revertNoteGesture(state),
@@ -331,7 +331,8 @@ export function notePointerMove(
   const moved =
     pointer.pointerType === 'touch' ? movedTouch(state, pointer) : state
   const owner = moved.gesture
-  if (owner === null) return quietStep(hovered(moved, ctx, pointer))
+  if (owner === null || owner.kind === 'hold')
+    return quietStep(hovered(moved, ctx, pointer))
   if (owner.kind === 'pinch')
     return owner.pointerIds.includes(pointer.pointerId)
       ? pinchTo(state, moved, ctx, owner)
@@ -439,9 +440,10 @@ export function notePointerUp(
         ? afterPinch(lifted, ctx, pointer.time)
         : lifted,
     )
-  if (owner?.anchor.pointerId !== pointer.pointerId) return quietStep(lifted)
-  const moved = dragTo(lifted, ctx, owner, pointer)
-  const gesture = singleGesture(moved.state) ?? owner
+  const single = singleGesture(lifted)
+  if (single?.anchor.pointerId !== pointer.pointerId) return quietStep(lifted)
+  const moved = dragTo(lifted, ctx, single, pointer)
+  const gesture = singleGesture(moved.state) ?? single
   const done = gesture.dragging
     ? finishDrag(moved.state, gesture, pointer.time)
     : finishTap(moved.state, gesture)
@@ -463,7 +465,7 @@ export function notePointerCancel(
         ? { ...lifted, gesture: null }
         : lifted,
     )
-  if (owner?.anchor.pointerId === pointer.pointerId)
+  if (singleGesture(lifted)?.anchor.pointerId === pointer.pointerId)
     return quietStep(revertNoteGesture(lifted))
   return quietStep(lifted)
 }

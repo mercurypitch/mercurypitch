@@ -1,9 +1,10 @@
 // Studio note editing keys and commands — each key while the editor has the focus, one commit a press: arrows move by a grid step or a semitone (Shift a bar or an octave, Alt a pixel), Delete and Backspace delete, Ctrl or Cmd with D, A, C, X and V duplicate, select all, copy, cut and paste, Escape undoes, clears and then closes; undo and redo pass on; and the toolbar's quantize, transpose, velocity, snap and tool.
 import { describe, expect, it } from 'vitest'
 import { NOTE_NO_ROOM_AFTER, NOTE_NO_ROOM_PASTE } from './edit-commands'
-import { commitsOf, key, mouse, note, noteHost, noteOf, noticesOf, ONE_NOTE_CLIPBOARD, play, } from './edit-script.fixture'
+import { commitsOf, key, keyup, mouse, note, noteHost, noteOf, noticesOf, ONE_NOTE_CLIPBOARD, play, press, } from './edit-script.fixture'
 import type { NoteEditCommand } from './edit-types'
 import { noteVelocityValue } from './edit-velocity'
+import { noteEditView } from './edit-view'
 
 // A middle C an eighth from beat 2, an E4 sixteenth on beat 3 and a G4
 // eighth on beat 4, in a clip of two bars.
@@ -31,27 +32,90 @@ describe('the arrows', () => {
     ['ArrowRight', { shift: true }, { startTick: 4800 }],
     ['ArrowRight', { alt: true }, { startTick: 964 }],
   ] as const)(
-    'move the selection with %s %o, in one commit',
+    'move the selection with %s %o, in one commit when let go',
     (name, extra, moved) => {
       // Act
-      const host = play(editor(), key(name, extra))
+      const host = play(editor(), ...press(name, extra))
 
       // Assert
       expect(noteOf(host, 1)).toMatchObject(moved)
       expect(commitsOf(host)).toHaveLength(1)
-      expect(host.handled).toEqual([true])
+      expect(host.handled).toEqual([true, true])
     },
   )
 
-  it('commit once a press, a held arrow once a repeat', () => {
+  it("draft a held arrow's repeats, and commit them as one move when it is let go", () => {
+    // Arrange: a press and two of the browser's repeats.
     const host = play(
       editor(),
       key('ArrowRight'),
-      key('ArrowRight'),
+      key('ArrowRight', { repeat: true }),
       key('ArrowRight', { repeat: true }),
     )
-    expect(commitsOf(host)).toHaveLength(3)
+    const held = noteEditView(host.state, host.ctx)
+
+    // Act
+    play(host, keyup('ArrowRight'))
+
+    // Assert
+    expect(held.drafting).toBe(true)
+    expect(held.notes.find((each) => each.id === 1)?.startTick).toBe(1680)
+    expect(commitsOf(host)).toHaveLength(1)
     expect(noteOf(host, 1)?.startTick).toBe(1680)
+  })
+
+  it('make one edit of two arrows held together', () => {
+    const host = play(
+      editor(),
+      key('ArrowUp'),
+      key('ArrowRight'),
+      keyup('ArrowUp'),
+    )
+    const first = commitsOf(host).length
+    play(host, keyup('ArrowRight'))
+    expect(first).toBe(0)
+    expect(commitsOf(host)).toHaveLength(1)
+    expect(noteOf(host, 1)).toMatchObject({ pitch: 61, startTick: 1200 })
+  })
+
+  it('put the notes back on Escape, or when the editor loses the focus, while held', () => {
+    const escaped = play(
+      editor(),
+      key('ArrowRight'),
+      key('Escape'),
+      keyup('ArrowRight'),
+    )
+    const blurred = play(
+      editor(),
+      key('ArrowUp'),
+      { type: 'abort' },
+      keyup('ArrowUp'),
+    )
+    expect(commitsOf(escaped)).toEqual([])
+    expect(commitsOf(blurred)).toEqual([])
+    expect(escaped.state.selection).toEqual([1])
+  })
+
+  it('commit the held move before another key acts on it', () => {
+    // Act: right, then Delete while it is held.
+    const host = play(editor(), key('ArrowRight'), key('Delete'))
+
+    // Assert: the move, then the deletion of the moved note.
+    const commits = commitsOf(host)
+    expect(commits).toHaveLength(2)
+    expect(commits[0].notes.find((each) => each.id === 1)?.startTick).toBe(1200)
+    expect(commits[1].notes.map((each) => each.id)).toEqual([2, 3])
+  })
+
+  it('commit the held move when the pointer presses, and start nothing with that press', () => {
+    const host = play(
+      editor(),
+      key('ArrowRight'),
+      mouse('down', 510, 150),
+      mouse('up', 510, 150),
+    )
+    expect(commitsOf(host)).toHaveLength(1)
+    expect(host.state.selection).toEqual([1])
   })
 
   it("pass on with nothing selected, but keep Alt with them, the browser's Back", () => {
@@ -276,7 +340,7 @@ describe('the toolbar', () => {
     const host = play(
       editor([1]),
       command({ type: 'snap', snap: '1/8' }),
-      key('ArrowRight'),
+      ...press('ArrowRight'),
     )
     expect(noteOf(host, 1)?.startTick).toBe(1440)
   })
