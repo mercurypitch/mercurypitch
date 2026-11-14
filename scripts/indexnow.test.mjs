@@ -1,7 +1,9 @@
 // IndexNow is only believed when the key file the engines fetch holds the key
 // that was sent, and a release should send only the pages that changed. These
 // hold the key file to the protocol, and --since to the sitemap's own record
-// of what changed. Nothing here reaches the network: the CLI case is a dry run.
+// of what changed, and the command line to sending only what it is asked for
+// by name. Nothing here reaches the network: every CLI case is a dry run, so
+// a guard that stopped guarding could only print.
 
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
@@ -10,7 +12,7 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import test from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { changedUrls, findKey, indexNowRequest, listedEntries, parseArgs, SITE, sitemapEntries, unlistedUrls, urlsSince, } from './indexnow.mjs'
+import { changedUrls, findKey, indexNowRequest, listedEntries, parseArgs, SITE, sitemapEntries, unlistedUrls, urlsSince, USAGE, } from './indexnow.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./indexnow.mjs', import.meta.url))
 const SITEMAP = readFileSync(
@@ -187,17 +189,77 @@ test('a listing that flips is sent as an addition or a removal', () => {
 
 test('--since takes a ref, and URLs are not mixed with it', () => {
   assert.deepEqual(parseArgs([`${SITE}/jam`]), {
+    help: false,
     dryRun: false,
+    all: false,
     since: undefined,
     urls: [`${SITE}/jam`],
   })
   assert.deepEqual(parseArgs(['--dry-run', '--since', 'v0.9.21']), {
+    help: false,
     dryRun: true,
+    all: false,
     since: 'v0.9.21',
     urls: [],
   })
   assert.throws(() => parseArgs(['--since']), /needs a git ref/)
-  assert.throws(() => parseArgs(['--since', 'v1', `${SITE}/jam`]), /not both/)
+  assert.throws(() => parseArgs(['--since', '--all']), /needs a git ref/)
+  assert.throws(
+    () => parseArgs(['--since', 'v1', `${SITE}/jam`]),
+    /only one of/,
+  )
+})
+
+test('every URL is sent only when --all asks for it', () => {
+  assert.deepEqual(parseArgs(['--all']), {
+    help: false,
+    dryRun: false,
+    all: true,
+    since: undefined,
+    urls: [],
+  })
+  assert.throws(() => parseArgs(['--all', `${SITE}/jam`]), /only one of/)
+  assert.throws(() => parseArgs(['--all', '--since', 'v1']), /only one of/)
+})
+
+test('a run that names nothing to send is refused, with the usage', () => {
+  for (const args of [[], ['--dry-run']]) {
+    assert.throws(
+      () => parseArgs(args),
+      (error) =>
+        /^Nothing to send: /.test(error.message) &&
+        error.message.endsWith(USAGE),
+    )
+  }
+})
+
+test('an option it does not know is refused, never read as no option', () => {
+  // each of these once sent the whole sitemap
+  for (const option of ['--help-me', '--dryrun', '--since=v0.9.21', '-n']) {
+    assert.throws(
+      () => parseArgs([option]),
+      (error) =>
+        error.message.startsWith(`Unknown option: ${option}\n`) &&
+        error.message.endsWith(USAGE),
+    )
+  }
+  assert.throws(
+    () => parseArgs(['--all', '--frobnicate']),
+    /Unknown option: --frobnicate\n/,
+  )
+})
+
+test('an argument that is not a URL is refused by name', () => {
+  assert.throws(() => parseArgs(['help']), /: Not a URL: help$/)
+  assert.throws(
+    () => parseArgs([`${SITE}/jam`, 'karaoke-app']),
+    /: Not a URL: karaoke-app$/,
+  )
+})
+
+test('--help asks for the usage and for nothing to be sent', () => {
+  assert.equal(parseArgs(['--help']).help, true)
+  assert.equal(parseArgs(['--help', '--all']).help, true)
 })
 
 test('a --since ref that is not a commit is refused, not read as a first release', () => {
@@ -209,6 +271,54 @@ test('a --since ref that is not a commit is refused, not read as a first release
   assert.equal(result.status, 1)
   assert.match(result.stderr, /--since v0\.0\.0-no-such-tag is not a commit/)
   assert.equal(result.stdout, '')
+})
+
+test('the command line refuses, and sends nothing, when it is asked for nothing it knows', () => {
+  for (const [args, message] of [
+    [['--dry-run'], /Nothing to send: /],
+    [['--dry-run', '--verbose'], /Unknown option: --verbose/],
+    [['--dry-run', 'help'], /Not a URL: help/],
+    [['--dry-run', '--all', `${SITE}/jam`], /only one of/],
+  ]) {
+    const result = spawnSync(process.execPath, [SCRIPT, ...args], {
+      encoding: 'utf8',
+    })
+    assert.equal(result.status, 1, args.join(' '))
+    assert.match(result.stderr, message)
+    assert.equal(result.stdout, '')
+  }
+})
+
+test('--help prints the usage and sends nothing', () => {
+  const result = spawnSync(process.execPath, [SCRIPT, '--dry-run', '--help'], {
+    encoding: 'utf8',
+  })
+  assert.equal(result.status, 0, result.stderr)
+  assert.equal(result.stdout.trimEnd(), USAGE)
+})
+
+test('a dry run of --all prints every URL production lists', () => {
+  const result = spawnSync(process.execPath, [SCRIPT, '--dry-run', '--all'], {
+    encoding: 'utf8',
+  })
+  assert.equal(result.status, 0, result.stderr)
+  assert.deepEqual(JSON.parse(result.stdout).urlList, [
+    ...listedEntries(SITEMAP, ENV_PRODUCTION).keys(),
+  ])
+})
+
+test('the release names what it sends: the changes since the last tag, or --all on the first', () => {
+  const workflow = readFileSync(
+    fileURLToPath(new URL('../.github/workflows/build.yml', import.meta.url)),
+    'utf8',
+  )
+  const from = workflow.indexOf('- name: Notify IndexNow')
+  assert.notEqual(from, -1, 'build.yml has no Notify IndexNow step')
+  const next = workflow.indexOf('\n      - name:', from + 1)
+  const step = workflow.slice(from, next === -1 ? undefined : next)
+  assert.match(step, /scope=\(--all\)/)
+  assert.match(step, /scope=\(--since "\$previous"\)/)
+  assert.match(step, /node scripts\/indexnow\.mjs "\$\{scope\[@\]\}"/)
 })
 
 test('a dry run prints the request and sends nothing', () => {
