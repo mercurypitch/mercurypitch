@@ -22,7 +22,8 @@ import { noteById, playedIds } from './edit-changes'
 import type { NoteSnap } from './edit-snap'
 import { lineAfter, noteSnapGrid, snapCeil, snapTravel } from './edit-snap'
 import type { NoteDraft, NoteDragIntent, NoteEditContext, NoteMarquee, NoteSingleGesture, NoteVelocityReadout, } from './edit-types'
-import { noteVelocityValue, stepStudioNoteVelocities, velocitySteps, } from './edit-velocity'
+import { noteVelocityValue, stepStudioNoteVelocities } from './edit-velocity'
+import { velocitySteps } from './velocity-lane'
 
 /** Where the pointer is, and whether Alt is held to place freely. */
 export interface NoteDragPoint {

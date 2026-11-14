@@ -1,4 +1,4 @@
-// Studio note roll drawing tests — each note in view is drawn where it sounds, as strong as it was played, named where it fits, and dimmed when it starts outside the clip's window; notes out of view cost nothing; a selected note gets a ring and a grip; a draft is drawn over the stored note it stands in for, which fades to a ghost; the marquee, the hover and the playhead are drawn on the overlay only; each note's velocity stands in its lane; the keys name each C, a kit's rows their General MIDI names cut to fit; the ruler names the song's bars; and the grid leaves out lines too close to read.
+// Studio note roll drawing tests — each note in view is drawn where it sounds, as strong as it was played, named where it fits, and dimmed when it starts outside the clip's window; notes out of view cost nothing; a selected note gets a ring, and the editor's grips a bar each; a draft is drawn over the stored note it stands in for, which fades to a ghost; the marquee, the hover, a velocity's readout and the playhead are drawn on the overlay only; each note's velocity stands in its lane; rows sitting on fractions of a semitone draw every row they show part of; the keys name each C, a kit's rows their General MIDI names cut to fit; the ruler names the song's bars; and the grid leaves out lines too close to read.
 import { describe, expect, it } from 'vitest'
 import type { StudioRollRows } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioNote } from '@/lib/studio/model/types'
@@ -86,7 +86,9 @@ function input(overrides: Partial<StudioRollInput> = {}): StudioRollInput {
     selected: new Set(),
     drafts: [],
     marquee: null,
+    grips: [],
     hover: null,
+    readout: null,
     playheadTick: null,
     corner: 'Notes',
     ...overrides,
@@ -164,7 +166,7 @@ describe('the notes', () => {
     )
   })
 
-  it('rings a selected note in the selection colour, with a grip on its end', () => {
+  it('rings a selected note in the selection colour, and leaves its grip to the overlay', () => {
     // Arrange
     const { context, paints } = recordingRollContext()
 
@@ -182,11 +184,25 @@ describe('the notes', () => {
     expect(
       paints.some(
         (paint) =>
-          paint.op === 'fillRect' &&
           paint.style === 'selection' &&
-          Math.abs(paint.shapes[0].x - (456.5 + 190.5 - 5)) < 0.01,
+          paint.op === 'fill' &&
+          paint.shapes.some((shape) => shape.kind === 'round'),
       ),
-    ).toBe(true)
+    ).toBe(false)
+  })
+
+  it('draws every row a view on fractions of a semitone shows part of, and the notes in them', () => {
+    // Arrange: the rows panned half a row, 55.5 to 66.5; row 67 peeks in at the top.
+    const half = input().viewport
+    const view = { ...half, minMidi: 55.5, maxMidi: 66.5 }
+    const high = note(9, 67, 960, 480, 1)
+    const { context, paints } = recordingRollContext()
+
+    // Act
+    drawStudioRollBase(context, input({ viewport: view, notes: [high] }))
+
+    // Assert: row 67's top is half a row over the grid's, at y 26 - 12.5.
+    expect(bodyAt(paints, 264.5)!.shapes[0]).toMatchObject({ y: 14.5 })
   })
 })
 
@@ -240,24 +256,17 @@ describe('a gesture’s drafts', () => {
 })
 
 describe('the overlay', () => {
-  it('draws the marquee over the ticks and pitches it holds, in a wash and an edge', () => {
+  it('draws the marquee where the editor holds it, in a wash and an edge', () => {
     // Arrange
     const { context, paints } = recordingRollContext()
 
     // Act
     drawStudioRollOverlay(
       context,
-      input({
-        marquee: {
-          startTick: 960,
-          endTick: 1920,
-          lowPitch: 60,
-          highPitch: 64,
-        },
-      }),
+      input({ marquee: { x: 264, y: 76, width: 192, height: 125 } }),
     )
 
-    // Assert: rows 64 down to 60, from y 76 to 201.
+    // Assert
     const wash = paints.find((paint) => paint.style === 'marquee')!
     expect(wash.op).toBe('fillRect')
     expect(wash.alpha).toBeCloseTo(0.14, 6)
@@ -268,6 +277,45 @@ describe('the overlay', () => {
       height: 125,
     })
     expect(paints.some((paint) => paint.op === 'strokeRect')).toBe(true)
+  })
+
+  it("draws each of the editor's grips as a bar in the selection colour", () => {
+    const { context, paints } = recordingRollContext()
+
+    drawStudioRollOverlay(
+      context,
+      input({ grips: [{ x: 640, y: 82, width: 3, height: 12 }] }),
+    )
+
+    const grip = paints.find(
+      (paint) => paint.op === 'fill' && paint.style === 'selection',
+    )!
+    expect(grip.shapes[0]).toMatchObject({ kind: 'round', x: 640, width: 3 })
+  })
+
+  it("shows a dragged velocity, 1 to 127, in a pill over its note's lollipop", () => {
+    // Arrange: note 1's lollipop at x 268 in a lane from y 326; at 0.8 its head is at y 342.4.
+    const { context, texts } = recordingRollContext()
+
+    // Act
+    drawStudioRollOverlay(context, input({ readout: { id: 1, value: 102 } }))
+
+    // Assert
+    expect(texts).toContainEqual(expect.objectContaining({ text: '102' }))
+  })
+
+  it('rings the head of the lollipop under the mouse', () => {
+    const { context, paints } = recordingRollContext()
+
+    drawStudioRollOverlay(
+      context,
+      input({ hover: { id: 1, zone: 'velocity' } }),
+    )
+
+    const ring = paints.find(
+      (paint) => paint.op === 'stroke' && paint.style === 'selection',
+    )!
+    expect(ring.shapes[0]).toMatchObject({ kind: 'arc', width: 14 })
   })
 
   it('outlines the hovered note, and lights the grip when the pointer is on its end', () => {
@@ -311,7 +359,7 @@ describe('the overlay', () => {
     const full = input({
       playheadTick: 1920,
       hover: { id: 1, zone: 'body' },
-      marquee: { startTick: 0, endTick: 960, lowPitch: 60, highPitch: 62 },
+      marquee: { x: 72, y: 126, width: 192, height: 75 },
     })
 
     drawStudioRollBase(base.context, full)

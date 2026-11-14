@@ -11,10 +11,7 @@ import type { StudioNote } from '@/lib/studio/model/types'
 import { studioNoteName } from './note-names'
 import type { RollContext, StudioRollDraft, StudioRollInput, StudioRollRect, } from './note-roll-geometry'
 import { clipTo, fillBox, isBlackKey, rollGridLines, roundBox, rowTop, shownRows, smallCaps, startsInWindow, studioRollRegions, tickSpacing, tickX, vertical, } from './note-roll-geometry'
-
-/** The velocity lane's room under a stick and over a full one. */
-const STICK_FOOT = 10
-const STICK_HEAD = 8
+import { VELOCITY_CAP_RADIUS, VELOCITY_FOOT, velocityLaneX, velocityLaneY, } from './velocity-lane'
 
 /** The grid's rows (a piano's black keys and a kit's every other row shaded), its lines, and the parts outside the clip's window dimmed. */
 export function drawRollGrid(
@@ -72,6 +69,18 @@ function dimOutsideWindow(
     })
 }
 
+/** Where a note's lollipop head stands on the canvas (velocity-lane.ts); null when it is out of the lane's sight. */
+export function rollStickHead(
+  input: StudioRollInput,
+  note: Pick<StudioRollDraft, 'startTick' | 'velocity'>,
+): { readonly x: number; readonly y: number } | null {
+  const lane = studioRollRegions(input).velocity
+  const x = lane.x + velocityLaneX(note.startTick, input.viewport)
+  const radius = VELOCITY_CAP_RADIUS
+  if (x < lane.x - radius || x > lane.x + lane.width + radius) return null
+  return { x, y: lane.y + velocityLaneY(note.velocity, lane.height) }
+}
+
 /** A note's velocity as a lollipop in the velocity lane: a stick up to its strength, a dot on top. */
 export function drawRollStick(
   context: RollContext,
@@ -79,17 +88,15 @@ export function drawRollStick(
   note: StudioRollDraft,
   color: string,
 ): void {
+  const head = rollStickHead(input, note)
+  if (head === null) return
   const lane = studioRollRegions(input).velocity
-  const x = tickX(input, note.startTick)
-  if (x < lane.x - 4 || x > lane.x + lane.width + 4) return
-  const foot = lane.y + lane.height - STICK_FOOT
-  const reach = Math.max(0, lane.height - STICK_FOOT - STICK_HEAD)
-  const top = foot - note.velocity * reach
+  const foot = lane.y + lane.height - VELOCITY_FOOT
   context.globalAlpha = startsInWindow(input, note) ? 1 : 0.3
   context.fillStyle = color
-  context.fillRect(x + 3, top, 2, foot - top)
+  context.fillRect(head.x - 1, head.y, 2, foot - head.y)
   context.beginPath()
-  context.arc(x + 4, top, 4, 0, Math.PI * 2)
+  context.arc(head.x, head.y, VELOCITY_CAP_RADIUS, 0, Math.PI * 2)
   context.fill()
   context.globalAlpha = 1
 }

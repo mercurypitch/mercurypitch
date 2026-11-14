@@ -28,7 +28,7 @@ export const PHONE: RollViewport = {
 }
 
 /** The velocity lane's height: 64 px from 0 to 1. */
-const LANE_HEIGHT = 80
+const LANE_HEIGHT = 82
 
 export function note(
   id: number,
