@@ -244,6 +244,28 @@ function drawRulerLabels(context: RollContext, input: StudioRollInput): void {
     if (bar >= 0 && bar % step === 0 && x >= ruler.x - 8)
       context.fillText(String(bar + 1), x + 6, ruler.height / 2)
   }
+  drawRulerStart(context, input, barTicks)
+}
+
+/** A view that starts inside a bar names that bar and beat at its left edge, "1.3", until the next bar line comes near. */
+function drawRulerStart(
+  context: RollContext,
+  input: StudioRollInput,
+  barTicks: number,
+): void {
+  const { beatTicks, originTick } = input.meter
+  const offset = input.viewport.start - originTick
+  const bar = Math.floor(offset / barTicks)
+  const into = offset - bar * barTicks
+  if (bar < 0 || into < 1) return
+  const ruler = studioRollRegions(input).ruler
+  if (tickX(input, originTick + (bar + 1) * barTicks) - ruler.x < 48) return
+  context.fillStyle = input.theme.muted
+  context.fillText(
+    `${bar + 1}.${Math.floor(into / beatTicks) + 1}`,
+    ruler.x + 6,
+    ruler.height / 2,
+  )
 }
 
 /** The ruler: the song's bars by number, its beats, and the clip's window as a band in the lane's colour along its foot. */
