@@ -228,7 +228,54 @@ describe('the take', () => {
       lines: [],
       pitch: null,
       inBand: 0,
+      onset: null,
     })
+  })
+
+  it('says when the singer’s first note started against bar 1, early or late, anchored or not (Lesson 28)', async () => {
+    // Arrange: on time, a beat late, three beats late (past the anchor's
+    // two), and do hummed from the take's open through bar 1
+    const takes = [
+      [...quiet(BAR1), ...sung()],
+      [...quiet(BAR1 + 1), ...sung(1)],
+      [...quiet(BAR1 + 3), ...sung(3)],
+      [
+        ...Array.from({ length: BAR1 / HOP }, (_, i) => ({
+          t: i * HOP,
+          f0: hz(G3),
+          conf: 0.95,
+        })),
+        ...sung(),
+      ],
+    ]
+
+    // Act
+    const onsets: (number | null)[] = []
+    for (const frames of takes) {
+      const end = await run(module(frames).mod)
+      onsets.push(end.kind === 'read' ? end.onset : null)
+    }
+
+    // Assert: seconds from bar 1's first beat, the hummed do from the open
+    expect(onsets.map((t) => Number(t?.toFixed(2)))).toEqual([0, 1, 3, -0.5])
+  })
+
+  it('has no onset for a take with voice but no run of it 0.15 s long', async () => {
+    // Arrange: a tenth of a second at the start of each note, and silence between
+    const blips = sung().filter((f) => {
+      const n = TUNE_1.find(
+        (m) => f.t >= BAR1 + m.beat - 1e-9 && f.t < BAR1 + m.beat + m.beats,
+      )
+      return n !== undefined && f.t < BAR1 + n.beat + 0.1 - 1e-9
+    })
+    const frames = [...quiet(BAR1), ...blips].sort((a, b) => a.t - b.t)
+
+    // Act
+    const end = await run(module(frames).mod)
+
+    // Assert: heard, so read, but nothing to line a playback up on
+    expect(end.kind === 'read' && end.voiced).toBe(true)
+    expect(end.kind === 'read' ? end.onset : 0).toBeNull()
   })
 
   it('counts the notes read in the band', async () => {

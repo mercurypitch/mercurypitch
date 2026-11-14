@@ -131,6 +131,14 @@ function runsOf(voiced: readonly VoicedFrame[]): VoicedFrame[][] {
   return runs
 }
 
+/** When the first run of voice at least 0.15 s long started, on the frames' clock: the singer's first note; null with none. */
+export function firstRunAt(voiced: readonly VoicedFrame[]): number | null {
+  const first = runsOf(voiced).find(
+    (run) => run[run.length - 1].t - run[0].t >= ANCHOR_RUN_SEC - 1e-9,
+  )
+  return first === undefined ? null : first[0].t
+}
+
 /**
  * The anchor: how far the singer's first note started from bar 1's first
  * beat, s, early below 0; null where the take's first run of 0.15 s or more
@@ -141,16 +149,31 @@ export function anchorOf(
   o: Pick<InTimeOptions, 'bpm' | 'bar1' | 'opened'>,
 ): number | null {
   const spb = 60 / o.bpm
-  const first = runsOf(voiced).find(
-    (run) => run[run.length - 1].t - run[0].t >= ANCHOR_RUN_SEC - 1e-9,
-  )
-  if (first === undefined) return null
-  const start = first[0].t
+  const start = firstRunAt(voiced)
+  if (start === null) return null
   if (start - o.opened <= MAX_HOP) return null
   const shift = start - o.bar1
   if (shift < -ANCHOR_EARLY_BEATS * spb - 1e-9) return null
   if (shift > ANCHOR_LATE_BEATS * spb + 1e-9) return null
   return shift
+}
+
+/**
+ * How far after bar 1's first beat the take's first run of voice at least
+ * 0.15 s long started, s, early below 0: the anchor's run, wherever it
+ * falls, so also where it anchors nothing, as a run already going when the
+ * take opened, or one that came more than two beats late. A playback lines
+ * the take's recording up on it (Lesson 28 WEB-SPEC, The playback). Null
+ * with no such run.
+ */
+export function onsetOf(
+  frames: readonly F0Frame[],
+  o: Pick<InTimeOptions, 'bar1' | 'opened'>,
+): number | null {
+  const start = firstRunAt(
+    preprocess(frames.filter((f) => f.t >= o.opened - 1e-9)),
+  )
+  return start === null ? null : start - o.bar1
 }
 
 /** The voiced frames from `from` to `to`, by time. */

@@ -15,7 +15,8 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { createSoundOwner } from './now-playing'
 import type { KeptTake } from './record'
-import { canRecord, gainFor, keepTake, LEAD_IN_SEC, peakOf, PLAYBACK_PEAK, playTake, recorderFor, startOf, TakeShelf, } from './record'
+import type { PartUnder } from './record'
+import { canRecord, gainFor, keepTake, LEAD_IN_SEC, PART_LEAD_SEC, PART_TAIL_SEC, peakOf, PLAYBACK_PEAK, playTake, playWithPart, recorderFor, startOf, TakeShelf, } from './record'
 import { Sound } from './sound'
 
 /** A MediaRecorder double: records its stream, its state, and hands over one chunk on stop. */
@@ -60,11 +61,16 @@ function contextDouble(decoded: AudioBuffer) {
   const sources: {
     buffer: AudioBuffer | null
     started: [number, number] | null
+    stopAt: number | null
     stopped: boolean
     onended: (() => void) | null
     to: unknown[]
   }[] = []
-  const gains: { gain: { value: number }; to: unknown[] }[] = []
+  const gains: {
+    gain: { value: number }
+    ramps: [string, number, number][]
+    to: unknown[]
+  }[] = []
   const destination = { name: 'speakers' }
   const context = {
     currentTime: 10,
@@ -85,7 +91,13 @@ function contextDouble(decoded: AudioBuffer) {
         start(when: number, offset: number) {
           s.started = [when, offset]
         },
-        stop() {
+        stopAt: null as number | null,
+        stop(when?: number) {
+          // a stop booked ahead only marks when; one now ends it
+          if (when !== undefined) {
+            s.stopAt = when
+            return
+          }
           s.stopped = true
           s.onended?.()
         },
@@ -95,7 +107,16 @@ function contextDouble(decoded: AudioBuffer) {
     },
     createGain() {
       const g = {
-        gain: { value: 1 },
+        ramps: [] as [string, number, number][],
+        gain: {
+          value: 1,
+          setValueAtTime(v: number, t: number) {
+            g.ramps.push(['set', v, t])
+          },
+          linearRampToValueAtTime(v: number, t: number) {
+            g.ramps.push(['ramp', v, t])
+          },
+        },
         to: [] as unknown[],
         connect(n: unknown) {
           g.to.push(n)
@@ -135,6 +156,8 @@ afterEach(() => {
   if (!hadBytes)
     delete (Blob.prototype as { arrayBuffer?: unknown }).arrayBuffer
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
+  vi.useRealTimers()
   Sound.set('unset')
 })
 
@@ -434,5 +457,144 @@ describe('playing a take back', () => {
     const db = 20 * Math.log10((out[2] ?? 0) / (out[0] ?? 1))
     expect(db).toBeCloseTo(6.02, 1)
     expect(Math.max(...out)).toBeCloseTo(PLAYBACK_PEAK)
+  })
+})
+
+describe('playing a take back with its part (Lesson 28)', () => {
+  /** The part under a take: bars 1 to 8 at 72 BPM, its bookings kept, its voice a double. */
+  function partOf(onset: number) {
+    const booked: number[] = []
+    const voice = { stop: vi.fn() }
+    const part: PartUnder = {
+      book: (at) => {
+        booked.push(at)
+        return voice
+      },
+      seconds: 26.67,
+      onset,
+    }
+    return { part, booked, voice }
+  }
+
+  it('books the part from its bar 1 a moment from now, and the take so its voice plays as late as it came in the run', () => {
+    // Arrange: the voice 0.9 s into the recording, sung 0.3 s after bar 1
+    const { context, sources } = contextDouble(bufferOf([0.1]))
+    const { part, booked } = partOf(0.3)
+    vi.spyOn(performance, 'now').mockReturnValue(5000)
+
+    // Act
+    const playback = playWithPart(
+      kept(new Array(3000).fill(0.2), 0.9),
+      context,
+      createSoundOwner(),
+      part,
+    )
+
+    // Assert: P = 10.1 s on the audio clock; the take's 0.9 s plays at P + 0.3
+    expect(booked).toEqual([PART_LEAD_SEC])
+    expect(sources[0]?.started?.[0]).toBeCloseTo(10 + PART_LEAD_SEC, 9)
+    expect(sources[0]?.started?.[1]).toBeCloseTo(0.6, 9)
+    expect(playback?.bar1).toBeCloseTo(5000 + PART_LEAD_SEC * 1000, 9)
+  })
+
+  it('starts the recording later where it holds less before the voice than the singer was late', () => {
+    // Arrange: the voice 0.2 s into the recording, sung 0.5 s after bar 1
+    const { context, sources } = contextDouble(bufferOf([0.1]))
+
+    // Act
+    playWithPart(
+      kept(new Array(3000).fill(0.2), 0.2),
+      context,
+      createSoundOwner(),
+      partOf(0.5).part,
+    )
+
+    // Assert: start(P + late - O, 0)
+    expect(sources[0]?.started?.[0]).toBeCloseTo(10 + PART_LEAD_SEC + 0.3, 9)
+    expect(sources[0]?.started?.[1]).toBe(0)
+  })
+
+  it('ends the take with the part’s last note, fading over its release, and lasts as long as the part', async () => {
+    // Arrange
+    vi.useFakeTimers()
+    const { context, sources, gains } = contextDouble(bufferOf([0.1]))
+    const take = kept(new Array(3000).fill(0.2), 0.9)
+    const playback = playWithPart(
+      take,
+      context,
+      createSoundOwner(),
+      partOf(0).part,
+    )
+    let heard: boolean | null = null
+    void playback?.done.then((h) => {
+      heard = h
+    })
+    const end = 10 + PART_LEAD_SEC + 26.67
+
+    // Act: the recording runs out 1 s before the part does
+    ;(context as unknown as { currentTime: number }).currentTime = end - 1
+    sources[0]?.onended?.()
+    await Promise.resolve()
+    const early = heard
+    vi.advanceTimersByTime((1 + PART_TAIL_SEC) * 1000)
+    await Promise.resolve()
+
+    // Assert
+    expect(sources[0]?.stopAt).toBeCloseTo(end + PART_TAIL_SEC, 9)
+    expect(gains[0]?.ramps).toEqual([
+      ['set', take.gain, end],
+      ['ramp', 0, end + PART_TAIL_SEC],
+    ])
+    expect(gains[0]?.to).toEqual([
+      (context as unknown as { destination: unknown }).destination,
+    ])
+    expect(early).toBeNull()
+    expect(heard).toBe(true)
+  })
+
+  it('is one sound: it stops what sounded before, and another sound stops the take and the part', async () => {
+    // Arrange
+    const { context, sources } = contextDouble(bufferOf([0.1]))
+    const owner = createSoundOwner()
+    const before = vi.fn()
+    owner.claim(before)
+    const { part, voice } = partOf(0)
+    const playback = playWithPart(
+      kept(new Array(3000).fill(0.2), 0.9),
+      context,
+      owner,
+      part,
+    )
+
+    // Act
+    owner.claim(() => undefined)
+
+    // Assert
+    expect(before).toHaveBeenCalledOnce()
+    expect(sources[0]?.stopped).toBe(true)
+    expect(voice.stop).toHaveBeenCalledOnce()
+    await expect(playback?.done).resolves.toBe(false)
+  })
+
+  it('stops when every sound stops, and plays nothing with the sound off or while a take is open', async () => {
+    // Arrange
+    const { context, sources } = contextDouble(bufferOf([0.1]))
+    const take = kept(new Array(3000).fill(0.2), 0.9)
+    const { part, booked } = partOf(0)
+    const playing = playWithPart(take, context, createSoundOwner(), part)
+
+    // Act
+    Sound.set('off')
+    const off = playWithPart(take, context, createSoundOwner(), part)
+    Sound.set('on')
+    Sound.hush(true)
+    const hushed = playWithPart(take, context, createSoundOwner(), part)
+    Sound.hush(false)
+
+    // Assert
+    await expect(playing?.done).resolves.toBe(false)
+    expect(sources[0]?.stopped).toBe(true)
+    expect([off, hushed]).toEqual([null, null])
+    expect([sources.length, booked.length]).toEqual([1, 1])
   })
 })
