@@ -707,9 +707,10 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // bands, on the rhythm bar's engraving), in the steps' toy and free play, the
   // cold open's strip and its pairs of staffs on the kit's predict, the three
   // words' figures, and the recall and the quick check on the kit's quiz with
-  // Lesson 18's and Lesson 26's questions: 189,557 bytes in build:e2e; a
-  // quarter over.
-  'learn/28.html': 232,
+  // Lesson 18's and Lesson 26's questions. Sing it loads as a chunk of its own
+  // after first paint, and its take, its reader and the quiet check with the
+  // microphone at Start: 191,769 bytes in build:e2e; a quarter over.
+  'learn/28.html': 235,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -920,7 +921,7 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // reaches no sheet, its questions being words alone, so the guide's stays
   // out.
   'learn/27.html': 113,
-  // Lesson 28 (a draft, as above): 98,576 bytes in build:e2e, the kit's sheets
+  // Lesson 28 (a draft, as above): 99,071 bytes in build:e2e, the kit's sheets
   // (the voice lessons' in the chunk the Wrap's comfort check shares, and the
   // shared parts), its own with the rhythm bar's and the score's taken in by
   // @import, and the shared Inter and Outfit @font-face rules; a quarter over.

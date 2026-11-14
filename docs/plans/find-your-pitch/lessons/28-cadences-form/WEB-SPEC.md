@@ -675,7 +675,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 1. **The lesson host**: `learn/28.html` at `/learn/28`, which every build takes as a lesson page
    (`lessonPages`, `tools/draft-lessons.ts:81-89`); `/learn/28` and `/learn/28.html` in
    `STANDALONE_DOCUMENT_PATHS` (`src/lib/sw-runtime.ts:93`); the first-paint budgets. The lesson
-   pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:135`).
+   pages' route already takes any two digits (`LESSON_PAGE`, `src/lesson-gate.ts:142-143`).
 2. **The draft line**, in the draft list's form:
    `28: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)"`, as Lesson 5's
    (`src/features/lessons/kit/drafts.ts:31-42`).
@@ -973,3 +973,65 @@ production:
   cards, and C3 and D3 are heard through the speaker.
 - The season's close reads Season 2's words, and its rest version after each of the three endings;
   Lesson 14's page still reads Season 1's.
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- Counted by `scripts/lesson-words.mjs`'s rule as the built page shows it: the package's 2,062
+  words; the 159 Length lists, less its three status lines (15), which the next count holds; Sing
+  it's lines that LESSON.md does not write, 140 in the lower voice's forms (the comfort and voice
+  prompts, the listening path's line, the headphones prompt and both briefings, the microphone's
+  ask, the count-in, the run's line, the sing-along's two lines, the run left, the set spent, the
+  first turn's and the playback's lines, the take deleted, the playback's and Start's sound-off
+  lines, and Done for today); and the cold open's hints after a choice and after the reveal,
+  "Locked in. Play both ways." and "Play either again." (8). That is about 2,354 in place of
+  Length's 2,371 on the brief's 150, about 25 under the series' cap of 2,379, and the page still
+  runs about 19 minutes.
+- Sing it loads as a chunk of its own after first paint, and its take, its reader, the quiet check
+  and the recording's onset load with the microphone at Start, so first paint carries none of them.
+  Its flow is this page's own code on the kit's moves (`lesson-28/sing.ts` and `sing-run.ts`), as
+  Lesson 26's is: Lesson 18's sing flow has not moved into the kit.
+- The other part's notes stay chrome once a voice is chosen and never light, as Look gives them,
+  where Toys 6 has them "lighting chrome": in the quiet check and Hear Tavi's part first only the
+  cursor moves over them, and in a run and the playback the learner's notes light amber at the
+  cursor (`kit/lesson-score.css`). On the listening path, where no voice is chosen, both parts keep
+  their own colours and light as they sound.
+- The count-in's four dots show once a voice is chosen; the listening path, which counts nothing
+  in, has none.
+- The voice choice stays beside the panel after it, the headphones check, the briefing or the
+  sing-along, until the first run, so the voice can still change; a run hides it.
+- The quiet check's fail line shows in the card's status and again over Start, beside No
+  headphones, as Lessons 24 and 26 show theirs.
+- The hush that keeps every other sound off begins at bar 1's first beat, when the count-in's run
+  ends, not as the take opens half a beat before it, as Lesson 26's does, so the count-in sounds to
+  its end; from bar 1 the cursor follows the take's frames.
+- Levels, as Lesson 26's: the other part in a run, in the quiet check and in the sing-along at 0.1
+  (`PART_GAIN`, `kit/take-part.ts`), half Merc's do at 0.2, and the count-in's woodblock at 0.1;
+  Play the song's two parts at 0.2 each. The playback takes the take's peak to 0.5
+  (`PLAYBACK_PEAK`, `kit/record.ts`), with the part under it at the run's 0.1. The lab sets the
+  run's level (Audio).
+- The playback books the part's bar 1 0.1 s after the press (`PART_LEAD_SEC`) and fades the take
+  over 0.3 s as the part's last note ends (`PART_TAIL_SEC`, `kit/record.ts`). The take's first
+  note is found in the recording within a second either side of where the frames heard it, with
+  the listener's own detector and the reader's rule for a first note (`kit/take-onset.ts`).
+- The cold open's two ways play one at a time, as the kit's predict plays every pair: a press on
+  one while the other sounds does nothing, and the reveal waits for both to be heard to their end.
+- Sing it's figure is 260 px tall, 300 px at 560 px and narrower: bars 1 to 8 on one system on a
+  desktop, and on two systems of four bars at about 1024 px and narrower (`kit/score-layout.ts`),
+  which Toys 6 leaves open.
+- A black key's row on the pitch line is named by its sharp, "ti · F♯3", as Lesson 26's As built
+  gives it; the kit's pitch line named it "ti ·" alone, and now names it so on every page that
+  draws one (`kit/pitch-line.ts`).
+- Question 4 of the quick check holds its Play and its answers through the kit quiz's `held`,
+  released on the cold open's choice, in place of passing them to the predict's `unlocks`, which
+  the quiz's own renders would undo; the recall asks Lesson 26's question 2 afresh, its hold and
+  its held line dropped.
+- The season's close draws no staff in its figure: the four blocks, A A B A, the beat grid, Lesson
+  6's beads and Lesson 12's ring, since every staff on a Season 2 page is music, and it plays
+  (Look).
+- Tests 8, 10 and 12 also run in the browser on a fake microphone
+  (`src/e2e/learn-lesson-28-sing.spec.ts`): the quiet check hearing a note, a run alone read in the
+  band, its playback with Tavi's part, and Delete.
+- The first-paint ceilings are the page's measured build a quarter over, as every lesson's are: 235
+  KB of JavaScript (191,769 bytes) and 121 KB of CSS (99,071 bytes) in `build:e2e`.
