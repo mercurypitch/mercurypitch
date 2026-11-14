@@ -336,6 +336,13 @@ tools and keys on top without changing what C draws with.
 - **A selected MIDI clip says how to open it**, "Double-click to edit
   notes" or "Tap twice to edit notes", for four seconds, as the mockup's
   tooltip does.
+- **C's rows sit beside D's engine's.** D's engine merged first, with
+  `roll-rows.ts` panning and zooming a piano's rows in fractions of a
+  semitone. C's read-only roll counts whole rows, a kit's included, in
+  `roll-keyboard.ts`, under names of its own (`scrollStudioRollRows`,
+  `studioRollShownRows`), with the engine's `StudioRollRowLimits` for its
+  row heights. Wiring the engine in, D2 chooses which of the two moves the
+  rows.
 
 ### Design decisions made while building D's engine
 
