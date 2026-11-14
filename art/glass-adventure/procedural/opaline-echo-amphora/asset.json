@@ -1,0 +1,7 @@
+{
+  "name": "opaline-echo-amphora",
+  "contract": "contract.json",
+  "optics": "optics.json",
+  "concept": "../../v6-level2/concepts/opaline-echo-amphora.png",
+  "elevation_deg": 8
+}

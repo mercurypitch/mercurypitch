@@ -1,0 +1,5120 @@
+[
+ {
+  "file": "apps/beside-cue/public/games/adventure-v2/garden-kit.glb",
+  "bytes": 813920,
+  "roots": [
+   "garden_foliage",
+   "garden_perimeter",
+   "island_root",
+   "ivy_trail"
+  ],
+  "rootCount": 4,
+  "meshObjects": 6,
+  "tris": 9440,
+  "nonManifoldEdges": 3720,
+  "boundaryEdges": 3720,
+  "components": 358,
+  "flatFaceShare": 0.172,
+  "materials": [
+   "garden_palette",
+   "museum_ivory",
+   "museum_limestone"
+  ],
+  "dims_m": [
+   2.849,
+   2.861,
+   3.039
+  ],
+  "objects": [
+   {
+    "name": "garden_foliage_garden_palette",
+    "tris": 2812,
+    "nonManifoldEdges": 1344,
+    "boundaryEdges": 1344,
+    "components": 141
+   },
+   {
+    "name": "garden_foliage_museum_ivory",
+    "tris": 540,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 5
+   },
+   {
+    "name": "garden_perimeter_garden_palette",
+    "tris": 4012,
+    "nonManifoldEdges": 1944,
+    "boundaryEdges": 1944,
+    "components": 161
+   },
+   {
+    "name": "garden_perimeter_museum_ivory",
+    "tris": 540,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 5
+   },
+   {
+    "name": "island_root_museum_limestone",
+    "tris": 480,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 6
+   },
+   {
+    "name": "ivy_trail_garden_palette",
+    "tris": 1056,
+    "nonManifoldEdges": 432,
+    "boundaryEdges": 432,
+    "components": 40
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v2/platform-kit.glb",
+  "bytes": 3622720,
+  "roots": [
+   "museum_arcade_bay",
+   "museum_arch",
+   "museum_balustrade",
+   "museum_column",
+   "museum_rotunda",
+   "platform_bridge",
+   "platform_island",
+   "platform_ledge",
+   "platform_plinth",
+   "platform_terrace"
+  ],
+  "rootCount": 10,
+  "meshObjects": 34,
+  "tris": 54224,
+  "nonManifoldEdges": 616,
+  "boundaryEdges": 616,
+  "components": 867,
+  "flatFaceShare": 0.276,
+  "materials": [
+   "museum_brass",
+   "museum_ivory",
+   "museum_limestone",
+   "museum_petrol"
+  ],
+  "dims_m": [
+   3.4,
+   3.418,
+   3.901
+  ],
+  "objects": [
+   {
+    "name": "museum_arcade_bay_museum_brass",
+    "tris": 244,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 3
+   },
+   {
+    "name": "museum_arcade_bay_museum_ivory",
+    "tris": 88,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "museum_arcade_bay_museum_limestone",
+    "tris": 196,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 11
+   },
+   {
+    "name": "museum_arch_museum_brass",
+    "tris": 372,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 3
+   },
+   {
+    "name": "museum_arch_museum_ivory",
+    "tris": 88,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "museum_arch_museum_limestone",
+    "tris": 244,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 15
+   },
+   {
+    "name": "museum_balustrade_museum_ivory",
+    "tris": 1960,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 7
+   },
+   {
+    "name": "museum_balustrade_museum_limestone",
+    "tris": 88,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "museum_column_museum_brass",
+    "tris": 800,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 5
+   },
+   {
+    "name": "museum_column_museum_ivory",
+    "tris": 640,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 8
+   },
+   {
+    "name": "museum_column_museum_limestone",
+    "tris": 944,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 5
+   },
+   {
+    "name": "museum_rotunda_museum_brass",
+    "tris": 8752,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 49
+   },
+   {
+    "name": "museum_rotunda_museum_ivory",
+    "tris": 5632,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 66
+   },
+   {
+    "name": "museum_rotunda_museum_limestone",
+    "tris": 7552,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 40
+   },
+   {
+    "name": "platform_bridge_museum_brass",
+    "tris": 1996,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 25
+   },
+   {
+    "name": "platform_bridge_museum_ivory",
+    "tris": 748,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 17
+   },
+   {
+    "name": "platform_bridge_museum_limestone",
+    "tris": 1744,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 92
+   },
+   {
+    "name": "platform_bridge_museum_petrol",
+    "tris": 8,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "platform_island_museum_brass",
+    "tris": 2716,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 22
+   },
+   {
+    "name": "platform_island_museum_ivory",
+    "tris": 396,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 9
+   },
+   {
+    "name": "platform_island_museum_limestone",
+    "tris": 960,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 48
+   },
+   {
+    "name": "platform_island_museum_petrol",
+    "tris": 184,
+    "nonManifoldEdges": 200,
+    "boundaryEdges": 200,
+    "components": 9
+   },
+   {
+    "name": "platform_ledge_museum_brass",
+    "tris": 1508,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 19
+   },
+   {
+    "name": "platform_ledge_museum_ivory",
+    "tris": 572,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 13
+   },
+   {
+    "name": "platform_ledge_museum_limestone",
+    "tris": 1352,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 70
+   },
+   {
+    "name": "platform_ledge_museum_petrol",
+    "tris": 8,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "platform_plinth_museum_brass",
+    "tris": 2972,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 23
+   },
+   {
+    "name": "platform_plinth_museum_ivory",
+    "tris": 396,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 9
+   },
+   {
+    "name": "platform_plinth_museum_limestone",
+    "tris": 960,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 48
+   },
+   {
+    "name": "platform_plinth_museum_petrol",
+    "tris": 184,
+    "nonManifoldEdges": 200,
+    "boundaryEdges": 200,
+    "components": 9
+   },
+   {
+    "name": "platform_terrace_museum_brass",
+    "tris": 6108,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 64
+   },
+   {
+    "name": "platform_terrace_museum_ivory",
+    "tris": 1100,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 25
+   },
+   {
+    "name": "platform_terrace_museum_limestone",
+    "tris": 2528,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 136
+   },
+   {
+    "name": "platform_terrace_museum_petrol",
+    "tris": 184,
+    "nonManifoldEdges": 200,
+    "boundaryEdges": 200,
+    "components": 9
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v2/vessels-qa-v2.glb",
+  "bytes": 1818936,
+  "roots": [
+   "goblet_laurel",
+   "vase_amphora",
+   "vase_fluted",
+   "vase_rounded"
+  ],
+  "rootCount": 4,
+  "meshObjects": 84,
+  "tris": 62408,
+  "nonManifoldEdges": 706,
+  "boundaryEdges": 0,
+  "components": 299,
+  "flatFaceShare": 0.13,
+  "materials": [
+   "glass_cut",
+   "glass_shell",
+   "gold_trim"
+  ],
+  "dims_m": [
+   0.554,
+   0.401,
+   0.69
+  ],
+  "objects": [
+   {
+    "name": "goblet_laurel_intact",
+    "tris": 8304,
+    "nonManifoldEdges": 168,
+    "boundaryEdges": 0,
+    "components": 27
+   },
+   {
+    "name": "goblet_laurel_shard_000",
+    "tris": 576,
+    "nonManifoldEdges": 18,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "goblet_laurel_shard_001",
+    "tris": 576,
+    "nonManifoldEdges": 18,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "goblet_laurel_shard_002",
+    "tris": 576,
+    "nonManifoldEdges": 18,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "goblet_laurel_shard_003",
+    "tris": 576,
+    "nonManifoldEdges": 18,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "goblet_laurel_shard_004",
+    "tris": 870,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "goblet_laurel_shard_005",
+    "tris": 716,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "goblet_laurel_shard_006",
+    "tris": 1754,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "goblet_laurel_shard_007",
+    "tris": 434,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "goblet_laurel_shard_008",
+    "tris": 1190,
+    "nonManifoldEdges": 4,
+    "boundaryEdges": 0,
+    "components": 9
+   },
+   {
+    "name": "goblet_laurel_shard_009",
+    "tris": 378,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "goblet_laurel_shard_010",
+    "tris": 386,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "goblet_laurel_shard_011",
+    "tris": 782,
+    "nonManifoldEdges": 2,
+    "boundaryEdges": 0,
+    "components": 6
+   },
+   {
+    "name": "goblet_laurel_shard_012",
+    "tris": 726,
+    "nonManifoldEdges": 1,
+    "boundaryEdges": 0,
+    "components": 7
+   },
+   {
+    "name": "goblet_laurel_shard_013",
+    "tris": 442,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "goblet_laurel_shard_014",
+    "tris": 408,
+    "nonManifoldEdges": 14,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "goblet_laurel_shard_015",
+    "tris": 982,
+    "nonManifoldEdges": 9,
+    "boundaryEdges": 0,
+    "components": 9
+   },
+   {
+    "name": "goblet_laurel_shard_016",
+    "tris": 394,
+    "nonManifoldEdges": 14,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "goblet_laurel_shard_017",
+    "tris": 404,
+    "nonManifoldEdges": 7,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "goblet_laurel_shard_018",
+    "tris": 424,
+    "nonManifoldEdges": 7,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "goblet_laurel_shard_019",
+    "tris": 876,
+    "nonManifoldEdges": 9,
+    "boundaryEdges": 0,
+    "components": 8
+   },
+   {
+    "name": "goblet_laurel_shard_020",
+    "tris": 746,
+    "nonManifoldEdges": 15,
+    "boundaryEdges": 0,
+    "components": 7
+   },
+   {
+    "name": "goblet_laurel_shard_021",
+    "tris": 418,
+    "nonManifoldEdges": 7,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "goblet_laurel_shard_022",
+    "tris": 400,
+    "nonManifoldEdges": 7,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_amphora_base",
+    "tris": 192,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_intact",
+    "tris": 2520,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 3
+   },
+   {
+    "name": "vase_amphora_shard_000",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_001",
+    "tris": 512,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_amphora_shard_002",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_003",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_004",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_005",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_006",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_007",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_008",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_009",
+    "tris": 512,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_amphora_shard_010",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_011",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_012",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_013",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_014",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_015",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_base",
+    "tris": 192,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_intact",
+    "tris": 2176,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_000",
+    "tris": 162,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_001",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_002",
+    "tris": 162,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_003",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_004",
+    "tris": 162,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_005",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_006",
+    "tris": 162,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_007",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_008",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_009",
+    "tris": 248,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_010",
+    "tris": 162,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_011",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_012",
+    "tris": 162,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_013",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_014",
+    "tris": 162,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_015",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_intact",
+    "tris": 10176,
+    "nonManifoldEdges": 180,
+    "boundaryEdges": 0,
+    "components": 51
+   },
+   {
+    "name": "vase_rounded_shard_000",
+    "tris": 404,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_001",
+    "tris": 1106,
+    "nonManifoldEdges": 24,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_rounded_shard_002",
+    "tris": 418,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_rounded_shard_003",
+    "tris": 718,
+    "nonManifoldEdges": 18,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_rounded_shard_004",
+    "tris": 524,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_rounded_shard_005",
+    "tris": 808,
+    "nonManifoldEdges": 20,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_rounded_shard_006",
+    "tris": 730,
+    "nonManifoldEdges": 12,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_rounded_shard_007",
+    "tris": 452,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 5
+   },
+   {
+    "name": "vase_rounded_shard_008",
+    "tris": 862,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 0,
+    "components": 8
+   },
+   {
+    "name": "vase_rounded_shard_009",
+    "tris": 714,
+    "nonManifoldEdges": 2,
+    "boundaryEdges": 0,
+    "components": 8
+   },
+   {
+    "name": "vase_rounded_shard_010",
+    "tris": 608,
+    "nonManifoldEdges": 1,
+    "boundaryEdges": 0,
+    "components": 6
+   },
+   {
+    "name": "vase_rounded_shard_011",
+    "tris": 1104,
+    "nonManifoldEdges": 4,
+    "boundaryEdges": 0,
+    "components": 10
+   },
+   {
+    "name": "vase_rounded_shard_012",
+    "tris": 620,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 5
+   },
+   {
+    "name": "vase_rounded_shard_013",
+    "tris": 970,
+    "nonManifoldEdges": 4,
+    "boundaryEdges": 0,
+    "components": 9
+   },
+   {
+    "name": "vase_rounded_shard_014",
+    "tris": 272,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_015",
+    "tris": 1100,
+    "nonManifoldEdges": 4,
+    "boundaryEdges": 0,
+    "components": 9
+   },
+   {
+    "name": "vase_rounded_shard_016",
+    "tris": 664,
+    "nonManifoldEdges": 21,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_rounded_shard_017",
+    "tris": 960,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 0,
+    "components": 7
+   },
+   {
+    "name": "vase_rounded_shard_018",
+    "tris": 622,
+    "nonManifoldEdges": 21,
+    "boundaryEdges": 0,
+    "components": 2
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v3/aurora-coupe-qa-v2.glb",
+  "bytes": 3707060,
+  "roots": [
+   "coupe_aurora"
+  ],
+  "rootCount": 1,
+  "meshObjects": 24,
+  "tris": 113602,
+  "nonManifoldEdges": 0,
+  "boundaryEdges": 0,
+  "components": 25,
+  "flatFaceShare": 0.056,
+  "materials": [
+   "glass_cut",
+   "glass_shell",
+   "gold_trim"
+  ],
+  "dims_m": [
+   0.329,
+   0.329,
+   0.4
+  ],
+  "objects": [
+   {
+    "name": "coupe_aurora_intact",
+    "tris": 50000,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_000",
+    "tris": 3544,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_001",
+    "tris": 3486,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_002",
+    "tris": 1996,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_003",
+    "tris": 3212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_004",
+    "tris": 2038,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_005",
+    "tris": 2452,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_006",
+    "tris": 2660,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_007",
+    "tris": 2916,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_008",
+    "tris": 3090,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_009",
+    "tris": 1822,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_010",
+    "tris": 2302,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_011",
+    "tris": 2542,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_012",
+    "tris": 2896,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_013",
+    "tris": 2588,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_014",
+    "tris": 3060,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "coupe_aurora_shard_015",
+    "tris": 6048,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_016",
+    "tris": 2388,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_017",
+    "tris": 2478,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_018",
+    "tris": 3858,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_019",
+    "tris": 1584,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_020",
+    "tris": 2158,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_021",
+    "tris": 2694,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "coupe_aurora_shard_022",
+    "tris": 1790,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v3/cut-crystal-decanter-qa-v2.glb",
+  "bytes": 3715732,
+  "roots": [
+   "decanter_cut"
+  ],
+  "rootCount": 1,
+  "meshObjects": 25,
+  "tris": 116716,
+  "nonManifoldEdges": 0,
+  "boundaryEdges": 0,
+  "components": 28,
+  "flatFaceShare": 0.226,
+  "materials": [
+   "glass_cut",
+   "glass_shell",
+   "gold_trim"
+  ],
+  "dims_m": [
+   0.261,
+   0.269,
+   0.52
+  ],
+  "objects": [
+   {
+    "name": "decanter_cut_body",
+    "tris": 46264,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "decanter_cut_stopper",
+    "tris": 3734,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_000",
+    "tris": 3020,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_001",
+    "tris": 2328,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_002",
+    "tris": 4406,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "decanter_cut_shard_003",
+    "tris": 2516,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_004",
+    "tris": 4306,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_005",
+    "tris": 2026,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_006",
+    "tris": 1688,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_007",
+    "tris": 3658,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_008",
+    "tris": 1036,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_009",
+    "tris": 2248,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_010",
+    "tris": 2602,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_011",
+    "tris": 4740,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "decanter_cut_shard_012",
+    "tris": 2116,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_013",
+    "tris": 2098,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_014",
+    "tris": 3994,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_015",
+    "tris": 3156,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_016",
+    "tris": 3442,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_017",
+    "tris": 2608,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_018",
+    "tris": 3730,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_019",
+    "tris": 1518,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_020",
+    "tris": 1798,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_021",
+    "tris": 3950,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "decanter_cut_shard_022",
+    "tris": 3734,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v3/fluted-carafe-qa-v2.glb",
+  "bytes": 4278408,
+  "roots": [
+   "vase_fluted"
+  ],
+  "rootCount": 1,
+  "meshObjects": 24,
+  "tris": 119617,
+  "nonManifoldEdges": 3,
+  "boundaryEdges": 2,
+  "components": 46,
+  "flatFaceShare": 0.077,
+  "materials": [
+   "glass_cut",
+   "glass_shell",
+   "gold_trim"
+  ],
+  "dims_m": [
+   0.264,
+   0.271,
+   0.69
+  ],
+  "objects": [
+   {
+    "name": "vase_fluted_intact",
+    "tris": 49930,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_fluted_shard_000",
+    "tris": 3546,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_001",
+    "tris": 1888,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_002",
+    "tris": 5920,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_003",
+    "tris": 1374,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_004",
+    "tris": 2918,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 3
+   },
+   {
+    "name": "vase_fluted_shard_005",
+    "tris": 2230,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 4
+   },
+   {
+    "name": "vase_fluted_shard_006",
+    "tris": 2338,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 3
+   },
+   {
+    "name": "vase_fluted_shard_007",
+    "tris": 7542,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_008",
+    "tris": 1084,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_009",
+    "tris": 1930,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_010",
+    "tris": 2788,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_011",
+    "tris": 3078,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 3
+   },
+   {
+    "name": "vase_fluted_shard_012",
+    "tris": 3282,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 4
+   },
+   {
+    "name": "vase_fluted_shard_013",
+    "tris": 3680,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_fluted_shard_014",
+    "tris": 3984,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_015",
+    "tris": 2147,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 3
+   },
+   {
+    "name": "vase_fluted_shard_016",
+    "tris": 3716,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 3
+   },
+   {
+    "name": "vase_fluted_shard_017",
+    "tris": 4466,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_018",
+    "tris": 3302,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_019",
+    "tris": 2456,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 5
+   },
+   {
+    "name": "vase_fluted_shard_020",
+    "tris": 2550,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_021",
+    "tris": 754,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_022",
+    "tris": 2714,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v3/garden-arcade.glb",
+  "bytes": 6829416,
+  "roots": [
+   "meshy_garden_arcade"
+  ],
+  "rootCount": 1,
+  "meshObjects": 1,
+  "tris": 28161,
+  "nonManifoldEdges": 243,
+  "boundaryEdges": 171,
+  "components": 1,
+  "flatFaceShare": 0.048,
+  "materials": [
+   "meshy_garden_arcade_atlas"
+  ],
+  "dims_m": [
+   5.663,
+   0.818,
+   3.0
+  ],
+  "objects": [
+   {
+    "name": "garden_arcade_mesh",
+    "tris": 28161,
+    "nonManifoldEdges": 243,
+    "boundaryEdges": 171,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v3/gilded-column.glb",
+  "bytes": 6031316,
+  "roots": [
+   "meshy_gilded_column"
+  ],
+  "rootCount": 1,
+  "meshObjects": 1,
+  "tris": 23148,
+  "nonManifoldEdges": 357,
+  "boundaryEdges": 185,
+  "components": 1,
+  "flatFaceShare": 0.057,
+  "materials": [
+   "meshy_gilded_column_atlas"
+  ],
+  "dims_m": [
+   0.774,
+   0.774,
+   3.0
+  ],
+  "objects": [
+   {
+    "name": "gilded_column_mesh",
+    "tris": 23148,
+    "nonManifoldEdges": 357,
+    "boundaryEdges": 185,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v3/moon-amphora-qa-v2.glb",
+  "bytes": 5776264,
+  "roots": [
+   "vase_amphora"
+  ],
+  "rootCount": 1,
+  "meshObjects": 24,
+  "tris": 223547,
+  "nonManifoldEdges": 3,
+  "boundaryEdges": 2,
+  "components": 30,
+  "flatFaceShare": 0.049,
+  "materials": [
+   "glass_cut",
+   "glass_shell",
+   "gold_trim"
+  ],
+  "dims_m": [
+   0.292,
+   0.292,
+   0.55
+  ],
+  "objects": [
+   {
+    "name": "vase_amphora_intact",
+    "tris": 99976,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_000",
+    "tris": 5570,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_amphora_shard_001",
+    "tris": 3592,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_002",
+    "tris": 2398,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_003",
+    "tris": 3412,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_004",
+    "tris": 3768,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_005",
+    "tris": 5452,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_amphora_shard_006",
+    "tris": 9462,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_amphora_shard_007",
+    "tris": 4296,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_008",
+    "tris": 3214,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_009",
+    "tris": 3190,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_010",
+    "tris": 6490,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_011",
+    "tris": 13481,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_012",
+    "tris": 4488,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_amphora_shard_013",
+    "tris": 3932,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_amphora_shard_014",
+    "tris": 4314,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_015",
+    "tris": 3282,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_016",
+    "tris": 3670,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_017",
+    "tris": 4968,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_amphora_shard_018",
+    "tris": 2116,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_019",
+    "tris": 7320,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_020",
+    "tris": 8116,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_021",
+    "tris": 10776,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_022",
+    "tris": 6264,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v3/observatory-canopy.glb",
+  "bytes": 7545096,
+  "roots": [
+   "meshy_observatory_canopy"
+  ],
+  "rootCount": 1,
+  "meshObjects": 1,
+  "tris": 40424,
+  "nonManifoldEdges": 112,
+  "boundaryEdges": 65,
+  "components": 2,
+  "flatFaceShare": 0.061,
+  "materials": [
+   "meshy_observatory_canopy_atlas"
+  ],
+  "dims_m": [
+   2.621,
+   2.622,
+   3.0
+  ],
+  "objects": [
+   {
+    "name": "observatory_canopy_mesh",
+    "tris": 40424,
+    "nonManifoldEdges": 112,
+    "boundaryEdges": 65,
+    "components": 2
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v4/museum-screen-bay.glb",
+  "bytes": 4686268,
+  "roots": [
+   "meshy_museum_screen_bay"
+  ],
+  "rootCount": 1,
+  "meshObjects": 1,
+  "tris": 19479,
+  "nonManifoldEdges": 316,
+  "boundaryEdges": 225,
+  "components": 2,
+  "flatFaceShare": 0.062,
+  "materials": [
+   "meshy_museum_screen_bay_atlas"
+  ],
+  "dims_m": [
+   3.202,
+   0.207,
+   3.6
+  ],
+  "objects": [
+   {
+    "name": "museum_screen_bay_mesh",
+    "tris": 19479,
+    "nonManifoldEdges": 316,
+    "boundaryEdges": 225,
+    "components": 2
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v4/museum-window-bay.glb",
+  "bytes": 5047156,
+  "roots": [
+   "meshy_museum_window_bay"
+  ],
+  "rootCount": 1,
+  "meshObjects": 1,
+  "tris": 22204,
+  "nonManifoldEdges": 124,
+  "boundaryEdges": 87,
+  "components": 1,
+  "flatFaceShare": 0.057,
+  "materials": [
+   "meshy_museum_window_bay_atlas"
+  ],
+  "dims_m": [
+   2.906,
+   0.362,
+   3.6
+  ],
+  "objects": [
+   {
+    "name": "museum_window_bay_mesh",
+    "tris": 22204,
+    "nonManifoldEdges": 124,
+    "boundaryEdges": 87,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v5/museum-decor.glb",
+  "bytes": 9240644,
+  "roots": [
+   "decor_crystal_planter",
+   "decor_gallery_frame"
+  ],
+  "rootCount": 2,
+  "meshObjects": 3,
+  "tris": 16201,
+  "nonManifoldEdges": 258,
+  "boundaryEdges": 154,
+  "components": 3,
+  "flatFaceShare": 0.152,
+  "materials": [
+   "decor_surface",
+   "meshy_crystal_planter_atlas",
+   "meshy_gallery_frame_atlas"
+  ],
+  "dims_m": [
+   1.117,
+   0.912,
+   2.3
+  ],
+  "objects": [
+   {
+    "name": "decor_crystal_planter",
+    "tris": 9236,
+    "nonManifoldEdges": 175,
+    "boundaryEdges": 71,
+    "components": 1
+   },
+   {
+    "name": "gallery_frame_mesh",
+    "tris": 6910,
+    "nonManifoldEdges": 42,
+    "boundaryEdges": 42,
+    "components": 1
+   },
+   {
+    "name": "gallery_frame_surface",
+    "tris": 55,
+    "nonManifoldEdges": 41,
+    "boundaryEdges": 41,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v6/amber-cadence-urn-qa-v2.glb",
+  "bytes": 3741768,
+  "roots": [
+   "breakable_l2_low_amber_urn"
+  ],
+  "rootCount": 1,
+  "meshObjects": 18,
+  "tris": 26544,
+  "nonManifoldEdges": 0,
+  "boundaryEdges": 0,
+  "components": 20,
+  "flatFaceShare": 0.202,
+  "materials": [
+   "amber_shell",
+   "cavity_surface",
+   "glass_cut"
+  ],
+  "dims_m": [
+   0.932,
+   0.932,
+   0.72
+  ],
+  "objects": [
+   {
+    "name": "breakable_l2_low_amber_urn_intact",
+    "tris": 9864,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_000",
+    "tris": 1168,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_001",
+    "tris": 860,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_002",
+    "tris": 1400,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_003",
+    "tris": 830,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_004",
+    "tris": 846,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_005",
+    "tris": 918,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_006",
+    "tris": 1342,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_007",
+    "tris": 1068,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_008",
+    "tris": 812,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_009",
+    "tris": 942,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_010",
+    "tris": 966,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_011",
+    "tris": 1074,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_012",
+    "tris": 1666,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_013",
+    "tris": 942,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_014",
+    "tris": 848,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_low_amber_urn_shard_015",
+    "tris": 938,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "COLLIDER_breakable_l2_low_amber_urn",
+    "tris": 60,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v6/opaline-echo-amphora-qa-v2.glb",
+  "bytes": 3814404,
+  "roots": [
+   "breakable_l2_opaline_echo_amphora"
+  ],
+  "rootCount": 1,
+  "meshObjects": 20,
+  "tris": 23438,
+  "nonManifoldEdges": 0,
+  "boundaryEdges": 0,
+  "components": 20,
+  "flatFaceShare": 0.205,
+  "materials": [
+   "cavity_surface",
+   "glass_cut",
+   "glass_shell"
+  ],
+  "dims_m": [
+   0.619,
+   0.568,
+   0.92
+  ],
+  "objects": [
+   {
+    "name": "breakable_l2_opaline_echo_amphora_intact",
+    "tris": 8728,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_000",
+    "tris": 1238,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_001",
+    "tris": 812,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_002",
+    "tris": 1464,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_003",
+    "tris": 454,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_004",
+    "tris": 482,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_005",
+    "tris": 844,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_006",
+    "tris": 1044,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_007",
+    "tris": 590,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_008",
+    "tris": 1060,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_009",
+    "tris": 766,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_010",
+    "tris": 748,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_011",
+    "tris": 684,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_012",
+    "tris": 790,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_013",
+    "tris": 666,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_014",
+    "tris": 388,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_015",
+    "tris": 768,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_016",
+    "tris": 480,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "breakable_l2_opaline_echo_amphora_shard_017",
+    "tris": 1372,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "COLLIDER_breakable_l2_opaline_echo_amphora",
+    "tris": 60,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure-v6/twin-tone-resonance-harp.glb",
+  "bytes": 2810588,
+  "roots": [
+   "decor_l2_twin_tone_resonance_harp"
+  ],
+  "rootCount": 1,
+  "meshObjects": 1,
+  "tris": 9837,
+  "nonManifoldEdges": 15,
+  "boundaryEdges": 10,
+  "components": 1,
+  "flatFaceShare": 0.044,
+  "materials": [
+   "twin_tone_resonance_harp_atlas_01"
+  ],
+  "dims_m": [
+   1.5,
+   0.686,
+   1.65
+  ],
+  "objects": [
+   {
+    "name": "twin_tone_resonance_harp_mesh_01",
+    "tris": 9837,
+    "nonManifoldEdges": 15,
+    "boundaryEdges": 10,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure/legend-slab.glb",
+  "bytes": 709632,
+  "roots": [
+   "legend_cash"
+  ],
+  "rootCount": 1,
+  "meshObjects": 22,
+  "tris": 816,
+  "nonManifoldEdges": 0,
+  "boundaryEdges": 0,
+  "components": 22,
+  "flatFaceShare": 0.651,
+  "materials": [
+   "legend_edge",
+   "legend_portrait",
+   "museum_brass",
+   "museum_obsidian"
+  ],
+  "dims_m": [
+   0.88,
+   0.25,
+   1.209
+  ],
+  "objects": [
+   {
+    "name": "legend_cash_base",
+    "tris": 108,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_frame_horizontal_1.105",
+    "tris": 108,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_frame_horizontal_-0.025",
+    "tris": 108,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_frame_vertical_0.374",
+    "tris": 108,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_frame_vertical_-0.374",
+    "tris": 108,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_intact",
+    "tris": 12,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_000",
+    "tris": 12,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_001",
+    "tris": 20,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_002",
+    "tris": 16,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_003",
+    "tris": 12,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_004",
+    "tris": 16,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_005",
+    "tris": 20,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_006",
+    "tris": 20,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_007",
+    "tris": 16,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_008",
+    "tris": 20,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_009",
+    "tris": 12,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_010",
+    "tris": 24,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_011",
+    "tris": 16,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_012",
+    "tris": 12,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_013",
+    "tris": 20,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_014",
+    "tris": 12,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "legend_cash_shard_015",
+    "tris": 16,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure/platform-kit-qa-v2.glb",
+  "bytes": 944596,
+  "roots": [
+   "museum_arch",
+   "museum_astrolabe",
+   "museum_column",
+   "platform_bridge",
+   "platform_island",
+   "platform_ledge",
+   "platform_plinth",
+   "platform_ramp",
+   "platform_terrace"
+  ],
+  "rootCount": 9,
+  "meshObjects": 33,
+  "tris": 22969,
+  "nonManifoldEdges": 75,
+  "boundaryEdges": 61,
+  "components": 151,
+  "flatFaceShare": 0.072,
+  "materials": [
+   "museum_brass",
+   "museum_cyan",
+   "museum_ivory",
+   "museum_ivory.001",
+   "museum_obsidian",
+   "museum_petrol"
+  ],
+  "dims_m": [
+   3.3,
+   3.323,
+   3.678
+  ],
+  "objects": [
+   {
+    "name": "museum_arch_museum_brass",
+    "tris": 1192,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 4
+   },
+   {
+    "name": "museum_arch_museum_ivory",
+    "tris": 868,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 3
+   },
+   {
+    "name": "museum_arch_museum_petrol",
+    "tris": 108,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "museum_astrolabe_museum_brass",
+    "tris": 6167,
+    "nonManifoldEdges": 35,
+    "boundaryEdges": 21,
+    "components": 1
+   },
+   {
+    "name": "museum_column_museum_brass",
+    "tris": 2880,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 5
+   },
+   {
+    "name": "museum_column_museum_ivory",
+    "tris": 888,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 3
+   },
+   {
+    "name": "platform_bridge_museum_brass",
+    "tris": 2192,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 22
+   },
+   {
+    "name": "platform_bridge_museum_cyan",
+    "tris": 96,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_bridge_museum_ivory",
+    "tris": 84,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_bridge_museum_obsidian",
+    "tris": 108,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_bridge_museum_petrol",
+    "tris": 22,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "platform_island_museum_brass",
+    "tris": 1600,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 20
+   },
+   {
+    "name": "platform_island_museum_cyan",
+    "tris": 96,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_island_museum_ivory",
+    "tris": 84,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_island_museum_obsidian",
+    "tris": 108,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_island_museum_petrol",
+    "tris": 22,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "platform_ledge_museum_brass",
+    "tris": 1600,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 20
+   },
+   {
+    "name": "platform_ledge_museum_cyan",
+    "tris": 96,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_ledge_museum_ivory",
+    "tris": 84,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_ledge_museum_obsidian",
+    "tris": 108,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_ledge_museum_petrol",
+    "tris": 22,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "platform_plinth_museum_brass",
+    "tris": 1600,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 20
+   },
+   {
+    "name": "platform_plinth_museum_cyan",
+    "tris": 672,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "platform_plinth_museum_ivory",
+    "tris": 84,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_plinth_museum_obsidian",
+    "tris": 108,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_plinth_museum_petrol",
+    "tris": 22,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "platform_ramp_museum_brass",
+    "tris": 136,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 10
+   },
+   {
+    "name": "platform_ramp_museum_ivory",
+    "tris": 12,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_terrace_museum_brass",
+    "tris": 1600,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 20
+   },
+   {
+    "name": "platform_terrace_museum_cyan",
+    "tris": 96,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_terrace_museum_ivory",
+    "tris": 84,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_terrace_museum_obsidian",
+    "tris": 108,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "platform_terrace_museum_petrol",
+    "tris": 22,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/adventure/vessels.glb",
+  "bytes": 353292,
+  "roots": [
+   "vase_amphora",
+   "vase_fluted",
+   "vase_rounded"
+  ],
+  "rootCount": 3,
+  "meshObjects": 54,
+  "tris": 16192,
+  "nonManifoldEdges": 0,
+  "boundaryEdges": 0,
+  "components": 58,
+  "flatFaceShare": 0.052,
+  "materials": [
+   "glass_aqua",
+   "glass_honey",
+   "glass_rose",
+   "museum_brass"
+  ],
+  "dims_m": [
+   0.554,
+   0.401,
+   0.69
+  ],
+  "objects": [
+   {
+    "name": "vase_amphora_base",
+    "tris": 192,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_intact",
+    "tris": 2520,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 3
+   },
+   {
+    "name": "vase_amphora_shard_000",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_001",
+    "tris": 512,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_amphora_shard_002",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_003",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_004",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_005",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_006",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_007",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_008",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_009",
+    "tris": 512,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 2
+   },
+   {
+    "name": "vase_amphora_shard_010",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_011",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_012",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_013",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_014",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_amphora_shard_015",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_base",
+    "tris": 192,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_intact",
+    "tris": 2176,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_000",
+    "tris": 162,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_001",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_002",
+    "tris": 162,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_003",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_004",
+    "tris": 162,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_005",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_006",
+    "tris": 162,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_007",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_008",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_009",
+    "tris": 248,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_010",
+    "tris": 162,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_011",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_012",
+    "tris": 162,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_013",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_014",
+    "tris": 162,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_fluted_shard_015",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_base",
+    "tris": 192,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_intact",
+    "tris": 1920,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_000",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_001",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_002",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_003",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_004",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_005",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_006",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_007",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_008",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_009",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_010",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_011",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_012",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_013",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_014",
+    "tris": 126,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "vase_rounded_shard_015",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/crystal-interiors-v2/living-crystal-platform-v2.glb",
+  "bytes": 461664,
+  "roots": [
+   "LivingCrystalPlatformV2"
+  ],
+  "rootCount": 1,
+  "meshObjects": 3,
+  "tris": 32336,
+  "nonManifoldEdges": 0,
+  "boundaryEdges": 0,
+  "components": 96,
+  "flatFaceShare": 0.009,
+  "materials": [
+   "LivingCrystalV2_Hardware_Gold",
+   "LivingCrystalV2_Interior_PearlRoot",
+   "LivingCrystalV2_Shell_Rose"
+  ],
+  "dims_m": [
+   3.097,
+   1.804,
+   0.55
+  ],
+  "objects": [
+   {
+    "name": "LivingCrystalPlatformV2_Hardware",
+    "tris": 3104,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 26
+   },
+   {
+    "name": "LivingCrystalPlatformV2_PearlRoots",
+    "tris": 28644,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 69
+   },
+   {
+    "name": "LivingCrystalPlatformV2_Shell",
+    "tris": 588,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/glass3d/glass.glb",
+  "bytes": 49872,
+  "roots": [
+   "glass_foot",
+   "glass_intact"
+  ],
+  "rootCount": 2,
+  "meshObjects": 2,
+  "tris": 2624,
+  "nonManifoldEdges": 64,
+  "boundaryEdges": 64,
+  "components": 2,
+  "flatFaceShare": 0.0,
+  "materials": [
+   "glass_clear"
+  ],
+  "dims_m": [
+   0.092,
+   0.092,
+   0.22
+  ],
+  "objects": [
+   {
+    "name": "glass_foot",
+    "tris": 704,
+    "nonManifoldEdges": 64,
+    "boundaryEdges": 64,
+    "components": 1
+   },
+   {
+    "name": "glass_intact",
+    "tris": 1920,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/glass3d/merc.glb",
+  "bytes": 431512,
+  "roots": [
+   "merc_rig",
+   "Icosphere"
+  ],
+  "rootCount": 2,
+  "meshObjects": 5,
+  "tris": 12258,
+  "nonManifoldEdges": 0,
+  "boundaryEdges": 0,
+  "components": 7,
+  "flatFaceShare": 0.007,
+  "materials": [
+   "merc_eye"
+  ],
+  "dims_m": [
+   1.902,
+   2.0,
+   2.0
+  ],
+  "objects": [
+   {
+    "name": "merc_body",
+    "tris": 9522,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "merc_hand_l",
+    "tris": 790,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "merc_hand_r",
+    "tris": 786,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "merc_face.001",
+    "tris": 1080,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 3
+   },
+   {
+    "name": "Icosphere",
+    "tris": 80,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/glass3d/pane-shards.glb",
+  "bytes": 151812,
+  "roots": [
+   "pane_000",
+   "pane_001",
+   "pane_002",
+   "pane_003",
+   "pane_004",
+   "pane_005",
+   "pane_006",
+   "pane_007",
+   "pane_008",
+   "pane_009",
+   "pane_010",
+   "pane_011",
+   "pane_012",
+   "pane_013",
+   "pane_014",
+   "pane_015",
+   "pane_016",
+   "pane_017",
+   "pane_018",
+   "pane_019",
+   "pane_020",
+   "pane_021",
+   "pane_022",
+   "pane_023",
+   "pane_024",
+   "pane_025",
+   "pane_026",
+   "pane_027",
+   "pane_028",
+   "pane_029",
+   "pane_030",
+   "pane_031",
+   "pane_032",
+   "pane_033",
+   "pane_034",
+   "pane_035",
+   "pane_036",
+   "pane_037",
+   "pane_038",
+   "pane_039"
+  ],
+  "rootCount": 78,
+  "meshObjects": 78,
+  "tris": 1455,
+  "nonManifoldEdges": 293,
+  "boundaryEdges": 197,
+  "components": 78,
+  "flatFaceShare": 0.386,
+  "materials": [],
+  "dims_m": [
+   0.003,
+   0.36,
+   0.525
+  ],
+  "objects": [
+   {
+    "name": "pane_000",
+    "tris": 10,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_001",
+    "tris": 14,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_002",
+    "tris": 17,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "pane_003",
+    "tris": 16,
+    "nonManifoldEdges": 4,
+    "boundaryEdges": 3,
+    "components": 1
+   },
+   {
+    "name": "pane_004",
+    "tris": 14,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_005",
+    "tris": 16,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_006",
+    "tris": 6,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "pane_007",
+    "tris": 18,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_008",
+    "tris": 20,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "pane_009",
+    "tris": 30,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 6,
+    "components": 1
+   },
+   {
+    "name": "pane_010",
+    "tris": 20,
+    "nonManifoldEdges": 12,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "pane_011",
+    "tris": 36,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "pane_012",
+    "tris": 9,
+    "nonManifoldEdges": 7,
+    "boundaryEdges": 5,
+    "components": 1
+   },
+   {
+    "name": "pane_013",
+    "tris": 18,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "pane_014",
+    "tris": 21,
+    "nonManifoldEdges": 9,
+    "boundaryEdges": 6,
+    "components": 1
+   },
+   {
+    "name": "pane_015",
+    "tris": 14,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_016",
+    "tris": 16,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_017",
+    "tris": 20,
+    "nonManifoldEdges": 12,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "pane_018",
+    "tris": 34,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 6,
+    "components": 1
+   },
+   {
+    "name": "pane_019",
+    "tris": 24,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 6,
+    "components": 1
+   },
+   {
+    "name": "pane_020",
+    "tris": 27,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "pane_021",
+    "tris": 6,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_022",
+    "tris": 9,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "pane_023",
+    "tris": 32,
+    "nonManifoldEdges": 12,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "pane_024",
+    "tris": 19,
+    "nonManifoldEdges": 14,
+    "boundaryEdges": 9,
+    "components": 1
+   },
+   {
+    "name": "pane_025",
+    "tris": 14,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_026",
+    "tris": 32,
+    "nonManifoldEdges": 12,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "pane_027",
+    "tris": 16,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_028",
+    "tris": 8,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_029",
+    "tris": 12,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "pane_030",
+    "tris": 26,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_031",
+    "tris": 8,
+    "nonManifoldEdges": 1,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_032",
+    "tris": 16,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_033",
+    "tris": 20,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_034",
+    "tris": 6,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_035",
+    "tris": 42,
+    "nonManifoldEdges": 2,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_036",
+    "tris": 7,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "pane_037",
+    "tris": 24,
+    "nonManifoldEdges": 12,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "pane_038",
+    "tris": 19,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "pane_039",
+    "tris": 10,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_040",
+    "tris": 28,
+    "nonManifoldEdges": 7,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "pane_041",
+    "tris": 12,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_042",
+    "tris": 8,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_043",
+    "tris": 26,
+    "nonManifoldEdges": 1,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_044",
+    "tris": 16,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_045",
+    "tris": 8,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_046",
+    "tris": 13,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "pane_047",
+    "tris": 30,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_048",
+    "tris": 20,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "pane_049",
+    "tris": 30,
+    "nonManifoldEdges": 7,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "pane_050",
+    "tris": 16,
+    "nonManifoldEdges": 7,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "pane_051",
+    "tris": 33,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "pane_052",
+    "tris": 16,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_053",
+    "tris": 21,
+    "nonManifoldEdges": 13,
+    "boundaryEdges": 10,
+    "components": 1
+   },
+   {
+    "name": "pane_054",
+    "tris": 14,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_055",
+    "tris": 20,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_056",
+    "tris": 9,
+    "nonManifoldEdges": 5,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "pane_057",
+    "tris": 17,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "pane_058",
+    "tris": 28,
+    "nonManifoldEdges": 10,
+    "boundaryEdges": 6,
+    "components": 1
+   },
+   {
+    "name": "pane_059",
+    "tris": 33,
+    "nonManifoldEdges": 4,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "pane_060",
+    "tris": 7,
+    "nonManifoldEdges": 5,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "pane_061",
+    "tris": 28,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "pane_062",
+    "tris": 27,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "pane_063",
+    "tris": 30,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_064",
+    "tris": 11,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "pane_065",
+    "tris": 16,
+    "nonManifoldEdges": 12,
+    "boundaryEdges": 9,
+    "components": 1
+   },
+   {
+    "name": "pane_066",
+    "tris": 17,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "pane_067",
+    "tris": 20,
+    "nonManifoldEdges": 1,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_068",
+    "tris": 10,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_069",
+    "tris": 26,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_070",
+    "tris": 20,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_071",
+    "tris": 19,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "pane_072",
+    "tris": 12,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "pane_073",
+    "tris": 25,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "pane_074",
+    "tris": 20,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_075",
+    "tris": 22,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "pane_076",
+    "tris": 5,
+    "nonManifoldEdges": 7,
+    "boundaryEdges": 7,
+    "components": 1
+   },
+   {
+    "name": "pane_077",
+    "tris": 16,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 4,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/glass3d/shards.glb",
+  "bytes": 110884,
+  "roots": [
+   "shard_000",
+   "shard_001",
+   "shard_002",
+   "shard_003",
+   "shard_004",
+   "shard_005",
+   "shard_006",
+   "shard_007",
+   "shard_008",
+   "shard_009",
+   "shard_010",
+   "shard_011",
+   "shard_012",
+   "shard_013",
+   "shard_014",
+   "shard_015",
+   "shard_016",
+   "shard_017",
+   "shard_018",
+   "shard_019",
+   "shard_020",
+   "shard_021",
+   "shard_022",
+   "shard_023",
+   "shard_024",
+   "shard_025",
+   "shard_026",
+   "shard_027",
+   "shard_028",
+   "shard_029",
+   "shard_030",
+   "shard_031",
+   "shard_032",
+   "shard_033",
+   "shard_034",
+   "shard_035",
+   "shard_036",
+   "shard_037",
+   "shard_038",
+   "shard_039"
+  ],
+  "rootCount": 103,
+  "meshObjects": 103,
+  "tris": 813,
+  "nonManifoldEdges": 674,
+  "boundaryEdges": 578,
+  "components": 103,
+  "flatFaceShare": 0.114,
+  "materials": [
+   "glass_clear"
+  ],
+  "dims_m": [
+   0.09,
+   0.091,
+   0.12
+  ],
+  "objects": [
+   {
+    "name": "shard_000",
+    "tris": 6,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "shard_001",
+    "tris": 10,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "shard_002",
+    "tris": 7,
+    "nonManifoldEdges": 7,
+    "boundaryEdges": 7,
+    "components": 1
+   },
+   {
+    "name": "shard_003",
+    "tris": 13,
+    "nonManifoldEdges": 4,
+    "boundaryEdges": 1,
+    "components": 1
+   },
+   {
+    "name": "shard_004",
+    "tris": 12,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 3,
+    "components": 1
+   },
+   {
+    "name": "shard_005",
+    "tris": 10,
+    "nonManifoldEdges": 4,
+    "boundaryEdges": 3,
+    "components": 1
+   },
+   {
+    "name": "shard_006",
+    "tris": 12,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 5,
+    "components": 1
+   },
+   {
+    "name": "shard_007",
+    "tris": 10,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 7,
+    "components": 1
+   },
+   {
+    "name": "shard_008",
+    "tris": 8,
+    "nonManifoldEdges": 10,
+    "boundaryEdges": 10,
+    "components": 1
+   },
+   {
+    "name": "shard_009",
+    "tris": 7,
+    "nonManifoldEdges": 9,
+    "boundaryEdges": 9,
+    "components": 1
+   },
+   {
+    "name": "shard_010",
+    "tris": 4,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 6,
+    "components": 1
+   },
+   {
+    "name": "shard_011",
+    "tris": 6,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "shard_012",
+    "tris": 6,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "shard_013",
+    "tris": 5,
+    "nonManifoldEdges": 7,
+    "boundaryEdges": 7,
+    "components": 1
+   },
+   {
+    "name": "shard_014",
+    "tris": 6,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "shard_015",
+    "tris": 6,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "shard_016",
+    "tris": 7,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "shard_017",
+    "tris": 9,
+    "nonManifoldEdges": 4,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "shard_018",
+    "tris": 6,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "shard_019",
+    "tris": 7,
+    "nonManifoldEdges": 5,
+    "boundaryEdges": 3,
+    "components": 1
+   },
+   {
+    "name": "shard_020",
+    "tris": 4,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 6,
+    "components": 1
+   },
+   {
+    "name": "shard_021",
+    "tris": 4,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 6,
+    "components": 1
+   },
+   {
+    "name": "shard_022",
+    "tris": 6,
+    "nonManifoldEdges": 4,
+    "boundaryEdges": 3,
+    "components": 1
+   },
+   {
+    "name": "shard_023",
+    "tris": 3,
+    "nonManifoldEdges": 5,
+    "boundaryEdges": 5,
+    "components": 1
+   },
+   {
+    "name": "shard_024",
+    "tris": 5,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "shard_025",
+    "tris": 4,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "shard_026",
+    "tris": 14,
+    "nonManifoldEdges": 10,
+    "boundaryEdges": 7,
+    "components": 1
+   },
+   {
+    "name": "shard_027",
+    "tris": 7,
+    "nonManifoldEdges": 5,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "shard_028",
+    "tris": 9,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "shard_029",
+    "tris": 8,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 5,
+    "components": 1
+   },
+   {
+    "name": "shard_030",
+    "tris": 7,
+    "nonManifoldEdges": 9,
+    "boundaryEdges": 9,
+    "components": 1
+   },
+   {
+    "name": "shard_031",
+    "tris": 9,
+    "nonManifoldEdges": 11,
+    "boundaryEdges": 11,
+    "components": 1
+   },
+   {
+    "name": "shard_032",
+    "tris": 10,
+    "nonManifoldEdges": 4,
+    "boundaryEdges": 3,
+    "components": 1
+   },
+   {
+    "name": "shard_033",
+    "tris": 12,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 5,
+    "components": 1
+   },
+   {
+    "name": "shard_034",
+    "tris": 13,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "shard_035",
+    "tris": 12,
+    "nonManifoldEdges": 10,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "shard_036",
+    "tris": 7,
+    "nonManifoldEdges": 9,
+    "boundaryEdges": 9,
+    "components": 1
+   },
+   {
+    "name": "shard_037",
+    "tris": 10,
+    "nonManifoldEdges": 12,
+    "boundaryEdges": 12,
+    "components": 1
+   },
+   {
+    "name": "shard_038",
+    "tris": 9,
+    "nonManifoldEdges": 9,
+    "boundaryEdges": 7,
+    "components": 1
+   },
+   {
+    "name": "shard_039",
+    "tris": 8,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 5,
+    "components": 1
+   },
+   {
+    "name": "shard_040",
+    "tris": 9,
+    "nonManifoldEdges": 11,
+    "boundaryEdges": 11,
+    "components": 1
+   },
+   {
+    "name": "shard_041",
+    "tris": 5,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "shard_042",
+    "tris": 4,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 6,
+    "components": 1
+   },
+   {
+    "name": "shard_043",
+    "tris": 9,
+    "nonManifoldEdges": 9,
+    "boundaryEdges": 7,
+    "components": 1
+   },
+   {
+    "name": "shard_044",
+    "tris": 10,
+    "nonManifoldEdges": 12,
+    "boundaryEdges": 12,
+    "components": 1
+   },
+   {
+    "name": "shard_045",
+    "tris": 7,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "shard_046",
+    "tris": 12,
+    "nonManifoldEdges": 4,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "shard_047",
+    "tris": 8,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 5,
+    "components": 1
+   },
+   {
+    "name": "shard_048",
+    "tris": 10,
+    "nonManifoldEdges": 12,
+    "boundaryEdges": 12,
+    "components": 1
+   },
+   {
+    "name": "shard_049",
+    "tris": 12,
+    "nonManifoldEdges": 1,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "shard_050",
+    "tris": 7,
+    "nonManifoldEdges": 5,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "shard_051",
+    "tris": 7,
+    "nonManifoldEdges": 7,
+    "boundaryEdges": 5,
+    "components": 1
+   },
+   {
+    "name": "shard_052",
+    "tris": 9,
+    "nonManifoldEdges": 11,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "shard_053",
+    "tris": 6,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "shard_054",
+    "tris": 10,
+    "nonManifoldEdges": 10,
+    "boundaryEdges": 7,
+    "components": 1
+   },
+   {
+    "name": "shard_055",
+    "tris": 11,
+    "nonManifoldEdges": 12,
+    "boundaryEdges": 9,
+    "components": 1
+   },
+   {
+    "name": "shard_056",
+    "tris": 11,
+    "nonManifoldEdges": 13,
+    "boundaryEdges": 12,
+    "components": 1
+   },
+   {
+    "name": "shard_057",
+    "tris": 15,
+    "nonManifoldEdges": 11,
+    "boundaryEdges": 10,
+    "components": 1
+   },
+   {
+    "name": "shard_058",
+    "tris": 15,
+    "nonManifoldEdges": 7,
+    "boundaryEdges": 3,
+    "components": 1
+   },
+   {
+    "name": "shard_059",
+    "tris": 5,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "shard_060",
+    "tris": 12,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "shard_061",
+    "tris": 7,
+    "nonManifoldEdges": 9,
+    "boundaryEdges": 9,
+    "components": 1
+   },
+   {
+    "name": "shard_062",
+    "tris": 10,
+    "nonManifoldEdges": 7,
+    "boundaryEdges": 3,
+    "components": 1
+   },
+   {
+    "name": "shard_063",
+    "tris": 4,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 6,
+    "components": 1
+   },
+   {
+    "name": "shard_064",
+    "tris": 8,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 5,
+    "components": 1
+   },
+   {
+    "name": "shard_065",
+    "tris": 3,
+    "nonManifoldEdges": 5,
+    "boundaryEdges": 5,
+    "components": 1
+   },
+   {
+    "name": "shard_066",
+    "tris": 11,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 1,
+    "components": 1
+   },
+   {
+    "name": "shard_067",
+    "tris": 5,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "shard_068",
+    "tris": 6,
+    "nonManifoldEdges": 4,
+    "boundaryEdges": 3,
+    "components": 1
+   },
+   {
+    "name": "shard_069",
+    "tris": 7,
+    "nonManifoldEdges": 5,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "shard_070",
+    "tris": 7,
+    "nonManifoldEdges": 9,
+    "boundaryEdges": 9,
+    "components": 1
+   },
+   {
+    "name": "shard_071",
+    "tris": 10,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 6,
+    "components": 1
+   },
+   {
+    "name": "shard_072",
+    "tris": 6,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "shard_073",
+    "tris": 10,
+    "nonManifoldEdges": 6,
+    "boundaryEdges": 3,
+    "components": 1
+   },
+   {
+    "name": "shard_074",
+    "tris": 11,
+    "nonManifoldEdges": 11,
+    "boundaryEdges": 9,
+    "components": 1
+   },
+   {
+    "name": "shard_075",
+    "tris": 7,
+    "nonManifoldEdges": 5,
+    "boundaryEdges": 4,
+    "components": 1
+   },
+   {
+    "name": "shard_076",
+    "tris": 6,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "shard_077",
+    "tris": 7,
+    "nonManifoldEdges": 9,
+    "boundaryEdges": 9,
+    "components": 1
+   },
+   {
+    "name": "shard_078",
+    "tris": 6,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   },
+   {
+    "name": "shard_079",
+    "tris": 8,
+    "nonManifoldEdges": 8,
+    "boundaryEdges": 8,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/glassware-trio-v1/g01-sunlit-diadem.glb",
+  "bytes": 4725956,
+  "roots": [
+   "Glassware_G01_Delivery"
+  ],
+  "rootCount": 1,
+  "meshObjects": 34,
+  "tris": 277516,
+  "nonManifoldEdges": 6,
+  "boundaryEdges": 4,
+  "components": 34,
+  "flatFaceShare": 0.047,
+  "materials": [
+   "Glassware_G01_Glass",
+   "Glassware_G01_Gold",
+   "Glassware_G01_Interior"
+  ],
+  "dims_m": [
+   0.204,
+   0.204,
+   0.45
+  ],
+  "objects": [
+   {
+    "name": "Glassware_G01_Shard_000",
+    "tris": 2298,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_001",
+    "tris": 2278,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_002",
+    "tris": 2140,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_003",
+    "tris": 1868,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_004",
+    "tris": 268,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_005",
+    "tris": 180,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_006",
+    "tris": 340,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_007",
+    "tris": 208,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_008",
+    "tris": 274,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_009",
+    "tris": 16000,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_010",
+    "tris": 7692,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_011",
+    "tris": 8276,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_012",
+    "tris": 10121,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_013",
+    "tris": 9814,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_014",
+    "tris": 10884,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_015",
+    "tris": 14475,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_016",
+    "tris": 324,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_017",
+    "tris": 416,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_018",
+    "tris": 358,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_019",
+    "tris": 17276,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_020",
+    "tris": 548,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_021",
+    "tris": 324,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_022",
+    "tris": 434,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_023",
+    "tris": 430,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_024",
+    "tris": 16018,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_025",
+    "tris": 70,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_026",
+    "tris": 12780,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_027",
+    "tris": 212,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_028",
+    "tris": 190,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_029",
+    "tris": 14920,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_030",
+    "tris": 324,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_031",
+    "tris": 508,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Shard_032",
+    "tris": 268,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G01_Intact_Mesh",
+    "tris": 125000,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/glassware-trio-v1/g14-tidal-wave-carafe.glb",
+  "bytes": 3245184,
+  "roots": [
+   "Glassware_G14_Delivery"
+  ],
+  "rootCount": 1,
+  "meshObjects": 22,
+  "tris": 204792,
+  "nonManifoldEdges": 0,
+  "boundaryEdges": 0,
+  "components": 22,
+  "flatFaceShare": 0.042,
+  "materials": [
+   "Glassware_G14_Glass",
+   "Glassware_G14_Gold",
+   "Glassware_G14_Interior"
+  ],
+  "dims_m": [
+   0.387,
+   0.268,
+   0.45
+  ],
+  "objects": [
+   {
+    "name": "Glassware_G14_Shard_000",
+    "tris": 4464,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_001",
+    "tris": 4122,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_002",
+    "tris": 4412,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_003",
+    "tris": 2436,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_004",
+    "tris": 7728,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_005",
+    "tris": 2582,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_006",
+    "tris": 6766,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_007",
+    "tris": 5856,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_008",
+    "tris": 2454,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_009",
+    "tris": 2498,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_010",
+    "tris": 900,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_011",
+    "tris": 7044,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_012",
+    "tris": 1764,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_013",
+    "tris": 1858,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_014",
+    "tris": 3722,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_015",
+    "tris": 2140,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_016",
+    "tris": 5812,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_017",
+    "tris": 14168,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_018",
+    "tris": 10802,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_019",
+    "tris": 6246,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_Shard_020",
+    "tris": 13780,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G14_IntactMesh",
+    "tris": 93238,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   }
+  ]
+ },
+ {
+  "file": "apps/beside-cue/public/games/glassware-trio-v1/g22-aurora-lotus-bowl.glb",
+  "bytes": 7522444,
+  "roots": [
+   "Glassware_G22_Delivery"
+  ],
+  "rootCount": 1,
+  "meshObjects": 21,
+  "tris": 475167,
+  "nonManifoldEdges": 9,
+  "boundaryEdges": 4,
+  "components": 21,
+  "flatFaceShare": 0.023,
+  "materials": [
+   "Glassware_G22_Glass",
+   "Glassware_G22_Gold",
+   "Glassware_G22_Interior"
+  ],
+  "dims_m": [
+   0.757,
+   0.757,
+   0.45
+  ],
+  "objects": [
+   {
+    "name": "Glassware_G22_Shard_000",
+    "tris": 9434,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_001",
+    "tris": 7626,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_002",
+    "tris": 8940,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_003",
+    "tris": 8362,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_004",
+    "tris": 4262,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_005",
+    "tris": 2508,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_006",
+    "tris": 6714,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_007",
+    "tris": 4284,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_008",
+    "tris": 5076,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_009",
+    "tris": 11338,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_010",
+    "tris": 16644,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_011",
+    "tris": 19310,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_012",
+    "tris": 12854,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_013",
+    "tris": 15016,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_014",
+    "tris": 7282,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_015",
+    "tris": 24715,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 1,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_016",
+    "tris": 18080,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_017",
+    "tris": 20147,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 2,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_018",
+    "tris": 23154,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Shard_019",
+    "tris": 22962,
+    "nonManifoldEdges": 0,
+    "boundaryEdges": 0,
+    "components": 1
+   },
+   {
+    "name": "Glassware_G22_Intact_Mesh",
+    "tris": 226459,
+    "nonManifoldEdges": 3,
+    "boundaryEdges": 1,
+    "components": 1
+   }
+  ]
+ }
+]

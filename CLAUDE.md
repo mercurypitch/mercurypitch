@@ -23,6 +23,7 @@ and CI keeps it from going stale.
 | [docs/agent/DOCS-AUDIT.md](docs/agent/DOCS-AUDIT.md)             | Before trusting `docs/plans/` — many "pending" plans have shipped |
 | [motion-designer](.claude/skills/motion-designer/SKILL.md)       | Making, reviewing or rendering a video or motion graphic          |
 | [app-check](.claude/skills/app-check/SKILL.md)                   | Checking layouts and features in a real browser before maff looks |
+| [blender-modeler](.claude/skills/blender-modeler/SKILL.md)       | Modelling, rebuilding, fracturing or reviewing a 3D game asset    |
 
 The guardrails in full are in [AGENTS.md](AGENTS.md). The ones that must not
 wait for that read:

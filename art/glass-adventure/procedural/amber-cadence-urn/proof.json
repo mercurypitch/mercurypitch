@@ -1,0 +1,52 @@
+{
+ "layout": "twin-galleries",
+ "replace": "adventure-v6/amber-cadence-urn-qa-v2.glb",
+ "progress": {
+  "version": 2,
+  "levelId": "glassworks-twin-galleries/twin-galleries",
+  "checkpointId": "glassworks-twin-galleries/twin-galleries/warm/checkpoint/entry",
+  "completedBreakableIds": []
+ },
+ "viewports": [
+  {
+   "name": "desktop",
+   "width": 1280,
+   "height": 800,
+   "scale": 1,
+   "quality": "high"
+  }
+ ],
+ "shots": [
+  {
+   "name": "entry",
+   "settle": 6000
+  },
+  {
+   "name": "right",
+   "drag": [
+    350,
+    0
+   ],
+   "settle": 3000
+  },
+  {
+   "name": "left",
+   "drag": [
+    -700,
+    0
+   ],
+   "settle": 3000
+  },
+  {
+   "name": "tilt",
+   "drag": [
+    0,
+    -60
+   ],
+   "settle": 3000
+  }
+ ],
+ "dismiss": [
+  "Skip tutorial"
+ ]
+}

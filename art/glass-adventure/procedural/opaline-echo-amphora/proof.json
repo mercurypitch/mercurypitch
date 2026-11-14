@@ -1,0 +1,57 @@
+{
+ "layout": "twin-galleries",
+ "replace": "adventure-v6/opaline-echo-amphora-qa-v2.glb",
+ "progress": {
+  "version": 2,
+  "levelId": "glassworks-twin-galleries/twin-galleries",
+  "checkpointId": "glassworks-twin-galleries/twin-galleries/court/checkpoint/entry",
+  "completedBreakableIds": [
+   "glassworks-twin-galleries/twin-galleries/warm/encounter/lower-urn",
+   "glassworks-twin-galleries/twin-galleries/cool/encounter/upper-decanter"
+  ]
+ },
+ "viewports": [
+  {
+   "name": "desktop",
+   "width": 1280,
+   "height": 800,
+   "scale": 1,
+   "quality": "high"
+  }
+ ],
+ "shots": [
+  {
+   "name": "entry",
+   "settle": 6000
+  },
+  {
+   "name": "face",
+   "drag": [
+    350,
+    0
+   ],
+   "settle": 3000
+  },
+  {
+   "name": "walk",
+   "keys": [
+    {
+     "key": "w",
+     "ms": 1300
+    }
+   ],
+   "settle": 3000
+  },
+  {
+   "name": "walk-tilt",
+   "drag": [
+    0,
+    -60
+   ],
+   "settle": 3000
+  }
+ ],
+ "dismiss": [
+  "Skip tutorial"
+ ]
+}
