@@ -420,6 +420,41 @@ describe("after a hold, the reading's lines", { timeout: 15_000 }, () => {
   })
 })
 
+describe("the visit's ending", { timeout: 15_000 }, () => {
+  it('keeps the rest card when Done for today follows "Effortful"', async () => {
+    // Arrange: a hold read, then "Effortful", which picks the rest card here
+    await loadCard(true)
+    const { VisitEnding } = await import('@/features/lessons/kit/comfort')
+    mic.frames = take(STRAIGHT)
+    await press('[data-sing="start"]')
+    el('[data-feel="effortful"]').click()
+    const afterEffort = VisitEnding.ending
+
+    // Act
+    el('[data-panel="after"] [data-sing="today"]').click()
+
+    // Assert: the checkpoint is over, and the visit still ends on rest
+    expect(el('#singStatus').textContent).toBe('Done for today.')
+    expect([afterEffort, VisitEnding.ending]).toEqual(['rest', 'rest'])
+  })
+
+  it('leaves the practice card when Done for today follows "Easy"', async () => {
+    // Arrange
+    await loadCard(true)
+    const { VisitEnding } = await import('@/features/lessons/kit/comfort')
+    mic.frames = take(STRAIGHT)
+    await press('[data-sing="start"]')
+    el('[data-feel="easy"]').click()
+
+    // Act
+    el('[data-panel="after"] [data-sing="today"]').click()
+
+    // Assert
+    expect(el('#singStatus').textContent).toBe('Done for today.')
+    expect(VisitEnding.ending).toBe('practise')
+  })
+})
+
 describe('the middle line', () => {
   /** The reading's part of the card, and a chart's scene, on their own. */
   function viewDouble(): { view: HoldSingView; scene: Partial<BandScene> } {

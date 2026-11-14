@@ -464,14 +464,18 @@ export function initHoldSing(stills: RingStills, plan: HoldSingPlan): void {
 
   const feelings = mountFeelings(card, onFeel)
 
-  /** Done for today, on either of its buttons: the checkpoint ends here, and the Wrap keeps the Voice Mirror card. */
+  /**
+   * Done for today, on either of its buttons: the checkpoint ends here. It
+   * says nothing of the voice, so the Wrap's card stays as the visit's
+   * ending has it: the rest card after "Effortful" where the page asks for
+   * it, the practice card otherwise.
+   */
   function finish(): void {
     for (const b of qa<HTMLButtonElement>(
       '[data-panel="after"] .sing-btns button, [data-take-actions] button',
       card,
     ))
       b.hidden = true
-    VisitEnding.set('practise')
     view.status(STATUS.done)
     view.focusText(q('#singStatus'))
   }
