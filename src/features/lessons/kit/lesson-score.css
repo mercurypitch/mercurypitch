@@ -1,0 +1,168 @@
+/* ============================================================
+   Score — a song on two staffs: ink notes on chrome lines, the lit note, the marks
+   ============================================================
+   kit/score-draw.ts's drawing and its pitch-line view, kit/score-bands.ts
+   (Lesson 28 WEB-SPEC, Look). A page that mounts the score takes this
+   sheet in by @import, with the rhythm bar's, whose notation classes the
+   engraving writes, so both inline into the page's own sheet.
+
+   Notes are ink on chrome lines; the note sounding lights in its part's
+   colour, set on its staff as --rb-voice: Tavi's orange, Merc's blue, and
+   in Sing it the learner's amber, the other part's notes chrome. Tags,
+   numerals and words are ink; the bar numbers ink-2; the cursor a thin ink
+   line through the system. A mark not drawn before fades in over 0.3 s;
+   under reduced motion, or with Pause animations on, it lands at once. */
+
+.sc {
+  position: relative;
+}
+.sc-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  touch-action: pan-y;
+}
+.sc .is-hidden {
+  opacity: 0;
+}
+
+/* ---------------------------------------------------------------- the parts' colours */
+.sc-staff[data-tone='tavi'],
+.sc-part[data-tone='tavi'] {
+  --rb-voice: var(--orange);
+}
+.sc-staff[data-tone='merc'],
+.sc-part[data-tone='merc'] {
+  --rb-voice: var(--signal-blue);
+}
+.sc-staff[data-tone='learner'] {
+  --rb-voice: var(--amber);
+}
+/* the other part, under the learner's: chrome, never lit */
+.sc-staff[data-tone='other'] .rb-ink,
+.sc-staff[data-tone='other'] .rb-head {
+  fill: var(--chrome);
+}
+.sc-staff[data-tone='other'] .rb-head.rb-open {
+  fill: none;
+  stroke: var(--chrome);
+}
+.sc-staff[data-tone='other'] .rb-stem {
+  stroke: var(--chrome);
+}
+
+/* ---------------------------------------------------------------- the system */
+.sc-sysline,
+.sc-barline {
+  stroke: var(--rb-line);
+  stroke-width: 1.3px;
+}
+.sc-brace {
+  fill: none;
+  stroke: var(--chrome);
+  stroke-width: 2px;
+  stroke-linecap: round;
+}
+.sc-keysign {
+  fill: var(--ink);
+}
+.sc-number {
+  fill: var(--ink-2);
+  font-family: var(--f-display);
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- the marks */
+.sc-tag rect {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.2px;
+}
+.sc-tag-text,
+.sc-numeral {
+  fill: var(--ink);
+  font-family: var(--f-display);
+  font-weight: 600;
+}
+.sc-word {
+  fill: var(--ink);
+  font-family: var(--f-display);
+  font-style: italic;
+}
+.sc-breath {
+  fill: var(--ink);
+  font-family: var(--f-serif);
+  font-style: italic;
+  font-weight: 700;
+}
+.sc-house {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.9px;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.sc-ring {
+  fill: none;
+  stroke: var(--ink);
+  stroke-width: 1.6px;
+}
+.sc-cursor {
+  stroke: var(--ink);
+  stroke-width: 1.5px;
+  stroke-linecap: round;
+}
+.sc-cursor.is-off {
+  display: none;
+}
+/* a staff a tap plays (Step 4): the box takes the tap, and shows nothing */
+.sc-hit {
+  fill: transparent;
+  cursor: pointer;
+}
+
+/* ---------------------------------------------------------------- the pitch-line view */
+.sc-lane {
+  stroke: var(--hair-2);
+  stroke-width: 1px;
+}
+.sc-beatline {
+  stroke: var(--hair-2);
+  stroke-width: 1px;
+}
+.sc-band rect {
+  fill: var(--rb-voice);
+  opacity: 0.55;
+}
+.sc-band.is-sounding rect {
+  opacity: 1;
+}
+.sc-part-name {
+  fill: var(--rb-voice);
+  font-family: var(--f-display);
+  font-weight: 600;
+}
+
+/* ---------------------------------------------------------------- motion */
+.sc .is-fresh {
+  animation: sc-fade 0.3s var(--ease) both;
+}
+@keyframes sc-fade {
+  from {
+    opacity: 0;
+  }
+}
+.motion-paused .sc .is-fresh {
+  animation: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .sc .is-fresh {
+    animation: none;
+  }
+  .sc .rb-sym {
+    transition: none;
+  }
+}
