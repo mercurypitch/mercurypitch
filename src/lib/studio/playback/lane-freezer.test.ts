@@ -1,4 +1,4 @@
-// Studio lane freezer — renders a heavy song's lanes, lends them to runs, and lets an edited lane wait.
+// Studio lane freezer — renders a heavy song's lanes, lends them to runs, and lets an edited lane wait, and a lane whose MIDI render waits to be kept.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { reserveStudioMemory, setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-budget'
 import type { StudioPlannedLane } from '../model/arrangement-plan'
@@ -101,6 +101,29 @@ describe('Studio lane freezer', () => {
     held.release()
     freezer.dispose()
     expect(studioReservedMemoryBytes()).toBe(before)
+  })
+
+  it('leaves a lane whose MIDI render waits to be kept alone, says so, and renders it once the render is kept', async () => {
+    // Arrange
+    const { project, assets } = song()
+    const clock = { now: 0 }
+    const { freezer, render } = freezerFor(clock)
+
+    // Act
+    freezer.update(project, assets, new Set(['track-2']))
+    await vi.waitFor(() => expect(render).toHaveBeenCalledTimes(2))
+    await vi.waitFor(() => expect(laneFreezeStatus().rendering).toBe(false))
+    const waiting = laneFreezeStatus()
+    freezer.update(project, assets)
+    await vi.waitFor(() => expect(render).toHaveBeenCalledTimes(3))
+
+    // Assert
+    expect(
+      render.mock.calls.slice(0, 2).map(([lane]) => lane.track.id),
+    ).toEqual(expect.not.arrayContaining(['track-2']))
+    expect(waiting).toMatchObject({ wanted: 3, ready: 2, waiting: 1 })
+    expect(render.mock.calls[2][0].track.id).toBe('track-2')
+    freezer.dispose()
   })
 
   it('lets an edited lane go once no run holds it, and renders it again only once it is left alone', async () => {

@@ -57,6 +57,12 @@ export interface UseStudioTransportOptions {
    * the playhead and the clock, and the transport shows it running.
    */
   take?: Accessor<StudioTakeClock | null>
+  /**
+   * Lanes whose MIDI clips wait for a render to be kept
+   * (src/features/studio/midi): the lane freezer leaves them alone until
+   * it is, so it never renders ahead audio about to be replaced.
+   */
+  waitingLanes?: Accessor<ReadonlySet<string>>
 }
 
 export interface StudioPreviewOptions {
@@ -403,7 +409,9 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     return Math.max(runtime.prepareToSuspend(), retiringPreviews.size ? 240 : 0)
   }
   let observedId: string | null = null
-  let observedRevision = -1
+  let observedProject: StudioProject | null = null
+  // A new song object is a change to follow, the same revision included: a
+  // MIDI clip's preview render lands without an edit (midi-preview-snapshot.ts).
   createEffect(() => {
     const project = options.project()
     const assets = options.assets()
@@ -412,7 +420,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
       runtime.stop()
       stopPreview()
       observedId = project?.id ?? null
-    } else if (project !== null && project.revision !== observedRevision) {
+    } else if (project !== null && project !== observedProject) {
       void runtime.setSnapshot(project, assets).catch((error: unknown) => {
         if (!disposed)
           setPreviewError(
@@ -422,7 +430,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
           )
       })
     }
-    observedRevision = project?.revision ?? -1
+    observedProject = project
   })
 
   // Warm the playback cache as the song opens, and again once edits settle,
@@ -457,7 +465,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     const project = options.project()
     const assets = options.assets()
     if (!project) return
-    freezer.update(project, assets)
+    freezer.update(project, assets, options.waitingLanes?.())
     if (options.recording?.() === true) freezer.pause()
     else if (options.audioBusy?.() !== true) freezer.resume()
   })

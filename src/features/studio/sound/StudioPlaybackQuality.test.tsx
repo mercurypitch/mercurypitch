@@ -1,10 +1,10 @@
-// Studio playback quality control tests — the device's choice, and the tier Auto picks for the open song.
+// Studio playback quality control tests — the device's choice, the tier Auto picks for the open song, and what the lanes rendered ahead say, waiting for MIDI renders included.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { livePlaybackProfile, notePlayout, readStoredChoice, resetPlaybackQualityForTests, TIER_PROFILES, } from '@/lib/studio/playback/playback-quality'
 import { MEDIUM_SONG, roleSong, SMALL_SONG, THIS_DESKTOP_US, } from '@/lib/studio/playback/song.test-fixtures'
-import { StudioPlaybackQuality } from './StudioPlaybackQuality'
+import { studioFreezeNote,StudioPlaybackQuality,  } from './StudioPlaybackQuality'
 
 const small = roleSong(SMALL_SONG)
 const auto = () => screen.getByRole('radio', { name: /^Auto/ })
@@ -62,5 +62,20 @@ describe('Studio playback quality control', () => {
     expect(auto().closest('label')).toHaveTextContent('Auto (Balanced)')
     // The notice itself is the workspace's (StudioPlaybackNotice).
     expect(screen.queryByRole('status')).toBeNull()
+  })
+
+  it('says lanes wait for edited MIDI notes to be kept before they render ahead', () => {
+    // Act
+    const one = studioFreezeNote(3, 2, true, 1)
+    const two = studioFreezeNote(3, 1, false, 2)
+
+    // Assert
+    expect(one).toBe(
+      'Waiting for edited MIDI notes to be kept: then 1 lane renders ahead so this song keeps up.',
+    )
+    expect(two).toBe(
+      'Waiting for edited MIDI notes to be kept: then 2 lanes render ahead so this song keeps up.',
+    )
+    expect(studioFreezeNote(3, 1, true, 0)).toMatch(/^Rendering lanes ahead/)
   })
 })

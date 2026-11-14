@@ -20,6 +20,14 @@ export interface StudioExportControllerOptions {
     assets: readonly StudioAsset[],
   ): StudioFreezeHold | null
   render?: typeof renderStudioWav
+  /**
+   * Keep the renders of MIDI clips whose audio is stale, before the song is
+   * taken (src/features/studio/midi): the export then plays their notes.
+   * Resolves once they are kept or have failed, or the signal aborts.
+   */
+  settleRenders?(signal: AbortSignal): Promise<void>
+  /** Whether any MIDI clip waits for its render to be kept. */
+  rendersPending?(): boolean
 }
 
 export function useStudioExport(options: StudioExportControllerOptions) {
@@ -29,6 +37,8 @@ export function useStudioExport(options: StudioExportControllerOptions) {
   const [error, setError] = createSignal<string | null>(null)
   const [notice, setNotice] = createSignal<string | null>(null)
   const [result, setResult] = createSignal<StudioWavExport | null>(null)
+  // MIDI clips' renders are being kept before the song is taken.
+  const [waitingRenders, setWaitingRenders] = createSignal(false)
   const retained = new Set<OwnedStudioExport>()
   let owner: OwnedStudioExport | null = null
   let active: StudioRenderJob | null = null
@@ -60,8 +70,11 @@ export function useStudioExport(options: StudioExportControllerOptions) {
   function sync(): void {
     const project = options.project()
     if (owner && !isCurrent(owner.value.token)) clearResult()
+    // While MIDI renders are kept the song moves on under the job on
+    // purpose: the job takes the song once they are.
     if (
       active &&
+      !waitingRenders() &&
       (project?.id !== active.projectId || project.revision !== active.revision)
     )
       cancel()
@@ -78,15 +91,28 @@ export function useStudioExport(options: StudioExportControllerOptions) {
     setCancelling(false)
   }
 
+  /** Keep stale MIDI clips' renders first; then the job takes the song as it stands. False once cancelled. */
+  async function keepRenders(job: StudioRenderJob): Promise<boolean> {
+    if (!options.settleRenders || options.rendersPending?.() === false)
+      return true
+    setWaitingRenders(true)
+    try {
+      await options.settleRenders(job.abort.signal)
+    } finally {
+      const project = options.project()
+      if (project?.id === job.projectId) job.revision = project.revision
+      setWaitingRenders(false)
+    }
+    return !job.abort.signal.aborted && isCurrent(job)
+  }
+
   async function exportWav(): Promise<boolean> {
-    const project = options.project()
-    if (!project || disposed || busy() || !options.canStart()) return false
-    const snapshot = structuredClone(project)
-    const assets = structuredClone(options.assets())
-    const job = {
+    const start = options.project()
+    if (!start || disposed || busy() || !options.canStart()) return false
+    const job: StudioRenderJob = {
       abort: new AbortController(),
-      projectId: snapshot.id,
-      revision: snapshot.revision,
+      projectId: start.id,
+      revision: start.revision,
     }
     active = job
     setBusy(true)
@@ -95,9 +121,13 @@ export function useStudioExport(options: StudioExportControllerOptions) {
     setNotice(null)
     setStage('preparing')
     clearResult()
-    // Held before the audio goes: the room the export takes back is then never these renders.
-    const held = options.holdFrozen?.(snapshot, assets) ?? null
+    let held: StudioFreezeHold | null = null
     try {
+      if (!(await keepRenders(job))) return false
+      const snapshot = structuredClone(options.project()!)
+      const assets = structuredClone(options.assets())
+      // Held before the audio goes: the room the export takes back is then never these renders.
+      held = options.holdFrozen?.(snapshot, assets) ?? null
       await options.releaseAudio()
       job.abort.signal.throwIfAborted()
       if (!isCurrent(job)) return false
@@ -167,6 +197,8 @@ export function useStudioExport(options: StudioExportControllerOptions) {
     busy,
     cancelling,
     stage,
+    /** True while MIDI clips' renders are kept before the song is taken. */
+    waitingRenders,
     error,
     notice,
     result,

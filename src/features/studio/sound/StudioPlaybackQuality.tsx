@@ -22,7 +22,16 @@ const NOTES: Readonly<Record<StudioPlaybackChoice, string>> = {
 }
 
 /** What the lanes rendered ahead mean for the next Play. */
-function freezeNote(wanted: number, ready: number, rendering: boolean): string {
+export function studioFreezeNote(
+  wanted: number,
+  ready: number,
+  rendering: boolean,
+  waiting: number,
+): string {
+  if (waiting > 0)
+    return waiting === 1
+      ? 'Waiting for edited MIDI notes to be kept: then 1 lane renders ahead so this song keeps up.'
+      : `Waiting for edited MIDI notes to be kept: then ${waiting} lanes render ahead so this song keeps up.`
   if (rendering)
     return `Rendering lanes ahead so this song keeps up: ${ready} of ${wanted} done. Rendered lanes play at Best from the next Play.`
   return wanted === 1
@@ -75,10 +84,11 @@ export function StudioPlaybackQuality(props: { song: StudioSongShape }) {
           class={common.help}
           data-studio-freeze-status={freezing() ? 'rendering' : 'ready'}
         >
-          {freezeNote(
+          {studioFreezeNote(
             quality.freeze().wanted,
             quality.freeze().ready,
             freezing(),
+            quality.freeze().waiting,
           )}
         </p>
       </Show>
