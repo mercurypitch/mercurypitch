@@ -3532,3 +3532,22 @@ take, sitemap, As built, Length, ceilings, rebase after #1406, reviews, PR).
   MERGE TRAIN (task #1): whole stack rebased once onto 954cc2653 with `git rebase --update-refs origin/main` on feat/lesson-28-page (147 commits; verified per branch: counts, messages+authors+dates, patch-ids same; tree diff = the 2 workflow files; committers all aetheris007) and PUSHED with explicit leases: L16 92641676f->c8c896157, L18 69f2d7ed6->e0328c980, L20 4aee11dc4->6d484e2dc, L25 7da59cfdb->81baccbfc, L27 b334ff575->cc57f8501, L26 2e57b6efd->02314329f, L28 d567b3a33->5ff4d357c. #1406 re-subscribed; its PR Gate runs on c8c896157.
   LOOP per PR N: PR Gate green -> merge_pull_request rebase expectedHeadSha -> fetch main, verify (rev-list count, patch-ids, tree == branch tree) -> in worktree train: git switch feat/lesson-28-page; git rebase --update-refs --onto origin/main <old tip of N> (drops N's commits) -> push the remaining branches with leases -> update_pull_request base=main for N+1 -> its PR Gate. Order 1406, 1407, 1408, 1409, 1410, 1411, 1412.
   ALSO (tasks #2-#4): hold-sing rest card fix (small PR), IndexNow guard (small PR), delete the 18 October backup branches only where merging them into main is a no-op. With the routine check-in off, keep one send_later safety net while a PR Gate runs.
+- 14 Nov 09:5x: BACKUP BRANCHES (task #4): all 18 October backups verified on main with $S/branches/check.py (per file: the tip's blob is a version main had, or every added line is in main's history of that file; docs bar citations/numbers; INDEX.md generated). 11 strict: kit-folds, kit-mic-hold, kit-run (also patch-equal), kit-move-do-aria, kit-names-modes, kit-octave-tag, kit-run-chords, kit-spiral-owner, kit-spiral-rest, lesson-09-arcs, lesson-09-quiz. 7 with small edits made at integration (every file on main; residue = renames and reworded comments): lesson-09-flow (LADDERS -> LADDER_ORDER, the S4 rename), lesson-09-rungs (ancestor of lesson-09-arcs), lesson-10-chords/layout-hero/sing-quiz (kit MAJOR_SOLFEGE constants, 2-12 lines), lesson-12-rooms/sing-layout (same + 3 private declarations). TIPS before deletion (restore: git push origin <sha>:refs/heads/<name> while GitHub keeps the objects):
+    feat/kit-folds 5d2d49a5d375c2e8c01b93abafb8902b06c98c96
+    feat/kit-mic-hold d0789109d126fb8cc5a9f3940ad23cd18c6f6424
+    feat/kit-move-do-aria 91075f0dba0094da30da3fe59a014e40ed5df316
+    feat/kit-names-modes b4b82f7c27e1fd8ecb16fecc7314cf96eeb39944
+    feat/kit-octave-tag 68f7cedb5073f7c20a4e18eb39a34b74c101f513
+    feat/kit-run 659265535d63332f816e978ea5cd67cfc8e46e2b
+    feat/kit-run-chords 66f032bc3bd78f588b4c4ba674e6f53671330f65
+    feat/kit-spiral-owner 0630104f5aee14cd9502832abdbfa24c797e3c3b
+    feat/kit-spiral-rest 34649659cfa362557866e201c0736d26f7f95b4d
+    feat/lesson-09-arcs bb1acf1f943fff0fd9b5728bdce1641e19176c12
+    feat/lesson-09-flow c15407f6657174eade73e90e03721751fb46aeac
+    feat/lesson-09-quiz bde33b1f87e9773e0335a151f98107f3e99cea69
+    feat/lesson-09-rungs bae1e7e7d7cb37d367010f5c0b023d01a630a8f2
+    feat/lesson-10-chords bdd1f8ef783016d42f47c0adadf84227572ee3b8
+    feat/lesson-10-layout-hero 821ef42a14d96f49ef4b54ab011eda87cff217b9
+    feat/lesson-10-sing-quiz e409678d5b5fc75378bfa22b320045812157e161
+    feat/lesson-12-rooms 9c1f47ef4f94843f303af65034e093a125c3a550
+    feat/lesson-12-sing-layout c03f23ed0b0e100a64e7067827a4481827985c52
