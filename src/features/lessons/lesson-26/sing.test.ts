@@ -358,6 +358,21 @@ describe('before Start', () => {
     expect([mic.asked, played.runs.length]).toEqual([0, 0])
   })
 
+  it('keeps the headphones answer when the voice changes at the briefing, and briefs the new part', async () => {
+    // Arrange
+    await loadCard()
+    await toBrief()
+
+    // Act
+    await press('[data-voice="higher"]')
+
+    // Assert: WEB-SPEC, Toys 5, state 4, "The answer holds for the visit"
+    expect([shown('brief'), shown('phones')]).toEqual([true, false])
+    expect(el('[data-turn-first]').textContent).toBe(
+      'mi fa so fa mi, a third above the tune.',
+    )
+  })
+
   it('draws the briefing’s figure and its first line for the voice', async () => {
     // Arrange
     await loadCard({ voice: 'higher' })
