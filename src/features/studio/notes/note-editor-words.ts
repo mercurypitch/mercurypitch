@@ -6,10 +6,10 @@
 // as its label: how many notes the clip plays, from which note to which (on
 // a kit, on how many drums), and over which of the song's bars. Bars count
 // from the song's bar 1 (time.ts, studioSongBeats), as the ruler does.
-import { midiToNoteNameOctave, noteOnScreen } from '@/lib/note-utils'
 import type { StudioMidiSoundKind } from '@/lib/studio/midi/render-key'
 import type { StudioTickWindow } from '@/lib/studio/midi/time'
 import type { StudioNote } from '@/lib/studio/model/types'
+import { studioNoteName } from './note-names'
 import type { StudioRollMeter } from './note-roll-draw'
 
 /** The song's bar tick `tick` falls in, counted from 1. */
@@ -61,8 +61,9 @@ function spanWords(
     return pitches.size === 1 ? 'on 1 drum' : `on ${pitches.size} drums`
   const low = Math.min(...pitches)
   const high = Math.max(...pitches)
-  const name = (pitch: number) => noteOnScreen(midiToNoteNameOctave(pitch))
-  return low === high ? `on ${name(low)}` : `from ${name(low)} to ${name(high)}`
+  return low === high
+    ? `on ${studioNoteName(low)}`
+    : `from ${studioNoteName(low)} to ${studioNoteName(high)}`
 }
 
 /** The roll's text alternative: "41 notes from C3 to G5, bars 3 to 6". */

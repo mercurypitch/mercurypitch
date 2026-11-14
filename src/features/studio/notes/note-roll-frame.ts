@@ -6,9 +6,9 @@
 // region, so a long name or a note at the edge never runs into the next
 // part. The grid's lines come from the song's bars over the sequence
 // (rollGridLines): bars always, beats and sixteenths where they have room.
-import { midiToNoteNameOctave } from '@/lib/note-utils'
 import { rowHeight } from '@/lib/roll-geometry'
 import type { StudioNote } from '@/lib/studio/model/types'
+import { studioNoteName } from './note-names'
 import type { RollContext, StudioRollDraft, StudioRollInput, StudioRollRect, } from './note-roll-geometry'
 import { clipTo, fillBox, isBlackKey, rollGridLines, roundBox, rowTop, shownRows, smallCaps, startsInWindow, studioRollRegions, tickSpacing, tickX, vertical, } from './note-roll-geometry'
 
@@ -154,7 +154,7 @@ function drawPianoKey(
   context.textAlign = 'right'
   context.textBaseline = 'middle'
   context.fillText(
-    midiToNoteNameOctave(row),
+    studioNoteName(row),
     keys.x + keys.width - 6,
     y + height / 2 + 0.5,
   )

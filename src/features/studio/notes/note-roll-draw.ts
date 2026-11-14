@@ -16,10 +16,10 @@
 // faint when it starts outside the clip's window. Only what the view shows
 // is drawn: a sequence of 10,000 notes costs one pass over its notes to find
 // those in view, and a fill for each of them.
-import { midiToNoteNameOctave, noteOnScreen } from '@/lib/note-utils'
 import { rowHeight } from '@/lib/roll-geometry'
 import { studioRollRow } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioNote } from '@/lib/studio/model/types'
+import { studioNoteName } from './note-names'
 import { drawRollDividers, drawRollGrid, drawRollKeys, drawRollRuler, drawRollStick, drawRollVelocities, } from './note-roll-frame'
 import type { RollContext, StudioRollDraft, StudioRollInput, StudioRollRect, } from './note-roll-geometry'
 import { beginRollLayer, clipTo, fillBox, roundBox, rowTop, startsInWindow, studioRollRegions, tickX, } from './note-roll-geometry'
@@ -92,7 +92,7 @@ function noteLabel(
   context.textBaseline = 'middle'
   context.textAlign = 'left'
   context.fillText(
-    noteOnScreen(midiToNoteNameOctave(pitch)),
+    studioNoteName(pitch),
     box.x + 5,
     box.y + box.height / 2 + 0.5,
   )
