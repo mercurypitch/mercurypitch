@@ -103,6 +103,18 @@ describe('the chart after the take', () => {
     ])
   })
 
+  it('names a black key by its sharp, as the app’s pitch line does (Lesson 28’s ti)', () => {
+    // Act
+    const rows = rowsOf([55, 54, 52, 55], ['Do', 'Ti', 'La', 'Do'])
+
+    // Assert
+    expect(rows).toEqual([
+      [52, 'la · E3'],
+      [54, 'ti · F♯3'],
+      [55, 'do · G3'],
+    ])
+  })
+
   it('says the notes in order, and nothing of an octave in their own', () => {
     // Act
     const said = summaryOf(LABELS, 0)

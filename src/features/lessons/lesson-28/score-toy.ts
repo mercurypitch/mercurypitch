@@ -32,6 +32,7 @@ import { mountScore } from '@/features/lessons/kit/score'
 import type { ScoreScene } from '@/features/lessons/kit/score-layout'
 import { Sound } from '@/features/lessons/kit/sound'
 import { showParts } from '@/features/lessons/kit/step-parts'
+import { addLockedStrip } from './locked-strip'
 import type { Leg, ScorePlan, ScorePlayId, StepState, Way } from './score-plays'
 import { BANDS_SAID, blockSaid, blockScene, LOCKED_SAID, PHRASES, planOf, STATE_SAID, stepFourScene, stepOneScene, WAYS, waySaid, wayScene, } from './score-plays'
 import { BEAT_SEC } from './song'
@@ -89,22 +90,8 @@ export function mountScoreToy(root: HTMLElement, o: ScoreToyOptions): ScoreToy {
     },
   })
 
-  // the hero's ten empty bars while the figure waits: a still copy of the
-  // strip, with no name of its own, the figure's carrying it, and no part
-  // for the step parts to hide
-  if (o.strip !== null) {
-    const copy = o.strip.cloneNode(true) as Element
-    copy.removeAttribute('role')
-    copy.removeAttribute('aria-label')
-    copy.removeAttribute('data-hero-strip')
-    for (const el of copy.querySelectorAll('[data-part]'))
-      el.removeAttribute('data-part')
-    const still = document.createElement('div')
-    still.className = 'song-strip score-locked'
-    still.setAttribute('aria-hidden', 'true')
-    still.append(copy)
-    figure.append(still)
-  }
+  // the hero's ten empty bars while the figure waits
+  addLockedStrip(figure, o.strip)
 
   /** Step 1's marks heard so far. */
   const phraseMarks = () => {

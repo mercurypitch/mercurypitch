@@ -221,13 +221,14 @@
   width: 100%;
   height: 100%;
 }
-/* until the cold open's choice the figure draws the hero's ten empty bars,
-   a still copy of the strip, and the staffs wait (score-toy.ts) */
-.l28-toy .score-fig.is-locked .sc-svg,
-.l28-toy .score-fig:not(.is-locked) .score-locked {
+/* until the cold open's choice a figure draws the hero's ten empty bars,
+   a still copy of the strip, and its staffs wait: the steps', free play's
+   and Sing it's (locked-strip.ts) */
+.score-fig.is-locked .sc-svg,
+.score-fig:not(.is-locked) .score-locked {
   display: none;
 }
-.l28-toy .score-locked {
+.score-fig .score-locked {
   display: grid;
   align-content: center;
   height: 100%;
@@ -404,7 +405,36 @@
 }
 .sing-fig .sing-score {
   position: relative;
-  min-height: 160px;
+  height: 260px;
+}
+/* the count-in's four dots over the staffs, beat 1's the larger, a dot lit
+   a click (sing-figure.ts) */
+.sing-fig .sing-count {
+  grid-column: 1 / -1;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: flex-end;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+.sing-fig .sing-count[hidden] {
+  display: none;
+}
+.sing-fig .sing-count li {
+  width: 8px;
+  height: 8px;
+  border: 1.5px solid var(--ink-3);
+  border-radius: 50%;
+}
+.sing-fig .sing-count li:first-child {
+  width: 11px;
+  height: 11px;
+}
+.sing-fig .sing-count li.is-lit {
+  background: var(--ink);
+  border-color: var(--ink);
 }
 .sing-fig .sing-merc {
   width: 88px;
@@ -415,6 +445,9 @@
 @media (max-width: 560px) {
   .sing-fig {
     grid-template-columns: minmax(0, 1fr);
+  }
+  .sing-fig .sing-score {
+    height: 300px;
   }
   .sing-fig .sing-merc {
     width: 56px;

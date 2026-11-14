@@ -1330,6 +1330,17 @@
                    (sing-view.ts); beside it, the still of the one who sings
                    do -->
               <div class="sing-fig" id="singFig">
+                <ol
+                  class="sing-count"
+                  data-sing-count
+                  aria-hidden="true"
+                  hidden
+                >
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                  <li></li>
+                </ol>
                 <div
                   class="sing-score score-fig"
                   role="img"
@@ -1382,7 +1393,9 @@
                   >
                     <svg class="ico" aria-hidden="true">
                       <use href="#i-play" /></svg
-                    >Hear <span data-who-part>Tavi's part</span> first
+                    ><span
+                      >Hear <span data-who-part>Tavi's part</span> first</span
+                    >
                   </button>
                 </div>
                 <p
@@ -1391,14 +1404,14 @@
                   data-start-hint
                   aria-live="polite"
                 ></p>
-                <p class="guide-hint" data-cant-record hidden>
-                  This browser can't record here: your take is drawn, not
-                  recorded.
-                </p>
               </div>
 
               <!-- 8. after a run: one line a note -->
               <div class="sing-live" id="singLive" hidden>
+                <div class="sing-chart band-chart" id="singChart">
+                  <canvas role="img" aria-label="Your pitch line"></canvas>
+                  <span class="octave-tag" data-octave-tag hidden></span>
+                </div>
                 <ol class="tune-readings" data-readings hidden></ol>
               </div>
 
@@ -1415,7 +1428,9 @@
                   >
                     <svg class="ico" aria-hidden="true">
                       <use href="#i-play" /></svg
-                    >Hear it with <span data-who-part>Tavi's part</span>
+                    ><span
+                      >Hear it with <span data-who-part>Tavi's part</span></span
+                    >
                   </button>
                   <button class="btn" type="button" data-sing="delete">
                     <svg class="ico" aria-hidden="true">
@@ -1427,6 +1442,11 @@
                   The song ends V to I: a perfect cadence.
                 </p>
               </div>
+              <!-- a browser that can't record, or a take it could not keep -->
+              <p class="guide-hint" data-cant-record hidden>
+                This browser can't record here: your take is drawn, not
+                recorded.
+              </p>
 
               <!-- 11. the sing-along: no microphone or a refused one; nothing
                    listens and nothing is recorded -->
@@ -1437,7 +1457,12 @@
                   and nothing listens.
                 </p>
                 <div class="sing-btns">
-                  <button class="btn primary" type="button" data-sing="along">
+                  <button
+                    class="btn primary"
+                    type="button"
+                    data-sing="along"
+                    disabled
+                  >
                     <svg class="ico" aria-hidden="true">
                       <use href="#i-play" /></svg
                     >Start the sing-along
@@ -1525,6 +1550,20 @@
                     <svg class="ico" aria-hidden="true">
                       <use href="#i-mic" /></svg
                     >Start again
+                  </button>
+                  <button
+                    class="btn tint"
+                    type="button"
+                    data-sing="first"
+                    style="--c: var(--chrome)"
+                    hidden
+                    disabled
+                  >
+                    <svg class="ico" aria-hidden="true">
+                      <use href="#i-play" /></svg
+                    ><span
+                      >Hear <span data-who-part>Tavi's part</span> first</span
+                    >
                   </button>
                   <button
                     class="btn primary"

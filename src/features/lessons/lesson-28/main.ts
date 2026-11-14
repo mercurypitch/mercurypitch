@@ -68,6 +68,12 @@ const deck = createStepDeck({
   after: { label: 'Sing it', selector: '#sing' },
 })
 // free play first, so the steps' choice and the cold open's reach it
+// the cold open's choice, which Sing it waits for: its chunk may load after it
+let chose: () => void = () => undefined
+const chosen = new Promise<void>((resolve) => {
+  chose = resolve
+})
+
 const wrap = initWrap()
 const steps = initSteps(deck)
 deck.start()
@@ -85,6 +91,17 @@ initWords()
 // rest it keeps its answer and the map alone (WEB-SPEC, Toys 7)
 createNextCard(28, VisitEnding)
 createExplorer({ current: 28 })
+
+// Sing it: a chunk of its own, after first paint, since its staffs bring
+// the score's drawing and its run the beat clock and the recorder (sing.ts);
+// the take, its reader, the quiet check and the recording's onset load with
+// the microphone at Start
+void import('./sing').then(
+  ({ initSing }) => {
+    initSing({ chosen })
+  },
+  () => undefined,
+)
 
 // the last screen's way back to the plan, for someone who answered its
 // questions: a chunk of its own, after first paint (one that cannot load
@@ -111,6 +128,7 @@ initColdOpen(deck, {
     steps.unlock()
     wrap.free.unlock()
     quizzes.unlock()
+    chose()
   },
   onReveal: () => steps.reveal(),
 })
