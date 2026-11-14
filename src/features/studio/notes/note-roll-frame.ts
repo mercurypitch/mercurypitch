@@ -228,7 +228,7 @@ function barLabelStep(input: StudioRollInput): number {
 function drawRulerLabels(context: RollContext, input: StudioRollInput): void {
   const { beatTicks, originTick, beatsPerBar } = input.meter
   const barTicks = beatTicks * beatsPerBar
-  if (!(barTicks > 0)) return
+  if (Number.isNaN(barTicks) || barTicks <= 0) return
   const step = barLabelStep(input)
   const ruler = studioRollRegions(input).ruler
   context.font = `600 11px ${input.theme.font}`

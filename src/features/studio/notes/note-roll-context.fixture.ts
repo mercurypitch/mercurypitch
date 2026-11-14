@@ -53,8 +53,11 @@ interface PenState {
   textBaseline: string
 }
 
-const fontPx = (font: string): number =>
-  Number(/(\d+(?:\.\d+)?)px/u.exec(font)?.[1] ?? 10)
+/** The size in a CSS font shorthand: 11 in "600 11px Inter". */
+const fontPx = (font: string): number => {
+  const size = font.split(' ').find((part) => part.endsWith('px'))
+  return size === undefined ? 10 : Number.parseFloat(size)
+}
 
 /** A 2D context that records the roll's calls, typed as the real one for the draw functions. */
 export function recordingRollContext() {

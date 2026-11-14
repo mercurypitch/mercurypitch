@@ -61,23 +61,12 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
   const sound = createMemo(() =>
     studioMidiSound(studioLaneInstrument(props.track)),
   )
-  /** Clip `clipId`'s notes, the same object while its sequence and sound are. */
-  const clipNotes = (clipId: string) => {
-    const notes = createMemo<StudioClipNotes | undefined>(
-      () => {
-        const midi = props.view.clips().get(clipId)?.midi
-        const sequence =
-          midi && studioSequence(props.timeline.project, midi.sequenceId)
-        return sequence ? { sequence, sound: sound() } : undefined
-      },
-      undefined,
-      {
-        equals: (before, after) =>
-          before?.sequence === after?.sequence &&
-          before?.sound === after?.sound,
-      },
-    )
-    return notes
+  /** Clip `clipId`'s notes: its sequence and the lane's sound, none for audio. */
+  const clipNotes = (clipId: string): StudioClipNotes | undefined => {
+    const midi = props.view.clips().get(clipId)?.midi
+    const sequence =
+      midi && studioSequence(props.timeline.project, midi.sequenceId)
+    return sequence ? { sequence, sound: sound() } : undefined
   }
   const source = () =>
     studioSourcePresentation(props.view.assets().get(props.clips[0]?.assetId))
@@ -267,7 +256,10 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
         <For each={clipIds()}>
           {(clipId) => {
             const clip = () => props.view.clips().get(clipId)!
-            const notes = clipNotes(clipId)
+            // The same object while the clip's sequence and sound are.
+            const notes = createMemo(() => clipNotes(clipId), undefined, {
+              equals: sameClipNotes,
+            })
             return (
               <StudioTimelineClip
                 clip={clip()}
@@ -342,6 +334,13 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
       </div>
     </div>
   )
+}
+
+function sameClipNotes(
+  before: StudioClipNotes | undefined,
+  after: StudioClipNotes | undefined,
+): boolean {
+  return before?.sequence === after?.sequence && before?.sound === after?.sound
 }
 
 /** Back to a lane's lines toggle, once its line closes. */

@@ -21,20 +21,31 @@ export function studioNotesKeyClip(
   scope: Element | null,
   selectedClipId: string | null,
 ): string | null {
-  if (event.defaultPrevented || event.repeat) return null
+  if (!isBareE(event) || !isStudioKey(event.target, scope)) return null
+  return studioEditorFocus(event.target)?.clipId ?? selectedClipId
+}
+
+/** A press of E alone, not held down, that nothing has answered yet. */
+function isBareE(event: KeyboardEvent): boolean {
+  if (event.defaultPrevented || event.repeat) return false
   if (event.ctrlKey || event.metaKey || event.altKey || event.shiftKey)
-    return null
-  if (event.key.toLowerCase() !== 'e') return null
-  const target = event.target
-  if (isTypingTarget(target) || isInsideOverlay(target)) return null
-  const outside =
-    target !== document.body &&
-    target !== document.documentElement &&
-    !(target instanceof Node && scope?.contains(target) === true)
-  if (outside) return null
-  if (target instanceof Element && target.closest('[data-studio-note-editor]'))
-    return null
-  return studioEditorFocus(target)?.clipId ?? selectedClipId
+    return false
+  return event.key.toLowerCase() === 'e'
+}
+
+/** Whether a key pressed on `target` is the Studio's: in `scope`, or on nothing in particular, and not in a field, an overlay or the note editor. */
+function isStudioKey(
+  target: EventTarget | null,
+  scope: Element | null,
+): boolean {
+  if (isTypingTarget(target) || isInsideOverlay(target)) return false
+  if (target === document.body || target === document.documentElement)
+    return true
+  if (!(target instanceof Node) || scope?.contains(target) !== true)
+    return false
+  return !(
+    target instanceof Element && target.closest('[data-studio-note-editor]')
+  )
 }
 
 /** Listen for E for exactly the Studio workspace's lifetime. */

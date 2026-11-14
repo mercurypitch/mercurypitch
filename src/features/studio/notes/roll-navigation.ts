@@ -50,6 +50,15 @@ export function studioRollWheelMove(
     const factor = studioWheelZoomFactor(event)
     return factor === 1 ? null : { kind: 'zoom', factor: 1 / factor, anchorX }
   }
+  return wheelPan(event, rowsScroll, pagePixels)
+}
+
+/** A pan by the wheel: through the clip with Shift, or when the rows cannot scroll; else down the rows and across by a sideways swipe. */
+function wheelPan(
+  event: WheelInput,
+  rowsScroll: boolean,
+  pagePixels: number,
+): StudioRollMove | null {
   const down = studioWheelPixels(event, pagePixels)
   const across = event.deltaMode === 1 ? event.deltaX * 33 : event.deltaX
   const notch = isStudioWheelNotch(event)

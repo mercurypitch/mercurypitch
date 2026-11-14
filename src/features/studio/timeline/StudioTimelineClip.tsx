@@ -207,12 +207,10 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
     const to = Math.min(right(), props.scroll + props.contentWidth)
     return (from + to) / 2 - left()
   }
+  // Said on a computer or a tablet, while the clip is not being dragged.
+  const atRest = () => !props.phone && ownDraft() === null
   const hinted = () =>
-    midi() &&
-    props.selected &&
-    props.editing !== true &&
-    !props.phone &&
-    ownDraft() === null
+    midi() && props.selected && props.editing !== true && atRest()
   const label = () => {
     const name =
       passOf() === ''
