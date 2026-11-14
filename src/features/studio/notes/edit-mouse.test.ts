@@ -91,6 +91,17 @@ describe('a drag on a note in Select', () => {
     expect(noteOf(host, 1)).toMatchObject({ startTick: 960, pitch: 62 })
   })
 
+  it('keeps the time of a note played off the grid when dragged up', () => {
+    // Arrange: A played 40 ticks late, dragged two rows up and 10 px sideways.
+    const late = [note(1, 60, 1000, 480)]
+
+    // Act
+    const host = play(noteHost({ notes: late }), ...drag(A, [310, 190]))
+
+    // Assert
+    expect(noteOf(host, 1)).toMatchObject({ startTick: 1000, pitch: 62 })
+  })
+
   it('places freely with Alt held', () => {
     const host = play(
       noteHost({ notes: NOTES }),

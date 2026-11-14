@@ -244,6 +244,12 @@ describe('the toolbar', () => {
     expect(host.state.selection).toEqual([2])
   })
 
+  it('commits nothing when the notes are already on the grid', () => {
+    const host = play(editor([1, 2]), command({ type: 'quantize' }))
+    expect(commitsOf(host)).toEqual([])
+    expect(host.handled).toEqual([true])
+  })
+
   it('quantizes every note the clip plays when none is selected', () => {
     const late = [note(1, 60, 1000, 480), note(2, 64, 1950, 240)]
     const host = play(noteHost({ notes: late }), command({ type: 'quantize' }))

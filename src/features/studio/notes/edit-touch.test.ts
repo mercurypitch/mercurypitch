@@ -244,13 +244,14 @@ describe('a pinch', () => {
 })
 
 describe('a pen', () => {
-  it('keeps its drag when a palm touches down', () => {
+  it('keeps its drag when a palm touches down, in two places', () => {
     const pen = { pointerId: 7, pointerType: 'pen' as const }
     const host = play(
       phone(),
       finger(7, 'down', ...L, pen),
       finger(7, 'move', 200, 150, pen),
       finger(1, 'down', 20, 400),
+      finger(2, 'down', 40, 410),
       finger(7, 'move', 200, 130, pen),
       finger(7, 'up', 200, 130, pen),
     )
