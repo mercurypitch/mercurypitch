@@ -175,15 +175,15 @@ describe('opening the notes', () => {
 describe('the hint', () => {
   it('tells a mouse to double-click the selected clip, and a tablet to tap it twice', () => {
     renderClip({ selected: true })
-    expect(
-      screen.getByText('Double-click to edit notes', { exact: true }),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/to edit notes$/)).toHaveTextContent(
+      'Double-click to edit notes',
+    )
     cleanup()
 
     renderClip({ selected: true, tablet: true })
-    expect(
-      screen.getByText('Tap twice to edit notes', { exact: true }),
-    ).toBeInTheDocument()
+    expect(screen.getByText(/to edit notes$/)).toHaveTextContent(
+      'Tap twice to edit notes',
+    )
   })
 
   it('stays away while the clip is not selected, and while its notes are open', () => {
