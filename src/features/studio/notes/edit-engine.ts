@@ -29,7 +29,7 @@ import { noteFrame, notePointerCancel, notePointerDown, notePointerMove, notePoi
 import type { NoteSnap } from './edit-snap'
 import { DEFAULT_NOTE_SNAP } from './edit-snap'
 import type { NoteEditCommand, NoteEditContext, NoteEditEffect, NoteEditInput, NoteEditKey, NoteEditState, NoteEditStep, NoteEditTool, NoteEditWheel, } from './edit-types'
-import { wheelNoteRoll } from './edit-viewport'
+import { sameRollViewport, wheelNoteRoll } from './edit-viewport'
 
 export { noteEditWantsFrames } from './edit-pointer'
 
@@ -158,8 +158,9 @@ function wheelStep(
   wheel: NoteEditWheel,
 ): NoteEditStep {
   const viewport = wheelNoteRoll(ctx.viewport, ctx.window, wheel)
-  const effects: NoteEditEffect[] =
-    viewport === ctx.viewport ? [] : [{ type: 'viewport', viewport }]
+  const effects: NoteEditEffect[] = sameRollViewport(viewport, ctx.viewport)
+    ? []
+    : [{ type: 'viewport', viewport }]
   return { state, effects, handled: true }
 }
 

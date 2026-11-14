@@ -206,6 +206,27 @@ describe('the wheel', () => {
   })
 })
 
+describe('the wheel at an edge', () => {
+  it('moves nothing and gives no viewport, but still keeps the event from the page', () => {
+    // Arrange: the roll shows the whole clip, so time cannot scroll.
+    const host = noteHost({ notes: NOTES })
+
+    // Act
+    play(host, {
+      type: 'wheel',
+      x: 0,
+      y: 0,
+      deltaX: 0,
+      deltaY: 100,
+      shift: true,
+    })
+
+    // Assert
+    expect(viewportsOf(host)).toEqual([])
+    expect(host.handled).toEqual([true])
+  })
+})
+
 describe('an abort', () => {
   it('undoes a gesture and forgets every finger', () => {
     const host = play(
