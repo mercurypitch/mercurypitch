@@ -488,6 +488,34 @@ describe('a run', () => {
     expect(status()).toBe("That's every run this set has today.")
   })
 
+  it('asks for nothing with sound off on Start again, Again or Swap parts, and says why', async () => {
+    // Arrange: a run with no voice, a run read, then the masthead's sound off
+    await loadCard()
+    const { Sound } = await import('@/features/lessons/kit/sound')
+    await toBrief()
+    await toTake()
+    await endTake(SILENT)
+    await toTake('[data-sing="restart"]')
+    await endTake(VOICED)
+    await press('[data-feel="easy"]')
+    const before = [mic.asked, clock.runs, played.runs.length]
+    vi.mocked(Sound.canPlay).mockReturnValue(false)
+    const said: string[] = []
+
+    // Act
+    for (const b of ['again', 'swap']) {
+      await press(`[data-sing="${b}"]`, 3_000)
+      said.push(status())
+    }
+
+    // Assert: WEB-SPEC, Toys 5, state 5, and Edge cases, "Start waits for sound"
+    const hint =
+      "Sound is off, so nothing played. Turn sound on to hear Merc's part, then press Start."
+    expect(said).toEqual([hint, hint])
+    expect([mic.asked, clock.runs, played.runs.length]).toEqual(before)
+    expect(shown('after')).toBe(true)
+  })
+
   it('leaves the page where the learner took it when they leave mid-run: the run counts, and nothing brings Sing it back', async () => {
     // Arrange: Merc's model singing, then the card scrolled far above the screen
     await loadCard()
