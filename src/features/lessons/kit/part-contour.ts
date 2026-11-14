@@ -12,8 +12,11 @@
 // glide of 0.05 s that ends on the next note's first beat, so every note
 // arrives on its beat; and two notes on one pitch in a row, which Lesson
 // 26's parts never have and Lesson 28's song may, struck again by a dip
-// in level to a quarter for 0.08 s between them. Lesson 14's song keeps
-// its own line (lesson-14/song.ts), with its swells and its own dip.
+// in level to a quarter for 0.08 s between them. A note a breath follows
+// falls to a quarter of the level for its last seconds, the breath's, and
+// rises again into the next (Lesson 28 WEB-SPEC, Audio: half a beat before
+// each of its breath marks). Lesson 14's song keeps its own line
+// (lesson-14/song.ts), with its swells and its own dip.
 
 import { hz } from './notes'
 import type { ContourPoint } from './sound'
@@ -22,6 +25,8 @@ import type { ContourPoint } from './sound'
 export interface PartNote {
   readonly midi: number
   readonly sec: number
+  /** Seconds at its end the voice falls quiet for a breath after it; none by default. */
+  readonly breath?: number
 }
 
 /** Seconds of the glide from one note to the next, ending on the next note's first beat. */
@@ -30,6 +35,9 @@ export const PART_GLIDE_SEC = 0.05
 /** The dip between two notes on one pitch: its lowest level, a share of the voice's, and its length, seconds. */
 export const PART_DIP = { level: 0.25, sec: 0.08 } as const
 
+/** A breath: the level it falls to, a share of the voice's, and how long it takes to fall, seconds. */
+export const PART_BREATH = { level: 0.25, fall: 0.05 } as const
+
 /** Rounds a time to the microsecond, so points summed from lengths compare cleanly. */
 const at = (t: number): number => Math.round(t * 1e6) / 1e6
 
@@ -37,8 +45,9 @@ const at = (t: number): number => Math.round(t * 1e6) / 1e6
  * The contour of `notes` sung one after another from time 0: each held at
  * its pitch, gliding to the next over the last 0.05 s of its length, or
  * dipping to a quarter for 0.08 s, its middle on the boundary, into a
- * repeated pitch; the last held to its end, where the voice's release
- * begins. Empty for no notes.
+ * repeated pitch; a note a breath follows first falling to a quarter, over
+ * 0.05 s, for its last `breath` seconds; the last held to its end, where
+ * the voice's release begins. Empty for no notes.
  */
 export function partContour(notes: readonly PartNote[]): ContourPoint[] {
   const first = notes[0]
@@ -52,14 +61,26 @@ export function partContour(notes: readonly PartNote[]): ContourPoint[] {
       points.push({ t: at(end), hz: hz(n.midi), level: 1 })
       return
     }
+    // a breath: the level falls to a quarter for the note's last seconds
+    const breath = Math.min(n.breath ?? 0, n.sec - PART_GLIDE_SEC)
+    const level = breath > 0 ? PART_BREATH.level : 1
+    if (breath > 0) {
+      points.push({ t: at(end - breath), hz: hz(n.midi), level: 1 })
+      points.push({
+        t: at(end - breath + PART_BREATH.fall),
+        hz: hz(n.midi),
+        level,
+      })
+    }
     if (next.midi === n.midi) {
       const half = PART_DIP.sec / 2
-      points.push({ t: at(end - half), hz: hz(n.midi), level: 1 })
+      if (breath <= 0)
+        points.push({ t: at(end - half), hz: hz(n.midi), level: 1 })
       points.push({ t: at(end), hz: hz(n.midi), level: PART_DIP.level })
       points.push({ t: at(end + half), hz: hz(n.midi), level: 1 })
       return
     }
-    points.push({ t: at(end - PART_GLIDE_SEC), hz: hz(n.midi), level: 1 })
+    points.push({ t: at(end - PART_GLIDE_SEC), hz: hz(n.midi), level })
     points.push({ t: at(end), hz: hz(next.midi), level: 1 })
   })
   return points
