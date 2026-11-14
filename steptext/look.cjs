@@ -6,7 +6,13 @@ const { chromium } = require('/opt/node22/lib/node_modules/playwright')
 const fs = require('fs')
 const [PORT, OUT, ONLY] = process.argv.slice(2) // ONLY: one lesson's cases
 fs.mkdirSync(OUT, { recursive: true })
-const BASE = `http://127.0.0.1:${PORT}`
+// a port serves a local build's .html files; a full address (dev or a preview, never production) serves clean paths
+const REMOTE = /^https?:/.test(PORT)
+const BASE = REMOTE ? PORT.replace(/\/$/, '') : `http://127.0.0.1:${PORT}`
+if (REMOTE && !/^(dev\.mercurypitch\.com|[a-z0-9-]+-mercurypitch-preview\.[a-z0-9-]+\.workers\.dev)$/.test(new URL(BASE).host)) {
+  console.error('refusing: dev or a preview only')
+  process.exit(2)
+}
 
 // lesson, the step the deck stands on, the play of the next step
 const WIDE = [
@@ -43,7 +49,7 @@ async function open(browser, n, w, h, dsf) {
   page.on('console', (m) => {
     if (m.type() === 'error') errors.push(m.text())
   })
-  await page.goto(`${BASE}/learn/${n}.html`)
+  await page.goto(`${BASE}/learn/${n}${REMOTE ? '' : '.html'}`)
   await page.waitForTimeout(1000)
   await page.locator('#gateBtn').click({ timeout: 1500 }).catch(() => {})
   // the cold open's choice, and any step's own predict, open the held plays
