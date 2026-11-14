@@ -12,7 +12,7 @@ import type { StudioClipNotes } from './clip-notes'
 import type { StudioLineEditor } from './line-editor'
 import { createStudioLineActions } from './line-editor'
 import { LaneLine } from './line-icons'
-import { studioSourcePresentation } from './source-presentation'
+import { studioMidiSourceLabel, studioSourcePresentation, } from './source-presentation'
 import { StudioCompLanes } from './StudioCompLanes'
 import { StudioArmButton, StudioLaneInstrument } from './StudioLaneHeader'
 import { StudioLaneLine } from './StudioLaneLine'
@@ -69,8 +69,13 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
       midi && studioSequence(props.timeline.project, midi.sequenceId)
     return sequence ? { sequence, sound: sound() } : undefined
   }
+  // A lane of MIDI says so, and what it plays as; else where its take came from.
   const source = () =>
-    studioSourcePresentation(props.view.assets().get(props.clips[0]?.assetId))
+    props.clips[0]?.midi === undefined
+      ? studioSourcePresentation(
+          props.view.assets().get(props.clips[0]?.assetId),
+        ).label
+      : studioMidiSourceLabel(sound())
   // Clips keyed by id, so an edit to one redraws only that one.
   const clipIds = createMemo(() => props.clips.map((clip) => clip.id), [], {
     equals: (before, after) =>
@@ -186,7 +191,7 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
       <StudioTrackName
         id={props.id}
         name={props.track.name}
-        source={source().label}
+        source={source()}
         tour={props.view.tall() ? undefined : 'studio.lines'}
         onDetails={props.timeline.onTrackDetails}
       />

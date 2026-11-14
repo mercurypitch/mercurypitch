@@ -1,4 +1,5 @@
 // Studio source presentation — provenance colors never replace musical roles or source names.
+import type { StudioMidiSoundKind } from '@/lib/studio/midi/render-key'
 import type { SourceKind, StudioAsset } from '@/lib/studio/model/types'
 
 const labels: Record<SourceKind, string> = {
@@ -22,6 +23,14 @@ const tints: Partial<Record<SourceKind, string>> = {
   'drum-night': '#6e8b3d',
   file: '#8c7b6b',
   recording: '#b8483e',
+}
+
+/**
+ * What a lane playing MIDI says it is, in place of its rendered audio's
+ * provenance: the notes are the source, their audio a render of them.
+ */
+export function studioMidiSourceLabel(sound: StudioMidiSoundKind): string {
+  return sound === 'drums' ? 'MIDI · Kit' : 'MIDI · Piano'
 }
 
 export function studioSourcePresentation(asset?: StudioAsset): {
