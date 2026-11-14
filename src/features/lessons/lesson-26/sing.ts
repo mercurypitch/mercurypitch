@@ -592,8 +592,11 @@ export function initSing(o: SingOptions = {}): void {
     const v = voiceNow()
     const tune = tuneOf(v)
     const part = partOf(v)
+    // who sings this play: a voice changed while it sounds stops it, and it
+    // lets go of its own singer, not the new voice's
+    const who = singer()
     b.classList.add('is-on')
-    mercSing(singer(), tune.midis[0], true)
+    mercSing(who, tune.midis[0], true)
     await sound(
       startListen(tune, part, Sound.canPlay(), (n: RunNote, i: number) => {
         // the notes in the play's order: the tune, the part, then both
@@ -603,7 +606,7 @@ export function initSing(o: SingOptions = {}): void {
       }),
     )
     if (mine !== listens) return
-    mercSing(singer(), tune.midis[0], false)
+    mercSing(who, tune.midis[0], false)
     b.classList.remove('is-on')
   }
 
@@ -638,6 +641,8 @@ export function initSing(o: SingOptions = {}): void {
 
   /** After the voice choice: listening only, the headphones check, or where the visit had got to. */
   function afterVoice(): void {
+    // "Just listen today"'s play, in the voice before, stops: its notes are that voice's
+    sounding?.stop()
     if (resting) toListen()
     else if (mode === 'along') toAlong('phones')
     else toPhones()
