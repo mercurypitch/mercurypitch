@@ -47,7 +47,7 @@
 import type { Feeling } from '@/features/lessons/kit/comfort'
 import { mountComfort, mountFeelings, VisitEnding, } from '@/features/lessons/kit/comfort'
 import { q, qa, wait } from '@/features/lessons/kit/dom'
-import { mountHeadphones } from '@/features/lessons/kit/headphones'
+import { Headphones, mountHeadphones } from '@/features/lessons/kit/headphones'
 import type { Which } from '@/features/lessons/kit/merc-duo'
 import { mercListen, mercSing } from '@/features/lessons/kit/merc-duo'
 import { MicHold } from '@/features/lessons/kit/mic-hold'
@@ -645,6 +645,8 @@ export function initSing(o: SingOptions = {}): void {
     sounding?.stop()
     if (resting) toListen()
     else if (mode === 'along') toAlong('phones')
+    // the headphones answer holds for the visit (Toys 5, state 4)
+    else if (Headphones.answer === 'on') toBrief()
     else toPhones()
   }
 
