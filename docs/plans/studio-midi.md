@@ -189,6 +189,10 @@ budgets and a local e2e run. New UI loads lazily.
     Clip details gets an "Edit notes" button, and the keyboard gets a way in.
   - On a phone, a MIDI clip opens its editor even though other clip editing
     is for tablets and computers.
+  - Moved here from D, so the notes can be seen before they can be edited:
+    the editor's drawer and full screen, and a read-only roll with the keys,
+    the ruler, the velocity lane and the playhead, drawn by a function D
+    feeds its gestures through.
 - **D. The note editor, piano.**
   - **Where it opens:** a drawer under the lanes, like the mix desk, that can
     be resized and expanded. On a phone it is full screen.
@@ -259,6 +263,76 @@ budgets and a local e2e run. New UI loads lazily.
 - **The roll picks only what the clip plays.** A note starting outside the
   clip's window is drawn dimmed and never picked, and the roll's zoom and
   pan stay inside the window, a zoom closing in to a sixteenth note.
+
+### Design decisions made while building C
+
+C took the editor's host and a read-only roll from D, so the owner can open
+a clip and see its notes before the editing lands. D adds its gestures,
+tools and keys on top without changing what C draws with.
+
+- **The roll is one drawing function over one input.** The input already
+  carries a selection, a gesture's drafts (a draft with a stored note's id
+  stands in for it, which fades to a ghost), a marquee, the hovered note and
+  edge, and the playhead, and the header keeps a place for the tools
+  (`data-studio-note-tools`). It draws in two layers: the base when the
+  notes, the view, the size or the theme change, and the overlay (hover,
+  drafts, marquee, playhead) on its own canvas, so a drag or a playing song
+  redraws only the overlay.
+- **Mix and the note editor take turns under the lanes.** Both are drawers
+  in one place, and two at once would leave no lane in view on a laptop.
+  Opening the notes closes the desk; Mix and X close the notes. A panel that
+  covers the lanes closes too; one beside them stays.
+- **E opens the notes**, of the clip with the focus, or else of the
+  selected clip. The app's keys are M, V, R, P, Space and Home; the
+  Studio's S, M, X, Z, =, -, Delete, the arrows and the Ctrl chords. While
+  the focus is in the editor, =, - and Z zoom the roll instead of the lanes.
+- **Two taps are counted by hand**: a second tap on the same clip within
+  300 ms and 24 px, from the clicks of a finger or a pen. A mouse opens the
+  notes on dblclick, and a dblclick that follows two taps is ignored, so
+  two taps open once. An audio clip's double-click still opens its details.
+- **A phone opens a MIDI clip's notes** although it edits no other clip:
+  by two taps, or the Notes button that replaces "Edit clips on a tablet or
+  computer." in the clip's note. The editor fills the screen above the
+  transport, the song's bar stepping aside, until Done.
+- **The lane draws the notes in the clip's own canvas**, over its waveform
+  faded to 30 %. What a clip draws is worked out once per sequence, window
+  and sound and kept until the sequence changes (at most eight windows a
+  sequence, so a trim's steps do not pile up); a redraw finds its first
+  note by a binary search and shares a few fills among all its bars. The
+  playhead never redraws a clip.
+- **Brightness is velocity.** In a lane, five strengths from 0.6 to 1; in
+  the roll, 0.55 + 0.45 × velocity, as the mockup has it. A note starting
+  outside the window draws at 0.22.
+- **A piano clip's rows fit its pitches** with a semitone of air, seven rows
+  at the fewest; a drum clip draws a row per part of the kit it plays
+  (cymbals and hi-hats, other percussion and toms, snares and claps, kicks).
+- **The roll's rows keep a readable height**: 12 to 26 px with a mouse, 18
+  to 34 px on a touch screen, scrolling by whole rows when more are wanted.
+  A kit's rows are the usual kit (crash, ride, the two hi-hats, two toms,
+  snare and kick) and every key played, cymbals on top, named as General
+  MIDI names them; a key outside General MIDI gets a row below the kick.
+- **The bars are the song's.** Bar and beat lines come from the song's
+  tempo over the sequence's ticks (`studioSongBeats`, in `time.ts` with the
+  rest of the tick arithmetic), four beats to a bar as the Studio's ruler
+  counts. A later change of the song's tempo moves the lines and leaves the
+  notes. A view that starts inside a bar names that bar and beat, as 1.3.
+- **The roll's colours are the Studio's tokens.** They are custom
+  properties on the editor, built from the Studio's tokens and the lane's
+  colour; a canvas cannot read `var()`, so each is read through a probe's
+  computed colour when the theme or the lane's colour changes.
+- **The drawer opens at 56 % of the arrangement**, between 220 and 560 px,
+  and leaves the ruler and one lane in view at its tallest. A height chosen
+  on its top edge is kept on the device; Expand is not, so the editor always
+  opens as a drawer.
+- **The editor loads on its first open.** The roll, its drawing and the
+  General MIDI names load with `import()`; Drum Night's first paint stays
+  at 522,828 bytes.
+- **The focus follows the editor**: into it on open, back to the clip on
+  close, unless it went somewhere on purpose. Escape closes it only while
+  the focus is inside it.
+- **A selected MIDI clip says how to open it**, "Double-click to edit
+  notes" or "Tap twice to edit notes", for four seconds, as the mockup's
+  tooltip does.
 
 ### Design decisions made while building D's engine
 
@@ -437,7 +511,31 @@ on either.
 | `src/lib/studio/midi/roll.ts`               | A2: the note editor's roll in ticks over a clip's window: its viewport, zoom, pan, hit test and the point under a pointer.                                             |
 | `src/lib/roll-geometry.ts`                  | A2: a piano roll's geometry in the caller's time unit, moved from the Lab's `transcription-roll.ts`, which the Lab's bench now draws with in seconds.                  |
 
-## 5. Where D's engine lives
+## 5. Where C lives
+
+| File                                                     | What it answers                                                                                                       |
+| -------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/studio/midi/preview.ts`                         | What a MIDI clip draws in its lane: its window's notes by start on rows of its height, kept per sequence.             |
+| `src/features/studio/timeline/clip-notes.ts`             | The lane's notes drawn in the clip's canvas, over its waveform faded back.                                            |
+| `src/features/studio/timeline/double-tap.ts`             | Two taps on one clip within 300 ms and 24 px.                                                                         |
+| `src/features/studio/timeline/StudioMidiClip.module.css` | A MIDI clip's glass body, chip, count, editing mark and hint.                                                         |
+| `src/lib/studio/midi/time.ts`                            | C adds `studioSongBeats`: the song's beats over a clip's sequence, for the roll's bars.                               |
+| `src/lib/studio/midi/drum-rows.ts`                       | A drum editor's rows: the usual kit and every key played, named as General MIDI names them.                           |
+| `src/lib/studio/midi/roll-keyboard.ts`                   | The roll's rows, piano or kit, kept between a least and a most height, and a scroll by whole rows.                    |
+| `src/features/studio/notes/note-editor-state.ts`         | Which clip's notes are open, expanded or not, the drawer's height; closes when its clip or song goes.                 |
+| `src/features/studio/notes/note-editor-keys.ts`          | E on the focused or selected MIDI clip.                                                                               |
+| `src/features/studio/notes/useStudioNoteEditor.ts`       | The workspace's note editor: opening from every way in, and Mix giving way.                                           |
+| `src/features/studio/notes/StudioNoteEditorHost.tsx`     | Where the editor mounts, loaded with `import()` on its first open.                                                    |
+| `src/features/studio/notes/StudioNoteEditor.tsx`         | The drawer or full-screen editor: header, tools slot, resize, expand, Done, Escape, focus.                            |
+| `src/features/studio/notes/StudioNoteRoll.tsx`           | The roll's canvases, its view, the playhead following the clock, and the wheel, a finger and a pinch.                 |
+| `src/features/studio/notes/note-roll-draw.ts`            | The roll drawn from one input: notes, selection, drafts, marquee, hover and playhead, in a base and an overlay layer. |
+| `src/features/studio/notes/note-roll-geometry.ts`        | The draw's input, where each part of the roll sits on the canvas, and where a tick, a row and a grid line fall.       |
+| `src/features/studio/notes/note-roll-frame.ts`           | The roll around its notes: rows, grid, keys or kit names, the bar ruler and the velocity lane.                        |
+| `src/features/studio/notes/note-roll-theme.ts`           | The roll's colours read from the editor's stylesheet.                                                                 |
+| `src/features/studio/notes/roll-navigation.ts`           | The wheel, a trackpad, one finger and a pinch over the roll.                                                          |
+| `src/features/studio/notes/note-editor-words.ts`         | The roll's text alternative and the status line.                                                                      |
+
+## 6. Where D's engine lives
 
 | File                                                         | What it answers                                                                                                    |
 | ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------ |
