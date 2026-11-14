@@ -79,6 +79,13 @@ describe('snapTravel', () => {
     expect(late + travel).toBe(720)
   })
 
+  it('holds a note played off the grid still too, though the nearest line is near', () => {
+    // A note 40 ticks late, dragged 30 ticks either way: a line is 40 away.
+    expect([snapTravel(520, 30, grid), snapTravel(520, -30, grid)]).toEqual([
+      0, 0,
+    ])
+  })
+
   it('travels to the tick without a grid', () => {
     expect(snapTravel(480, 33.6, null)).toBe(34)
   })
