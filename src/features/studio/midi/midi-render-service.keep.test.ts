@@ -170,6 +170,25 @@ describe('keeping a MIDI render', () => {
     expect(ui.project()!.clips[1].assetId).toBe('asset-midi')
   })
 
+  it('never keeps a ready preview of notes undone as the keep began', async () => {
+    // Arrange
+    const ui = mount()
+    keepIntoSong(ui)
+    ui.setProject(editNotes(ui.fixture.project, up))
+    await vi.advanceTimersByTimeAsync(250)
+    ui.renderer.calls[0].resolve()
+    await vi.advanceTimersByTimeAsync(50)
+
+    // Act
+    const closed = ui.service.editorClosed()
+    ui.setProject(ui.fixture.project)
+    await closed
+
+    // Assert
+    expect(ui.keep).not.toHaveBeenCalled()
+    expect(playedAsset(ui.service)).toBe('asset-midi')
+  })
+
   it('settles before an export once the renders are kept, and at once when nothing is stale', async () => {
     // Arrange
     const ui = mount()
