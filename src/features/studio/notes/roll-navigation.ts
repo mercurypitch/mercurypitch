@@ -9,10 +9,11 @@
 // through the clip when they all show. On a touch screen one finger pans
 // both ways and two fingers zoom about the point between them. A zoom and a
 // pan stay inside the clip's window (lib/studio/midi/roll.ts); the rows
-// move by whole rows (roll-rows.ts), the part of a row left over carried to
-// the next move so a slow drag still gets there.
+// move by whole rows (roll-keyboard.ts), the part of a row left over carried
+// to the next move so a slow drag still gets there.
 //
-// The editing gestures replace the pointer side of this; the wheel stays.
+// D's editing engine moves the roll its own way, in fractions of a row
+// (edit-viewport.ts); wired in, it takes over the pointer side of this.
 import type { RollViewport } from '@/lib/roll-geometry'
 import { rowHeight } from '@/lib/roll-geometry'
 import { panStudioRoll, zoomStudioRoll } from '@/lib/studio/midi/roll'
