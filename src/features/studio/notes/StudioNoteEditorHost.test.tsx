@@ -93,10 +93,13 @@ describe('opening', () => {
 
     // The clip's window plays two notes, middle C and the E above, from the
     // song's first bar into its second.
+    expect(screen.getByRole('img', { name: /^2 notes/ })).toHaveAttribute(
+      'aria-label',
+      '2 notes from C4 to E4, bars 1 to 2',
+    )
     expect(
-      screen.getByRole('img', { name: '2 notes from C4 to E4, bars 1 to 2' }),
-    ).toBeInTheDocument()
-    expect(screen.getByText('2 notes · Bars 1–2')).toBeInTheDocument()
+      document.querySelector('[data-studio-note-status]'),
+    ).toHaveTextContent('2 notes \u00b7 Bars 1\u20132')
   })
 })
 
