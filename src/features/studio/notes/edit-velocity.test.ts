@@ -1,8 +1,9 @@
-// Studio note velocity tests — a lollipop stands from the lane's foot to its velocity, inside the lane's padding; a drag moves velocity in 127 steps, the value read being the value kept; a group moves by the same steps, each note stopping at 1 and 127 on its own; and a press takes a selected note's lollipop first, then the nearest head.
+// Studio note velocity tests — a velocity reads from 1 to 127; a drag moves it in 127 steps, the value read being the value kept; a group moves by the same steps, each note stopping at 1 and 127 on its own; and a press takes a selected note's lollipop first, then the nearest head, within the pointer's reach of where the lane draws it.
 import { describe, expect, it } from 'vitest'
 import type { RollViewport } from '@/lib/roll-geometry'
 import type { StudioNote } from '@/lib/studio/model/types'
-import { noteVelocityValue, pickLollipop, stepStudioNoteVelocities, VELOCITY_LANE_PAD, velocityLaneY, velocitySteps, } from './edit-velocity'
+import { noteVelocityValue, pickLollipop, stepStudioNoteVelocities, } from './edit-velocity'
+import { velocityLaneY } from './velocity-lane'
 
 /** One bar across 960 px: 4 ticks a pixel. */
 const VIEW: RollViewport = {
@@ -13,8 +14,8 @@ const VIEW: RollViewport = {
   width: 960,
   height: 480,
 }
-/** A lane 80 px tall: 64 px from velocity 0 to 1. */
-const LANE = 80
+/** A lane 82 px tall: 64 px from velocity 0 to 1. */
+const LANE = 82
 
 const note = (
   id: number,
@@ -23,21 +24,7 @@ const note = (
   pitch = 60,
 ): StudioNote => ({ id, pitch, startTick, lengthTicks: 240, velocity })
 
-describe('the lane', () => {
-  it('stands the loudest head at the top padding and the softest at the foot', () => {
-    expect(velocityLaneY(1, LANE)).toBe(VELOCITY_LANE_PAD)
-    expect(velocityLaneY(0, LANE)).toBe(LANE - VELOCITY_LANE_PAD)
-    expect(velocityLaneY(0.5, LANE)).toBe(40)
-  })
-
-  it("moves 127 steps over the lane's span, so 64 px up is the whole range", () => {
-    expect([
-      velocitySteps(64, LANE),
-      velocitySteps(-16, LANE),
-      velocitySteps(1, LANE),
-    ]).toEqual([127, -32, 2])
-  })
-
+describe('a velocity', () => {
   it('reads a velocity from 1 to 127, as a musician does', () => {
     expect([
       noteVelocityValue(0.7874),
@@ -100,7 +87,7 @@ describe('stepStudioNoteVelocities', () => {
 })
 
 describe('pickLollipop', () => {
-  // A chord on beat 2 (x 240), soft, loud and between, and a note on beat 3 (x 480).
+  // A chord on beat 2 (its lollipops at x 244), soft, loud and between, and a note on beat 3 (x 484).
   const notes = [
     note(1, 960, 0.3, 60),
     note(2, 960, 0.9, 64),
@@ -134,8 +121,8 @@ describe('pickLollipop', () => {
 
   it('reaches 7 px sideways for a mouse and 16 px for a finger', () => {
     const soft = velocityLaneY(0.3, LANE)
-    expect([at(247, soft), at(248, soft)]).toEqual([1, null])
-    expect([at(256, soft, [], 'touch'), at(257, soft, [], 'touch')]).toEqual([
+    expect([at(251, soft), at(252, soft)]).toEqual([1, null])
+    expect([at(260, soft, [], 'touch'), at(261, soft, [], 'touch')]).toEqual([
       1,
       null,
     ])

@@ -7,10 +7,14 @@
 // keys' column sits to its left, the ruler above, the velocity lane below,
 // so every canvas position here is the viewport's position moved by those
 // bands. A gesture maps a pointer the other way with studioRollRegions.
+//
+// A piano's rows may sit on fractions of a semitone while the editor pans
+// them (roll-rows.ts): the rows drawn are the whole ones the view shows any
+// of, a part-shown row at either edge included. A kit's rows are whole.
 import type { RollViewport } from '@/lib/roll-geometry'
 import { midiToY, timeToX } from '@/lib/roll-geometry'
-import type { StudioNoteBounds } from '@/lib/studio/midi/notes'
 import type { StudioRollRows } from '@/lib/studio/midi/roll-keyboard'
+import { studioRollTopRow } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioTickWindow } from '@/lib/studio/midi/time'
 import type { StudioNote } from '@/lib/studio/model/types'
 
@@ -87,9 +91,17 @@ export interface StudioRollInput {
   readonly notes: readonly StudioNote[]
   readonly selected: ReadonlySet<number>
   readonly drafts: readonly StudioRollDraft[]
-  /** A marquee being drawn: ticks across, pitches up (on a kit, its top and bottom rows' keys). */
-  readonly marquee: StudioNoteBounds | null
-  readonly hover: { readonly id: number; readonly zone: 'body' | 'end' } | null
+  /** A marquee being drawn, in the canvas's pixels. */
+  readonly marquee: StudioRollRect | null
+  /** The grips on the selected notes' right ends, in the canvas's pixels: where a resize takes them (edit-pick.ts, noteGripRect). */
+  readonly grips: readonly StudioRollRect[]
+  /** The note under a mouse: its body, its end, or its lollipop. */
+  readonly hover: {
+    readonly id: number
+    readonly zone: 'body' | 'end' | 'velocity'
+  } | null
+  /** A velocity being dragged, 1 to 127, shown over its note's lollipop. */
+  readonly readout: { readonly id: number; readonly value: number } | null
   /** The transport's playhead in the sequence's ticks; null keeps it out. */
   readonly playheadTick: number | null
   /** The corner's word over the keys: Notes, or Kit. */
@@ -199,11 +211,25 @@ export function rowTop(input: StudioRollInput, row: number): number {
   return input.layout.rulerHeight + midiToY(row, input.viewport)
 }
 
+/** The highest and the lowest whole row the view shows any of. */
+export function rowSpan(input: Pick<StudioRollInput, 'viewport' | 'rows'>): {
+  readonly top: number
+  readonly bottom: number
+} {
+  return {
+    top: Math.min(
+      studioRollTopRow(input.rows),
+      Math.ceil(input.viewport.maxMidi - 1e-9),
+    ),
+    bottom: Math.max(0, Math.floor(input.viewport.minMidi + 1e-9)),
+  }
+}
+
 /** The rows the view shows, from the top. */
 export function shownRows(input: StudioRollInput): number[] {
+  const { top, bottom } = rowSpan(input)
   const rows: number[] = []
-  for (let row = input.viewport.maxMidi; row >= input.viewport.minMidi; row--)
-    rows.push(row)
+  for (let row = top; row >= bottom; row--) rows.push(row)
   return rows
 }
 

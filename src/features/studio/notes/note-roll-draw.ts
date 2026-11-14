@@ -20,9 +20,10 @@ import { rowHeight } from '@/lib/roll-geometry'
 import { studioRollRow } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioNote } from '@/lib/studio/model/types'
 import { studioNoteName } from './note-names'
-import { drawRollDividers, drawRollGrid, drawRollKeys, drawRollRuler, drawRollStick, drawRollVelocities, } from './note-roll-frame'
+import { drawRollDividers, drawRollGrid, drawRollKeys, drawRollRuler, drawRollStick, drawRollVelocities, rollStickHead, } from './note-roll-frame'
 import type { RollContext, StudioRollDraft, StudioRollInput, StudioRollRect, } from './note-roll-geometry'
-import { beginRollLayer, clipTo, fillBox, roundBox, rowTop, startsInWindow, studioRollRegions, tickX, } from './note-roll-geometry'
+import { beginRollLayer, clipTo, fillBox, roundBox, rowSpan, rowTop, startsInWindow, studioRollRegions, tickX, } from './note-roll-geometry'
+import { VELOCITY_CAP_RADIUS } from './velocity-lane'
 
 export type {
   StudioRollDraft,
@@ -46,8 +47,8 @@ export function studioRollNoteBox(
 ): StudioRollRect | null {
   const row = studioRollRow(input.rows, note.pitch)
   const { viewport } = input
-  if (row === null || row < viewport.minMidi || row > viewport.maxMidi)
-    return null
+  const shown = rowSpan(input)
+  if (row === null || row < shown.bottom || row > shown.top) return null
   const end = note.startTick + note.lengthTicks
   if (end < viewport.start || note.startTick > viewport.end) return null
   const x = tickX(input, note.startTick)
@@ -98,7 +99,7 @@ function noteLabel(
   )
 }
 
-/** A selected note's ring, and the grip on its end that a resize takes. */
+/** A selected note's ring; its grip, where a resize takes it, is the overlay's (drawGrips). */
 function selectionMarks(
   context: RollContext,
   input: StudioRollInput,
@@ -119,13 +120,6 @@ function selectionMarks(
   context.lineWidth = 2
   context.strokeStyle = input.theme.selection
   context.stroke()
-  if (box.width >= 14)
-    fillBox(context, input.theme.selection, {
-      x: box.x + box.width - 5,
-      y: box.y + box.height * 0.25,
-      width: 3,
-      height: box.height * 0.5,
-    })
 }
 
 /** One note: its glass fill as strong as it was played, its rim, its name where it fits, and a selected note's marks; a ghost, the stored note a draft stands in for, is only a faint fill. */
@@ -227,7 +221,7 @@ function drawHover(context: RollContext, input: StudioRollInput): void {
   const hover = input.hover
   const note = hover && input.notes.find((each) => each.id === hover.id)
   const box = note ? studioRollNoteBox(input, note) : null
-  if (!hover || box === null) return
+  if (!hover || hover.zone === 'velocity' || box === null) return
   context.beginPath()
   roundBox(context, box, Math.min(5, box.height / 2))
   context.globalAlpha = 0.7
@@ -244,28 +238,8 @@ function drawHover(context: RollContext, input: StudioRollInput): void {
     })
 }
 
-/** The marquee's box on the canvas: its ticks across, from its high row's top to its low row's foot; null on a kit with no row for an edge. */
-export function studioRollMarqueeBox(
-  input: StudioRollInput,
-): StudioRollRect | null {
-  const marquee = input.marquee
-  if (marquee === null) return null
-  const high = studioRollRow(input.rows, marquee.highPitch)
-  const low = studioRollRow(input.rows, marquee.lowPitch)
-  if (high === null || low === null) return null
-  const top = rowTop(input, Math.max(high, low))
-  const bottom = rowTop(input, Math.min(high, low)) + rowHeight(input.viewport)
-  const left = tickX(input, marquee.startTick)
-  return {
-    x: left,
-    y: top,
-    width: tickX(input, marquee.endTick) - left,
-    height: bottom - top,
-  }
-}
-
 function drawMarquee(context: RollContext, input: StudioRollInput): void {
-  const box = studioRollMarqueeBox(input)
+  const box = input.marquee
   if (box === null) return
   context.globalAlpha = 0.14
   fillBox(context, input.theme.marquee, box)
@@ -294,6 +268,78 @@ function drawPlayhead(context: RollContext, input: StudioRollInput): void {
   context.restore()
 }
 
+/** Each selected note's grip: a bar in the selection colour on its right end, inside a long note and beside a short one. */
+function drawGrips(context: RollContext, input: StudioRollInput): void {
+  for (const grip of input.grips) {
+    context.beginPath()
+    roundBox(context, grip, 1.5)
+    context.fillStyle = input.theme.selection
+    context.fill()
+  }
+}
+
+/** The note a velocity drag or the mouse is on in the lane: as the draft has it, else as stored. */
+function laneNote(
+  input: StudioRollInput,
+  id: number,
+): StudioRollDraft | undefined {
+  return (
+    input.drafts.find((draft) => draft.id === id) ??
+    input.notes.find((note) => note.id === id)
+  )
+}
+
+/** A ring round the head of the lollipop under the mouse. */
+function drawLaneHover(context: RollContext, input: StudioRollInput): void {
+  const hover = input.hover
+  const note = hover?.zone === 'velocity' ? laneNote(input, hover.id) : null
+  const head = note ? rollStickHead(input, note) : null
+  if (head === null) return
+  context.beginPath()
+  context.arc(head.x, head.y, VELOCITY_CAP_RADIUS + 3, 0, Math.PI * 2)
+  context.lineWidth = 1.5
+  context.strokeStyle = input.theme.selection
+  context.stroke()
+}
+
+/** The velocity being dragged, 1 to 127, in a pill over its lollipop. */
+function drawReadout(context: RollContext, input: StudioRollInput): void {
+  const readout = input.readout
+  const note = readout ? laneNote(input, readout.id) : undefined
+  const head = note ? rollStickHead(input, note) : null
+  if (readout === null || head === null) return
+  const lane = studioRollRegions(input).velocity
+  const text = String(readout.value)
+  context.font = `700 11px ${input.theme.font}`
+  const width = context.measureText(text).width + 12
+  const box = {
+    x: Math.min(lane.x + lane.width - width, Math.max(lane.x, head.x + 8)),
+    y: Math.max(lane.y + 1, head.y - 9),
+    width,
+    height: 18,
+  }
+  context.beginPath()
+  roundBox(context, box, 9)
+  context.fillStyle = input.theme.selection
+  context.fill()
+  context.fillStyle = input.theme.background
+  context.textAlign = 'center'
+  context.textBaseline = 'middle'
+  context.fillText(text, box.x + box.width / 2, box.y + box.height / 2 + 0.5)
+}
+
+function drawLaneOverlay(context: RollContext, input: StudioRollInput): void {
+  const lane = studioRollRegions(input).velocity
+  if (lane.height <= 0) return
+  context.save()
+  clipTo(context, lane)
+  for (const draft of input.drafts)
+    drawRollStick(context, input, draft, input.theme.selection)
+  drawLaneHover(context, input)
+  drawReadout(context, input)
+  context.restore()
+}
+
 function drawOverlay(context: RollContext, input: StudioRollInput): void {
   const regions = studioRollRegions(input)
   context.save()
@@ -301,15 +347,10 @@ function drawOverlay(context: RollContext, input: StudioRollInput): void {
   drawHover(context, input)
   for (const draft of input.drafts)
     drawNote(context, input, draft, { chosen: true, ghost: false })
+  drawGrips(context, input)
   drawMarquee(context, input)
   context.restore()
-  if (regions.velocity.height > 0 && input.drafts.length > 0) {
-    context.save()
-    clipTo(context, regions.velocity)
-    for (const draft of input.drafts)
-      drawRollStick(context, input, draft, input.theme.selection)
-    context.restore()
-  }
+  drawLaneOverlay(context, input)
   drawPlayhead(context, input)
 }
 

@@ -4,8 +4,8 @@ import { auditionsOf, commitsOf, drag, finger, mouse, note, noteHost, noteOf, pl
 import { noteVelocityValue } from './edit-velocity'
 import { noteEditView } from './edit-view'
 
-// A at 64 of 127 on beat 2 (its lollipop at x 240, head at y 39.75 of 80);
-// B at 100 and C at 30, a chord on beat 3 (x 480, heads at 21.6 and 56.9).
+// A at 64 of 127 on beat 2 (its lollipop at x 244, head at y 39.75 of 82);
+// B at 100 and C at 30, a chord on beat 3 (x 484, heads at 21.6 and 56.9).
 const NOTES = [
   note(1, 60, 960, 480, 64 / 127),
   note(2, 64, 1920, 240, 100 / 127),

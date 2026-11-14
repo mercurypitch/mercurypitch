@@ -14,7 +14,6 @@ import { createEffect, createMemo, createSignal, on, onCleanup, onMount, untrack
 import type { RollViewport } from '@/lib/roll-geometry'
 import { timeToX } from '@/lib/roll-geometry'
 import { studioDrumRows } from '@/lib/studio/midi/drum-rows'
-import type { StudioNoteBounds } from '@/lib/studio/midi/notes'
 import type { StudioMidiSoundKind } from '@/lib/studio/midi/render-key'
 import { panStudioRoll, zoomStudioRoll } from '@/lib/studio/midi/roll'
 import type { StudioRollRows } from '@/lib/studio/midi/roll-keyboard'
@@ -23,7 +22,7 @@ import type { StudioTickWindow } from '@/lib/studio/midi/time'
 import { studioClipTickWindow, studioSongBeats, studioSongFrameToTick, } from '@/lib/studio/midi/time'
 import type { StudioClip, StudioSequence } from '@/lib/studio/model/types'
 import { studioRollWords } from './note-editor-words'
-import type { StudioRollDraft, StudioRollInput, StudioRollLayout, StudioRollMeter, StudioRollTheme, } from './note-roll-draw'
+import type { StudioRollDraft, StudioRollInput, StudioRollLayout, StudioRollMeter, StudioRollRect, StudioRollTheme, } from './note-roll-draw'
 import { drawStudioRollBase, drawStudioRollOverlay } from './note-roll-draw'
 import { readStudioRollTheme } from './note-roll-theme'
 import type { StudioRollMove } from './roll-navigation'
@@ -60,13 +59,16 @@ interface StudioNoteRollProps {
   /** What the editing gestures add to a draw. */
   selected?: ReadonlySet<number>
   drafts?: readonly StudioRollDraft[]
-  marquee?: StudioNoteBounds | null
+  marquee?: StudioRollRect | null
+  grips?: readonly StudioRollRect[]
   hover?: StudioRollInput['hover']
+  readout?: StudioRollInput['readout']
   controls?(controls: StudioNoteRollControls): void
 }
 
 const NO_SELECTION: ReadonlySet<number> = new Set()
 const NO_DRAFTS: readonly StudioRollDraft[] = []
+const NO_GRIPS: readonly StudioRollRect[] = []
 /** The Studio's bars are of four beats (timeline-geometry.ts). */
 const BEATS_PER_BAR = 4
 
@@ -262,7 +264,9 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       selected: props.selected ?? NO_SELECTION,
       drafts: untrack(() => props.drafts ?? NO_DRAFTS),
       marquee: null,
+      grips: NO_GRIPS,
       hover: null,
+      readout: null,
       playheadTick: null,
       corner: props.sound === 'drums' ? 'Kit' : 'Notes',
     }
@@ -286,7 +290,9 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       ...input,
       drafts: props.drafts ?? NO_DRAFTS,
       marquee: props.marquee ?? null,
+      grips: props.grips ?? NO_GRIPS,
       hover: props.hover ?? null,
+      readout: props.readout ?? null,
       playheadTick: liveTick ?? restingTick(),
     })
   }
@@ -313,7 +319,9 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     void baseInput()
     void props.drafts
     void props.marquee
+    void props.grips
     void props.hover
+    void props.readout
     void restingTick()
     queue('overlay')
   })
