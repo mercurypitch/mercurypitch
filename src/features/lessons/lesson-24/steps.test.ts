@@ -194,4 +194,57 @@ describe("the steps' own plays", () => {
     expect(deck.steps.toy.state).toBe(4)
     expect(runs[0].lines.map((l) => l.vibrato)).toEqual([null, WIDE_WAVE])
   })
+
+  it('shows a text play’s own step first when the deck has not reached it, so the chart and its heading agree', () => {
+    // Arrange: a wide page, Step 3's text on screen while the deck is on Step 2
+    const deck = mountSteps()
+    deck.steps.unlock()
+    btn('#predict2 .choice[data-choice="fifth"]').click()
+    deck.show(2)
+
+    // Act: Step 3's play
+    btn('[data-step-play="mi-pure"]').click()
+
+    // Assert
+    expect([deck.current, el('#stepNow').textContent]).toEqual([3, '3'])
+    expect(deck.steps.toy.state).toBe(3)
+    expect(runs).toHaveLength(1)
+  })
+
+  it('shows Step 2 first when its predict plays while the deck is on Step 1', () => {
+    // Arrange: Step 2's card on screen, the deck still on Step 1
+    const deck = mountSteps()
+    deck.steps.unlock()
+    btn('#predict2 .choice[data-choice="fifth"]').click()
+    const before = deck.current
+
+    // Act
+    btn('#predict2 [data-play="third"]').click()
+
+    // Assert
+    expect([before, deck.current, el('#stepNow').textContent]).toEqual([
+      1,
+      2,
+      '2',
+    ])
+    expect(deck.steps.toy.state).toBe(2)
+  })
+
+  it('leaves the deck where it stands when pressed in the step showing, and asks the deck for its stage', () => {
+    // Arrange
+    const deck = mountSteps()
+    deck.steps.unlock()
+    btn('#predict2 .choice[data-choice="fifth"]').click()
+    deck.show(4)
+    const show = vi.spyOn(deck, 'show')
+    const showToy = vi.spyOn(deck, 'showToy')
+
+    // Act
+    btn('[data-step-play="wave"]').click()
+
+    // Assert: a phone's stage comes back into view from above the text
+    expect(show).not.toHaveBeenCalled()
+    expect(showToy).toHaveBeenCalledTimes(1)
+    expect(deck.steps.toy.state).toBe(4)
+  })
 })

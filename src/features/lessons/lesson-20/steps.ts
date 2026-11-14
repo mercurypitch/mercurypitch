@@ -56,9 +56,24 @@ export function initSteps(deck: StepDeck): Steps {
     'on-c': () => stairs.onC(),
     touch: () => run.touchBoth(),
   }
+  // each step's plays in its text play on that step's toy. On a wide page
+  // the next step's text shows before the deck reaches it: a play there
+  // shows its own step first, so the toy draws that step's state under that
+  // step's heading. A phone brings the stage back into view from above the
+  // text, so what the play lights is seen
   for (const b of qa<HTMLButtonElement>('[data-step-play]')) {
     const play = PLAYS[b.dataset.stepPlay ?? '']
-    if (play !== undefined) b.addEventListener('click', () => light(b, play()))
+    if (play === undefined) continue
+    const step = Number(b.closest<HTMLElement>('[data-step]')?.dataset.step)
+    b.addEventListener('click', () => {
+      if (
+        (step in STAIRS_STATES || step in RUN_STATES) &&
+        step !== deck.current
+      )
+        deck.show(step)
+      deck.showToy()
+      light(b, play())
+    })
   }
 
   // both toys follow Sing it's voice choice at once

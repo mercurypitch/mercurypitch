@@ -75,13 +75,16 @@ function reveal(n: 1 | 3, selector: string): void {
   if (held !== null) held.hidden = true
 }
 
+/** A play on the chart, in its own step (`initSteps`). */
+type PlayOn = (key: PlayKey, audible?: boolean) => Promise<boolean>
+
 /** Opens Step 2's predict on the toy, with the hint the kit is to keep. */
-function mountStep2(toy: DroneToy, step2: () => void): void {
+function mountStep2(play: PlayOn, step2: () => void): void {
   const card = q('#predict2')
   q('.lock-hint', card).innerHTML = `${LOCK}${PREDICT_2.open}`
   for (const b of qa<HTMLButtonElement>('.choice', card)) b.disabled = false
   mountPredict(card, {
-    play: (what, audible) => toy.play(what as PlayKey, audible),
+    play: (what, audible) => play(what as PlayKey, audible),
     hints: PREDICT_2.hints,
     revealOn: ['fifth', 'third'],
     revealAfter: 'all',
@@ -110,13 +113,26 @@ export function initSteps(deck: StepDeck, o: StepsOptions = {}): Steps {
       toy.setState(clamp(n, 1, 4) as DroneState)
     },
   })
+  /**
+   * Plays `key` on the chart, in its own step. On a wide page the next
+   * step's text shows before the deck reaches it: a play there shows its
+   * own step first, so the chart draws that step's state under that step's
+   * heading, where the toy alone would change state under the step before's.
+   * A phone brings the stage back into view from above the text, so what
+   * the play draws is seen.
+   */
+  const playOn: PlayOn = (key, audible) => {
+    if (PLAY_STATE[key] !== deck.current) deck.show(PLAY_STATE[key])
+    deck.showToy()
+    return toy.play(key, audible)
+  }
   const light = playLights()
   const stepPlays = qa<HTMLButtonElement>('[data-step-play]')
   for (const b of stepPlays) {
     const key = b.dataset.stepPlay as PlayKey
     b.addEventListener('click', () => {
       if (b.disabled) return
-      light(b, toy.play(key))
+      light(b, playOn(key))
     })
   }
   /** The steps' plays a choice opens: Step 1's with the cold open's, the rest with Step 2's. */
@@ -143,7 +159,7 @@ export function initSteps(deck: StepDeck, o: StepsOptions = {}): Steps {
       cold = true
       toy.unlock()
       open(true, second)
-      mountStep2(toy, step2)
+      mountStep2(playOn, step2)
     },
     revealStep1() {
       reveal(1, '[data-reveal1]')
