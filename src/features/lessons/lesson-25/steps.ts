@@ -54,10 +54,15 @@ export function initSteps(deck: StepDeck): Steps {
   })
 
   // each step's plays in its text play on the toy, which a phone brings
-  // back into view from above the text, so what it lights is seen
+  // back into view from above the text, so what it lights is seen. On a
+  // wide page the next step's text shows before the deck reaches it: a play
+  // there shows its own step first, so the toy draws that step's state
+  // under that step's heading
   for (const b of qa<HTMLButtonElement>('[data-step-play]')) {
     const id = b.dataset.stepPlay as PlayId
+    const step = Number(b.closest<HTMLElement>('[data-step]')?.dataset.step)
     b.addEventListener('click', () => {
+      if (step in STEP_STATES && step !== deck.current) deck.show(step)
       deck.showToy()
       light(b, toy.play(id))
     })

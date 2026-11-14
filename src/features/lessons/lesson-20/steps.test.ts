@@ -434,3 +434,52 @@ describe('Steps 3 and 4: the run', () => {
     )
   })
 })
+
+describe("the plays in the steps' text", () => {
+  it('show their own step first when pressed in a step the deck has not reached, so the toy and its heading agree', async () => {
+    // Arrange: a wide page, Step 2's text on screen while the deck is on Step 1
+    const deck = mountSteps()
+    const modes = el('#toyStairs [data-stairs-mode]')
+    const before = modes.hidden
+
+    // Act: Step 2's play, C's five and then A's
+    click('[data-step-play="both"]')
+    await vi.advanceTimersByTimeAsync(6850)
+
+    // Assert: Step 2's own controls on the stage, and the play as Step 2 plays it
+    expect([deck.current, el('#stepNow').textContent]).toEqual([2, '2'])
+    expect([before, modes.hidden]).toEqual([true, false])
+    expect(sounded()).toEqual([48, 50, 52, 55, 57, 60, 45, 48, 50, 52, 55, 57])
+  })
+
+  it('show Step 4 first when its play is pressed from Step 3, the tempo held as Step 4 holds it', () => {
+    // Arrange: Step 3's own tempo, 0.6 s a note
+    const deck = mountSteps()
+    deck.show(3)
+    const before = deck.steps.run.tempo
+
+    // Act
+    click('[data-step-play="touch"]')
+
+    // Assert
+    expect([deck.current, el('#stepNow').textContent]).toEqual([4, '4'])
+    expect([before, deck.steps.run.tempo]).toEqual([0.6, 0.45])
+    expect(pressed('#toyRun [data-touch="staccato"]')).toBe('true')
+  })
+
+  it('leave the deck where it stands when pressed in the step showing, and ask the deck for its stage', () => {
+    // Arrange
+    const deck = mountSteps()
+    deck.show(2)
+    const show = vi.spyOn(deck, 'show')
+    const showToy = vi.spyOn(deck, 'showToy')
+
+    // Act
+    click('[data-step-play="on-c"]')
+
+    // Assert: a phone's stage comes back into view from above the text
+    expect(show).not.toHaveBeenCalled()
+    expect(showToy).toHaveBeenCalledTimes(1)
+    expect(deck.current).toBe(2)
+  })
+})

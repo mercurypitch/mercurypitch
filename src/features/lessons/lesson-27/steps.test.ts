@@ -152,6 +152,53 @@ describe('the stage, step by step', () => {
     expect(written(last().notes)).toBe('G2 B2 D3 F3 C3 E3 G3')
     expect(el('#toyRing').querySelectorAll('.st-head').length).toBe(0)
   })
+
+  it('shows a text play’s own step first when the deck has not reached it, so the toy and its heading agree', () => {
+    // Arrange: a wide page, Step 3's text on screen while the deck is on Step 2
+    const { deck, steps } = mount()
+    steps.unlock()
+    deck.show(2)
+
+    // Act: Step 3's play
+    button('[data-step-play="v7-home"]').click()
+
+    // Assert
+    expect([deck.current, el('#stepNow').textContent]).toEqual([3, '3'])
+    expect(written(last().notes)).toBe('G2 B2 D3 F3 C3 E3 G3')
+  })
+
+  it('shows Step 4 first when its predict plays from Step 3, its own chip row on the stage', () => {
+    // Arrange: Step 4's card on screen while the deck is on Step 3
+    const { deck, steps } = mount()
+    steps.unlock()
+    deck.show(3)
+    button('#predict4 [data-choice="eminor"]').click()
+    const row4 = el('#toyRing .chord-row[data-part="4"]')
+    const before = row4.hidden
+
+    // Act
+    button('#predict4 [data-play="turn"]').click()
+
+    // Assert
+    expect([deck.current, el('#stepNow').textContent]).toEqual([4, '4'])
+    expect([before, row4.hidden]).toEqual([true, false])
+    expect(written(last().notes)).toBe('C3 E3 G3 E3 G3 C4')
+  })
+
+  it('leaves the deck where it stands when a text play is pressed in the step showing', () => {
+    // Arrange
+    const { deck, steps } = mount()
+    steps.unlock()
+    deck.show(3)
+    const show = vi.spyOn(deck, 'show')
+
+    // Act
+    button('[data-step-play="v7-home"]').click()
+
+    // Assert
+    expect(show).not.toHaveBeenCalled()
+    expect(deck.current).toBe(3)
+  })
 })
 
 describe("Step 4's predict", () => {

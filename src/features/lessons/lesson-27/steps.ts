@@ -90,11 +90,22 @@ export function initSteps(deck: StepDeck, o: StepsOptions = {}): Steps {
     light,
   })
 
+  /**
+   * On a wide page the next step's text shows before the deck reaches it:
+   * a play there shows its own step first, so the toy draws that step's
+   * state under that step's heading.
+   */
+  const showStep = (step: number): void => {
+    if (step in RING_STATES && step !== deck.current) deck.show(step)
+  }
+
   // each step's plays in its text play on the toy, which a phone brings
   // back into view from above the text, so what it lights is seen
   for (const b of qa<HTMLButtonElement>('[data-step-play]')) {
     const id = b.dataset.stepPlay as PlayId
+    const step = Number(b.closest<HTMLElement>('[data-step]')?.dataset.step)
     b.addEventListener('click', () => {
+      showStep(step)
       deck.showToy()
       light(b, toy.play(id))
     })
@@ -121,6 +132,7 @@ export function initSteps(deck: StepDeck, o: StepsOptions = {}): Steps {
   function mount4(): Predict {
     return mountPredict(box, {
       play: (what) => {
+        showStep(4)
         deck.showToy()
         return toy.play(what === 'eminor' ? 'eminor' : 'turn')
       },
