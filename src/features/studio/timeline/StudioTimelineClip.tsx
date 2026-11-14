@@ -27,6 +27,14 @@ import type { StudioWaveformResource } from './waveform-resource'
 
 // The title band names the take; the file's extension adds nothing there.
 const AUDIO_EXTENSION = /\.(wav|mp3|m4a|aac|ogg|oga|opus|flac|webm|aiff?)$/i
+/** A clip's take as its band names it: its file's name without the extension, or else the lane's. */
+export function studioClipTakeName(
+  asset: Pick<StudioAsset, 'originalName'> | undefined,
+  trackName: string,
+): string {
+  return (asset?.originalName ?? trackName).replace(AUDIO_EXTENSION, '')
+}
+
 /** The drawn span's grid, in CSS pixels: a scroll redraws a clip once per this much. */
 export const STUDIO_WAVE_SPAN_GRID = 512
 

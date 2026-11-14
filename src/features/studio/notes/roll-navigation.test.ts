@@ -160,6 +160,26 @@ describe('createStudioRollTouch', () => {
     expect(moves[1]).toEqual({ kind: 'pan', x: -50, y: 0 })
   })
 
+  it('forgets a finger whose capture is gone, so the next one pans and does not pinch', () => {
+    // Arrange: the browser never sent the first finger's cancel.
+    const moves: StudioRollMove[] = []
+    const held = new Set<number>()
+    const roll = createStudioRollTouch({
+      apply: (move) => moves.push(move),
+      origin: () => 0,
+      holds: (id) => held.has(id),
+    })
+    roll.down(pointer(1, 300, 200))
+
+    // Act
+    held.add(2)
+    roll.down(pointer(2, 500, 200))
+    roll.move(pointer(2, 480, 200))
+
+    // Assert
+    expect(moves).toEqual([{ kind: 'pan', x: 20, y: 0 }])
+  })
+
   it('leaves a mouse alone, and forgets a finger once it lifts', () => {
     const { moves, roll } = touch()
 

@@ -103,11 +103,15 @@ interface TouchPoint {
  * One finger pans and two fingers zoom, from pointer events on the roll.
  * Touch and pen only: a mouse is the editing gestures' (and the wheel's).
  * `apply` takes each move; `origin` gives the grid's left edge on the page,
- * so a pinch zooms about the point between the fingers.
+ * so a pinch zooms about the point between the fingers. A finger counts
+ * while the roll holds its capture (`holds`): a browser does not always
+ * send the cancel it owes, and a finger it forgot must not turn the next
+ * one into a pinch.
  */
 export function createStudioRollTouch(options: {
   apply(move: StudioRollMove): void
   origin(): number
+  holds?(pointerId: number): boolean
 }) {
   const points = new Map<number, TouchPoint>()
   let pinch: StudioPinchPoint | null = null
@@ -123,6 +127,8 @@ export function createStudioRollTouch(options: {
 
   function down(event: PointerEvent): boolean {
     if (event.pointerType === 'mouse') return false
+    for (const id of points.keys())
+      if (options.holds?.(id) === false) points.delete(id)
     points.set(event.pointerId, { x: event.clientX, y: event.clientY })
     pinch = points.size === 2 ? pinchPoint() : null
     return true
