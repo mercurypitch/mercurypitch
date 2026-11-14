@@ -7,11 +7,12 @@ import { checkImportCancelled, DEFAULT_STUDIO_IMPORT_LIMITS, } from '@/lib/studi
 import { prepareStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioCommand } from '@/lib/studio/model/commands'
-import type { StudioAsset, StudioAssetData, StudioProject, StudioProjectSummary, } from '@/lib/studio/model/types'
+import type { StudioAsset, StudioProject, StudioProjectSummary, } from '@/lib/studio/model/types'
 import type { StudioBackupTarget } from './backup/backup-target'
 import { restoreStudioBackup, writeStudioBackup } from './backup/studio-backup'
+import { createStudioEditCommits } from './controller/edit-commits'
 import type { StudioEditHistory } from './controller/edit-history'
-import { createStudioEditHistory, executeStudioEdit, travelStudioHistory, } from './controller/edit-history'
+import { createStudioEditHistory } from './controller/edit-history'
 import type { StudioSongClaim } from './controller/editor-keeper'
 import { createStudioEditorKeeper, lostOwnership, } from './controller/editor-keeper'
 import type { EditorPresenceSource } from './controller/editor-presence'
@@ -163,6 +164,18 @@ export function useStudioController(options: StudioControllerOptions = {}) {
   // a device that has none; the first take kept asks the browser to keep
   // the songs.
   const persistence = options.persistence ?? createStudioPersistence()
+  const edits = createStudioEditCommits({
+    history: editHistory,
+    setHistory: setEditHistory,
+    queue: () => queue,
+    canEdit,
+    assets,
+    setAssets,
+    setProject,
+    now,
+    report,
+  })
+  const { commit } = edits
   const storage = createStudioStorageImports({
     ask: options.askStorage,
     cancelImport: () => importer.cancelCurrentImport(),
@@ -179,6 +192,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     clearProblem: () => setImportRefusal(null),
     report: (error) => setImportRefusal(message(error)),
     commit,
+    amend: edits.amend,
     flush: () => queue?.flush(),
     createId,
     now,
@@ -392,58 +406,6 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     } finally {
       if (claim) await editor.drop(claim)
       if (current(epoch)) setLoading(false)
-    }
-  }
-
-  /**
-   * Make `command` an edit, kept and saved. A refusal goes to `refused`: the
-   * page's banner by default, an import's own notice for an import's
-   * commands, so a song with no room for a file says so where every other
-   * refusal of that file is said.
-   */
-  function commit(
-    command: StudioCommand,
-    prepared: readonly StudioAssetData[] = [],
-    refused: (error: unknown) => void = report,
-  ): boolean {
-    const history = editHistory()
-    if (!canEdit() || !queue || history === null) return false
-    try {
-      const metadata = [...assets(), ...prepared.map((data) => data.asset)]
-      const next = executeStudioEdit(history, command, {
-        assets: metadata,
-        now: now(),
-      })
-      if (next === history) return true
-      queue.stage(next.state.present, prepared)
-      setEditHistory(next)
-      setProject(next.state.present)
-      setAssets(metadata)
-      void queue.flush()
-      return true
-    } catch (error) {
-      refused(error)
-      return false
-    }
-  }
-
-  function historyAction(direction: 'undo' | 'redo'): boolean {
-    const history = editHistory()
-    if (!canEdit() || !queue || history === null) return false
-    try {
-      const next = travelStudioHistory(history, direction, {
-        assets: assets(),
-        now: now(),
-      })
-      if (next === history) return true
-      queue.stage(next.state.present)
-      setEditHistory(next)
-      setProject(next.state.present)
-      void queue.flush()
-      return true
-    } catch (error) {
-      report(error)
-      return false
     }
   }
 
@@ -729,8 +691,12 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     canRedo,
     undoLabel,
     redoLabel,
-    undo: () => historyAction('undo'),
-    redo: () => historyAction('redo'),
+    undo: () => edits.travel('undo'),
+    redo: () => edits.travel('redo'),
+    /** How many times undo or redo moved the song: a step can land on a MIDI clip due a render. */
+    travels: edits.travels,
+    /** Keep a MIDI clip's render as its audio, as a take is kept, without an undo step (imports.ts). */
+    keepMidiRender: importer.addRender,
     cancelImport,
     retrySave,
     takeOver,
