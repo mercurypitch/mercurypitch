@@ -1,4 +1,4 @@
-// Studio export panel tests — final measurements and download never masquerade as a target or a saved file; Export waits for a take.
+// Studio export panel tests — final measurements and download never masquerade as a target or a saved file; Export waits for a take, and says so while MIDI clips render first.
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -15,11 +15,13 @@ function mount() {
   const [result, setResult] = createSignal<StudioWavExport | null>(null)
   const [busy, setBusy] = createSignal(false)
   const [cancelling, setCancelling] = createSignal(false)
+  const [waitingRenders, setWaitingRenders] = createSignal(false)
   const controller: StudioExportController = {
     busy,
     cancelling,
     result,
     stage: () => 'verifying',
+    waitingRenders,
     error: () => null,
     notice: () => null,
     exportWav: vi.fn(async () => true),
@@ -34,10 +36,25 @@ function mount() {
       canExport={true}
     />
   ))
-  return { controller, setResult, setBusy }
+  return { controller, setResult, setBusy, setWaitingRenders }
 }
 
 describe('Studio WAV panel', () => {
+  it('says edited MIDI clips render first while their renders are kept, then the stage', () => {
+    // Arrange
+    const ui = mount()
+    ui.setBusy(true)
+
+    // Act
+    ui.setWaitingRenders(true)
+    const waiting = screen.getByRole('status').textContent
+    ui.setWaitingRenders(false)
+
+    // Assert
+    expect(waiting).toContain('Rendering edited MIDI clips first…')
+    expect(screen.getByRole('status').textContent).toContain('Checking output…')
+  })
+
   it('moves keyboard focus to Cancel during rendering and Download after completion', async () => {
     const ui = mount()
     const finished = deferred<undefined>()

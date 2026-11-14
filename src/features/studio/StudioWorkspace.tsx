@@ -15,6 +15,8 @@ import { useStudioExport } from './export/useStudioExport'
 import { StudioInputsPanel } from './inputs/StudioInputsPanel'
 import { isStudioAudioDrop, studioDropFrame, studioDroppedTake, } from './integration/drop-audio'
 import type { StudioSourceEntry } from './integration/source-catalog'
+import { StudioMidiEditorContext } from './midi/midi-render-editor'
+import { useStudioMidiRenders } from './midi/useStudioMidiRenders'
 import { createStudioLiveMix, StudioLiveMixContext } from './mix/live-mix'
 import { installStudioMixShortcut } from './mix/mix-shortcut'
 import { StudioMixDesk } from './mix/StudioMixDesk'
@@ -97,10 +99,16 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
   let audioInput!: HTMLInputElement
   let importFrame = 0
   let importTrack: string | null = null
+  // MIDI clips play their edited notes from renders in memory until kept.
+  const midi = useStudioMidiRenders(
+    () => props.studio,
+    () => baseWritable(),
+  )
   const transport = useStudioTransport({
-    project: () => props.studio.project(),
-    assets: () => props.studio.assets(),
-    readCanonicalAsset: (id) => props.studio.readCanonicalAsset(id),
+    project: midi.project,
+    assets: midi.assets,
+    readCanonicalAsset: (id) => midi.readCanonicalAsset(id),
+    waitingLanes: midi.waitingLanes,
     beforePlay: () => setPreviewEpoch((epoch) => epoch + 1),
     audioBusy: () => finishing(),
     recording: () => recorder.busy(),
@@ -149,6 +157,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     readCanonicalAsset: (id) => props.studio.readCanonicalAsset(id),
     releaseAudio: releaseFinishingAudio,
     holdFrozen: transport.holdFrozen,
+    settleRenders: midi.settle,
+    rendersPending: midi.keepsPending,
   })
   const comparison = useStudioComparison({
     project: () => props.studio.project(),
@@ -517,7 +527,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             onSelectTrack={setSelectedTrackId}
             onNewLane={writable() ? addLane : undefined}
             keyboardPreviewClip={keyboardPreview()}
-            notice={props.studio.laneNotice()}
+            notice={midi.notice()}
             onPointerEditStart={editor.cancel}
             playheadFrame={transport.playheadFrame()}
             playheadClock={transport}
@@ -698,7 +708,9 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
 
   return (
     <StudioLiveMixContext.Provider value={liveMix}>
-      {view()}
+      <StudioMidiEditorContext.Provider value={midi.editor}>
+        {view()}
+      </StudioMidiEditorContext.Provider>
     </StudioLiveMixContext.Provider>
   )
 }

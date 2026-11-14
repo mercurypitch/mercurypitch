@@ -21,6 +21,13 @@ const STAGES: Record<StudioExportStage, string> = {
   verifying: 'Checking output…',
 }
 
+/** What the export is doing now, said in its progress row. */
+function progressText(controller: StudioExportController): string {
+  if (controller.cancelling()) return 'Stopping after the current pass…'
+  if (controller.waitingRenders()) return 'Rendering edited MIDI clips first…'
+  return STAGES[controller.stage()]
+}
+
 function reading(value: number): string {
   return Number.isFinite(value) ? value.toFixed(1) : '−∞'
 }
@@ -132,14 +139,10 @@ export function StudioExportPanel(props: Props) {
             aria-label={
               props.controller.cancelling()
                 ? 'Cancelling export'
-                : STAGES[props.controller.stage()]
+                : progressText(props.controller)
             }
           />
-          <span>
-            {props.controller.cancelling()
-              ? 'Stopping after the current pass…'
-              : STAGES[props.controller.stage()]}
-          </span>
+          <span>{progressText(props.controller)}</span>
         </div>
         <button
           type="button"

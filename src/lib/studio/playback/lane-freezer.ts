@@ -17,6 +17,11 @@
 // that needs the room takes back the ones nothing holds. A run already
 // playing keeps what it was built with: renders that finish while it plays
 // are heard from the next Play.
+//
+// A lane whose MIDI clip waits for its render to be kept waits too
+// (update's `waiting`): rendered now, it would hold audio about to be
+// replaced. Once the render is kept, the lane is left alone as any edited
+// lane is, and then rendered.
 import { measureTrackLatencies } from '@/lib/studio-fx/mixdown'
 import { isStudioMemoryRefusal, registerStudioMemoryReclaimer, reserveStudioMemory, studioWorkingBytes, } from '../memory-budget'
 import type { StudioPlannedLane } from '../model/arrangement-plan'
@@ -72,6 +77,8 @@ export interface StudioLaneFreezeStatus {
   readonly rendering: boolean
   /** The lanes the next Play plays from a render. */
   readonly frozen: ReadonlySet<string>
+  /** Of `wanted`, the lanes that wait for their MIDI clips' renders to be kept first. */
+  readonly waiting: number
 }
 
 const IDLE_STATUS: StudioLaneFreezeStatus = {
@@ -79,6 +86,7 @@ const IDLE_STATUS: StudioLaneFreezeStatus = {
   ready: 0,
   rendering: false,
   frozen: new Set(),
+  waiting: 0,
 }
 let status = IDLE_STATUS
 const statusListeners = new Set<(status: StudioLaneFreezeStatus) => void>()
@@ -154,6 +162,10 @@ export function createStudioLaneFreezer(options: StudioLaneFreezerOptions) {
   let song: Song | null = null
   let queue: string[] = []
   let wanted = 0
+  // Lanes whose MIDI clips wait for a render to be kept, and how many of
+  // them the song would render ahead.
+  let waiting: ReadonlySet<string> = new Set()
+  let waitingWanted = 0
   let paused = false
   let disposed = false
   let memoryShort = false
@@ -225,6 +237,7 @@ export function createStudioLaneFreezer(options: StudioLaneFreezerOptions) {
       ready: Math.min(wanted, frozen.size),
       rendering: rendering.size > 0,
       frozen: new Set(frozen.keys()),
+      waiting: waitingWanted,
     })
   }
 
@@ -266,25 +279,42 @@ export function createStudioLaneFreezer(options: StudioLaneFreezerOptions) {
           bytes: entry?.lane.bytes ?? frozenLaneBytes(lane),
           ready:
             (entry !== undefined && !entry.stale) || rendering.has(trackId),
-          settled: settledAt <= at && !failed.has(key),
+          settled: settledAt <= at && !failed.has(key) && !waiting.has(trackId),
         }
       },
     )
     const picked = choice()
-    const order = chooseLaneFreezes(candidates, {
+    const goal = {
       tier: picked === 'auto' ? 'best' : picked,
       voiceChainUs: us,
       memoryBytes: studioWorkingBytes() * FREEZE_MEMORY_SHARE,
-    })
+    } as const
+    const order = chooseLaneFreezes(candidates, goal)
     // Once memory refused a render, the song gets what is rendered until it changes.
     queue = memoryShort ? [] : order
-    wanted = candidates.filter((lane) => lane.ready).length + queue.length
+    waitingWanted = waitingFor(candidates, goal)
+    wanted =
+      candidates.filter((lane) => lane.ready).length +
+      queue.length +
+      waitingWanted
     if (nextSettle !== Infinity && !disposed)
       settleTimer = setTimeout(() => {
         plan()
         publish()
         pump()
       }, nextSettle - at)
+  }
+
+  /** The waiting lanes the song would render ahead once their MIDI renders are kept. */
+  function waitingFor(
+    candidates: readonly StudioFreezeCandidate[],
+    goal: Parameters<typeof chooseLaneFreezes>[1],
+  ): number {
+    if (!candidates.some((lane) => waiting.has(lane.trackId))) return 0
+    const kept = candidates.map((lane) =>
+      waiting.has(lane.trackId) ? { ...lane, settled: true } : lane,
+    )
+    return chooseLaneFreezes(kept, goal).filter((id) => waiting.has(id)).length
   }
 
   function cache(): StudioBufferCache {
@@ -396,8 +426,14 @@ export function createStudioLaneFreezer(options: StudioLaneFreezerOptions) {
 
   return {
     /** Follow the song as it stands: what changed waits, what is left alone may render. */
-    update(project: StudioProject, assets: readonly StudioAsset[]): void {
+    update(
+      project: StudioProject,
+      assets: readonly StudioAsset[],
+      /** Lanes whose MIDI clips wait for a render to be kept: left alone until it is. */
+      waitingLanes: ReadonlySet<string> = new Set(),
+    ): void {
       if (disposed) return
+      waiting = waitingLanes
       const next = compileSong(project, assets)
       const opened = song?.project.id !== project.id
       song = next
