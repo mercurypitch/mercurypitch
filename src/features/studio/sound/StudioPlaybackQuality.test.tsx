@@ -4,7 +4,7 @@ import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { livePlaybackProfile, notePlayout, readStoredChoice, resetPlaybackQualityForTests, TIER_PROFILES, } from '@/lib/studio/playback/playback-quality'
 import { MEDIUM_SONG, roleSong, SMALL_SONG, THIS_DESKTOP_US, } from '@/lib/studio/playback/song.test-fixtures'
-import { studioFreezeNote,StudioPlaybackQuality,  } from './StudioPlaybackQuality'
+import { studioFreezeNote, StudioPlaybackQuality, } from './StudioPlaybackQuality'
 
 const small = roleSong(SMALL_SONG)
 const auto = () => screen.getByRole('radio', { name: /^Auto/ })
