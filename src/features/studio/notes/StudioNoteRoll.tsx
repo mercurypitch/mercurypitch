@@ -4,12 +4,18 @@
 //
 // Two canvases, one over the other, both drawn by note-roll-draw.ts from
 // one input. The base is drawn again when what it shows changes (the notes,
-// the view, the size, the theme); the overlay when the playhead moves or a
-// gesture changes what it holds. While the song plays the overlay follows
-// the clock on every display frame, and the view turns the page when the
-// playhead runs off its right edge. The wheel, a trackpad, a finger and a
-// pinch move and zoom the view (roll-navigation.ts); the editor's buttons
-// and keys reach it through `controls`.
+// the selection, the view, the size, the theme); the overlay when the
+// playhead moves or a gesture changes what it holds. While the song plays
+// the overlay follows the clock on every display frame, and the view turns
+// the page when the playhead runs off its right edge.
+//
+// A piano's roll is edited: its pointers and its wheel go to the editing
+// engine (`editing`, useStudioNoteEditing.ts), which moves the notes and the
+// view alike, the rows in fractions of a row; its draw adds the engine's
+// selection, drafts, marquee, grips, hover and velocity readout
+// (edit-host.ts). A kit's roll keeps its whole rows and C's navigation
+// (roll-navigation.ts) until the drum editor takes it over. The editor's
+// buttons and keys reach the view through `controls`.
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
 import type { RollViewport } from '@/lib/roll-geometry'
 import { timeToX } from '@/lib/roll-geometry'
@@ -18,16 +24,20 @@ import type { StudioMidiSoundKind } from '@/lib/studio/midi/render-key'
 import { panStudioRoll, zoomStudioRoll } from '@/lib/studio/midi/roll'
 import type { StudioRollRows } from '@/lib/studio/midi/roll-keyboard'
 import { STUDIO_ROLL_ROWS_FINE, STUDIO_ROLL_ROWS_TOUCH, studioRollOpening, studioRollShownRows, studioRollTopRow, studioRollWantedRows, } from '@/lib/studio/midi/roll-keyboard'
+import { resizeStudioRollRows } from '@/lib/studio/midi/roll-rows'
 import type { StudioTickWindow } from '@/lib/studio/midi/time'
 import { studioClipTickWindow, studioSongBeats, studioSongFrameToTick, } from '@/lib/studio/midi/time'
 import type { StudioClip, StudioSequence } from '@/lib/studio/model/types'
+import { notePianoOpening, noteRollDrafts, noteRollDrawing } from './edit-host'
 import { studioRollWords } from './note-editor-words'
-import type { StudioRollDraft, StudioRollInput, StudioRollLayout, StudioRollMeter, StudioRollRect, StudioRollTheme, } from './note-roll-draw'
-import { drawStudioRollBase, drawStudioRollOverlay } from './note-roll-draw'
+import type { StudioRollDraft, StudioRollInput, StudioRollLayout, StudioRollMeter, StudioRollTheme, } from './note-roll-draw'
+import { drawStudioRollBase, drawStudioRollOverlay, studioRollRegions, } from './note-roll-draw'
+import { createNoteRollPointers } from './note-roll-pointers'
 import { readStudioRollTheme } from './note-roll-theme'
 import type { StudioRollMove } from './roll-navigation'
 import { createStudioRollTouch, moveStudioRoll, studioRollWheelMove, } from './roll-navigation'
 import styles from './StudioNoteEditor.module.css'
+import type { StudioNoteRollEditing } from './useStudioNoteEditing'
 
 /** What the roll reads from the transport. */
 export interface StudioNoteRollTransport {
@@ -56,19 +66,13 @@ interface StudioNoteRollProps {
   /** The lane's colour: a change reads the theme again. */
   color: string
   transport: StudioNoteRollTransport
-  /** What the editing gestures add to a draw. */
-  selected?: ReadonlySet<number>
-  drafts?: readonly StudioRollDraft[]
-  marquee?: StudioRollRect | null
-  grips?: readonly StudioRollRect[]
-  hover?: StudioRollInput['hover']
-  readout?: StudioRollInput['readout']
+  /** The editing engine: a piano's roll edits with it; without it, it only shows. */
+  editing?: StudioNoteRollEditing
   controls?(controls: StudioNoteRollControls): void
 }
 
 const NO_SELECTION: ReadonlySet<number> = new Set()
 const NO_DRAFTS: readonly StudioRollDraft[] = []
-const NO_GRIPS: readonly StudioRollRect[] = []
 /** The Studio's bars are of four beats (timeline-geometry.ts). */
 const BEATS_PER_BAR = 4
 
@@ -86,6 +90,9 @@ export function studioRollLayout(
 
 const sameWindow = (a: StudioTickWindow, b: StudioTickWindow) =>
   a.startTick === b.startTick && a.endTick === b.endTick
+
+const sameIds = (a: ReadonlySet<number>, b: ReadonlySet<number>) =>
+  a.size === b.size && [...a].every((id) => b.has(id))
 
 const pixelRatio = () =>
   Math.min(3, Math.max(1, globalThis.devicePixelRatio || 1))
@@ -112,6 +119,9 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
   let carryRows = 0
 
   const layout = createMemo(() => studioRollLayout(props.sound, props.compact))
+  const regions = createMemo(() =>
+    studioRollRegions({ ...size(), layout: layout() }),
+  )
   const clipWindow = createMemo(
     () => studioClipTickWindow(props.clip, props.sequence),
     undefined,
@@ -159,12 +169,15 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     props.touch ? STUDIO_ROLL_ROWS_TOUCH : STUDIO_ROLL_ROWS_FINE
   const tickOf = (frame: number) =>
     studioSongFrameToTick(props.clip, props.sequence, frame)
+  // A piano edits through the engine; a kit waits for the drum editor.
+  const editing = () =>
+    props.sound === 'piano' ? (props.editing ?? null) : null
 
   /** The view as it opens: the first bars that fit, the playhead a tenth in when it is in the clip past them. */
   function opening(box: { width: number; height: number }): RollViewport {
     const barTicks = meter().beatTicks * BEATS_PER_BAR
     const bars = Math.max(2, Math.round(box.width / 160))
-    const opened = studioRollOpening({
+    const fitted = studioRollOpening({
       sequence: props.sequence,
       window: clipWindow(),
       rows: rows(),
@@ -173,6 +186,8 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       limits: limits(),
       span: bars * barTicks,
     })
+    const opened =
+      rows().kind === 'piano' ? notePianoOpening(fitted, props.touch) : fitted
     const tick = tickOf(props.transport.playheadFrame())
     const span = opened.end - opened.start
     const shown = tick >= opened.start && tick <= opened.end
@@ -181,7 +196,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     return panStudioRoll(opened, tick - span * 0.1 - opened.start, clipWindow())
   }
 
-  /** The view at a new size, window or kit: its ticks kept inside the window, its rows fitted again about their middle. */
+  /** The view at a new size, window or kit: its ticks kept inside the window; a piano's rows as tall as they were, a kit's fitted again. */
   function refit(
     current: RollViewport,
     box: { width: number; height: number },
@@ -192,14 +207,16 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       0,
       clipWindow(),
     )
+    if (rows().kind === 'piano')
+      return resizeStudioRollRows(
+        { ...kept, height: current.height },
+        box.height,
+      )
     const shown = studioRollShownRows(
       studioRollWantedRows(props.sequence, clipWindow(), rows()),
       box.height,
       limits(),
       studioRollTopRow(rows()),
-      rows().kind === 'drums'
-        ? undefined
-        : (current.minMidi + current.maxMidi) / 2,
     )
     return { ...kept, ...shown }
   }
@@ -236,10 +253,32 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       (overlay?.getBoundingClientRect().left ?? 0) + layout().keysWidth,
     holds: (id) => overlay?.hasPointerCapture(id) === true,
   })
+  const pointers = createNoteRollPointers({
+    editing,
+    canvas: () => overlay ?? null,
+    regions,
+  })
 
+  // What the engine draws: the selection and the drafts' ghosts in the
+  // base, the rest on the overlay.
+  const editView = () => editing()?.view() ?? null
+  const selected = createMemo(
+    () => {
+      const shown = editView()
+      return shown === null ? NO_SELECTION : new Set(shown.selection)
+    },
+    NO_SELECTION,
+    { equals: sameIds },
+  )
+  const drafts = createMemo(() => {
+    const shown = editView()
+    return shown === null
+      ? NO_DRAFTS
+      : noteRollDrafts(shown, props.sequence.notes)
+  })
   // The drafts' ids are what the base draws from them: a ghost for each.
   const draftIds = createMemo(() =>
-    (props.drafts ?? NO_DRAFTS)
+    drafts()
       .map((draft) => draft.id ?? '')
       .filter((id) => id !== '')
       .join(),
@@ -261,10 +300,10 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       rows: rows(),
       meter: meter(),
       notes: props.sequence.notes,
-      selected: props.selected ?? NO_SELECTION,
-      drafts: untrack(() => props.drafts ?? NO_DRAFTS),
+      selected: selected(),
+      drafts: untrack(drafts),
       marquee: null,
-      grips: NO_GRIPS,
+      grips: [],
       hover: null,
       readout: null,
       playheadTick: null,
@@ -286,13 +325,18 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     if (input === null || !overlay) return
     const context = contextFor(overlay, input)
     if (context === null) return
+    const shown = editView()
+    const drawing =
+      shown === null
+        ? null
+        : noteRollDrawing(shown, props.sequence.notes, regions().grid)
     drawStudioRollOverlay(context, {
       ...input,
-      drafts: props.drafts ?? NO_DRAFTS,
-      marquee: props.marquee ?? null,
-      grips: props.grips ?? NO_GRIPS,
-      hover: props.hover ?? null,
-      readout: props.readout ?? null,
+      drafts: drawing?.drafts ?? NO_DRAFTS,
+      marquee: drawing?.marquee ?? null,
+      grips: drawing?.grips ?? [],
+      hover: drawing?.hover ?? null,
+      readout: drawing?.readout ?? null,
       playheadTick: liveTick ?? restingTick(),
     })
   }
@@ -317,11 +361,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
   })
   createEffect(() => {
     void baseInput()
-    void props.drafts
-    void props.marquee
-    void props.grips
-    void props.hover
-    void props.readout
+    void editView()
     void restingTick()
     queue('overlay')
   })
@@ -329,7 +369,8 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
   /** The playhead ran off the view's right edge: the next page, the playhead a tenth in. */
   function follow(tick: number, before: number | null): void {
     const current = view()
-    if (current === null || touch.active() || before === null) return
+    if (current === null || before === null) return
+    if (touch.active() || pointers.active()) return
     if (before > current.end || tick <= current.end) return
     const span = current.end - current.start
     setView(
@@ -384,9 +425,15 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       const box = host.getBoundingClientRect()
       setSize({ width: box.width, height: box.height })
     }
+    const detach = props.editing?.attach({
+      viewport: view,
+      setViewport: (viewport) => setView(viewport),
+      velocityHeight: () => layout().velocityHeight,
+    })
     onCleanup(() => {
       appearance?.disconnect()
       observer?.disconnect()
+      detach?.()
     })
     props.controls?.({ zoom, fit })
   })
@@ -407,6 +454,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
   }
 
   function wheel(event: WheelEvent): void {
+    if (pointers.wheel(event)) return
     const current = view()
     if (current === null || !overlay) return
     const left = overlay.getBoundingClientRect().left + layout().keysWidth
@@ -422,6 +470,17 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     if (move === null) return
     event.preventDefault()
     apply(move)
+  }
+
+  function press(event: PointerEvent): void {
+    if (pointers.down(event)) return
+    if (!touch.down(event)) return
+    event.preventDefault()
+    overlay?.setPointerCapture(event.pointerId)
+  }
+
+  function lift(event: PointerEvent, kind: 'up' | 'cancel'): void {
+    if (!pointers.end(event, kind)) touch.up(event)
   }
 
   const words = createMemo(() =>
@@ -440,23 +499,28 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
   }
 
   return (
-    <div ref={host} class={styles.roll} data-studio-note-roll={viewData()}>
+    <div
+      ref={host}
+      class={styles.roll}
+      data-studio-note-roll={viewData()}
+      data-studio-note-editing={editing() === null ? undefined : ''}
+    >
       <canvas ref={base} class={styles.rollCanvas} aria-hidden="true" />
       <canvas
         ref={overlay}
         class={styles.rollCanvas}
+        style={{ cursor: editView()?.cursor }}
         role="img"
         aria-label={words()}
         onWheel={wheel}
-        onPointerDown={(event) => {
-          if (!touch.down(event)) return
-          event.preventDefault()
-          overlay?.setPointerCapture(event.pointerId)
+        onPointerDown={press}
+        onPointerMove={(event) => {
+          if (!pointers.move(event)) touch.move(event)
         }}
-        onPointerMove={(event) => touch.move(event)}
-        onPointerUp={(event) => touch.up(event)}
-        onPointerCancel={(event) => touch.up(event)}
-        onLostPointerCapture={(event) => touch.up(event)}
+        onPointerUp={(event) => lift(event, 'up')}
+        onPointerCancel={(event) => lift(event, 'cancel')}
+        onLostPointerCapture={(event) => lift(event, 'cancel')}
+        onPointerLeave={(event) => pointers.leave(event)}
       />
     </div>
   )

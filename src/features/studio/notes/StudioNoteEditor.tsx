@@ -5,16 +5,20 @@
 // Loaded on its first open (StudioNoteEditorHost.tsx), so no page pays for
 // it before then. It opens on the clip the editor state names
 // (note-editor-state.ts), takes the focus, and gives it back to the clip
-// when it closes. Escape and Done close it; =, - and Z zoom the roll as they
-// zoom the lanes. The drawer's top edge drags to another height, kept on
-// this device, and Expand fills the arrangement. The header names the lane
-// and the clip and holds a place for the editing tools
-// (data-studio-note-tools); the roll (StudioNoteRoll.tsx) draws the notes.
+// when it closes. Done closes it; Escape clears the selection, then closes
+// it; =, - and Z zoom the roll as they zoom the lanes, and B switches
+// between Select and Draw. The drawer's top edge drags to another height,
+// kept on this device, and Expand fills the arrangement. The header names
+// the lane and the clip and holds the editing tools (StudioNoteTools.tsx);
+// the roll (StudioNoteRoll.tsx) draws the notes, and edits a piano's
+// through the engine (useStudioNoteEditing.ts). A note the editor touches
+// sounds through the lane's instrument (note-audition.ts).
 import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { Maximize2, Minimize2 } from '@/components/icons'
 import { isTypingTarget } from '@/lib/space-playback'
 import { studioLaneInstrument } from '@/lib/studio/instruments/resolve'
 import { studioClipTickWindow, studioSongBeats } from '@/lib/studio/midi/time'
+import type { StudioCommand } from '@/lib/studio/model/commands'
 import { studioSequence } from '@/lib/studio/model/sequences'
 import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model/types'
 import { studioMidiSound, studioMidiSoundWords, } from '../record/midi/studio-midi-sound'
@@ -22,11 +26,15 @@ import { FitWidth, ZoomIn, ZoomOut } from '../studio-icons'
 import common from '../StudioPage.module.css'
 import { studioClipTakeName } from '../timeline/StudioTimelineClip'
 import { studioTrackColor, studioTrackHue } from '../timeline/track-hues'
+import type { StudioNoteAuditionClock } from './note-audition'
+import { createStudioNoteAudition } from './note-audition'
 import type { StudioNoteEditorState } from './note-editor-state'
 import { studioNoteStatusWords } from './note-editor-words'
 import styles from './StudioNoteEditor.module.css'
 import type { StudioNoteRollControls, StudioNoteRollTransport, } from './StudioNoteRoll'
 import { StudioNoteRoll } from './StudioNoteRoll'
+import { StudioNoteSelectionTools, StudioNoteTools } from './StudioNoteTools'
+import { useStudioNoteEditing } from './useStudioNoteEditing'
 
 export interface StudioNoteEditorProps {
   state: StudioNoteEditorState
@@ -35,7 +43,12 @@ export interface StudioNoteEditorProps {
   assets: readonly StudioAsset[]
   phone: boolean
   tablet: boolean
-  transport: StudioNoteRollTransport
+  /** The transport, and its clock for the notes the editor sounds. */
+  transport: StudioNoteRollTransport & Partial<StudioNoteAuditionClock>
+  /** The Studio's commands: each edit is one, and one undo step. */
+  dispatch(command: StudioCommand): boolean
+  /** Whether the song can be edited now. */
+  writable: boolean
 }
 
 /** The drawer's least height, and how much of the arrangement it takes on its own. */
@@ -45,6 +58,8 @@ const AUTO_MOST = 560
 /** The ruler and one lane stay in view over a drawer at its tallest. */
 const LANES_LEFT = 36 + 64
 const RESIZE_STEP = 16
+/** How long a word from the editor stays in its status line. */
+const NOTICE_MS = 5000
 
 export function StudioNoteEditor(props: StudioNoteEditorProps) {
   let section: HTMLElement | undefined
@@ -114,8 +129,59 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
     props.state.close()
   }
 
+  const [notice, setNotice] = createSignal('')
+  let noticeTimer: ReturnType<typeof setTimeout> | undefined
+
+  function announce(words: string): void {
+    clearTimeout(noticeTimer)
+    setNotice(words)
+    noticeTimer = setTimeout(() => setNotice(''), NOTICE_MS)
+  }
+  onCleanup(() => clearTimeout(noticeTimer))
+
+  const audition = createStudioNoteAudition({
+    clock: {
+      clock: () => props.transport.clock?.() ?? null,
+      unlock: () => props.transport.unlock?.() ?? Promise.resolve(false),
+    },
+    sound,
+  })
+  onCleanup(audition.dispose)
+  const editor = useStudioNoteEditing({
+    clip: () => props.clip,
+    sequence,
+    songTempoBpm: () => props.project.tempoBpm,
+    writable: () => props.writable,
+    playheadFrame: () =>
+      props.transport.playing()
+        ? props.transport.frameNow()
+        : props.transport.playheadFrame(),
+    dispatch: (command) => props.dispatch(command),
+    close,
+    clipboard: () => props.state.clipboard(),
+    setClipboard: (clipboard) => props.state.setClipboard(clipboard),
+    audition,
+    announce,
+  })
+  // A piano's notes are edited here; a kit's wait for the drum editor.
+  const edits = () => sound() === 'piano'
+
+  /** B switches between Select and Draw. */
+  function toolKey(event: KeyboardEvent): boolean {
+    if (!edits() || event.key.toLowerCase() !== 'b' || event.repeat)
+      return false
+    if (event.ctrlKey || event.metaKey || event.altKey) return false
+    editor.setTool(editor.tool() === 'draw' ? 'select' : 'draw')
+    return true
+  }
+
   function keyDown(event: KeyboardEvent): void {
     if (event.defaultPrevented || isTypingTarget(event.target)) return
+    if (toolKey(event) || (edits() && editor.keyDown(event))) {
+      event.preventDefault()
+      event.stopPropagation()
+      return
+    }
     if (event.ctrlKey || event.metaKey || event.altKey) return
     if (event.key === 'Escape') {
       event.preventDefault()
@@ -185,6 +251,7 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
       setRoom(host.clientHeight)
     }
     const clipId = props.clip.id
+    audition.warm()
     queueMicrotask(() => {
       if (section?.isConnected === true) section.focus({ preventScroll: true })
     })
@@ -227,6 +294,7 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
       tabindex="-1"
       data-studio-note-editor={props.clip.id}
       onKeyDown={keyDown}
+      onKeyUp={(event) => editor.keyUp(event)}
     >
       <Show when={drawer()}>
         <div
@@ -266,7 +334,28 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
         <span class={styles.chip}>
           {sound() === 'drums' ? 'MIDI · KIT' : 'MIDI · PIANO'}
         </span>
-        <div class={styles.tools} data-studio-note-tools="" />
+        <div class={styles.tools} data-studio-note-tools="">
+          <Show when={edits() && sequence()}>
+            {(shown) => (
+              <>
+                <StudioNoteTools
+                  editing={editor}
+                  notes={shown().notes}
+                  writable={props.writable}
+                  compact={props.phone}
+                />
+                <Show when={!props.phone}>
+                  <StudioNoteSelectionTools
+                    editing={editor}
+                    notes={shown().notes}
+                    writable={props.writable}
+                    compact={false}
+                  />
+                </Show>
+              </>
+            )}
+          </Show>
+        </div>
         <div class={styles.actions}>
           <Show when={!props.phone}>
             <button
@@ -309,13 +398,29 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
             compact={props.phone}
             color={color()}
             transport={props.transport}
+            editing={editor.editing}
             controls={(value) => (controls = value)}
           />
         )}
       </Show>
+      <Show when={props.phone && edits() && sequence()}>
+        {(shown) => (
+          <div class={styles.thumbBar}>
+            <StudioNoteSelectionTools
+              editing={editor}
+              notes={shown().notes}
+              writable={props.writable}
+              compact
+            />
+          </div>
+        )}
+      </Show>
       <div class={styles.status}>
         <span class={styles.statusWords} data-studio-note-status="">
-          {status()}
+          {notice() || status()}
+        </span>
+        <span class={styles.notice} role="status">
+          {notice()}
         </span>
         <div class={styles.zoom}>
           <button

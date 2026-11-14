@@ -59,6 +59,8 @@ function renderHost(options: { phone?: boolean } = {}) {
           phone={options.phone === true}
           tablet={false}
           transport={transport}
+          dispatch={() => true}
+          writable
         />
       </div>
     )

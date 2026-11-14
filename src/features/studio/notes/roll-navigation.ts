@@ -12,8 +12,10 @@
 // move by whole rows (roll-keyboard.ts), the part of a row left over carried
 // to the next move so a slow drag still gets there.
 //
-// D's editing engine moves the roll its own way, in fractions of a row
-// (edit-viewport.ts); wired in, it takes over the pointer side of this.
+// A piano's roll is the editing engine's now (note-roll-pointers.ts): its
+// pointers and wheel move the roll in fractions of a row (edit-viewport.ts).
+// A kit's roll keeps this until the drum editor takes it over, and the
+// editor's zoom buttons and keys zoom both rolls through moveStudioRoll.
 import type { RollViewport } from '@/lib/roll-geometry'
 import { rowHeight } from '@/lib/roll-geometry'
 import { panStudioRoll, zoomStudioRoll } from '@/lib/studio/midi/roll'

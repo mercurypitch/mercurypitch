@@ -593,6 +593,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             phone={phone()}
             tablet={tablet()}
             transport={transport}
+            dispatch={props.studio.dispatch}
+            writable={writable()}
           />
         </div>
         <Show when={panel() !== null && !deskOpen()}>
