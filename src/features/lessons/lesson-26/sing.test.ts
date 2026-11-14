@@ -129,9 +129,13 @@ vi.mock('@/features/lessons/kit/beat-clock', async (actual) => ({
     },
   },
 }))
+/** Each time Merc or Tavi was told to sing or to stop: who, and which. */
+const merc = vi.hoisted(() => ({ sang: [] as [string, boolean][] }))
 vi.mock('@/features/lessons/kit/merc-duo', async (actual) => ({
   ...(await actual<typeof MercDuoModule>()),
-  mercSing: () => undefined,
+  mercSing: (which: string, _midi: number, on: boolean) => {
+    merc.sang.push([which, on])
+  },
   mercListen: () => undefined,
 }))
 
@@ -221,6 +225,7 @@ beforeEach(() => {
   take.contexts.length = 0
   take.ends.length = 0
   take.heard = false
+  merc.sang.length = 0
 })
 
 afterEach(() => {
@@ -697,6 +702,22 @@ describe('the sing-along and listening', () => {
       ...notes.map((i) => [i, i]),
       [null, null],
     ])
+  })
+
+  it('stops "Just listen today"’s play when the voice changes, and lets go of the singer who sang it', async () => {
+    // Arrange: the lower voice's play sounding, Merc singing it
+    await loadCard()
+    await press('[data-comfort="listen"]')
+    await press('[data-listen-play]', 2_000)
+    const playing = played.runs.at(-1)
+
+    // Act: the higher voice chosen beside it
+    await press('[data-voice="higher"]')
+
+    // Assert: WEB-SPEC, Toys 5, state 3, "in the chosen voice"
+    expect(playing?.stopped).toBe(true)
+    expect(el('[data-listen-play]').classList.contains('is-on')).toBe(false)
+    expect(merc.sang.at(-1)).toEqual(['blue', false])
   })
 
   it('starts Play the two parts again on a second press, still lit, the first play stopped', async () => {
