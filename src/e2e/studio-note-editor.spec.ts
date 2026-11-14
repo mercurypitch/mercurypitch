@@ -1,7 +1,7 @@
 // Studio note editor — a MIDI clip draws its notes in its lane's canvas; a double-click opens its notes in a drawer under the lanes, Escape and Done close it and give the focus back to the clip; Clip details' Edit notes and E open it too; the drawer's top edge resizes it, Expand fills the arrangement and Mix takes turns with it; two taps open it on a tablet, and on a phone it fills the screen until Done.
 import { expect, test } from '@playwright/test'
 import { center, setStudioZoom, studioRegion, } from './helpers/dedicatedstudio-fixture'
-import { clipCanvasAlpha, DRUM_NOTES, noteEditor, openMidiSong, } from './helpers/studio-notes'
+import { clipCanvasAlpha, DRUM_NOTES, noteEditor, noteEditorArrived, openMidiSong, } from './helpers/studio-notes'
 
 test.describe('Studio note editor on a computer', () => {
   test.use({ viewport: { width: 1440, height: 900 } })
@@ -112,6 +112,7 @@ test.describe('Studio note editor on a computer', () => {
     const editor = noteEditor(page)
     await clip.dblclick()
     await expect(editor).toBeVisible()
+    await noteEditorArrived(editor)
     const before = (await editor.boundingBox())!.height
 
     // A real drag of the top edge, 120 px up.

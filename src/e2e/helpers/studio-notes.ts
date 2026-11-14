@@ -132,3 +132,17 @@ export async function clipCanvasAlpha(
 export function noteEditor(page: Page): Locator {
   return studioRegion(page).getByRole('region', { name: /^Note editor: / })
 }
+
+/**
+ * Waits for the note editor to finish sliding in. Its edges move 24 px while
+ * it does, which takes longer than its 0.2 s on a busy machine.
+ */
+export async function noteEditorArrived(editor: Locator): Promise<void> {
+  await editor.evaluate((element) =>
+    Promise.all(
+      element
+        .getAnimations()
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  )
+}
