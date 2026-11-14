@@ -394,6 +394,25 @@ describe('the keys, the kit and the ruler', () => {
     expect(texts.some((text) => text.text === 'NOTES')).toBe(true)
   })
 
+  it('names the bar and beat the view starts in when it starts inside a bar', () => {
+    // Arrange: tick 0 is the third beat of bar 1.
+    const inside = recordingRollContext()
+    const onBar = recordingRollContext()
+
+    // Act
+    drawStudioRollBase(inside.context, input())
+    drawStudioRollBase(
+      onBar.context,
+      input({ meter: { beatTicks: 960, originTick: 0, beatsPerBar: 4 } }),
+    )
+
+    // Assert
+    expect(
+      inside.texts.find((text) => text.color === 'muted' && text.x === 78),
+    ).toMatchObject({ text: '1.3' })
+    expect(onBar.texts.some((text) => /^\d+\.\d+$/.test(text.text))).toBe(false)
+  })
+
   it('draws sixteenths where they have room, and leaves them out when they crowd', () => {
     const close = recordingRollContext()
     drawStudioRollBase(close.context, input())

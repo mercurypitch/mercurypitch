@@ -114,7 +114,7 @@ function layBars(notes: StudioClipNotes, frame: StudioClipNotesFrame): Bar[][] {
   const height =
     notes.sound === 'drums'
       ? Math.max(1.5, rowHeight - 2)
-      : Math.max(1.5, rowHeight - Math.max(0.5, rowHeight * 0.14))
+      : Math.max(2, rowHeight - Math.max(0.5, rowHeight * 0.14))
   const range = studioClipNoteRange(notes, frame)
   for (let index = range.first; index < range.end; index++) {
     const note = preview.notes[index]
