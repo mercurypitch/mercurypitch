@@ -1,11 +1,18 @@
-// Studio note editor tests — nothing loads until a clip's notes open; the editor then names the lane and the clip, says what the clip plays in words for its canvas and its status, and takes the focus; Escape inside it and Done close it and give the focus back to the clip; Expand fills the arrangement; the top edge's keys set a height kept on this device; a phone's editor fills the screen with no edge to drag; and the editor closes by itself when its clip is deleted.
+// Studio note editor tests — nothing shows until a clip's notes open; the editor then names the lane and the clip, says what the clip plays in words for its canvas and its status, and takes the focus; Escape inside it and Done close it and give the focus back to the clip; Expand fills the arrangement; the top edge's keys set a height kept on this device; a phone's editor fills the screen with no edge to drag; and the editor closes by itself when its clip is deleted.
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, } from 'vitest'
 import { studioMidiFixture } from '@/lib/studio/model/model.test-fixtures'
 import type { StudioProject } from '@/lib/studio/model/types'
 import { createStudioNoteEditorState, STUDIO_NOTE_EDITOR_HEIGHT_KEY, } from './note-editor-state'
 import { StudioNoteEditorHost } from './StudioNoteEditorHost'
+
+// The editor loads with import() on its first open; vitest transforms its
+// module graph on that first import, a second or more under load. Load it
+// once here, so each test waits on the editor and not on the transform.
+beforeAll(async () => {
+  await import('./StudioNoteEditor')
+})
 
 beforeEach(() => {
   // jsdom draws nothing: the roll's canvases have no context.
@@ -63,7 +70,7 @@ const editor = () =>
   screen.findByRole('region', { name: /^Note editor: Keys, / })
 
 describe('opening', () => {
-  it('loads nothing until a clip’s notes open, then names the lane and the clip and takes the focus', async () => {
+  it('shows nothing until a clip’s notes open, then names the lane and the clip and takes the focus', async () => {
     // Arrange
     const { state, fixture } = renderHost()
     expect(screen.queryByRole('region')).toBeNull()
