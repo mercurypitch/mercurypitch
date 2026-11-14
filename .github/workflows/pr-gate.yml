@@ -370,7 +370,10 @@ jobs:
     name: Browser tests (${{ matrix.shard }}/4)
     needs: scope
     if: needs.scope.outputs.root == 'true' && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    # Playwright 1.60 cannot install a browser on Ubuntu 26.04, which
+    # ubuntu-latest became in November 2026: browser jobs stay on 24.04 until
+    # Playwright supports it.
+    runs-on: ubuntu-24.04
     # 45, not 30, since 6 Nov 2026. With fullyParallel the shards split the
     # suite by test order, so the Studio's 102 audio specs, the slowest in
     # the suite, all land in shard 4: it ran 28:56 of its 30 minutes on a
@@ -447,7 +450,10 @@ jobs:
     name: Browser smoke (${{ matrix.shard }}/2)
     needs: scope
     if: needs.scope.outputs.root == 'true' && github.event_name == 'pull_request'
-    runs-on: ubuntu-latest
+    # Playwright 1.60 cannot install a browser on Ubuntu 26.04, which
+    # ubuntu-latest became in November 2026: browser jobs stay on 24.04 until
+    # Playwright supports it.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -555,7 +561,10 @@ jobs:
     name: Beside Cue browser tests (legacy ${{ matrix.shard }}/2)
     needs: scope
     if: needs.scope.outputs.beside == 'true' && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    # Playwright 1.60 cannot install a browser on Ubuntu 26.04, which
+    # ubuntu-latest became in November 2026: browser jobs stay on 24.04 until
+    # Playwright supports it.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     strategy:
       fail-fast: false
@@ -597,7 +606,10 @@ jobs:
     name: Beside Cue adventure (${{ matrix.spec }})
     needs: scope
     if: needs.scope.outputs.beside == 'true' && github.event_name != 'pull_request'
-    runs-on: ubuntu-latest
+    # Playwright 1.60 cannot install a browser on Ubuntu 26.04, which
+    # ubuntu-latest became in November 2026: browser jobs stay on 24.04 until
+    # Playwright supports it.
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:
       fail-fast: false

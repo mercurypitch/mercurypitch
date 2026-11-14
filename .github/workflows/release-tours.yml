@@ -34,7 +34,10 @@ concurrency:
 jobs:
   walk:
     name: Guided tours (${{ matrix.viewport }})
-    runs-on: ubuntu-latest
+    # Playwright 1.60 cannot install a browser on Ubuntu 26.04, which
+    # ubuntu-latest became in November 2026: browser jobs stay on 24.04 until
+    # Playwright supports it.
+    runs-on: ubuntu-24.04
     timeout-minutes: 45
     strategy:
       # Both viewports always finish: a miss on one says nothing about the
