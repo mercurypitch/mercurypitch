@@ -15,24 +15,22 @@
 // parts' notes sharing their onsets.
 
 import type { Run as ClockRun, Spot } from '@/features/lessons/kit/beat-clock'
-import { bars, BeatClock } from '@/features/lessons/kit/beat-clock'
-import { partContour } from '@/features/lessons/kit/part-contour'
 import type { Run, RunNote } from '@/features/lessons/kit/run'
 import { playNotes } from '@/features/lessons/kit/run'
 import type { Voice as Tone } from '@/features/lessons/kit/sound'
-import { contourVoice, MERC_GAIN, NOTE_GAIN, } from '@/features/lessons/kit/sound'
-import { bookWood } from '@/features/lessons/kit/woodblock'
+import { MERC_GAIN, NOTE_GAIN } from '@/features/lessons/kit/sound'
+import { bookPart as bookTakePart, startCountIn as countIn, } from '@/features/lessons/kit/take-part'
 import type { Part } from './sing-plan'
 import { BEATS, BPM, COUNT_IN, PART_SEC } from './sing-plan'
 
-/** The other part's level under a take and in the sing-along: under Merc's model, so the singer hears their own voice (the lab sets it; WEB-SPEC, Audio, Levels). */
-export const PART_GAIN = 0.1
-/** The woodblock's level, as the rhythm lessons click. */
-export const WOOD_GAIN = 0.1
-/** Seconds of quiet between the model and the count-in. */
-export const QUIET_GAP_SEC = 0.4
-/** Seconds of the other part the quiet check plays: its first two notes. */
-export const CHECK_SEC = 2
+// the count-in and the part under a take are the kit's, at this page's
+// tempo (kit/take-part.ts)
+export {
+  CHECK_SEC,
+  PART_GAIN,
+  QUIET_GAP_SEC,
+} from '@/features/lessons/kit/take-part'
+
 /** "Just listen today"'s play: each part 6.0 s, 1.0 s apart: the tune, the part, then both (20.0 s). */
 export const LISTEN = { gap: 1, sec: PART_SEC } as const
 export const LISTEN_SEC = 3 * LISTEN.sec + 2 * LISTEN.gap
@@ -63,61 +61,23 @@ export const startModel = (
     },
   })
 
-/** One click of the count-in: beat 1 higher. */
-export interface Click {
-  readonly high: boolean
-}
-
 /** The count-in: one bar of four clicks at 60 BPM, beat 1 higher, each told as it is heard. */
 export const startCountIn = (
   audible: boolean,
   onClick: (beat: number) => void,
   onFrame: (spot: Spot) => void,
-): ClockRun =>
-  BeatClock.start<Click>({
-    bar: bars([
-      {
-        beats: COUNT_IN,
-        hits: [0, 1, 2, 3].map((beat) => ({
-          beat,
-          data: { high: beat === 0 },
-        })),
-      },
-    ]),
-    bpm: () => BPM,
-    audible,
-    book: (c, when, bus) => {
-      bookWood(bus, when, c.high, WOOD_GAIN)
-    },
-    onBeat: (spot) => {
-      onClick(spot.beat)
-    },
-    onFrame,
-  })
+): ClockRun => countIn({ bpm: BPM, beats: COUNT_IN, audible, onClick, onFrame })
 
 /**
  * The other part as one voice, booked `at` seconds from now on the audio
  * clock: all of it, or only its first `sec` seconds (the quiet check's 2.0
  * s). Null while sound cannot play.
  */
-export function bookPart(
+export const bookPart = (
   midis: readonly number[],
   at: number,
   sec = PART_SEC,
-): Tone | null {
-  const notes: { midi: number; sec: number }[] = []
-  let left = sec
-  midis.forEach((midi, i) => {
-    const len = Math.min((BEATS[i] * 60) / BPM, left)
-    if (len > 1e-6) notes.push({ midi, sec: len })
-    left -= len
-  })
-  return contourVoice(partContour(notes), {
-    kind: 'merc',
-    gain: PART_GAIN,
-    at: Math.max(0, at),
-  })
-}
+): Tone | null => bookTakePart({ midis, beats: BEATS, bpm: BPM }, at, sec)
 
 /** "Just listen today"'s notes: the tune alone, the part alone, then the two together, each part's notes in its own list. */
 export function listenNotes(tune: Part, part: Part): RunNote[] {

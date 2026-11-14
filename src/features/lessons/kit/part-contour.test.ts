@@ -5,11 +5,13 @@
 // Lesson 26 WEB-SPEC, What the kit and the app still need, item 6: each
 // note a held point at its pitch with a 0.05 s glide to the next, arriving
 // on the next note's beat; a repeated note dips to a quarter for 0.08 s
-// between the two; the last note holds to its end.
+// between the two; the last note holds to its end. Lesson 28 WEB-SPEC,
+// Audio: a note a breath follows falls to a quarter for its last half
+// beat, then the voice glides into the next note at its full level.
 
 import { describe, expect, it } from 'vitest'
 import { hz } from './notes'
-import { PART_DIP, PART_GLIDE_SEC, partContour } from './part-contour'
+import { PART_BREATH, PART_DIP, PART_GLIDE_SEC, partContour, } from './part-contour'
 import { contourLength } from './sound'
 
 const E3 = 52
@@ -59,6 +61,43 @@ describe('a part as one voice’s line', () => {
     expect(points).toEqual([
       { t: 0, hz: hz(G3), level: 1 },
       { t: 0.96, hz: hz(G3), level: 1 },
+      { t: 1, hz: hz(G3), level: 0.25 },
+      { t: 1.04, hz: hz(G3), level: 1 },
+      { t: 2, hz: hz(G3), level: 1 },
+    ])
+  })
+
+  it('falls to a quarter for a breath at the end of the note it follows, then glides into the next at full level', () => {
+    // Act: a half note at 72 BPM, its last half beat a breath, then the next
+    const points = partContour([
+      { midi: G3, sec: 1.6, breath: 0.4 },
+      { midi: E3, sec: 1 },
+    ])
+
+    // Assert
+    expect(PART_BREATH).toEqual({ level: 0.25, fall: 0.05 })
+    expect(points).toEqual([
+      { t: 0, hz: hz(G3), level: 1 },
+      { t: 1.2, hz: hz(G3), level: 1 },
+      { t: 1.25, hz: hz(G3), level: 0.25 },
+      { t: 1.6 - PART_GLIDE_SEC, hz: hz(G3), level: 0.25 },
+      { t: 1.6, hz: hz(E3), level: 1 },
+      { t: 2.6, hz: hz(E3), level: 1 },
+    ])
+  })
+
+  it('keeps a breath before a note on the same pitch, its dip the breath', () => {
+    // Act
+    const points = partContour([
+      { midi: G3, sec: 1, breath: 0.4 },
+      { midi: G3, sec: 1 },
+    ])
+
+    // Assert: no rise to full level before the boundary
+    expect(points).toEqual([
+      { t: 0, hz: hz(G3), level: 1 },
+      { t: 0.6, hz: hz(G3), level: 1 },
+      { t: 0.65, hz: hz(G3), level: 0.25 },
       { t: 1, hz: hz(G3), level: 0.25 },
       { t: 1.04, hz: hz(G3), level: 1 },
       { t: 2, hz: hz(G3), level: 1 },
