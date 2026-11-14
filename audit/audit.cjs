@@ -30,7 +30,7 @@ fs.mkdirSync(OUT, { recursive: true })
   })
   const page = await ctx.newPage()
   const report = {
-    lesson: N, size: TAG, url: `${BASE}/learn/${N}`, status: null, title: null,
+    lesson: N, size: TAG, url: `${BASE}/learn/${N}${/^(127\.0\.0\.1|localhost)/.test(host) ? '.html' : ''}`, status: null, title: null,
     errors: [], badResponses: [], failedRequests: [], production: [], sideways: [], notes: [], shots: [],
   }
   page.on('pageerror', (e) => report.errors.push(`pageerror: ${e.message}`))

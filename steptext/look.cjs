@@ -4,7 +4,7 @@
 // above, pressing a text play brings the stage back into view.
 const { chromium } = require('/opt/node22/lib/node_modules/playwright')
 const fs = require('fs')
-const [PORT, OUT] = process.argv.slice(2)
+const [PORT, OUT, ONLY] = process.argv.slice(2) // ONLY: one lesson's cases
 fs.mkdirSync(OUT, { recursive: true })
 const BASE = `http://127.0.0.1:${PORT}`
 
@@ -18,14 +18,17 @@ const WIDE = [
   [25, 2, 'melodic'],
   // Steps 2 and 3's text waits for the cold open's reveal
   [27, 2, 'v7-home', { plays: '.hero-plays [data-play]', shown: '[data-held="3"]' }],
-]
+  // the first play of a step's text is the one a reader meets while the deck is a step behind
+  [27, 1, 'sevenths', { plays: '.hero-plays [data-play]', shown: '[data-held="2"]' }],
+  [27, 2, 'tritone', { plays: '.hero-plays [data-play]', shown: '[data-held="3"]' }],
+].filter((c) => !ONLY || String(c[0]) === ONLY)
 // lesson, step, play
 const PHONE = [
   [20, 2, 'on-c'],
   [24, 3, 'mi-pure'],
   [25, 3, 'melodic'],
   [27, 3, 'v7-home'],
-]
+].filter((c) => !ONLY || String(c[0]) === ONLY)
 
 async function open(browser, n, w, h, dsf) {
   const ctx = await browser.newContext({ viewport: { width: w, height: h }, deviceScaleFactor: dsf })
