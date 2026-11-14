@@ -7,6 +7,8 @@ import type { StudioAutomationEdit } from './automation'
 import { applyStudioAutomationEdit, isStudioAutomationEdit } from './automation'
 import { studioClipOnPass } from './clip-passes'
 import { createStudioTrack } from './defaults'
+import type { StudioMidiRenderEdit } from './midi-render-commands'
+import { applyStudioMidiRenderEdit, isStudioMidiRenderEdit, } from './midi-render-commands'
 import type { StudioPasteEdit } from './placement-commands'
 import { moveStudioClipToNewTrack, pasteStudioClip } from './placement-commands'
 import type { StudioPunchEdit } from './punch-commands'
@@ -26,6 +28,7 @@ export type StudioEdit =
   | StudioSoundEdit
   | StudioAutomationEdit
   | StudioSequenceEdit
+  | StudioMidiRenderEdit
   | { readonly type: 'rename-project'; readonly title: string }
   | { readonly type: 'add-track'; readonly track: StudioTrack }
   | { readonly type: 'add-clip'; readonly clip: StudioClip }
@@ -284,6 +287,8 @@ function applyEdit(project: StudioProject, edit: StudioEdit): StudioProject {
   if (isStudioAutomationEdit(edit))
     return applyStudioAutomationEdit(project, edit)
   if (isStudioSequenceEdit(edit)) return applyStudioSequenceEdit(project, edit)
+  if (isStudioMidiRenderEdit(edit))
+    return applyStudioMidiRenderEdit(project, edit)
   if ('clipId' in edit) return editClip(project, edit)
   switch (edit.type) {
     case 'paste-clip':

@@ -1,7 +1,7 @@
 // Studio editor history — command labels accompany pure undo snapshots without entering saved data.
 import type { StudioCommand, StudioCommandOptions, StudioEdit, } from '@/lib/studio/model/commands'
 import type { StudioHistory } from '@/lib/studio/model/history'
-import { createStudioHistory, executeStudioCommand, redoStudioCommand, undoStudioCommand, } from '@/lib/studio/model/history'
+import { amendStudioPresent, createStudioHistory, executeStudioCommand, redoStudioCommand, undoStudioCommand, } from '@/lib/studio/model/history'
 import type { StudioProject } from '@/lib/studio/model/types'
 
 export interface StudioEditHistory {
@@ -39,6 +39,8 @@ const EDIT_LABELS: Record<StudioEdit['type'], string> = {
   'apply-auto-balance': 'auto-balance',
   'add-sequence': 'add notes',
   'set-sequence-notes': 'edit notes',
+  // Kept by an amendment, which takes no step and so is never named.
+  'set-midi-render': 'render notes',
 }
 
 type TrackChanges = Extract<StudioEdit, { type: 'update-track' }>['changes']
@@ -92,6 +94,16 @@ export function executeStudioEdit(
     ),
     futureLabels: [],
   }
+}
+
+/** Change the present without an undo step: a MIDI clip's render kept as its audio. The labels stay as they are. */
+export function amendStudioEdit(
+  history: StudioEditHistory,
+  command: StudioCommand,
+  options: StudioCommandOptions,
+): StudioEditHistory {
+  const state = amendStudioPresent(history.state, command, options)
+  return state === history.state ? history : { ...history, state }
 }
 
 export function travelStudioHistory(
