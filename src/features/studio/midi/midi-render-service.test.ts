@@ -174,7 +174,7 @@ describe('a render of notes that changed while it ran', () => {
     expect(ui.keep).not.toHaveBeenCalled()
   })
 
-  it('is dropped as it lands when the render did not stop for the change', async () => {
+  it('is never played when the renderer does not stop for the change: its preparation does', async () => {
     // Arrange
     const ui = mount(undefined, {
       // A renderer that does not listen for aborts: the render lands anyway.
