@@ -21,7 +21,8 @@ async function settle(): Promise<void> {
 
 beforeEach(() => {
   vi.stubGlobal('requestAnimationFrame', (callback: FrameRequestCallback) => {
-    frames.set(++nextFrame, callback)
+    nextFrame += 1
+    frames.set(nextFrame, callback)
     return nextFrame
   })
   vi.stubGlobal('cancelAnimationFrame', (id: number) => frames.delete(id))
