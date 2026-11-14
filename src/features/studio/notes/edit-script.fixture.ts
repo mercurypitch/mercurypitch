@@ -182,6 +182,18 @@ export function key(
   return { type: 'key', key: name, ...extra }
 }
 
+export function keyup(name: string): NoteEditInput {
+  return { type: 'keyup', key: name }
+}
+
+/** A key pressed and let go. */
+export function press(
+  name: string,
+  extra: Partial<NoteEditKey> = {},
+): NoteEditInput[] {
+  return [key(name, extra), keyup(name)]
+}
+
 export function commitsOf(host: NoteHost): NoteEditCommit[] {
   return host.effects.flatMap((effect) =>
     effect.type === 'commit' ? [effect.commit] : [],

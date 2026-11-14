@@ -12,7 +12,8 @@
 // and Ctrl+Y pass on to the Studio, whose one history holds the editor's
 // commits (decision 8). Every key the editor does not use passes on.
 //
-// A held arrow repeats its move, a commit each, as in a DAW; a held Delete
+// A held arrow repeats its move into a draft, committed as one move when it
+// is let go (edit-hold.ts), as the Studio's clip nudge does; a held Delete
 // or Ctrl+D acts once.
 import type { NoteEditCommand, NoteEditKey } from './edit-types'
 
