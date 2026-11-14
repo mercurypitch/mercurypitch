@@ -16,7 +16,7 @@ import { VisitEnding } from '@/features/lessons/kit/comfort'
 import { NowPlaying } from '@/features/lessons/kit/now-playing'
 import type * as RunModule from '@/features/lessons/kit/run'
 import { resetRuns, runs, } from '@/features/lessons/kit/run-recorder.test-fixtures'
-import { el, loadPage, settle, soundOn } from './page-dom.test-fixtures'
+import { el, loadPage, settle, soundOn, words } from './page-dom.test-fixtures'
 import { PLAIN_SAID } from './part-shapes'
 import { initWrap } from './wrap'
 
@@ -125,6 +125,25 @@ describe('the practice card', () => {
     expect(first).toEqual([true, false])
     expect(rested).toEqual([false, true])
     expect([rest.hidden, practise.hidden]).toEqual([true, false])
+  })
+
+  it('heads the rest version "Rest today", as Lesson 10\'s form is, and the card its own words again after', () => {
+    // Arrange
+    initWrap()
+    const eyebrow = el('#practiseCard .eyebrow')
+    const first = words(eyebrow)
+
+    // Act
+    VisitEnding.set('rest')
+    const rested = words(eyebrow)
+    VisitEnding.set('practise')
+
+    // Assert: WEB-SPEC, Practice links, "The rest version"; FACTS 66
+    expect([first, rested, words(eyebrow)]).toEqual([
+      'Practise in MercuryPitch',
+      'Rest today',
+      'Practise in MercuryPitch',
+    ])
   })
 })
 

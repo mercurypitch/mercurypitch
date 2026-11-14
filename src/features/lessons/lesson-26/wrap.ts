@@ -4,10 +4,11 @@
 //
 // The practice card names Harmony Stack, a Jam room's mode, and Drone
 // Intonation's thirds on a drone (WEB-SPEC, Practice links; FACTS 63 to
-// 66). After "Effortful", "Uncomfortable" or "Just listen today" the rest
-// line takes the card's place: Sing it's ending is held in memory for the
-// visit (kit/comfort.ts `VisitEnding`), never stored, so a new visit opens
-// on the full card.
+// 66). After "Effortful", "Uncomfortable" or "Just listen today" the card
+// takes Lesson 10's rest form, headed "Rest today", its rest line in the
+// drills' place (kit/comfort.ts `mountPractiseCard`): Sing it's ending is
+// held in memory for the visit (`VisitEnding`), never stored, so a new
+// visit opens on the full card.
 //
 // Free play (Toys 2, Free play) is the steps' toy again, on a card of its
 // own under the next-lesson card: the four states on one stage, a state
@@ -22,7 +23,7 @@
 // The tease still (Toys 6) is markup, in the next-lesson card's slot:
 // Lesson 27's ring of rooms, V lit and I faint, which plays nothing.
 
-import { VisitEnding } from '@/features/lessons/kit/comfort'
+import { mountPractiseCard } from '@/features/lessons/kit/comfort'
 import { q } from '@/features/lessons/kit/dom'
 import { watch } from '@/features/lessons/kit/frame-loop'
 import { onLeave } from '@/features/lessons/kit/leave'
@@ -44,12 +45,6 @@ export function initFreePlay(): PartToy {
 
 /** The practice card in the version Sing it's ending picks, and free play. */
 export function initWrap(): { readonly free: PartToy } {
-  const card = q('#practiseCard')
-  const rest = q('[data-ending="rest"]', card)
-  const practise = q('[data-ending="practise"]', card)
-  VisitEnding.subscribe((ending) => {
-    rest.hidden = ending !== 'rest'
-    practise.hidden = ending === 'rest'
-  })
+  mountPractiseCard(q('#practiseCard'))
   return { free: initFreePlay() }
 }
