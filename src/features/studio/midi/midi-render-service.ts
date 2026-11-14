@@ -30,7 +30,9 @@ import { createEffect, createMemo, createSignal, on, onCleanup, untrack, } from 
 import type { StudioMidiKeys } from '@/lib/studio/midi/clip-keys'
 import { studioMidiKeys } from '@/lib/studio/midi/clip-keys'
 import { studioLaneMidiSound } from '@/lib/studio/midi/lane-sound'
+import type { StudioNoteSet } from '@/lib/studio/midi/notes'
 import type { StudioMidiSoundKind } from '@/lib/studio/midi/render-key'
+import { studioSequence } from '@/lib/studio/model/sequences'
 import type { StudioAsset, StudioProject, StudioSequence, } from '@/lib/studio/model/types'
 import type { StudioRenderImport } from '../controller/imports'
 import type { StudioMidiPreview } from './midi-preview-audio'
@@ -533,18 +535,28 @@ export function createStudioMidiRenderService(
         if (preview.asset.id === assetId) return studioMidiPreviewBlob(preview)
       return undefined
     },
-    /** Notes the editor shows before it commits them, rendered once left alone; null ends the draft. */
-    preview(clipId: string, draft: StudioSequence | null): void {
+    /** Notes the editor shows before it commits them, on the clip's own time, rendered once left alone; null ends the draft. */
+    preview(clipId: string, draft: StudioNoteSet | null): void {
       const project = untrack(options.project)
       const clip = project?.clips.find((each) => each.id === clipId)
       const base = project && clip ? keys.clipKey(project, clip) : null
+      const own =
+        clip?.midi && project && studioSequence(project, clip.midi.sequenceId)
       const pending = new Map(untrack(drafting))
-      if (draft === null || base === null) {
+      if (draft === null || base === null || !own) {
         pending.delete(clipId)
         const kept = new Map(untrack(drafts))
         kept.delete(clipId)
         setDrafts(kept)
-      } else pending.set(clipId, { sequence: draft, base })
+      } else {
+        // The draft's notes on the clip's own time, made once, so it hashes once.
+        const sequence = {
+          ...own,
+          notes: draft.notes,
+          nextNoteId: draft.nextNoteId,
+        }
+        pending.set(clipId, { sequence, base })
+      }
       setDrafting(pending)
       soon()
     },
