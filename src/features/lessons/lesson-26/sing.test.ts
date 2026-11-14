@@ -20,9 +20,9 @@
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import type * as BeatClockModule from '@/features/lessons/kit/beat-clock'
 import type { RunOptions as ClockOptions } from '@/features/lessons/kit/beat-clock'
+import { scrollOutOfView } from '@/features/lessons/kit/browser-doubles.test-fixtures'
 import type * as ListenModule from '@/features/lessons/kit/listen'
 import type * as MercDuoModule from '@/features/lessons/kit/merc-duo'
 import type * as RunModule from '@/features/lessons/kit/run'
@@ -486,6 +486,38 @@ describe('a run', () => {
     expect(el('[data-after="silent"]').hidden).toBe(false)
     expect(offered()).toEqual(['today'])
     expect(status()).toBe("That's every run this set has today.")
+  })
+
+  it('leaves the page where the learner took it when they leave mid-run: the run counts, and nothing brings Sing it back', async () => {
+    // Arrange: Merc's model singing, then the card scrolled far above the screen
+    await loadCard()
+    await toBrief()
+    await press('[data-panel="start"] [data-sing="start"]', 4_500)
+    vi.spyOn(el('#singCard'), 'getBoundingClientRect').mockReturnValue({
+      x: 0,
+      y: -900,
+      top: -900,
+      bottom: -300,
+      left: 0,
+      right: 360,
+      width: 360,
+      height: 600,
+      toJSON: () => ({}),
+    })
+    const scroll = vi
+      .spyOn(window, 'scrollBy')
+      .mockImplementation(() => undefined)
+
+    // Act: Sing it off screen past the leave watch's 0.6 s
+    scrollOutOfView(el('#sing'))
+    await vi.advanceTimersByTimeAsync(700)
+
+    // Assert: WEB-SPEC, Edge cases, "Leaving Sing it mid-run"
+    expect(status()).toBe(
+      'That run stopped when you left, so nothing was read.',
+    )
+    expect(shown('after')).toBe(true)
+    expect(scroll).not.toHaveBeenCalled()
   })
 
   it('offers the swap after Easy, and the swap sings the tune against Merc’s part', async () => {

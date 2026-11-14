@@ -84,8 +84,12 @@ export interface SingView {
   focusText(el: HTMLElement): void
 }
 
-/** The view on `#singCard`. */
-export function createSingView(): SingView {
+/**
+ * The view on `#singCard`. `here` says whether the learner is still at Sing
+ * it: a panel shown once they have left, a run they walked away from, never
+ * moves the page back to it.
+ */
+export function createSingView(here: () => boolean = () => true): SingView {
   const card = q('#singCard')
   const statusEl = q('#singStatus')
   const fig = q('#singFig')
@@ -113,7 +117,7 @@ export function createSingView(): SingView {
       // screen (a phone, after Start): bring its top back at once, before
       // the section's leave watch sees it gone
       const top = card.getBoundingClientRect().top
-      if (top < 0 || top > window.innerHeight * 0.7)
+      if (here() && (top < 0 || top > window.innerHeight * 0.7))
         window.scrollBy({ top: top - 16, behavior: 'instant' })
     },
     voice(v) {
