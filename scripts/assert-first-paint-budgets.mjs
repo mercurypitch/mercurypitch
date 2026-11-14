@@ -701,10 +701,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // bytes in build:e2e; a quarter over.
   'learn/27.html': 254,
   // Lesson 28, "Cadences, form and a song in two parts", Season 2's last page
-  // and a draft, as a shell: the masthead, the step deck, the season's close
-  // and the explorer, with every part of the lesson held in its markup until
-  // its modules land: 90,498 bytes in build:e2e; a quarter over.
-  'learn/28.html': 111,
+  // and a draft, built in every mode as Lesson 3 is: its own module on the kit,
+  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must; with the
+  // song on two staffs, the kit's score (kit/score.ts, its layout, drawing and
+  // bands, on the rhythm bar's engraving), in the steps' toy and free play, the
+  // cold open's strip and its pairs of staffs on the kit's predict, the three
+  // words' figures, and the recall and the quick check on the kit's quiz with
+  // Lesson 18's and Lesson 26's questions: 189,557 bytes in build:e2e; a
+  // quarter over.
+  'learn/28.html': 232,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -915,10 +920,13 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // reaches no sheet, its questions being words alone, so the guide's stays
   // out.
   'learn/27.html': 113,
-  // Lesson 28 (a draft, as above), as a shell: 84,258 bytes in build:e2e,
-  // the kit's sheets and the page's own, with the shared Inter and Outfit
-  // @font-face rules; a quarter over.
-  'learn/28.html': 103,
+  // Lesson 28 (a draft, as above): 98,576 bytes in build:e2e, the kit's sheets
+  // (the voice lessons' in the chunk the Wrap's comfort check shares, and the
+  // shared parts), its own with the rhythm bar's and the score's taken in by
+  // @import, and the shared Inter and Outfit @font-face rules; a quarter over.
+  // The recall reaches no sheet, its questions being words alone, so the
+  // guide's stays out.
+  'learn/28.html': 121,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter

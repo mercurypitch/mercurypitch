@@ -74,8 +74,9 @@ function boxOf(el: Element): { w: number; h: number } {
   return w > 0 && h > 0 ? { w, h } : { w: 358, h: 300 }
 }
 
-/** Mounts a score in `figure`, empty until a scene is shown. */
+/** Mounts a score in `figure`, empty until a scene is shown; the figure takes the sheet's `sc` class, which sets the drawing in it. */
 export function mountScore(figure: HTMLElement, o: ScoreOptions = {}): Score {
+  figure.classList.add('sc')
   const host = svg(
     'svg',
     { class: 'sc-svg', 'aria-hidden': 'true', focusable: 'false' },

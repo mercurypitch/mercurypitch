@@ -2,8 +2,11 @@
    Lesson 28 — Cadences, form and a song in two parts: the page's own
    figures and cards
    ============================================================
-   Everything else is the kit's: lesson-base, lesson-sections, lesson-stage
-   and lesson-parts, imported by main.ts.
+   Everything else is the kit's: lesson-base, lesson-sections, lesson-stage,
+   lesson-parts and lesson-voice, imported by main.ts, and the rhythm bar's
+   and the score's sheets, taken in here by @import so they inline into
+   this page's own sheet and split no chunk the other lessons share
+   (MISTAKES.md, on the lessons' base stylesheet).
 
    Here: the hero's song strip between Merc and Tavi, with its three plays
    under it and the two staffs the answering plays write (WEB-SPEC, Toys 1);
@@ -14,6 +17,9 @@
    with the season's close and its figure, and free play. No staff for show:
    the section heads carry none, and the body's season-2 class drops the
    background's (kit/lesson-base.css). */
+
+@import '../kit/lesson-rhythm.css';
+@import '../kit/lesson-score.css';
 
 /* ---------------------------------------------------------------- hero: the song strip between Merc and Tavi */
 /* six chips, which wrap: rows 16 px apart keep each prerequisite link's
@@ -92,7 +98,7 @@
     background-color 0.12s ease,
     color 0.12s ease;
 }
-.song-strip .strip-bars li.on {
+.song-strip .strip-bars li.is-lit {
   background: color-mix(in srgb, var(--part) 30%, transparent);
   color: var(--ink);
 }
@@ -102,12 +108,21 @@
   padding-top: 0;
   border-top: 0;
 }
-/* bars 7 and 8 on two staffs, written by the answering plays */
+/* bars 7 and 8 on two staffs, written by the answering plays, the
+   ending's pair above the other way's (cold-open.ts) */
 .l28-hero .hero-staffs {
+  display: grid;
+  gap: 8px;
   margin-top: 12px;
 }
 .l28-hero .hero-staffs[hidden] {
   display: none;
+}
+.l28-hero .l28-pair {
+  width: 100%;
+  max-width: 560px;
+  height: 184px;
+  justify-self: center;
 }
 @media (max-width: 1080px) {
   .l28-duo {
@@ -135,6 +150,12 @@
     border-radius: 4px;
     font-size: 11px;
   }
+  .l28-hero .l28-pair {
+    height: 156px;
+  }
+}
+.motion-paused .song-strip .strip-bars li {
+  transition: none;
 }
 
 /* ---------------------------------------------------------------- three words */
@@ -143,6 +164,47 @@
 .ticket .stub svg.word-fig {
   width: 96px;
   height: 96px;
+}
+/* the figures' boxes (words.ts): Cadence's two bars, Tavi's row over
+   Merc's in their colours as the hero's strip draws them, a bar's pair lit
+   as it sounds; Section's eight bars under one bracket and Form's four
+   sections in chrome, their letters fading in at Show the letters */
+.word-fig .w-box {
+  --part: var(--chrome);
+  fill: transparent;
+  stroke: color-mix(in srgb, var(--part) 55%, transparent);
+  stroke-width: 1px;
+  transition: fill 0.12s ease;
+}
+.word-fig .w-box.w-tavi {
+  --part: var(--orange);
+}
+.word-fig .w-box.w-merc {
+  --part: var(--signal-blue);
+}
+.word-fig .w-box.is-lit {
+  fill: color-mix(in srgb, var(--part) 30%, transparent);
+}
+.word-fig .w-num {
+  fill: var(--ink-3);
+  font: 500 11px var(--f-mono);
+}
+.word-fig .w-bracket {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.5px;
+}
+.word-fig .w-letter {
+  fill: var(--ink);
+  font: 600 15px var(--f-display);
+  transition: opacity 0.3s ease;
+}
+.word-fig .w-letter.is-hidden {
+  opacity: 0;
+}
+.motion-paused .word-fig .w-box,
+.motion-paused .word-fig .w-letter {
+  transition: none;
 }
 
 /* ---------------------------------------------------------------- the steps' toy */
@@ -155,8 +217,19 @@
   position: relative;
   height: 320px;
 }
-.l28-toy .score-viz .score {
+.l28-toy .score-viz .score-fig {
   width: 100%;
+  height: 100%;
+}
+/* until the cold open's choice the figure draws the hero's ten empty bars,
+   a still copy of the strip, and the staffs wait (score-toy.ts) */
+.l28-toy .score-fig.is-locked .sc-svg,
+.l28-toy .score-fig:not(.is-locked) .score-locked {
+  display: none;
+}
+.l28-toy .score-locked {
+  display: grid;
+  align-content: center;
   height: 100%;
 }
 @media (min-width: 961px) and (max-height: 720px) {
@@ -173,7 +246,8 @@
   }
 }
 /* the form strip: four blocks, A A B A, each a 44 px target that plays its
-   section; a letter fades in above its block as its section plays */
+   section; as a section plays its block is outlined and its letter fades
+   in, and stays; the block the staffs show is shaded */
 .form-strip {
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -206,11 +280,18 @@
   opacity: 0;
   transition: opacity 0.3s ease;
 }
-.form-block.named .form-letter {
+.form-block.is-heard .form-letter {
   opacity: 1;
 }
-.form-block.on {
+.form-block.is-shown {
+  background: color-mix(in srgb, var(--chrome) 8%, transparent);
+}
+.form-block.is-playing {
   border-color: var(--ink);
+  box-shadow: inset 0 0 0 1px var(--ink);
+}
+.motion-paused .form-block .form-letter {
+  transition: none;
 }
 .form-block .form-bars {
   font: 500 var(--fs-12) / 16px var(--f-mono);
