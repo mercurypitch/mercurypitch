@@ -3,7 +3,7 @@ import { describe, expect, it } from 'vitest'
 import type { RollViewport } from '@/lib/roll-geometry'
 import { yToMidi } from '@/lib/roll-geometry'
 import type { StudioNote } from '../model/types'
-import { fitStudioRollRows, panStudioRollRows, studioRollPitchAt, studioRollRowOf, studioRollYOf, studioWindowRollNotes, zoomStudioRollRows, } from './roll-rows'
+import { fitStudioRollRows, panStudioRollRows, resizeStudioRollRows, studioRollPitchAt, studioRollRowOf, studioRollYOf, studioWindowRollNotes, zoomStudioRollRows, } from './roll-rows'
 
 /** Two octaves from C3 to B4 in 480 px: 24 rows of 20 px. */
 const VIEW: RollViewport = {
@@ -133,6 +133,24 @@ describe('fitStudioRollRows', () => {
 
   it('leaves rows that are already tall enough as they are', () => {
     expect(fitStudioRollRows(VIEW, 14)).toBe(VIEW)
+  })
+})
+
+describe('resizeStudioRollRows', () => {
+  it('shows more rows below at a taller height, each as tall as before, the top row kept', () => {
+    // Act: 480 px to 600 px, 20 px a row.
+    const taller = resizeStudioRollRows(VIEW, 600)
+
+    // Assert
+    expect(taller).toMatchObject({ maxMidi: 71, minMidi: 42, height: 600 })
+  })
+
+  it('stays on the keyboard when it grows at the bottom of it', () => {
+    const low = { ...VIEW, minMidi: 0, maxMidi: 23 }
+    expect(resizeStudioRollRows(low, 600)).toMatchObject({
+      minMidi: 0,
+      maxMidi: 29,
+    })
   })
 })
 
