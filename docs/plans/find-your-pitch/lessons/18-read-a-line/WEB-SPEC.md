@@ -335,12 +335,12 @@ Two quizzes through the kit's quiz, each with its own prefix and keys.
   `fyp-l18-recall-seed` and `fyp-l18-recall-v1`; no `lesson`, so it marks nothing done. Step links
   read "Try Lesson 16, Step 4 again" and "Try Lesson 17, Step 1 again" and open that page at the step
   in a new tab, the quiz's `away` address set to `recallStepHref`
-  (`src/features/lessons/kit/quiz.ts:140-142`), or keep their words with no link where the lesson is
-  not live (`linkAway`, `src/features/lessons/kit/quiz.ts:186-212`).
+  (`src/features/lessons/kit/quiz.ts:150-152`), or keep their words with no link where the lesson is
+  not live (`linkAway`, `src/features/lessons/kit/quiz.ts:196-222`).
 - **Quick check**: LESSON.md's four questions, ids `l18-q1` to `l18-q4`, keys `fyp-l18-seed` and
   `fyp-l18-quiz-v1`, and `lesson: 18`, so answering all four marks Lesson 18 done. Three answers each,
   shuffled from the stored seed, one line of feedback for every answer, "Right." or "Not quite."
-  before it (`src/features/lessons/kit/quiz.ts:315`). Question 4's slot holds its play, a button
+  before it (`src/features/lessons/kit/quiz.ts:335`). Question 4's slot holds its play, a button
   reading "Play", which plays so, fa, mi loud, then after a beat the same three notes quiet, in
   quarter notes at 60 BPM in the learner's octave, 7.0 s, drawn as nothing. It is not the four
   words' clip, mi, re, do quiet then loud, so the ear answers and not the memory of a labelled sound
@@ -493,7 +493,7 @@ kit and the app still need, item 15).
 - **The line**: the rung line with the note's syllable and "the written note": "So · In the band: 20
   cents above the written note.", "Right in the middle" within 15 cents, with Lesson 3's octave line
   within 50 cents of the note an octave or more away, or "Mi · We didn't hear a steady note there."
-  (`rungLine`, `src/features/lessons/kit/take.ts:301-309`, given whose note it is, as Lesson 16's spec
+  (`rungLine`, `src/features/lessons/kit/take.ts:314-322`, given whose note it is, as Lesson 16's spec
   asks). No count, no score, no word on timing and no celebration on a note.
 - **No voice**: when no window holds a voiced frame, the take reads as no voice (state 7).
 
@@ -704,7 +704,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    - the pitch line drawn after a take on the bars' time axis: Lesson 17's pitch-line view of a rhythm
      (its item 8) given a take's frames.
 8. **Dynamics, staccato, slurs and breaths in the kit's runs**: a run's note takes a level, which a
-   contour already carries (`src/features/lessons/kit/sound.ts:346-354`), a sounding length shorter
+   contour already carries (`src/features/lessons/kit/sound.ts:358-366`), a sounding length shorter
    than its value, a join to the next note with no gap, and a silence taken from its end, all booked
    on the beat clock.
 9. **No decorative staff** (Lesson 15's item 7).
@@ -996,4 +996,5 @@ Where the page differs from the text above, the page as built is the reference:
 - Free play has no tap pad (Toys 2, state 5): Step 3 keeps the page's one, where its task is.
 - The recall and the quick check load after first paint as a chunk of their own (`recall.ts`), as
   free play does (`free-play.ts`), so the page's first paint carries neither; the take's reader and
-  its pitch line load with the microphone at Start (`sing-take.ts`).
+  its pitch line load with the microphone at Start (`kit/take-in-time.ts`, which Lesson 26's take
+  shares).

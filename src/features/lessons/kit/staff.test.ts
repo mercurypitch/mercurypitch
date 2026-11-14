@@ -10,6 +10,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
+import { Motion } from './motion-switch'
 import type { Spelled } from './notes'
 import { createSoundOwner } from './now-playing'
 import type * as RunModule from './run'
@@ -310,6 +311,77 @@ describe('a play', () => {
     expect(heads().every((h) => h === 'st-head')).toBe(true)
   })
 
+  it("writes a chord's notes in one column, two chords side by side: Lesson 25's chord on so, then home", () => {
+    // Arrange: E, G sharp and B, then A, C and E, in the treble clef
+    const chord = (t: number, col: number, notes: readonly Spelled[]) =>
+      notes.map((note) => ({ t, dur: 1.2, note, col }))
+    const toy = mount()
+
+    // Act
+    void toy.play({
+      show: 'run',
+      notes: [
+        ...chord(0, 0, [
+          E4,
+          { letter: 'G', alter: 1, octave: 4 },
+          { letter: 'B', alter: 0, octave: 4 },
+        ]),
+        ...chord(1.2, 1, [
+          { letter: 'A', alter: 0, octave: 4 },
+          { letter: 'C', alter: 0, octave: 5 },
+          { letter: 'E', alter: 0, octave: 5 },
+        ]),
+      ],
+    })
+    for (let i = 0; i < 6; i++) last().note(i)
+    const xs = Array.from(root().querySelectorAll('.st-head'), (h) =>
+      Number(
+        /translate\(([-\d.]+)/.exec(h.getAttribute('transform') ?? '')?.[1],
+      ),
+    )
+
+    // Assert: three heads in each of two columns
+    expect(xs).toHaveLength(6)
+    expect(new Set(xs.slice(0, 3)).size).toBe(1)
+    expect(new Set(xs.slice(3)).size).toBe(1)
+    expect(xs[3]).toBeGreaterThan(xs[0])
+  })
+
+  it("writes a silent play's notes as they come, sounding nothing and claiming no owner (Lesson 20's run toy)", async () => {
+    // Arrange
+    const toy = mount()
+
+    // Act
+    const heard = toy.play({ ...CLIMB, silent: true })
+    last().note(0)
+    const one = heads()
+    owner.claim(() => undefined)
+    last().note(1)
+    last().note(2)
+    last().end(true)
+
+    // Assert: nothing asked to sound, and a newer sound leaves it to its page
+    expect(last().o.audible).toBe(false)
+    expect(Sound.canPlay).not.toHaveBeenCalled()
+    expect(one).toEqual(['st-head is-lit'])
+    expect(runs[0].stopped).toBe(false)
+    expect(await heard).toBe(true)
+  })
+
+  it('stops a silent play when its page stops the toy', async () => {
+    // Arrange
+    const toy = mount()
+    const heard = toy.play({ ...CLIMB, silent: true })
+    last().note(0)
+
+    // Act
+    toy.stop()
+
+    // Assert
+    expect(runs[0].stopped).toBe(true)
+    expect(await heard).toBe(false)
+  })
+
   it('stops the play before it when the toy plays again', async () => {
     // Arrange
     const toy = mount()
@@ -353,6 +425,49 @@ describe('a play', () => {
     // Assert
     expect(last().o.kind).toBe('merc')
     expect(heads()).toEqual(['st-head is-blue'])
+  })
+
+  it('writes a chord in one column and climbs the note a play turns over from where it was', () => {
+    // Arrange: motion on, a figure that animates; C major turned over, E, G
+    // and C5, its C climbing from C4 (Lesson 27's Turn over)
+    vi.spyOn(Motion, 'paused', 'get').mockReturnValue(false)
+    const climbs: number[] = []
+    Object.defineProperty(SVGElement.prototype, 'animate', {
+      configurable: true,
+      value: (frames: Keyframe[], o: KeyframeAnimationOptions) => {
+        if (/px, -?[1-9]/.test(String(frames[0].transform)))
+          climbs.push(Number(o.duration))
+        return {} as Animation
+      },
+    })
+    const C4: Spelled = { letter: 'C', alter: 0, octave: 4 }
+    const C5: Spelled = { letter: 'C', alter: 0, octave: 5 }
+    const toy = mount()
+
+    try {
+      // Act
+      void toy.play({
+        show: 'run',
+        notes: [
+          { t: 0, dur: 1.2, note: E4, col: 0 },
+          { t: 0, dur: 1.2, note: G4, col: 0 },
+          { t: 0, dur: 1.2, note: C5, col: 0, from: C4 },
+        ],
+      })
+      for (const i of [0, 1, 2]) last().note(i)
+
+      // Assert: three heads in one column, and the climb, each time the
+      // staff drew while it ran
+      const xs = Array.from(root().querySelectorAll('.st-head'), (h) =>
+        h.getAttribute('transform')?.replace(/ .*/, ''),
+      )
+      expect(new Set(xs).size).toBe(1)
+      expect(xs).toHaveLength(3)
+      expect(climbs.length).toBeGreaterThan(0)
+      expect(new Set(climbs)).toEqual(new Set([400]))
+    } finally {
+      Reflect.deleteProperty(SVGElement.prototype, 'animate')
+    }
   })
 })
 
@@ -586,6 +701,47 @@ describe('a key signature', () => {
     expect(root().querySelectorAll('.st-keysign.is-fresh').length).toBe(0)
   })
 
+  it("travels a joining sign from the note that carried it in the time a page gives: Lesson 25's flats take 0.6 s, Lesson 21's 0.45", () => {
+    // Arrange: motion on, a figure that animates, and C minor's run
+    // written, its E flat in column 2 and its B flat in column 6
+    vi.spyOn(Motion, 'paused', 'get').mockReturnValue(false)
+    const moves: number[] = []
+    Object.defineProperty(SVGElement.prototype, 'animate', {
+      configurable: true,
+      value: (_frames: Keyframe[], o: KeyframeAnimationOptions) => {
+        moves.push(Number(o.duration))
+        return {} as Animation
+      },
+    })
+    const letters = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C'] as const
+    const flat = [2, 5, 6]
+    const notes = letters.map((letter, i) => ({
+      t: i * 0.4,
+      dur: 0.35,
+      note: {
+        letter,
+        alter: flat.includes(i) ? -1 : 0,
+        octave: i === 7 ? 5 : 4,
+      } as Spelled,
+    }))
+    const toy = mount({ ...PLACE, keyRoom: 3 })
+    void toy.play({ show: 'run', notes })
+    notes.forEach((_n, i) => last().note(i))
+    last().end(true)
+
+    try {
+      // Act: B flat into the signature, then E flat
+      toy.setKey({ sign: 'flat', count: 1 }, { from: 6, sec: 0.6 })
+      toy.setKey({ sign: 'flat', count: 2 }, { from: 2 })
+
+      // Assert
+      expect(moves).toEqual([600, 450])
+      expect(said()).toBe('Key signature: two flats, B flat and E flat')
+    } finally {
+      Reflect.deleteProperty(SVGElement.prototype, 'animate')
+    }
+  })
+
   it('drops the signature, saying so, and says nothing when it stays the same', () => {
     // Arrange
     const toy = mount(ONE_SHARP)
@@ -750,6 +906,30 @@ describe('reading along a written line (Lesson 16)', () => {
     expect(heads().every((h) => h === 'st-head')).toBe(true)
   })
 
+  it("lights a line that comes back down on its own later notes, not on the first of each pitch (Lesson 20's run)", () => {
+    // Arrange: do, re, mi, re and do written
+    const line = [G4, A4, B4, A4, G4]
+    const toy = mount({
+      ...PLACE,
+      tap: 'none',
+      score: line.map((note) => ({ note })),
+    })
+
+    // Act: the same five played, re and do again sounding
+    void toy.play({
+      show: 'score',
+      notes: line.map((note, i) => ({ t: i * 0.5, dur: 0.4, note })),
+    })
+    last().note(3)
+    const reAgain = heads()
+    last().note(4)
+    const doAgain = heads()
+
+    // Assert: re's and do's later heads, never the first re or do
+    expect([reAgain[1], reAgain[3]]).toEqual(['st-head', 'st-head is-lit'])
+    expect([doAgain[0], doAgain[4]]).toEqual(['st-head', 'st-head is-lit'])
+  })
+
   it('lights a note its beat before it sounds, silent, when it plays ahead: Hear it inside', () => {
     // Arrange
     vi.useFakeTimers()
@@ -840,5 +1020,62 @@ describe('reading along a written line (Lesson 16)', () => {
     expect(root().querySelector('.st-home')?.getAttribute('class')).toBe(
       'st-home is-amber',
     )
+  })
+})
+
+describe('room and levels (Lesson 27)', () => {
+  it('keeps room for the places a state names, so G3 under the treble staff stays in the figure', () => {
+    // Arrange: G3 is place -5, under the second ledger line below
+    const G3: Spelled = { letter: 'G', alter: 0, octave: 3 }
+    const tight = mount()
+    void tight.play({ show: 'run', notes: [{ t: 0, dur: 1, note: G3 }] })
+    last().note(0)
+    const low = (): number =>
+      Number(
+        /translate\([-\d.]+ ([-\d.]+)\)/.exec(
+          root().querySelector('.st-head')?.getAttribute('transform') ?? '',
+        )?.[1],
+      )
+    const height = (): number =>
+      Number(
+        root().querySelector('svg')?.getAttribute('viewBox')?.split(' ')[3],
+      )
+    const before = low() / height()
+
+    // Act: the same note in a state that keeps room for it
+    document.body.innerHTML = MARKUP
+    const roomy = mount({ ...PLACE, room: [-5, 12] })
+    void roomy.play({ show: 'run', notes: [{ t: 0, dur: 1, note: G3 }] })
+    last().note(0)
+
+    // Assert: drawn higher in its figure, inside it
+    expect(low() / height()).toBeLessThan(before)
+    expect(low()).toBeLessThan(height())
+  })
+
+  it("plays each note at its own level where a play's chords differ in size", () => {
+    // Arrange
+    const toy = mount()
+    const C4: Spelled = { letter: 'C', alter: 0, octave: 4 }
+    const B4: Spelled = { letter: 'B', alter: 0, octave: 4 }
+
+    // Act: a three-note chord, then a four-note one
+    void toy.play({
+      show: 'run',
+      notes: [
+        { t: 0, dur: 1.2, note: C4, col: 0, gain: 0.075 },
+        { t: 0, dur: 1.2, note: E4, col: 0, gain: 0.075 },
+        { t: 0, dur: 1.2, note: G4, col: 0, gain: 0.075 },
+        { t: 1.2, dur: 1.2, note: C4, col: 1, gain: 0.056 },
+        { t: 1.2, dur: 1.2, note: E4, col: 1, gain: 0.056 },
+        { t: 1.2, dur: 1.2, note: G4, col: 1, gain: 0.056 },
+        { t: 1.2, dur: 1.2, note: B4, col: 1, gain: 0.056 },
+      ],
+    })
+
+    // Assert
+    expect(last().notes.map((n) => n.gain)).toEqual([
+      0.075, 0.075, 0.075, 0.056, 0.056, 0.056, 0.056,
+    ])
   })
 })

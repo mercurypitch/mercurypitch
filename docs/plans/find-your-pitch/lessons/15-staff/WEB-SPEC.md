@@ -364,12 +364,12 @@ staff (Toys 1, state 6). In order:
 3. **Your turn**, the stop line on its own line, then two buttons: Play Merc's notes and Start the
    guide. Play Merc's notes plays Merc's line (lower) or Tavi's (higher) as one voice along a
    contour, each of the first four notes a 1.15 s hold and a 0.05 s glide, the top note 1.8 s
-   (FACTS 57, 69; `contourOf` and `playContour`, `src/features/lessons/kit/sound.ts:356-384`,
-   `:693-706`), lighting
+   (FACTS 57, 69; `contourOf` and `playContour`, `src/features/lessons/kit/sound.ts:368-396`,
+   `:705-718`), lighting
    each note amber as it sounds. Start the guide waits until Merc's notes have been heard with sound
    on, with Lesson 12's hint, "Play Merc's notes first", and its sound-off line
    (`src/features/lessons/kit/sing-flow.ts:191-196`); then it counts in on do, 0.8 s at 0.065
-   and 0.2 s of quiet (`countIn`, `src/features/lessons/kit/move-do.ts:65-74`), and the sweep runs
+   and 0.2 s of quiet (`countIn`, `src/features/lessons/kit/move-do.ts:68-77`), and the sweep runs
    6.6 s with no voice. No Move do and no readout (FACTS 56). The line under the buttons is
    LESSON.md's, "The guide counts you in on do, then a line sweeps along the notes. Nothing listens
    here and nothing is scored. It's just for you." (FACTS 59a). Your turn's own text adds two
@@ -404,7 +404,7 @@ lead-in is its summary line's words.
 ### 7. Recall and quick check
 
 Two quizzes share this page through the kit's quiz (`createQuiz`,
-`src/features/lessons/kit/quiz.ts:218`), each with its own prefix and keys.
+`src/features/lessons/kit/quiz.ts:228`), each with its own prefix and keys.
 
 - **Recall**: Lesson 2's questions 2 and 3 (FACTS 7), imported from Lesson 2's page and filtered by
   id, `l02-q2` and `l02-q3`, as Lesson 4's page takes Lesson 2's questions 1 and 3
@@ -413,7 +413,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
   since Lesson 2 is a prerequisite. Prefix `recall-`, keys `fyp-l15-recall-seed` and
   `fyp-l15-recall-v1`; no `lesson`, so it marks nothing done. Its step links read "Try Lesson 2,
   Step 3 again" and "Try Lesson 2, Step 5 again" and open `/learn/02#step-3` and `/learn/02#step-5`
-  in a new tab, through `away: { href: recallStepHref }` (`quiz.ts:141-143`, `:186-216`); the step
+  in a new tab, through `away: { href: recallStepHref }` (`quiz.ts:151-153`, `:196-226`); the step
   deck opens a page at the step its address names (`src/features/lessons/kit/step-deck.ts:21-23`).
   Question 2's slot is Lesson 2's own, its play button and its "1st" and "2nd" chips
   (`QUIZ_PAIR_SLOT`), handled by `bindQuizPair` on this quiz's host
@@ -424,7 +424,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
   `fyp-l15-quiz-v1`, and `lesson: 15`, so answering all four marks Lesson 15 done. Three answers
   each, shuffled per question from the stored seed, one-line feedback for every answer, and a check
   icon and ink, not gold, on the right one. The kit prints "Right." or "Not quite." before each line
-  (`quiz.ts:315`). Question 2's slot holds its play, "Play the three notes", which plays E4, F4 and
+  (`quiz.ts:335`). Question 2's slot holds its play, "Play the three notes", which plays E4, F4 and
   G4 and lights them on a small treble staff in the slot (FACTS 65); it never shares a name with
   Step 2's plays. Question 1's wording stays as it is: Lesson 16 plans to ask it, word for word, as
   its recall (`lessons/16-sing-what-you-see/ARTICLE-PLAN.md:50`).
@@ -572,7 +572,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    next-lesson card draws the lesson after the page's own wherever the data holds one, and the
    season's end only where it holds none (`nextCard`, `src/features/lessons/kit/next-card.ts:92-122`),
    so once Lesson 15 is in the data, Lesson 14's page would draw Lesson 15's card in place of
-   Season 1's close, `SEASON_END` (`src/features/lessons/kit/lesson-copy.ts:204-216`), which SEASON-2
+   Season 1's close, `SEASON_END` (`src/features/lessons/kit/lesson-copy.ts:237-252`), which SEASON-2
    § 1.4 item 3 and § 7 item 8 keep, with CURIOSITY-MOMENTS' Lesson 14 entry (FACTS 5b). The card
    for Lesson 15 would answer nothing, but Season 1's end would be gone. `LESSONS[n].n === n` (`src/features/lessons/kit/season.ts:108-110`) and the head
    test's `LESSONS[n]?.minutes` (`src/tests/lesson-pages.test.ts:191-211`) read one list by number;

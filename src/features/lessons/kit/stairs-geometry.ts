@@ -5,9 +5,11 @@
 // Pitch is height (playbook rule 20): eight stairs, do to do, left to right,
 // each one row per semitone above do (0, 2, 4, 5, 7, 9, 11, 12), on faint
 // semitone rows; a page may draw fewer, from do up (Lesson 16's five, do to
-// so), whose rows on a phone run only from do to the top stair, each the
-// taller, and whose columns, each over its own key, keep to the narrow
-// layout's widest. Three layouts of the one drawing:
+// so), or another scale's (Lesson 20's six of a pentatonic, do to do,
+// stairs-scales.ts), whose rows on a phone run only from do to the top
+// stair, each the taller, and whose columns keep to the narrow layout's
+// widest, the strip below them showing the white keys from do to the top
+// stair. Three layouts of the one drawing:
 //
 // - wide: the stage on a desktop. All 25 rows from the floor, the C at or
 //   below the lowest start, stay put and the staircase climbs them as it
@@ -24,7 +26,10 @@
 //   so the staircase keeps its slope.
 // - compact: Lesson 4's cold open and hero. Fifteen rows from the floor, C4
 //   to D5 there, so a scale on C and one on D both fit unscaled; no strip,
-//   nothing that takes taps.
+//   nothing that takes taps. A scale that reaches past them lifts the rows
+//   until its top stair is the top row: Lesson 20's minor five on A3, over
+//   C3. A page may give its own rows and keep room at the right (Lesson
+//   25's A2 to C4, its chord column beside the stairs; `StairsRoom`).
 //
 // Every stair is a block from its tread down to a foot below do, and its
 // tap zone is its column, at least 44 px tall: columns never overlap, so no
@@ -36,6 +41,7 @@ import type { Strip } from './key-strip'
 import { stripLayout, whiteRange } from './key-strip'
 import { MAJOR_DEGREES } from './major-scale'
 import { isBlack } from './notes'
+import type { Degrees } from './stairs-scales'
 
 export type StairsMode = 'wide' | 'narrow' | 'compact'
 
@@ -161,14 +167,52 @@ const MAX_COLUMN = 64
 const specFor = (mode: StairsMode, H: number): ModeSpec =>
   mode === 'narrow' && H < SHORT_BELOW ? SHORT : SPEC[mode]
 
+/**
+ * Room a page keeps around a compact staircase: `right` px at its right
+ * (Lesson 25's chord column), and the rows it shows, `rows.lo` to
+ * `rows.hi`, in place of the fifteen from its floor, so the rows stand
+ * still while the staircase slides between starts they hold: Lesson 25's
+ * A2 to C4 hold A minor on A2 with its chord on so up to B3, and C major
+ * and C minor on C3, its house gliding from C3 down to A2 over rows that
+ * never move. A scale reaching past `rows.hi` lifts them, as past the
+ * floor's fifteen. Other layouts take no room.
+ */
+export interface StairsRoom {
+  readonly right?: number
+  readonly rows?: { readonly lo: number; readonly hi: number }
+}
+
+/**
+ * The rows a layout shows, how many, and the pitch at the top row's centre:
+ * narrow, do to the top stair; wide, the floor's 25; compact, the floor's
+ * fifteen or a page's own, lifted until a scale reaching past them has its
+ * top stair on the top row.
+ */
+function rowsOf(
+  mode: StairsMode,
+  s: ModeSpec,
+  start: number,
+  floor: number,
+  topDeg: number,
+  room: StairsRoom,
+): { count: number; high: number } {
+  if (mode === 'narrow') return { count: topDeg + 1, high: start + topDeg }
+  if (mode === 'wide') return { count: s.rows, high: floor + s.rows - 1 }
+  const own = room.rows
+  if (own === undefined)
+    return { count: s.rows, high: Math.max(floor + s.rows - 1, start + topDeg) }
+  return { count: own.hi - own.lo + 1, high: Math.max(own.hi, start + topDeg) }
+}
+
 /** The stairs' and the strip's left and right edges, for `count` stairs. */
 function spanOf(
   mode: StairsMode,
   W: number,
   count: number,
+  right = 0,
 ): { x0: number; x1: number } {
   const s = SPEC[mode]
-  if (mode !== 'narrow') return { x0: s.left, x1: W - s.right }
+  if (mode !== 'narrow') return { x0: s.left, x1: W - s.right - right }
   const span = Math.min(W, count * MAX_COLUMN)
   const x0 = (W - span) / 2
   return { x0, x1: x0 + span }
@@ -177,11 +221,12 @@ function spanOf(
 /**
  * A range's floor, the C at or below its lowest start: the lowest row of a
  * layout that does not scroll, and the strip's lowest key. Every start sits
- * in the octave above it, so a scale's top do keeps to the 25 rows.
+ * in the octave above it, or on the C that closes it (Lesson 20's Step 2,
+ * A2 and C3 over C2), so a scale's top do keeps to the 25 rows.
  */
 export function floorOf(range: StairsRange): number {
   const floor = range.lo - (range.lo % 12)
-  if (range.hi < range.lo || range.hi > floor + 11)
+  if (range.hi < range.lo || range.hi > floor + 12)
     throw new Error(
       `A staircase's starts run within one octave from C: not ${range.lo} to ${range.hi}`,
     )
@@ -221,18 +266,28 @@ export function stripWindow(start: number, floor: number): number {
   return at(lo) + (at(lo + 1) - at(lo)) * u - 0.5
 }
 
+/**
+ * The white keys the narrow strip shows: one a letter from do to the top
+ * stair, as many as the stairs for the major scale and Lesson 16's five,
+ * eight for a pentatonic's octave.
+ */
+function keysOf(degrees: Degrees): number {
+  const top = MAJOR_DEGREES.indexOf(degrees[degrees.length - 1])
+  return top === -1 ? degrees.length : top + 1
+}
+
 function stripFor(
   mode: StairsMode,
   W: number,
   H: number,
   start: number,
   floor: number,
-  count: number,
+  degrees: Degrees,
 ): Strip | null {
   if (mode === 'compact') return null
   const s = specFor(mode, H)
   const wide = mode === 'wide'
-  const { x0, x1 } = spanOf(mode, W, count)
+  const { x0, x1 } = spanOf(mode, W, degrees.length)
   return stripLayout({
     lo: floor,
     hi: floor + 24,
@@ -240,14 +295,18 @@ function stripFor(
     x1: wide ? W - 4 : x1,
     top: H - s.pad - s.stripH,
     height: s.stripH,
-    window: wide ? undefined : { from: stripWindow(start, floor), keys: count },
+    window: wide
+      ? undefined
+      : { from: stripWindow(start, floor), keys: keysOf(degrees) },
   })
 }
 
 /**
  * The staircase on a W by H canvas, standing on `start` (do; fractional
- * while a slide travels) over `floor` (`floorOf`). In narrow mode the
- * stairs never move: `start` scrolls the rows and pans the strip instead.
+ * while a slide travels) over `floor` (`floorOf`), its stairs `degrees`
+ * semitones above do, the major scale's eight unless a page draws others.
+ * In narrow mode the stairs never move: `start` scrolls the rows and pans
+ * the strip instead.
  */
 export function stairsLayout(
   mode: StairsMode,
@@ -255,24 +314,24 @@ export function stairsLayout(
   H: number,
   start: number,
   floor: number,
-  count = MAJOR_DEGREES.length,
+  degrees: Degrees = MAJOR_DEGREES,
+  room: StairsRoom = {},
 ): StairsLayout {
   const s = specFor(mode, H)
   const narrow = mode === 'narrow'
+  const count = degrees.length
   // the top stair's degree: narrow rows run from do up to it
-  const topDeg = MAJOR_DEGREES[count - 1]
-  const rowCount = narrow ? topDeg + 1 : s.rows
+  const topDeg = degrees[count - 1]
+  const { count: rowCount, high } = rowsOf(mode, s, start, floor, topDeg, room)
   const rowH = (H - s.pad - s.stripH - s.drop - s.depth - s.top) / rowCount
-  // the pitch at the top row's centre
-  const high = narrow ? start + topDeg : floor + s.rows - 1
   const yOfRow = (midi: number): number =>
     s.top + rowH / 2 + (high - midi) * rowH
   const yOfStair = (deg: number): number =>
     narrow ? s.top + rowH / 2 + (topDeg - deg) * rowH : yOfRow(start + deg)
-  const { x0, x1 } = spanOf(mode, W, count)
+  const { x0, x1 } = spanOf(mode, W, count, mode === 'compact' ? room.right : 0)
   const cw = (x1 - x0) / count
   const bottom = yOfStair(0) + rowH / 2 + s.depth
-  const stairs = MAJOR_DEGREES.slice(0, count).map((deg, i): StairBox => {
+  const stairs = degrees.map((deg, i): StairBox => {
     const top = yOfStair(deg) - rowH / 2
     const zoneTop = Math.min(top - 6, bottom - TARGET)
     const x = x0 + i * cw
@@ -311,7 +370,7 @@ export function stairsLayout(
     x1,
     stairs,
     brackets,
-    strip: stripFor(mode, W, H, start, floor, count),
+    strip: stripFor(mode, W, H, start, floor, degrees),
   }
 }
 

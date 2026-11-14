@@ -160,7 +160,30 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // differently around a shell that loads the reveal but not the predict,
   // as Lesson 24's shell did; they come back once Lesson 21's cold open
   // loads the predict. 173 holds the film and the shell.
-  'learn/02.html': 173,
+  // Raised to 174 for Lesson 20's page shell: 176,901 bytes before it,
+  // 177,178 with it, against 177,152 at 173. About 90 of the 277 are on
+  // every lesson page: Lesson 20's drafts line (kit/drafts.ts). The rest
+  // are the bundler cutting the kit's shared code differently around a
+  // shell that loads the reveal but not the predict, as Lesson 18's shell
+  // did; 173 can be tried again once Lesson 20's cold open loads the
+  // predict.
+  // Back to 173 with Lesson 20's cold open, which loads the predict:
+  // 177,002 bytes in build:e2e.
+  // Raised to 174 for Lesson 25's page shell: 177,002 bytes before it,
+  // 177,321 with it, against 177,152 at 173. About 140 of the 319 are on
+  // every lesson page: Lesson 25's drafts line (kit/drafts.ts). The rest
+  // are the bundler cutting the kit's shared code differently around a
+  // shell that loads the reveal but not the predict, as Lesson 20's shell
+  // did; 173 can be tried again once Lesson 25's cold open loads the
+  // predict.
+  // Raised to 175 for Lesson 26's page shell: 177,982 bytes before it,
+  // 178,351 with it, against 178,176 at 174. 191 of the 369 are on every
+  // lesson page: Lesson 26's drafts line (kit/drafts.ts). The rest are the
+  // bundler cutting the kit's shared code differently around a shell that
+  // loads the reveal but not the predict, as Lesson 25's shell did. With
+  // Lesson 26's cold open loading the predict it is 178,435, still 259 over
+  // 174.
+  'learn/02.html': 175,
 
   // Lesson 3, released on the owner's word on 7 November 2026 and built in
   // every mode like the rest: the site worker decides where it is live
@@ -263,7 +286,18 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // drafts line, on every lesson page, as on Lesson 2; the other 188 are the
   // bundler's, as on Lesson 2, and come back with Lesson 21's cold open.
   // 158 holds the film and the shell.
-  'learn/03.html': 158,
+  // Raised to 159 for Lesson 20's page shell, as on Lesson 2: 161,537
+  // bytes before it, 161,817 with it, against 161,792 at 158; 158 can be
+  // tried again once Lesson 20's cold open loads the predict.
+  // Back to 158 with Lesson 20's cold open, which loads the predict:
+  // 161,638 bytes in build:e2e.
+  // Raised to 159 for Lesson 25's page shell, as on Lesson 2: 161,638
+  // bytes before it, 161,960 with it, against 161,792 at 158; 158 can be
+  // tried again once Lesson 25's cold open loads the predict.
+  // Raised to 160 for Lesson 26's page shell, as on Lesson 2: 162,538
+  // bytes before it, 162,906 with it, against 162,816 at 159. With Lesson
+  // 26's cold open loading the predict it is 162,991, still 175 over 159.
+  'learn/03.html': 160,
   // Lesson 5, a draft (src/features/lessons/kit/drafts.ts), built in every
   // mode as Lesson 3 is. Measured 122
   // with the lesson menu and the next-lesson card (109 before them), and 129
@@ -331,7 +365,15 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // shell that loads the reveal but not the predict, as on Lessons 21's and
   // 22's; they come back once Lesson 16's cold open loads the predict, but
   // the 116 alone leave no room at 148.
-  'learn/05.html': 149,
+  // Raised to 150 for Lesson 27's page shell: 152,337 bytes before it,
+  // 152,900 with it, against 152,576 at 149. About 360 of the 563 are on
+  // every lesson page: Lesson 27's drafts line (kit/drafts.ts), its page and
+  // reading time in the season's map, and Lessons 27 and 28's teases
+  // (kit/lesson-copy.ts). The rest are the bundler cutting the kit's shared
+  // code differently around a shell that loads the reveal but not the
+  // predict, as Lesson 25's shell did. With Lesson 27's cold open loading
+  // the predict it is 152,739, still 163 over 149.
+  'learn/05.html': 150,
 
   // Lesson 4, "The major scale and home": its own module on the same kit,
   // the staircase drawn on canvas. Measured 114 with the lesson menu and the
@@ -406,7 +448,24 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // that loads the reveal but not the predict, as Lesson 16's shell did.
   // With Lesson 18's cold open on the predict it is 160,785, still 17
   // bytes over 157, so 158 stays.
-  'learn/04.html': 158,
+  // Raised to 159 for the staircase's other scales (Lesson 20's pentatonic,
+  // kit/stairs-scales.ts): 161,072 bytes before them, 162,409 with them,
+  // against 161,792 at 158. The page draws its staircase at first paint, so
+  // it carries the degrees, the spelling and both names' drawing.
+  // Raised to 160 for Lesson 25's staircase (kit/stairs-core.ts,
+  // stairs-draw.ts and stairs-geometry.ts): a stair sliding to new degrees
+  // with its name kept until it lands, an outlined riser, a page's own rows
+  // and room, and a drawing over the stairs. 162,675 bytes before them,
+  // 163,838 with them and the kit's chord levels, against 162,816 at 159:
+  // 2 bytes under 160, so the next kit change it carries raises it again.
+  // Raised to 161 with Lesson 25's steps' toy, which changes nothing of
+  // the kit: 164,037 bytes with it, 199 more and 197 over 160, all of them
+  // the bundler cutting the shared staircase code differently around a page
+  // that draws a staircase with a chord column over a staff.
+  // Raised to 162 for Lesson 27's page shell, as on Lesson 5: 164,590
+  // bytes before it, 165,153 with it, against 164,864 at 161. With Lesson
+  // 27's cold open loading the predict it is 165,002, still 138 over 161.
+  'learn/04.html': 162,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and
@@ -544,6 +603,16 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // quarter over. The recall and quick check, the take (its judge and the
   // tap pad) and free play load after first paint.
   'learn/19.html': 187,
+  // Lesson 20, "Runs and the pentatonic scale", a Season 2 page and a draft,
+  // built in every mode as Lesson 3 is: its own module on the kit, carrying
+  // Season 2's map (kit/season-2.ts) as a Season 2 page must; its shell
+  // and the steps' two toys, the staircase and the run with its staff;
+  // the cold open's run and predict, the four words' figures, Sing it's
+  // card on the run chart (kit/ladder-sing.ts, kit/ladder-guide.ts) and
+  // free play's import: 196,214 bytes in build:e2e; a quarter over. The
+  // recall and quick check, the take with its listener, and free play load
+  // after first paint.
+  'learn/20.html': 240,
   // Lesson 21, "Keys and the circle of fifths", a Season 2 page and a
   // draft, built in every mode as Lesson 3 is: its own module on the kit,
   // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must, with
@@ -601,6 +670,47 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // 178,425 bytes in build:e2e; a quarter over. The quiet check and the
   // listener load on Start, so nothing of the pitch code comes in.
   'learn/24.html': 218,
+  // Lesson 25, "Minor, properly", a Season 2 page and a draft, built in
+  // every mode as Lesson 3 is: its own module on the kit, carrying Season
+  // 2's map (kit/season-2.ts) as a Season 2 page must; with the steps'
+  // toy, the kit's staircase with its chord column over the staff toy with
+  // its signature, the cold open's staircase on the kit's predict, the four
+  // words' staircases, the recall and the quick check on the kit's quiz
+  // with Lesson 10's and Lesson 21's questions, Sing it on the kit's sing
+  // flow with its comfort check and voice choice, and free play: 203,428
+  // bytes in build:e2e; a quarter over.
+  'learn/25.html': 249,
+  // Lesson 26, "A second voice", a Season 2 page and a draft, built in every
+  // mode as Lesson 3 is: its own module on the kit, carrying Season 2's map
+  // (kit/season-2.ts) as a Season 2 page must; with the steps' toy and free
+  // play on the kit's tune line, dressed, the cold open's on the kit's
+  // predict, the three words' figures, and the recall and the quick check on
+  // the kit's quiz with Lesson 12's and Lesson 24's questions; Sing it in a
+  // chunk of its own after first paint, whose import brings the preload
+  // helper and the chunk's list of what it needs: 162,965 bytes in
+  // build:e2e; a quarter over.
+  'learn/26.html': 199,
+  // Lesson 27, "Seventh chords and inversions", a Season 2 page and a draft,
+  // built in every mode as Lesson 3 is: its own module on the kit, carrying
+  // Season 2's map (kit/season-2.ts) as a Season 2 page must; with the steps'
+  // toy, Lesson 12's ring of rooms from the kit (kit/ring-rooms.ts, its drawing
+  // and its marks) beside the staff toy, the cold open's ring on the kit's
+  // predict, the three words' staves, the recall and the quick check on the
+  // kit's quiz with Lesson 12's and Lesson 23's questions, Sing it on the kit's
+  // sing flow with its comfort check and voice choice, and free play: 207,966
+  // bytes in build:e2e; a quarter over.
+  'learn/27.html': 254,
+  // Lesson 28, "Cadences, form and a song in two parts", Season 2's last page
+  // and a draft, built in every mode as Lesson 3 is: its own module on the kit,
+  // carrying Season 2's map (kit/season-2.ts) as a Season 2 page must; with the
+  // song on two staffs, the kit's score (kit/score.ts, its layout, drawing and
+  // bands, on the rhythm bar's engraving), in the steps' toy and free play, the
+  // cold open's strip and its pairs of staffs on the kit's predict, the three
+  // words' figures, and the recall and the quick check on the kit's quiz with
+  // Lesson 18's and Lesson 26's questions. Sing it loads as a chunk of its own
+  // after first paint, and its take, its reader and the quiet check with the
+  // microphone at Start: 191,769 bytes in build:e2e; a quarter over.
+  'learn/28.html': 235,
 
   // A lesson film's watch page (learn/NN/watch.html): createEpisode, the
   // film's chapters and captions, and Vite's helper. Measured 17 and 18 on
@@ -762,6 +872,11 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // @import, and the shared parts), its own, and the shared Inter and Outfit
   // @font-face rules; a quarter over.
   'learn/19.html': 106,
+  // Lesson 20 (a draft, as above): 94,173 bytes in build:e2e, the kit's
+  // sheets (the shared parts and the comfort check's), its own with the
+  // staircase's, the staff toy's and the voice lessons' taken in, and the
+  // shared Inter and Outfit @font-face rules; a quarter over.
+  'learn/20.html': 115,
   // Lesson 21 (a draft, as above): 95,757 bytes in build:e2e, the kit's
   // sheets (the guide's and the voice lessons' in the chunks the quizzes and
   // Sing it share, the staff toy's, the staircase's and the circle's
@@ -785,6 +900,34 @@ export const FIRST_PAINT_CSS_BUDGETS_KB = {
   // questions and Sing it share, and the shared parts), its own, and the
   // shared Inter and Outfit @font-face rules; a quarter over.
   'learn/24.html': 110,
+  // Lesson 25 (a draft, as above): 92,872 bytes in build:e2e, the kit's
+  // sheets (the voice lessons' in the chunk Sing it's comfort check shares,
+  // and the shared parts), its own with the staff toy's taken in by
+  // @import, and the shared Inter and Outfit @font-face rules; a quarter
+  // over. The recall reaches no sheet, its questions being words alone, so
+  // the guide's stays out.
+  'learn/25.html': 114,
+  // Lesson 26 (a draft, as above): 90,584 bytes in build:e2e, the kit's
+  // sheets (the voice lessons' in the chunk the Wrap's comfort check shares,
+  // and the shared parts), its own with the tune line's taken in by
+  // @import, and the shared Inter and Outfit @font-face rules; a quarter
+  // over. The recall reaches no sheet, its questions being words alone, so
+  // the guide's stays out.
+  'learn/26.html': 111,
+  // Lesson 27 (a draft, as above): 92,302 bytes in build:e2e, the kit's sheets
+  // (the voice lessons' in the chunk Sing it's comfort check shares, and the
+  // shared parts), its own with the staff toy's taken in by @import, and the
+  // shared Inter and Outfit @font-face rules; a quarter over. The recall
+  // reaches no sheet, its questions being words alone, so the guide's stays
+  // out.
+  'learn/27.html': 113,
+  // Lesson 28 (a draft, as above): 99,071 bytes in build:e2e, the kit's sheets
+  // (the voice lessons' in the chunk the Wrap's comfort check shares, and the
+  // shared parts), its own with the rhythm bar's and the score's taken in by
+  // @import, and the shared Inter and Outfit @font-face rules; a quarter over.
+  // The recall reaches no sheet, its questions being words alone, so the
+  // guide's stays out.
+  'learn/28.html': 121,
 
   // A lesson film's watch page: one sheet, kit/lesson-watch.css, which
   // inlines the lessons' fonts, base and sections. Measured 36, a quarter

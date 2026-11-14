@@ -185,9 +185,32 @@ export function readNotes(
   })
 }
 
-/** Each note's line, its label first: "Re · In the band: 20 cents below the written note." */
+/** What a take's lines name, beside the note each was measured against. */
+export interface LinesOptions {
+  /** The note a gap is measured from: "the written note" unless given (Lesson 26's "your part's note"). */
+  readonly whose?: string
+  /** The part another voice sang under the take: whose it is, "Merc's", and each of its notes' syllables. */
+  readonly other?: {
+    readonly whose: string
+    readonly labels: readonly string[]
+  }
+}
+
+/**
+ * Each note's line, its label first: "Re · In the band: 20 cents below the
+ * written note.", or, for a note sung on the note the other part was
+ * sounding (read-in-time.ts), "Do · That was Merc's note: mi.", with no
+ * gap, no cause and no advice.
+ */
 export const readingLines = (
   labels: readonly string[],
-  readings: readonly NoteReading[],
+  readings: readonly (NoteReading & { readonly other?: number })[],
+  o: LinesOptions = {},
 ): string[] =>
-  readings.map((r, i) => rungLine(labels[i] ?? '', r, 'the written note'))
+  readings.map((r, i) => {
+    const label = labels[i] ?? ''
+    const other = r.other === undefined ? undefined : o.other?.labels[r.other]
+    if (other !== undefined && o.other !== undefined)
+      return `${label} · That was ${o.other.whose} note: ${other}.`
+    return rungLine(label, r, o.whose ?? 'the written note')
+  })

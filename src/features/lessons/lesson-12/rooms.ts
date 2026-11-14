@@ -51,11 +51,11 @@ import { MAJOR_SOLFEGE } from '@/features/lessons/kit/names-modes'
 import { signName } from '@/features/lessons/kit/notes'
 import type { SoundOwner } from '@/features/lessons/kit/now-playing'
 import { easeOutExpo } from '@/features/lessons/kit/reveal'
+import { mountRing } from '@/features/lessons/kit/ring-rooms'
 import type { Run, RunNote } from '@/features/lessons/kit/run'
 import { playNotes } from '@/features/lessons/kit/run'
 import { Sound } from '@/features/lessons/kit/sound'
 import type { Spiral } from '@/features/lessons/kit/spiral'
-import { mountSpiral } from '@/features/lessons/kit/spiral'
 import type { Naming } from './lines'
 import { chipName, figureSummary, keyTurnedLine, rootMoves, slideLine, tuneEndLine, tuneStartLine, } from './lines'
 import type { KeyName, TuneId, TuneNote } from './music'
@@ -71,13 +71,6 @@ import { tallyOf, tuneSound } from './tune-play'
 
 /** The ring's states, one for each step (WEB-SPEC, Toys 1). */
 export type RoomsMode = 'build' | 'numerals' | 'slide' | 'loop' | 'tunes'
-
-/** The turn lit from above starts on C4, so C4 to B4 sit on it (Toys 1, `ring: 60`). */
-export const RING = 60
-/** The notes the slider reaches: the lit turn, C4 to B4. */
-export const RANGE: readonly [number, number] = [60, 71]
-/** The lit turn's five black keys, C♯4 to A♯4, lit so each carries its name. */
-export const RING_BLACK: readonly number[] = [61, 63, 66, 68, 70]
 
 /** The rooms each state opens on, faint, by degree. */
 export const OPENING_ROOMS: Readonly<Record<RoomsMode, readonly number[]>> = {
@@ -488,11 +481,12 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
 
   // ------------------------------------------------------------ the figure
 
-  const spiral = mountSpiral(viz, {
+  // the kit's ring of rooms: from above, held still, its letters on the
+  // beads and its black keys lit (kit/ring-rooms.ts). The compact layout's
+  // letters only, which the full layout shares: its syllables are the
+  // page's marks, drawn beside the beads
+  const spiral = mountRing(viz, {
     active: opts.active,
-    ring: RING,
-    view: 'top',
-    range: () => RANGE,
     owner: opts.owner,
     overlay: (f) => {
       dirty = false
@@ -505,11 +499,6 @@ export function mountRooms(root: HTMLElement, opts: RoomsOptions): Rooms {
       return dirty || roomsAnimating(state(), t) || marksAnimating(marks(), t)
     },
   })
-  spiral.setTurning(false)
-  // the compact layout's letters only, which the full layout shares: its
-  // syllables are the page's marks, drawn beside the beads
-  spiral.setLabels('letter')
-  RING_BLACK.forEach((m) => spiral.light(m))
 
   /**
    * The figure's height now, if it has one. In the compact layout the

@@ -1,0 +1,419 @@
+/* ============================================================
+   Lesson 25 — Minor, properly: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's: lesson-base, lesson-sections, lesson-stage
+   and lesson-parts, imported by main.ts, and the staff toy's sheet, taken
+   in here by @import so it inlines into this page's own sheet and splits no
+   chunk the other lessons share (MISTAKES.md, on the lessons' base
+   stylesheet).
+
+   Here: the hero's staircase between Merc and Tavi, with the three plays
+   under it (WEB-SPEC, Toys 2); the four words' small staircases; the steps'
+   toy, the staircase with its chord column over the learner's staff (Toys
+   1), its lock line and its rows of controls; Step 1's held paragraph and
+   Tavi's lines in Steps 3 and 4; Sing it's staff beside the still of the
+   Merc who sings; and the Wrap's cards, with the next card's tease still
+   and free play. No decorative staff: the section heads carry none, and
+   the body's season-2 class drops the background's (kit/lesson-base.css). */
+
+@import '../kit/lesson-staff.css';
+
+/* ---------------------------------------------------------------- hero: the staircase between Merc and Tavi */
+/* five chips, which wrap: rows 16 px apart keep each prerequisite link's
+   44 px tap box whole (lesson-base.css, `.chip-link::after`) */
+.l25-hero .meta {
+  row-gap: 16px;
+}
+.l25-duo {
+  --merc: clamp(120px, 11vw, 168px);
+  --stairs-h: clamp(250px, 23vw, 320px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  height: calc(var(--stairs-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the staircase's foot, where Merc and Tavi stand */
+.l25-duo .floor {
+  top: var(--stairs-h);
+}
+.l25-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l25-duo .merc-blue {
+  grid-column: 1;
+}
+.l25-duo .merc-orange {
+  grid-column: 3;
+}
+.l25-duo .hero-stairs {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  height: var(--stairs-h);
+}
+.l25-duo .hero-stairs canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* the three plays sit under the stage, outside the predict card */
+.l25-hero .hero-plays {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+}
+@media (max-width: 1080px) {
+  .l25-duo {
+    --merc: clamp(120px, 20vw, 190px);
+    --stairs-h: clamp(250px, 40vw, 340px);
+  }
+  /* Play the tune, twice sits right under the stage, before the sound gate
+     (the kit orders the hero's parts at this width) */
+  .l25-hero .hero-plays {
+    order: 4;
+  }
+}
+/* on a phone Merc and Tavi stand smaller either side of the staircase's
+   foot, so neither covers do's stair, the lowest; the staircase's canvas
+   spans Tavi's column too, its stairs kept clear of it (cold-open.ts), so
+   after the choice the chord column draws over Tavi's head */
+@media (max-width: 560px) {
+  .l25-duo {
+    --merc: min(19vw, 76px);
+    --stairs-h: 250px;
+    margin-top: 2px;
+  }
+  .l25-duo .hero-stairs {
+    grid-column: 2 / 4;
+  }
+}
+
+/* ---------------------------------------------------------------- four words */
+/* each figure across the top of its ticket, as Lesson 20's words are: eight
+   stairs need more room than the kit's stub, 88 px wide, gives them */
+.l25-words .ticket {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+}
+.l25-words .ticket .stub {
+  border-right: 0;
+  border-bottom: 1px dashed var(--hair-2);
+  padding: 12px 14px 10px;
+}
+/* the ticket's notches move to the ends of its dashed line */
+.l25-words .ticket .stub::before,
+.l25-words .ticket .stub::after {
+  top: auto;
+  bottom: -10px;
+}
+.l25-words .ticket .stub::before {
+  left: -10px;
+}
+.l25-words .ticket .stub::after {
+  left: auto;
+  right: -10px;
+}
+/* the stub centres what it holds, so the figure takes the stub's width,
+   or it would shrink to its canvas's own 2:1 */
+.l25-words .word-stairs {
+  width: 100%;
+  height: 92px;
+}
+.l25-words .word-stairs canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+/* ---------------------------------------------------------------- the steps' toy */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+/* the staircase and its chord column over the learner's staff, at every
+   width: eight stairs and a column in half the stage card would come out
+   narrower than a fingertip's 44 px, as Lesson 21's did. The staircase
+   keeps at least 210 px, so its stairs still climb, and a stage too short
+   for all of it scrolls inside itself (kit/lesson-stage.css) */
+.minor-figs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  min-height: 0;
+}
+.minor-figs > .viz {
+  min-width: 0;
+}
+.minor-toy .beads-viz {
+  --viz-min: 210px;
+  position: relative;
+  height: 280px;
+}
+.minor-toy .beads-viz canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.minor-toy .staff-viz {
+  --staff-h: 150px;
+  height: var(--staff-h);
+}
+/* Step 4's and free play's small staff in the other clef, the signature
+   alone, under the learner's staff. The kit lays each staff's drawing over
+   its whole figure (kit/lesson-staff.css), which would put one staff on the
+   other, so while the small staff shows, the figure grows by 70 px, the
+   small staff's 64 and room around it, and the learner's staff keeps the
+   rest at the top: all of --staff-h, or less on a phone held sideways,
+   where the kit caps the figure's height (kit/lesson-stage.css) */
+.minor-toy .staff-viz:has(> .staff-small:not([hidden])) {
+  height: calc(var(--staff-h) + 70px);
+}
+.minor-toy .staff-viz:has(> .staff-small:not([hidden])) > [data-staff-svg] {
+  height: calc(100% - 68px);
+}
+.minor-toy .staff-viz > .staff-small {
+  top: auto;
+  right: auto;
+  bottom: 2px;
+  width: min(100%, 220px);
+  height: 64px;
+  /* drawn, never tapped: a tap there is the figure's */
+  pointer-events: none;
+}
+.minor-toy .staff-viz > .staff-small[hidden] {
+  display: none;
+}
+@media (min-width: 961px) and (max-height: 720px) {
+  .minor-toy .staff-viz {
+    --staff-h: 116px;
+  }
+}
+/* on a phone the two figures stand one above the other, each the card's
+   whole width */
+@media (max-width: 560px) {
+  .minor-toy .beads-viz {
+    height: 250px;
+  }
+  .minor-toy .staff-viz {
+    --staff-h: 140px;
+  }
+}
+/* a phone held sideways: the two figures side by side, each down to the
+   kit's 150 px floor, so they and the toy's first row of controls share the
+   screen (kit/lesson-stage.css) */
+@media (orientation: landscape) and (max-height: 500px) {
+  .minor-figs {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .minor-toy .beads-viz {
+    --viz-min: 150px;
+  }
+}
+/* the steps' line until the cold open's choice, under the figures */
+.lock-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-2);
+}
+.lock-line[hidden] {
+  display: none;
+}
+/* Raise te, or Raise le and Play the scale, then the clef and the
+   pitch-line switch, each a row that wraps on a phone; each step's other
+   plays sit in its text */
+.minor-toy .controls {
+  margin-top: 10px;
+}
+.minor-toy .controls .btn {
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.2;
+}
+/* Treble · Bass: each button a 44 px target */
+.minor-toy .seg .btn {
+  min-width: 44px;
+}
+
+/* ---------------------------------------------------------------- the step text */
+/* a play inside a step's sentence wraps its words rather than running past
+   a phone's edge: Step 3's "Play A major, then melodic minor, going up" is
+   wider than the column at 344 px */
+.steps-text .btn.inline {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+  padding-block: 8px;
+}
+/* Step 1's paragraph on the chord on so waits for the reveal behind its
+   held line (WEB-SPEC, Toys 1 and 3) */
+.held-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  color: var(--ink-2);
+}
+.held-line[hidden] {
+  display: none;
+}
+/* Tavi's lines in Steps 3 and 4: a bubble beside her still */
+.l25-says {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 16px;
+}
+.l25-says img {
+  width: 72px;
+  height: 72px;
+  flex: none;
+  object-fit: contain;
+}
+.l25-says .bubble {
+  flex: 1 1 auto;
+  min-width: 0;
+}
+.l25-says .bubble::after {
+  display: none;
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.l25-sing .sing-card .turn {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--hair);
+}
+.l25-sing .sing-card .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l25-sing .sing-card .guide-hint {
+  margin: 0 0 8px;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l25-sing .sing-card .unscored {
+  font-size: var(--fs-16);
+  color: var(--ink-2);
+}
+.l25-sing .voice-clef {
+  margin: 14px 0 12px;
+  color: var(--ink-2);
+}
+/* the learner's staff, the still of the Merc who sings beside it */
+.l25-sing-staff {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 12px;
+  align-items: center;
+}
+.l25-sing-staff .viz {
+  height: 230px;
+}
+.l25-sing-staff .sing-merc {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+}
+.l25-sing-staff .staff-row {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+/* on a phone the staff takes the card's width, for its six notes, and the
+   still stands beside the switch under it */
+@media (max-width: 560px) {
+  .l25-sing-staff {
+    grid-template-columns: minmax(0, 1fr) 56px;
+  }
+  .l25-sing-staff .viz {
+    grid-column: 1 / -1;
+    height: 210px;
+  }
+  .l25-sing-staff .staff-row {
+    grid-row: 2;
+    grid-column: 1;
+  }
+  .l25-sing-staff .sing-merc {
+    grid-row: 2;
+    grid-column: 2;
+    width: 56px;
+    height: 56px;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l25-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l25-app .second-drill {
+  margin-top: 14px;
+  color: var(--ink-2);
+}
+.l25-app .second-drill p {
+  margin: 0 0 8px;
+}
+.l25-app .rest-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l25-app .addr-line {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l25-app a.addr {
+  text-decoration: none;
+}
+.l25-next {
+  margin-top: 18px;
+}
+/* the tease still in the next-lesson card: Lesson 26's opening, under a
+   class of its own, apart from .next-tease; nothing moves and nothing
+   glows (WEB-SPEC, Toys 8) */
+.l25-tease {
+  width: min(100%, 320px);
+  margin-top: 12px;
+}
+.l25-tease svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.l25-tease-label {
+  font: 500 9px / 1 var(--f-mono);
+  fill: var(--ink-2);
+  text-anchor: middle;
+}
+.l25-tease-band {
+  fill: color-mix(in srgb, var(--chrome) 7%, transparent);
+}
+.l25-tease-bead {
+  fill: var(--chrome);
+}
+.l25-tease-house {
+  fill: none;
+  stroke: var(--ink-2);
+  stroke-width: 1.5px;
+  stroke-linejoin: round;
+}
+.l25-tease-merc.b {
+  fill: color-mix(in srgb, var(--signal-blue) 70%, transparent);
+}
+.l25-tease-merc.o {
+  fill: color-mix(in srgb, var(--orange) 70%, transparent);
+}
+.l25-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}

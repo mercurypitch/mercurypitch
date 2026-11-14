@@ -3,10 +3,15 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
+import { NATURAL_MINOR_DEGREES } from './chords'
+import { MAJOR_DEGREES } from './major-scale'
 import { floorOf, fullMode, overlaps, stairAt, stairsLayout, stripWindow, TARGET, } from './stairs-geometry'
+import { MAJOR_FIVE, MINOR_FIVE } from './stairs-scales'
 
 /** Lesson 4's floor, under its starts C4 to B4. */
 const C4 = 60
+/** Lesson 16's five stairs, do to so. */
+const FIVE = MAJOR_DEGREES.slice(0, 5)
 const STARTS = Array.from({ length: 12 }, (_, k) => C4 + k)
 
 /** The desktop stage's figure, and the phone's at 390 x 844 (Lesson 4 WEB-SPEC, Contract). */
@@ -178,6 +183,16 @@ describe('the compact layout', () => {
     expect(onD.stairs[7].top).toBeCloseTo(onC.rowsTop, 9)
     expect(onC.stairs[0].bottom).toBeCloseTo(220 - 6, 9)
   })
+
+  it("lifts its rows for a scale that reaches past them, its top stair the top row: the minor five on A3 over C3 (Lesson 20's words)", () => {
+    // Act
+    const onA = stairsLayout('compact', 320, 220, 57, 48, MINOR_FIVE)
+
+    // Assert
+    expect(onA.rows).toEqual(Array.from({ length: 15 }, (_, k) => 55 + k))
+    expect(onA.stairs[5].top).toBeCloseTo(onA.rowsTop, 9)
+    expect(onA.stairs[0].bottom).toBeLessThanOrEqual(220 - 6 + 1e-9)
+  })
 })
 
 describe('a staircase on other starts', () => {
@@ -188,6 +203,29 @@ describe('a staircase on other starts', () => {
     expect(floorOf({ lo: 67, hi: 67 })).toBe(60)
     expect(() => floorOf({ lo: 43, hi: 50 })).toThrow()
     expect(() => floorOf({ lo: 62, hi: 60 })).toThrow()
+  })
+
+  it("takes the C that closes the floor's octave as a start: Lesson 20's A2 and C3 over C2", () => {
+    expect(floorOf({ lo: 45, hi: 48 })).toBe(36)
+    expect(floorOf({ lo: 60, hi: 72 })).toBe(60)
+    expect(() => floorOf({ lo: 45, hi: 49 })).toThrow()
+  })
+
+  it("keeps the major scale from C3 and the minor five from A2 on C2's 25 rows", () => {
+    // Act: Lesson 20's Step 2 for the lower voice
+    const major = stairsLayout('wide', 650, 476, 48, 36, MAJOR_FIVE)
+    const minor = stairsLayout('wide', 650, 476, 45, 36, MINOR_FIVE)
+
+    // Assert: each top do on its own row, inside the rows
+    expect(major.stairs[5].top).toBeCloseTo(
+      major.yOfRow(60) - major.rowH / 2,
+      9,
+    )
+    expect(minor.stairs[5].top).toBeCloseTo(
+      minor.yOfRow(57) - minor.rowH / 2,
+      9,
+    )
+    expect(minor.rows).toEqual(Array.from({ length: 25 }, (_, k) => 36 + k))
   })
 
   it('draws G2 on two octaves from C2, the strip from C2 to C4 under it', () => {
@@ -210,7 +248,7 @@ describe('a staircase on other starts', () => {
 describe('a staircase of fewer stairs', () => {
   it('draws five, do to so, with no brackets for Group', () => {
     // Act: Lesson 16's, on G4 over C4, on a phone's figure
-    const five = stairsLayout('narrow', 356, 424, 67, C4, 5)
+    const five = stairsLayout('narrow', 356, 424, 67, C4, FIVE)
     const eight = stairsLayout('narrow', 356, 424, 67, C4)
 
     // Assert: the short stair from mi to fa a row, the others two
@@ -226,9 +264,9 @@ describe('a staircase of fewer stairs', () => {
 
   it('runs its rows from do to so on a phone, each the taller, and keeps the widest column, centred', () => {
     // Act
-    const five = stairsLayout('narrow', 356, 424, 67, C4, 5)
+    const five = stairsLayout('narrow', 356, 424, 67, C4, FIVE)
     const eight = stairsLayout('narrow', 356, 424, 67, C4)
-    const narrowFive = stairsLayout('narrow', 300, 424, 67, C4, 5)
+    const narrowFive = stairsLayout('narrow', 300, 424, 67, C4, FIVE)
 
     // Assert: eight rows where eight stairs take thirteen
     expect(five.rowH).toBeCloseTo((eight.rowH * 13) / 8, 6)
@@ -246,7 +284,7 @@ describe('a staircase of fewer stairs', () => {
 
   it('keeps each stair over its own white key on a phone', () => {
     // Act: G4 to D4 over G, A, B, C, D
-    const five = stairsLayout('narrow', 356, 424, 67, C4, 5)
+    const five = stairsLayout('narrow', 356, 424, 67, C4, FIVE)
     const whites = (five.strip?.keys ?? []).filter(
       (k) => k.white && k.cx > five.x0 && k.cx < five.x1,
     )
@@ -256,5 +294,155 @@ describe('a staircase of fewer stairs', () => {
     whites.forEach((k, i) =>
       expect(k.cx).toBeCloseTo(five.stairs[i].x + five.stairs[i].w / 2, 6),
     )
+  })
+})
+
+describe("a pentatonic's six stairs (Lesson 20)", () => {
+  it('draws do, re, mi, so, la and do at their own heights, the risers 2, 2, 3, 2 and 3 rows', () => {
+    // Act: on C4, on a phone's figure
+    const L = stairsLayout('narrow', 356, 424, C4, C4, MAJOR_FIVE)
+
+    // Assert
+    expect(L.stairs).toHaveLength(6)
+    expect(
+      L.stairs.map((st) => Math.round((L.stairs[0].top - st.top) / L.rowH)),
+    ).toEqual([0, 2, 4, 7, 9, 12])
+    expect(L.brackets).toEqual([])
+  })
+
+  it("draws the minor five's first riser three rows, from la", () => {
+    // Act
+    const L = stairsLayout('narrow', 356, 424, 57, C4 - 12, MINOR_FIVE)
+
+    // Assert
+    expect(
+      L.stairs.map((st) => Math.round((L.stairs[0].top - st.top) / L.rowH)),
+    ).toEqual([0, 3, 5, 7, 10, 12])
+  })
+
+  it("shows the octave's eight white keys under six columns on a phone, each a fingertip wide", () => {
+    // Act
+    const L = stairsLayout('narrow', 356, 424, C4, C4, MAJOR_FIVE)
+    const whites = (L.strip?.keys ?? []).filter(
+      (k) => k.white && k.cx > L.x0 && k.cx < L.x1,
+    )
+
+    // Assert: C4 to C5, the scale's thirteen rows, six columns of 59 px
+    expect(whites.map((k) => k.midi)).toEqual([60, 62, 64, 65, 67, 69, 71, 72])
+    expect(L.rows[0]).toBeLessThanOrEqual(60)
+    expect(L.rows.filter((m) => m > 73)).toEqual([])
+    expect(L.stairs.every((st) => st.w >= TARGET)).toBe(true)
+    expect(L.x1 - L.x0).toBe(356)
+  })
+})
+
+describe("a compact staircase's own rows and room (Lesson 25)", () => {
+  /** Lesson 25's steps' figure for the lower voice: rows A2 to C4, 104 px kept for the chord column. */
+  const ROOM = { right: 104, rows: { lo: 45, hi: 60 } }
+  const C2 = 36
+  const minorOnA = stairsLayout(
+    'compact',
+    420,
+    280,
+    45,
+    C2,
+    NATURAL_MINOR_DEGREES,
+    ROOM,
+  )
+
+  it('keeps 104 px at its right for the chord column, the stairs sharing the rest', () => {
+    // Arrange
+    const plain = stairsLayout(
+      'compact',
+      420,
+      280,
+      45,
+      C2,
+      NATURAL_MINOR_DEGREES,
+    )
+    const top = minorOnA.stairs[7]
+
+    // Assert
+    expect(plain.x1 - minorOnA.x1).toBe(104)
+    expect(top.x + top.w).toBeCloseTo(minorOnA.x1, 9)
+  })
+
+  it("shows its own sixteen rows, A2 to C4, do on the lowest and the chord on so's B3 inside them", () => {
+    // Assert
+    expect(minorOnA.rows).toEqual(Array.from({ length: 16 }, (_, k) => 45 + k))
+    expect(minorOnA.stairs[0].top).toBeCloseTo(
+      minorOnA.yOfRow(45) - minorOnA.rowH / 2,
+      9,
+    )
+    expect(minorOnA.yOfRow(59) - minorOnA.rowH / 2).toBeGreaterThan(
+      minorOnA.rowsTop,
+    )
+  })
+
+  it("holds C major on C3 and A minor on A2 on the same still rows, so do's house can glide between them (Step 4)", () => {
+    // Act
+    const majorOnC = stairsLayout(
+      'compact',
+      420,
+      280,
+      48,
+      C2,
+      MAJOR_DEGREES,
+      ROOM,
+    )
+
+    // Assert: one row per pitch on both, do three rows apart, and C
+    // major's la, A3, A minor's top do
+    expect(majorOnC.yOfRow(57)).toBeCloseTo(minorOnA.yOfRow(57), 9)
+    expect(minorOnA.stairs[0].top - majorOnC.stairs[0].top).toBeCloseTo(
+      3 * minorOnA.rowH,
+      9,
+    )
+    expect(majorOnC.stairs[5].top).toBeCloseTo(minorOnA.stairs[7].top, 9)
+  })
+
+  it('lifts its rows for a scale that reaches past them, as past the fifteen from its floor', () => {
+    // Act: A minor on A3 over rows that stop at C4
+    const L = stairsLayout(
+      'compact',
+      420,
+      280,
+      57,
+      C2,
+      NATURAL_MINOR_DEGREES,
+      ROOM,
+    )
+
+    // Assert: its top do, A4, the top row
+    expect(L.stairs[7].top).toBeCloseTo(L.rowsTop, 9)
+  })
+
+  it('takes no room in the wide and narrow layouts', () => {
+    // Act
+    const wideRoomy = stairsLayout(
+      'wide',
+      650,
+      476,
+      60,
+      C4,
+      MAJOR_DEGREES,
+      ROOM,
+    )
+    const narrowRoomy = stairsLayout(
+      'narrow',
+      356,
+      424,
+      60,
+      C4,
+      MAJOR_DEGREES,
+      ROOM,
+    )
+
+    // Assert
+    expect([wideRoomy.x1, wideRoomy.rows]).toEqual([wide(60).x1, wide(60).rows])
+    expect([narrowRoomy.x1, narrowRoomy.rows]).toEqual([
+      narrow(60).x1,
+      narrow(60).rows,
+    ])
   })
 })

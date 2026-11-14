@@ -367,14 +367,14 @@ pan-y` (`lesson-stage.css:776`), so a swipe still scrolls; every action is a but
   (Step 5); free play, every control together. Any state can be playing or still. Leaving a step by
   any route stops the step's sound and anything queued to play after it, a miss's replay in Count
   the bar included (Toys 4). Every route goes through the deck's `show`, which tells each registered
-  toy the new step and the one before (`kit/step-deck.ts:172`): Next and Previous (`:218-228`), a
-  swipe (`:230-256`), scrolling another step into view on the wide page (`:201-216`), the lesson
-  menu's jump (`:287-291`, called at `kit/lesson-menu.ts:542`), a `#step-N` address
-  (`kit/step-deck.ts:268-276`, `:298-305`) and a quiz's step link (`kit/quiz.ts:361`, `:366`). The
-  page registers one toy (`registerToy`, `kit/step-deck.ts:92-96`), as `lesson-03/main.ts:80-87`
+  toy the new step and the one before (`kit/step-deck.ts:182`): Next and Previous (`:228-238`), a
+  swipe (`:240-266`), scrolling another step into view on the wide page (`:211-226`), the lesson
+  menu's jump (`:297-301`, called at `kit/lesson-menu.ts:542`), a `#step-N` address
+  (`kit/step-deck.ts:278-286`, `:308-315`) and a quiz's step link (`kit/quiz.ts:381`, `:386`). The
+  page registers one toy (`registerToy`, `kit/step-deck.ts:99-103`), as `lesson-03/main.ts:80-87`
   does, whose `onStep(step, previous)` (`kit/step-deck.ts:45-47`) stops the stage, Count the bar and
   Step 5's predict plays whenever the two differ; a layout change that shows the same step again
-  (`kit/step-deck.ts:193-196`) stops nothing. Any other play on the page stops it too: one sound at
+  (`kit/step-deck.ts:203-206`) stops nothing. Any other play on the page stops it too: one sound at
   a time (Audio).
 - **Free play** (Wrap): its own copy of the object in a card, as Lesson 2's free play is
   (`lesson-02/free-play.ts:1-13`), with every control: Play, Bars, the Click switch, March, Rock
@@ -571,7 +571,7 @@ the page is hidden, whatever is playing stops (`lesson-03/sing.ts:388-412`).
 - **Stopping.** Stop, or leaving the card or the page, ends the take with no line: "Stopped. Press
   Start to tap again."
 - **Sound off.** The take and the groove need sound: with sound off, Start and Play the groove show
-  the kit's toast for a play that does (`kit/sound.ts:620-632`, `canPlay`, `needsSound`; till this
+  the kit's toast for a play that does (`kit/sound.ts:632-644`, `canPlay`, `needsSound`; till this
   PR, the usual one, and the groove ran silently) and run nothing. The status reads "Sound is off,
   so the take didn't start. Turn sound on, then press Start." or the groove's (LESSON.md). No Web
   Audio: both `aria-disabled`, "This browser can't play the page's sounds, so the take can't run."
@@ -666,12 +666,12 @@ another, which is the guide in either case, and the still stays still.
 
 ### 7. Recall and quick check
 
-Two quizzes share this page through the kit's quiz (`kit/quiz.ts`, `createQuiz` at `:218`), with
-the options it already has (`:80-104`): an id prefix for each quiz's elements; `lesson` optional; a
+Two quizzes share this page through the kit's quiz (`kit/quiz.ts`, `createQuiz` at `:228`), with
+the options it already has (`:88-112`): an id prefix for each quiz's elements; `lesson` optional; a
 question `id`, the event's `qLesson` and `q`; and a question from another lesson linking "Try Lesson
-M, Step N again" in a new tab, through `away` (`:94-101`, `linkAway` at `:191-216`). While that
+M, Step N again" in a new tab, through `away` (`:102-109`, `linkAway` at `:201-226`). While that
 lesson is not live where the page is served, the words stay with no link, which would lead to the
-404 page (`:18-20`, `:197`, `:206-209`).
+404 page (`:18-20`, `:207`, `:216-219`).
 
 - **Recall**: Lesson 6's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS 3):
   the very question objects Lesson 6's page asks, imported from `lesson-06/quiz-questions.ts` and
@@ -708,12 +708,12 @@ lesson is not live where the page is served, the words stay with no link, which 
   calls its recall first (`lesson-03/main.ts:56`, `:104`), so that it never mounts a quiz the page
   then takes away. Nothing then invites the viewer to answer questions on a lesson the explorer
   calls "Coming later", and the step links' fallback, their words with no link
-  (`kit/quiz.ts:191-216`), is never shown.
+  (`kit/quiz.ts:201-226`), is never shown.
 - **Quick check**: LESSON.md's four questions, ids `l08-q1` to `l08-q4`, keys `fyp-l08-seed` and
   `fyp-l08-quiz-v1`, and `lesson: 8`, so answering all four marks Lesson 8 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`kit/quiz.ts:315`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`kit/quiz.ts:335`), so no feedback line starts with "Right", "Yes" or
   "Correct". Question 2's slot holds its play button, two bars of 3 and the next first beat, seven
   clicks, 4.0 s (FACTS 77), named "Play two bars"; the kit keeps a slot's controls across answers,
   and the page handles them with a listener on the quiz's `host`. "Try Step 2 again" to "Try Step
@@ -760,7 +760,7 @@ sounding first. A sound so stopped, or stopped by leaving its step, never counts
   Each run plays into its own gain node on the kit's master bus, so Stop fades that node out over 30
   ms and drops it, and any hit already scheduled goes silent with it. The frame loop runs on
   `requestAnimationFrame`, which a hidden tab pauses, and the kit stops every sound when the page is
-  hidden (`kit/sound.ts:585-587`), so a hidden page plays nothing.
+  hidden (`kit/sound.ts:597-599`), so a hidden page plays nothing.
 - **The two clocks.** The beat clock maps an audio-clock time to the page's clock with
   `getOutputTimestamp()` (FACTS 38), read on every frame, using the latest reading whose
   `performanceTime` is above 0; with none, it pairs `currentTime` with `performance.now()` at the
@@ -770,19 +770,19 @@ sounding first. A sound so stopped, or stopped by leaving its step, never counts
 - **Levels** (FACTS 72 to 76): the click 0.09 high and 0.06 plain; Kick 0.8 (March's accent
   1.0), Clap 0.7, Hi-hat 0.5; the viewer's claps in the take 0.7; under the sung line every drum
   at half its gain; Merc's "ooh" at the kit's level, 0.2, and in the cold open 0.2 on beat 1, 0.17
-  on beat 3 and 0.14 on 2 and 4 (`kit/sound.ts:240`; FACTS 30c); the count-in do at 0.065.
+  on beat 3 and 0.14 on 2 and 4 (`kit/sound.ts:252`; FACTS 30c); the count-in do at 0.065.
 - **What the kit's sound module has** (What the kit and the app still need, item 5): a voice and a
-  burst of noise start at a time ahead on the audio clock (`at`, `kit/sound.ts:68-72`, `:228`;
-  `playNoise`, `:482-583`), and `contourVoice` releases on it (`:397-423`). This page added the
+  burst of noise start at a time ahead on the audio clock (`at`, `kit/sound.ts:80-84`, `:240`;
+  `playNoise`, `:494-595`), and `contourVoice` releases on it (`:409-435`). This page added the
   rest, the bus and the note in a module of their own that only this page imports,
   `kit/sound-ahead.ts`, so no other lesson's first paint carries them: a caller's own bus on the
   master, `openBus`, so the drums play into it and obey the Sound switch, the hush and the
-  hidden-page stop, where the master is module-private (`kit/sound.ts:120`, made at `:163`, lent by
-  `openMaster` at `:592-600`; the bus at `kit/sound-ahead.ts:18-66`, closed with every voice
-  through `onStopAll`, `:31-35` there and `kit/sound.ts:186-191`, `:602-605`); `tick` with a start
-  time and a bus, where it sounded at once (`kit/sound.ts:459-480`); and `bookNote`, a voice
+  hidden-page stop, where the master is module-private (`kit/sound.ts:132`, made at `:175`, lent by
+  `openMaster` at `:604-612`; the bus at `kit/sound-ahead.ts:18-66`, closed with every voice
+  through `onStopAll`, `:31-35` there and `kit/sound.ts:198-203`, `:614-617`); `tick` with a start
+  time and a bus, where it sounded at once (`kit/sound.ts:471-492`); and `bookNote`, a voice
   booked ahead and released by the audio clock (`kit/sound-ahead.ts:68-100`), where a voice given
-  a length is stopped by a timer (`kit/sound.ts:338-344`, `:342`).
+  a length is stopped by a timer (`kit/sound.ts:350-356`, `:354`).
 
 ## Merc and Tavi
 
@@ -886,14 +886,14 @@ was built on.
    `runtime/index.ts:5` re-exporting it) and its test moving beside it: the house rule keeps a feature out of a sibling
    feature's code (`.dependency-cruiser.cjs:101-109`, "Shared code belongs in src/lib or
    src/components").
-5. `kit/sound.ts`: a bus of the caller's on the master, which is module-private (`:120`, made at
-   `:163`), so drum hits play into it and obey the Sound switch, the hush and the hidden-page stop;
-   `tick` with a start time (`:459-480`); a voice given a length stopped on the audio clock, where
-   `voice` stops one on a timer (`:338-344`). The beat clock keeps the clock map itself. Voices and
-   noise already took a start time (`:68-72`, `:482-583`). Built with the bus and the note in
+5. `kit/sound.ts`: a bus of the caller's on the master, which is module-private (`:132`, made at
+   `:175`), so drum hits play into it and obey the Sound switch, the hush and the hidden-page stop;
+   `tick` with a start time (`:471-492`); a voice given a length stopped on the audio clock, where
+   `voice` stops one on a timer (`:350-356`). The beat clock keeps the clock map itself. Voices and
+   noise already took a start time (`:80-84`, `:494-595`). Built with the bus and the note in
    `kit/sound-ahead.ts` (`openBus`, `:18-66`; `bookNote`, `:68-100`), which only this page imports,
    so every other lesson's first paint stays without them; `kit/sound.ts` lends it the master
-   (`openMaster`, `:592-600`) and closes its buses with every voice (`onStopAll`, `:602-605`).
+   (`openMaster`, `:604-612`) and closes its buses with every voice (`onStopAll`, `:614-617`).
 6. `kit/explorer-figures.ts`: `metronomeSVG(id)`, a gradient id per copy (`:20-32`), with a test
    that two copies on one page have distinct ids.
 7. `kit/ear-game.ts`, Lesson 2's game promoted and generalised on #1149 (Toys 4), with two more
@@ -918,13 +918,13 @@ was built on.
    `lesson-sections.css:296-302`), and the old hook was the admin console's alternative in
    `kit/lesson-copy.ts:106-112` at `b7093a0a4` until #1186 dropped it. This page adds only its
    tease figure to the slot (Toys 9).
-10. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:141-143`, `:137-139`),
+10. `kit/quiz.ts`: `recallStepHref` promoted beside `lessonPageHref` (`:151-153`, `:147-149`),
     since this page is its fourth user after Lessons 3, 4 and 5, whose own copies became
     re-exports of the kit's (`lesson-03/quiz-questions.ts:23-24`, `lesson-04/quiz-questions.ts:31-32`,
     used at `lesson-04/main.ts:50` and `:65`, and `lesson-05/quiz-questions.ts:19-20`). #1149's
     `recallHref` (`lesson-06/quiz-questions.ts:30-32` at `b7093a0a4`) opened a page, never a step;
     #1186 deleted it. The quiz needs nothing else: its prefix, slot and away links are on main
-    (`kit/quiz.ts:80-104`, `:186-216`).
+    (`kit/quiz.ts:88-112`, `:196-226`).
 11. `kit/comfort.ts`, built by #1192: `restAfterEffort`, which this page's flow passes
     (`lesson-08/sing-flow.ts:121`) to pick the rest card after "Effortful", as Lesson 6's does; both
     picked it by hand before. The kit's default stays the coach's (`kit/comfort.ts:69-78`).
@@ -997,8 +997,8 @@ was built on.
     (`src/tests/lesson-pages.test.ts:309-346`). When its line leaves `drafts.ts`, the release adds a
     line to each static file (`public/llms.txt`'s Lessons list, `:66-80`), as `kit/drafts.ts:18-21`
     asks and `lesson-pages.test.ts:284-292` checks. The first-paint budget comes with the page,
-    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:151-303`, Lessons 3 and 5),
-    at `:361-367`, and its CSS ceiling at `:578-581`, since every build carries every lesson page.
+    beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:151-304`, Lessons 3 and 5),
+    at `:374-380`, and its CSS ceiling at `:612-615`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
     built with the page.
 18. From #1149's fix pass, both needed before this page's predicts and plays are built:
@@ -1009,7 +1009,7 @@ was built on.
 
 ## Edge cases
 
-- **Sound off, unset or missing.** Every play obeys the kit's `canPlay` (`kit/sound.ts:620-632`):
+- **Sound off, unset or missing.** Every play obeys the kit's `canPlay` (`kit/sound.ts:632-644`):
   the first tap turns sound on, sound off plays the visuals silently with the kit's toast, and no
   Web Audio leaves the page readable with every play `aria-disabled` and its line saying why. The
   predicts' reveals and Start the guide wait for heard sound (Toys 2, 6); the take and the groove,
@@ -1123,7 +1123,7 @@ parts:
     `show` as a quiz's step link calls it) stops the stage's sound, Count the bar's round and Step
     5's predict plays; a miss in Count the bar and then a step change within its 700 ms start
     nothing once the clock passes 700 ms; a re-show of the same step, as a layout change makes
-    (`kit/step-deck.ts:193-196`), stops nothing.
+    (`kit/step-deck.ts:203-206`), stops nothing.
 18. Heard means finished: for the cold open's predict and Step 5's, a play cut short, by its stop,
     by another play or, in Step 5, by leaving the step, resolves `false` and leaves the reveal
     hidden, and a play that runs to its end reveals; starting any sound on the page stops the one

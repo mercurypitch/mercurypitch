@@ -8,6 +8,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import './browser-doubles.test-fixtures'
 import { ANNOUNCE_DELAY_MS } from './announce'
 import type * as MotionSwitch from './motion-switch'
+import type { StepDeck } from './step-deck'
 import { createStepDeck, DECK_QUERY, registerToy, stepFromHash, } from './step-deck'
 
 /** The system's reduced-motion setting, as the deck reads it. */
@@ -345,6 +346,88 @@ describe('createStepDeck', () => {
     expect(tops).toContain(1300 - (70 + 768) / 2)
     expect(tops).toContain(300 - 76)
     expect(tops).not.toContain(500 - (70 + 768) / 2)
+    frames.mockRestore()
+    scroll.mockRestore()
+    document.documentElement.style.scrollPaddingTop = ''
+  })
+
+  it("brings the stage into view for a play from a step's text on a phone, and moves nothing on a wide page or with the stage in view", () => {
+    // Arrange: the stage's head 400 px up, off the screen, on a phone's
+    // deck and on a wide page's
+    deckPage(2)
+    const stage = document.getElementById('stepsStage') as HTMLElement
+    let top = -400
+    stage.getBoundingClientRect = () => ({ top, height: 700 }) as DOMRect
+    const brought = vi.fn()
+    stage.scrollIntoView = brought
+    const make = (query: string): StepDeck => {
+      const media = vi
+        .spyOn(window, 'matchMedia')
+        .mockImplementation(onlyMatching(query))
+      const made = createStepDeck({
+        toyFor: (n) => n,
+        after: { label: 'The quick check', selector: '#quiz' },
+      })
+      media.mockRestore()
+      return made
+    }
+    const phone = make(DECK_QUERY)
+    const wide = make('(min-width: 1px) and (max-width: 0px)')
+
+    // Act
+    wide.showToy()
+    const fromWide = brought.mock.calls.length
+    phone.showToy()
+    const fromPhone = brought.mock.calls.length - fromWide
+    top = 20
+    phone.showToy()
+    const inView = brought.mock.calls.length - fromWide - fromPhone
+
+    // Assert
+    expect(fromWide).toBe(0)
+    expect(fromPhone).toBe(1)
+    expect(brought).toHaveBeenCalledWith({ behavior: 'smooth', block: 'start' })
+    expect(inView).toBe(0)
+  })
+
+  it("brings a step taller than the screen's room to its head under the masthead, never centred past it", () => {
+    // Arrange: a 768 px screen under a 70 px scroll padding, and step 2
+    // 900 px tall, more than the 698 px under the padding
+    deckPage(3)
+    document.documentElement.style.scrollPaddingTop = '70px'
+    const stage = document.getElementById('stepsStage') as HTMLElement
+    stage.style.top = '76px'
+    const box =
+      (top: number, height = 0): (() => DOMRect) =>
+      () =>
+        ({ top, height }) as DOMRect
+    ;(stage.parentElement as HTMLElement).getBoundingClientRect = box(300)
+    const steps = document.querySelectorAll<HTMLElement>('.step')
+    steps[1].getBoundingClientRect = box(1000, 900)
+    const frames = vi
+      .spyOn(globalThis, 'requestAnimationFrame')
+      .mockImplementation((frame) => {
+        frame(0)
+        return 0
+      })
+    const scroll = vi
+      .spyOn(window, 'scrollTo')
+      .mockImplementation(() => undefined)
+    const deck = createStepDeck({
+      toyFor: (n) => n,
+      after: { label: 'The quick check', selector: '#quiz' },
+    })
+    deck.start()
+
+    // Act
+    window.location.hash = '#step-2'
+    window.dispatchEvent(new HashChangeEvent('hashchange'))
+
+    // Assert: its head just under the padding, not its middle at the
+    // screen's, which would put the head 101 px up under the masthead
+    const tops = scroll.mock.calls.map(([to]) => (to as ScrollToOptions).top)
+    expect(tops).toContain(1000 - 70)
+    expect(tops).not.toContain(1000 + 900 / 2 - (70 + 768) / 2)
     frames.mockRestore()
     scroll.mockRestore()
     document.documentElement.style.scrollPaddingTop = ''

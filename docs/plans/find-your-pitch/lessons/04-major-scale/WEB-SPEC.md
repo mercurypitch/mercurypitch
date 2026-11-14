@@ -133,7 +133,7 @@ transforms is one object on the page.
 - **One action per tap.** A tap on a stair plays its note in the soft tone, in every state but the
   compact one. A tap on a key of the strip plays that key in steps 1 and 2; from step 3 on, and in
   free play, it makes that key do instead. A pointer that moves more than 6 px before it lifts is a
-  drag, not a tap, as on Lesson 1's spiral (`kit/spiral.ts:541`).
+  drag, not a tap, as on Lesson 1's spiral (`kit/spiral.ts:546`).
 - **Play up** and **Play down** (FACTS 57) light each stair and key as it sounds; **Slow** doubles
   every length (MASTER-PLAN § 4.2 item 5).
 - **Step sizes** (step 1): the T and S labels show, and the two semitone steps light gold once
@@ -253,8 +253,8 @@ Two quizzes share this page, so it depends on the three changes Lesson 2 makes t
 - a question `id`, the event's `qLesson` and `q`, which `QuizQuestion` lacked.
 
 If Lesson 2's page has not landed them when this one is built, this page lands them, in the shape
-Lesson 2 describes. All three are on main: the id `prefix` (`kit/quiz.ts:88-93`, `:220-224`), an
-optional `lesson` (`:82-83`, `:344-349`) and the question `id` (`:43-47`).
+Lesson 2 describes. All three are on main: the id `prefix` (`kit/quiz.ts:96-101`, `:230-234`), an
+optional `lesson` (`:90-91`, `:364-369`) and the question `id` (`:43-47`).
 
 - **Recall**: Lesson 2's questions 1 and 3, word for word with their feedback (LESSON.md; FACTS
   30), under their Lesson 2 ids, `l02-q1` and `l02-q3`. It is reshuffled from a seed of its own
@@ -269,8 +269,8 @@ optional `lesson` (`:82-83`, `:344-349`) and the question `id` (`:43-47`).
   `fyp-l04-quiz-v1`, and `lesson: 4`, so answering all four marks Lesson 4 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. Question 3's play button plays
-  `stop-c` (FACTS 58). The kit rebuilds the questions on every answer (`kit/quiz.ts:301-304`,
-  `:321-322`), so that button is handled by a listener on the quiz's root (`#qs` today), as the step
+  `stop-c` (FACTS 58). The kit rebuilds the questions on every answer (`kit/quiz.ts:321-324`,
+  `:341-342`), so that button is handled by a listener on the quiz's root (`#qs` today), as the step
   links are. "Try Step 1 again" and "Try Step 3 again" use the kit's `data-goto-step`. Answers stay
   in the viewer's browser; since #1193 each question's first answer in a visit also goes out,
   anonymously.

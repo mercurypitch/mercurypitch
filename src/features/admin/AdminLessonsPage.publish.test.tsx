@@ -20,8 +20,7 @@ import { HOOK_NOTES } from '@/features/lessons/kit/team-notes'
 import type { AdminLessonsPageProps } from './AdminLessonsPage'
 import { AdminLessonsPage } from './AdminLessonsPage'
 import type { CopyChoicesFor } from './lessons/copy-choices'
-import { lessonRows } from './lessons/lesson-admin'
-import { card, cellOf, liveRegion, openCard, seasonRows, settled, } from './lessons/lesson-page.test-fixtures'
+import { card, cellOf, liveRegion, openCard, PLANNED, rowsWithPlanned, seasonRows, settled, } from './lessons/lesson-page.test-fixtures'
 import type { FakeLessonApi, SiteAnswer, } from './lessons/lesson-site.test-fixtures'
 import { ADMIN_KEY, fakeLessonApi, stubLessonSite, unpublishedHere, } from './lessons/lesson-site.test-fixtures'
 
@@ -231,15 +230,11 @@ describe('publishing a lesson', () => {
   })
 
   it('offers a lesson with no page yet no switch, only a disabled control that says so', async () => {
-    renderPage()
+    renderPage(fakeLessonApi(), { rows: rowsWithPlanned() })
     await settled()
 
-    const planned =
-      lessonRows().find((row) => row.path !== null && !row.written)?.lesson.n ??
-      -1
-    expect(planned).toBeGreaterThan(0)
-    const control = within(cellOf(planned, 0)).getByRole('button', {
-      name: `Publish Lesson ${planned}: No page yet`,
+    const control = within(cellOf(PLANNED, 0)).getByRole('button', {
+      name: `Publish Lesson ${PLANNED}: No page yet`,
     })
     expect(control).toBeDisabled()
     expect(control).toHaveTextContent(/No page yet$/)

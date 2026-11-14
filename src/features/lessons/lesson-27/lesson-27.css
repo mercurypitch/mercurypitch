@@ -1,0 +1,375 @@
+/* ============================================================
+   Lesson 27 — Seventh chords and inversions: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's: lesson-base, lesson-sections, lesson-stage
+   and lesson-parts, imported by main.ts, and the staff toy's sheet, taken
+   in here by @import so it inlines into this page's own sheet and splits no
+   chunk the other lessons share (MISTAKES.md, on the lessons' base
+   stylesheet).
+
+   Here: the hero's ring between Merc and Tavi, with the three plays under
+   it (WEB-SPEC, Toys 2); the three words' small staffs; the steps' toy, the
+   ring of rooms beside the learner's staff (Toys 1), its readout, its lock
+   line and its rows of controls; the held text of Steps 1 to 4; Sing it's
+   staff beside the still of the Merc who sings; and the Wrap's cards, with
+   the next card's tease still and free play. No decorative staff: the
+   section heads carry none, and the body's season-2 class drops the
+   background's (kit/lesson-base.css). */
+
+@import '../kit/lesson-staff.css';
+
+/* ---------------------------------------------------------------- hero: the ring between Merc and Tavi */
+/* four chips, which wrap: rows 16 px apart keep each prerequisite link's
+   44 px tap box whole (lesson-base.css, `.chip-link::after`) */
+.l27-hero .meta {
+  row-gap: 16px;
+}
+.l27-duo {
+  --merc: clamp(120px, 11vw, 168px);
+  --ring-h: clamp(250px, 23vw, 320px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  align-items: end;
+  height: calc(var(--ring-h) + var(--merc) * 0.165);
+  margin-top: 6px;
+}
+/* the floor line runs under the ring, where Merc and Tavi stand */
+.l27-duo .floor {
+  top: var(--ring-h);
+}
+.l27-duo .merc {
+  grid-row: 1;
+  z-index: 1;
+  pointer-events: none;
+}
+.l27-duo .merc-blue {
+  grid-column: 1;
+}
+.l27-duo .merc-orange {
+  grid-column: 3;
+}
+.l27-duo .hero-ring {
+  position: relative;
+  grid-column: 2;
+  grid-row: 1;
+  align-self: start;
+  min-width: 0;
+  height: var(--ring-h);
+}
+.l27-duo .hero-ring canvas {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+/* the three plays sit under the stage, outside the predict card */
+.l27-hero .hero-plays {
+  margin-top: 14px;
+  padding-top: 0;
+  border-top: 0;
+}
+@media (max-width: 1080px) {
+  .l27-duo {
+    --merc: clamp(120px, 20vw, 190px);
+    --ring-h: clamp(250px, 40vw, 340px);
+  }
+  /* Play V, then I sits right under the stage, before the sound gate (the
+     kit orders the hero's parts at this width) */
+  .l27-hero .hero-plays {
+    order: 4;
+  }
+}
+/* on a phone Merc and Tavi stand smaller either side of the ring's foot, so
+   neither covers a bead */
+@media (max-width: 560px) {
+  .l27-duo {
+    --merc: min(19vw, 76px);
+    --ring-h: 250px;
+    margin-top: 2px;
+  }
+  /* the ring takes the stage's whole width, behind Merc and Tavi: its
+     radius follows the canvas's width (kit/spiral-draw.ts), and between
+     them it came out half the steps' ring, its centre's name running into
+     F sharp's. Centred, every bead and name stays clear of them */
+  .l27-duo .hero-ring {
+    grid-column: 1 / -1;
+  }
+}
+
+/* ---------------------------------------------------------------- three words */
+/* three tickets, each figure a small staff in the learner's clef, as
+   Lesson 23's words are */
+.ticket .stub svg.word-fig {
+  width: 80px;
+  height: 120px;
+}
+
+/* ---------------------------------------------------------------- the steps' toy */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+/* the ring over the learner's staff, at every width: twelve named beads in
+   half the stage card would come out too small to read. A stage too short
+   for all of it scrolls inside itself (kit/lesson-stage.css) */
+.ring-figs {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  min-height: 0;
+}
+.ring-figs > .viz {
+  min-width: 0;
+}
+.ring-toy .ring-viz {
+  --viz-min: 220px;
+  position: relative;
+  height: 280px;
+}
+.ring-toy .ring-viz canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* the readout under the ring: the root's distance to its seventh in Step 1,
+   the chord's position in Step 4 */
+.ring-readout {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 2px;
+  margin: 0;
+  font: 500 var(--fs-14) / 1.2 var(--f-mono);
+  color: var(--ink-2);
+  text-align: center;
+  pointer-events: none;
+}
+.ring-readout:empty {
+  display: none;
+}
+.ring-toy .staff-viz {
+  height: 150px;
+}
+@media (min-width: 961px) and (max-height: 720px) {
+  .ring-toy .staff-viz {
+    height: 116px;
+  }
+}
+/* on a phone the two figures stand one above the other, the ring first,
+   each the card's whole width (WEB-SPEC, Edge cases) */
+@media (max-width: 560px) {
+  .ring-toy .ring-viz {
+    height: 260px;
+  }
+  .ring-toy .staff-viz {
+    height: 140px;
+  }
+}
+/* a phone held sideways: the two figures side by side, each down to the
+   kit's 150 px floor, so they and the toy's first row of controls share the
+   screen (kit/lesson-stage.css) */
+@media (orientation: landscape) and (max-height: 500px) {
+  .ring-figs {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+  .ring-toy .ring-viz {
+    --viz-min: 150px;
+  }
+}
+/* the steps' line until the cold open's choice, under the figures */
+.lock-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-2);
+}
+.lock-line[hidden] {
+  display: none;
+}
+/* the chips, Add the seventh and Turn over, then the clef and the
+   pitch-line switch, each a row that wraps on a phone; each step's other
+   plays sit in its text */
+.ring-toy .controls {
+  margin-top: 10px;
+}
+.ring-toy .controls[hidden] {
+  display: none;
+}
+.ring-toy .controls .btn {
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.2;
+}
+/* a chip is one numeral, still a 44 px target each way: wider than the
+   row's own buttons, which may shrink to their words */
+.ring-toy .controls .ring-chip {
+  min-width: 52px;
+  font: 600 var(--fs-16) / 1 var(--f-mono);
+}
+/* the lit chord's chip, while its chord is the ring's lit room */
+.ring-toy .ring-chip.is-lit {
+  border-color: var(--chrome);
+  background: color-mix(in srgb, var(--chrome) 14%, transparent);
+}
+/* Treble · Bass: each button a 44 px target */
+.ring-toy .seg .btn {
+  min-width: 44px;
+}
+
+/* ---------------------------------------------------------------- the step text */
+/* Step 1's paragraph on so, and Steps 2 and 3 under their headings, wait
+   for the cold open's reveal behind their held lines; Step 4's text after
+   its predict waits for its own (WEB-SPEC, Toys 3) */
+.held-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 0 0 14px;
+  color: var(--ink-2);
+}
+.held-line[hidden] {
+  display: none;
+}
+.step-predict {
+  margin: 0 0 16px;
+}
+/* a play in a step's sentence wraps its words at a phone's width, as
+   Lesson 25's do */
+.steps-text .btn.inline {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.l27-sing .sing-card .turn {
+  padding: 0 0 14px;
+  border-bottom: 1px solid var(--hair);
+}
+.l27-sing .sing-card .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l27-sing .sing-card .guide-hint {
+  margin: 0 0 8px;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l27-sing .sing-card .unscored {
+  font-size: var(--fs-16);
+  color: var(--ink-2);
+}
+.l27-sing .voice-clef {
+  margin: 14px 0 12px;
+  color: var(--ink-2);
+}
+/* the learner's staff, the still of the Merc who sings beside it */
+.l27-sing-staff {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 88px;
+  gap: 12px;
+  align-items: center;
+}
+.l27-sing-staff .viz {
+  height: 230px;
+}
+.l27-sing-staff .sing-merc {
+  width: 88px;
+  height: 88px;
+  object-fit: contain;
+}
+.l27-sing-staff .staff-row {
+  grid-column: 1 / -1;
+  margin-top: 0;
+}
+/* on a phone the staff takes the card's width, for its six notes, and the
+   still stands beside the switch under it */
+@media (max-width: 560px) {
+  .l27-sing-staff {
+    grid-template-columns: minmax(0, 1fr) 56px;
+  }
+  .l27-sing-staff .viz {
+    grid-column: 1 / -1;
+    height: 210px;
+  }
+  .l27-sing-staff .staff-row {
+    grid-row: 2;
+    grid-column: 1;
+  }
+  .l27-sing-staff .sing-merc {
+    grid-row: 2;
+    grid-column: 2;
+    width: 56px;
+    height: 56px;
+  }
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l27-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l27-app .second-drill {
+  margin-top: 14px;
+  color: var(--ink-2);
+}
+.l27-app .addr-line {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l27-app a.addr {
+  text-decoration: none;
+}
+.l27-next {
+  margin-top: 18px;
+}
+/* the tease still in the next-lesson card: Lesson 28's opening, under a
+   class of its own, apart from .next-tease; nothing moves and nothing
+   glows (WEB-SPEC, Toys 8) */
+.l27-tease {
+  width: min(100%, 320px);
+  margin-top: 12px;
+}
+.l27-tease svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.l27-tease-label {
+  font: 500 9px / 1 var(--f-mono);
+  fill: var(--ink-2);
+}
+.l27-tease-row rect {
+  fill: none;
+  stroke-width: 1.25px;
+}
+.l27-tease-row.o rect {
+  stroke: color-mix(in srgb, var(--orange) 70%, transparent);
+}
+.l27-tease-row.b rect {
+  stroke: color-mix(in srgb, var(--signal-blue) 70%, transparent);
+}
+.l27-tease-merc.b {
+  fill: color-mix(in srgb, var(--signal-blue) 70%, transparent);
+}
+.l27-tease-merc.o {
+  fill: color-mix(in srgb, var(--orange) 70%, transparent);
+}
+.l27-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}
+/* free play's longest play wraps its words at a phone's width, left-aligned
+   as the plays above it start, still a 44 px target; its lines balanced,
+   so no letter is left alone on the second */
+.l27-free .staff-plays .btn {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  text-wrap: balance;
+  line-height: 1.25;
+  padding-block: 8px;
+}

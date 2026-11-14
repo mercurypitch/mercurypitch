@@ -3,7 +3,10 @@
 // ============================================================
 
 import { describe, expect, it } from 'vitest'
-import { readout, scaleName, sliderText, stairLabel, stairName, stopSaid, summary, whiteKeysSaid, } from './stairs-words'
+import type { NamesMode } from './names-modes'
+import type { Degrees } from './stairs-scales'
+import { MAJOR_FIVE, MINOR_FIVE } from './stairs-scales'
+import { readout, risersSaid, scaleName, sliderText, stairLabel, stairName, stopSaid, summary, whiteKeysSaid, } from './stairs-words'
 
 /** A line as the eye reads it: the signs shown, the spoken words dropped. */
 const seen = (html: string): string =>
@@ -63,6 +66,54 @@ describe('stairName', () => {
       'E♭',
     ])
     expect(stairName(6, 66, 'letters')).toBe('E♯')
+  })
+
+  it("names another scale's stairs from its own degrees: the major five on C, and the minor five on A (Lesson 20)", () => {
+    // Act
+    const names = (tonic: number, degrees: Degrees, mode: NamesMode) =>
+      degrees.map((_d, i) => stairName(i, tonic, mode, degrees))
+
+    // Assert
+    expect(names(60, MAJOR_FIVE, 'solfege')).toEqual([
+      'do',
+      're',
+      'mi',
+      'so',
+      'la',
+      'do',
+    ])
+    expect(names(60, MAJOR_FIVE, 'letters')).toEqual([
+      'C',
+      'D',
+      'E',
+      'G',
+      'A',
+      'C',
+    ])
+    expect(names(60, MAJOR_FIVE, 'numbers')).toEqual([
+      '1',
+      '2',
+      '3',
+      '5',
+      '6',
+      '1',
+    ])
+    expect(names(57, MINOR_FIVE, 'solfege')).toEqual([
+      'do',
+      'me',
+      'fa',
+      'so',
+      'te',
+      'do',
+    ])
+    expect(names(57, MINOR_FIVE, 'letters')).toEqual([
+      'A',
+      'C',
+      'D',
+      'E',
+      'G',
+      'A',
+    ])
   })
 })
 
@@ -129,6 +180,48 @@ describe("the staircase's lines", () => {
     )
     expect(stopSaid(60)).toBe(
       'Stopped on ti, B4. Landing on do finishes the scale.',
+    )
+  })
+})
+
+describe("a pentatonic's words (Lesson 20 WEB-SPEC, Toys 1)", () => {
+  it('names each stair from its own degrees, its signs spoken: "Stair 2, me, E flat 3" in Play it on C', () => {
+    // Act
+    const onC = [0, 1, 4, 5].map((i) => stairLabel(i, 48, MINOR_FIVE))
+    const fromD = stairLabel(2, 50, MAJOR_FIVE)
+
+    // Assert
+    expect(onC).toEqual([
+      'Stair 1, do, C3, home',
+      'Stair 2, me, E flat 3',
+      'Stair 5, te, B flat 3',
+      'Stair 6, do, C4, home',
+    ])
+    expect(fromD).toBe('Stair 3, mi, F sharp 3')
+  })
+
+  it("says Lesson 4's stairs as before when no degrees are given", () => {
+    expect(stairLabel(2, 50)).toBe('Stair 3, mi, F sharp 3')
+  })
+
+  it("gives each scale's risers in semitones", () => {
+    expect([risersSaid(MAJOR_FIVE), risersSaid(MINOR_FIVE)]).toEqual([
+      '2, 2, 3, 2 and 3',
+      '3, 2, 2, 3 and 2',
+    ])
+  })
+
+  it('sums up a pentatonic with its notes and its steps in semitones', () => {
+    // Act
+    const major = summary(48, MAJOR_FIVE)
+    const minor = summary(45, MINOR_FIVE)
+
+    // Assert
+    expect(major).toBe(
+      'C major pentatonic: C, D, E, G, A, C. Steps of 2, 2, 3, 2 and 3 semitones.',
+    )
+    expect(minor).toBe(
+      'A minor pentatonic: A, C, D, E, G, A. Steps of 3, 2, 2, 3 and 2 semitones.',
     )
   })
 })

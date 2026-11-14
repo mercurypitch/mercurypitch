@@ -21,11 +21,11 @@
 // Where the spec gives one example of a template, "C major: C 4, E 4, G 4.
 // ...", "Stacked: C, E, G. C major.", the others follow its form.
 
+import type { ChordTone, Quality } from '@/features/lessons/kit/chords'
+import { FIFTH, scaleOf, THIRD_OF, thirdOf, tone, triad, } from '@/features/lessons/kit/chords'
 import { MAJOR_SOLFEGE, MINOR_SOLFEGE, } from '@/features/lessons/kit/names-modes'
 import type { Spelled } from '@/features/lessons/kit/notes'
 import { wordName } from '@/features/lessons/kit/notes'
-import type { ChordTone, Quality } from './chords'
-import { FIFTH, scaleOf, THIRD_OF, thirdOf, tone, triad } from './chords'
 import type { MoveId, Tempo } from './sounds'
 
 /** What the chord beads show: Step 1's third, a triad, or its scale spread out. */

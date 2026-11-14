@@ -119,4 +119,11 @@ export const TEASE_NOTES: Readonly<Partial<Record<number, VariantNotes>>> = {
   25: {
     plan: "Lesson 24's planned line. It is true of Lesson 24's page, whose Step 2 plays do, mi and so together over the drone, Lesson 10's major chord, but it sets \"a major chord\" one line above \"another change\" in a minor key, a soft lean on Lesson 25's predict, which asks whether a raised note turns a minor chord major; so the default is the lead's line, Lesson 25's opening in miniature (Lesson 24 FACTS 5b).",
   },
+  26: {
+    plan: "Lesson 25's planned line, \"So far the other part was a drone. What if it's a tune?\", mended: Lesson 12 had the learner sing the chords' roots while the chords moved under them, and Lesson 25's cold open puts moving chords under its tune, so only Lesson 24's other part was a drone. It is true of Lesson 24 and leaks nothing of Lesson 26's predict, but the default is Lesson 26's opening in miniature (Lesson 25 FACTS 5).",
+  },
+  27: {
+    'three-notes':
+      "The alternative to the lead's line, restating the cold open's play: three notes, then one more on V, and where it goes. Like the default, Lesson 27's opening in miniature, it names no note and no third, so it says nothing of which note stacks or which pulls (Lesson 27 FACTS 5b).",
+  },
 }

@@ -20,7 +20,7 @@ import { capsOf, channels, marksOf, paintCharts, paintFrames, } from './band-cha
 import { BAND_COLOR } from './band-chart-draw'
 import { HOLD_5, PUSH_5, SING_3 } from './band-chart-lessons.test-fixtures'
 import type { Rung } from './band-chart-rungs'
-import { paintRungs } from './band-chart-rungs'
+import { paintRungs, slotsAt } from './band-chart-rungs'
 import { HIT_TOLERANCE_CENTS } from './band-words'
 
 afterEach(() => {
@@ -138,6 +138,31 @@ describe('a rung over its time slot', () => {
     expect(Math.max(...words[0].xs)).toBeLessThanOrEqual(
       chart.pointOf(chart.window, 0).x,
     )
+  })
+
+  it("writes IN THE BAND once where two narrow lit slots on one row would print it over each other (Lesson 20's smudged run)", async () => {
+    // Arrange: do lit twice and re once, 0.2 s slots across a 6.75 s window
+    const figure: Figure = {
+      opts: { ...ladder([]).opts, window: 6.75 },
+      scene: (s) => {
+        s.rungs = [
+          { c: 0, from: 0, to: 0.2, lit: true },
+          { c: 200, from: 0.2, to: 0.4, lit: true },
+          { c: 0, from: 1.6, to: 1.8, lit: true },
+        ]
+      },
+    }
+
+    // Act
+    const [{ calls }] = await paintCharts(figure)
+
+    // Assert: every edge lit, the words once a row
+    const words = marksOf(calls).filter((m) => m.line.endsWith(' IN THE BAND'))
+    const edges = inColor(marksOf(calls), MINT).filter(
+      (m) => !m.line.endsWith(' IN THE BAND'),
+    )
+    expect(words).toHaveLength(2)
+    expect(edges.length).toBeGreaterThanOrEqual(6)
   })
 
   it('stands a staircase: each rung over its own slot, at its own note', async () => {
@@ -358,5 +383,168 @@ describe('one rung at 0 across the plot', () => {
 
     // Assert
     expect(drawn(rungs.calls)).toEqual(band.calls)
+  })
+})
+
+describe("the bead style (Lesson 20's run)", () => {
+  /** Do, re and mi from do, a note every second. */
+  const RUN: Rung[] = slotsAt(3, 1).map((slot, i) => ({
+    c: [0, 200, 400][i],
+    ...slot,
+  }))
+
+  /** Where an amber circle sits, and its radius. */
+  const circles = (marks: readonly Mark[]) =>
+    inColor(marks, AMBER)
+      .filter((m) => m.line.startsWith('fill ') && m.line.includes(' O'))
+      .map((m) => ({
+        x: (m.xs[0] + m.xs[1]) / 2,
+        y: (m.ys[0] + m.ys[1]) / 2,
+        r: (m.xs[1] - m.xs[0]) / 2,
+        opacity: m.opacity,
+      }))
+
+  const beaded = (rungs: Rung[], string = true): Figure =>
+    ladder(rungs, (s) => {
+      s.beads = { string }
+    })
+
+  it("puts a bead on Merc's steady line at the start of each slot", async () => {
+    // Act
+    const [{ chart, calls }] = await paintCharts(beaded(RUN))
+
+    // Assert
+    expect(circles(marksOf(calls)).map(({ x, y }) => ({ x, y }))).toEqual(
+      RUN.map((r) => chart.pointOf(r.from ?? 0, r.c)),
+    )
+  })
+
+  it('joins bead to bead with the string, the run sung joined', async () => {
+    // Act
+    const [{ chart, calls }] = await paintCharts(beaded(RUN))
+
+    // Assert: one amber stroke through the three beads
+    const at = RUN.map((r) => chart.pointOf(r.from ?? 0, r.c))
+    const string = inColor(marksOf(calls), AMBER).filter(
+      (m) =>
+        m.line.startsWith('stroke ') &&
+        m.xs.length === 3 &&
+        m.xs.every((x, i) => Math.abs(x - at[i].x) < 1e-9),
+    )
+    expect(string).toHaveLength(1)
+    expect(string[0].ys).toEqual(at.map((p) => p.y))
+  })
+
+  it('draws no string for a staccato run, each rung 0.15 s with the gap after it', async () => {
+    // Arrange: a note every 0.45 s, each held 0.15 s
+    const staccato = slotsAt(3, 0.45, 0.15).map((slot, i) => ({
+      c: [0, 200, 400][i],
+      ...slot,
+    }))
+
+    // Act
+    const [{ chart, calls }] = await paintCharts(beaded(staccato, false))
+
+    // Assert: no stroke joins the beads, and each band spans its 0.15 s
+    const marks = marksOf(calls)
+    const joined = inColor(marks, AMBER).filter(
+      (m) => m.line.startsWith('stroke ') && m.xs.length === 3,
+    )
+    expect(joined).toEqual([])
+    const bands = inColor(marks, AMBER).filter((m) =>
+      m.line.startsWith('rect '),
+    )
+    expect(bands.map((m) => m.xs)).toEqual(
+      staccato.map((r) => [
+        chart.pointOf(r.from, r.c).x,
+        chart.pointOf(r.to, r.c).x,
+      ]),
+    )
+  })
+
+  it('swells a sounding bead with a halo and shows its label over the band only then', async () => {
+    // Arrange: re sounds
+    const labelled = RUN.map((r, i) => ({
+      ...r,
+      label: ['do', 're', 'mi'][i],
+      glow: i === 1 ? 1 : 0,
+    }))
+
+    // Act
+    const [{ chart, calls }] = await paintCharts(beaded(labelled))
+
+    // Assert
+    const marks = marksOf(calls)
+    const words = inColor(marks, AMBER)
+      .filter((m) => m.line.startsWith('text '))
+      .map((m) => m.line.split(' ').at(-1))
+    expect(words).toEqual(['re'])
+    const re = chart.pointOf(1, 200)
+    const atRe = circles(marks).filter((c) => c.x === re.x && c.y === re.y)
+    // the halo, then the swollen bead
+    expect(atRe).toHaveLength(2)
+    expect(atRe[0].r).toBeCloseTo(6.5 * 2.2, 9)
+    expect(atRe[1].r).toBeCloseTo(6.5, 9)
+  })
+
+  it("leaves out a lit edge's words where they would print over a sounding bead's label (Lesson 20's faster pass)", async () => {
+    // Arrange: the last take's edges kept lit on do, re and mi, 0.45 s
+    // slots across a 6.75 s window, and re sounding
+    const kept: Rung[] = slotsAt(3, 0.45).map((slot, i) => ({
+      c: [0, 200, 400][i],
+      ...slot,
+      label: ['do', 're', 'mi'][i],
+      glow: i === 1 ? 1 : 0,
+      lit: true,
+    }))
+    const figure: Figure = {
+      opts: { ...beaded([]).opts, window: 6.75 },
+      scene: (s) => {
+        s.rungs = kept
+        s.beads = { string: true }
+      },
+    }
+
+    // Act
+    const [{ calls }] = await paintCharts(figure)
+
+    // Assert: re's label stands, its words give way; do's and mi's stay
+    const marks = marksOf(calls)
+    const labels = inColor(marks, AMBER)
+      .filter((m) => m.line.startsWith('text '))
+      .map((m) => m.line.split(' ').at(-1))
+    expect(labels).toEqual(['re'])
+    expect(marks.filter((m) => m.line.endsWith(' IN THE BAND'))).toHaveLength(2)
+  })
+
+  it("draws a faint rung's bead faint while it rests", async () => {
+    // Act
+    const [{ calls }] = await paintCharts(
+      beaded(RUN.map((r) => ({ ...r, faint: true }))),
+    )
+
+    // Assert
+    expect(circles(marksOf(calls)).map((c) => c.opacity)).toEqual([
+      0.5, 0.5, 0.5,
+    ])
+  })
+
+  it("draws no beads and no string without the bead style, as Lesson 9's chart", async () => {
+    // Act
+    const [{ calls }] = await paintCharts(ladder(RUN))
+
+    // Assert
+    expect(circles(marksOf(calls))).toEqual([])
+  })
+
+  it('times the slots by the tempo: nine notes at 0.75 s end at 6.75 s, and at 0.2 s at 1.8 s', () => {
+    // Act
+    const slow = slotsAt(9, 0.75)
+    const fast = slotsAt(9, 0.2)
+
+    // Assert
+    expect(slow.at(-1)?.to).toBeCloseTo(6.75, 9)
+    expect(fast.at(-1)?.to).toBeCloseTo(1.8, 9)
+    expect(fast.map((s) => s.from)).toEqual(slow.map((_, i) => i * 0.2))
   })
 })

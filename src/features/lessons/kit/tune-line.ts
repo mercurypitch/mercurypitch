@@ -22,8 +22,14 @@
 // while that change moves; idle, it asks the page's frame loop for nothing
 // (frame-loop.ts, `wants`). On a page that plays one sound at a time, a run
 // claims the page's owner (now-playing.ts), so it stops the sound before
-// it, and a newer one elsewhere stops it. Words belong to the page: the
-// core asks for each name and label and only draws.
+// it, and a newer one elsewhere stops it. A shape may dress the line
+// beyond Lesson 6's states (`TuneShape.dress`, tune-line-parts.ts): a key's
+// rows lit as lanes, the house on do in a gutter at the left, a chord held
+// under the band, and a part beside one of the tune's lines, whose beads
+// that a new shape moves slide to their rows over 0.3 s; a run lights a
+// part's bead where its look names the part, in each note's own colour or
+// none. Words belong to the page: the core asks for each name and label
+// and only draws.
 
 import { addDrawer, surface, wake } from './frame-loop'
 import { reducedMotion } from './motion-switch'
@@ -33,10 +39,16 @@ import type { Voice, VoiceOptions } from './sound'
 import { Sound } from './sound'
 import type { GapWords, TuneBracket, TuneScene } from './tune-line-draw'
 import { paintTune } from './tune-line-draw'
-import type { Rect, TuneLayout } from './tune-line-layout'
+import { firstsOf, gridMove, place, watchPixelRatio } from './tune-line-grid'
+import type { TuneLayout } from './tune-line-layout'
 import { tuneLayout } from './tune-line-layout'
 import type { Slide } from './tune-line-motion'
 import { landsAfter, lightAt, slideAt, travelSec } from './tune-line-motion'
+import type { DressPainter, DressScene, PartScene, PartSlide, TuneDress, } from './tune-line-parts'
+import { HOUSE_GUTTER, samePart, shownBeads, SLIDE_SEC, slidePitches, } from './tune-line-parts'
+
+export type { GridCell } from './tune-line-grid'
+export { gridMove } from './tune-line-grid'
 
 /** One note of a tune: semitones above the tune's start, and its length in crotchets. */
 export interface TuneNote {
@@ -79,9 +91,15 @@ export interface TuneShape {
    * Off by default.
    */
   readonly grid?: boolean
+  /**
+   * What the shape dresses the line with beyond Lesson 6's states: lanes,
+   * the house, a part beside the tune, brackets between them, hollow beads,
+   * a held chord (tune-line-parts.ts). None by default.
+   */
+  readonly dress?: TuneDress
 }
 
-/** A contrast case drawn dashed over the first line: its notes above the start, and the gaps it changes. */
+/** A contrast case drawn dashed over the lines, its notes following them in order: its notes above the start, and the gaps it changes. */
 export interface TuneOverlay {
   readonly at: readonly number[]
   readonly changed: readonly { readonly gap: number; readonly size: string }[]
@@ -96,6 +114,17 @@ export interface TuneLook {
   readonly notes?: readonly number[]
   /** Light the contrast case's beads instead of the tune's. */
   readonly overlay?: boolean
+  /**
+   * The part each event lights, by its place in the shape's dress, or
+   * null for the tune; by default every event lights the tune. A part's
+   * bead is the one against the note `notes` gives.
+   */
+  readonly parts?: readonly (number | null)[]
+  /**
+   * Each event's own light, or null for none (a passing note's, or a held
+   * chord's notes); by default `color`.
+   */
+  readonly colors?: readonly (string | null)[]
   /** Hears each note as it starts. */
   readonly onNote?: (e: TuneEvent, i: number) => void
 }
@@ -124,6 +153,12 @@ export interface TuneLineOptions {
   readonly onBracket?: (g: number) => void
   /** The page's one-sound owner (now-playing.ts), on a page that plays one sound at a time. */
   readonly owner?: SoundOwner
+  /**
+   * The painter of a shape's dress (tune-line-parts-draw.ts `DRESS`), on a
+   * line that draws one; without it a dress draws nothing, so a page that
+   * dresses no shape loads none of it.
+   */
+  readonly dressPainter?: DressPainter
 }
 
 export interface TuneLine {
@@ -157,6 +192,8 @@ const FADE_SEC = 0.25
 interface Lit {
   readonly note: number
   readonly overlay: boolean
+  /** The part it lights, by its place in the dress, or null for the tune. */
+  readonly part: number | null
   readonly from: number
   readonly to: number
   readonly color: string
@@ -168,88 +205,6 @@ interface Hit {
   readonly box: HTMLElement
   readonly kind: 'note' | 'gap' | 'bracket'
   readonly g: number
-}
-
-/** The global index of each line's first note. */
-function firstsOf(tune: readonly (readonly TuneNote[])[]): number[] {
-  let n = 0
-  return tune.map((line) => {
-    const first = n
-    n += line.length
-    return first
-  })
-}
-
-/** Calls `fn` whenever the screen's pixel ratio changes: a zoom, or another screen. */
-function watchPixelRatio(fn: () => void): void {
-  const query = window.matchMedia(
-    `(resolution: ${window.devicePixelRatio || 1}dppx)`,
-  )
-  query.addEventListener(
-    'change',
-    () => {
-      fn()
-      watchPixelRatio(fn)
-    },
-    { once: true },
-  )
-}
-
-/** Places a button over a rectangle of the drawing. */
-function place(b: HTMLElement, r: Rect): void {
-  b.style.left = `${r.x}px`
-  b.style.top = `${r.y}px`
-  b.style.width = `${r.w}px`
-  b.style.height = `${r.h}px`
-}
-
-/** A cell of a grid: its row, and its place in that row. */
-export interface GridCell {
-  readonly row: number
-  readonly col: number
-}
-
-/**
- * Where a key moves the focus in a grid whose rows are `lengths` long, from
- * `at`, as WAI-ARIA's layout grid has it: an arrow a cell at a time, staying
- * put at an edge, Up and Down to the same place in the next row or to its
- * last cell if it is shorter; Home and End to the row's ends, and with
- * Control to the grid's first and last cells. Null for any other key.
- */
-export function gridMove(
-  lengths: readonly number[],
-  at: GridCell,
-  key: string,
-  ctrl = false,
-): GridCell | null {
-  const lastRow = lengths.length - 1
-  const end = (row: number): number => lengths[row] - 1
-  const inRow = (row: number): GridCell => ({
-    row,
-    col: Math.min(at.col, end(row)),
-  })
-  if (ctrl)
-    return key === 'Home'
-      ? { row: 0, col: 0 }
-      : key === 'End'
-        ? { row: lastRow, col: end(lastRow) }
-        : null
-  switch (key) {
-    case 'ArrowLeft':
-      return { row: at.row, col: Math.max(0, at.col - 1) }
-    case 'ArrowRight':
-      return { row: at.row, col: Math.min(end(at.row), at.col + 1) }
-    case 'ArrowUp':
-      return inRow(Math.max(0, at.row - 1))
-    case 'ArrowDown':
-      return inRow(Math.min(lastRow, at.row + 1))
-    case 'Home':
-      return { row: at.row, col: 0 }
-    case 'End':
-      return { row: at.row, col: end(at.row) }
-    default:
-      return null
-  }
 }
 
 export function mountTuneLine(opts: TuneLineOptions): TuneLine {
@@ -270,6 +225,8 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
   let busy = false
   let layout: TuneLayout | null = null
   let lastKey = ''
+  // a part's beads sliding to new rows after a shape changes them, by part
+  let slides = new Map<number, PartSlide>()
   // something the drawing shows has changed since its last frame
   let dirty = true
   let buttons: Hit[] = []
@@ -297,15 +254,55 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     return hi - lo + 1
   }
 
-  function lightOf(g: number, over: boolean, t: number) {
+  function lightOf(g: number, over: boolean, t: number, part: number | null) {
     let best: { amount: number; color: string } | null = null
     for (const l of lits) {
-      if (l.note !== g || l.overlay !== over) continue
+      if (l.note !== g || l.overlay !== over || l.part !== part) continue
       const amount = lightAt(l.from, l.to, t)
       if (amount > 0 && (best === null || amount > best.amount))
         best = { amount, color: l.color }
     }
     return best
+  }
+
+  /** A part's pitches at `t`: on its rows, or sliding there. */
+  function partPitches(j: number, at: readonly number[], t: number): number[] {
+    const to = at.map((a) => view + a)
+    const s = slides.get(j)
+    return s === undefined ? to : slidePitches(s.from, to, t - s.t0)
+  }
+
+  function dressScene(t: number): DressScene | null {
+    const d = shape.dress
+    if (d === undefined) return null
+    const parts = (d.parts ?? []).flatMap((p, j): PartScene[] => {
+      const band = shape.lines.indexOf(p.line)
+      if (band < 0) return []
+      return [
+        {
+          band,
+          pitches: partPitches(j, p.at, t),
+          label: p.label,
+          color: p.color ?? COLOR.chrome,
+          beads: shownBeads(p),
+          joined: p.only === undefined,
+          names: p.names ?? [],
+          brackets: p.brackets ?? [],
+          hollow: new Set(p.hollow ?? []),
+          light: (i) => lightOf(firsts[p.line] + i, false, t, j),
+        },
+      ]
+    })
+    return {
+      lanes: new Set(d.lanes ?? []),
+      house: d.house ?? null,
+      label: d.label ?? null,
+      color: d.color ?? COLOR.chrome,
+      hollow: new Set(d.hollow ?? []),
+      only: d.only ?? null,
+      chord: d.chord ?? null,
+      parts,
+    }
   }
 
   function scene(t: number, lift: number, glow: number): TuneScene {
@@ -341,9 +338,10 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
               amount: overlayAmount,
               changed: overlay.changed,
             },
-      light: (g, over) => lightOf(g, over, t),
+      light: (g, over) => lightOf(g, over, t, null),
       lift,
       glow: shape.below === 'gaps' ? glow : 0,
+      dress: dressScene(t),
     }
   }
 
@@ -376,8 +374,12 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
     (shape.gapButtons && shape.below === 'gaps') ||
     shape.brackets.length > 0
 
+  /** Room at the left for the house on do, where the shape draws it. */
+  const gutterOf = (): number =>
+    shape.dress?.house === undefined ? 0 : HOUSE_GUTTER
+
   function measure(w: number, h: number): void {
-    const key = `${w} ${h} ${shape.lines.join(',')} ${rowsOf()} ${shape.names} ${shape.below} ${shape.brackets.length} ${shape.fill} ${hasTargets()}`
+    const key = `${w} ${h} ${shape.lines.join(',')} ${rowsOf()} ${shape.names} ${shape.below} ${shape.brackets.length} ${shape.fill} ${hasTargets()} ${gutterOf()}`
     if (key === lastKey && layout !== null) return
     lastKey = key
     layout = tuneLayout({
@@ -390,6 +392,7 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
       above: shape.brackets.length > 0,
       fill: shape.fill,
       targets: hasTargets(),
+      gutter: gutterOf(),
     })
     placeButtons()
   }
@@ -404,7 +407,11 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
   function wants(): boolean {
     const target = overlay === null ? 0 : 1
     return (
-      dirty || slide !== null || overlayAmount !== target || lits.length > 0
+      dirty ||
+      slide !== null ||
+      overlayAmount !== target ||
+      lits.length > 0 ||
+      slides.size > 0
     )
   }
 
@@ -432,8 +439,10 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
         : Math.max(target, overlayAmount - dt / FADE_SEC)
     const { ctx, w, h } = cv.fit()
     measure(w, h)
-    if (layout !== null) paintTune(ctx, layout, scene(t, lift, glow))
+    if (layout !== null)
+      paintTune(ctx, layout, scene(t, lift, glow), opts.dressPainter ?? null)
     lits = lits.filter((l) => t < l.to + 0.5)
+    for (const [j, s] of slides) if (t - s.t0 >= SLIDE_SEC) slides.delete(j)
   }
 
   /** Lays the buttons out for the canvas as it stands, without drawing. */
@@ -647,6 +656,25 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
       return landsAfter(s)
     },
     setShape(next) {
+      // a part that keeps its line slides the beads that moved, from where
+      // they stand now, even mid-slide; under reduced motion they land
+      const t = now()
+      const before = shape.dress?.parts ?? []
+      const moving = new Map<number, PartSlide>()
+      ;(next.dress?.parts ?? []).forEach((p, j) => {
+        const was = before[j]
+        if (reducedMotion() || !samePart(was, p)) return
+        if (was.at.every((a, i) => a === p.at[i])) {
+          const going = slides.get(j)
+          if (going !== undefined) moving.set(j, going)
+          return
+        }
+        moving.set(j, {
+          from: partPitches(j, was.at, t),
+          t0: t,
+        })
+      })
+      slides = moving
       shape = next
       build()
       invalidate()
@@ -684,13 +712,15 @@ export function mountTuneLine(opts: TuneLineOptions): TuneLine {
             }, e.at * 1000),
           )
           const note = order[i]
-          if (note !== undefined)
+          const own = look.colors === undefined ? color : look.colors[i]
+          if (note !== undefined && own !== null)
             lits.push({
               note: look.overlay === true ? i : note,
               overlay: look.overlay === true,
+              part: look.parts?.[i] ?? null,
               from: t0 + e.at,
               to: t0 + e.at + e.dur,
-              color,
+              color: own ?? color,
             })
         })
         invalidate()

@@ -68,7 +68,8 @@ async function load() {
   vi.resetModules()
   const dom = await import('./page-dom.test-fixtures')
   const sing = await import('./sing')
-  const flow = await import('./ladder-flow')
+  const flow = await import('@/features/lessons/kit/ladder-flow')
+  const words = await import('./ladder-flow')
   const comfort = await import('@/features/lessons/kit/comfort')
   const sound = await import('@/features/lessons/kit/sound')
   const owner = await import('@/features/lessons/kit/now-playing')
@@ -83,6 +84,7 @@ async function load() {
     ...dom,
     ...sing,
     ...flow,
+    ...words,
     ...comfort,
     ...sound,
     ...owner,

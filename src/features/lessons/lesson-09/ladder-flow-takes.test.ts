@@ -12,8 +12,9 @@
 // celebrates once a visit; the feelings lock once answered.
 
 import { describe, expect, it } from 'vitest'
-import type { LadderEvent, LadderOffers } from './ladder-flow'
-import { againName, kindOf, LADDER_ORDER, next, offers } from './ladder-flow'
+import type { LadderEvent, LadderOffers, } from '@/features/lessons/kit/ladder-flow'
+import { againName, kindOf, LADDER_ORDER, next, offers, } from '@/features/lessons/kit/ladder-flow'
+import { AGAIN_NAMES } from './ladder-flow'
 import { begin, briefed, DONE, feel, run, take, took, } from './ladder-flow.test-fixtures'
 
 describe('after a take', () => {
@@ -305,7 +306,7 @@ describe('after a take', () => {
     'names Again on the %s ladder after the %s one "%s"',
     (ladder, last, name) => {
       // Act
-      const named = againName(ladder, last)
+      const named = againName(ladder, last, AGAIN_NAMES)
 
       // Assert
       expect(named).toBe(name)

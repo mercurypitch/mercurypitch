@@ -355,11 +355,11 @@ the guide drawn on the staff and no Move do. In order:
    line. The stop line on its own line, then two buttons. Play Merc's notes plays Merc's line
    (lower) or Tavi's (higher) as two contours a breath apart, each one voice: do held 1.15 s and a
    0.05 s glide to so, held 1.8 s; 1.0 s of quiet; then so held 1.15 s, a 0.05 s glide to do, held
-   1.8 s; 7.0 s in all (FACTS 55, 72; `contourOf`, `src/features/lessons/kit/sound.ts:366`;
-   `playContour`, `src/features/lessons/kit/sound.ts:697`), each note lighting as it sounds. Start
+   1.8 s; 7.0 s in all (FACTS 55, 72; `contourOf`, `src/features/lessons/kit/sound.ts:378`;
+   `playContour`, `src/features/lessons/kit/sound.ts:709`), each note lighting as it sounds. Start
    the guide waits until Merc's notes have been heard with sound on, with Lesson 12's two hints
    (`hintFor`, `src/features/lessons/kit/sing-flow.ts:196-202`); then it counts in on do, 0.8 s
-   at 0.065 and 0.2 s of quiet (`countIn`, `src/features/lessons/kit/move-do.ts:65-74`), and a
+   at 0.065 and 0.2 s of quiet (`countIn`, `src/features/lessons/kit/move-do.ts:68-77`), and a
    chrome sweep line runs along the four notes in time, 7.0 s, with no voice and nothing on the
    notes themselves. No Move do and no readout (FACTS 53). The line under the buttons is LESSON.md's
    guide line (FACTS 58a). Your turn's own text adds the line for a top note that feels high (FACTS
@@ -398,7 +398,7 @@ names are.
 ### 7. Recall and quick check
 
 Two quizzes share this page through the kit's quiz (`createQuiz`,
-`src/features/lessons/kit/quiz.ts:218`), each with its own prefix and keys.
+`src/features/lessons/kit/quiz.ts:228`), each with its own prefix and keys.
 
 - **Recall**: Lesson 6's questions 3 and 4 (FACTS 7), imported from Lesson 6's page and filtered by
   id, `l06-q3` and `l06-q4`, as Lesson 10's page filters its two
@@ -408,7 +408,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
   `fyp-l23-recall-seed` and `fyp-l23-recall-v1`, no `lesson`, so it marks nothing done. Its step
   links read "Try Lesson 6, Step 2 again" and "Try Lesson 6, Step 4 again" and open
   `/learn/06#step-2` and `/learn/06#step-4` in a new tab, through `away: { href: recallStepHref }`
-  (`src/features/lessons/kit/quiz.ts:142`, `src/features/lessons/kit/quiz.ts:191`). The first
+  (`src/features/lessons/kit/quiz.ts:152`, `src/features/lessons/kit/quiz.ts:201`). The first
   question, `l06-q3`, keeps Lesson 6's own slot and Play, handled by Lesson 6's `bindQuizPlays` on
   this quiz's host (`src/features/lessons/lesson-06/quiz-play.ts:18`), which plays Lesson 6's pair
   and already claims the page's one sound (FACTS 68); the second, `l06-q4`, has no play.
@@ -416,7 +416,7 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
   `fyp-l23-quiz-v1`, and `lesson: 23`, so answering all four marks Lesson 23 done. Three answers
   each, shuffled per question from the stored seed, one-line feedback for every answer, and a check
   icon and ink, not gold, on the right one. The kit prints "Right." or "Not quite." before each line
-  (`src/features/lessons/kit/quiz.ts:315`). Question 1's "Try Step 2 again", question 2's "Try Step
+  (`src/features/lessons/kit/quiz.ts:335`). Question 1's "Try Step 2 again", question 2's "Try Step
   3 again", question 3's "Try Step 1 again" and question 4's "Try Step 4 again" go to that step on
   this page. Question 4's slot holds its play, "Play", which plays B3 and F4 together for 1.5 s, for
   everyone, the same on every visit (FACTS 73, 78), handled by one listener on the quiz's host in
@@ -461,7 +461,7 @@ and the page has no music bed.
 
 - **Two notes together** (the cold open's last chord, Step 4's B and F, the listening pair, quick
   check 4) start in one timer task, so their voices share one clock (`playNotes`,
-  `src/features/lessons/kit/run.ts:206`); a pair's second note is timed from the play's start, as
+  `src/features/lessons/kit/run.ts:215`); a pair's second note is timed from the play's start, as
   Lesson 6 times its pairs, so the drawing and the sound never drift.
 - **Merc's and Tavi's line** in Sing it is one voice along a contour, held and glided on the audio
   clock (`src/features/lessons/kit/sound.ts:18-23`), so do and so join with no click.

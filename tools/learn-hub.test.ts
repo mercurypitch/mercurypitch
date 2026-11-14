@@ -384,7 +384,7 @@ describe("the hub's Season 2", () => {
     expect(first?.querySelector('a')).toBeNull()
   })
 
-  it('lists its fourteen lessons, each with no page coming, with no link and no reading time', () => {
+  it('lists its fourteen lessons, every one written: none is left coming with no link', () => {
     const items = Array.from(section?.querySelectorAll('.hub-lesson') ?? [])
     // a list a lane, theory first, as Season 1's map is
     expect(items.map((li) => li.querySelector('h4')?.id).sort()).toEqual(
@@ -398,13 +398,18 @@ describe("the hub's Season 2", () => {
           'lesson-17',
           'lesson-18',
           'lesson-19',
+          'lesson-20',
           'lesson-21',
           'lesson-22',
           'lesson-23',
           'lesson-24',
+          'lesson-25',
+          'lesson-26',
+          'lesson-27',
+          'lesson-28',
         ].includes(li.querySelector('h4')?.id ?? ''),
     )
-    expect(unwritten).toHaveLength(5)
+    expect(unwritten).toHaveLength(0)
     for (const li of unwritten) {
       expect(words(li.querySelector('.hub-go'))).toBe('Coming')
       expect(li.querySelector('a')).toBeNull()
@@ -551,6 +556,26 @@ describe("the hub's Season 2", () => {
     expect(go?.querySelector('.hub-film')).toBeNull()
   })
 
+  it('writes both readings of Lesson 20, its page and "Coming", for the build to mark', () => {
+    // Arrange: a draft, as Lessons 15, 17 and 19 are
+    const go = section
+      ?.querySelector('#lesson-20')
+      ?.closest('li')
+      ?.querySelector('.hub-go')
+
+    // Assert
+    expect(
+      go?.querySelector('div[data-if-live="20"] a')?.getAttribute('href'),
+    ).toBe('/learn/20')
+    expect(words(go?.querySelector('span[data-if-live="20"]') ?? null)).toBe(
+      '15 minutes',
+    )
+    expect(words(go?.querySelector('span[data-if-planned="20"]') ?? null)).toBe(
+      'Coming',
+    )
+    expect(go?.querySelector('.hub-film')).toBeNull()
+  })
+
   it('writes both readings of Lesson 21, its page and "Coming", for the build to mark', () => {
     // Arrange: a draft, as Lessons 15, 17 and 19 are
     const go = section
@@ -586,6 +611,86 @@ describe("the hub's Season 2", () => {
       '16 minutes',
     )
     expect(words(go?.querySelector('span[data-if-planned="24"]') ?? null)).toBe(
+      'Coming',
+    )
+    expect(go?.querySelector('.hub-film')).toBeNull()
+  })
+
+  it('writes both readings of Lesson 25, its page and "Coming", for the build to mark', () => {
+    // Arrange: a draft, as Lessons 15, 17 and 19 are
+    const go = section
+      ?.querySelector('#lesson-25')
+      ?.closest('li')
+      ?.querySelector('.hub-go')
+
+    // Assert
+    expect(
+      go?.querySelector('div[data-if-live="25"] a')?.getAttribute('href'),
+    ).toBe('/learn/25')
+    expect(words(go?.querySelector('span[data-if-live="25"]') ?? null)).toBe(
+      '15 minutes',
+    )
+    expect(words(go?.querySelector('span[data-if-planned="25"]') ?? null)).toBe(
+      'Coming',
+    )
+    expect(go?.querySelector('.hub-film')).toBeNull()
+  })
+
+  it('writes both readings of Lesson 26, its page and "Coming", for the build to mark', () => {
+    // Arrange: a draft, as Lessons 15, 17 and 19 are
+    const go = section
+      ?.querySelector('#lesson-26')
+      ?.closest('li')
+      ?.querySelector('.hub-go')
+
+    // Assert
+    expect(
+      go?.querySelector('div[data-if-live="26"] a')?.getAttribute('href'),
+    ).toBe('/learn/26')
+    expect(words(go?.querySelector('span[data-if-live="26"]') ?? null)).toBe(
+      '16 minutes',
+    )
+    expect(words(go?.querySelector('span[data-if-planned="26"]') ?? null)).toBe(
+      'Coming',
+    )
+    expect(go?.querySelector('.hub-film')).toBeNull()
+  })
+
+  it('writes both readings of Lesson 27, its page and "Coming", for the build to mark', () => {
+    // Arrange: a draft, as Lessons 15, 17 and 19 are
+    const go = section
+      ?.querySelector('#lesson-27')
+      ?.closest('li')
+      ?.querySelector('.hub-go')
+
+    // Assert
+    expect(
+      go?.querySelector('div[data-if-live="27"] a')?.getAttribute('href'),
+    ).toBe('/learn/27')
+    expect(words(go?.querySelector('span[data-if-live="27"]') ?? null)).toBe(
+      '15 minutes',
+    )
+    expect(words(go?.querySelector('span[data-if-planned="27"]') ?? null)).toBe(
+      'Coming',
+    )
+    expect(go?.querySelector('.hub-film')).toBeNull()
+  })
+
+  it('writes both readings of Lesson 28, its page and "Coming", for the build to mark', () => {
+    // Arrange: a draft, as Lessons 15, 17 and 19 are
+    const go = section
+      ?.querySelector('#lesson-28')
+      ?.closest('li')
+      ?.querySelector('.hub-go')
+
+    // Assert
+    expect(
+      go?.querySelector('div[data-if-live="28"] a')?.getAttribute('href'),
+    ).toBe('/learn/28')
+    expect(words(go?.querySelector('span[data-if-live="28"]') ?? null)).toBe(
+      '19 minutes',
+    )
+    expect(words(go?.querySelector('span[data-if-planned="28"]') ?? null)).toBe(
       'Coming',
     )
     expect(go?.querySelector('.hub-film')).toBeNull()

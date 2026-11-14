@@ -138,6 +138,8 @@ export interface SpiralOptions {
   readonly owner?: SoundOwner
   /** Where the camera starts: 'top' looks down the axis from the first frame, with no move; default 'side'. */
   readonly view?: SpiralCamera
+  /** A picture: its beads drawn, never tapped, dragged or reached from the keyboard; default false. */
+  readonly inert?: boolean
 }
 
 /** What a page's keys layer is built from: the canvas size, the time and the figure's state. */
@@ -435,8 +437,11 @@ export function mountSpiral(
     syncPan()
   }
 
-  bindPointer()
-  bindKeys()
+  // a picture takes no pointer and no keys, and says no slider's value
+  if (opts.inert !== true) {
+    bindPointer()
+    bindKeys()
+  }
 
   // pointer: drag to turn, tap to play; a tap snaps to the nearest bead or key within 22 px
   function bindPointer(): void {
@@ -731,7 +736,8 @@ export function mountSpiral(
 
   // a change of names re-says the selected note, and draws it
   Names.subscribe(() => {
-    canvas.setAttribute('aria-valuetext', valueText(LO + sel))
+    if (opts.inert !== true)
+      canvas.setAttribute('aria-valuetext', valueText(LO + sel))
     wake()
   })
 

@@ -10,16 +10,24 @@
 // glyph, never a colour. Tavi's guess, the white keys from the start, is
 // dashed ink-2 with a "?", since violet belongs to the singer in the
 // lessons. Each part draws in its own small function, in paint order.
+//
+// A page may draw another scale's stairs (stairs-scales.ts): the risers
+// and their gold follow its steps, the keys and their names its notes, and
+// do's house sits on each do. Lesson 20's stairs print both names, the
+// sung name over the letter, and each riser its size in semitones, 1, 2 or
+// 3, since a riser of three is neither T nor S.
 
 import { drawHome } from './home-glyph'
 import { drawStrip } from './key-strip'
 import type { StepSize } from './major-scale'
-import { MAJOR_STEPS, nameInScale, scaleNotes, stepSizes, whiteKeysFrom, } from './major-scale'
+import { MAJOR_STEPS, stepSizes, whiteKeysFrom } from './major-scale'
 import type { NamesMode } from './names-modes'
-import { COLOR, rgba } from './notes'
+import { COLOR, rgba, signName } from './notes'
 import type { StairBox, StairsLayout } from './stairs-geometry'
 import { BLOCK_GAP } from './stairs-geometry'
 import { paintRows, paintRuler } from './stairs-ruler'
+import type { Degrees } from './stairs-scales'
+import { risersOf, spellDegrees, syllableOf } from './stairs-scales'
 import { stairName } from './stairs-words'
 
 /** A stair's light: how strongly (0 to 1) and in whose colour. */
@@ -32,10 +40,16 @@ export interface StairLight {
 export interface StairsScene {
   /** The start the stairs are named from (a whole semitone). */
   readonly tonic: number
+  /** The stairs as semitones above do: the major scale's, or a page's other scale. */
+  readonly degrees: Degrees
+  /** Each stair's sung name over its letter, in place of the names mode. */
+  readonly both: boolean
+  /** Each riser's size as a number, in place of T and S. */
+  readonly numbers: boolean
   readonly names: NamesMode
-  /** The T and S labels on the risers. */
+  /** The risers' labels: T and S, or their sizes. */
   readonly steps: boolean
-  /** The two semitone steps in gold (steps 1 and 2, once Play up has played). */
+  /** The semitone steps in gold (Lesson 4's steps 1 and 2, once Play up has played). */
   readonly gold: boolean
   /** Group's brackets, 0 to 1, and each bracket's flash. */
   readonly group: number
@@ -53,6 +67,19 @@ export interface StairsScene {
   readonly arrow: number
   /** The top stair's house, lit by Land on do (0 to 1). */
   readonly home: number
+  /**
+   * The stairs' names while a slide has not landed: the stairs it left, so
+   * a stair's name changes as it lands (Lesson 25's Raise te).
+   */
+  readonly named?: Degrees
+  /** A riser outlined from tread to tread, its label beside it (Lesson 25's le-to-ti stair, "3"). */
+  readonly outline?: StairsOutline | null
+}
+
+/** One riser outlined: the rise from stair `riser` to the next, and its label. */
+export interface StairsOutline {
+  readonly riser: number
+  readonly label: string
 }
 
 const FONT = {
@@ -70,6 +97,9 @@ const block = (st: StairBox): { x: number; w: number } => ({
 const nameSize = (L: StairsLayout): number =>
   L.mode === 'compact' ? Math.max(10, Math.min(13, L.rowH * 1.05)) : 13
 
+/** The scale's notes, MIDI, a stair each. */
+const notesOf = (s: StairsScene): number[] => s.degrees.map((d) => s.tonic + d)
+
 // ---------------------------------------------------------------- the strip and its hairlines
 
 function paintHairlines(
@@ -79,7 +109,7 @@ function paintHairlines(
 ): void {
   const strip = L.strip
   if (strip === null) return
-  scaleNotes(s.tonic).forEach((midi, i) => {
+  notesOf(s).forEach((midi, i) => {
     const key = strip.key(midi)
     if (key === null || i >= L.stairs.length) return
     const st = L.stairs[i]
@@ -99,11 +129,12 @@ function paintKeys(
   s: StairsScene,
 ): void {
   if (L.strip === null) return
-  // the keys of the stairs it draws
-  const notes = scaleNotes(s.tonic).slice(0, L.stairs.length)
+  // the keys of the stairs it draws, each named as the scale spells it
+  const notes = notesOf(s)
+  const spelled = spellDegrees(s.tonic, s.degrees)
   drawStrip(ctx, L.strip, {
     lit: (m) => notes.includes(m),
-    label: (m) => (notes.includes(m) ? nameInScale(m, s.tonic) : null),
+    label: (m) => (notes.includes(m) ? spelled[notes.indexOf(m)] : null),
     pulse: s.keyPulse,
   })
 }
@@ -157,9 +188,9 @@ function paintRisers(
   L: StairsLayout,
   s: StairsScene,
 ): void {
-  MAJOR_STEPS.slice(0, L.stairs.length - 1).forEach((size, i) => {
+  risersOf(s.named ?? s.degrees).forEach((size, i) => {
     const r = riser(L, i)
-    const gold = s.gold && size === 'S'
+    const gold = s.gold && size === 1
     ctx.strokeStyle = gold ? COLOR.gold : rgba(COLOR.chrome, 0.4)
     ctx.lineWidth = gold ? 2.5 : 1.25
     ctx.beginPath()
@@ -168,6 +199,14 @@ function paintRisers(
     ctx.stroke()
   })
 }
+
+/** The middle of a riser's label: the riser's mid-height, and clear of the tread above it. */
+const labelY = (r: { y0: number; y1: number }): number =>
+  Math.max((r.y0 + r.y1) / 2, r.y0 + 11)
+
+/** A riser's label's font: 12 px, in the weight given. */
+const labelFont = (weight: number): string =>
+  `${weight} 12px "JetBrains Mono", monospace`
 
 /** A step's size label, inside the next block's top corner, at the riser's mid-height and clear of its tread. */
 function stepLabel(
@@ -180,11 +219,15 @@ function stepLabel(
 ): void {
   const r = riser(L, i)
   ctx.fillStyle = color
-  ctx.font = `${weight} 12px "JetBrains Mono", monospace`
+  ctx.font = labelFont(weight)
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.fillText(text, r.x + 6, Math.max((r.y0 + r.y1) / 2, r.y0 + 11))
+  ctx.fillText(text, r.x + 6, labelY(r))
 }
+
+/** A riser's label: its size in semitones, or T for a tone and S for a semitone. */
+const riserText = (size: number, numbers: boolean): string =>
+  numbers || (size !== 1 && size !== 2) ? String(size) : size === 1 ? 'S' : 'T'
 
 function paintStepLabels(
   ctx: CanvasRenderingContext2D,
@@ -192,8 +235,9 @@ function paintStepLabels(
   s: StairsScene,
 ): void {
   if (!s.steps || s.white > 0.5) return
-  MAJOR_STEPS.slice(0, L.stairs.length - 1).forEach((size, i) => {
-    const gold = s.gold && size === 'S'
+  // a sliding stair's riser keeps its size until it lands, as its name does
+  risersOf(s.named ?? s.degrees).forEach((size, i) => {
+    const gold = s.gold && size === 1
     // with Group on, the tone that joins the two groups speaks up
     const joint = i === 3 && s.group > 0.5
     const color = gold
@@ -201,8 +245,36 @@ function paintStepLabels(
       : joint
         ? COLOR.ink
         : rgba(COLOR.chrome, 0.9)
-    stepLabel(ctx, L, i, size, color, joint || gold ? 700 : 500)
+    stepLabel(
+      ctx,
+      L,
+      i,
+      riserText(size, s.numbers),
+      color,
+      joint || gold ? 700 : 500,
+    )
   })
+}
+
+/**
+ * The outlined riser: the higher block's width, from its tread down to the
+ * lower one's, in chrome, and its label in ink at its side, as a riser's
+ * size is labelled.
+ */
+function paintOutline(
+  ctx: CanvasRenderingContext2D,
+  L: StairsLayout,
+  s: StairsScene,
+): void {
+  const o = s.outline
+  const next = o === undefined || o === null ? undefined : L.stairs[o.riser + 1]
+  if (o === undefined || o === null || next === undefined) return
+  const { x, w } = block(next)
+  const h = Math.max(2, L.stairs[o.riser].top - next.top)
+  ctx.strokeStyle = rgba(COLOR.chrome, 0.85)
+  ctx.lineWidth = 1.5
+  ctx.strokeRect(x + 0.75, next.top + 0.75, w - 1.5, h - 1.5)
+  stepLabel(ctx, L, o.riser, o.label, COLOR.ink, 700)
 }
 
 function paintNames(
@@ -214,32 +286,77 @@ function paintNames(
   ctx.font = FONT.name(px)
   ctx.textAlign = 'center'
   ctx.textBaseline = 'alphabetic'
+  const spelled = s.both ? spellDegrees(s.tonic, s.degrees) : []
   L.stairs.forEach((st, i) => {
     const lit = s.light(i)?.amount ?? 0
+    const x = st.x + st.w / 2
+    const y = st.top - (L.mode === 'compact' ? 5 : 7)
     ctx.fillStyle = lit > 0.3 ? '#ffffff' : COLOR.ink
-    ctx.fillText(
-      stairName(i, s.tonic, s.names),
-      st.x + st.w / 2,
-      st.top - (L.mode === 'compact' ? 5 : 7),
-    )
+    if (!s.both) {
+      ctx.fillText(stairName(i, s.tonic, s.names, s.named ?? s.degrees), x, y)
+      return
+    }
+    // the sung name over the letter
+    ctx.fillText(signName(spelled[i], { octave: false }), x, y)
+    ctx.fillText(syllableOf(s.degrees[i]), x, y - px - 3)
   })
 }
 
-/** Do's house inside both do blocks; the top one lights as Land on do lands. */
+/** The label drawn in stair i's block, the outline's or its riser's size, if any. */
+function labelIn(s: StairsScene, i: number): string | null {
+  if (i === 0) return null
+  if (s.outline?.riser === i - 1) return s.outline.label
+  if (!s.steps || s.white > 0.5) return null
+  return riserText(risersOf(s.named ?? s.degrees)[i - 1], s.numbers)
+}
+
+/**
+ * A house's centre on stair i: `centred`, or, where the label in the
+ * block's top corner would touch it, just under that label's line and
+ * still inside the block. A narrow block's top do needs it, as on Lesson
+ * 25's compact staircases, whose blocks are not much wider than the house.
+ */
+function homeY(
+  ctx: CanvasRenderingContext2D,
+  L: StairsLayout,
+  s: StairsScene,
+  i: number,
+  size: number,
+  centred: number,
+): number {
+  const text = labelIn(s, i)
+  if (text === null) return centred
+  const st = L.stairs[i]
+  const r = riser(L, i - 1)
+  const y = labelY(r)
+  // the bold weight is the wider: an outline's label, or a gold or joining one
+  ctx.font = labelFont(700)
+  const right = r.x + 6 + ctx.measureText(text).width
+  const clear =
+    st.x + st.w / 2 - size / 2 >= right + 2 ||
+    centred - size / 2 >= y + 8 ||
+    centred + size / 2 <= y - 8
+  if (clear) return centred
+  return Math.min(Math.max(centred, y + 9 + size / 2), st.bottom - 2 - size / 2)
+}
+
+/** Do's house inside each do block; the top one lights as Land on do lands. */
 function paintHomes(
   ctx: CanvasRenderingContext2D,
   L: StairsLayout,
   s: StairsScene,
 ): void {
-  // centred in the height of do's own block, on both do stairs, and inside it
+  // centred in the height of do's own block, on both do stairs, and inside
+  // it, under the label in its corner where the two would meet
   const room = L.stairs[0].bottom - L.stairs[0].top
   const size =
     L.mode === 'compact' ? Math.min(18, L.rowH * 1.45) : Math.min(18, room - 4)
-  for (const i of [0, 7].filter((k) => k < L.stairs.length)) {
+  const homes = s.degrees.flatMap((d, i) => (d % 12 === 0 ? [i] : []))
+  for (const i of homes) {
     const st = L.stairs[i]
-    const lit = i === 7 ? s.home : 0
-    const color = i === 7 && s.waiting ? rgba(COLOR.chrome, 0.6) : COLOR.ink
-    const cy = st.top + 2 + room / 2
+    const lit = i > 0 ? s.home : 0
+    const color = i > 0 && s.waiting ? rgba(COLOR.chrome, 0.6) : COLOR.ink
+    const cy = homeY(ctx, L, s, i, size, st.top + 2 + room / 2)
     if (lit > 0) {
       const halo = ctx.createRadialGradient(
         st.x + st.w / 2,
@@ -431,6 +548,7 @@ export function paintStairs(
   )
   paintRisers(ctx, L, s)
   paintStepLabels(ctx, L, s)
+  paintOutline(ctx, L, s)
   paintNames(ctx, L, s)
   paintHomes(ctx, L, s)
   paintOverlay(ctx, L, s)

@@ -333,11 +333,11 @@ the guide drawn on the staff and no Move do. In order:
    buttons. Play Merc's notes plays Merc's line (lower) or Tavi's (higher) as two contours a breath
    apart, each one voice: so held 1.15 s and a 0.05 s glide, te the same, do held 1.8 s; 1.0 s of
    quiet; then so, ti and do the same way; 9.4 s in all (FACTS 45, 65; `contourOf`,
-   `src/features/lessons/kit/sound.ts:366`; `playContour`, `src/features/lessons/kit/sound.ts:697`),
+   `src/features/lessons/kit/sound.ts:378`; `playContour`, `src/features/lessons/kit/sound.ts:709`),
    each note lighting as it sounds. Start the guide waits until Merc's notes have been heard with
    sound on, with Lesson 12's two hints (`hintFor`, `src/features/lessons/kit/sing-flow.ts:196-202`);
    then it counts in on so, the line's first note, 0.8 s at 0.065 and 0.2 s of quiet (`countIn`,
-   `src/features/lessons/kit/move-do.ts:65-74`; FACTS 46a), and a chrome sweep line runs along the six
+   `src/features/lessons/kit/move-do.ts:68-77`; FACTS 46a), and a chrome sweep line runs along the six
    notes in time, 9.4 s, with no voice and nothing on the notes themselves. No Move do and no readout
    (FACTS 43).
 4. **How did that feel?** after each sweep run to its end, through the kit's `mountFeelings`
@@ -362,7 +362,7 @@ only: no sound and no figure. Its bold lead-in is its summary line's words.
 ### 7. Recall and quick check
 
 Two quizzes share this page through the kit's quiz (`createQuiz`,
-`src/features/lessons/kit/quiz.ts:218`), each with its own prefix and keys.
+`src/features/lessons/kit/quiz.ts:228`), each with its own prefix and keys.
 
 - **Recall**: Lesson 10's question 4 and Lesson 21's question 2 (FACTS 7), imported from their pages
   and filtered by id, `l10-q4` and Lesson 21's second question's id, as Lesson 10's page filters
@@ -372,13 +372,13 @@ Two quizzes share this page through the kit's quiz (`createQuiz`,
   keys `fyp-l25-recall-seed` and `fyp-l25-recall-v1`, no `lesson`, so it marks nothing done. Its step
   links read "Try Lesson 10, Step 5 again" and "Try Lesson 21, Step 4 again" and open
   `/learn/10#step-5` and `/learn/21#step-4` in a new tab, through `away: { href: recallStepHref }`
-  (`src/features/lessons/kit/quiz.ts:142`, `src/features/lessons/kit/quiz.ts:191`). Neither question
+  (`src/features/lessons/kit/quiz.ts:152`, `src/features/lessons/kit/quiz.ts:201`). Neither question
   has a play.
 - **Quick check**: LESSON.md's four questions, ids `l25-q1` to `l25-q4`, keys `fyp-l25-seed` and
   `fyp-l25-quiz-v1`, and `lesson: 25`, so answering all four marks Lesson 25 done. Three answers
   each, shuffled per question from the stored seed, one-line feedback for every answer, and a check
   icon and ink, not gold, on the right one. The kit prints "Right." or "Not quite." before each line
-  (`src/features/lessons/kit/quiz.ts:315`). Question 1's "Try Step 3 again", question 2's "Try Step
+  (`src/features/lessons/kit/quiz.ts:335`). Question 1's "Try Step 3 again", question 2's "Try Step
   1 again", question 3's "Try Step 4 again" and question 4's "Try Step 3 again" go to that step on
   this page. Question 4's slot holds its play, "Play", which plays A melodic minor going up in the
   learner's octave, 3.15 s, the same on every visit (FACTS 65, 69), handled by one listener on the
@@ -420,11 +420,11 @@ music bed.
 
 - **The tune with its chords.** The answering plays sound Merc's "ooh" at 0.2 over three soft voices
   at 0.05 each, Lesson 12's levels for chords under "ooh" (`UNDER_GAIN`,
-  `src/features/lessons/lesson-12/sounds.ts:45-46`), started together on one clock (`allOf`,
-  `src/features/lessons/kit/run.ts:260`), so a chord change falls on its melody note. A chord heard
+  `src/features/lessons/kit/sound.ts:59-60`), started together on one clock (`allOf`,
+  `src/features/lessons/kit/run.ts:271`), so a chord change falls on its melody note. A chord heard
   alone, Step 1's chord on so and home and the free play's, is three voices at 0.075 each
-  (`CHORD_GAIN`, `src/features/lessons/lesson-12/sounds.ts:43-44`). Each chord's three voices start
-  in one timer task (`playNotes`, `src/features/lessons/kit/run.ts:207`), so they share one clock
+  (`CHORD_GAIN`, `src/features/lessons/kit/sound.ts:55-56`). Each chord's three voices start
+  in one timer task (`playNotes`, `src/features/lessons/kit/run.ts:216`), so they share one clock
   and never flam.
 - **Scales and pairs**: a scale is the soft tone at 0.13, a note every 0.4 s, each sounding 0.35 s;
   an interval is Lesson 6's pair, 0.6 s, 0.15 s of quiet and 0.8 s, two notes and no glide
@@ -556,7 +556,7 @@ first; they are listed so this page's needs are in one place.
 4. **Lesson 10's chord beads and staircase in the kit**: `lesson-10/chord-beads.ts`, its drawing and
    its layout move into the kit, and Lesson 10's page then imports them from there. Today they take
    only the seven white-key roots from C4 to B4 and a window of C4 to F♯5, and refuse any other root
-   (`ROOTS`, `WINDOW` and `rootLetter`, `src/features/lessons/lesson-10/chords.ts:68-82`). They gain:
+   (`ROOTS`, `WINDOW` and `rootLetter`, `src/features/lessons/kit/chords.ts:82-95`). They gain:
    roots and a window set per page, this page's white-key roots from A2 to B4, which take in every
    root it uses (A2, C3, E3, A3, C4 and E4), and a window from A2 to C5, every note it sounds, with
    Lesson 10's C4 to B4 and C4 to F♯5 kept for its own page; the scale state and the chord state
@@ -574,7 +574,7 @@ first; they are listed so this page's needs are in one place.
    signature (0.6 s); a second, small staff in the other clef that shows the signature only; and a
    bar per figure, so the page never needs a natural sign.
 6. **Lesson 12's chord levels in the kit**: `NOTE_GAIN`, `CHORD_GAIN`, `UNDER_GAIN` and `MERC_GAIN`
-   (`src/features/lessons/lesson-12/sounds.ts:41-48`) move into the kit's sound module, with the way
+   (`src/features/lessons/kit/sound.ts:53-62`) move into the kit's sound module, with the way
    Lesson 12's page plays chords under "ooh" on one clock, and Lesson 12's page imports them.
 7. **Lesson 6's pair in the kit**, as Lesson 23's page needs it too: `PAIR` and `pair`, moved
    there for Lesson 23's page (`src/features/lessons/kit/pair.ts:16`, `src/features/lessons/kit/pair.ts:28-38`).
@@ -820,3 +820,70 @@ production:
 - On a real phone, by ear and by eye (`docs/agent/DEVICE-DEBUGGING.md`): A2 audible on the
   speaker; a chord heard as one, with no flam; the tune's "ooh" clear over its chords; Merc's line
   joined, with no click; the stairs and beads sliding in time with their sounds.
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- Counted by `scripts/lesson-words.mjs`'s rule as the built page shows it, the package's 2,160 words
+  with about 155 more written in the open (the two endings' names and the predict's two hints, 20;
+  the steps' figure label, the toy's labels, its lock line and Step 1's held line, 54; Sing it's
+  status lines, its hint, its pitch-line switch and the stored voice's line, 81), the sound-off
+  lines, the next-lesson card and free play left out, as the counter leaves them and as Lessons 16,
+  18 and 20 counted theirs: about 2,315, 64 under the series' cap of 2,379, as Length estimated. No
+  cut is made.
+- The steps' toy is the kit's staircase, Lessons 4 and 21's, in its compact drawing on the
+  learner's rows, with the chord column drawn on the same canvas at its right in Lesson 10's beads
+  (`kit/stairs-core.ts`, `kit/chord-column.ts`), rather than Lesson 10's chord beads in their scale
+  state: one drawing slides a stair, keeps room for the column and outlines a riser for every
+  step. The staff stands under the staircase at every width, not beside it: eight stairs and a
+  column in half the stage card would come out narrower than a fingertip, as Lesson 21's did.
+- Step 2 counts each pair's semitones in the riser's own label, which the staircase prints for
+  every riser, and in the polite line as each pair sounds ("Le to ti, F to G sharp: 3
+  semitones."), with the outlined riser's "3" in bold; nothing more is drawn under the stairs.
+- The hero's column stands on the staircase's own rows, E4, G4 and B4, an octave over the chord the
+  ending sounds, E3, G3 and B3, and names its tones by letter alone, so it reads true for the
+  chord heard. It stays through the next ending, which redraws it or slides G to G♯, and leaves
+  when the tune plays, since the tune plays no chord. On a phone the staircase's canvas reaches over
+  Tavi's column, so the column stands above her head, clear of both singers.
+- Sing it's staff writes so, te, do, so, ti, do as one run of six notes with no bar line between the
+  two figures, as the kit's sing-along staff writes every line. The G before the G♯ needs no sign
+  in one bar, so nothing a learner reads is lost.
+- Harmonic minor's word lifts te to ti as its play starts, before ti sounds, and the staircase
+  settles back when it ends; Relative keys stays on A minor, where its play left it.
+- Quick check question 4's play reads "Play" and is named "Play the question's scale" for a screen
+  reader, which no step's play shares.
+- The live region says "Key signature: three flats, B flat, E flat and A flat", with "and" before
+  the last.
+- The hero's and the toys' chord columns are drawn on their canvases, so "no chord column in the
+  DOM" (Tests 3 and 18) holds by construction; the page tests read the figures' names and the held
+  controls instead, and no line above the quick check puts "major" beside the chord on so before
+  the choice.
+- The kit's staircase keeps do's house under the label in its block's corner where the two would
+  meet, as Lesson 25's compact staircases and every major staircase at a phone's width had them
+  touching (`kit/stairs-draw.ts`).
+- A play inside a step's sentence wraps its words at a phone's width: Step 3's "Play A major, then
+  melodic minor, going up" is wider than the column at 344 px.
+- Step 4's and free play's small staff stands under the learner's, the figure growing by 70 px
+  while it shows; on a phone held sideways, where the kit caps the figure's height, the learner's
+  staff takes what the small one leaves.
+- On a phone, where the stage stands above the steps' text, a play from a step's text brings the
+  stage back into view (`kit/step-deck.ts` `showToy`), and a free play button pressed with the
+  figures scrolled away above the screen brings them back, so what a play lights is seen as it
+  sounds. On a wide page the stage is stuck beside the text and nothing moves.
+- The step deck never scrolls a step taller than the screen past its own head, so Step 3's kicker
+  and heading stay clear of the masthead at 1440 by 900 (`kit/step-deck.ts`).
+- A staff whose notes may carry a sharp or a flat gives each note two and seven tenths spaces, not
+  two and a quarter, so Sing it's G♯ and the steps' F♯, G♯ and C minor's flats stand clear of the
+  note before them at a phone's width (`kit/staff.ts` `scoreAcross`).
+- Free play's Play A melodic minor, up and down, before the choice sounds with le and te raised for
+  the play alone, leaving its held switches off; in Step 3 it switches Raise le on as above.
+- The choice ends the tune, so Play ending 1, which takes the focus, plays at the first press
+  rather than waiting out the tune's 17 s.
+- Every play of the toy says what it sounds as it starts, the chord on so its column's line then
+  home's, and a switch that moves the other says both, te first; the figure's name adds the chord
+  column once the choice draws it, as the hero's does.
+- The five chips wrap to four rows at 390 px, not two or three: the three prerequisite chips are
+  each wider than half the column, and Lesson 23's runs to two lines.
+- The first-paint ceilings are the page's measured build a quarter over, as every lesson's are:
+  249 KB of JavaScript (203,428 bytes) and 114 KB of CSS (92,872 bytes) in `build:e2e`.

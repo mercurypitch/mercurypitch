@@ -44,8 +44,13 @@ export const DRAFT_LESSONS: Readonly<Partial<Record<number, string>>> = {
   17: "Lesson 8's page at /learn/08, and the vocal coach's look at the sung part",
   18: "Lessons 16 and 17's pages at /learn/16 and /learn/17, and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
   19: "Lesson 17's page at /learn/17",
+  20: "Lessons 5, 9 and 10's pages, and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
   21: "Lessons 6 and 15's pages at /learn/06 and /learn/15, and the vocal coach's look at Sing it (MASTER-PLAN § 12 item 8)",
   22: "the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
   23: "Lesson 6's page at /learn/06, and the vocal coach's look at Sing it",
   24: "the lab's two tests (its WEB-SPEC, What the kit and the app still need, item 7), and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
+  25: "Lessons 10, 21 and 23's pages at /learn/10, /learn/21 and /learn/23, and the vocal coach's look at the sung checkpoint and the sung drill",
+  26: "Lessons 12 and 24's pages at /learn/12 and /learn/24, the lab test (its WEB-SPEC, What the kit and the app still need, item 8), and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
+  27: "Lessons 12 and 23's pages at /learn/12 and /learn/23, and the vocal coach's look at the sung checkpoint and the sung drill",
+  28: "Lessons 18 and 26's pages at /learn/18 and /learn/26, the lab test (its WEB-SPEC, What the kit and the app still need, item 9), and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
 }

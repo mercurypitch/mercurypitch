@@ -248,7 +248,7 @@ a bead (FACTS 31, 32). It takes no taps.
   E, 8.0 s, its beads drawing on the lanes as they sound; as it starts the copy moved four
   semitones fades to the kit's contrast case, dashed ink-2, with its "?" over its first line's off-
   lane beads, as Lesson 6's swapped version is drawn (`TuneOverlay`,
-  `src/features/lessons/kit/tune-line.ts:85-89`).
+  `src/features/lessons/kit/tune-line.ts:102-106`).
 - **Spoken summary** of the figure, in words, never signs: at first, "‘Twinkle’ in C major: two
   lines of seven notes, from C 4 up to A 4."; after the answering play, "The copy: six of its notes,
   on C sharp 5, G sharp 4 and F sharp 4, are off C major's rows."; after the reveal's play, "The
@@ -314,7 +314,7 @@ at the top to unlock this step." in their place (FACTS 41). Every play is the pa
 Layout: the stage takes the kit's tune line layout at every width from 344 px up. No bead and no
 bracket is a button in any state: `beadButtons` is off, and the kit's `brackets`, a button each, are
 not used, since this page's brackets stand between two lines and are drawn only (item 7;
-`src/features/lessons/kit/tune-line.ts:70-73`). The targets are the controls, each at least 44 px,
+`src/features/lessons/kit/tune-line.ts:82-85`). The targets are the controls, each at least 44 px,
 no two overlapping: Step up and Step down, the switches, the plays and free play's state switch.
 Step 2's two lines stack, each on a band of fifteen rows with no gap strip, so the figure keeps
 about the 350 px Lesson 6 measured at 390 by 844, though two of its beads and their bracket can
@@ -336,7 +336,7 @@ The kit's quiz, as on Lesson 24's page. The recall imports Lesson 12's `l12-q3`
 (`src/features/lessons/lesson-12/quiz-questions.ts:89-107`) and Lesson 24's question 1, `l24-q1`,
 once Lesson 24's questions are a module, each with its away links, "Try Lesson 12, Step 4 again"
 becoming plain words where Lesson 12 is not live (`linkAway`,
-`src/features/lessons/kit/quiz.ts:191-205`); its keys are `fyp-l26-recall-seed` and
+`src/features/lessons/kit/quiz.ts:201-215`); its keys are `fyp-l26-recall-seed` and
 `fyp-l26-recall-v1`. The quick check's ids are `l26-q1` to `l26-q4`, its keys `fyp-l26-seed` and
 `fyp-l26-quiz-v1`, its words LESSON.md's, in authored order, each ♯ made speakable (FACTS 71 to 74).
 Question 4's **Play** plays do re mi re do on C4 with the part four semitones up, then, after 1.0 s,
@@ -440,7 +440,7 @@ States:
 - **A set** is one part sung in runs: the learner's part, then, after Easy or Workable, the tune in
   the swap. One run is one take, and each set allows three takes in a visit, every take counted, one
   with no voice or one cut short when the page is left or hidden too, as Lessons 18 and 24 count
-  them (`MAX_TRIES`, `src/features/lessons/kit/take.ts:63`).
+  them (`MAX_TRIES`, `src/features/lessons/kit/take.ts:66`).
 - **Again** sings the set again: the quiet check, the model, the count-in and the run.
 - **The swap** is offered only after Easy or Workable on the learner's part, and never after
   Effortful or Uncomfortable.
@@ -523,23 +523,23 @@ music bed (FACTS 75 to 79).
 
 - **Two parts note against note.** Every two-part play outside a take, the cold open's, the steps',
   the words' and quick check 4's, is one `playNotes` run holding both parts' notes, which share their
-  onsets, so each pair of notes starts in one timer task (`src/features/lessons/kit/run.ts:13-14`);
-  a chord under a part is the same, its notes in the soft tone (`src/features/lessons/kit/run.ts:44-45`).
+  onsets, so each pair of notes starts in one timer task (`src/features/lessons/kit/run.ts:15-16`);
+  a chord under a part is the same, its notes in the soft tone (`src/features/lessons/kit/run.ts:46-47`).
   Nothing new is needed for these (FACTS 26).
 - **Timbres.** The cold open, the words, the steps but for Merc and Tavi, and quick check 4 play in
   the kit's soft tone; Step 3's Merc and Tavi, the models, the other part in a run, "Just listen
   today"'s play and the sing-along in Merc's "ooh", Tavi's an octave above Merc's; the count-in is the
   woodblock (FACTS 79).
 - **A part under a take.** The kit holds every sound off while a take is open
-  (`src/features/lessons/kit/sound.ts:643-662`). The other part is the one exception: one voice along
-  a contour (`contourVoice`, `src/features/lessons/kit/sound.ts:391-423`), each note a held point at
+  (`src/features/lessons/kit/sound.ts:655-674`). The other part is the one exception: one voice along
+  a contour (`contourVoice`, `src/features/lessons/kit/sound.ts:403-435`), each note a held point at
   its pitch, joined to the next by a glide of 0.05 s, built before the take opens and booked on the
   audio clock to start on bar 1's first beat through the voice's `at`
-  (`src/features/lessons/kit/sound.ts:68-72`), the hush leaving it sounding, as Lesson 24's item 5
+  (`src/features/lessons/kit/sound.ts:80-84`), the hush leaving it sounding, as Lesson 24's item 5
   keeps its drone. Its release ends it as its last note ends. Two notes on one pitch in a row, which
   this page's parts never have and Lesson 28's song may, are struck again by a dip in the contour's
   level, to a quarter for 0.08 s between them (What the kit and the app still need, item 6).
-- **Levels.** A note at the kit's 0.13 and Merc at 0.2 (`src/features/lessons/kit/sound.ts:240`); a
+- **Levels.** A note at the kit's 0.13 and Merc at 0.2 (`src/features/lessons/kit/sound.ts:252`); a
   two-part play at the note level for each part. In a run the other part sits at a level the lab
   sets, under Merc's model, so the singer's own voice stays clear in the headphones (FACTS 79).
 - **Low notes.** The page's lowest sounds are C3, 130.81 Hz, Step 4's chord root and Merc's do in
@@ -677,7 +677,7 @@ items 15 and 16 and Lesson 18's item 16 (item 4 below), which have shipped.
 6. **A part under a take**, code with tests, widening Lesson 24's item 5
    (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:743-747`): the hush's one kept
    source is any one voice built before the hush, a drone or a contour voice, not a drone alone; a
-   contour voice can be booked to start later through `at` (`src/features/lessons/kit/sound.ts:68-72`),
+   contour voice can be booked to start later through `at` (`src/features/lessons/kit/sound.ts:80-84`),
    so the other part is built when the take is set up and starts on bar 1's first beat; and a
    helper turns a part's notes into its contour, each note a held point with a 0.05 s glide to the
    next and a dip in level to a quarter for 0.08 s between two notes on one pitch, so Lesson 28 can
@@ -915,3 +915,57 @@ production:
   Nothing plays; each part's boxes name its own notes; a note sung an octave from its box scores
   nothing. Once more with the guest in before the pick, the repo's two-peer check's own order, so
   both orders are seen to work (items 15 and 16; FACTS 63a, 63b, 64).
+
+## As built
+
+Where the page differs from the text above, the page as built is the reference:
+
+- Counted by `scripts/lesson-words.mjs`'s rule as the built page shows it: the package's 2,044
+  words; the 168 Length lists, less its three status lines (14), which the next count holds; Sing
+  it's status lines that LESSON.md does not write, about 154 in the lower voice's forms (the comfort
+  and voice prompts, the listening path's two lines, the headphones and briefing prompts, the
+  microphone's ask, the count-in, the model's and the run's lines, the sing-along's two lines, the
+  run left, both parts, the sing-along's ending, the set spent, Done for today and Start's sound-off
+  hint); and the cold open's hint after a choice and its "Play them together" (8). That is about
+  2,360 in place of Length's 2,362 on the brief's 150, about 19 under the series' cap of 2,379, and
+  the page still runs about 16 minutes.
+- Sing it loads as a chunk of its own after first paint, and its take, its reader and the quiet
+  check load with the microphone at Start, so first paint carries none of them.
+- The voice choice stays beside the panel after it, the headphones check, the briefing, the
+  sing-along or "Just listen today"'s play, until the first run, so the voice can still change; a
+  run hides it. On the listening path it asks "Choose a voice: it picks who sings."
+- The hush that keeps every other sound off begins at bar 1's first beat, when the count-in's run
+  ends, not as the take opens half a beat before it, so the count-in sounds to its end; from bar 1
+  the cursor and the other part's lit beads follow the take's frames.
+- Levels: the other part in a run, and in the quiet check, at 0.1, half Merc's model at 0.2, so the
+  singer's own voice stays clear in the headphones; "Just listen today"'s play at the note level,
+  0.13, for each part; the count-in's woodblock at 0.1. The lab sets the run's level (Audio).
+- The figure's zero is the first note of the part sung, as the take's pitch line has it, and a
+  black key's row is named with its sharp, "ti · F♯3". After a run the take's anchor moves the
+  learner's pitch line onto the bands, as Lesson 18's does; the other part's beads keep their
+  written beats.
+- The tricky line counts the run's notes read in the band, which the kit's take now reports
+  (`kit/take-in-time.ts`, `inBand`).
+- The count-in's dots, and the other part's lit bead, are kept in the band chart's scene, which the
+  kit now gives a page's own painter (`over`, `kit/band-chart.ts`), so each click draws its dot as
+  it sounds; a chart draws only when its scene changes.
+- A hero play pressed with the drawing scrolled away brings it back by the page's own scroll,
+  never the stage's, which clips Merc and Tavi's bubbles; leaving the hero, its stage and its
+  predict, stops what it plays.
+- Step 4's chord bar keeps 20 px clear of the lower part's label, and the contrast mark's "?" is
+  sized to the room above its bead, 12 to 24 px (`kit/tune-line-parts-draw.ts`,
+  `kit/tune-line-draw.ts`).
+- A bead off the lanes carries its name inside it, in the page's dark ink
+  (`kit/tune-line-parts-draw.ts` `paintBeadName`), not beside it: beside, the name would land on
+  the bracket's number or on the next bead.
+- The Chord note and Passing note words' figures light a chord note gold as it sounds, as Step 4
+  does, since they draw the same fit; Look keeps gold to Step 4.
+- The figure's summary goes into its live line when the learner changes what it draws; a step
+  change, or the cold open's choice, puts it on the figure's name only, since the deck says the step
+  itself.
+- On a phone, after No headphones or the briefing, the panel's Start can sit below the first screen:
+  the card keeps its top in view, as Lesson 24's does, and the learner scrolls to it.
+- The tease still is drawn as Toys 6 gives it, and its test checks Lesson 27's Tests item 18, the V
+  room with three corners (`lesson-26/wrap.test.ts`).
+- The first-paint ceilings are the page's measured build a quarter over, as every lesson's are: 199
+  KB of JavaScript (162,965 bytes) and 111 KB of CSS (90,584 bytes) in `build:e2e`.

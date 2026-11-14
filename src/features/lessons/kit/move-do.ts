@@ -35,11 +35,14 @@ export interface MoveReach {
 /** The reach a page has unless it passes its own: `MOVE_MAX` both ways. */
 export const MOVE_REACH: MoveReach = { lower: MOVE_MAX, higher: MOVE_MAX }
 
-/** Move do, kept whole and within its reach. */
+/**
+ * Move do, kept whole and within its reach. The floor is `0 - lower`, so a
+ * reach of none lower (Lesson 20's) keeps do at 0, never -0.
+ */
 export const clampMove = (
   shift: number,
   reach: MoveReach = MOVE_REACH,
-): number => clamp(Math.round(shift), -reach.lower, reach.higher)
+): number => clamp(Math.round(shift), 0 - reach.lower, reach.higher)
 
 /** Move do after a press of `button`: its `data-move-do` step, within the reach. */
 export const nextShift = (

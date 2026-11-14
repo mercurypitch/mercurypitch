@@ -272,6 +272,8 @@ const NO_FILM = [
     sing: 'Tap the beat',
     steps: 4,
   },
+  // it teaches in four steps
+  { n: 20, title: 'Runs and the pentatonic scale', steps: 4 },
   // it teaches in five steps
   { n: 21, title: 'Keys and the circle of fifths', steps: 5 },
   // it teaches in four steps
@@ -280,6 +282,14 @@ const NO_FILM = [
   { n: 23, title: 'Perfect, major, minor and the tritone', steps: 4 },
   // it teaches in four steps
   { n: 24, title: 'Harmony against a drone', steps: 4 },
+  // it teaches in four steps
+  { n: 25, title: 'Minor, properly', steps: 4 },
+  // it teaches in four steps
+  { n: 26, title: 'A second voice', steps: 4 },
+  // it teaches in four steps
+  { n: 27, title: 'Seventh chords and inversions', steps: 4 },
+  // it teaches in four steps
+  { n: 28, title: 'Cadences, form and a song in two parts', steps: 4 },
 ] as const
 
 for (const entry of NO_FILM) {

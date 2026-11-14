@@ -49,10 +49,16 @@
 // each note then shows its syllable in a row under the staff, counted up
 // from do, while Names is on (`[data-staff-names]`, Names on · off, or
 // `setNames`); off hides the syllables and keeps the house. A state that
-// writes a score lights its notes as they play (`show: 'score'`) and as a
+// writes a score lights its notes as they play (`show: 'score'`), each the
+// next written note of its pitch, so a run back down lights its own, and as a
 // tap sounds one; a state with a `lead` plays it before each tapped place,
 // do and then the note. A play's note may light a moment before it sounds
 // (`ahead`): Hear it inside, a beat to imagine it in.
+//
+// A play may be silent (`silent`): its notes are written and lit on time
+// and nothing sounds, while another voice sings them (Lesson 20's run toy,
+// Merc's run sung as one line). Such a play is not the page's sound: it
+// claims no owner, and the page that sings the run stops it with its own.
 //
 // "See it on the pitch line" (`[data-staff-lanes]`, a switch, off at first)
 // is one choice for the visit, in memory: every staff toy on the page
@@ -71,10 +77,12 @@ import type { Layout, Mark, Scene, Tone } from './staff-draw'
 import { drawScene, figureSize } from './staff-draw'
 import type { KeySig } from './staff-key'
 import { keyAlter, keyWords, NO_KEY } from './staff-key'
+import { PitchLine } from './staff-pitch-line'
 import type { Clef, StaffKind } from './staff-places'
 import { midiOf, noteAt, placeOf, placeRange, sayPlace, staffName, syllableOf, writtenOf, } from './staff-places'
 import type { StaffPlay, StaffState } from './staff-state'
 
+export { PitchLine } from './staff-pitch-line'
 export type { PlayNote, StaffPlay, StaffState } from './staff-state'
 
 export interface StaffToy {
@@ -96,11 +104,16 @@ export interface StaffToy {
   /**
    * Changes the key signature and keeps what the staff shows, saying it in
    * words unless `quiet`; a sign that joins fades in, or travels from beside
-   * the note in run column `from` that carried it.
+   * the note in run column `from` that carried it, in `sec` seconds (0.45
+   * unless given; Lesson 25's flats take 0.6).
    */
   setKey(
     key: KeySig | null,
-    how?: { readonly from?: number; readonly quiet?: boolean },
+    how?: {
+      readonly from?: number
+      readonly quiet?: boolean
+      readonly sec?: number
+    },
   ): void
   /** Plays `p`; resolves true when heard to its end with nothing cutting it short. */
   play(p: StaffPlay): Promise<boolean>
@@ -135,28 +148,6 @@ export interface StaffOptions {
   readonly onClef?: (clef: Clef) => void
 }
 
-// ---------------------------------------------------------------- the switch
-
-const lanesListeners = new Set<(on: boolean) => void>()
-let lanesOn = false
-
-/** "See it on the pitch line": one choice for the visit, in memory, which every staff toy on the page follows. */
-export const PitchLine = {
-  get on(): boolean {
-    return lanesOn
-  },
-  set(on: boolean): void {
-    if (on === lanesOn) return
-    lanesOn = on
-    lanesListeners.forEach((fn) => fn(on))
-  },
-  /** Calls `fn` now and after every change. */
-  subscribe(fn: (on: boolean) => void): void {
-    lanesListeners.add(fn)
-    fn(lanesOn)
-  },
-}
-
 /** How long a tapped note sounds, s, unless the state says (Lesson 15 FACTS 64). */
 const TAP_SEC = 0.8
 /** A mover's note, at each place it lands on (FACTS 66). */
@@ -168,13 +159,13 @@ const KEY_MIN = 44
 
 /**
  * The staff spaces a score asks across (staff-draw.ts `across`): the clef
- * and the margins, and two and a quarter for each note, so its noteheads,
- * their signs and the house under do never touch on a narrow screen; on a
- * narrow figure the staff draws smaller instead. Never fewer than the
- * drawing's own 9.
+ * and the margins, and two and a quarter for each note, or two and seven
+ * tenths where a note may carry a sign, so noteheads, signs and the house
+ * under do never touch on a narrow screen; on a narrow figure the staff
+ * draws smaller instead. Never fewer than the drawing's own 9.
  */
-export const scoreAcross = (notes: number): number =>
-  Math.max(9, 5 + 2.25 * notes)
+export const scoreAcross = (notes: number, signs = false): number =>
+  Math.max(9, 5 + (signs ? 2.7 : 2.25) * notes)
 
 // ---------------------------------------------------------------- the toy
 
@@ -211,6 +202,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
   let key: KeySig | null = state.key ?? null
   let keyFresh: number | null = null
   let keyFrom: number | null = null
+  let keyMs: number | undefined
   // what sounds: a play or a tap, and the timers that put its notes back to rest
   let playing: Run | null = null
   let timers: number[] = []
@@ -235,7 +227,12 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
 
   function scene(): Scene {
     const kind = kindOf()
-    const room = placeRange(kind)
+    const room = state.room ?? placeRange(kind)
+    // a score note with a sign the signature does not give it asks for room
+    const signs =
+      state.score?.some(
+        (n) => n.note.alter !== keyed({ ...n.note, alter: 0 }).alter,
+      ) ?? false
     const marks: Mark[] =
       state.score !== undefined
         ? state.score.map((n, i) => ({
@@ -267,7 +264,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
       across:
         state.score === undefined
           ? state.across
-          : scoreAcross(state.score.length),
+          : scoreAcross(state.score.length, signs),
       letters: [...letters],
       gold,
       lanes: PitchLine.on && state.noLanes !== true ? { lo, hi } : null,
@@ -280,6 +277,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
       key,
       keyFresh,
       keyFrom,
+      keyMs,
       keyRoom: state.keyRoom,
     }
   }
@@ -364,13 +362,14 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
 
   function start(p: StaffPlay, audible: boolean): Promise<boolean> {
     stop()
-    o.owner.claim(stop)
+    // a silent play is another voice's sound, not the page's: it claims nothing
+    if (p.silent !== true) o.owner.claim(stop)
     const mine = ++plays
     rest()
     gold = null
     if (p.show === 'run') {
       run = []
-      runCols = p.notes.length
+      runCols = Math.max(...p.notes.map((n, i) => n.col ?? i)) + 1
       cursor = null
     } else run = []
     const notes: RunNote[] = p.notes.map((n) => ({
@@ -378,15 +377,24 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
       midi: midiOf(n.note),
       dur: n.dur,
       kind: n.kind ?? p.kind ?? 'soft',
+      gain: n.gain,
     }))
-    // the score's note each sounds, or none
-    const cols = p.notes.map((n) =>
-      p.show !== 'score'
-        ? -1
-        : (state.score ?? []).findIndex(
-            (m) => midiOf(m.note) === midiOf(n.note),
-          ),
-    )
+    // the score's note each sounds, or none: the next of its pitch after
+    // the last found, so a line that comes back down lights its own later
+    // notes (Lesson 20's run), else the first of its pitch
+    const score = state.score ?? []
+    let after = 0
+    const cols = p.notes.map((n) => {
+      if (p.show !== 'score') return -1
+      const midi = midiOf(n.note)
+      const next = score.findIndex(
+        (m, c) => c >= after && midiOf(m.note) === midi,
+      )
+      const col =
+        next >= 0 ? next : score.findIndex((m) => midiOf(m.note) === midi)
+      if (col >= 0) after = col + 1
+      return col
+    })
     /** Shows note `i` of the play in `tone`: in its column, as the one note, or on the score. */
     const show = (i: number, tone: Tone): void => {
       const n = p.notes[i]
@@ -398,11 +406,15 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
         const next = run.slice()
         next[i] = {
           note: n.note,
-          col: i,
+          col: n.col ?? i,
           tone,
           on: n.on,
           outline: n.outline,
           home: n.home,
+          climb:
+            n.from === undefined
+              ? undefined
+              : { from: n.from, at: performance.now() },
         }
         run = next
       } else cursor = { note: n.note, tone, on: n.on }
@@ -622,7 +634,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
 
   function setKey(
     next: KeySig | null,
-    how: { readonly from?: number; readonly quiet?: boolean } = {},
+    how: Parameters<StaffToy['setKey']>[1] = {},
   ): void {
     const was = key
     key =
@@ -631,11 +643,13 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
       was?.sign === key?.sign && (was?.count ?? 0) === (key?.count ?? 0)
     keyFresh = joining(was, key)
     keyFrom = keyFresh === null ? null : (how.from ?? null)
+    keyMs = how.sec === undefined ? undefined : how.sec * 1000
     el.setAttribute('aria-label', labelOf())
     draw()
     // drawn once: a later redraw shows the signature as it stands
     keyFresh = null
     keyFrom = null
+    keyMs = undefined
     if (how.quiet !== true && !same) say(keyWords(key ?? NO_KEY))
   }
 
@@ -740,7 +754,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
     play: (p) => {
       if (p.clef !== undefined && state.staff !== 'grand' && p.clef !== clef)
         setClef(p.clef)
-      return start(p, Sound.canPlay())
+      return start(p, p.silent !== true && Sound.canPlay())
     },
     tapPlace,
     tapKey,

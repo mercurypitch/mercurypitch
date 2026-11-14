@@ -225,7 +225,7 @@ SEASON-2 § 6.2 item 4 asks for (What the kit and the app still need, item 4).
   free play in the Wrap, anywhere from E♭ round to A. A bead in the step's part is a button that
   moves the house there and plays its scale. At a stop, Step round or Step back is marked
   `aria-disabled`, as Move do's buttons are at their ends (`setMoveEnds`,
-  `src/features/lessons/kit/move-do.ts:52-63`).
+  `src/features/lessons/kit/move-do.ts:55-66`).
 - **Beads past three sharps or flats**: E, B or C♭, F♯ or G♭, C♯ or D♭, and A♭. They are drawn and
   named, dimmed, and take no tap: the house never goes there, nothing plays, and no signature
   shows beside the circle for them, since the page reads no signature past three. The bottom three
@@ -305,7 +305,7 @@ Lesson 15's flow, with two runs in place of one (Lesson 15 WEB-SPEC, Toys 5).
    or D4 E4 F♯4 G4). 12.8 s in all, Merc's "ooh" (FACTS 56, 64).
 5. **Guide**: enabled once Merc's notes have been heard with sound on, with the hint "Play Merc's
    notes first" until then. A count-in on so (`countIn`, which plays the note it is given,
-   `src/features/lessons/kit/move-do.ts:69-70`), then a line sweeps along the four notes in C with
+   `src/features/lessons/kit/move-do.ts:72-73`), then a line sweeps along the four notes in C with
    no voice; the signature and the house change as in Merc's; a second count-in on the new so in the
    last second of the gap; then the line sweeps along the four notes in G. 13.8 s in all.
 6. **How did that feel?**, after each guide that runs to its end: Lesson 3's four answers through
@@ -321,13 +321,13 @@ Two quizzes share this page through the kit's quiz, each with its own prefix and
 - **Recall**: Lesson 6's question object `l06-q2` and Lesson 15's `l15-q2`, imported, never copied,
   under their ids, with `away: { href: recallStepHref }`, so "Try Step 5 again" and "Try Step 2 again"
   read "Try Lesson 6, Step 5 again" and "Try Lesson 15, Step 2 again" and open that lesson's page at
-  the step in a new tab (`recallStepHref`, `src/features/lessons/kit/quiz.ts:141-143`; FACTS 7).
+  the step in a new tab (`recallStepHref`, `src/features/lessons/kit/quiz.ts:151-153`; FACTS 7).
   Lesson 15's question keeps its slot, "Play the three notes", E4, F4 and G4 on a small treble staff,
   which takes this page's sound owner.
 - **Quick check**: LESSON.md's four questions, ids `l21-q1` to `l21-q4`, keys `fyp-l21-seed` and
   `fyp-l21-quiz-v1`, and `lesson: 21`, so answering all four marks Lesson 21 done. Three answers
   each, shuffled per question from the stored seed, one-line feedback for every answer; the kit
-  prints "Right." or "Not quite." before each line (`quiz.ts:315`).
+  prints "Right." or "Not quite." before each line (`quiz.ts:335`).
 
 ### 9. Tease still
 
@@ -346,7 +346,7 @@ play button is pressed (the sound gate).
 
 - **The soft tone** plays every scale, the four words, Find do and the walk; **Merc's "ooh"** sings
   Sing it's runs, Tavi's an octave higher; the count-ins are the kit's, at half a tapped note's level
-  (`COUNT_IN`, `src/features/lessons/kit/move-do.ts:65-66`).
+  (`COUNT_IN`, `src/features/lessons/kit/move-do.ts:68-69`).
 - **Timings** (FACTS 61 to 64): a scale a note every 0.4 s, each note 0.35 s long, 3.15 s, as the
   hero's three plays are (D major from D4, A major from A4 both ways); Step 2's scales a note every
   0.3 s, each 0.27 s long, 2.37 s; the semitones word, thirteen notes 0.3 s apart, each 0.25 s long,
@@ -514,7 +514,7 @@ For the vocal coach), not the owner's.
   Step down as well as by tap (Toys 4).
 - **A tap on a bead past three sharps or flats**: nothing happens; it is not a button (Toys 3).
 - **Lessons 6 and 15 not live**: the recall links keep their words and do not link, as the kit's
-  quiz does for a lesson that is not live (`linkAway`, `src/features/lessons/kit/quiz.ts:186-216`);
+  quiz does for a lesson that is not live (`linkAway`, `src/features/lessons/kit/quiz.ts:196-226`);
   the page publishes only after both are live.
 - **Compose hidden**: in the app's simple mode, or set to guitar, Compose is not a tab, and the link
   lands on Home (Lesson 15 FACTS 46). **Compose on a later visit** opens on the last melody open, not

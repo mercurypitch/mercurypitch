@@ -279,6 +279,34 @@ describe('the explorer, a tab per season', () => {
     ).not.toBeNull()
   })
 
+  it("opens Lesson 20's page on its own card, Ready, with the Exercises' link", async () => {
+    // Arrange: Lesson 20's page carries Season 2 before it draws (main.ts)
+    vi.resetModules()
+    const { carrySeason } = await import('./page-state')
+    const { SEASON_2: S2 } = await import('./season-2')
+    const { createExplorer: explorerBuilt } = await import('./explorer')
+    carrySeason(S2)
+    explorerPage()
+
+    // Act
+    explorerBuilt({ current: 20 })
+
+    // Assert: a draft with a page, shown in this build, whose card on its own
+    // page goes back to its top (Lesson 20's WEB-SPEC, Explorer and season data)
+    const card = document.querySelector('#exCardHost .ex-card')
+    expect(openTitle()).toBe('Runs and the pentatonic scale')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Lesson 20')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Ready')
+    expect(
+      Array.from(card?.querySelectorAll('a.btn') ?? [], (a) =>
+        a.getAttribute('href'),
+      ),
+    ).toEqual(['#top'])
+    expect(
+      card?.querySelector('a.addr[href="/pitch-training?lesson=20"]'),
+    ).not.toBeNull()
+  })
+
   it("opens Lesson 17's page on its own card, Ready, with the Ear Lab's link", async () => {
     // Arrange: Lesson 17's page carries Season 2 before it draws (main.ts)
     vi.resetModules()
@@ -469,6 +497,116 @@ describe('the explorer, a tab per season', () => {
     ).not.toBeNull()
   })
 
+  it("opens Lesson 25's page on its own card, Ready, with the Ear Lab's link", async () => {
+    // Arrange: Lesson 25's page carries Season 2 before it draws (main.ts)
+    vi.resetModules()
+    const { carrySeason } = await import('./page-state')
+    const { SEASON_2: S2 } = await import('./season-2')
+    const { createExplorer: explorerBuilt } = await import('./explorer')
+    carrySeason(S2)
+    explorerPage()
+
+    // Act
+    explorerBuilt({ current: 25 })
+
+    // Assert: a draft with a page, shown in this build, whose card on its own
+    // page goes back to its top (Lesson 25's WEB-SPEC, Explorer and season data)
+    const card = document.querySelector('#exCardHost .ex-card')
+    expect(openTitle()).toBe('Minor, properly')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Lesson 25')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Ready')
+    expect(
+      Array.from(card?.querySelectorAll('a.btn') ?? [], (a) =>
+        a.getAttribute('href'),
+      ),
+    ).toEqual(['#top'])
+    expect(
+      card?.querySelector('a.addr[href="/ear-lab?lesson=25"]'),
+    ).not.toBeNull()
+  })
+
+  it("opens Lesson 26's page on its own card, Ready, with the Jam link", async () => {
+    // Arrange: Lesson 26's page carries Season 2 before it draws (main.ts)
+    vi.resetModules()
+    const { carrySeason } = await import('./page-state')
+    const { SEASON_2: S2 } = await import('./season-2')
+    const { createExplorer: explorerBuilt } = await import('./explorer')
+    carrySeason(S2)
+    explorerPage()
+
+    // Act
+    explorerBuilt({ current: 26 })
+
+    // Assert: a draft with a page, shown in this build, whose card on its own
+    // page goes back to its top (Lesson 26's WEB-SPEC, Explorer and season data)
+    const card = document.querySelector('#exCardHost .ex-card')
+    expect(openTitle()).toBe('A second voice')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Lesson 26')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Ready')
+    expect(
+      Array.from(card?.querySelectorAll('a.btn') ?? [], (a) =>
+        a.getAttribute('href'),
+      ),
+    ).toEqual(['#top'])
+    expect(card?.querySelector('a.addr[href="/jam?lesson=26"]')).not.toBeNull()
+  })
+
+  it("opens Lesson 27's page on its own card, Ready, with the Exercises link", async () => {
+    // Arrange: Lesson 27's page carries Season 2 before it draws (main.ts)
+    vi.resetModules()
+    const { carrySeason } = await import('./page-state')
+    const { SEASON_2: S2 } = await import('./season-2')
+    const { createExplorer: explorerBuilt } = await import('./explorer')
+    carrySeason(S2)
+    explorerPage()
+
+    // Act
+    explorerBuilt({ current: 27 })
+
+    // Assert: a draft with a page, shown in this build, whose card on its own
+    // page goes back to its top (Lesson 27's WEB-SPEC, Explorer and season data)
+    const card = document.querySelector('#exCardHost .ex-card')
+    expect(openTitle()).toBe('Seventh chords and inversions')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Lesson 27')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Ready')
+    expect(
+      Array.from(card?.querySelectorAll('a.btn') ?? [], (a) =>
+        a.getAttribute('href'),
+      ),
+    ).toEqual(['#top'])
+    expect(
+      card?.querySelector('a.addr[href="/pitch-training?lesson=27"]'),
+    ).not.toBeNull()
+  })
+
+  it("opens Lesson 28's page on its own card, Ready, with the Karaoke Night link", async () => {
+    // Arrange: Lesson 28's page carries Season 2 before it draws (main.ts)
+    vi.resetModules()
+    const { carrySeason } = await import('./page-state')
+    const { SEASON_2: S2 } = await import('./season-2')
+    const { createExplorer: explorerBuilt } = await import('./explorer')
+    carrySeason(S2)
+    explorerPage()
+
+    // Act
+    explorerBuilt({ current: 28 })
+
+    // Assert: a draft with a page, shown in this build, whose card on its own
+    // page goes back to its top (Lesson 28's WEB-SPEC, Explorer and season data)
+    const card = document.querySelector('#exCardHost .ex-card')
+    expect(openTitle()).toBe('Cadences, form and a song in two parts')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Lesson 28')
+    expect(card?.querySelector('.eyebrow')?.textContent).toContain('Ready')
+    expect(
+      Array.from(card?.querySelectorAll('a.btn') ?? [], (a) =>
+        a.getAttribute('href'),
+      ),
+    ).toEqual(['#top'])
+    expect(
+      card?.querySelector('a.addr[href="/karaoke-night?lesson=28"]'),
+    ).not.toBeNull()
+  })
+
   it("lights a Season 2 lesson's lines in from Season 1, and its Season 1 lessons on its path", async () => {
     // Arrange
     explorerPage()
@@ -557,7 +695,19 @@ describe('the explorer, a tab per season', () => {
     ).toBe('Ready · after 16, 17')
     expect(
       document.querySelector('#exList [data-n="20"] small')?.textContent,
-    ).toBe('Coming later · after 5, 9, 10')
+    ).toBe('Ready · after 5, 9, 10')
+    expect(
+      document.querySelector('#exList [data-n="25"] small')?.textContent,
+    ).toBe('Ready · after 10, 21, 23')
+    expect(
+      document.querySelector('#exList [data-n="26"] small')?.textContent,
+    ).toBe('Ready · after 12, 24')
+    expect(
+      document.querySelector('#exList [data-n="27"] small')?.textContent,
+    ).toBe('Ready · after 12, 23')
+    expect(
+      document.querySelector('#exList [data-n="28"] small')?.textContent,
+    ).toBe('Ready · after 18, 26')
     expect(document.querySelectorAll('#exList .ex-row')).toHaveLength(14)
   })
 

@@ -241,6 +241,13 @@ function drawLine(
   }
 }
 
+/** A C's name and octave beside its bead: its type, the type's height and its gap past the bead's edge, px. */
+export const C_NAME = {
+  font: '500 12px "JetBrains Mono", monospace',
+  size: 12,
+  gap: 12,
+} as const
+
 // a C carries its name and number beside a tick: the octave number goes up there
 function drawCName(sc: Scene, b: BeadLook): void {
   const { ctx, ka } = sc
@@ -252,11 +259,11 @@ function drawCName(sc: Scene, b: BeadLook): void {
   ctx.moveTo(x - r0 - 9, y)
   ctx.lineTo(x + r0 + 9, y)
   ctx.stroke()
-  ctx.font = '500 12px "JetBrains Mono", monospace'
+  ctx.font = C_NAME.font
   ctx.fillStyle = COLOR.chrome
   ctx.textAlign = 'left'
   ctx.textBaseline = 'middle'
-  ctx.fillText(nameOf(m) ?? '', x + r0 + 12, y)
+  ctx.fillText(nameOf(m) ?? '', x + r0 + C_NAME.gap, y)
   ctx.globalAlpha = alpha
 }
 

@@ -9,7 +9,8 @@
 // not. A chord is three soft voices at 0.075 each when it plays alone, and
 // 0.05 each under Merc's "ooh" (0.2) or under the guide, so the tune or the
 // root stands clear of it; a single note, a root or an arpeggio's note, is
-// the soft tone's own 0.13 (FACTS 74).
+// the soft tone's own 0.13 (FACTS 74). The four levels are the kit's
+// (kit/sound.ts), moved there for Lesson 25's page.
 //
 // The note's shape is the kit's coming `RunNote` (`{ t, midi, dur }`, in
 // `kit/run.ts`) with a gain and a voice kind on each note. None of those
@@ -23,6 +24,7 @@
 // whole of it with `inKey`. Slow doubles every onset and length.
 
 import type { VoiceOptions } from '@/features/lessons/kit/sound'
+import { CHORD_GAIN, MERC_GAIN, NOTE_GAIN, UNDER_GAIN, } from '@/features/lessons/kit/sound'
 import type { Voice } from '@/features/lessons/kit/voice-choice'
 import type { KeyName, TuneId } from './music'
 import { BAR_SEC, chordsOf, loopOf, rootLine, tuneOf } from './music'
@@ -37,15 +39,6 @@ export interface SoundNote {
 }
 
 export type SoundNotes = readonly SoundNote[]
-
-/** A single soft note: a tapped bead, a root, an arpeggio's note (the soft tone's 0.13). */
-export const NOTE_GAIN = 0.13
-/** Each voice of a chord that plays alone (FACTS 74). */
-export const CHORD_GAIN = 0.075
-/** Each voice of a chord under Merc's "ooh" or under the guide (FACTS 74). */
-export const UNDER_GAIN = 0.05
-/** Merc's "ooh" (the kit's 0.2). */
-export const MERC_GAIN = 0.2
 
 /** A chip's chord (FACTS 69). */
 export const CHIP_SEC = 1.4

@@ -341,7 +341,7 @@ song, takes, swell, endings, listen back and still, plus live mode at the checkp
   (Audio). While a take sounds the predict ignores its own two buttons (`:179`), so in the cold open
   a take is cut short only from outside it: another source taking the page's one "now playing" owner
   (a Four words play, say, on a screen tall enough to show both), the Sound toggle going off, or the
-  tab going hidden, both of which stop every voice (`Sound.stopAll`, `kit/sound.ts:586`, `:617`)
+  tab going hidden, both of which stop every voice (`Sound.stopAll`, `kit/sound.ts:598`, `:629`)
   without telling the source. The page's `play` resolves `false` in each of the three cases, so it
   must notice the last two itself (Audio).
 - The hints, each true in every state the kit shows it in (until the reveal, the kit shows `silent`
@@ -427,7 +427,7 @@ States:
    (MASTER-PLAN § 4.2 item 2).
    - **Move do**: Lesson 4's control, word for word (`learn/04.html:1254-1263`): a group labelled
      "Move do:" with two buttons, "lower" and "higher", a semitone a tap, up to four each way from
-     D3 (or D4), each disabled at its end, as Lesson 4's are (`kit/move-do.ts:26-27`, `:38-49`;
+     D3 (or D4), each disabled at its end, as Lesson 4's are (`kit/move-do.ts:26-27`, `:38-52`;
      70). The bands, the rows and the window move with it, and the chart's summary says where do is
      ("Do is D3"), in Lesson 4's spelling (18). Move do can change before Start and between takes,
      never during a take; a take made before a move is redrawn against the bands it was sung to,
@@ -538,7 +538,7 @@ pure and unit-tested; 53):
 
 - Input: the take's raw frames, the take's number, and Merc's do and la as MIDI notes (from do D3:
   50 and 59). A frame is voiced when Voice Mirror's `preprocess` keeps it, as `readTake` takes them
-  (`kit/take.ts:144-166`).
+  (`kit/take.ts:155-179`).
 - Under 1.5 s of voiced frames gives `{ heard: false }` and `NOT_HEARD_PHRASE_LINE`, "We didn't hear
   the phrase that time.", the kit's `NOT_STEADY_LINE` (`:64-65`) with "the phrase" for "a steady
   note" and without its "Try again at about speaking volume.", since the takes stop at three.
@@ -550,7 +550,7 @@ pure and unit-tested; 53):
   swell.
 - The octave line, as a second sentence, only when both notes, moved by the same whole number of
   octaves, are Merc's do and la: the kit's octave words in the plural, "You sang it an octave lower:
-  same notes." (`octaveLine`, `kit/take.ts:119-132`, whose "two octaves" form carries over).
+  same notes." (`octaveLine`, `kit/take.ts:122-135`, whose "two octaves" form carries over).
 - Every template passes `validateGuidedDynamicClaim` (`src/lib/guided-voice/claims.ts`, surface
   `finding`) in a unit test, as Lesson 3's lines do (95).
 
@@ -559,7 +559,7 @@ take (`:64`), released when it ends, on leaving the section, on `pagehide` and w
 hidden (`:18-22`); the YIN-only F0 stream (`src/lib/pitch-f0-stream.ts`); one AudioContext through
 `Sound.context()`, so every note Merc sings and every frame the take hears share a clock; nothing
 plays while a take is open. The addition is `Listener.media`, the stream the listener already holds
-(`:58-59`), so the recorder can use it without asking for the microphone again (51).
+(`:77-78`), so the recorder can use it without asking for the microphone again (51).
 
 Recording (`kit/record.ts`, proposed; 51, 52):
 
@@ -577,7 +577,7 @@ Recording (`kit/record.ts`, proposed; 51, 52):
 - Playback applies one gain to the whole take: the gain takes the take's peak to one set level, the
   same for every take, so a take sung quietly and one sung louder play back at the same peak, and it
   never changes during the take. Nothing compresses the take or sets its gain as it plays: it goes
-  past the master bus's compressor (`kit/sound.ts:163-172`), and through no automatic gain, so a swell
+  past the master bus's compressor (`kit/sound.ts:175-184`), and through no automatic gain, so a swell
   keeps its shape.
 - The stream it records is the listener's, the mic manager's analysis stream, with the browser's
   echo cancellation, noise suppression and automatic gain control off (`ANALYSIS_CONSTRAINTS`,
@@ -607,10 +607,10 @@ without a playhead, and Merc and Tavi skip their reactions (REQ-GVC-083).
 ### 5. Recall and quick check
 
 The kit's quiz as it stands carries everything two quizzes on one page need (`kit/quiz.ts`): an id
-`prefix` for each quiz's elements (`:88-93`), question ids, from which a question's lesson is read
-(`:42-47`, `lessonOfQuestion` `:131-135`), an optional `lesson` (`:82-83`) and links that leave this
-page for a question from another lesson (`linkAway`, `:186-216`), which keep their words and drop
-the link where that lesson is not live (`:186-190`).
+`prefix` for each quiz's elements (`:96-101`), question ids, from which a question's lesson is read
+(`:42-47`, `lessonOfQuestion` `:141-145`), an optional `lesson` (`:90-91`) and links that leave this
+page for a question from another lesson (`linkAway`, `:196-226`), which keep their words and drop
+the link where that lesson is not live (`:196-200`).
 
 - **Recall**: Lesson 5's questions 2 and 4, word for word with their feedback (LESSON.md; 7), under
   their Lesson 5 ids, `l05-q2` and `l05-q4`, with the prefix `rc-`, as Lessons 3 and 5's recalls
@@ -622,15 +622,15 @@ the link where that lesson is not live (`:186-190`).
   again" and "Try Lesson 5, Step 5 again", links that open Lesson 5's page at that step,
   `/learn/05#step-1` and `/learn/05#step-5` (its step ids, `learn/05.html:1052`, `:1269`), in a new
   tab so the viewer keeps their place here, never `data-goto-step`, which would move this page's own
-  deck (`quiz.ts:186-216`); where Lesson 5 is not live, each keeps its words with no link
-  (`:206-209`; Edge cases). The address is the quiz's `away.href` (`quiz.ts:94-101`), the kit's
-  `recallStepHref` (`:141-143`) in place of the default `/learn/05#lesson`, and the kit's step deck
-  opens at the step an address names (`kit/step-deck.ts:18-23`, `:298-306`).
+  deck (`quiz.ts:196-226`); where Lesson 5 is not live, each keeps its words with no link
+  (`:216-219`; Edge cases). The address is the quiz's `away.href` (`quiz.ts:102-109`), the kit's
+  `recallStepHref` (`:151-153`) in place of the default `/learn/05#lesson`, and the kit's step deck
+  opens at the step an address names (`kit/step-deck.ts:18-23`, `:308-316`).
 - **Quick check**: LESSON.md's four questions, ids `l14-q1` to `l14-q4`, keys `fyp-l14-seed` and
   `fyp-l14-quiz-v1` (`lesson-04/main.ts:91`), and `lesson: 14`, so answering all four marks Lesson
   14 done in the explorer. Three answers each, shuffled per question from the stored seed, one-line
   feedback for every answer, and a check icon and ink (not gold) on the right one. The kit prints
-  "Right." or "Not quite." before each line (`quiz.ts:315`), so no feedback line starts with
+  "Right." or "Not quite." before each line (`quiz.ts:335`), so no feedback line starts with
   "Right", "Yes" or "Correct". "Try Step 2 again", "Try Step 3 again" and "Try Step 4 again" use the
   kit's `data-goto-step`. LESSON.md's note on the shuffle is editorial and never printed. Answers
   stay local; #1193 sends each first answer in a visit, anonymously.
@@ -641,7 +641,7 @@ Every tone is synthesised in the page with Web Audio at the frequencies in 82, t
 sound module and its house envelopes (`.claude/memory/audio-pop-free-playback.md`), and started only
 by a tap: Merc's takes, phrases and the song in Merc's "ooh"; the chords and the count-in in the
 soft tone (83 to 90). A sung line is one voice from breath to breath, the kit's `contourVoice`
-(`kit/sound.ts:390-423`), its level a share of Merc's 0.2 and its ramps exponential; a repeated note
+(`kit/sound.ts:402-435`), its level a share of Merc's 0.2 and its ramps exponential; a repeated note
 dips to 0.6 of its level for about 0.06 s, never to silence, so two notes are heard as two within
 one voice; a chord is three soft voices at 0.05 each, held for its minim (87). A breath is a 0.3 s
 gap, not a sound, because the kit's noise cannot be stopped once started (84). The one recorded
@@ -655,8 +655,8 @@ last, whichever control made it. Leaving a step stops its sound and anything it 
 of the song, the second of two takes or a chord under a line, whatever the route: Previous or Next,
 a swipe, the wide page's scroll, the lesson menu's jump, a `#step-N` address and a quick-check step
 link all reach the deck's `show`, which calls each toy's `onStep(step, previous)`
-(`kit/step-deck.ts:45-47`, `:145-186`), and the page stops the step's sound whenever `step` differs
-from `previous`; a layout switch calls it with the same step (`:193-196`) and stops nothing. Leaving
+(`kit/step-deck.ts:45-47`, `:155-196`), and the page stops the step's sound whenever `step` differs
+from `previous`; a layout switch calls it with the same step (`:203-206`) and stops nothing. Leaving
 Sing it's section, or the tab going hidden, stops a playing take as it releases the microphone. A
 play cut short, by a new play, a stop, the Sound toggle or a hidden tab, never counts as heard: the
 cold open's `play` resolves `false` for it, and the predict counts only a play that runs to its end
@@ -829,13 +829,13 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
    Tavi. It shows no swell, no light and no breath mark, so it does not answer the cold
    open's predict.
 4. First-paint ceilings for `learn/14.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:151-369`,
-   `:326-334`; `:572-575`, `:585-589`). Every build emits every lesson page, and the check fails a
-   document with no ceiling (`:959-963`), so without them the Browser jobs fail before any spec
+   JavaScript table and one in its stylesheet table, beside Lessons 3 and 6's (`:151-378`,
+   `:331-339`; `:606-609`, `:619-623`). Every build emits every lesson page, and the check fails a
+   document with no ceiling (`:1018-1022`), so without them the Browser jobs fail before any spec
    runs, as Lesson 6's did on PR #1149. Each is the page's measured first paint plus about a
-   quarter, the tables' rule (`:47-58`, `:437-447`), measured in `build:e2e`, where the check runs
+   quarter, the tables' rule (`:47-58`, `:467-477`), measured in `build:e2e`, where the check runs
    (`package.json:20`), as Lesson 6's entry warns, since a build of one page alone weighs it lighter
-   (`assert-first-paint-budgets.mjs:270-272`). As on Lesson 3, the listener, the pitch detector and
+   (`assert-first-paint-budgets.mjs:273-275`). As on Lesson 3, the listener, the pitch detector and
    Voice Mirror's scorer arrive through a dynamic import when Start is pressed
    (`scripts/assert-first-paint-budgets.mjs:131-135`), and the record module and the app's recorder
    with them, so the ceiling holds only while that boundary does.
@@ -872,8 +872,8 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     wiring.
 11. Move do and the count-in as kit parts, built by #1192, which moved them from Lesson 4's page
     into `kit/move-do.ts` as Lesson 9's spec proposed (What the kit and the app still need, 10,
-    there): Move do word for word (`kit/move-do.ts:26-27`, `:38-49`), and Lesson 4's count-in
-    (`countIn`, `:65-67`, `:69-74`), which this page plays before every take.
+    there): Move do word for word (`kit/move-do.ts:26-27`, `:38-52`), and Lesson 4's count-in
+    (`countIn`, `:68-70`, `:72-77`), which this page plays before every take.
 12. `kit/next-card.ts`: a close that knows Sing it's ending, required before this page is built, the
     lead's decision (21 October 2026), so the page waits for it, as it did for item 11. After
     "Effortful", "Uncomfortable" or "Just listen today", the card keeps "You've seen every note you
@@ -881,15 +881,15 @@ among them (PR #1149), and in Lesson 9's spec, beyond the parts Lessons 2 to 9 p
     button, which the rules suppress after such an ending (REQ-GVC-021, REQ-GVC-023, REQ-GVC-055;
     78). The kit draws the close once (`next-card.ts:224-227`), so either `createNextCard` redraws
     it when the visit's ending changes, or the page draws it once Sing it has ended. `SEASON_END`
-    would gain the shorter line beside its own (`lesson-copy.ts:210-216`), kept free of the team's
+    would gain the shorter line beside its own (`lesson-copy.ts:245-252`), kept free of the team's
     words as the test asks (`lesson-copy.test.ts:250-258`). Its unit test and End to end 11 check it
     (Tests), and so does Page QA.
-13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:515-583`),
+13. A stoppable noise (84), proposed: `playNoise` returns nothing to stop (`kit/sound.ts:527-595`),
     so a page cannot cut an in-breath when the viewer leaves a step. Until it returns a voice like
     every other sound, a breath is a gap, as here.
 14. The four-words strip, built: promoted from Lesson 1's page (`lesson-01/words.ts`) into
     `kit/words-strip.ts` with Lesson 7's page. `recallStepHref`, built too: Lesson 8's page moved it
-    into the kit's quiz (`kit/quiz.ts:141-143`), beside `lessonPageHref` (`:137-139`), so Lessons 9
+    into the kit's quiz (`kit/quiz.ts:151-153`), beside `lessonPageHref` (`:147-149`), so Lessons 9
     and 14 take it from there.
 15. The hook and the tease: done in this package (1, 2).
 16. `src/e2e/helpers/tone-wav.ts`: Lesson 9's `writeStepsWav(steps, leadSilence)`, built (`:156`),
@@ -991,7 +991,7 @@ What the page does where nothing above says:
   `kit/page-state.ts:64-127`, called by `initMasthead`, `kit/page-chrome.ts:131`): each "After
   Lesson N" chip for such a lesson stays as a plain chip, and any other link keeps its words. The
   kit's quiz does the same for the recall's step links, which keep their words, "Try Lesson 5, Step
-  1 again", with no link (`kit/quiz.ts:186-216`). Step 4's "as in Lesson 12" names a lesson that may
+  1 again", with no link (`kit/quiz.ts:196-226`). Step 4's "as in Lesson 12" names a lesson that may
   not be live, and is not a link. End to end 14 holds it.
 - **The season's close after a rest ending**: after "Effortful", "Uncomfortable" or "Just listen
   today" it keeps "You've seen every note you sing." and "See the season map", and shows neither

@@ -16,6 +16,7 @@
 // region. Pure, so each is tested against FACTS and against the app's own
 // presets (`VOCAL_RANGES`), which the page itself never loads.
 
+import type { LadderId } from '@/features/lessons/kit/ladder-flow'
 import { MAJOR_DEGREES, majorScale } from '@/features/lessons/kit/major-scale'
 import { clampMove } from '@/features/lessons/kit/move-do'
 import type { Spelled } from '@/features/lessons/kit/notes'
@@ -98,8 +99,8 @@ export function rungName(doMidi: number, id: RungId): RungName {
 
 // -------------------------------------------------------------- ladders
 
-/** Sing it's two ladders: up to the top do, or the smaller one back down to do. */
-export type LadderId = 'full' | 'smaller'
+/** Sing it's two ladders, the kit's ids: up to the top do, or the smaller one back down to do. */
+export type { LadderId }
 
 /** A note of a ladder: its rung, and the label its reading line opens with. */
 export interface LadderNote {

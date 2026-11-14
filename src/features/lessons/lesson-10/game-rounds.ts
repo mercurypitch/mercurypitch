@@ -20,9 +20,9 @@
 // carry no level: the page's play sounds the chord's three together at a
 // chord voice's level (lesson-10/sounds.ts).
 
+import type { Quality } from '@/features/lessons/kit/chords'
+import { DEGREES, FIFTH, QUALITIES, THIRD_OF, } from '@/features/lessons/kit/chords'
 import type { EarNote, EarRound } from '@/features/lessons/kit/ear-game'
-import type { Quality } from './chords'
-import { DEGREES, FIFTH, QUALITIES, THIRD_OF } from './chords'
 
 /** The answers, in key order: 1 is Major, 2 is Minor. */
 export const ANSWERS: readonly Quality[] = QUALITIES

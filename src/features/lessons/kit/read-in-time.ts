@@ -37,6 +37,16 @@
 //   from its own note, for a note held out of tune. No gap is measured from
 //   the wrong note, and nothing reads when the voice came: timing is never
 //   scored.
+// - Another part's note. Lesson 26 sings a part while another voice sings
+//   the other part (`other`), booked from bar 1's first beat and never
+//   anchored. A note not heard on its note whose own frames sit more than
+//   60 cents off is compared, before the neighbour rule, frame by frame
+//   with the note the other part was sounding at that frame's time: where
+//   those distances, folded, have their median within 60 cents, it reads as
+//   that part's note, the one most of its frames sat on ("That was Merc's
+//   note: mi.", read-along.ts `readingLines`), with no gap and no cause.
+//   The parts are a third apart, so it never reads "in the band" (Lesson
+//   26 WEB-SPEC, Toys 5, the reader; FACTS 28, 58).
 // - No voice: no window holds a voiced frame.
 //
 // Every value is new, chosen for a quarter note's 1 s at 60 BPM, and is set
@@ -83,11 +93,18 @@ export interface InTimeOptions {
   readonly bar1: number
   /** When the take opened, on the same clock: frames are kept from here, half a beat before bar 1. */
   readonly opened: number
+  /**
+   * The part another voice sings under the take (Lesson 26), each note's
+   * beats from bar 1's first beat as booked, never moved by the anchor.
+   */
+  readonly other?: readonly WrittenNote[]
 }
 
 /** A note's reading, and whether it was heard on its note. */
 export interface InTimeNote extends NoteReading {
   readonly heard: boolean
+  /** The other part's note it was sung on, by its place in that part (Lesson 26); absent for any other reading. */
+  readonly other?: number
 }
 
 export type InTimeReading =
@@ -114,6 +131,14 @@ function runsOf(voiced: readonly VoicedFrame[]): VoicedFrame[][] {
   return runs
 }
 
+/** When the first run of voice at least 0.15 s long started, on the frames' clock: the singer's first note; null with none. */
+export function firstRunAt(voiced: readonly VoicedFrame[]): number | null {
+  const first = runsOf(voiced).find(
+    (run) => run[run.length - 1].t - run[0].t >= ANCHOR_RUN_SEC - 1e-9,
+  )
+  return first === undefined ? null : first[0].t
+}
+
 /**
  * The anchor: how far the singer's first note started from bar 1's first
  * beat, s, early below 0; null where the take's first run of 0.15 s or more
@@ -124,16 +149,31 @@ export function anchorOf(
   o: Pick<InTimeOptions, 'bpm' | 'bar1' | 'opened'>,
 ): number | null {
   const spb = 60 / o.bpm
-  const first = runsOf(voiced).find(
-    (run) => run[run.length - 1].t - run[0].t >= ANCHOR_RUN_SEC - 1e-9,
-  )
-  if (first === undefined) return null
-  const start = first[0].t
+  const start = firstRunAt(voiced)
+  if (start === null) return null
   if (start - o.opened <= MAX_HOP) return null
   const shift = start - o.bar1
   if (shift < -ANCHOR_EARLY_BEATS * spb - 1e-9) return null
   if (shift > ANCHOR_LATE_BEATS * spb + 1e-9) return null
   return shift
+}
+
+/**
+ * How far after bar 1's first beat the take's first run of voice at least
+ * 0.15 s long started, s, early below 0: the anchor's run, wherever it
+ * falls, so also where it anchors nothing, as a run already going when the
+ * take opened, or one that came more than two beats late. A playback lines
+ * the take's recording up on it (Lesson 28 WEB-SPEC, The playback). Null
+ * with no such run.
+ */
+export function onsetOf(
+  frames: readonly F0Frame[],
+  o: Pick<InTimeOptions, 'bar1' | 'opened'>,
+): number | null {
+  const start = firstRunAt(
+    preprocess(frames.filter((f) => f.t >= o.opened - 1e-9)),
+  )
+  return start === null ? null : start - o.bar1
 }
 
 /** The voiced frames from `from` to `to`, by time. */
@@ -200,6 +240,52 @@ const onANeighbour = (
         ON_NOTE_CENTS,
   )
 
+/** The place of the other part's note sounding at `t`, from bar 1's first beat as booked; -1 where none sounds. */
+function otherAt(
+  o: InTimeOptions,
+  other: readonly WrittenNote[],
+  t: number,
+): number {
+  const spb = 60 / o.bpm
+  return other.findIndex(
+    (m) =>
+      t >= o.bar1 + m.beat * spb - 1e-9 &&
+      t < o.bar1 + (m.beat + m.beats) * spb - 1e-9,
+  )
+}
+
+/**
+ * Whether `frames`, each against the other part's note sounding at its
+ * time, sit within 60 cents of it by their median, folded: the place of the
+ * note most of them sat on, the earlier on a tie; null where they do not,
+ * or no part sounds under them.
+ */
+function onTheOther(
+  frames: readonly VoicedFrame[],
+  o: InTimeOptions,
+): number | null {
+  const other = o.other ?? []
+  const against = frames.flatMap((f) => {
+    const j = otherAt(o, other, f.t)
+    return j < 0
+      ? []
+      : [{ j, d: Math.abs(foldCents(f.cents - other[j].midi * 100)) }]
+  })
+  if (against.length === 0) return null
+  if (median(against.map((a) => a.d)) > ON_NOTE_CENTS) return null
+  const counts = new Map<number, number>()
+  for (const a of against)
+    if (a.d <= ON_NOTE_CENTS) counts.set(a.j, (counts.get(a.j) ?? 0) + 1)
+  let best: number | null = null
+  let most = 0
+  for (const [j, n] of counts)
+    if (n > most) {
+      best = j
+      most = n
+    }
+  return best
+}
+
 /** Reads a take of written notes sung in time: each note in its own beats, anchored on the singer's first. */
 export function readInTime(
   frames: readonly F0Frame[],
@@ -230,8 +316,13 @@ export function readInTime(
     )
     if (voicedSec(own) < OWN_VOICE_SEC - 1e-9) return NOT_STEADY
     const diffs = own.map((f) => f.cents - n.midi * 100)
-    const off = Math.abs(median(diffs.map(foldCents))) > ON_NOTE_CENTS
-    if (off && onANeighbour(own, o.notes, i)) return NOT_STEADY
+    if (Math.abs(median(diffs.map(foldCents))) > ON_NOTE_CENTS) {
+      // the other part's note first: in these parts it is sometimes the
+      // singer's own note two places away (Lesson 26 FACTS 58)
+      const j = onTheOther(own, o)
+      if (j !== null) return { ...NOT_STEADY, other: j }
+      if (onANeighbour(own, o.notes, i)) return NOT_STEADY
+    }
     return readingOf(diffs, false)
   })
   return { voice: true, shift, notes }

@@ -14,7 +14,7 @@
 // (Lesson 16 needs Lesson 9) is a plain edge, and the explorer draws it as
 // a line in from the season before.
 //
-// Lessons 15 to 19 and 21 to 24 have their pages, drafts (drafts.ts); every other
+// Lessons 15 to 28 have their pages, drafts (drafts.ts); every other
 // lesson is coming later, with no page, no reading time and no film, as
 // Lesson 14 was before its page. A lesson's page, its reading time, its
 // tease and its figure land with the page. Each entry takes its lesson's copy from lesson-copy.ts, as
@@ -171,6 +171,10 @@ const ENTRIES_2: readonly Lesson[] = [
     title: 'Runs and the pentatonic scale',
     short: 'Runs',
     topics: ['S18', 'T16'],
+    // A draft until Lessons 5, 9 and 10 are live and the vocal coach's
+    // sign-off (drafts.ts).
+    minutes: 15,
+    page: '/learn/20',
     hook: 'How do singers sing a fast run without the notes smudging together?',
     pr: {
       needs:
@@ -276,6 +280,10 @@ const ENTRIES_2: readonly Lesson[] = [
     title: 'Minor, properly',
     short: 'Minor, properly',
     topics: ['T15b'],
+    // A draft until Lessons 10, 21 and 23 are live and the vocal coach's
+    // look at the sung checkpoint and the sung drill (drafts.ts).
+    minutes: 15,
+    page: '/learn/25',
     hook: 'Why does a minor key often raise one note just before it comes home?',
     pr: {
       needs:
@@ -294,6 +302,10 @@ const ENTRIES_2: readonly Lesson[] = [
     title: 'A second voice',
     short: 'Second voice',
     topics: ['S20b', 'T23'],
+    // A draft until Lessons 12 and 24 are live, the lab test and the vocal
+    // coach's sign-off (drafts.ts).
+    minutes: 16,
+    page: '/learn/26',
     hook: 'Can you make a harmony by singing the tune a third higher?',
     pr: {
       needs: 'The harmony-line drill (SEASON-2 § 5.2 item 17)',
@@ -311,6 +323,10 @@ const ENTRIES_2: readonly Lesson[] = [
     title: 'Seventh chords and inversions',
     short: 'Sevenths',
     topics: ['T24', 'T25'],
+    // A draft until Lessons 12 and 23 are live and the vocal coach's look
+    // at the sung checkpoint and the sung drill (drafts.ts).
+    minutes: 15,
+    page: '/learn/27',
     hook: 'Add one note to the V chord and it pulls towards home. Which note, and why?',
     pr: {
       needs:
@@ -329,6 +345,10 @@ const ENTRIES_2: readonly Lesson[] = [
     title: 'Cadences, form and a song in two parts',
     short: 'Cadences',
     topics: ['T22', 'T31'],
+    // A draft until Lessons 18 and 26 are live, the lab test and the vocal
+    // coach's sign-off (drafts.ts).
+    minutes: 19,
+    page: '/learn/28',
     hook: "How can a song sound as if it's ending, then keep going?",
     pr: {
       needs:

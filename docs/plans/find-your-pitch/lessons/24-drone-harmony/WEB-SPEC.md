@@ -412,7 +412,7 @@ answers in a shuffled order. The recall asks Lesson 10's question object `l10-q1
 (`src/features/lessons/lesson-10/quiz-questions.ts:41-61`) and Lesson 23's question 3, once Lesson
 23's questions are a module (What the kit and the app still need), imported and never copied; their
 step links read "Try Lesson 10, Step 1 again" and "Try Lesson 23, Step 1 again" through `linkAway`
-(`src/features/lessons/kit/quiz.ts:191-205`), plain words where that page is not live (FACTS 7). The
+(`src/features/lessons/kit/quiz.ts:201-215`), plain words where that page is not live (FACTS 7). The
 quick check's questions are `l24-q1` to `l24-q4`, in a module of their own, so Lesson 26's recall
 can import `l24-q1` word for word (FACTS 74). Quick check 4's Play, by ear only, plays A3 with E4
 at 330 Hz, 4.0 s; it is disabled until the cold open's choice under the line "Choose an answer at
@@ -444,7 +444,7 @@ States:
    sing" only, LESSON.md's line, "If do feels low, move it higher.", and Lesson 4's control as
    Lesson 20's page has it: a group labelled "Move do:" with "lower" and "higher", with the reach
    `{ lower: 0, higher: 5 }` for both voices (`MoveReach`, `src/features/lessons/kit/move-do.ts:29-36`;
-   `clampMove`, `src/features/lessons/kit/move-do.ts:39-42`). "lower" rests at D, `aria-disabled`,
+   `clampMove`, `src/features/lessons/kit/move-do.ts:38-45`). "lower" rests at D, `aria-disabled`,
    never `disabled`, and after any press of "higher" it is the way back
    (`src/features/lessons/kit/move-do.ts:8-12`). Do starts on D every visit, and a move holds for
    the visit, in memory. Do moves with the drone, Merc's model notes, the band, the quiet check's
@@ -596,10 +596,10 @@ music bed (FACTS 67 to 73).
   is a straight tone with harmonics: Merc's "ooh" partials with no modulator, through Lesson 22's
   vibrato option set to null (its item 4,
   `docs/plans/find-your-pitch/lessons/22-vibrato/WEB-SPEC.md:684-697`; `src/lib/demo-voice.ts:33-37`;
-  `src/features/lessons/kit/sound.ts:53-81`), since the kit's soft tone carries the third's beating
+  `src/features/lessons/kit/sound.ts:64-93`), since the kit's soft tone carries the third's beating
   harmonics 26 to 32 dB down (FACTS 72). Which timbre makes the fifth's slow beat and the third's
   fast one audible on phone speakers and on headphones, through the master compressor
-  (`src/features/lessons/kit/sound.ts:165-172`), is the lab's to choose before any beat rate goes
+  (`src/features/lessons/kit/sound.ts:177-184`), is the lab's to choose before any beat rate goes
   on screen (What the kit and the app still need, item 7).
 - **Exact frequencies.** Each tone's partials sit at exact multiples of its frequency, so every beat
   is the arithmetic of FACTS 11 to 21; nothing is detuned to make a beat louder or slower. The slide
@@ -607,7 +607,7 @@ music bed (FACTS 67 to 73).
   (`src/features/lessons/kit/sound.ts:18-23`).
 - **One audio time.** The drone and every note set against it start together, on one audio time,
   each partial at phase 0 (the kit starts a voice at its own time, `build`,
-  `src/features/lessons/kit/sound.ts:224-263`): two notes on one frequency add by their phase, and
+  `src/features/lessons/kit/sound.ts:236-275`): two notes on one frequency add by their phase, and
   at 180° the fundamental and every odd harmonic cancel. So the slide ends 13° from in phase and
   its still pair sounds whole, and Step 1's snap restarts the top note on a whole period of the
   drone's (Toys 2; FACTS 44, 69).
@@ -615,13 +615,13 @@ music bed (FACTS 67 to 73).
   cents either side, grown in over 0.3 s, its phase 0 at the voice's start
   (`docs/plans/find-your-pitch/lessons/22-vibrato/WEB-SPEC.md:196`), through Lesson 22's vibrato
   option on the top note only; the drone stays straight. Merc's usual wave, 5.5 swings at 14 cents
-  (`src/features/lessons/kit/sound.ts:247-262`), would leave 78 % of the slow throb, so it is not
+  (`src/features/lessons/kit/sound.ts:259-274`), would leave 78 % of the slow throb, so it is not
   the demonstration (FACTS 38).
-- **Levels.** A note at the kit's 0.13 and Merc at 0.2 (`src/features/lessons/kit/sound.ts:240`); a
+- **Levels.** A note at the kit's 0.13 and Merc at 0.2 (`src/features/lessons/kit/sound.ts:252`); a
   drone pair at the note level for each tone. In Sing it the drone sits below Merc's notes, at a
   level the lab sets so the singer's own voice stays clear in the headphones (FACTS 54).
 - **A drone under a take.** The kit holds every sound off while a take is open
-  (`src/features/lessons/kit/sound.ts:643-662`); Sing it's drone is the one exception, started
+  (`src/features/lessons/kit/sound.ts:655-674`); Sing it's drone is the one exception, started
   before the take opens and kept through it, with every other source still hushed (What the kit and
   the app still need, item 5).
 - **One low note.** The page's lowest sound is D3, 146.83 Hz, the lower voice's drone and do, which a
@@ -740,7 +740,7 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    this page's holds; and its item 7, Lesson 5's hold flow in the kit
    (`docs/plans/find-your-pitch/lessons/22-vibrato/WEB-SPEC.md:732`), with this page's options
    (item 8). The page is not published without them.
-5. **A drone under a take**, code with tests: the kit's hush (`src/features/lessons/kit/sound.ts:643-662`)
+5. **A drone under a take**, code with tests: the kit's hush (`src/features/lessons/kit/sound.ts:655-674`)
    gains one kept source, a drone voice started before the hush, which the hush leaves sounding while
    it stops and silences everything else; the drone's own release ends it. Tests: during a take a
    play of any other source sounds nothing and says nothing; the kept drone sounds until its release;

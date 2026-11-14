@@ -8,9 +8,10 @@
 // counts end on 11 of 15, 10 of 12 and 10 of 12; Slow doubles every length.
 
 import { describe, expect, it } from 'vitest'
+import { MERC_GAIN, UNDER_GAIN } from '@/features/lessons/kit/sound'
 import type { TuneId } from './music'
 import { TUNE_IDS, tuneOf } from './music'
-import { lengthOf, MERC_GAIN, tune, UNDER_GAIN } from './sounds'
+import { lengthOf, tune } from './sounds'
 import { tallyOf, tuneIdOf, tuneSound } from './tune-play'
 
 describe("Lesson 12's tune play", () => {

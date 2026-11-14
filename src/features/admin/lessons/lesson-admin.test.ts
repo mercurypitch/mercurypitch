@@ -75,26 +75,14 @@ describe('lessonRows', () => {
     )
   })
 
-  it('reads every Season 2 lesson but Lessons 15 to 19 and 21 to 24 as planned, with no page and nothing to publish', () => {
+  it('reads no Season 2 lesson as planned: every one, 15 to 28, has its page', () => {
     // Act
-    const withPage = (n: number): boolean =>
-      [15, 16, 17, 18, 19, 21, 22, 23, 24].includes(n)
-    const rows = lessonRows().filter(
-      (row) => row.lesson.n >= 15 && !withPage(row.lesson.n),
-    )
+    const rows = lessonRows().filter((row) => row.lesson.n >= 15)
 
     // Assert
-    expect(rows.map((row) => row.lesson.n)).toEqual(
-      LESSONS_2.filter((L) => !withPage(L.n)).map((L) => L.n),
-    )
-    for (const row of rows) {
-      expect(row.build, `lesson ${row.lesson.n}`).toBe('planned')
-      expect(row.built, `lesson ${row.lesson.n}`).toBe(false)
-      expect(row.written, `lesson ${row.lesson.n}`).toBe(false)
-      expect(row.waitingOn, `lesson ${row.lesson.n}`).toBeNull()
-      expect(row.path).toBe(`/learn/${row.lesson.n}`)
-      expect(row.signature, `lesson ${row.lesson.n}`).not.toBeNull()
-    }
+    expect(rows.map((row) => row.lesson.n)).toEqual(LESSONS_2.map((L) => L.n))
+    expect(rows.filter((row) => row.build === 'planned')).toEqual([])
+    for (const row of rows) expect(row.path).toBe(`/learn/${row.lesson.n}`)
   })
 
   it("reads Lesson 15, Season 2's first page, as a draft built where drafts are shown, waiting on its sign-off", () => {

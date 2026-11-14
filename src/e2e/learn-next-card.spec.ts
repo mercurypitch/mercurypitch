@@ -9,7 +9,7 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 5 to 19, 21, 22, 23 and 24 are live here; a page that holds them back is
+// does, so Lessons 5 to 28 are live here; a page that holds them back is
 // next-card.test.ts's, and one the site worker served with the console's
 // state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
@@ -140,9 +140,15 @@ const CARDS: readonly (readonly [string, string, string, string])[] = [
   ],
   [
     '/learn/19',
-    'Next lesson 20 · Runs and the pentatonic scale Coming later',
-    '#explorer',
-    'See it on the map',
+    'Next lesson 20 · Runs and the pentatonic scale Ready · 15 min',
+    '/learn/20',
+    'Start lesson',
+  ],
+  [
+    '/learn/20',
+    'Next lesson 21 · Keys and the circle of fifths Ready · 15 min',
+    '/learn/21',
+    'Start lesson',
   ],
   [
     '/learn/21',
@@ -164,9 +170,27 @@ const CARDS: readonly (readonly [string, string, string, string])[] = [
   ],
   [
     '/learn/24',
-    'Next lesson 25 · Minor, properly Coming later',
-    '#explorer',
-    'See it on the map',
+    'Next lesson 25 · Minor, properly Ready · 15 min',
+    '/learn/25',
+    'Start lesson',
+  ],
+  [
+    '/learn/25',
+    'Next lesson 26 · A second voice Ready · 16 min',
+    '/learn/26',
+    'Start lesson',
+  ],
+  [
+    '/learn/26',
+    'Next lesson 27 · Seventh chords and inversions Ready · 15 min',
+    '/learn/27',
+    'Start lesson',
+  ],
+  [
+    '/learn/27',
+    'Next lesson 28 · Cadences, form and a song in two parts Ready · 19 min',
+    '/learn/28',
+    'Start lesson',
   ],
 ]
 
@@ -458,6 +482,35 @@ test("Lesson 14's Wrap closes the season: no link itself, its line, Karaoke Nigh
   await expect(page.locator('#wrap a.next-card')).toHaveCount(0)
 })
 
+test("Lesson 28's Wrap closes Season 2: no link itself, its line, Karaoke Night in a tab of its own and the map, then the page's figure", async ({
+  page,
+}) => {
+  // Act
+  await page.goto('/learn/28')
+
+  // Assert: the kit's close in the mark's classes, the figure kept after its
+  // words (Lesson 28's WEB-SPEC, Toys 7)
+  const end = page.locator('#wrap [data-next-card="end"]')
+  await expect(end).toHaveClass(/\bl28-next\b/)
+  expect(await end.evaluate((e) => e.tagName)).toBe('DIV')
+  await expect(end.locator('.eyebrow')).toHaveText('End of Season 2')
+  await expect(end.locator('.end-line')).toHaveText(
+    "You've read a song in two parts. Now sing a whole song.",
+  )
+  const song = end.getByRole('link', { name: 'Karaoke Night' })
+  await expect(song).toHaveAttribute('href', '/karaoke-night?lesson=28')
+  await expect(song).toHaveAttribute('target', '_blank')
+  await expect(
+    end.getByRole('link', { name: 'See the season map' }),
+  ).toHaveAttribute('href', '#explorer')
+  expect(
+    await end.evaluate((e) =>
+      Array.from(e.children, (k) => k.classList[0] ?? k.tagName),
+    ),
+  ).toEqual(['next-words', 'l28-close'])
+  await expect(page.locator('#wrap a.next-card')).toHaveCount(0)
+})
+
 test("Lesson 15's card sets up Lesson 16 with its tease, one line above its hook, and keeps the page's tease still after its words: five plain notes, nothing lit and no names", async ({
   page,
 }) => {
@@ -549,7 +602,8 @@ test("Lesson 19's card sets up Lesson 20 with its tease, one line above its hook
   // Act
   await page.goto('/learn/19')
 
-  // Assert: Lesson 20 has no page yet, so the card leads to the map (WEB-SPEC, Toys 11)
+  // Assert: Lesson 20's page is live here, as drafts are, so the card opens
+  // it (WEB-SPEC, Toys 11)
   const c = card(page)
   await expect(c.locator('.next-tease')).toHaveText(
     LESSON_COPY[20]?.tease ?? 'Lesson 20 has a tease',
@@ -604,7 +658,7 @@ test("Lesson 19's card sets up Lesson 20 with its tease, one line above its hook
     moving: 0,
   })
   await expect(c.locator('button')).toHaveCount(0)
-  await expect(c).toHaveAttribute('href', '#explorer')
+  await expect(c).toHaveAttribute('href', '/learn/20')
 })
 
 test("Lesson 2's card, its two figures kept, leads to Lesson 3's page @smoke", async ({

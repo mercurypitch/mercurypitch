@@ -82,9 +82,6 @@ export function byNameBars(withDo: boolean): ClockBar<ByNameHit>[] {
 /** The seconds from the press the hero's do waits for, so it sounds 0.1 s after it. */
 export const DO_LEAD = DO_BEATS + QUIET_BEATS + 0.1
 
-/** Sing it's take opens this many beats before bar 1's first beat: 0.5 s after the last click starts (FACTS 82). */
-export const OPEN_BEATS = 0.5
-
 /** A note's words when tapped: "B3, mi, a quarter note". */
 export function noteWords(n: Spelled, degree: number, beats: number): string {
   return `${n.letter}${n.octave}, ${SYLLABLES[degree]}, ${beats === 2 ? 'a half note' : 'a quarter note'}`

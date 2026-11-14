@@ -12,7 +12,7 @@
 // could not hear.
 
 import { describe, expect, it } from 'vitest'
-import { next, offers } from './ladder-flow'
+import { next, offers } from '@/features/lessons/kit/ladder-flow'
 import { begin, briefed, feel, run, SILENCED, SING, SOUND_OFF, SOUND_ON, take, visit, } from './ladder-flow.test-fixtures'
 
 describe('with the sound off', () => {

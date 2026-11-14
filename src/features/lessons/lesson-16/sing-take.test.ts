@@ -7,8 +7,8 @@
 // gets its line, and the take's pitch line comes with them, each written
 // note a band over the stretch it was lit, the voice folded into the
 // octave of the written note nearest it, broken where no voice came
-// (WEB-SPEC, Toys 6, states 6 and 7; FACTS 45 to 47). Then the chart that
-// draws it after the take.
+// (WEB-SPEC, Toys 6, states 6 and 7; FACTS 45 to 47). The chart that draws
+// it after the take is the kit's (kit/pitch-line.test.ts).
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
@@ -16,9 +16,8 @@ import type { Listener } from '@/features/lessons/kit/listen'
 import type { ListenModule } from '@/features/lessons/kit/mic-hold'
 import type { NoteRun } from '@/features/lessons/kit/read-along'
 import type { F0Frame, VoicedFrame } from '@/lib/mirror/metrics'
-import { rowsOf, summaryOf } from './sing-chart'
-import type { PitchLine, TakeContext } from './sing-take'
-import { drawPitchLine, pitchLineOf, runTake } from './sing-take'
+import type { TakeContext } from './sing-take'
+import { pitchLineOf, runTake } from './sing-take'
 
 afterEach(() => {
   vi.restoreAllMocks()
@@ -220,97 +219,5 @@ describe('the pitch line', () => {
 
     // Assert
     expect(p).toBeNull()
-  })
-})
-
-describe('the chart after the take', () => {
-  const PITCH: PitchLine = {
-    seconds: 3,
-    rungs: [
-      { c: 0, from: 0, to: 0.6 },
-      { c: 200, from: 0.6, to: 1.5 },
-      { c: 400, from: 1.5, to: 3 },
-    ],
-    line: [
-      { t: 0, c: 4 },
-      { t: 1, c: 210 },
-    ],
-    octaves: -1,
-  }
-
-  /** Sing it's chart frame, as the page has it. */
-  function frame(): HTMLElement {
-    document.body.innerHTML = `
-      <div class="sing-chart band-chart" id="singChart">
-        <canvas role="img" aria-label="Your pitch line"></canvas>
-        <span class="octave-tag" data-octave-tag hidden></span>
-      </div>`
-    return document.getElementById('singChart') as HTMLElement
-  }
-
-  it('draws the take over the phrase’s bands, a lane a semitone, with the octave tag', () => {
-    // Arrange
-    const root = frame()
-
-    // Act
-    const chart = drawPitchLine(root, PITCH, PHRASE, LABELS)
-
-    // Assert: FACTS 46
-    expect(chart.scene.rungs).toEqual(PITCH.rungs)
-    expect(chart.scene.line).toEqual(PITCH.line)
-    expect([chart.target, chart.lo, chart.hi, chart.window]).toEqual([
-      55, -100, 500, 3,
-    ])
-    const tag = root.querySelector<HTMLElement>('[data-octave-tag]')
-    expect([tag?.hidden, tag?.textContent]).toEqual([false, 'octave lower'])
-    expect(root.querySelector('canvas')?.getAttribute('aria-label')).toBe(
-      "Your pitch line over the written notes' bands: do, re, mi, re, do. You sang it an octave lower: same notes. It is drawn in their octave.",
-    )
-  })
-
-  it('draws the next take on the same chart, its axis the new phrase’s, with no tag in the written octave', () => {
-    // Arrange
-    const root = frame()
-    const first = drawPitchLine(root, PITCH, PHRASE, LABELS)
-
-    // Act: phrase 2 in the treble, do, so, mi, re, do
-    const next = drawPitchLine(
-      root,
-      { ...PITCH, seconds: 5, octaves: 0 },
-      [67, 74, 71, 69, 67],
-      ['Do', 'So', 'Mi', 'Re', 'Do'],
-    )
-
-    // Assert
-    expect(next).toBe(first)
-    expect([next.target, next.lo, next.hi, next.window]).toEqual([
-      67, -100, 800, 5,
-    ])
-    expect(root.querySelector<HTMLElement>('[data-octave-tag]')?.hidden).toBe(
-      true,
-    )
-  })
-
-  it('names each row of the phrase once, low to high, by its syllable and note', () => {
-    // Act
-    const rows = rowsOf([67, 74, 71, 69, 67], ['Do', 'So', 'Mi', 'Re', 'Do'])
-
-    // Assert
-    expect(rows).toEqual([
-      [67, 'do · G4'],
-      [69, 're · A4'],
-      [71, 'mi · B4'],
-      [74, 'so · D5'],
-    ])
-  })
-
-  it('says the notes in order, and nothing of an octave in their own', () => {
-    // Act
-    const said = summaryOf(LABELS, 0)
-
-    // Assert
-    expect(said).toBe(
-      "Your pitch line over the written notes' bands: do, re, mi, re, do.",
-    )
   })
 })

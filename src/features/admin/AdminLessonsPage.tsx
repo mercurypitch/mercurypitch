@@ -22,7 +22,7 @@
 // are the lessons kit's own (lessons/copy-choices.ts).
 
 import type { JSX } from 'solid-js'
-import { createMemo, createSignal, For, Index, onCleanup, onMount, Show, } from 'solid-js'
+import { createMemo, createSignal, For, Index, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ChevronDown, Eye, RotateCcw } from '@/components/icons'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
@@ -52,6 +52,8 @@ export interface AdminLessonsPageProps {
   copyChoices?: CopyChoicesFor
   /** How long after a save the site is asked again, in ms. */
   recheckAfterMs?: number
+  /** One row a lesson, read once as the page mounts; the seasons' own by default. */
+  rows?: readonly LessonRow[]
 }
 
 const CHECKING = { kind: 'checking' } as const
@@ -136,7 +138,7 @@ function Fact(props: { term: string; children: JSX.Element }): JSX.Element {
 }
 
 export function AdminLessonsPage(props: AdminLessonsPageProps): JSX.Element {
-  const rows = lessonRows()
+  const rows = untrack(() => props.rows) ?? lessonRows()
   const origin = window.location.origin
   const [pages, setPages] = createSignal<ReadonlyMap<number, PageCheck>>(
     new Map(),

@@ -16,11 +16,12 @@ import { describe, expect, it } from 'vitest'
 // the guide's path helpers load the kit's motion setting, which reads matchMedia
 import '@/features/lessons/kit/browser-doubles.test-fixtures'
 import { inGap, pathLength, pathPieces, pitchAt, } from '@/features/lessons/kit/slide-guide'
+import { UNDER_GAIN } from '@/features/lessons/kit/sound'
 import type { Voice } from '@/features/lessons/kit/voice-choice'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import { VOCAL_RANGES } from '@/stores/settings-store'
 import { BREATH_SEC, guideChordsAt, guidePath, guideRows, REACH, readoutAt, singAlongAt, singDo, sungNotes, } from './sing-guide'
-import { lengthOf, UNDER_GAIN } from './sounds'
+import { lengthOf } from './sounds'
 
 /** Markup as the eye reads it: the signs shown, the spoken words dropped. */
 const seen = (html: string): string =>

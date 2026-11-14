@@ -474,8 +474,8 @@ word "Listening", and Merc and Tavi skip their reactions (REQ-GVC-083).
 
 Two quizzes share this page, so it depends on the three changes Lesson 2 makes to `kit/quiz.ts`
 (its WEB-SPEC, "What the kit and the app still need"), which are on main: an id prefix for the
-elements each quiz binds and writes (`kit/quiz.ts:88-93`, `:220-224`); `lesson` optional, since the
-kit marks `lesson` done once every question has an answer (`:82-83`, `:344-349`); and a question
+elements each quiz binds and writes (`kit/quiz.ts:96-101`, `:230-234`); `lesson` optional, since the
+kit marks `lesson` done once every question has an answer (`:90-91`, `:364-369`); and a question
 `id` (`:42-47`).
 
 - **Recall**: Lesson 3's questions 1 and 4, word for word with their feedback (LESSON.md; FACTS 3),
@@ -486,13 +486,13 @@ kit marks `lesson` done once every question has an answer (`:82-83`, `:344-349`)
   Step 1 again" links to Lesson 3's page at that step, `/learn/03#step-1`, opening in a new tab so
   the viewer keeps their place here, as Lesson 5's recall links them: the quiz's `away.href` is
   `recallStepHref` (`lesson-05/quiz-questions.ts:19-20`, `lesson-05/recall.ts:21`), where the kit's
-  default would open `/learn/03#lesson` (`kit/quiz.ts:94-101`). It is never `data-goto-step`, which
-  would move this page's own deck (`kit/quiz.ts:352-369`). Question 4 has no step link.
+  default would open `/learn/03#lesson` (`kit/quiz.ts:102-109`). It is never `data-goto-step`, which
+  would move this page's own deck (`kit/quiz.ts:372-389`). Question 4 has no step link.
 - **Quick check**: LESSON.md's four questions, ids `l07-q1` to `l07-q4`, keys `fyp-l07-seed` and
   `fyp-l07-quiz-v1`, and `lesson: 7`, so answering all four marks Lesson 7 done in the explorer.
   Three answers each, shuffled per question from the stored seed, one-line feedback for every
   answer, and a check icon and ink (not gold) on the right one. The kit prints "Right." or "Not
-  quite." before each line (`kit/quiz.ts:315`), so no feedback line starts with "Right", "Yes" or
+  quite." before each line (`kit/quiz.ts:335`), so no feedback line starts with "Right", "Yes" or
   "Correct". "Try Step 1 again", "Try Step 2 again", "Try Step 4 again" and "Try Step 5 again" use
   the kit's `data-goto-step`. Answers stay in the viewer's browser; since #1193 each question's
   first answer in a visit also goes out, anonymously.
@@ -640,13 +640,13 @@ Lessons 2 to 6 promote into the kit (Toys table). Read again on main at `31b7f53
    and `kit/range-chart-draw.ts`.
 4. `kit/sound.ts`: the "ng" and lip-trill timbres (Audio). The voice that follows a pitch path is on
    main: `contourVoice` and `playContour` glide pitch and level exponentially from point to point
-   (`kit/sound.ts:390-423`, `:697-706`). Built: `kit/timbre.ts`, the "ng" (Merc's "ooh" through a
+   (`kit/sound.ts:402-435`, `:709-718`). Built: `kit/timbre.ts`, the "ng" (Merc's "ooh" through a
    900 Hz lowpass) and the lip trill, each a `Timbre` that the voice's new `timbre` option applies as
-   the voice is built (`kit/sound.ts:73-74`, `:243`), in a module only this page loads.
+   the voice is built (`kit/sound.ts:85-86`, `:255`), in a module only this page loads.
 5. `kit/take.ts`: `readSiren` (Toys 4); `src/lib/mirror/metrics.ts`:
    `middleHalf(lowMidi: number, highMidi: number): { low: number; high: number }`, exported and used
    by `pickMatchTargets`, with its parity test in `src/lib/mirror/metrics.test.ts` (Toys 4). Both
-   built: `readSiren` at `kit/take.ts:266`, `middleHalf` at `metrics.ts:353-368` and the parity test
+   built: `readSiren` at `kit/take.ts:279`, `middleHalf` at `metrics.ts:353-368` and the parity test
    at `metrics.test.ts:479`. The note formatter is on main: Lesson 4's spelling helper names a note
    with its sign and in words (`sharpOf`, `signName`, `wordName`, `kit/notes.ts:157-197`).
 6. Lesson 3's kit parts are on main: `comfort.ts` with the feeling question, `listen.ts`, `take.ts`,

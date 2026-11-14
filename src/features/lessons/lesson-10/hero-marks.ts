@@ -28,6 +28,8 @@
 // its slide has it, so the light follows mi's or so's glide down and back,
 // and no light marks one note over the others.
 
+import type { ChordTone } from '@/features/lessons/kit/chords'
+import { qualityOf, tone, triad } from '@/features/lessons/kit/chords'
 import { clamp, lerp, TAU } from '@/features/lessons/kit/dom'
 import { MAJOR_SOLFEGE } from '@/features/lessons/kit/names-modes'
 import { COLOR, rgba, signName } from '@/features/lessons/kit/notes'
@@ -35,8 +37,6 @@ import type { SpiralFrame } from '@/features/lessons/kit/spiral'
 import type { BeadHit } from '@/features/lessons/kit/spiral-draw'
 import { LO } from '@/features/lessons/kit/spiral-keys'
 import { GLOW_RISE_SEC, GLOW_SEC, lightAt, } from '@/features/lessons/kit/tune-line-motion'
-import type { ChordTone } from './chords'
-import { qualityOf, tone, triad } from './chords'
 import { chordName } from './lines'
 import type { MoveId } from './sounds'
 import { MOVE, MOVE_SEC, moveSound } from './sounds'

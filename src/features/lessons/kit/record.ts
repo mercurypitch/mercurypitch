@@ -27,6 +27,15 @@
 // to one level, the same for every take, and never changes during it; it
 // goes straight to the speakers, past the master bus's compressor
 // (kit/sound.ts) and through no automatic gain, so a swell keeps its shape.
+//
+// Lesson 28 plays a take back with the part sung under it (its WEB-SPEC,
+// The playback; `playWithPart`): the part's voice booked from its bar 1 at
+// a moment P on the audio clock, and the recording so that its voice's
+// start plays as far after P as the singer's first note came after bar 1
+// in the run, so a learner who came in late hears themselves late. Where
+// the voice starts in the recording is found in the recording itself
+// (kit/take-onset.ts), since the recorder gives no time for its first
+// sample. Both end with the part's last note, as one sound.
 
 import type { TakeRecorder } from '@/lib/voice-capture'
 import { createTakeRecorder, pickRecorderMime } from '@/lib/voice-capture'
@@ -143,7 +152,7 @@ export interface Playback {
 
 // The take playing now, stopped when every sound stops (the Sound switch
 // off, a hidden tab), as the kit's runs are.
-let playing: Playback | null = null
+let playing: { stop(): void } | null = null
 onStopAll(() => {
   playing?.stop()
 })
@@ -203,6 +212,107 @@ export function playTake(
   owner.claim(stop)
   source.onended = () => end(true)
   source.start(t0, at)
+  playing = playback
+  return playback
+}
+
+/** Seconds from a press of play to the part's bar 1: room to book the part and the take on the audio clock. */
+export const PART_LEAD_SEC = 0.1
+
+/** Seconds the take fades over after the part's last note, as that note releases. */
+export const PART_TAIL_SEC = 0.3
+
+/** The part a take was sung with, as its playback books it (Lesson 28). */
+export interface PartUnder {
+  /** Books the part's voice from its bar 1, `at` seconds from now on the audio clock; null while sound cannot play. */
+  readonly book: (at: number) => { stop(release?: number): void } | null
+  /** Seconds from the part's bar 1 to its last note's end. */
+  readonly seconds: number
+  /** Seconds after bar 1's first beat the singer's first note came in the run, late above 0 (take-in-time.ts `onset`). */
+  readonly onset: number
+}
+
+/** A take playing with its part: `done` is true when it played to the part's end, false when stopped. */
+export interface PartPlayback {
+  readonly done: Promise<boolean>
+  /** The part's bar 1, ms on the page's clock: a cursor runs from here. */
+  readonly bar1: number
+  stop(): void
+}
+
+/**
+ * Plays `take` with its part, after `owner` stops whatever sounded before:
+ * the part from its bar 1 at P, `PART_LEAD_SEC` from now, and the
+ * recording so that its voice's start, `voicedAt` seconds in, plays
+ * `part.onset` seconds after P: `start(P, O - late)`, or `start(P + late -
+ * O, 0)` where that offset would fall before the recording begins. The take
+ * plays through its one gain straight to the speakers, as `playTake`'s, and
+ * fades as the part's last note ends; the playback lasts as long as the
+ * part, whatever the recording's length. Null with the sound off or a take
+ * open.
+ */
+export function playWithPart(
+  take: KeptTake,
+  context: AudioContext,
+  owner: SoundOwner,
+  part: PartUnder,
+): PartPlayback | null {
+  if (Sound.state !== 'on' || Sound.hushed) return null
+  if (context.state === 'suspended')
+    void context.resume().catch(() => undefined)
+  let over = false
+  let settle: (heard: boolean) => void = () => undefined
+  const done = new Promise<boolean>((resolve) => {
+    settle = resolve
+  })
+  let voice: { stop(release?: number): void } | null = null
+  const source = context.createBufferSource()
+  const finish = (heard: boolean): void => {
+    if (over) return
+    over = true
+    if (playing === playback) playing = null
+    owner.release(stop)
+    settle(heard)
+  }
+  const stop = (): void => {
+    if (over) return
+    finish(false)
+    voice?.stop(0.05)
+    try {
+      source.stop()
+    } catch {
+      // not started, or already stopped
+    }
+  }
+  owner.claim(stop)
+  const p = context.currentTime + PART_LEAD_SEC
+  const playback: PartPlayback = {
+    done,
+    bar1: performance.now() + PART_LEAD_SEC * 1000,
+    stop,
+  }
+  voice = part.book(PART_LEAD_SEC)
+  source.buffer = take.buffer
+  const level = context.createGain()
+  level.gain.value = take.gain
+  source.connect(level)
+  level.connect(context.destination)
+  const end = p + part.seconds
+  level.gain.setValueAtTime(take.gain, end)
+  level.gain.linearRampToValueAtTime(0, end + PART_TAIL_SEC)
+  source.onended = () => {
+    // a recording that runs out first leaves the part to finish
+    const left = end + PART_TAIL_SEC - context.currentTime
+    if (left <= 0.05) finish(true)
+    else
+      window.setTimeout(() => {
+        finish(true)
+      }, left * 1000)
+  }
+  const offset = take.voicedAt - part.onset
+  if (offset >= 0) source.start(p, offset)
+  else source.start(p - offset, 0)
+  source.stop(end + PART_TAIL_SEC)
   playing = playback
   return playback
 }

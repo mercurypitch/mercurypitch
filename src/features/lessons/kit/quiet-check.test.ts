@@ -13,7 +13,7 @@
 import { describe, expect, it } from 'vitest'
 import type { F0Frame } from '@/lib/mirror/metrics'
 import { HEARD_RUN_SEC, heardNothing, longestRun } from './quiet-check'
-import { HEARD_LINE, QUIET_LINE, QUIET_SEC } from './quiet-words'
+import { ALONE_NEXT, HEARD_LINE, heardLine, QUIET_LINE, QUIET_SEC, quietLine, } from './quiet-words'
 
 const HOP = 0.016
 /** The lower voice's drone and do, D3. */
@@ -105,6 +105,23 @@ describe('the quiet check', () => {
     )
     expect(HEARD_LINE).toBe(
       'The microphone heard a note during the drone. Check your headphones, then press Start again and stay quiet.',
+    )
+  })
+
+  it("names the part that plays where Lesson 26's check plays one", () => {
+    // Assert: Lesson 26's LESSON.md, Sing it
+    expect(quietLine("Tavi's part")).toBe(
+      "First, stay quiet for two seconds while Tavi's part plays: the page checks that the microphone can't hear it.",
+    )
+    expect(heardLine("Merc's part")).toBe(
+      "The microphone heard a note during Merc's part. Check your headphones, then press Start again and stay quiet.",
+    )
+  })
+
+  it("offers singing alone where Lesson 28's page lets a learner without headphones do so", () => {
+    // Assert: Lesson 28's LESSON.md, Sing it
+    expect(heardLine("Tavi's part", ALONE_NEXT)).toBe(
+      "The microphone heard a note during Tavi's part. Check your headphones, or choose No headphones to sing alone.",
     )
   })
 })

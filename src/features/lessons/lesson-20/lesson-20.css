@@ -1,0 +1,353 @@
+/* ============================================================
+   Lesson 20 — Runs and the pentatonic scale: the page's own figures and cards
+   ============================================================
+   Everything else is the kit's: lesson-base, lesson-sections, lesson-stage
+   and lesson-parts, imported by main.ts, and the staircase's and the staff
+   toy's sheets, taken in here by @import so they inline into this page's own
+   sheet and split no chunk the other lessons share (MISTAKES.md, on the
+   lessons' base stylesheet).
+
+   Here: the hero's pitch line between Merc and Tavi, with its two plays
+   under it (WEB-SPEC, Toys 2); the four words' figures; the staircase and
+   the run toy on the stage (Toys 1 and 5); Sing it's run choice and its
+   chart; and the Wrap's cards, with the next card's tease still and free
+   play. No decorative staff: the section heads carry none, and the body's
+   season-2 class drops the background's (kit/lesson-base.css). */
+
+@import '../kit/lesson-staff.css';
+@import '../kit/lesson-stairs.css';
+
+/* ---------------------------------------------------------------- the hero */
+.l20-hero .hook {
+  font-size: clamp(30px, 3.3vw, 50px);
+  line-height: 1.06;
+  max-width: 15em;
+}
+/* seven chips, which wrap: rows 16 px apart keep each prerequisite link's
+   44 px tap box whole (lesson-base.css, `.chip-link::after`) */
+.l20-hero .meta {
+  row-gap: 16px;
+}
+.l20-hero .duo {
+  --merc: clamp(120px, 13vw, 188px);
+  grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+  height: calc(var(--merc) * 1.32);
+}
+/* the pitch line between Merc and Tavi, clear of Merc's bubble */
+.hero-run {
+  position: relative;
+  z-index: 1;
+  align-self: center;
+  min-width: 0;
+  height: calc(var(--merc) * 1.02);
+  margin-top: calc(var(--merc) * 0.24);
+  border-radius: var(--r-md);
+  border: 1px solid var(--hair);
+  background: rgba(7, 10, 16, 0.62);
+  overflow: hidden;
+}
+.hero-run canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.l20-hero .stage-shot {
+  padding-bottom: 22px;
+}
+.l20-hero .hero-plays {
+  margin-top: 0;
+  border-top: 0;
+  padding-top: 0;
+}
+.l20-hero .hero-hint {
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l20-hero .hero-hint[hidden] {
+  display: none;
+}
+/* the choices are long: each wraps inside its button rather than running
+   past a phone's edge */
+.l20-hero .choice {
+  max-width: 100%;
+  white-space: normal;
+  text-align: left;
+  line-height: 1.25;
+  padding-block: 8px;
+}
+/* both plays sit right under the stage, before the sound gate (the kit
+   orders the hero's parts at this width), as on Lessons 17, 19 and 22 */
+@media (max-width: 1080px) {
+  .l20-hero .hero-plays {
+    order: 4;
+    margin-top: 14px;
+  }
+  .l20-hero .hero-hint {
+    order: 4;
+  }
+}
+.l20-hero .pq {
+  font-size: clamp(20px, 2vw, 26px);
+  line-height: 1.2;
+}
+@media (max-width: 560px) {
+  .l20-hero .hook {
+    font-size: 30px;
+    line-height: 1.08;
+  }
+  .l20-hero .duo {
+    --merc: min(31vw, 124px);
+    grid-template-columns: var(--merc) minmax(0, 1fr) var(--merc);
+    grid-template-rows: auto auto;
+    height: auto;
+  }
+  .l20-hero .merc-blue {
+    grid-column: 1;
+    grid-row: 1;
+  }
+  .l20-hero .merc-orange {
+    grid-column: 3;
+    grid-row: 1;
+  }
+  .hero-run {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    height: 200px;
+    margin-top: 6px;
+  }
+}
+
+/* ---------------------------------------------------------------- four words */
+/* each figure across the top of its ticket, as Lesson 22's words are: nine
+   beads, or six stairs, need more room than the kit's stub, 88 px wide,
+   gives them */
+.l20-words .ticket {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto 1fr;
+}
+.l20-words .ticket .stub {
+  border-right: 0;
+  border-bottom: 1px dashed var(--hair-2);
+  padding: 12px 14px 10px;
+}
+/* the ticket's notches move to the ends of its dashed line */
+.l20-words .ticket .stub::before,
+.l20-words .ticket .stub::after {
+  top: auto;
+  bottom: -10px;
+}
+.l20-words .ticket .stub::before {
+  left: -10px;
+}
+.l20-words .ticket .stub::after {
+  left: auto;
+  right: -10px;
+}
+/* the stub centres what it holds, so each figure takes the stub's width,
+   or it would shrink to its canvas's own 2:1 */
+.l20-words .word-chart,
+.l20-words .word-stairs {
+  width: 100%;
+  height: 92px;
+}
+.l20-words .word-chart canvas,
+.l20-words .word-stairs canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* Agility has no figure, and no stub to hold one */
+.l20-words .ticket.no-fig {
+  grid-template-rows: 1fr;
+}
+
+/* ---------------------------------------------------------------- the stage */
+/* a figure label is one 16 px line (the stage budget counts on it) */
+.steps-stage .toy .eyebrow {
+  line-height: 16px;
+}
+.l20-stairs .stairs-viz,
+.l20-free-stairs .stairs-viz {
+  --viz-min: 220px;
+}
+.l20-stairs .stairs-controls,
+.l20-free .stairs-controls,
+.run-controls {
+  margin-top: 10px;
+}
+.run-viz {
+  position: relative;
+  min-width: 0;
+}
+.run-viz canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+/* the beads' buttons sit over the drawing, one a bead (run-toy.ts) */
+.bead-hits {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+/* a fingertip square over its bead, placed by run-toy.ts, drawing nothing
+   of its own but the focus ring, as the staircase's stairs are */
+.bead-hit {
+  position: absolute;
+  margin: 0;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-tap-highlight-color: transparent;
+}
+.bead-hit:focus-visible {
+  outline: 2px solid var(--aqua);
+  outline-offset: -2px;
+}
+.illustration-tag {
+  position: absolute;
+  top: 8px;
+  right: 10px;
+  margin: 0;
+  font: 600 var(--fs-12) / 1.2 var(--f-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--violet);
+}
+.illustration-tag[hidden] {
+  display: none;
+}
+.l20-run-toy .staff-viz,
+.l20-free-run .staff-viz {
+  height: 140px;
+  margin-top: 10px;
+}
+.run-controls .btn,
+.stairs-controls .btn {
+  min-width: 0;
+  white-space: normal;
+  line-height: 1.2;
+}
+/* Tempo, Major · Minor and Staccato · Legato: each button a 44 px target */
+.controls .seg .btn {
+  min-width: 44px;
+}
+/* Tempo: its label, then the five notches as one pill, each notch's "0.75
+   s" on one line; on a narrow phone the label sits over the pill */
+.tempo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 8px;
+  max-width: 100%;
+}
+.tempo .seg-lbl {
+  font-size: var(--fs-14);
+  color: var(--ink-2);
+}
+.tempo-seg .btn {
+  padding: 0 9px;
+  white-space: nowrap;
+}
+
+/* ---------------------------------------------------------------- Sing it */
+.l20-sing .sing-card .turn {
+  margin: 14px 0 10px;
+}
+.l20-sing .ladder-choice,
+.l20-sing .move-do {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 10px;
+  margin: 10px 0 0;
+}
+/* the card's 12 px under the run choice, before the words on singing it */
+.l20-sing .ladder-choice {
+  margin-bottom: 12px;
+}
+/* the run the take sings wears the kit's pressed ring (lesson-parts.css,
+   `.seg`), its buttons 10 px apart rather than joined */
+.l20-sing .ladder-choice .btn[aria-pressed='true'] {
+  background: color-mix(in srgb, var(--aqua) 16%, transparent);
+  box-shadow: inset 0 0 0 2px var(--aqua);
+  color: var(--ink);
+}
+@media (forced-colors: active) {
+  .l20-sing .ladder-choice .btn[aria-pressed='true'] {
+    forced-color-adjust: none;
+    background: Highlight;
+    color: HighlightText;
+  }
+}
+.l20-sing .sing-card .stop-line {
+  margin: 14px 0 0;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l20-sing .sing-card .guide-hint {
+  margin: 8px 0 0;
+  font-size: var(--fs-14);
+  color: var(--ink-3);
+}
+.l20-sing .brief-lines {
+  margin: 0 0 14px;
+  padding-left: 18px;
+  color: var(--ink-2);
+}
+.l20-sing .faster-how {
+  margin: 10px 0 0;
+  color: var(--ink-2);
+}
+.l20-sing .ladder-readings {
+  margin: 12px 0 0;
+  padding-left: 18px;
+  color: var(--ink-2);
+}
+
+/* ---------------------------------------------------------------- the wrap */
+.l20-app {
+  grid-template-columns: minmax(0, 1fr);
+  align-items: start;
+}
+.l20-app .rest-line {
+  margin: 0 0 10px;
+  font-weight: 600;
+  color: var(--ink);
+}
+.l20-app .addr-line {
+  margin: 0 0 8px;
+  color: var(--ink-2);
+}
+.l20-app a.addr {
+  text-decoration: none;
+}
+.l20-next {
+  margin-top: 18px;
+}
+/* the tease still in the next-lesson card: Lesson 21's ring of twelve
+   beads over its keyboard, under a class of its own, apart from
+   .next-tease */
+.l20-tease {
+  width: min(100%, 320px);
+  margin-top: 12px;
+}
+.l20-tease svg {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+.l20-free > .eyebrow {
+  margin: 0 0 10px;
+  line-height: 16px;
+}
+.l20-free-run {
+  margin-top: 22px;
+}
+.l20-free .run-viz {
+  height: 240px;
+}
