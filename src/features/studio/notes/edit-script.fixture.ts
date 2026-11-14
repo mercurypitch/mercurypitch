@@ -28,11 +28,7 @@ export const PHONE: RollViewport = {
 }
 
 /** The velocity lane's height: 64 px from 0 to 1. */
-export const LANE_HEIGHT = 80
-
-/** Where row `pitch` is drawn: the middle of its 20 px. */
-export const rowY = (pitch: number, viewport: RollViewport) =>
-  (viewport.maxMidi - pitch) * 20 + 10
+const LANE_HEIGHT = 80
 
 export function note(
   id: number,
