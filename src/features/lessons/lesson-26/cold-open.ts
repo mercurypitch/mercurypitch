@@ -265,10 +265,14 @@ export function initColdOpen(
     return going.done.then((heard) => {
       if (mine !== plays) return false
       run = null
-      if (copy !== null) drawn = id === 'key' ? 'key' : 'up4'
+      // a copy heard to its end, or drawn to its end with sound off, stays
+      // drawn; one the sound switch cut short keeps what the line last drew
+      // (Edge cases, "A play cut short")
+      if (copy !== null && heard) {
+        drawn = id === 'key' ? 'key' : 'up4'
+        said.textContent = HERO_SAID[drawn]
+      }
       settle()
-      if (copy !== null)
-        said.textContent = HERO_SAID[drawn === 'key' ? 'key' : 'up4']
       NowPlaying.release(stop)
       listen(false)
       return heard

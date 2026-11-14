@@ -260,6 +260,28 @@ describe('the choice and Play them together', () => {
       HERO_SAID.rest,
     )
   })
+
+  it('keeps what it last drew when the Sound switch cuts its play short, and reveals nothing', async () => {
+    // Arrange: the copy a few beads in
+    const hero = mount()
+    choose('leaves')
+    const before = words(el('[data-hero-said]'))
+    play('together').click()
+    await settle()
+    vi.advanceTimersByTime(3000)
+
+    // Act: the switch stops every sound, not the page's own stop
+    last().end(false)
+    await settle()
+
+    // Assert: Edge cases, "A play cut short"
+    expect(hero.predict.revealed).toBe(false)
+    expect(hero.line.shape.dress).toEqual({ house: 60 })
+    expect(el('[data-hero-canvas]').getAttribute('aria-label')).toBe(
+      HERO_SAID.rest,
+    )
+    expect(words(el('[data-hero-said]'))).toBe(before)
+  })
 })
 
 describe('Play the copy that stays in the key', () => {
