@@ -113,6 +113,8 @@ export type NoteEditInput =
   | { readonly type: 'abort' }
   /** The context changed: the selection keeps the notes that still exist. */
   | { readonly type: 'sync' }
+  /** An animation frame while noteEditWantsFrames: a drag held at an edge scrolls. */
+  | { readonly type: 'frame'; readonly time: number }
   | ({ readonly type: 'wheel' } & NoteEditWheel)
   | ({ readonly type: 'key' } & NoteEditKey)
   | { readonly type: 'command'; readonly command: NoteEditCommand }
@@ -205,8 +207,14 @@ export interface NoteSingleGesture {
   readonly tap: NoteTapIntent
   /** Past the slop: the press is a drag. */
   readonly dragging: boolean
-  /** Where the pointer was last, for a pan's next step. */
-  readonly last: { readonly x: number; readonly y: number }
+  /** Where the pointer was last, and whether Alt was held: a pan steps from it, an edge scroll drafts at it. */
+  readonly last: {
+    readonly x: number
+    readonly y: number
+    readonly alt: boolean
+  }
+  /** When the pointer last moved or a frame last scrolled, in milliseconds. */
+  readonly frameTime: number
   readonly draft: NoteDraft
 }
 
