@@ -16,9 +16,28 @@
 
 import { publishMicLevel, resetMicLevel } from '@/lib/mic-level'
 import type { F0Frame } from '@/lib/mirror/metrics'
+import type { PitchDetectorOptions } from '@/lib/pitch-detector'
 import { PitchDetector } from '@/lib/pitch-detector'
 
 const FFT_SIZE = 2048
+
+/**
+ * The detector every frame comes from, but for the sample rate: YIN over
+ * the analyser's 2048 samples. A lesson reads a recorded take with the same
+ * settings (src/features/lessons/kit/take-onset.ts), so the voice starts
+ * where these frames would have heard it start.
+ */
+export const F0_DETECTOR = {
+  bufferSize: FFT_SIZE,
+  algorithm: 'yin',
+  // Human singing range with headroom; keeps YIN off subharmonics.
+  minFrequency: 60,
+  maxFrequency: 1600,
+  // The mirror captures with AGC off (required for honest pitch), so raw
+  // mobile input is quiet — the detector's 0.02 default RMS gate would
+  // reject normal singing at arm's length on a phone.
+  minAmplitude: 0.005,
+} as const satisfies Omit<PitchDetectorOptions, 'sampleRate'>
 
 /** An F0Frame plus the analysed buffer's RMS level (0..1). */
 export interface PitchFrame extends F0Frame {
@@ -75,15 +94,7 @@ export function createF0Stream(
 
   const detector = new PitchDetector({
     sampleRate: audioContext.sampleRate,
-    bufferSize: FFT_SIZE,
-    algorithm: 'yin',
-    // Human singing range with headroom; keeps YIN off subharmonics.
-    minFrequency: 60,
-    maxFrequency: 1600,
-    // The mirror captures with AGC off (required for honest pitch), so raw
-    // mobile input is quiet — the detector's 0.02 default RMS gate would
-    // reject normal singing at arm's length on a phone.
-    minAmplitude: 0.005,
+    ...F0_DETECTOR,
   })
 
   const buffer = new Float32Array(FFT_SIZE)

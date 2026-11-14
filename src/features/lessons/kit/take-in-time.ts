@@ -27,6 +27,11 @@
 // (`onFrame`), since the hush that keeps the part sounding stops the beat
 // clock that counted in.
 //
+// A take with voice also says when the singer's first note started against
+// bar 1's first beat (`onset`), anchored or not: Lesson 28 records the take
+// and plays it back with its part, lined up on that note (kit/record.ts
+// `playWithPart`).
+//
 // The pitch line comes with the lines, for the page to draw after the take
 // and never during it (pitch-line.ts): on the bars' time axis, moved by the
 // anchor as the reader moves the beats, each written note an amber band
@@ -45,7 +50,7 @@ import type { ListenModule } from './mic-hold'
 import type { PitchLine } from './pitch-line'
 import { readingLines } from './read-along'
 import type { InTimeOptions, InTimeReading, WrittenNote } from './read-in-time'
-import { readInTime, WINDOW_BEATS, windowsClose } from './read-in-time'
+import { onsetOf, readInTime, WINDOW_BEATS, windowsClose } from './read-in-time'
 import { heldSeconds } from './rhythm-model'
 
 export type { PitchLine } from './pitch-line'
@@ -98,6 +103,14 @@ export type TakeEnd =
       readonly pitch: PitchLine | null
       /** How many notes read in the band, within 35 cents of their own note: a page's tricky line counts them. */
       readonly inBand: number
+      /**
+       * Seconds after bar 1's first beat the singer's first run of voice at
+       * least 0.15 s long started, early below 0, whether it anchored the
+       * reading or not (read-in-time.ts `onsetOf`): where a playback lines
+       * the take's recording up on its part (Lesson 28). Null with no such
+       * run, when the take has nothing to play back.
+       */
+      readonly onset: number | null
     }
 
 /** A stretch this long with no voiced frame breaks the line, s: several frames missed in a row, a breath or a stop. */
@@ -187,7 +200,14 @@ export async function runTake(c: TakeContext): Promise<TakeEnd> {
   if (frames === null) return { kind: 'left' }
   const reading = readInTime(frames, o)
   if (!reading.voice)
-    return { kind: 'read', voiced: false, lines: [], pitch: null, inBand: 0 }
+    return {
+      kind: 'read',
+      voiced: false,
+      lines: [],
+      pitch: null,
+      inBand: 0,
+      onset: null,
+    }
   return {
     kind: 'read',
     voiced: true,
@@ -197,5 +217,6 @@ export async function runTake(c: TakeContext): Promise<TakeEnd> {
     }),
     pitch: pitchLineOf(frames, o, reading),
     inBand: reading.notes.filter((n) => n.d !== null && inBand(n.d)).length,
+    onset: onsetOf(frames, o),
   }
 }

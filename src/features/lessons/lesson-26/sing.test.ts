@@ -206,6 +206,7 @@ const VOICED: TakeEnd = {
   lines: LINES,
   pitch: PITCH,
   inBand: 4,
+  onset: 0,
 }
 const SILENT: TakeEnd = {
   kind: 'read',
@@ -213,6 +214,7 @@ const SILENT: TakeEnd = {
   lines: [],
   pitch: null,
   inBand: 0,
+  onset: null,
 }
 
 beforeEach(() => {
