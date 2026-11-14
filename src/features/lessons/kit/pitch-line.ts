@@ -9,7 +9,8 @@
 // violet over them, folded into the written notes' octave. When most of
 // the voice sat an octave or more away, the tag says so: "octave lower"
 // (band-words.ts `octaveTag`). The rows name the phrase's notes as Lesson
-// 9 names its ladder's: "re · A3". Nothing lights and nothing celebrates a
+// 9 names its ladder's, "re · A3", and a black key by its sharp, as the
+// app's pitch line names it: "ti · F♯3". Nothing lights and nothing celebrates a
 // note: the lines under the chart do the reading (FACTS 47). Lesson 16's
 // read-along take and the in-time take (take-in-time.ts, Lessons 18 and
 // 26) both hand one over, and each loads with its take's module on the
@@ -22,7 +23,7 @@ import type { Rung } from './band-chart-rungs'
 import { paintRungs } from './band-chart-rungs'
 import { octaveTag } from './band-words'
 import { q } from './dom'
-import { nameOf } from './notes'
+import { sharpOf, signName } from './notes'
 import { octaveLine } from './take'
 
 /** A take's pitch line, in seconds across its window and cents from do (a take's `pitchLineOf`). */
@@ -40,14 +41,14 @@ export interface PitchLine {
 /** The chart on each root, mounted on the first take drawn there. */
 const charts = new WeakMap<HTMLElement, BandChart>()
 
-/** The phrase's rows, each written note once, low to high: "re · A3". */
+/** The phrase's rows, each written note once, low to high: "re · A3", "ti · F♯3". */
 export function rowsOf(
   notes: readonly number[],
   labels: readonly string[],
 ): (readonly [midi: number, name: string])[] {
   const rows = new Map<number, string>()
   notes.forEach((midi, i) => {
-    rows.set(midi, `${labels[i].toLowerCase()} · ${nameOf(midi) ?? ''}`)
+    rows.set(midi, `${labels[i].toLowerCase()} · ${signName(sharpOf(midi))}`)
   })
   return [...rows].sort(([a], [b]) => a - b)
 }

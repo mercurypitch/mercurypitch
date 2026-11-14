@@ -477,11 +477,11 @@ describe("Lesson 28's page", () => {
     expect(
       Array.from(
         card?.querySelectorAll<HTMLButtonElement>(
-          '[data-listen-play], [data-sing="first"]',
+          '[data-listen-play], [data-sing="first"], [data-sing="along"]',
         ) ?? [],
         (b) => b.disabled,
       ),
-    ).toEqual([true, true])
+    ).toEqual([true, true, true, true])
   })
 
   it('links the practice drills with the lesson, each in a tab of its own', () => {

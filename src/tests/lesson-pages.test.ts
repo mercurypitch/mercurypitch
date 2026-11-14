@@ -400,10 +400,11 @@ describe('the documents outside the entry model', () => {
 })
 
 // A button lays its parts out in a row with a gap between them (the kit's
-// .btn), so a sign in a span of its own, a ♯ or a chord's numeral, loose
-// beside the label's words takes that gap on both sides: "G ♯", "Play: I ,
-// then V". The label goes in one span, sign and all. A switch's track is a
-// part of its own, with a class, and keeps its gap.
+// .btn), so a span of its own, a ♯, a chord's numeral or a part's name,
+// loose beside the label's words takes that gap on both sides: "G ♯",
+// "Play: I , then V", "Hear it with  Tavi's part". The label goes in one
+// span, sign and all. A switch's track is a part of its own, with a class,
+// and keeps its gap.
 describe.each(DOCUMENTS)("lesson document %i's buttons", (n) => {
   it('keep every label in one piece', () => {
     const split = Array.from(
@@ -416,10 +417,7 @@ describe.each(DOCUMENTS)("lesson document %i's buttons", (n) => {
             (node.textContent ?? '').trim() !== '',
         ) &&
         Array.from(button.children).some(
-          (child) =>
-            child.tagName === 'SPAN' &&
-            child.getAttribute('aria-hidden') === 'true' &&
-            !child.hasAttribute('class'),
+          (child) => child.tagName === 'SPAN' && !child.hasAttribute('class'),
         ),
     )
     expect(
