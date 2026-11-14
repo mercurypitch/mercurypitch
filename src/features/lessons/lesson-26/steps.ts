@@ -52,7 +52,12 @@ export function initSteps(deck: StepDeck): Steps {
   const textPlays = qa<HTMLButtonElement>('[data-step-play]')
   for (const b of textPlays) {
     const id = b.dataset.stepPlay as PlayId
+    // on a wide page the next step's text shows before the deck reaches
+    // it: a play there shows its own step first, so the toy draws that
+    // step's state under that step's heading (Toys 2)
+    const step = Number(b.closest<HTMLElement>('[data-step]')?.dataset.step)
     b.addEventListener('click', () => {
+      if (isState(step) && step !== deck.current) deck.show(step)
       deck.showToy()
       light(b, toy.play(id))
     })
