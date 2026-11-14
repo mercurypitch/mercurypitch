@@ -29,11 +29,18 @@ function rowWhere(test: (row: LessonRow) => boolean, what: string): LessonRow {
 
 const released = rowWhere((row) => row.lesson.n === 1, 'Lesson 1')
 const draft = rowWhere((row) => row.build === 'draft', 'draft')
-/** The first lesson whose page is not written yet. */
-const planned = rowWhere(
-  (row) => row.path !== null && !row.written,
-  'lesson still to write',
-)
+/**
+ * A lesson whose page is not written yet. With Lesson 28's page both
+ * seasons are written, so it is Lesson 28's row with its page taken away,
+ * as it was before the page landed.
+ */
+const planned: LessonRow = {
+  ...rowWhere((row) => row.lesson.n === 28, 'Lesson 28'),
+  build: 'planned',
+  built: false,
+  written: false,
+  waitingOn: null,
+}
 const trailer = rowWhere((row) => row.path === null, 'trailer')
 
 /** Where this site shows drafts, and where it holds them back. */

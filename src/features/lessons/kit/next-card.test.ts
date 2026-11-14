@@ -139,7 +139,7 @@ describe('nextCard', () => {
     })
   })
 
-  it("names Lesson 28 on Lesson 27's page, coming later on the map", () => {
+  it("names Lesson 28 on Lesson 27's page, ready, with a link to its page", () => {
     // Act
     const c = lessonCard(nextCard(LESSONS_2, [], {}, 27, SEASON_2))
 
@@ -147,9 +147,9 @@ describe('nextCard', () => {
     expect([c?.n, c?.title, c?.state, c?.kind, c?.href]).toEqual([
       28,
       'Cadences, form and a song in two parts',
-      'Coming later',
-      'map',
-      '#explorer',
+      'Ready · 19 min',
+      'start',
+      '/learn/28',
     ])
   })
 
@@ -503,7 +503,7 @@ describe('createNextCard on a Season 2 page (page-state.ts carrySeason)', () => 
     document.body.textContent = ''
   })
 
-  it("closes Season 2 on Lesson 28's page, links Lesson 26 from Lesson 25's and Lesson 27 from Lesson 26's, and names Lesson 28, still coming, on Lesson 27's", async () => {
+  it("closes Season 2 on Lesson 28's page, links Lesson 26 from Lesson 25's and Lesson 27 from Lesson 26's, and Lesson 28 from Lesson 27's", async () => {
     // Arrange: fresh modules, so the season carried here stays in this test
     const page = await import('./page-state')
     const card: typeof Card = await import('./next-card')
@@ -550,10 +550,11 @@ describe('createNextCard on a Season 2 page (page-state.ts carrySeason)', () => 
       '<div class="next-card card" data-next-card hidden></div>'
     card.createNextCard(27)
 
-    // Assert
+    // Assert: Lesson 28's page, a draft this build shows, is a link too
     const last = document.querySelector<HTMLElement>('[data-next-card]')
     expect(last?.dataset.nextCard).toBe('28')
-    expect(last?.dataset.selectLesson).toBe('28')
+    expect(last?.dataset.selectLesson).toBeUndefined()
+    expect(last?.getAttribute('href')).toBe('/learn/28')
   })
 
   it("closes Season 1 on Lesson 14's page of a build that carries Season 2", async () => {

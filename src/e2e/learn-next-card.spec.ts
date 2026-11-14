@@ -9,7 +9,7 @@
 // yet "Coming later" and a way to the map, never a link to a page. These
 // are the lesson polish plan's checks for it (D2), with the prerequisite
 // chip's 44 px target (A6). The e2e build shows drafts, as the dev deploy
-// does, so Lessons 5 to 27 are live here; a page that holds them back is
+// does, so Lessons 5 to 28 are live here; a page that holds them back is
 // next-card.test.ts's, and one the site worker served with the console's
 // state is learn-publish-state.spec.ts's. A lesson with a tease
 // (kit/lesson-copy.ts) is set up by it on the card before, one line above
@@ -188,9 +188,9 @@ const CARDS: readonly (readonly [string, string, string, string])[] = [
   ],
   [
     '/learn/27',
-    'Next lesson 28 · Cadences, form and a song in two parts Coming later',
-    '#explorer',
-    'See it on the map',
+    'Next lesson 28 · Cadences, form and a song in two parts Ready · 19 min',
+    '/learn/28',
+    'Start lesson',
   ],
 ]
 
@@ -479,6 +479,35 @@ test("Lesson 14's Wrap closes the season: no link itself, its line, Karaoke Nigh
       Array.from(e.children, (k) => k.classList[0] ?? k.tagName),
     ),
   ).toEqual(['next-words', 'end-still'])
+  await expect(page.locator('#wrap a.next-card')).toHaveCount(0)
+})
+
+test("Lesson 28's Wrap closes Season 2: no link itself, its line, Karaoke Night in a tab of its own and the map, then the page's figure", async ({
+  page,
+}) => {
+  // Act
+  await page.goto('/learn/28')
+
+  // Assert: the kit's close in the mark's classes, the figure kept after its
+  // words (Lesson 28's WEB-SPEC, Toys 7)
+  const end = page.locator('#wrap [data-next-card="end"]')
+  await expect(end).toHaveClass(/\bl28-next\b/)
+  expect(await end.evaluate((e) => e.tagName)).toBe('DIV')
+  await expect(end.locator('.eyebrow')).toHaveText('End of Season 2')
+  await expect(end.locator('.end-line')).toHaveText(
+    "You've read a song in two parts. Now sing a whole song.",
+  )
+  const song = end.getByRole('link', { name: 'Karaoke Night' })
+  await expect(song).toHaveAttribute('href', '/karaoke-night?lesson=28')
+  await expect(song).toHaveAttribute('target', '_blank')
+  await expect(
+    end.getByRole('link', { name: 'See the season map' }),
+  ).toHaveAttribute('href', '#explorer')
+  expect(
+    await end.evaluate((e) =>
+      Array.from(e.children, (k) => k.classList[0] ?? k.tagName),
+    ),
+  ).toEqual(['next-words', 'l28-close'])
   await expect(page.locator('#wrap a.next-card')).toHaveCount(0)
 })
 
