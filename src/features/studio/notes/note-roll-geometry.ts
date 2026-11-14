@@ -233,7 +233,7 @@ function linesAcross(
   step: number,
 ): number[] {
   const { start, end } = input.viewport
-  if (!(step > 0)) return []
+  if (Number.isNaN(step) || step <= 0) return []
   const xs: number[] = []
   for (
     let index = Math.ceil((start - from) / step);

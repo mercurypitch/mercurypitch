@@ -22,19 +22,21 @@ export interface StudioTap {
   readonly time: number
 }
 
+/** Whether `next` is a second tap after `previous`: on the same target, soon enough and near enough. */
+function isSecondTap(previous: StudioTap, next: StudioTap): boolean {
+  const gap = next.time - previous.time
+  const soon = gap >= 0 && gap <= STUDIO_DOUBLE_TAP_MS
+  const near =
+    Math.hypot(next.x - previous.x, next.y - previous.y) <= STUDIO_DOUBLE_TAP_PX
+  return previous.target === next.target && soon && near
+}
+
 export function createStudioDoubleTap() {
   let last: StudioTap | null = null
   return {
     /** Count a tap; true when it is the second of a double tap. */
     tap(next: StudioTap): boolean {
-      const previous = last
-      const second =
-        previous !== null &&
-        previous.target === next.target &&
-        next.time - previous.time >= 0 &&
-        next.time - previous.time <= STUDIO_DOUBLE_TAP_MS &&
-        Math.hypot(next.x - previous.x, next.y - previous.y) <=
-          STUDIO_DOUBLE_TAP_PX
+      const second = last !== null && isSecondTap(last, next)
       last = second ? null : next
       return second
     },

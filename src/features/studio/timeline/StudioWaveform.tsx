@@ -272,6 +272,16 @@ export function StudioWaveform(props: StudioWaveformProps) {
     // Silence still shows as a hairline, so an empty clip reads as audio.
     context.globalAlpha = 0.35
     context.fillRect(0, Math.round(frame.height / 2) - 0.5, frame.width, 1)
+    paintClip(canvas, context, frame, color)
+  }
+
+  /** The envelope, faded behind a MIDI clip's notes, then the fades, then the notes. */
+  function paintClip(
+    target: HTMLCanvasElement,
+    context: CanvasRenderingContext2D,
+    frame: WaveformFrame,
+    color: string,
+  ): void {
     const wave = envelope()
     const notes = props.notes
     if (wave)
@@ -286,7 +296,7 @@ export function StudioWaveform(props: StudioWaveformProps) {
       drawFades(context, frame)
     context.globalAlpha = 1
     if (notes !== undefined)
-      canvas.dataset.notes = String(
+      target.dataset.notes = String(
         drawStudioClipNotes(context, notes, frame, color),
       )
   }

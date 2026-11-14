@@ -117,12 +117,17 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
   function keyDown(event: KeyboardEvent): void {
     if (event.defaultPrevented || isTypingTarget(event.target)) return
     if (event.ctrlKey || event.metaKey || event.altKey) return
-    const key = event.key
-    if (key === 'Escape') {
+    if (event.key === 'Escape') {
       event.preventDefault()
       event.stopPropagation()
       close()
-    } else if (key === '=' || key === '+' || key === '-') {
+    } else viewKey(event)
+  }
+
+  /** = and - zoom the roll; Z fits the clip in it. */
+  function viewKey(event: KeyboardEvent): void {
+    const key = event.key
+    if (key === '=' || key === '+' || key === '-') {
       event.preventDefault()
       controls?.zoom(key === '-' ? -1 : 1)
     } else if (key.toLowerCase() === 'z' && !event.shiftKey && !event.repeat) {

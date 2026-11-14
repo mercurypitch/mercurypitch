@@ -15,7 +15,7 @@ import type { StudioRollMeter } from './note-roll-draw'
 /** The song's bar tick `tick` falls in, counted from 1. */
 export function studioBarAt(meter: StudioRollMeter, tick: number): number {
   const barTicks = meter.beatTicks * meter.beatsPerBar
-  if (!(barTicks > 0)) return 1
+  if (Number.isNaN(barTicks) || barTicks <= 0) return 1
   return Math.floor((tick - meter.originTick) / barTicks) + 1
 }
 
