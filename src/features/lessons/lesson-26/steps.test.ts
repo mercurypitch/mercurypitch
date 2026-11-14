@@ -139,6 +139,23 @@ describe("the plays in the steps' text", () => {
       60, 57, 62, 59, 64, 60, 62, 59, 60, 57,
     ])
   })
+
+  it('show their own step first when pressed in a step the deck has not reached, so the toy and its heading agree', () => {
+    // Arrange: a wide page, Step 3's text on screen while the deck is on Step 2
+    const { deck, steps } = mount()
+    steps.unlock()
+    deck.show(2)
+
+    // Act
+    button('[data-step-play="below"]').click()
+
+    // Assert: Toys 2, each step draws its own state
+    expect([deck.current, el('#stepNow').textContent]).toEqual([3, '3'])
+    expect([steps.toy.state, steps.toy.settings.side]).toEqual([3, 'below'])
+    expect(last().notes.map((n) => n.midi)).toEqual([
+      60, 57, 62, 59, 64, 60, 62, 59, 60, 57,
+    ])
+  })
 })
 
 describe("Steps 1 and 2's held words", () => {
