@@ -559,7 +559,7 @@ take (`:64`), released when it ends, on leaving the section, on `pagehide` and w
 hidden (`:18-22`); the YIN-only F0 stream (`src/lib/pitch-f0-stream.ts`); one AudioContext through
 `Sound.context()`, so every note Merc sings and every frame the take hears share a clock; nothing
 plays while a take is open. The addition is `Listener.media`, the stream the listener already holds
-(`:58-59`), so the recorder can use it without asking for the microphone again (51).
+(`:77-78`), so the recorder can use it without asking for the microphone again (51).
 
 Recording (`kit/record.ts`, proposed; 51, 52):
 
