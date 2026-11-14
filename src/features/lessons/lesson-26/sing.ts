@@ -92,7 +92,9 @@ interface Flight {
 
 /** Mounts Sing it on the page's #singCard. */
 export function initSing(o: SingOptions = {}): void {
-  const view: SingView = createSingView()
+  // the learner has left Sing it: off screen for 600 ms (the leave watch below)
+  let left = false
+  const view: SingView = createSingView(() => !left)
   const fig = view.figure
   const card = q('#singCard')
   const mic = new MicHold('lesson-26')
@@ -112,7 +114,6 @@ export function initSing(o: SingOptions = {}): void {
   let flight: Flight | null = null
   let sounding: { stop(): void } | null = null
   let resting = false
-  let left = false
   let begun = false
 
   const voiceNow = (): Voice => VoiceChoice.voice ?? 'lower'
