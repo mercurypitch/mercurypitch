@@ -9,7 +9,8 @@ import type { StudioCommand, StudioEdit } from '@/lib/studio/model/commands'
 import { createStudioTrack } from '@/lib/studio/model/defaults'
 import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limits'
 import type { StudioAsset, StudioAssetData, StudioClipMidi, StudioClipPasses, StudioNote, StudioProject, } from '@/lib/studio/model/types'
-import { studioTakeFileName } from '@/lib/studio/record/take-audio'
+import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
+import { studioTakeFileName, studioTakeWav, } from '@/lib/studio/record/take-audio'
 import { studioTakeSequence } from '@/lib/studio/record/take-notes'
 import { prepareStudioSource } from '../integration/prepare-source'
 import type { StudioSourceEntry } from '../integration/source-catalog'
@@ -68,6 +69,8 @@ interface ImportControllerOptions {
     prepared: readonly StudioAssetData[],
     refused: (error: unknown) => void,
   ): boolean
+  /** The present changed without an undo step: a kept MIDI render. False when nothing changed; a refusal throws. */
+  amend?(command: StudioCommand, prepared: readonly StudioAssetData[]): boolean
   flush(): Promise<unknown> | undefined
   createId(): string
   now(): Date
@@ -147,6 +150,17 @@ export interface StudioRecordingImport {
 }
 
 const TAKE_TOO_SHORT = 'That take was too short to keep.'
+
+/** A MIDI clip's render, kept as a take is (src/features/studio/midi). */
+export interface StudioRenderImport {
+  /** Mono, 48 kHz: frame 0 is tick 0 of its sequence. */
+  readonly samples: Float32Array
+  /** What it was rendered from: every stale clip whose notes have this key now takes it. */
+  readonly renderKey: string
+  /** The name its audio is kept under, which its clips show. */
+  readonly title: string
+  readonly signal?: AbortSignal
+}
 
 /** Whether a clip of this length starts here on the lane without overlapping one. */
 function laneHasRoom(
@@ -311,6 +325,17 @@ export function createStudioImporter(options: ImportControllerOptions) {
   // used to be dropped without a word.
   let turn: Promise<unknown> = Promise.resolve()
 
+  /** `work` now, or once the work ahead of it is done, while `wanted` still says so. */
+  function inTurn(
+    work: () => Promise<boolean>,
+    wanted: () => boolean,
+  ): Promise<boolean> {
+    const run =
+      active === null ? work() : turn.then(() => (wanted() ? work() : false))
+    turn = run.catch(() => undefined)
+    return run
+  }
+
   function importItems(
     items: readonly ImportItem[],
     startFrame: number,
@@ -319,16 +344,74 @@ export function createStudioImporter(options: ImportControllerOptions) {
     // A queued file belongs to the song it was picked for, and Cancel drops it.
     const epoch = options.epoch()
     const cancelled = cancels
-    const run =
-      active === null
-        ? importNow(items, startFrame, trackId)
-        : turn.then(() =>
-            epoch === options.epoch() && cancelled === cancels
-              ? importNow(items, startFrame, trackId)
-              : false,
-          )
-    turn = run.catch(() => undefined)
-    return run
+    return inTurn(
+      () => importNow(items, startFrame, trackId),
+      () => epoch === options.epoch() && cancelled === cancels,
+    )
+  }
+
+  /**
+   * A MIDI render kept as its clips' audio: prepared as a recorded take,
+   * checked against the song's room for audio, and swapped in by an
+   * amendment. It takes its turn with the imports, whose preparation it
+   * shares, but holds nothing up: no import notice, no lock on editing.
+   */
+  async function keepRender(render: StudioRenderImport): Promise<boolean> {
+    const snapshot = options.project()
+    const amend = options.amend
+    if (!options.canEdit() || active !== null || !snapshot || !amend)
+      return false
+    const epoch = options.epoch()
+    const abort = new AbortController()
+    const cancel = () => abort.abort()
+    render.signal?.addEventListener('abort', cancel, { once: true })
+    if (render.signal?.aborted === true) abort.abort()
+    const retained = createRetainedStudioAudio()
+    active = abort
+    try {
+      checkImportCancelled(abort.signal)
+      const data = await (options.prepareFile ?? prepareStudioAsset)(
+        studioTakeWav(render.samples, STUDIO_SAMPLE_RATE),
+        {
+          id: options.createId(),
+          projectId: snapshot.id,
+          originalName: studioTakeFileName(render.title),
+          provenance: {
+            kind: 'recording',
+            importedAt: options.now().toISOString(),
+          },
+        },
+        { signal: abort.signal },
+      )
+      checkImportCancelled(abort.signal)
+      if (!options.current(epoch) || !options.canEdit()) return false
+      const inUse = new Set(
+        (options.project()?.clips ?? []).map((clip) => clip.assetId),
+      )
+      const asset = retainNewAudio(data, options.assets(), inUse, retained)
+      const prepared = retained.values()
+      retained.clear()
+      return amend(
+        {
+          type: 'set-midi-render',
+          assetId: asset.id,
+          renderKey: render.renderKey,
+        },
+        prepared,
+      )
+    } finally {
+      render.signal?.removeEventListener('abort', cancel)
+      retained.clear()
+      if (active === abort) active = null
+    }
+  }
+
+  function addRender(render: StudioRenderImport): Promise<boolean> {
+    const epoch = options.epoch()
+    return inTurn(
+      () => keepRender(render),
+      () => epoch === options.epoch() && render.signal?.aborted !== true,
+    )
   }
 
   async function importNow(
@@ -540,6 +623,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
     addFile,
     addFiles,
     addRecording,
+    addRender,
     addTakes,
     addTake: (
       entry: StudioSourceEntry,
