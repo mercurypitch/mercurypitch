@@ -21,6 +21,8 @@ import { createStudioLiveMix, StudioLiveMixContext } from './mix/live-mix'
 import { installStudioMixShortcut } from './mix/mix-shortcut'
 import { StudioMixDesk } from './mix/StudioMixDesk'
 import { StudioPhoneMix } from './mix/StudioPhoneMix'
+import { StudioNoteEditorHost } from './notes/StudioNoteEditorHost'
+import { useStudioNoteEditor } from './notes/useStudioNoteEditor'
 import { createStudioPanels, STUDIO_PANEL_TITLES } from './panels/studio-panels'
 import { StudioClipDetails } from './panels/StudioClipDetails'
 import { StudioPanel } from './panels/StudioPanel'
@@ -71,6 +73,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     beforeChange: (next) => {
       if (next !== 'sound') comparison.stop()
       if (next !== 'sources') transport.stopPreview()
+      if (next === 'mix') notes.close()
     },
     onOpen: (next) => {
       if (next === 'sources') void props.studio.refreshSources()
@@ -83,6 +86,17 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     null,
   )
   const [inputFocusFor, setInputFocusFor] = createSignal<string | null>(null)
+  // A MIDI clip's notes: a drawer under the lanes, where Mix gives way.
+  const notes = useStudioNoteEditor({
+    project: () => props.studio.project(),
+    phone,
+    panel,
+    panelCovers: () => overlay() || phone(),
+    closePanel,
+    selectClip: setSelectedClipId,
+    selectedClipId,
+    scope: () => workspace,
+  })
   const [zoom, setZoom] = createSignal(40)
   const [previewEpoch, setPreviewEpoch] = createSignal(0)
   let workspace!: HTMLDivElement
@@ -440,6 +454,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         [styles.phone]: phone(),
         [styles.tablet]: tablet(),
         [styles.phonePanelOpen]: phone() && panel() !== null,
+        [styles.notesFull]: notes.full(),
       }}
       onKeyDown={keyDown}
       onKeyUp={editor.keyUp}
@@ -538,7 +553,10 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             tablet={tablet()}
             onZoom={setZoom}
             drawerOpen={panel() !== null && overlay() && !deskOpen()}
-            deskOpen={deskOpen()}
+            deskOpen={deskOpen() || notes.drawer()}
+            editingClipId={notes.state.clipId()}
+            onOpenNotes={(id) => void notes.open(id)}
+            covered={notes.covering()}
             onAddTakes={
               panel() === 'sources' ? undefined : () => openPanel('sources')
             }
@@ -575,6 +593,14 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               onClose={closePanel}
             />
           </Show>
+          <StudioNoteEditorHost
+            state={notes.state}
+            project={project()}
+            assets={props.studio.assets()}
+            phone={phone()}
+            tablet={tablet()}
+            transport={transport}
+          />
         </div>
         <Show when={panel() !== null && !deskOpen()}>
           <StudioPanel
@@ -663,6 +689,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
                 asset={selectedAsset()!}
                 writable={writable()}
                 onCommand={props.studio.dispatch}
+                onEditNotes={() => void notes.open(selectedClip()!.id)}
               />
             </Show>
             <Show when={panel() === 'track' && selectedTrack()}>

@@ -783,11 +783,27 @@
   min-height: 0;
 }
 .arrangement {
+  /* The note editor fills it when expanded, and on a phone. */
+  position: relative;
   display: flex;
   flex: 1;
   flex-direction: column;
   min-width: 0;
   min-height: 0;
+}
+/* A phone's note editor fills the screen: the song's bar steps aside. */
+.workspace.notesFull > .topBar {
+  display: none;
+}
+/* While the note editor loads the first time. */
+.notesLoading {
+  flex: none;
+  margin: 0;
+  padding: 10px 16px;
+  border-top: 1px solid var(--studio-line-strong);
+  background: var(--studio-panel);
+  color: var(--studio-muted);
+  font-size: 12px;
 }
 .workspace:has(.dropHint) .arrangement {
   outline: 2px dashed var(--studio-accent);
