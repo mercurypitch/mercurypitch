@@ -87,7 +87,9 @@ had, so each drill's own styles, the tests and the tours find what they looked f
 - **Hear it first.** Under Start, a drill can offer one example of what it asks for
   (`ExerciseShell`'s `demo`): Merc takes his singing pose, his bubble says what it is ("Listen:
   E3, then B3. That is a Perfect 5th."), and the example gives way to a run the moment one
-  starts. Thirteen drills have one. Twelve play a row of notes (`stage/note-demo.ts`): Interval
+  starts. The line lies over the brief inside the bubble, which keeps the brief's size, so the
+  sheet does not move while an example plays, and it stays up for at least two seconds, since
+  some examples are over sooner than their line can be read. Thirteen drills have one. Twelve play a row of notes (`stage/note-demo.ts`): Interval
   Trainer, Scale Runner, Long Note, Pitch Hold, Arpeggio Jumper, Chord Stacker, Staccato
   Precision, Drone Intonation, Siren, Slide, Dynamic Swell and Call & Response. An example says
   what it is and what it is not: Slide and Siren play the two notes a voice glides between, and
