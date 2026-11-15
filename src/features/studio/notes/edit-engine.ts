@@ -200,6 +200,11 @@ function wheelStep(
   return { state, effects, handled: true }
 }
 
+/** The mouse gone from the roll: no note under it. */
+function left(state: NoteEditState): NoteEditState {
+  return state.hover === null ? state : { ...state, hover: null }
+}
+
 /** Every gesture let go, undone, and every finger forgotten. */
 function abort(state: NoteEditState): NoteEditState {
   return {
@@ -237,7 +242,7 @@ export function stepNoteEditor(
     case 'command':
       return commandStep(ready, ctx, input.command)
     case 'leave':
-      return quietStep(ready.hover === null ? ready : { ...ready, hover: null })
+      return quietStep(left(ready))
     case 'abort':
       return quietStep(abort(ready))
     case 'sync':
