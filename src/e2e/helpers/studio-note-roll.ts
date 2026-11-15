@@ -130,7 +130,15 @@ export function moved(point: Point, x: number, y: number): Point {
   return { x: point.x + x, y: point.y + y }
 }
 
-/** A finger pressed at `from`, drawn to `to` in `steps` moves and lifted, through Chromium's native touch input. */
+/** How long a finger rests where a drag ends before it lifts. */
+const REST_MS = 120
+
+/**
+ * A finger pressed at `from`, drawn to `to` in `steps` moves, rested there
+ * and lifted, through Chromium's native touch input. It rests as a finger
+ * placing a note does: one lifted while still moving starts a fling, and
+ * Chromium does not click on the tap that stops a fling.
+ */
 export async function touchDrag(
   page: Page,
   from: Point,
@@ -154,6 +162,11 @@ export async function touchDrag(
         ),
       })
     }
+    await new Promise((resolve) => setTimeout(resolve, REST_MS))
+    await session.send('Input.dispatchTouchEvent', {
+      type: 'touchMove',
+      ...touch(to.x, to.y),
+    })
     await session.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
       touchPoints: [],
