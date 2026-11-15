@@ -12,9 +12,17 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
+import { createNoteDemo } from '../stage/note-demo'
 import { EXERCISE_STACCATO, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { useStaccatoPrecisionController } from './use-staccato-precision-controller'
+
+/**
+ * "Hear it first" plays three short notes, a chord's root, third and fifth:
+ * one would be over before its line could be read, and a run is a row of
+ * them.
+ */
+const EXAMPLE_STEPS = [0, 4, 7] as const
 
 interface StaccatoPrecisionExerciseProps {
   audioEngine: AudioEngine
@@ -65,6 +73,10 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (
 
   onCleanup(() => base.reset())
 
+  // "Hear it first": Merc plays one example before the singer tries.
+  const demo = createNoteDemo(audioEngine)
+  onCleanup(() => demo.stop())
+
   onMount(() => {
     if (props.autoStart === true && base.state().status === 'idle') {
       void handleStart()
@@ -114,6 +126,15 @@ const StaccatoPrecisionExercise: Component<StaccatoPrecisionExerciseProps> = (
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconZap size={20} />}
+      demo={{
+        play: () =>
+          demo.play(
+            EXAMPLE_STEPS.map((step) => noteToMidi(startNote()) + step),
+            { noteMs: 200, gapMs: 450 },
+          ),
+        stop: demo.stop,
+        line: () => `Listen: three short notes, up from ${startNote()}.`,
+      }}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <p>

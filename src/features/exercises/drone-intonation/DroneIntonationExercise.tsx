@@ -12,6 +12,7 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
+import { createNoteDemo } from '../stage/note-demo'
 import { EXERCISE_DRONE_INTONATION, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { droneIntervalLabel, droneIntervalNames, droneLaunchIntervals, plannedRounds, useDroneIntonationController, } from './use-drone-intonation-controller'
@@ -64,6 +65,17 @@ const DroneIntonationExercise: Component<DroneIntonationExerciseProps> = (
   }
 
   onCleanup(() => base.reset())
+
+  // "Hear it first": Merc plays one example before the singer tries. The
+  // drone, then one note above it: a launch's first interval, or a fifth.
+  const demo = createNoteDemo(audioEngine)
+  const exampleDrone = () => noteToMidi(startNote())
+  const exampleSpan = () => droneLaunchIntervals()?.[0] ?? 7
+  const exampleName = (): string => {
+    const label = droneIntervalLabel(exampleSpan())
+    return label === undefined ? '' : ` (${label})`
+  }
+  onCleanup(() => demo.stop())
 
   onMount(() => {
     if (props.autoStart === true && base.state().status === 'idle') {
@@ -143,6 +155,15 @@ const DroneIntonationExercise: Component<DroneIntonationExerciseProps> = (
           </span>
         </div>
       }
+      demo={{
+        play: () =>
+          demo.play([exampleDrone(), exampleDrone() + exampleSpan()], {
+            noteMs: 1100,
+          }),
+        stop: demo.stop,
+        line: () =>
+          `Listen: the drone, ${midiToNoteName(exampleDrone())}, then ${midiToNoteName(exampleDrone() + exampleSpan())} above it${exampleName()}.`,
+      }}
       idleSettings={
         <NoteDial
           label="Drone Note"

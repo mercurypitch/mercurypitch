@@ -354,7 +354,7 @@ Lesson 25. Neither says "right" or "wrong"; the reveal's line says what the lear
    launch field, triads and inversions (SEASON-2 § 5.2 item 18), so the card could open it on the
    dominant seventh and its inversions. The two fixes this package found have shipped: each note is
    waited out before the next, as Arpeggio Jumper's are
-   (`src/features/exercises/arpeggio-jumper/use-arpeggio-jumper-controller.ts:316-319`), so the
+   (`src/features/exercises/arpeggio-jumper/use-arpeggio-jumper-controller.ts:326-329`), so the
    first three notes sound their full length (FACTS 62); and its help text and its summary say what
    the drill does (FACTS 66).
 2. **Ear Lab's Stack**, `/ear-lab?lesson=27`, printed mercurypitch.com/ear-lab, then tap Stack. Today

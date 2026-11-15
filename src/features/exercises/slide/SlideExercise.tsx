@@ -11,6 +11,7 @@ import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import { ExerciseShell } from '../ExerciseShell'
+import { createNoteDemo } from '../stage/note-demo'
 import { EXERCISE_SLIDE } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { useSlideController } from './use-slide-controller'
@@ -84,6 +85,10 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
 
   onCleanup(() => base.reset())
 
+  // "Hear it first": Merc plays one example before the singer tries.
+  const demo = createNoteDemo(audioEngine)
+  onCleanup(() => demo.stop())
+
   onMount(() => {
     if (props.autoStart === true && base.state().status === 'idle') {
       void handleStart()
@@ -153,6 +158,15 @@ const SlideExercise: Component<SlideExerciseProps> = (props) => {
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconSlide size={20} />}
+      demo={{
+        play: () =>
+          demo.play([noteToMidi(fromNote()), noteToMidi(toNote())], {
+            noteMs: 900,
+          }),
+        stop: demo.stop,
+        line: () =>
+          `Listen: ${fromNote()}, then ${toNote()}. You slide from one to the other.`,
+      }}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <p>

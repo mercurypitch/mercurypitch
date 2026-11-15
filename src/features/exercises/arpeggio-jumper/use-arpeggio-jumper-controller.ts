@@ -55,6 +55,16 @@ const ARPEGGIO_DEGREES: Record<ArpeggioType, number[]> = {
   augmented: [0, 4, 8, 12],
 }
 
+/** An arpeggio's four notes from a root, in the order they are sung. */
+export function arpeggioNotes(
+  baseMidi: number,
+  type: ArpeggioType,
+  direction: 'up' | 'down',
+): number[] {
+  const notes = ARPEGGIO_DEGREES[type].map((degree) => baseMidi + degree)
+  return direction === 'down' ? notes.reverse() : notes
+}
+
 const NOTE_PLAY_DURATION_MS = 700
 /** Steps mode: quiet between the tone's end and the singer's window. */
 const GAP_BETWEEN_NOTES_MS = 250

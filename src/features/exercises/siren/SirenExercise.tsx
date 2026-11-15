@@ -12,6 +12,7 @@ import { getComfortableMidiRange, getDefaultNote, getNoteOptions, } from '@/lib/
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
+import { createNoteDemo } from '../stage/note-demo'
 import { EXERCISE_SIREN, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { SIREN_PHASE_GLIDE, SIREN_PHASE_LISTEN, SIREN_PHASE_READY, sirenGuideMidi, useSirenController, } from './use-siren-controller'
@@ -60,6 +61,15 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
   }
 
   onCleanup(() => base.reset())
+
+  // "Hear it first": Merc plays one example before the singer tries. A
+  // siren's two ends, a fifth apart around the centre note.
+  const demo = createNoteDemo(audioEngine)
+  const exampleSiren = (): [number, number] => {
+    const centre = noteToMidi(startNote())
+    return [centre - 3, centre + 4]
+  }
+  onCleanup(() => demo.stop())
 
   onMount(() => {
     if (props.autoStart === true && base.state().status === 'idle') {
@@ -141,6 +151,14 @@ const SirenExercise: Component<SirenExerciseProps> = (props) => {
           </span>
         </div>
       }
+      demo={{
+        play: () => demo.play(exampleSiren(), { noteMs: 900 }),
+        stop: demo.stop,
+        line: () => {
+          const [low, high] = exampleSiren()
+          return `Listen: ${midiToNoteName(low)}, then ${midiToNoteName(high)}. Your voice glides between them.`
+        },
+      }}
       idleSettings={
         <NoteDial
           label="Center Note"

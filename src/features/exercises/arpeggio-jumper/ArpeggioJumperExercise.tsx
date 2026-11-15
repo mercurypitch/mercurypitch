@@ -15,10 +15,11 @@ import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseFeedback } from '../ExerciseFeedback'
 import { ExerciseShell } from '../ExerciseShell'
 import { STOPPED_EARLY_LINE } from '../feedback'
+import { createNoteDemo } from '../stage/note-demo'
 import { EXERCISE_ARPEGGIO_JUMPER } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import type { ArpeggioMode } from './use-arpeggio-jumper-controller'
-import { arpeggioRunHeard, arpeggioRunStopped, octaveLine, useArpeggioJumperController, } from './use-arpeggio-jumper-controller'
+import { arpeggioNotes, arpeggioRunHeard, arpeggioRunStopped, octaveLine, useArpeggioJumperController, } from './use-arpeggio-jumper-controller'
 
 interface ArpeggioJumperExerciseProps {
   audioEngine: AudioEngine
@@ -89,6 +90,10 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
 
   onCleanup(() => base.reset())
 
+  // "Hear it first": Merc plays one example before the singer tries.
+  const demo = createNoteDemo(audioEngine)
+  onCleanup(() => demo.stop())
+
   onMount(() => {
     if (props.autoStart === true && base.state().status === 'idle') {
       void handleStart()
@@ -157,6 +162,16 @@ const ArpeggioJumperExercise: Component<ArpeggioJumperExerciseProps> = (
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconLayers size={20} />}
+      demo={{
+        play: () =>
+          demo.play(
+            arpeggioNotes(noteToMidi(startNote()), arpeggioType(), direction()),
+            { noteMs: 520, gapMs: 80 },
+          ),
+        stop: demo.stop,
+        line: () =>
+          `Listen: the ${ARPEGGIO_TYPES.find((t) => t.value === arpeggioType())?.label ?? arpeggioType()} arpeggio, ${direction() === 'up' ? 'up from' : 'down to'} ${startNote()}.`,
+      }}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <Show when={unscoredRun()}>
