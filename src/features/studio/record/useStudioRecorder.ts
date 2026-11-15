@@ -51,6 +51,8 @@ import { createStudioClickTrack } from '@/lib/studio/record/click-track'
 import { createStudioInputMonitor } from '@/lib/studio/record/input-monitor'
 import type { StudioLaneInput } from '@/lib/studio/record/lane-inputs'
 import { isMidiLaneInput } from '@/lib/studio/record/lane-inputs'
+import type { StudioMovingMix } from '@/lib/studio/record/monitor-sound'
+import { studioMonitorSound } from '@/lib/studio/record/monitor-sound'
 import type { StudioRecordSettings } from '@/lib/studio/record/record-settings'
 import { readStudioRecordSettings, writeStudioRecordSettings, } from '@/lib/studio/record/record-settings'
 import type { StudioCapturedTake, StudioLiveTake, StudioRecorderView, StudioRecordPhase, StudioTakeJournalWriter, } from '@/lib/studio/record/studio-recorder'
@@ -105,6 +107,8 @@ export interface StudioRecorderOptions {
   readonly selectedTrackId: Accessor<string | null>
   /** Export, Compare or auto-balance hold the song's audio. */
   readonly audioBusy: Accessor<boolean>
+  /** Faders and dials still moving, heard in the monitor as in playback. */
+  readonly liveMix?: StudioMovingMix
 }
 
 const MIC_ERRORS: Record<MicError['kind'], string> = {
@@ -216,17 +220,16 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     return writer
   }
 
-  function laneLevel(trackId: string | null) {
-    const track = project()?.tracks.find((item) => item.id === trackId)
-    return {
-      // The switch guards against a microphone's feedback; a MIDI lane has
-      // none, so its player always hears what they play.
-      on: settings().monitor || isMidiLaneInput(lanes.of(trackId)),
-      gain:
-        track === undefined ? 1 : track.mute ? 0 : 10 ** (track.gainDb / 20),
-      pan: track?.pan ?? 0,
-    }
-  }
+  /** Whether lane `trackId` is monitored: the switch guards against a microphone's feedback; a MIDI lane has none, so its player always hears what they play. */
+  const monitored = (trackId: string | null) =>
+    settings().monitor || isMidiLaneInput(lanes.of(trackId))
+
+  /** A lane's input through the lane, as its clips play: its effects, faders and the controls still moving. */
+  const monitorSound = (trackId: string | null) =>
+    studioMonitorSound(project(), trackId, {
+      on: monitored(trackId),
+      moving: options.liveMix,
+    })
 
   function measureRoundTrip(context: AudioContext, stream: MediaStream | null) {
     // An instrument's take: the output path alone, and the line-up beside
@@ -299,7 +302,7 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     createSource: (context, stream) => context.createMediaStreamSource(stream),
     createClicks: createStudioClickTrack,
     createMonitor: createStudioInputMonitor,
-    monitorLevel: laneLevel,
+    monitorSound,
     transport: {
       playing: () => transport.playing(),
       playheadFrame: () => transport.frameNow(),
@@ -460,9 +463,11 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       if (trackId !== null && !song.has(trackId))
         untrack(() => recorder.disarm(trackId))
   })
-  // Monitoring follows its setting and each armed lane's volume and pan.
+  // Each armed lane's monitoring follows its setting and, while it is
+  // monitored, the lane's sound: effects, volume, pan, Mute and Solo.
   createEffect(() => {
-    for (const { trackId } of laneRecords.lanes()) laneLevel(trackId)
+    for (const { trackId } of laneRecords.lanes())
+      if (monitored(trackId)) monitorSound(trackId)
     untrack(() => recorder.updateMonitor())
   })
   // Repeat comes back once the take is over.

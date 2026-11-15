@@ -3,8 +3,9 @@ import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { FakeMediaDevices } from '@/lib/audio-input/fake-devices.fixture'
 import { fakeMediaDevices } from '@/lib/audio-input/fake-devices.fixture'
+import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
 import type { StudioProject } from '@/lib/studio/model/types'
-import type { StudioMonitorLevel } from '@/lib/studio/record/input-monitor'
+import type { StudioMonitorSound } from '@/lib/studio/record/input-monitor'
 import type { StudioCapturedTake, StudioInstrumentHold, StudioRecorderView, } from '@/lib/studio/record/studio-recorder'
 import type { StudioRecordingImport } from '../controller/imports'
 import type { FakeMidiInput } from './midi/fake-midi.fixture'
@@ -16,7 +17,7 @@ const mocks = vi.hoisted(() => ({
     acquireInstrument(
       trackId: string | null,
     ): Promise<StudioInstrumentHold> | null
-    monitorLevel(trackId: string | null): StudioMonitorLevel
+    monitorSound(trackId: string | null): StudioMonitorSound
     roundTrip(context: AudioContext, stream: MediaStream | null): number
     keep(take: StudioCapturedTake): Promise<boolean>
   },
@@ -89,15 +90,18 @@ const { useStudioRecorder, describeStudioRecordError } =
   await import('./useStudioRecorder')
 const { setMicLatencyByDevice } = await import('@/stores/mic-latency-store')
 
-const song = {
-  id: 'song-1',
-  tempoBpm: 120,
+// A whole song: a monitored lane works out its effects from the mix.
+const song: StudioProject = {
+  ...createStudioProject({
+    id: 'song-1',
+    title: 'Song',
+    now: '2026-11-09T12:00:00.000Z',
+  }),
   tracks: [
-    { id: 'lane-1', name: 'Keys', order: 0, role: 'keys' },
-    { id: 'lane-2', name: 'Voice', order: 1, role: 'voice' },
+    createStudioTrack({ id: 'lane-1', name: 'Keys', order: 0, role: 'keys' }),
+    createStudioTrack({ id: 'lane-2', name: 'Voice', order: 1, role: 'voice' }),
   ],
-  clips: [],
-} as unknown as StudioProject
+}
 
 const KEYS = { kind: 'midi' as const, portId: 'keys', label: 'Keystation 49' }
 
@@ -218,8 +222,8 @@ describe('the Studio recorder on a MIDI lane', () => {
     hook.setSettings({ ...hook.settings(), monitor: false })
 
     // Act, Assert
-    expect(deps.monitorLevel('lane-1').on).toBe(true)
-    expect(deps.monitorLevel('lane-2').on).toBe(false)
+    expect(deps.monitorSound('lane-1').on).toBe(true)
+    expect(deps.monitorSound('lane-2').on).toBe(false)
   })
 
   it('moves a MIDI take by the output path alone, not a measured round trip or the line-up', () => {

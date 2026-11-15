@@ -5,7 +5,7 @@ import { releaseMicLock } from '@/lib/mic-lock'
 import { MicManager } from '@/lib/mic-manager'
 import type { StudioRecorderDeps } from './studio-recorder'
 import { MIC_LOST_ARMED, MIC_LOST_BEFORE_TAKE, MIC_LOST_MID_TAKE, } from './studio-recorder'
-import { harness, RATE, settle } from './studio-recorder.test-fixtures'
+import { harness, laneSound, RATE, settle, } from './studio-recorder.test-fixtures'
 
 afterEach(() => vi.useRealTimers())
 
@@ -125,7 +125,7 @@ describe('arming', () => {
     expect(await arming).toBe(true)
     expect(h.view()).toMatchObject({ phase: 'armed', targetTrackId: 'lane-1' })
     expect(h.deps.openCapture).toHaveBeenCalledOnce()
-    expect(h.monitor.set).toHaveBeenCalledWith({ on: false, gain: 1, pan: 0 })
+    expect(h.monitor.set).toHaveBeenCalledWith(laneSound())
 
     h.worklet.level(0.4, 1536)
     expect(h.view().level).toBe(0.4)
@@ -172,11 +172,8 @@ describe('arming', () => {
 
   it('arms the lane pressed while another lane opens beside it, each heard at its own level', async () => {
     const h = harness({
-      monitorLevel: (trackId) => ({
-        on: true,
-        gain: trackId === 'lane-2' ? 0.5 : 1,
-        pan: 0,
-      }),
+      monitorSound: (trackId) =>
+        laneSound(true, trackId === 'lane-2' ? 0.5 : 1),
     })
     const first = h.recorder.arm('lane-1')
 
@@ -190,8 +187,8 @@ describe('arming', () => {
       'lane-2',
     ])
     expect(h.monitor.set.mock.calls).toEqual([
-      [{ on: true, gain: 1, pan: 0 }],
-      [{ on: true, gain: 0.5, pan: 0 }],
+      [laneSound(true, 1)],
+      [laneSound(true, 0.5)],
     ])
   })
 
