@@ -9,13 +9,20 @@
 // edge, and the harness keeps the node each capture and the monitor were
 // given, so a case can say what a take hears.
 import { vi } from 'vitest'
+import { EMPTY_CHAIN } from '@/lib/studio-fx/chain-spec'
 import type { StudioCaptureEvents } from './capture-node'
+import type { StudioMonitorSound } from './input-monitor'
 import type { StudioRecordSettings } from './record-settings'
 import { DEFAULT_STUDIO_RECORD_SETTINGS } from './record-settings'
 import type { StudioCapturedTake, StudioRecorderDeps, StudioRecorderView, } from './studio-recorder'
 import { createStudioRecorder } from './studio-recorder'
 
 export const RATE = 48000
+
+/** What a harness lane sounds like through its monitor: no effects, both sides at `gain`. */
+export function laneSound(on = false, gain = 1): StudioMonitorSound {
+  return { on, spec: EMPTY_CHAIN, gains: [gain, gain] }
+}
 
 /** A node of the fake graph: its edges as `[to, output, input]`, and whether it was let go. */
 export interface FakeGraphNode {
@@ -130,7 +137,7 @@ export function harness(
       monitorInputs.push(input)
       return monitor
     },
-    monitorLevel: () => ({ on: false, gain: 1, pan: 0 }),
+    monitorSound: () => laneSound(),
     transport,
     settings: () => ({
       ...DEFAULT_STUDIO_RECORD_SETTINGS,

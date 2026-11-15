@@ -9,9 +9,11 @@
 // or an instrument's sound (armed-input.ts). Each armed lane listens through
 // a capture of its own (capture-node.ts), which takes one start, so a fresh
 // one listens after every take, and hears itself through a monitor of its
-// own at its lane's volume and pan. Disarming one lane leaves the others
-// armed; a lane disarmed before its input opened lets that input go as it
-// arrives. The click track is the clock's, shared by every lane.
+// own, through its lane's effects and faders (input-monitor.ts): a lane is
+// heard once, and lanes armed on one input are heard together, as a DAW
+// sums its armed tracks. Disarming one lane leaves the others armed; a
+// lane disarmed before its input opened lets that input go as it arrives.
+// The click track is the clock's, shared by every lane.
 import type { StudioArmedInput } from './armed-input'
 import { createStudioArmedInputs } from './armed-input'
 import type { StudioCaptureEvents, StudioCaptureHandle } from './capture-node'
@@ -52,7 +54,7 @@ type LaneArmDeps = Pick<
   | 'createSource'
   | 'createClicks'
   | 'createMonitor'
-  | 'monitorLevel'
+  | 'monitorSound'
   | 'inputOpened'
   | 'describeError'
 >
@@ -134,7 +136,7 @@ export function createStudioLaneArms(options: StudioLaneArmsOptions) {
     lane.level = 0
     listen(lane, clock.context, input)
     lane.monitor = deps.createMonitor(clock.context, input.node)
-    lane.monitor.set(deps.monitorLevel(lane.trackId))
+    lane.monitor.set(deps.monitorSound(lane.trackId))
     if (input.opened !== null)
       deps.inputOpened?.({ ...input.opened, trackId: lane.trackId })
   }
@@ -226,7 +228,7 @@ export function createStudioLaneArms(options: StudioLaneArmsOptions) {
     /** Each lane's monitoring follows the settings and its lane. */
     updateMonitors(): void {
       for (const lane of lanes)
-        lane.monitor?.set(deps.monitorLevel(lane.trackId))
+        lane.monitor?.set(deps.monitorSound(lane.trackId))
     },
     tap: (): StudioInputTap | null => inputs.tap(),
     capture: (): number | null => inputs.capture(),
