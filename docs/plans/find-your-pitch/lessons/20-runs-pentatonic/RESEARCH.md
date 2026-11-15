@@ -140,7 +140,7 @@ note"; staccato exercises "develop onset, and breath coordination". Full text. P
 the major pentatonic, up or down one octave, scored against the octave it plays.**
 `src/features/exercises/scale-runner/scale-runner-scales.ts:15-23` (types Major, Minor, Pentatonic,
 Chromatic when this was read; Harmonic Minor, Melodic Minor and Minor Pentatonic since 15 November
-2026); `src/features/exercises/scale-runner/ScaleRunnerExercise.tsx:46-49` (opens on Major, up);
+2026); `src/features/exercises/scale-runner/ScaleRunnerExercise.tsx:47-50` (opens on Major, up);
 `src/lib/scale-data.ts:452-472` (`getScaleDegrees`: pentatonic
 is `'pentatonic-major'`, minor `'natural-minor'`); `src/features/exercises/scale-runner/use-scale-runner-controller.ts:15-17`
 (`NOTE_PLAY_DURATION_MS = 700`, `GAP_BETWEEN_NOTES_MS = 250`, `MATCH_WINDOW_MS = 2000`);
