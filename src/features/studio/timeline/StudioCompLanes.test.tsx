@@ -293,6 +293,32 @@ describe('Studio comp lanes', () => {
     expect(middle.getAttribute('aria-label')).toContain('0:01.250 to 0:01.750')
   })
 
+  it('keeps the pick through an edit, so the pass above can play over the same stretch', () => {
+    const { command, setProject } = setup()
+    openStudioComp('take')
+    const middle = strip(2)
+    middle.focus()
+    fireEvent.keyDown(middle, { key: 'ArrowRight' })
+    fireEvent.keyDown(middle, { key: 'Enter' })
+
+    // Every command hands back new clip objects: the same clip keeps its pick.
+    setProject((song) => ({
+      ...song,
+      clips: song.clips.map((clip) => ({ ...clip })),
+    }))
+    expect(middle.getAttribute('aria-label')).toContain('0:01.250 to 0:01.500')
+
+    fireEvent.keyDown(middle, { key: 'ArrowUp' })
+    fireEvent.keyDown(document.activeElement!, { key: 'Enter' })
+    expect(command).toHaveBeenLastCalledWith({
+      type: 'comp-pass',
+      clipId: 'take',
+      fromSourceFrame: 2 * PASS + 12_000,
+      toSourceFrame: 2 * PASS + 24_000,
+      pass: 2,
+    })
+  })
+
   it('moves to the pass above or below with the arrows, and closes with Escape or Done', () => {
     setup()
     openStudioComp('take')

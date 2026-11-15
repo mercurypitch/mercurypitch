@@ -157,14 +157,10 @@ function CompRows(props: CompRowsProps) {
     window.removeEventListener('pointerdown', secondPointer, true)
   }
   onCleanup(letGo)
-  // Another clip's passes start their own pick.
-  createEffect(
-    on(
-      () => clip().id,
-      () => setSelection(null),
-      { defer: true },
-    ),
-  )
+  // Another clip's passes start their own pick. Every edit hands back a new
+  // clip object, so the pick follows the clip's id, not the object.
+  const clipId = createMemo(() => clip().id)
+  createEffect(on(clipId, () => setSelection(null), { defer: true }))
 
   const current = () =>
     selection() ??

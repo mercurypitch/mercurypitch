@@ -305,8 +305,21 @@ describe('edits to a comped clip', () => {
       },
       assets,
     )
+    const pasted = apply(
+      project,
+      {
+        type: 'paste-clip',
+        clip: clipOf(project),
+        trackId: clipOf(project).trackId,
+        startFrame: 1_000_000,
+        newClipId: 'pasted',
+        newTrackId: 'lane-pasted',
+      },
+      assets,
+    )
 
     expect(clipOf(next, 'copy').comp).toEqual(clipOf(project).comp)
+    expect(clipOf(pasted, 'pasted').comp).toEqual(clipOf(project).comp)
   })
 
   it('cuts the comp where a punch takes over the middle of the clip', () => {
