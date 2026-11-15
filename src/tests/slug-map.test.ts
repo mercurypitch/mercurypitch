@@ -5,11 +5,12 @@
 // matcher and the slug → launch-intent registry the about-landing relies on.
 
 import { describe, expect, it } from 'vitest'
+import { typesFor } from '@/features/exercises/cadence/cadence-rounds'
 import { droneIntervalLabel } from '@/features/exercises/drone-intonation/use-drone-intonation-controller'
 import { isWebRoom } from '@/features/exercises/rooms/web-room-ids'
 import { SCALE_RUNNER_SCALES } from '@/features/exercises/scale-runner/scale-runner-scales'
 import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
-import { EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
+import { EXERCISE_CADENCE, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
 import { difficultyLabel } from '@/features/practice-intelligence/adaptive-difficulty'
 import { clearLaunchOverride, launchIntervals, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
@@ -186,6 +187,32 @@ describe('EXERCISE_SLUGS', () => {
     expect(isWebRoom(launch.kind === 'exercise' ? launch.exercise : null)).toBe(
       true,
     )
+  })
+
+  it("opens Read the Note on the singer's own level for read-the-note", () => {
+    expect(EXERCISE_SLUGS['read-the-note']).toEqual({
+      kind: 'exercise',
+      exercise: EXERCISE_NOTE_READING,
+    })
+  })
+
+  it("opens Name the Cadence on Lesson 28's four cadences for name-the-cadence", () => {
+    const launch = EXERCISE_SLUGS['name-the-cadence']
+
+    expect(launch).toEqual({
+      kind: 'exercise',
+      exercise: EXERCISE_CADENCE,
+      difficulty: 7,
+    })
+    // The lesson names four; the level every singer starts on asks for three.
+    const level = launch.kind === 'exercise' ? (launch.difficulty ?? 5) : 5
+    expect(typesFor(level)).toEqual([
+      'perfect',
+      'imperfect',
+      'plagal',
+      'interrupted',
+    ])
+    expect(typesFor(5)).toHaveLength(3)
   })
 
   it('keys are lowercase kebab-case', () => {
