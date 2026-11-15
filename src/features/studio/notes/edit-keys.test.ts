@@ -1,10 +1,10 @@
-// Studio note editing keys and commands — each key while the editor has the focus, one commit a press: arrows move by a grid step or a semitone (Shift a bar or an octave, Alt a pixel), Delete and Backspace delete, Ctrl or Cmd with D, A, C, X and V duplicate, select all, copy, cut and paste, Escape undoes, clears and then closes; undo and redo pass on; and the toolbar's quantize, transpose, velocity, snap and tool.
+// Studio note editing keys and commands — each key while the editor has the focus, one commit a press: arrows move by a grid step or a semitone (Shift a bar or an octave, Alt a pixel), Delete and Backspace delete, Ctrl or Cmd with D, A, C, X and V duplicate, select all, copy, cut and paste, Escape undoes, clears and then closes; a held arrow's draft is the notes its release keeps; undo and redo pass on; and the toolbar's quantize, transpose, velocity, snap and tool.
 import { describe, expect, it } from 'vitest'
 import { NOTE_NO_ROOM_AFTER, NOTE_NO_ROOM_PASTE } from './edit-commands'
 import { commitsOf, key, keyup, mouse, note, noteHost, noteOf, noticesOf, ONE_NOTE_CLIPBOARD, play, press, } from './edit-script.fixture'
 import type { NoteEditCommand } from './edit-types'
 import { noteVelocityValue } from './edit-velocity'
-import { noteEditView } from './edit-view'
+import { noteEditDraft, noteEditView } from './edit-view'
 
 // A middle C an eighth from beat 2, an E4 sixteenth on beat 3 and a G4
 // eighth on beat 4, in a clip of two bars.
@@ -62,6 +62,21 @@ describe('the arrows', () => {
     expect(held.notes.find((each) => each.id === 1)?.startTick).toBe(1680)
     expect(commitsOf(host)).toHaveLength(1)
     expect(noteOf(host, 1)?.startTick).toBe(1680)
+  })
+
+  it('draft the notes their release keeps, and none once let go', () => {
+    const host = play(
+      editor(),
+      key('ArrowRight'),
+      key('ArrowRight', { repeat: true }),
+    )
+    const drafted = noteEditDraft(host.state)
+
+    play(host, keyup('ArrowRight'))
+
+    expect(drafted?.notes.find((each) => each.id === 1)?.startTick).toBe(1440)
+    expect(commitsOf(host)[0].notes).toEqual(drafted?.notes)
+    expect(noteEditDraft(host.state)).toBeNull()
   })
 
   it('make one edit of two arrows held together', () => {

@@ -1,7 +1,7 @@
-// Studio note editing host glue tests — a press lands on the grid or the velocity lane and counts from it, a captured pointer counting from it wherever it goes, and the keys and the ruler take none; Ctrl or Cmd are one modifier; a draft is only the notes a gesture changes or adds; the engine's marquee and grips move by the keys' column and the ruler onto the canvas; a commit is one set-sequence-notes with its own fork id; and a touch screen opens the piano with rows of 24 px.
+// Studio note editing host glue tests — a press lands on the grid or the velocity lane and counts from it, a captured pointer counting from it wherever it goes, and the keys and the ruler take none; Ctrl or Cmd are one modifier; a draft is only the notes a gesture changes or adds; the engine's marquee and grips move by the keys' column and the ruler onto the canvas; a commit is one set-sequence-notes with its own fork id; a draft is new to the render service only when its notes are; and a touch screen opens the piano with rows of 24 px.
 import { describe, expect, it } from 'vitest'
 import type { StudioNote } from '@/lib/studio/model/types'
-import { NOTE_TOUCH_ROW_HEIGHT, noteCommitCommand, noteEditKeyInput, notePianoOpening, noteRollDrafts, noteRollDrawing, noteRollPointerInput, noteRollSurfaceAt, noteRollWheelInput, } from './edit-host'
+import { NOTE_TOUCH_ROW_HEIGHT, noteCommitCommand, noteEditKeyInput, notePianoOpening, noteRollDrafts, noteRollDrawing, noteRollPointerInput, noteRollSurfaceAt, noteRollWheelInput, sameNoteDraft, } from './edit-host'
 import type { NoteEditView } from './edit-view'
 import { studioRollRegions } from './note-roll-geometry'
 
@@ -184,6 +184,30 @@ describe('noteCommitCommand', () => {
       nextNoteId: 5,
       forkSequenceId: 'sequence-fork',
     })
+  })
+})
+
+describe('sameNoteDraft', () => {
+  const draft = { notes: [note(1, 0), note(2, 240)], nextNoteId: 3 }
+
+  it('finds a copy holding the same notes the same', () => {
+    const copy = {
+      notes: draft.notes.map((each) => ({ ...each })),
+      nextNoteId: 3,
+    }
+    expect(sameNoteDraft(copy, draft)).toBe(true)
+  })
+
+  it('finds a note moved, a note added or no draft at all new', () => {
+    const moved = { notes: [note(1, 0), note(2, 480)], nextNoteId: 3 }
+    const added = { notes: [...draft.notes, note(3, 480)], nextNoteId: 4 }
+
+    expect([
+      sameNoteDraft(moved, draft),
+      sameNoteDraft(added, draft),
+      sameNoteDraft(null, draft),
+      sameNoteDraft(null, null),
+    ]).toEqual([false, false, false, true])
   })
 })
 

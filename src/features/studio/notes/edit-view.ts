@@ -11,6 +11,7 @@
 // note's velocity, 1 to 127, for the lane to show beside its lollipop.
 import type { RollRect, RollViewport } from '@/lib/roll-geometry'
 import { noteRect, timeToX } from '@/lib/roll-geometry'
+import type { StudioNoteSet } from '@/lib/studio/midi/notes'
 import { studioRollYOf, studioWindowRollNotes, } from '@/lib/studio/midi/roll-rows'
 import type { StudioNote } from '@/lib/studio/model/types'
 import { holdGesture } from './edit-hold'
@@ -90,6 +91,12 @@ function cursorOf(
   if (gesture !== null) return DRAG_CURSORS[gesture.intent.kind]
   if (state.hover !== null) return HOVER_CURSORS[state.hover.zone]
   return state.tool === 'draw' ? 'crosshair' : 'default'
+}
+
+/** The notes a gesture drafts, as its release would keep them; null while none is drafted. */
+export function noteEditDraft(state: NoteEditState): StudioNoteSet | null {
+  const draft = singleGesture(state)?.draft ?? holdGesture(state)?.draft
+  return draft?.sequence ?? null
 }
 
 /** What the roll and the velocity lane draw now. */
