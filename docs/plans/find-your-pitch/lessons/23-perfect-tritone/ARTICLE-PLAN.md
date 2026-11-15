@@ -190,11 +190,13 @@ Lesson 6, Step N again". Lesson 10 asked the same two; spacing them again is del
   (`banks.ts:36-109`, :72; `LeapDrill.tsx:111-112`). Card: "Listen for the perfect fourth, fifth and
   octave, and the tritone between them."
 - **Works today, sung: `/exercises/leap-ladder`** (Lesson 9's slug): Interval Trainer on the two
-  thirds, the fifth, the fourth and the octave, each upward (`slug-map.ts:68-74`). A second card,
+  thirds, the fifth, the fourth and the octave, each upward (`slug-map.ts:73-79`). A second card,
   "For your voice", with Lesson 9's care lines. **[coach]** if used.
-- **Waits:** the `perfect-intervals` slug, 5, 7 and 12 (SEASON-2 § 5 item 16; data, one line, as
-  launches take whole semitones 1 to 12 upward, `launch-override.ts:57`, :65-76); the `ear-drill`
-  subset of perfect intervals and the tritone (§ 5 item 12); `?lesson=23` (§ 5 item 21).
+- **Shipped on 15 November 2026:** the `perfect-intervals` slug, 5, 7 and 12 (SEASON-2 § 5 item 16;
+  data, one line, as launches take whole semitones 1 to 12 upward, `launch-override.ts:57`,
+  :65-76). The card does not link it yet.
+- **Waits:** the `ear-drill` subset of perfect intervals and the tritone (§ 5 item 12);
+  `?lesson=23` (§ 5 item 21).
 - Not planned: sung tritones (SEASON-2 § 5.3).
 
 ## Closing tease and next card

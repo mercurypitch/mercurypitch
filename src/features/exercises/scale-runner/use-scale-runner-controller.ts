@@ -2,39 +2,19 @@ import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import { midiToFrequency as midiToFreq } from '@/lib/frequency-to-note'
-import { getScaleDegrees } from '@/lib/scale-data'
 import { approximateRichness } from '@/lib/vocal-analyzer'
 import { EMPTY_NOTE_TALLY, tallyFromDeviations } from '../exercise-note-tally'
 import { noteDeviationCents, scoreNoteAccuracy, } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_SCALE_RUNNER, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
-
-type ScaleType = 'major' | 'minor' | 'pentatonic' | 'chromatic'
+import type { ScaleRunDirection, ScaleRunnerScale } from './scale-runner-scales'
+import { scaleRunNotes } from './scale-runner-scales'
 
 // Baselines reproduced exactly at difficulty 5 (difficultyFactor(5) === 1.0).
 const NOTE_PLAY_DURATION_MS = 700
 const GAP_BETWEEN_NOTES_MS = 250
 const MATCH_WINDOW_MS = 2000
-
-function buildScaleNotes(
-  baseMidi: number,
-  scaleType: ScaleType,
-  direction: 'up' | 'down',
-): number[] {
-  const degrees = getScaleDegrees(scaleType)
-  let notes = degrees.map((deg) => baseMidi + deg)
-  // Close on the octave — but only if the scale definition did not already.
-  // Every definition in scale-data does, so appending it unconditionally made
-  // the run ask for the top note twice in a row; invisible when the target was
-  // one flat line, obvious the moment the upcoming ladder drew it as two rungs
-  // at the same pitch.
-  if (notes[notes.length - 1] !== baseMidi + 12) notes.push(baseMidi + 12)
-  if (direction === 'down') {
-    notes = [...notes].reverse()
-  }
-  return notes
-}
 
 export function useScaleRunnerController(
   base: BaseExerciseController,
@@ -67,8 +47,8 @@ export function useScaleRunnerController(
 
   function setScale(
     baseMidi: number,
-    scaleType: ScaleType = 'major',
-    direction: 'up' | 'down' = 'up',
+    scaleType: ScaleRunnerScale = 'major',
+    direction: ScaleRunDirection = 'up',
   ): void {
     _cancelled = false
     // Harder = faster notes and a tighter match window (factor < 1 above d5,
@@ -78,7 +58,7 @@ export function useScaleRunnerController(
     notePlayDurationMs = Math.round(NOTE_PLAY_DURATION_MS * factor)
     gapBetweenNotesMs = Math.round(GAP_BETWEEN_NOTES_MS * factor)
     matchWindowMs = Math.round(MATCH_WINDOW_MS * factor)
-    scaleNotes = buildScaleNotes(baseMidi, scaleType, direction)
+    scaleNotes = scaleRunNotes(baseMidi, scaleType, direction)
     noteIndex = 0
     noteScores = []
     noteDeviations = []

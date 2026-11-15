@@ -399,8 +399,9 @@ item 10 ships, the second drill shrinks as Lesson 16's card does: a `key` launch
 its link open Sight-Singing in A harmonic minor directly, in Lesson 16's way, and replaces the
 route through the Singing tab; a "hear do" start (10b) replaces "It plays nothing first"; the bass
 clef (10c) and octave folding (10f) replace the clef and octave sentence; and names off (10e)
-replaces the sentence on the names. When Scale Runner's harmonic and melodic minor ship (item 13),
-its card can replace the second drill, with its own care lines and the coach's look (FACTS 51). The
+replaces the sentence on the names. Scale Runner's harmonic and melodic minor shipped on 15
+November 2026 (item 13), so its card can replace the second drill, with its own care lines and the
+coach's look (FACTS 51). The
 Singing tab's Melodic Minor is not named: it is the going-up form only, in both directions (FACTS
 52).]_
 

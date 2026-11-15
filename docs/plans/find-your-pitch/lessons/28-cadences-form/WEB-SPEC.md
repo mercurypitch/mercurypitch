@@ -24,7 +24,7 @@ signatures (Lesson 21's item 4,
 6.2 item 3); Lesson 18's reading staff, its woodblock count-in, its sing flow with a take read in
 time and its marks (its items 4, 5, 7 and 8,
 `docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:658-709`); Lesson 24's headphones
-check and quiet check (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:748-756`);
+check and quiet check (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:749-757`);
 Lesson 26's options for them, its part under a take and its reader's rule for a note sung on the
 other part's note (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:660-686`); and
 Lesson 14's recorder
@@ -50,7 +50,7 @@ module in `src/features/lessons/lesson-28/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season builds Lessons 24, 26 and 28
 last, with one coach batch for all three (SEASON-2 § 8.2 item 7,
-`docs/plans/find-your-pitch/SEASON-2.md:1272-1273`).
+`docs/plans/find-your-pitch/SEASON-2.md:1291-1292`).
 
 ## Look
 
@@ -629,11 +629,11 @@ stills when WebGL fails.
   widens the marker, and until then the quiz's answers are refused whole; the page is not built
   before that (FACTS 75).
 - **Needed: a cadence-type ear drill** (SEASON-2 § 5.2 item 19,
-  `docs/plans/find-your-pitch/SEASON-2.md:948-950`), the app's work: a bank of perfect, imperfect,
+  `docs/plans/find-your-pitch/SEASON-2.md:967-969`), the app's work: a bank of perfect, imperfect,
   plagal and interrupted cadences, as a new drill or a mode of Cadence. When it ships, it takes the
   second drill's place, with a card that says what it plays and asks.
 - **Needed: the harmony-line drill** (SEASON-2 § 5.2 item 17,
-  `docs/plans/find-your-pitch/SEASON-2.md:933-935`), the app's work, which Lesson 26's card takes
+  `docs/plans/find-your-pitch/SEASON-2.md:952-954`), the app's work, which Lesson 26's card takes
   first when it ships; this page's card can add it then, as a drill for singing a part alone. The
   native app's Harmony room is not linked: it sings short lines a third apart, not a written part,
   and no web page can open it (SEASON-2 § 7 item 14; FACTS 74).

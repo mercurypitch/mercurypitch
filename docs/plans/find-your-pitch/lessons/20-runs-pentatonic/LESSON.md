@@ -360,9 +360,9 @@ lesson marker reads Season 2's numbers (SEASON-2 § 5.2 item 21), so First Light
 steps aside on a first visit and the card has no first-visit line (FACTS 69). The rest card drops
 Staccato Precision, since it asks for the voice too (FACTS 72). Not linked:
 `/exercises/speed-scales`, which opens Scale Runner fast, since no score on this page rewards speed
-(FACTS 68). When Scale Runner's scale-type launch field and minor pentatonic ship (SEASON-2 § 5.2
-item 13), a beginner slug can open Pentatonic at a slow pace, and "Under Scale, choose Pentatonic."
-goes (FACTS 70).]_
+(FACTS 68). Scale Runner's scale launch field and minor pentatonic shipped on 15 November 2026
+(SEASON-2 § 5.2 item 13), with `/exercises/pentatonic-run`, which opens Pentatonic at a slow pace;
+when the card links it, "Under Scale, choose Pentatonic." goes (FACTS 70).]_
 
 **Next lesson:** Lesson 21, Keys and the circle of fifths. "G major needs one sharp and D major two.
 Why does each key a fifth up keep its sharps and add one?" One line above it, the tease: "D major:

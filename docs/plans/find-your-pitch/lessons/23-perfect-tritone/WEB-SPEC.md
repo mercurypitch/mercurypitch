@@ -504,9 +504,9 @@ other, paused off screen, and the still images when WebGL fails.
   P4, TT, P5 and P8. When it ships, the card's text changes as LESSON.md's editorial note says, and
   the link opens the subset (FACTS 63).
 - **Not linked yet: Interval Trainer's `perfect-intervals`** (item 16), intervals 5, 7 and 12 upward,
-  and Lesson 9's `leap-ladder`, which exists. Either is a sung drill, so its card brings the comfort
-  lines, a rest version without it and the coach's look; the plan made the second card optional, and
-  the page keeps to Leap until `perfect-intervals` ships (FACTS 63).
+  which shipped on 15 November 2026, and Lesson 9's `leap-ladder`. Either is a sung drill, so its
+  card brings the comfort lines, a rest version without it and the coach's look; the plan made the
+  second card optional, and the page keeps to Leap until that card is written (FACTS 63).
 - Not linked: none of the premium exercises.
 
 ## Explorer and season data
@@ -517,7 +517,7 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form, as Lesson 6's 
 
 - `n: 23`, `lane: 'theory'`, `title: 'Perfect, major, minor and the tritone'`, `short: 'Interval
 quality'`, `topics: ['T13']`, with T13's name, "Interval quality: major, minor, perfect; tritone;
-  inversion", as SEASON-2 § 4.1 gives it (`docs/plans/find-your-pitch/SEASON-2.md:764`); the hook word
+  inversion", as SEASON-2 § 4.1 gives it (`docs/plans/find-your-pitch/SEASON-2.md:773`); the hook word
   for word (FACTS 1). `minutes: 14` and `page: '/learn/23'` once the page is built, under the drafts'
   comment in Lesson 6's form (`src/features/lessons/kit/season.ts:270`), naming Lesson 6's page and
   the vocal coach's look. The entry decides nothing about being live: the draft list and the console
@@ -600,8 +600,9 @@ coach's look at Sing it"`. Releasing it is deleting that line, then listing the 
     structured-data blocks with `alternativeHeadline`, `teaches` and `timeRequired` `PT14M`, and on
     release the llms.txt line, each checked against the predict (FACTS 1a).
 12. **The practise links that wait** (Practice links), the app's work: the `ear-drill` launch kind
-    (SEASON-2 § 5.2 item 12) and `perfect-intervals` (item 16). When either ships, LESSON.md's card
-    changes as its editorial note says.
+    (SEASON-2 § 5.2 item 12); `perfect-intervals` (item 16) shipped on 15 November 2026. LESSON.md's
+    card changes as its editorial note says: for the first when it ships, for the second once its
+    sung card is written.
 
 ## Decisions for the owner
 

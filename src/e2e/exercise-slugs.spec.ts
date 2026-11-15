@@ -96,3 +96,72 @@ test("leaving thirds-on-a-drone's drill leaves the menu's Drone Intonation on it
   await expect(page.locator('h2.exercise-title')).toHaveText('Drone Intonation')
   await expect(page.locator('.idle-hint')).toHaveText('6 rounds · Drone: E3')
 })
+
+test("/exercises/perfect-intervals opens Interval Trainer on Lesson 23's three perfect intervals", async ({
+  page,
+}) => {
+  await openSlug(page, 'perfect-intervals', '23')
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Interval Trainer')
+  // All three are named: "Perfect 4th through Octave" would promise the
+  // tritone the lesson sets apart from them.
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '6 rounds · Perfect 4th, Perfect 5th and Octave',
+  )
+})
+
+test("/exercises/harmony-on-a-drone opens Drone Intonation on Lesson 24's fifth, major third and octave", async ({
+  page,
+}) => {
+  await openSlug(page, 'harmony-on-a-drone', '24')
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Drone Intonation')
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '6 rounds · Major 3rd, Perfect 5th and Octave · Drone: E3',
+  )
+})
+
+test("/exercises/harmonic-minor-run opens Scale Runner on Lesson 25's harmonic minor, from A", async ({
+  page,
+}) => {
+  await openSlug(page, 'harmonic-minor-run', '25')
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Scale Runner')
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '8 notes · Harmonic Minor · up',
+  )
+  // The lesson's key, in the octave whose run fits the default tenor preset.
+  await expect(page.getByLabel(/^Starting Note: A3\./)).toBeVisible()
+})
+
+test("/exercises/minor-pentatonic-run opens Scale Runner on Lesson 20's minor pentatonic", async ({
+  page,
+}) => {
+  await openSlug(page, 'minor-pentatonic-run', '20')
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Scale Runner')
+  // Five notes and the octave.
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '6 notes · Minor Pentatonic · up',
+  )
+})
+
+test("leaving harmonic-minor-run's drill leaves the menu's Scale Runner on its own scale", async ({
+  page,
+}) => {
+  await openSlug(page, 'harmonic-minor-run', '25')
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '8 notes · Harmonic Minor · up',
+  )
+
+  // Back clears the launch (resetExerciseLaunchState in App.tsx); without
+  // that, the slug's scale would follow the singer into the next open.
+  await page.locator('.back-btn').click()
+  await page
+    .locator('.exercise-card', { hasText: 'Scale Runner' })
+    .first()
+    .click()
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Scale Runner')
+  await expect(page.locator('.idle-hint')).toHaveText('8 notes · Major · up')
+})

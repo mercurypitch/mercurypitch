@@ -173,8 +173,8 @@ equal-tempered note.**
   "sine/piano/organ/strings/synth"), so whether it has harmonics to beat with depends on that
   setting.
 - `/exercises/thirds-on-a-drone` opens it on the minor and major thirds
-  (`src/features/exercises/slug-map.ts:75-81`). No slug asks for the fifth, third and octave
-  (SEASON-2 § 5 item 15).
+  (`src/features/exercises/slug-map.ts:80-86`). No slug asked for the fifth, third and octave when
+  this was read (SEASON-2 § 5 item 15); `harmony-on-a-drone` does since 15 November 2026.
 - Read: code.
 
 **R12. Ear Lab's Beat Hunt asks which of two pairs beats.** `src/features/ear-lab/BeatHuntDrill.tsx:

@@ -194,9 +194,9 @@ one?" The tease names no sharp's place, Lesson 21's predict answer.
 - Not linked: `/exercises/speed-scales` (fast, R20-13).
 - `?lesson=20` is not a lesson marker yet (R20-14).
 
-**When § 5 item 13 ships:** a scale-type launch field and minor pentatonic in Scale Runner, then a
-beginner slug (proposed `pentatonic-run`) that opens Pentatonic at a slow difficulty; the card then
-loses "choose Pentatonic". A drill that sings a run continuously (not echo) is not planned anywhere
+**§ 5 item 13 shipped on 15 November 2026:** a scale launch field and minor pentatonic in Scale
+Runner, and the beginner slugs `pentatonic-run` and `minor-pentatonic-run`, which open either
+pentatonic at level 2. When the card links them, it loses "choose Pentatonic". A drill that sings a run continuously (not echo) is not planned anywhere
 (SEASON-2 § 5.3 to add).
 
 ## Go deeper

@@ -499,9 +499,10 @@ Again, faster (FACTS 59). Neither speaks a line the page does not print.
   the octave it plays (FACTS 67). The rest card drops it, since it asks for the voice (FACTS 72).
 - Not linked: `/exercises/speed-scales`, Scale Runner at level 8 (FACTS 68).
 
-**When SEASON-2 § 5.2 item 13 ships**: Scale Runner's scale-type launch field and minor pentatonic,
-then a beginner slug that opens Pentatonic at a slow level (proposed `pentatonic-run`, data); the
-card then loses "Under Scale, choose Pentatonic." (FACTS 70). **Not planned anywhere**: a drill that
+**SEASON-2 § 5.2 item 13 shipped on 15 November 2026**: Scale Runner's scale launch field and minor
+pentatonic, and the beginner slugs `pentatonic-run` and `minor-pentatonic-run`, which open either
+pentatonic at level 2 (data); when the card links them, it loses "Under Scale, choose Pentatonic."
+(FACTS 70). **Not planned anywhere**: a drill that
 sings a run continuously and reads it note by note, as this page's take does; § 5.3 should list it.
 
 ## Explorer and season data
@@ -512,8 +513,8 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form (Lesson 9's,
 
 - `n: 20`, `lane: 'voice'`, `title: 'Runs and the pentatonic scale'`, `short: 'Runs'`, `topics:
 ['S18', 'T16']`, with their names as SEASON-2 § 4.1 gives them: S18, "Agility: staccato, runs,
-  pentatonic patterns" (`docs/plans/find-your-pitch/SEASON-2.md:773`), and T16, "Pentatonic and
-  blues scales" (`docs/plans/find-your-pitch/SEASON-2.md:760`); the hook word for word (FACTS 1).
+  pentatonic patterns" (`docs/plans/find-your-pitch/SEASON-2.md:782`), and T16, "Pentatonic and
+  blues scales" (`docs/plans/find-your-pitch/SEASON-2.md:769`); the hook word for word (FACTS 1).
   `minutes: 15` and `page: '/learn/20'` once the page is built, under the drafts' comment in Lesson
   9's form: `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` The entry decides nothing
   about being live: the draft list and the console do.
@@ -606,8 +607,9 @@ are listed so this page's needs are in one place.
     share card `learn/lesson-20-og.jpg` and its alt, the two structured-data blocks with
     `alternativeHeadline`, `teaches` and `timeRequired` `PT15M`, and on release the llms.txt line,
     each checked against the predict (FACTS 1a).
-12. **The practise links that wait** (Practice links), the app's work: Scale Runner's scale types
-    and launch field (SEASON-2 § 5.2 item 13). The two app notes found on the way have shipped:
+12. **The practise links that wait** (Practice links): the card's link to `pentatonic-run`. The
+    app's work, Scale Runner's scale types and launch field (SEASON-2 § 5.2 item 13), shipped on 15
+    November 2026. The two app notes found on the way have shipped:
     Staccato Precision's help says what it scores, pitch and not timing
     (`src/features/exercises/exercise-help.ts:226`); and Scale Runner's grade reaches 100, so its
     level can rise as well as ease, and the card says its window shortens as the level rises (FACTS
