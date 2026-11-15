@@ -12,6 +12,7 @@ import ExerciseMenu from '@/features/exercises/ExerciseMenu'
 import IntervalTrainerExercise from '@/features/exercises/interval-trainer/IntervalTrainerExercise'
 import LongNoteExercise from '@/features/exercises/long-note/LongNoteExercise'
 import MirrorMelodyExercise from '@/features/exercises/mirror-melody/MirrorMelodyExercise'
+import NoteReadingExercise from '@/features/exercises/note-reading/NoteReadingExercise'
 import PitchHoldExercise from '@/features/exercises/pitch-hold/PitchHoldExercise'
 import PitchPursuitExercise from '@/features/exercises/pitch-pursuit/PitchPursuitExercise'
 import { isWebRoom } from '@/features/exercises/rooms/web-room-ids'
@@ -250,6 +251,13 @@ export function ExercisesPage(props: ExercisesPageProps) {
           <SightSingingExercise
             audioEngine={audioEngine}
             practiceEngine={practiceEngine}
+            onBack={props.onBack}
+            autoStart={props.autoStartExercise()}
+          />
+        </Show>
+        <Show when={props.selectedExercise() === 'note-reading'}>
+          <NoteReadingExercise
+            audioEngine={audioEngine}
             onBack={props.onBack}
             autoStart={props.autoStartExercise()}
           />

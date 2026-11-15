@@ -1,0 +1,310 @@
+/* ============================================================
+   Read the Note: the staff, the answers and the setup's pickers
+   ============================================================
+
+   The drill sits on the shell's dark stage, so these read the stage's
+   tokens: light ink on a dark sheet in either app theme. */
+
+/* ── The setup ────────────────────────────────────────────── */
+
+.setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 14px;
+}
+
+.choice {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.choiceLabel {
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.segments {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 6px;
+}
+
+.segment {
+  min-height: 44px;
+  padding: 8px 16px;
+  border: 1px solid var(--border-color);
+  border-radius: 10px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    border-color 0.15s;
+}
+
+.segment:hover {
+  border-color: var(--accent);
+}
+
+.segment:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.segmentOn {
+  border-color: var(--accent);
+  background: var(--accent);
+  color: var(--on-accent);
+}
+
+/* ── What Merc says ───────────────────────────────────────── */
+
+.say {
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.sayRight {
+  color: var(--green);
+}
+
+.sayWrong {
+  color: var(--yellow);
+}
+
+/* ── The run ──────────────────────────────────────────────── */
+
+.run {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  /* No more at the sides than this: the seven answers need every pixel of
+     a narrow phone's sheet to be a thumb wide each. */
+  padding: 4px 2px 0;
+}
+
+.dotRight {
+  border-color: var(--green);
+  background: var(--green);
+}
+
+.dotWrong {
+  border-color: var(--red);
+  background: var(--red);
+}
+
+/* The staff. Its ink is the sheet's text colour; a read note turns green
+   and a missed one red, with its letter beside it. */
+.staff {
+  flex: none;
+  width: min(100%, 400px);
+  height: auto;
+  margin-top: 6px;
+  color: var(--text-primary);
+}
+
+.line {
+  stroke: currentcolor;
+  stroke-width: 1.1;
+  opacity: 0.72;
+}
+
+.ledger {
+  stroke: currentcolor;
+  stroke-width: 1.5;
+}
+
+.clef,
+.head {
+  fill: currentcolor;
+}
+
+.stem {
+  stroke: currentcolor;
+  stroke-width: 1.5;
+  stroke-linecap: round;
+}
+
+.head,
+.stem {
+  transition:
+    fill 0.15s,
+    stroke 0.15s;
+}
+
+.name {
+  fill: currentcolor;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.toneRight .head,
+.toneRight .name {
+  fill: var(--green);
+}
+
+.toneRight .stem,
+.toneRight .ledger {
+  stroke: var(--green);
+}
+
+.toneWrong .head,
+.toneWrong .name {
+  fill: var(--red);
+}
+
+.toneWrong .stem,
+.toneWrong .ledger {
+  stroke: var(--red);
+}
+
+/* ── The answers ──────────────────────────────────────────── */
+
+/* Seven across on any phone, each at least 44px wide down to a 360px
+   window: (the sheet's 330px, less the run's 4px and six 3px gaps) / 7. */
+.answers {
+  display: flex;
+  justify-content: center;
+  gap: 3px;
+  width: min(100%, 440px);
+  margin-top: 12px;
+}
+
+.answer {
+  position: relative;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: 62px;
+  height: 54px;
+  padding: 0;
+  border: 1px solid var(--border-color);
+  border-radius: 12px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 1.15rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    transform 0.12s;
+}
+
+.answer:hover {
+  border-color: var(--accent);
+}
+
+.answer:active {
+  transform: scale(0.96);
+}
+
+.answer:focus-visible {
+  z-index: 2;
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.answerRight {
+  border-color: var(--green);
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.answerWrong {
+  border-color: var(--red);
+  background: var(--danger-dim);
+  color: var(--red);
+}
+
+/* ── The answers as a piano's keys ────────────────────────── */
+
+/* The same seven buttons, drawn as an octave from C: white keys with the
+   black ones on their shoulders. The keys carry no letters until an answer
+   is on show: finding the key is the question. */
+.keys {
+  gap: 0;
+}
+
+.keys .answer {
+  max-width: 58px;
+  height: 128px;
+  border-color: #0d1117;
+  border-radius: 0 0 8px 8px;
+  background: linear-gradient(#f6f8fa, #dde3ea);
+  color: #0d1117;
+}
+
+.keys .answer + .answer {
+  border-left-width: 0;
+}
+
+.keys .answer:hover {
+  background: linear-gradient(#fff, #e9eef3);
+}
+
+.keys .answerName {
+  position: absolute;
+  right: 0;
+  bottom: 8px;
+  left: 0;
+  font-size: 1rem;
+  opacity: 0;
+}
+
+.keys .answerRight .answerName,
+.keys .answerWrong .answerName {
+  opacity: 1;
+}
+
+.keys .answerRight {
+  background: linear-gradient(#b7f0c1, #56d364);
+  color: #0d1117;
+}
+
+.keys .answerWrong {
+  background: linear-gradient(#ffc1bc, #ff7b72);
+  color: #0d1117;
+}
+
+.keys .sharpAfter::after {
+  position: absolute;
+  top: -1px;
+  right: 0;
+  z-index: 1;
+  width: 58%;
+  height: 62%;
+  border-radius: 0 0 5px 5px;
+  background: linear-gradient(#2d333b, #0d1117);
+  content: '';
+  pointer-events: none;
+  transform: translateX(50%);
+}
+
+@media (max-height: 720px) {
+  .answer {
+    height: 48px;
+  }
+
+  .keys .answer {
+    height: 96px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .answer,
+  .head,
+  .stem {
+    transition: none;
+  }
+}

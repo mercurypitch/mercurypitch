@@ -182,6 +182,9 @@ export interface ExerciseShellProps {
   onChangeTarget: () => void
   changeTargetLabel?: string
 
+  /** A drill nothing listens to (Read the Note). Its header carries no
+   *  microphone switch and its idle button no microphone. */
+  micless?: boolean
   /** Present only for drills that support a timed auto-score mode. */
   autoTimer?: AutoTimerConfig
 }
@@ -819,7 +822,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                 : 'Guided'}
             </span>
           </Show>
-          <Show when={engines}>
+          <Show when={engines !== null && props.micless !== true}>
             <MicButton active={micOn()} onClick={toggleMic} />
           </Show>
           <Show when={showsScore()}>
@@ -1170,7 +1173,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                     disabled={voiceSaveInFlight()}
                     onClick={activateIdlePrimary}
                   >
-                    <Show when={idlePrimaryStartsRun()}>
+                    <Show
+                      when={idlePrimaryStartsRun() && props.micless !== true}
+                    >
                       <span class={stage.startMic} aria-hidden="true">
                         <IconMic size={20} />
                       </span>

@@ -6,7 +6,7 @@
 // "vibrato" mean — `summary` is the one-liner, `body` is the gentle detail.
 
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_NOTE_READING, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
 
 export interface ExerciseHelp {
   /** One-line summary shown in the idle area and the menu card. */
@@ -240,6 +240,14 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
       '"Sight-singing" means singing music you are reading for the first time, straight from the notation.',
       'Find your starting note, then read ahead one note at a time, singing the pitches shown on the staff.',
       'You are scored on how accurately you sing the written notes.',
+    ],
+  },
+  [EXERCISE_NOTE_READING]: {
+    summary: 'Name the note written on the staff, by its letter.',
+    body: [
+      'A staff is five lines and four spaces. Each line and each space holds one letter, and the clef at the left says which: the treble clef for higher notes, the bass clef for lower ones.',
+      'A note appears on the staff. Tap its letter, or its key on the piano. Nothing listens here: this drill trains reading, not singing, so it opens no microphone.',
+      'Miss one and Merc names it and says where it sits. Higher levels add ledger lines, the short lines that carry a note above or below the staff.',
     ],
   },
 }

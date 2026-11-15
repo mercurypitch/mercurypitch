@@ -141,6 +141,32 @@ export function IconMic(p: IconProps): JSX.Element {
   )
 }
 
+/** A staff's five lines with a notehead on the middle one: reading. */
+export function IconStaff(p: IconProps): JSX.Element {
+  return (
+    <svg
+      {...iconProps(p.size ?? 24)}
+      class={p.class}
+      {...strokeProps}
+      stroke-width="1.4"
+    >
+      <line x1="3" y1="5" x2="21" y2="5" />
+      <line x1="3" y1="8.5" x2="21" y2="8.5" />
+      <line x1="3" y1="12" x2="21" y2="12" />
+      <line x1="3" y1="15.5" x2="21" y2="15.5" />
+      <line x1="3" y1="19" x2="21" y2="19" />
+      <ellipse
+        cx="13"
+        cy="12"
+        rx="3.1"
+        ry="2.4"
+        fill="currentColor"
+        stroke="none"
+      />
+    </svg>
+  )
+}
+
 export function IconMusic(p: IconProps): JSX.Element {
   return (
     <svg {...iconProps(p.size ?? 24)} class={p.class} {...strokeProps}>
