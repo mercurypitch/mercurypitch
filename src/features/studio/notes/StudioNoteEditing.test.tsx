@@ -1,4 +1,4 @@
-// Studio note editing tests — the open editor carries its tools, each named, the selection's edits off with a word until notes are selected; B switches to Draw and back; a key's edit is one set-sequence-notes with its own fork id; the toolbar's velocity reads the selection 1 to 127 and moves it by 8; Escape clears the selection and then closes; a refused edit says so; notes copied in one opening paste in the next; a song that cannot be edited now edits nothing; and the render service hears a draft until its commit, is told when the editor closes, and its render's state shows in the header.
+// Studio note editing tests — the open editor carries its tools, each named, the selection's edits off with a word until notes are selected; B switches to Draw and back; a key's edit is one set-sequence-notes with its own fork id; the toolbar's velocity reads the selection 1 to 127 and moves it by 8; Escape clears the selection and then closes; a refused edit says so; notes copied in one opening paste in the next; a song that cannot be edited now edits nothing; and the render service hears a draft until its commit, is told when the editor closes, and its render's state shows in the header; on a drum lane the tools have no transpose, and Up moves the selection a row up the kit.
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, } from 'vitest'
@@ -43,7 +43,31 @@ const transport = {
   frameNow: () => 0,
 }
 
-/** The fixture's song with its MIDI clip on a Keys lane: middle C (id 1, 0.8) and the E above (id 2, 0.5) in its window. */
+/** The fixture's song on a drum lane, its clip a kick (id 1) and a snare (id 2) in its window. */
+function drumFixture() {
+  const fixture = studioMidiFixture()
+  const sequence = {
+    ...fixture.sequence,
+    notes: [
+      { id: 1, pitch: 36, startTick: 960, lengthTicks: 240, velocity: 0.8 },
+      { id: 2, pitch: 38, startTick: 1920, lengthTicks: 240, velocity: 0.5 },
+    ],
+  }
+  return {
+    ...fixture,
+    project: {
+      ...fixture.project,
+      tracks: fixture.project.tracks.map((track) =>
+        track.id === fixture.clip.trackId
+          ? { ...track, name: 'Drums', role: 'drums' as const }
+          : track,
+      ),
+      sequences: [sequence],
+    },
+  }
+}
+
+/** The fixture's song with its MIDI clip on a Keys lane: middle C (id 1, 0.8) and the E above (id 2, 0.5) in its window; or on a drum lane. */
 function renderEditor(
   options: {
     writable?: boolean
@@ -51,9 +75,10 @@ function renderEditor(
     renders?: StudioMidiEditorApi
     /** What happened, in order: each command's type. */
     log?: string[]
+    drums?: boolean
   } = {},
 ) {
-  const fixture = studioMidiFixture()
+  const fixture = options.drums === true ? drumFixture() : studioMidiFixture()
   const [project] = createSignal<StudioProject>(fixture.project)
   const commands: StudioCommand[] = []
   const dispatch = vi.fn((command: StudioCommand) => {
@@ -86,7 +111,7 @@ function renderEditor(
   return { state, fixture, commands, dispatch }
 }
 
-const editor = () => screen.findByRole('region', { name: /^Note editor: Keys/ })
+const editor = () => screen.findByRole('region', { name: /^Note editor: / })
 
 /** The editor open, its roll laid out and its view made. */
 async function opened() {
@@ -319,5 +344,32 @@ describe('the render service', () => {
     )
     setRender('idle')
     expect(shown()).toBeNull()
+  })
+})
+
+describe('a drum lane', () => {
+  it('has the tools without transpose, since Up and Down move a hit between rows', async () => {
+    renderEditor({ drums: true })
+    await opened()
+
+    expect(screen.queryByRole('group', { name: 'Transpose' })).toBeNull()
+    expect(screen.getByRole('button', { name: 'Duplicate' })).toHaveAttribute(
+      'title',
+      'Select notes first',
+    )
+    expect(screen.getByRole('button', { name: 'Draw' })).toHaveAttribute(
+      'aria-pressed',
+      'false',
+    )
+  })
+
+  it('moves the selection a row up the kit with Up: the kick to the snare, the snare to the low tom', async () => {
+    const { commands } = renderEditor({ drums: true })
+    const region = await opened()
+
+    press(region, 'a', { ctrlKey: true })
+    press(region, 'ArrowUp')
+
+    expect(notesOf(commands[0]).map((note) => note.pitch)).toEqual([38, 45])
   })
 })

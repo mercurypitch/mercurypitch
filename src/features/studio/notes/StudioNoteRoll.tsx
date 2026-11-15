@@ -9,13 +9,16 @@
 // the overlay follows the clock on every display frame, and the view turns
 // the page when the playhead runs off its right edge.
 //
-// A piano's roll is edited: its pointers and its wheel go to the editing
-// engine (`editing`, useStudioNoteEditing.ts), which moves the notes and the
-// view alike, the rows in fractions of a row; its draw adds the engine's
+// The roll is edited, a piano's and a kit's alike: its pointers and its
+// wheel go to the editing engine (`editing`, useStudioNoteEditing.ts),
+// which moves the notes and the view, the rows in fractions of a row, a
+// kit's kept on the kit (edit-kit.ts); its draw adds the engine's
 // selection, drafts, marquee, grips, hover and velocity readout
-// (edit-host.ts). A kit's roll keeps its whole rows and C's navigation
-// (roll-navigation.ts) until the drum editor takes it over. The editor's
-// buttons and keys reach the view through `controls`.
+// (edit-host.ts). A kit's rows are C's, its keys from the cymbals down,
+// fitted again when the kit or the height changes. Without an engine (a
+// song that cannot be edited now) the roll keeps C's navigation
+// (roll-navigation.ts). The editor's buttons and keys reach the view
+// through `controls`.
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
 import type { RollViewport } from '@/lib/roll-geometry'
 import { timeToX } from '@/lib/roll-geometry'
@@ -29,7 +32,7 @@ import type { StudioTickWindow } from '@/lib/studio/midi/time'
 import { studioClipTickWindow, studioSongBeats, studioSongFrameToTick, } from '@/lib/studio/midi/time'
 import type { StudioClip, StudioSequence } from '@/lib/studio/model/types'
 import type { NoteRollDrawing } from './edit-host'
-import { notePianoOpening, noteRollDrafts, noteRollDrawing } from './edit-host'
+import { noteKitOpening, notePianoOpening, noteRollDrafts, noteRollDrawing, } from './edit-host'
 import { studioRollWords } from './note-editor-words'
 import type { StudioRollDraft, StudioRollInput, StudioRollLayout, StudioRollMeter, StudioRollTheme, } from './note-roll-draw'
 import { drawStudioRollBase, drawStudioRollOverlay, studioRollRegions, } from './note-roll-draw'
@@ -179,9 +182,9 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     props.touch ? STUDIO_ROLL_ROWS_TOUCH : STUDIO_ROLL_ROWS_FINE
   const tickOf = (frame: number) =>
     studioSongFrameToTick(props.clip, props.sequence, frame)
-  // A piano edits through the engine; a kit waits for the drum editor.
-  const editing = () =>
-    props.sound === 'piano' ? (props.editing ?? null) : null
+  const editing = () => props.editing ?? null
+  /** The kit's rows' first, the highest row's number. */
+  const topRow = () => studioRollTopRow(rows())
 
   /** The view as it opens: the first bars that fit, the playhead a tenth in when it is in the clip past them. */
   function opening(box: { width: number; height: number }): RollViewport {
@@ -197,7 +200,9 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       span: bars * barTicks,
     })
     const opened =
-      rows().kind === 'piano' ? notePianoOpening(fitted, props.touch) : fitted
+      rows().kind === 'piano'
+        ? notePianoOpening(fitted, props.touch)
+        : noteKitOpening(fitted, props.touch, topRow())
     const tick = tickOf(props.transport.playheadFrame())
     const span = opened.end - opened.start
     const shown = tick >= opened.start && tick <= opened.end
@@ -226,9 +231,9 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       studioRollWantedRows(props.sequence, clipWindow(), rows()),
       box.height,
       limits(),
-      studioRollTopRow(rows()),
+      topRow(),
     )
-    return { ...kept, ...shown }
+    return noteKitOpening({ ...kept, ...shown }, props.touch, topRow())
   }
 
   createEffect(() => {
@@ -432,6 +437,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     const detach = props.editing?.attach({
       viewport: view,
       setViewport: (viewport) => setView(viewport),
+      rows,
       velocityHeight: () => layout().velocityHeight,
     })
     onCleanup(() => {

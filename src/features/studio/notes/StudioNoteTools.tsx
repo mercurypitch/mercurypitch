@@ -29,6 +29,8 @@ export interface StudioNoteToolsProps {
   writable: boolean
   /** A phone's: icons alone, 44 px targets. */
   compact: boolean
+  /** A drum lane's: no transpose, since Up and Down move a hit between rows. */
+  kit?: boolean
 }
 
 const SNAP_WORDS: Readonly<Record<NoteSnap, string>> = {
@@ -174,44 +176,46 @@ export function StudioNoteSelectionTools(props: StudioNoteToolsProps) {
       classList={{ [styles.compact]: props.compact }}
       data-studio-note-selection-tools=""
     >
-      <div class={styles.cluster} role="group" aria-label="Transpose">
-        <ToolButton
-          label="Down an octave"
-          title={why('Down an octave (Shift+Down)')}
-          keys="Shift+ArrowDown"
-          disabled={off()}
-          compact={props.compact}
-          icon={<ChevronsDown size={17} />}
-          onClick={() => send({ type: 'transpose', semitones: -12 })}
-        />
-        <ToolButton
-          label="Down a semitone"
-          title={why('Down a semitone (Down)')}
-          keys="ArrowDown"
-          disabled={off()}
-          compact={props.compact}
-          icon={<ChevronDown size={17} />}
-          onClick={() => send({ type: 'transpose', semitones: -1 })}
-        />
-        <ToolButton
-          label="Up a semitone"
-          title={why('Up a semitone (Up)')}
-          keys="ArrowUp"
-          disabled={off()}
-          compact={props.compact}
-          icon={<ChevronUp />}
-          onClick={() => send({ type: 'transpose', semitones: 1 })}
-        />
-        <ToolButton
-          label="Up an octave"
-          title={why('Up an octave (Shift+Up)')}
-          keys="Shift+ArrowUp"
-          disabled={off()}
-          compact={props.compact}
-          icon={<ChevronsUp size={17} />}
-          onClick={() => send({ type: 'transpose', semitones: 12 })}
-        />
-      </div>
+      <Show when={props.kit !== true}>
+        <div class={styles.cluster} role="group" aria-label="Transpose">
+          <ToolButton
+            label="Down an octave"
+            title={why('Down an octave (Shift+Down)')}
+            keys="Shift+ArrowDown"
+            disabled={off()}
+            compact={props.compact}
+            icon={<ChevronsDown size={17} />}
+            onClick={() => send({ type: 'transpose', semitones: -12 })}
+          />
+          <ToolButton
+            label="Down a semitone"
+            title={why('Down a semitone (Down)')}
+            keys="ArrowDown"
+            disabled={off()}
+            compact={props.compact}
+            icon={<ChevronDown size={17} />}
+            onClick={() => send({ type: 'transpose', semitones: -1 })}
+          />
+          <ToolButton
+            label="Up a semitone"
+            title={why('Up a semitone (Up)')}
+            keys="ArrowUp"
+            disabled={off()}
+            compact={props.compact}
+            icon={<ChevronUp />}
+            onClick={() => send({ type: 'transpose', semitones: 1 })}
+          />
+          <ToolButton
+            label="Up an octave"
+            title={why('Up an octave (Shift+Up)')}
+            keys="Shift+ArrowUp"
+            disabled={off()}
+            compact={props.compact}
+            icon={<ChevronsUp size={17} />}
+            onClick={() => send({ type: 'transpose', semitones: 12 })}
+          />
+        </div>
+      </Show>
       <div class={styles.cluster}>
         <ToolButton
           label="Duplicate"

@@ -1,7 +1,7 @@
-// Studio note editing host glue tests — a press lands on the grid or the velocity lane and counts from it, a captured pointer counting from it wherever it goes, and the keys and the ruler take none; Ctrl or Cmd are one modifier; a draft is only the notes a gesture changes or adds; the engine's marquee and grips move by the keys' column and the ruler onto the canvas; a commit is one set-sequence-notes with its own fork id; a draft is new to the render service only when its notes are; and a touch screen opens the piano with rows of 24 px.
+// Studio note editing host glue tests — a press lands on the grid or the velocity lane and counts from it, a captured pointer counting from it wherever it goes, and the keys and the ruler take none; Ctrl or Cmd are one modifier; a draft is only the notes a gesture changes or adds; the engine's marquee and grips move by the keys' column and the ruler onto the canvas; a commit is one set-sequence-notes with its own fork id; a draft is new to the render service only when its notes are; and a touch screen opens the piano with rows of 24 px and a kit with rows of 32 px.
 import { describe, expect, it } from 'vitest'
 import type { StudioNote } from '@/lib/studio/model/types'
-import { NOTE_TOUCH_ROW_HEIGHT, noteCommitCommand, noteEditKeyInput, notePianoOpening, noteRollDrafts, noteRollDrawing, noteRollPointerInput, noteRollSurfaceAt, noteRollWheelInput, sameNoteDraft, } from './edit-host'
+import { NOTE_TOUCH_ROW_HEIGHT, noteCommitCommand, noteEditKeyInput, noteKitOpening, notePianoOpening, noteRollDrafts, noteRollDrawing, noteRollPointerInput, noteRollSurfaceAt, noteRollWheelInput, sameNoteDraft, } from './edit-host'
 import type { NoteEditView } from './edit-view'
 import { studioRollRegions } from './note-roll-geometry'
 
@@ -231,5 +231,28 @@ describe('notePianoOpening', () => {
 
   it('leaves the rows fitted to the notes for a mouse', () => {
     expect(notePianoOpening(crowded, false)).toBe(crowded)
+  })
+})
+
+describe('noteKitOpening', () => {
+  // The kit's eight rows in 160 px: 20 px each.
+  const kit = {
+    start: 0,
+    end: 3840,
+    minMidi: 0,
+    maxMidi: 7,
+    width: 600,
+    height: 160,
+  }
+
+  it('opens a touch screen on rows of 32 px at the least, about the kit’s middle', () => {
+    expect(noteKitOpening(kit, true, 7)).toMatchObject({
+      minMidi: 2,
+      maxMidi: 6,
+    })
+  })
+
+  it('leaves the kit fitted to a mouse’s rows', () => {
+    expect(noteKitOpening(kit, false, 7)).toBe(kit)
   })
 })
