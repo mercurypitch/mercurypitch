@@ -10,10 +10,11 @@
 // is refused, with a reason for the host to say: notes there could be
 // neither heard nor picked (decision 9).
 import type { StudioNoteClipboard, StudioNoteEdit, StudioNoteSet, } from '@/lib/studio/midi/notes'
-import { copyStudioNotes, deleteStudioNotes, duplicateStudioNotes, moveStudioNotes, pasteStudioNotes, quantizeStudioNotes, studioNotesInWindow, studioSelectionBounds, transposeStudioNotes, } from '@/lib/studio/midi/notes'
+import { copyStudioNotes, deleteStudioNotes, duplicateStudioNotes, moveStudioNotes, pasteStudioNotes, quantizeStudioNotes, studioNotesInWindow, studioSelectionBounds, } from '@/lib/studio/midi/notes'
 import { STUDIO_PPQ } from '@/lib/studio/model/types'
 import { STUDIO_BEATS_PER_BAR } from '@/lib/studio/record/take-timing'
 import { inNoteWindow, newNotesInWindow, noteEditCommit } from './edit-changes'
+import { transposeEditNotes } from './edit-kit'
 import { NOTE_FULL_NOTICE } from './edit-press'
 import { noteSnapGrid, noteStepGrid, snapNearest } from './edit-snap'
 import type { NoteEditCommand, NoteEditCommit, NoteEditContext, NoteEditState, } from './edit-types'
@@ -171,7 +172,7 @@ export function runNoteCommand(
       return quantize(state, ctx)
     case 'transpose':
       return onSelection(state, (ids) =>
-        committed(ctx, transposeStudioNotes(notes, ids, command.semitones)),
+        committed(ctx, transposeEditNotes(ctx, notes, ids, command.semitones)),
       )
     case 'nudge': {
       const ticks = command.direction * nudgeTicks(state, ctx, command.step)

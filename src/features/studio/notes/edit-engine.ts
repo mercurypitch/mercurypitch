@@ -27,6 +27,7 @@ import type { NoteEditing } from './edit-commands'
 import { runNoteCommand } from './edit-commands'
 import { afterHold, finishHold, holdArrow, holdGesture, isNoteArrowCommand, releaseArrow, } from './edit-hold'
 import { noteKeyAction } from './edit-keys'
+import { editTopRow } from './edit-kit'
 import { noteFrame, notePointerCancel, notePointerDown, notePointerMove, notePointerUp, quietStep, revertNoteGesture, singleGesture, } from './edit-pointer'
 import type { NoteSnap } from './edit-snap'
 import { DEFAULT_NOTE_SNAP } from './edit-snap'
@@ -193,7 +194,12 @@ function wheelStep(
   ctx: NoteEditContext,
   wheel: NoteEditWheel,
 ): NoteEditStep {
-  const viewport = wheelNoteRoll(ctx.viewport, ctx.window, wheel)
+  const viewport = wheelNoteRoll(
+    ctx.viewport,
+    ctx.window,
+    wheel,
+    editTopRow(ctx),
+  )
   const effects: NoteEditEffect[] = sameRollViewport(viewport, ctx.viewport)
     ? []
     : [{ type: 'viewport', viewport }]

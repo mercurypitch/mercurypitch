@@ -1,4 +1,4 @@
-// Studio MIDI roll rows tests — the pitch under a point holds when the rows sit on fractions of a semitone; rows pan and zoom on the keyboard, a zoom keeping the pitch under its anchor, and a row's height inside its limits; a touch roll opens with rows tall enough for a finger; and the window's notes are worked out once per sequence.
+// Studio MIDI roll rows tests — the pitch under a point holds when the rows sit on fractions of a semitone; rows pan and zoom on the keyboard, a zoom keeping the pitch under its anchor, and a row's height inside its limits; a touch roll opens with rows tall enough for a finger; a kit's rows pan and zoom no higher than its first row; and the window's notes are worked out once per sequence.
 import { describe, expect, it } from 'vitest'
 import type { RollViewport } from '@/lib/roll-geometry'
 import { yToMidi } from '@/lib/roll-geometry'
@@ -181,5 +181,36 @@ describe('studioWindowRollNotes', () => {
     expect(again).toBe(first)
     expect(wider.map((note) => note.id)).toEqual([1, 2])
     expect(edited).not.toBe(first)
+  })
+})
+
+describe("a kit's rows", () => {
+  // Six of the usual kit's eight rows in 240 px: 40 px each.
+  const KIT_VIEW: RollViewport = {
+    start: 0,
+    end: 3840,
+    minMidi: 0,
+    maxMidi: 5,
+    width: 600,
+    height: 240,
+  }
+
+  it('pan no higher than the kit’s first row', () => {
+    expect(panStudioRollRows(KIT_VIEW, 4, 7)).toMatchObject({
+      minMidi: 2,
+      maxMidi: 7,
+    })
+  })
+
+  it('zoom out to the whole kit at the most', () => {
+    const zoomed = zoomStudioRollRows(
+      KIT_VIEW,
+      4,
+      120,
+      { minRowHeight: 14, maxRowHeight: 48 },
+      7,
+    )
+
+    expect(zoomed).toMatchObject({ minMidi: 0, maxMidi: 7 })
   })
 })

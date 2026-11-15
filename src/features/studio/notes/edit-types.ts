@@ -16,6 +16,7 @@
 // against that surface wherever it goes.
 import type { RollViewport } from '@/lib/roll-geometry'
 import type { StudioNoteClipboard, StudioNoteDraft, StudioNoteSet, } from '@/lib/studio/midi/notes'
+import type { StudioRollRows } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioTickWindow } from '@/lib/studio/midi/time'
 import type { NoteSnap } from './edit-snap'
 
@@ -38,6 +39,8 @@ export interface NoteEditContext {
   readonly playheadTick: number | null
   /** A tick a bar line falls on: the grid's lines run through it. */
   readonly gridOffsetTick?: number
+  /** The roll's rows: a piano's semitones, the default, or a kit's keys (edit-kit.ts). */
+  readonly rows?: StudioRollRows
 }
 
 /** A pointer event as the engine reads it. */
@@ -165,6 +168,8 @@ export type NoteDragIntent =
       readonly ids: readonly number[]
     }
   | { readonly kind: 'draw'; readonly note: StudioNoteDraft }
+  /** On a kit, in Draw: a hit in every empty cell the pointer crosses, each like `hit`. */
+  | { readonly kind: 'paint'; readonly hit: StudioNoteDraft }
   | { readonly kind: 'marquee'; readonly add: boolean }
   | { readonly kind: 'pan' | 'none' }
 
@@ -173,6 +178,8 @@ export type NoteTapIntent =
   | { readonly kind: 'select'; readonly selection: readonly number[] }
   /** Keep the note drawn at the press, a grid step long. */
   | { readonly kind: 'draw' }
+  /** On a kit, in Draw: take the hit pressed away. */
+  | { readonly kind: 'remove'; readonly id: number }
 
 /** A marquee from where it was pressed to the pointer, in ticks and unrounded pitch. */
 export interface NoteMarquee {

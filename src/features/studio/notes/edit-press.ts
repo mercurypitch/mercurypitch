@@ -17,9 +17,9 @@ import type { RollViewport } from '@/lib/roll-geometry'
 import { xToTime } from '@/lib/roll-geometry'
 import type { StudioNoteDraft } from '@/lib/studio/midi/notes'
 import { addStudioNote } from '@/lib/studio/midi/notes'
-import { studioRollPitchAt, studioRollRowOf, studioWindowRollNotes, } from '@/lib/studio/midi/roll-rows'
+import { studioRollPitchAt } from '@/lib/studio/midi/roll-rows'
 import { inNoteWindow, noteById, playedNotes } from './edit-changes'
-import { pickRollNote } from './edit-pick'
+import { editKeyAt, onKit, pickEditNote } from './edit-kit'
 import { noteSnapGrid, noteStepGrid, snapFloor } from './edit-snap'
 import type { NoteAnchor, NoteDraft, NoteDragIntent, NoteEditContext, NoteEditPointer, NoteEditState, NoteSingleGesture, NoteTapIntent, NoteTouch, } from './edit-types'
 import { noteVelocityValue, pickLollipop } from './edit-velocity'
@@ -97,9 +97,7 @@ function rollTarget(
   pointer: NoteEditPointer,
   anchor: NoteAnchor,
 ): PressTarget {
-  const pick = pickRollNote({
-    notes: studioWindowRollNotes(ctx.sequence, ctx.window),
-    viewport: ctx.viewport,
+  const pick = pickEditNote(ctx, {
     selection: new Set(state.selection),
     x: pointer.x,
     y: pointer.y,
@@ -182,12 +180,17 @@ function notePress(
     target.drag === 'velocity' && note !== undefined
       ? { id: note.id, value: noteVelocityValue(note.velocity) }
       : null
+  // On a kit, a tap in Draw takes the hit away.
+  const removes =
+    state.tool === 'draw' && !add && onKit(ctx) && target.drag === 'move'
   return pressed(state, ctx, anchor, pointer, {
     intent: { kind: target.drag, noteId: target.noteId, ids: shown },
-    tap: {
-      kind: 'select',
-      selection: tappedSelection(live, target.noteId, selected, add),
-    },
+    tap: removes
+      ? { kind: 'remove', id: target.noteId }
+      : {
+          kind: 'select',
+          selection: tappedSelection(live, target.noteId, selected, add),
+        },
     draft: { ...idleDraft(shown), readout },
   })
 }
@@ -209,13 +212,15 @@ function emptyPress(
   })
 }
 
-/** The note a press in Draw puts down: on the grid line at or before it, on its row, a grid step long and inside the window. */
+/** The note a press in Draw puts down: on the grid line at or before it, on its row, a grid step long and inside the window; none past a kit's rows. */
 function drawnNote(
   state: NotePressState,
   ctx: NoteEditContext,
   anchor: NoteAnchor,
   free: boolean,
-): StudioNoteDraft {
+): StudioNoteDraft | null {
+  const pitch = editKeyAt(ctx, anchor.pitch)
+  if (pitch === null) return null
   const offset = ctx.gridOffsetTick ?? 0
   const grid = free ? null : noteSnapGrid(state.snap, offset)
   const tick =
@@ -225,7 +230,7 @@ function drawnNote(
     Math.max(ctx.window.startTick, tick),
   )
   return {
-    pitch: studioRollRowOf(anchor.pitch),
+    pitch,
     startTick,
     lengthTicks: Math.min(
       noteStepGrid(state.snap, offset).ticks,
@@ -242,15 +247,18 @@ function drawPress(
   pointer: NoteEditPointer,
 ): NotePress {
   const note = drawnNote(state, ctx, anchor, pointer.alt === true)
-  const edit = addStudioNote(ctx.sequence, note)
-  if (edit === null)
+  const edit = note === null ? null : addStudioNote(ctx.sequence, note)
+  if (note === null || edit === null)
     return {
       gesture: emptyPress(state, ctx, anchor, pointer, 'none'),
-      notice: NOTE_FULL_NOTICE,
+      notice: note === null ? null : NOTE_FULL_NOTICE,
     }
   return {
     gesture: pressed(state, ctx, anchor, pointer, {
-      intent: { kind: 'draw', note },
+      // On a kit a drag paints hits; on a piano it sets the note's length.
+      intent: onKit(ctx)
+        ? { kind: 'paint', hit: note }
+        : { kind: 'draw', note },
       tap: { kind: 'draw' },
       draft: { ...idleDraft(edit.selection), sequence: edit.sequence },
     }),

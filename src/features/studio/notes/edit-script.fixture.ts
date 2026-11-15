@@ -1,6 +1,7 @@
 // Studio note editing script fixture — a host for gesture scripts: a context like the editor's, pointer and finger inputs by name, and a player that applies each commit and viewport as the host does and keeps every effect.
 import type { RollViewport } from '@/lib/roll-geometry'
 import type { StudioNoteClipboard } from '@/lib/studio/midi/notes'
+import type { StudioRollRows } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioTickWindow } from '@/lib/studio/midi/time'
 import type { StudioNote } from '@/lib/studio/model/types'
 import type { NoteEditInit } from './edit-engine'
@@ -48,6 +49,8 @@ export interface NoteHostSetup {
   readonly playheadTick?: number | null
   readonly gridOffsetTick?: number
   readonly init?: NoteEditInit
+  /** A kit's rows; a piano's when left out. */
+  readonly rows?: StudioRollRows
 }
 
 /** The editor and its host, as a script plays them. */
@@ -75,6 +78,7 @@ export function noteHost(setup: NoteHostSetup): NoteHost {
       velocityHeight: LANE_HEIGHT,
       playheadTick: setup.playheadTick ?? null,
       gridOffsetTick: setup.gridOffsetTick,
+      rows: setup.rows,
     },
     effects: [],
     handled: [],

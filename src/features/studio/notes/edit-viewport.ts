@@ -68,19 +68,22 @@ export function sameRollViewport(a: RollViewport, b: RollViewport): boolean {
   return a === b || VIEWPORT_FIELDS.every((field) => a[field] === b[field])
 }
 
-/** The roll after its content followed a finger `dx`, `dy` pixels: time inside the window, rows on the keyboard. */
+/** The roll after its content followed a finger `dx`, `dy` pixels: time inside the window, rows on the keyboard, or under a kit's `top` row. */
 export function dragNoteRoll(
   viewport: RollViewport,
   window: StudioTickWindow,
   dx: number,
   dy: number,
+  top?: number,
 ): RollViewport {
   const timed =
     dx === 0
       ? viewport
       : panStudioRoll(viewport, -dx * ticksPerPixel(viewport), window)
   const height = rowHeight(viewport)
-  return dy === 0 || height <= 0 ? timed : panStudioRollRows(timed, dy / height)
+  return dy === 0 || height <= 0
+    ? timed
+    : panStudioRollRows(timed, dy / height, top)
 }
 
 /** Two fingers. */
@@ -114,6 +117,7 @@ export function pinchNoteRoll(
   before: NoteFingers,
   after: NoteFingers,
   rows: boolean,
+  top?: number,
 ): RollViewport {
   const from = midpoint(before)
   const to = midpoint(after)
@@ -122,6 +126,7 @@ export function pinchNoteRoll(
     window,
     to.x - from.x,
     rows ? to.y - from.y : 0,
+    top,
   )
   const time = spreadFactor(
     Math.abs(before.a.x - before.b.x),
@@ -133,7 +138,7 @@ export function pinchNoteRoll(
     Math.abs(before.a.y - before.b.y),
     Math.abs(after.a.y - after.b.y),
   )
-  return zoomStudioRollRows(timed, pitch, to.y, NOTE_ROW_LIMITS)
+  return zoomStudioRollRows(timed, pitch, to.y, NOTE_ROW_LIMITS, top)
 }
 
 /** The roll after a wheel event over it. */
@@ -141,6 +146,7 @@ export function wheelNoteRoll(
   viewport: RollViewport,
   window: StudioTickWindow,
   wheel: NoteEditWheel,
+  top?: number,
 ): RollViewport {
   const deltaMode = wheel.deltaMode ?? 0
   if (wheel.mod === true) {
@@ -157,7 +163,7 @@ export function wheelNoteRoll(
   )
   if (wheel.shift === true)
     return dragNoteRoll(viewport, window, -(dx === 0 ? dy : dx), 0)
-  return dragNoteRoll(viewport, window, -dx, -dy)
+  return dragNoteRoll(viewport, window, -dx, -dy, top)
 }
 
 /** How fast a pointer `depth` pixels into an edge's band scrolls, in pixels a second. */

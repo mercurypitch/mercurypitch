@@ -1,5 +1,5 @@
 // ============================================================
-// Studio MIDI roll rows — the pitches the note editor's roll shows, panned and zoomed in fractions of a row and kept between MIDI notes 0 and 127, and the roll's notes cached for pointer moves
+// Studio MIDI roll rows — the pitches the note editor's roll shows, panned and zoomed in fractions of a row and kept between MIDI notes 0 and 127 (or a kit's rows), and the roll's notes cached for pointer moves
 // ============================================================
 //
 // roll.ts fits the rows to a clip's notes and moves time; this moves the
@@ -17,9 +17,8 @@ import { studioRollNotes } from './roll'
 import type { StudioTickWindow } from './time'
 
 const LOWEST = 0
+/** The keyboard's top row; a kit's is its first row's number (roll-keyboard.ts, studioRollTopRow). */
 const HIGHEST = 127
-/** The most rows a roll shows: the whole keyboard. */
-const ALL_ROWS = HIGHEST - LOWEST + 1
 
 /** How tall a zoom may make a row, in CSS pixels. */
 export interface StudioRollRowLimits {
@@ -51,41 +50,51 @@ function rowsShown(viewport: RollViewport): number {
   return viewport.maxMidi - viewport.minMidi + 1
 }
 
-/** `viewport` slid up or down, as little as keeps its rows on the keyboard. */
-function onKeyboard(viewport: RollViewport): RollViewport {
+/** The most rows a roll shows: every row from 0 to `top`. */
+function allRows(top: number): number {
+  return top - LOWEST + 1
+}
+
+/** `viewport` slid up or down, as little as keeps its rows between row 0 and `top`. */
+function onKeyboard(viewport: RollViewport, top = HIGHEST): RollViewport {
   const span = viewport.maxMidi - viewport.minMidi
   const lowest = Math.min(
     Math.max(LOWEST, viewport.minMidi),
-    Math.max(LOWEST, HIGHEST - span),
+    Math.max(LOWEST, top - span),
   )
   if (lowest === viewport.minMidi) return viewport
   return { ...viewport, minMidi: lowest, maxMidi: lowest + span }
 }
 
-/** The rows `semitones` higher, unrounded, kept on the keyboard. */
+/** The rows `semitones` higher, unrounded, kept on the keyboard, or under a kit's `top` row. */
 export function panStudioRollRows(
   viewport: RollViewport,
   semitones: number,
+  top = HIGHEST,
 ): RollViewport {
   if (semitones === 0 || !Number.isFinite(semitones)) return viewport
-  return onKeyboard({
-    ...viewport,
-    minMidi: viewport.minMidi + semitones,
-    maxMidi: viewport.maxMidi + semitones,
-  })
+  return onKeyboard(
+    {
+      ...viewport,
+      minMidi: viewport.minMidi + semitones,
+      maxMidi: viewport.maxMidi + semitones,
+    },
+    top,
+  )
 }
 
 /**
  * The rows zoomed by `factor` about `anchorY` (above 1 shows more rows),
  * the pitch under the anchor staying under it. A row stays within the
  * limits' heights, or where it already was past them, and the keyboard's
- * 128 rows are the most shown.
+ * 128 rows (a kit's rows up to `top`) are the most shown.
  */
 export function zoomStudioRollRows(
   viewport: RollViewport,
   factor: number,
   anchorY: number,
   limits: StudioRollRowLimits,
+  top = HIGHEST,
 ): RollViewport {
   if (viewport.height <= 0 || !Number.isFinite(factor) || factor <= 0)
     return viewport
@@ -93,16 +102,19 @@ export function zoomStudioRollRows(
   const current = viewport.height / shown
   const fewest = viewport.height / Math.max(limits.maxRowHeight, current)
   const most = Math.min(
-    ALL_ROWS,
+    allRows(top),
     viewport.height / Math.min(limits.minRowHeight, current),
   )
   const rows = Math.min(most, Math.max(fewest, shown * factor))
   if (Math.abs(rows - shown) < 1e-9) return viewport
-  const top =
+  const highest =
     studioRollPitchAt(anchorY, viewport) -
     1 +
     (anchorY * rows) / viewport.height
-  return onKeyboard({ ...viewport, maxMidi: top, minMidi: top - rows + 1 })
+  return onKeyboard(
+    { ...viewport, maxMidi: highest, minMidi: highest - rows + 1 },
+    top,
+  )
 }
 
 /**
@@ -114,6 +126,7 @@ export function zoomStudioRollRows(
 export function fitStudioRollRows(
   viewport: RollViewport,
   minRowHeight: number,
+  top = HIGHEST,
 ): RollViewport {
   const shown = rowsShown(viewport)
   if (viewport.height <= 0 || viewport.height / shown >= minRowHeight)
@@ -122,11 +135,10 @@ export function fitStudioRollRows(
   const lowest = Math.round(
     (viewport.minMidi + viewport.maxMidi) / 2 - (rows - 1) / 2,
   )
-  return onKeyboard({
-    ...viewport,
-    minMidi: lowest,
-    maxMidi: lowest + rows - 1,
-  })
+  return onKeyboard(
+    { ...viewport, minMidi: lowest, maxMidi: lowest + rows - 1 },
+    top,
+  )
 }
 
 /**
@@ -137,15 +149,15 @@ export function fitStudioRollRows(
 export function resizeStudioRollRows(
   viewport: RollViewport,
   height: number,
+  top = HIGHEST,
 ): RollViewport {
   const row = rowHeight(viewport)
   if (height <= 0 || row <= 0) return { ...viewport, height }
-  const rows = Math.min(ALL_ROWS, height / row)
-  return onKeyboard({
-    ...viewport,
-    height,
-    minMidi: viewport.maxMidi - rows + 1,
-  })
+  const rows = Math.min(allRows(top), height / row)
+  return onKeyboard(
+    { ...viewport, height, minMidi: viewport.maxMidi - rows + 1 },
+    top,
+  )
 }
 
 interface WindowNotes {
