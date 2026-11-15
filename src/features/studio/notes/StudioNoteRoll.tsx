@@ -17,8 +17,10 @@
 // (edit-host.ts). A kit's rows are C's, its keys from the cymbals down,
 // fitted again when the kit or the height changes. Without an engine (a
 // song that cannot be edited now) the roll keeps C's navigation
-// (roll-navigation.ts). The editor's buttons and keys reach the view
-// through `controls`.
+// (roll-navigation.ts). The roll's touches are its own: a finger lifted
+// while still moving starts no fling, whose end would swallow the next tap
+// elsewhere. The editor's buttons and keys reach the view through
+// `controls`.
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
 import type { RollViewport } from '@/lib/roll-geometry'
 import { timeToX } from '@/lib/roll-geometry'
@@ -440,7 +442,12 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       rows,
       velocityHeight: () => layout().velocityHeight,
     })
+    // Not delegated: Chromium makes a touchstart listener on the document
+    // passive, and a passive one cannot keep its touches from a fling.
+    const ownTouch = (event: TouchEvent) => event.preventDefault()
+    overlay?.addEventListener('touchstart', ownTouch, { passive: false })
     onCleanup(() => {
+      overlay?.removeEventListener('touchstart', ownTouch)
       appearance?.disconnect()
       observer?.disconnect()
       detach?.()
