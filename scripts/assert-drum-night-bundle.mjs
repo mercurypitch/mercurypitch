@@ -36,7 +36,15 @@ const REPO_ROOT = resolve(SCRIPT_DIR, '..')
 // them. The ceiling moves by that cost plus a little slack. Splitting the
 // catalog by surface would let each room carry only its own covers; that is
 // a change of its own.
-const MAX_STATIC_JAVASCRIPT_BYTES = 523_000
+//
+// 2026-11-15: 525k. The exercise rooms open on the web (WEB_ROOMS,
+// src/lib/native-build.ts), so the web build keeps what they use of two
+// chunks every page loads whole: the Solid runtime (vendor-solid, 25,824 to
+// 27,185 bytes) and the icons (shared-icons, 34,705 to 35,080). Nothing of a
+// room is in this room's first paint; the two shared chunks are. It measured
+// 524,565 bytes against 523,000, from 522,828 on main before the rooms. The
+// ceiling moves by that cost plus a little slack.
+const MAX_STATIC_JAVASCRIPT_BYTES = 525_000
 
 const FORBIDDEN_CHUNKS = [
   /(?:^|\/)(?:index|advanced|library|pitch-core)-[^/]+\.js$/,
