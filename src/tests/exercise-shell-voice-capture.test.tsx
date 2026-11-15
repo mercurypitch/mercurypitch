@@ -45,10 +45,16 @@ function renderCompleteCapture(
   let discardCalls = 0
 
   const Harness = () => {
-    const [captureState] = createSignal<ExerciseVoiceCaptureState>('ready')
-    const [take] = createSignal<ExerciseSessionVoiceTake | null>(voiceTake)
+    const [captureState, setCaptureState] =
+      createSignal<ExerciseVoiceCaptureState>('ready')
+    const [take, setTake] = createSignal<ExerciseSessionVoiceTake | null>(
+      voiceTake,
+    )
+    // As the drill's own capture does: a discarded take is gone.
     const discard = () => {
       discardCalls += 1
+      setTake(null)
+      setCaptureState('idle')
     }
     const voiceCapture: ExerciseVoiceCaptureController = {
       state: captureState,
@@ -96,8 +102,11 @@ describe('ExerciseShell voice capture', () => {
     })
     const { take } = renderCompleteCapture()
 
-    expect(screen.getByText(/stays temporary/i)).toBeInTheDocument()
-    fireEvent.click(screen.getByRole('button', { name: 'Keep Take' }))
+    expect(
+      screen.getByText('Not saved unless you keep it.'),
+    ).toBeInTheDocument()
+    expect(keepMock).not.toHaveBeenCalled()
+    fireEvent.click(screen.getByRole('button', { name: 'Keep' }))
 
     await waitFor(() =>
       expect(keepMock).toHaveBeenCalledWith({
@@ -105,25 +114,33 @@ describe('ExerciseShell voice capture', () => {
         take,
       }),
     )
+    await screen.findByText('Take kept')
     expect(trackMock).toHaveBeenNthCalledWith(1, 'voice_keep_attempt')
     expect(trackMock).toHaveBeenNthCalledWith(2, 'voice_keep_success')
+    // The notice says it; no toast says it again.
+    expect(notificationMock).not.toHaveBeenCalled()
   })
 
-  it('discards the temporary replay without changing the score', () => {
+  it('discards the temporary replay without changing the score', async () => {
     const { discardCalls } = renderCompleteCapture()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Discard take' }))
 
     expect(discardCalls()).toBe(1)
     expect(screen.getByText('84%')).toBeInTheDocument()
+    // A discarded take shows nothing, in the notice or the card.
+    await waitFor(() =>
+      expect(screen.queryByTestId('exercise-take-notice')).toBeNull(),
+    )
+    expect(document.querySelector('.exercise-result-replay-note')).toBeNull()
   })
 
-  it('leaves Space with the Keep and Discard actions', async () => {
+  it('leaves Space with the Keep and Discard take actions', async () => {
     const onTryAgain = vi.fn()
     renderCompleteCapture(onTryAgain)
     await Promise.resolve()
 
-    for (const name of ['Keep Take', 'Discard']) {
+    for (const name of ['Keep', 'Discard take']) {
       const action = screen.getByRole('button', { name })
       action.focus()
       const space = new KeyboardEvent('keydown', {
@@ -151,7 +168,7 @@ describe('ExerciseShell voice capture', () => {
     expect(onTryAgain).toHaveBeenCalledOnce()
   })
 
-  it('blocks restart, back, and discard until a failed Keep offers Retry', async () => {
+  it('blocks restart and back, and offers no discard, until a failed Keep offers Retry', async () => {
     let resolveKeep!: (result: {
       ok: boolean
       quotaExceeded: boolean
@@ -167,15 +184,27 @@ describe('ExerciseShell voice capture', () => {
     const onBack = vi.fn()
     const { discardCalls } = renderCompleteCapture(onTryAgain, onBack)
 
-    fireEvent.click(screen.getByRole('button', { name: 'Keep Take' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Keep' }))
     expect(isLocalSaveNavigationLocked()).toBe(true)
-    for (const name of ['Saving', 'Discard', 'Try Again', /Back/]) {
+    expect(screen.getByText('Keeping your take')).toBeInTheDocument()
+    expect(screen.getByText('Saving on this device…')).toBeInTheDocument()
+    for (const name of ['Try Again', /Back/]) {
       expect(screen.getByRole('button', { name })).toBeDisabled()
     }
+    // The capsule is busy, not disabled: it keeps the focus it was pressed
+    // with, and a second press does nothing.
+    const busy = screen.getByRole('button', { name: 'Keeping' })
+    expect(busy).toHaveAttribute('aria-disabled', 'true')
+    expect(busy).not.toBeDisabled()
+    fireEvent.click(busy)
+    expect(keepMock).toHaveBeenCalledTimes(1)
+    // While the keep is written there is nothing to discard with.
+    expect(screen.queryByRole('button', { name: 'Discard take' })).toBeNull()
 
-    fireEvent.click(screen.getByRole('button', { name: 'Discard' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Keeping' }))
     fireEvent.click(screen.getByRole('button', { name: 'Try Again' }))
     fireEvent.click(screen.getByRole('button', { name: /Back/ }))
+    expect(keepMock).toHaveBeenCalledOnce()
     expect(discardCalls()).toBe(0)
     expect(onTryAgain).not.toHaveBeenCalled()
     expect(onBack).not.toHaveBeenCalled()
@@ -187,15 +216,53 @@ describe('ExerciseShell voice capture', () => {
       value: null,
     })
     await waitFor(() =>
-      expect(screen.getByRole('button', { name: 'Retry Keep' })).toBeEnabled(),
+      expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled(),
     )
     expect(isLocalSaveNavigationLocked()).toBe(false)
+    expect(screen.getByText('Could not keep it')).toBeInTheDocument()
     expect(
-      screen.getByText(/temporary replay is still available/i),
+      screen.getByText('The temporary copy stays until you retry or leave.'),
     ).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: 'Discard' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Discard take' })).toBeEnabled()
     expect(screen.getByRole('button', { name: 'Try Again' })).toBeEnabled()
     expect(screen.getByRole('button', { name: /Back/ })).toBeEnabled()
+    expect(trackMock).toHaveBeenCalledWith('voice_keep_failure')
+    expect(trackMock).not.toHaveBeenCalledWith('voice_storage_warning')
+    expect(notificationMock).not.toHaveBeenCalled()
+
+    // Retry is a second keep of the same take.
+    fireEvent.click(screen.getByRole('button', { name: 'Retry' }))
+    expect(keepMock).toHaveBeenCalledTimes(2)
+  })
+
+  it.each([
+    ['the quota is exceeded', { quotaExceeded: true, roomAvailable: true }],
+    ['the device has no room', { quotaExceeded: false, roomAvailable: false }],
+  ])('asks for storage when %s', async (_reason, failure) => {
+    keepMock.mockResolvedValue({ ok: false, value: null, ...failure })
+    renderCompleteCapture()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep' }))
+
+    await screen.findByText('Not enough storage')
+    expect(
+      screen.getByText('Free some browser storage, then retry.'),
+    ).toBeInTheDocument()
+    expect(screen.getByRole('button', { name: 'Retry' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Discard take' })).toBeEnabled()
+    expect(trackMock).toHaveBeenCalledWith('voice_storage_warning')
+    expect(notificationMock).not.toHaveBeenCalled()
+  })
+
+  it('says it could not keep a take when the keep throws', async () => {
+    keepMock.mockRejectedValue(new Error('the database went away'))
+    renderCompleteCapture()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Keep' }))
+
+    await screen.findByText('Could not keep it')
+    expect(trackMock).toHaveBeenLastCalledWith('voice_keep_failure')
+    expect(notificationMock).not.toHaveBeenCalled()
   })
 
   it('does not show stale success copy after an external run transition', async () => {
@@ -236,7 +303,7 @@ describe('ExerciseShell voice capture', () => {
       />
     ))
 
-    fireEvent.click(screen.getByRole('button', { name: 'Keep Take' }))
+    fireEvent.click(screen.getByRole('button', { name: 'Keep' }))
     setStatus('active')
     resolveKeep({
       ok: true,
@@ -249,14 +316,9 @@ describe('ExerciseShell voice capture', () => {
     )
     setStatus('complete')
 
-    expect(screen.getByRole('button', { name: 'Keep Take' })).toBeEnabled()
-    expect(
-      screen.queryByRole('button', { name: 'Kept' }),
-    ).not.toBeInTheDocument()
-    expect(notificationMock).not.toHaveBeenCalledWith(
-      expect.stringMatching(/kept in Hear Yourself/i),
-      'success',
-      expect.anything(),
-    )
+    expect(screen.getByRole('button', { name: 'Keep' })).toBeEnabled()
+    expect(screen.getByText('Keep this take?')).toBeInTheDocument()
+    expect(screen.queryByText('Take kept')).not.toBeInTheDocument()
+    expect(notificationMock).not.toHaveBeenCalled()
   })
 })

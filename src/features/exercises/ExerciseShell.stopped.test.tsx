@@ -22,10 +22,11 @@ import type { ExerciseVoiceCaptureController } from './use-base-exercise'
 
 const tick = () => new Promise((resolve) => setTimeout(resolve, 0))
 
-const discarded: ExerciseVoiceCaptureController = {
-  state: () => 'idle',
+/** A run whose replay never came through: the card says so in a line. */
+const unrecorded: ExerciseVoiceCaptureController = {
+  state: () => 'error',
   take: () => null,
-  awaitOutcome: async () => ({ state: 'discarded', take: null }),
+  awaitOutcome: async () => ({ state: 'error', take: null }),
   discard: () => {},
 }
 
@@ -42,7 +43,7 @@ async function finishRun(stoppedEarly: boolean, unscoredLine?: () => string) {
       resultScore={() => (status() === 'complete' ? 100 : null)}
       resultStoppedEarly={() => stoppedEarly}
       unscoredLine={unscoredLine}
-      voiceCapture={discarded}
+      voiceCapture={unrecorded}
       onBack={() => {}}
       onStart={() => {}}
       activeContent={<div>active</div>}
@@ -108,9 +109,8 @@ describe('a finished Drone Intonation run in the shell', () => {
     expect(card.textContent).not.toMatch(/New best|vs last/)
     // Nor does its replay line promise a score it does not have.
     expect(
-      card.querySelector('.exercise-result-voice-copy [role="status"]')
-        ?.textContent,
-    ).toBe('Replay discarded.')
+      card.querySelector('.exercise-result-replay-note')?.textContent,
+    ).toBe('No replay was captured.')
   })
 
   it('says why, when the drill knows: a Manual run too short to score', async () => {

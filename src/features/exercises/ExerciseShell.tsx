@@ -6,8 +6,9 @@
 // components: the header (back, "?" help toggle, title, score), the
 // collapsible beginner help panel, the idle area (settings + description +
 // Start beneath it), the active area (content + Stop + optional auto-timer),
-// and the result card with a primary retry action plus explicit voice-take
-// persistence choices. Exercise-specific JSX is passed in via slots so each
+// and the result card with a primary retry action. Whether to keep the run's
+// voice take is asked by a notice over Merc's bubble (stage/useTakeNotice.ts),
+// not by the card. Exercise-specific JSX is passed in via slots so each
 // component only supplies its canvas, metrics, idle placeholder and result
 // summary.
 
@@ -23,15 +24,11 @@ import { getDifficulty } from '@/features/practice-intelligence/difficulty-store
 import { holdMicForRoutine, releaseRoutineMicHold, } from '@/features/routines/routine-mic-hold'
 import { RoutineRibbon } from '@/features/routines/RoutineRibbon'
 import { segmentRunsExercise, useDailyRoutine, } from '@/features/routines/use-daily-routine'
-import { trackEvent } from '@/lib/analytics'
 import { haptics } from '@/lib/haptics'
-import { useLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import { isNarrow } from '@/lib/use-viewport'
 import { getExerciseStats } from '@/stores/exercise-history-store'
-import { showNotification } from '@/stores/notifications-store'
 import { EXERCISE_HELP } from './exercise-help'
 import { exerciseReplayNote } from './exercise-replay-note'
-import { keepExerciseVoiceTake } from './exercise-voice-take'
 import { ExerciseScoreHistory } from './ExerciseScoreHistory'
 import { gradeForScore, STOPPED_EARLY_LINE } from './feedback'
 import type { RunTrace } from './last-run-trace'
@@ -40,6 +37,7 @@ import { RunTraceCanvas } from './RunTraceCanvas'
 import stage from './stage/ExerciseStage.module.css'
 import { stagePose } from './stage/stage-pose'
 import { StageCoach } from './stage/StageCoach'
+import { useTakeNotice } from './stage/useTakeNotice'
 import { activeTimerSeconds, CUSTOM_MAX_SEC, CUSTOM_MIN_SEC, CUSTOM_STEP_SEC, customTimerSeconds, pinTimerForRun, releaseTimerPin, setCustomTimerSeconds, setTimerMode, TIMER_PRESETS, timerMode, } from './timer-preference'
 import type { ExerciseStatus, ExerciseType, GuidedPracticeLaunchConfig, } from './types'
 import type { ExerciseVoiceCaptureController } from './use-base-exercise'
@@ -211,9 +209,6 @@ const formatRunLength = (seconds: number): string => {
 
 export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   const [helpOpen, setHelpOpen] = createSignal(false)
-  const [voiceKeepState, setVoiceKeepState] = createSignal<
-    'idle' | 'saving' | 'saved' | 'error'
-  >('idle')
   const [remainingMs, setRemainingMs] = createSignal(0)
   const [guidedCompletedRepetitions, setGuidedCompletedRepetitions] =
     createSignal(0)
@@ -227,11 +222,8 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // Opens the slider. Sticky while Custom is the selected mode so the value
   // stays adjustable between runs, rather than collapsing after every pick.
   const [customOpen, setCustomOpen] = createSignal(false)
-  let voiceKeepGeneration = 0
   let guidedResultCard: HTMLDivElement | undefined
   let guidedResultFocusTimer: ReturnType<typeof setTimeout> | undefined
-  const voiceSaveInFlight = (): boolean => voiceKeepState() === 'saving'
-  useLocalSaveNavigationLock(voiceSaveInFlight, 'exercise voice-take keep')
 
   // Heavy idle settings → mobile bottom sheet (opt-in via settingsSheetLabel).
   const [settingsSheetOpen, setSettingsSheetOpen] = createSignal(false)
@@ -274,18 +266,19 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
     const total = guidedTotalRepetitions()
     return total !== null && guidedCompletedRepetitions() >= total
   }
-  const voiceCaptureHeading = createMemo(() => {
-    if (voiceKeepState() === 'saving') return 'Keeping voice take'
-    if (voiceKeepState() === 'saved') return 'Voice take kept'
-    if (voiceKeepState() === 'error') return 'Could not keep voice take'
-    const captureState = props.voiceCapture?.state()
-    if (captureState === 'processing') return 'Preparing voice take'
-    if (captureState === 'ready') return 'Keep this voice take?'
-    if (captureState === 'unsupported' || captureState === 'error') {
-      return 'Replay unavailable'
-    }
-    return 'Replay discarded'
+  // The run's voice take, offered by a notice over Merc's bubble once the
+  // result card is up, except where a guided hold ended for comfort or wants
+  // another try. While a keep is being written, every way out waits for it.
+  const take = useTakeNotice({
+    title: () => props.title,
+    capture: () => props.voiceCapture,
+    offered: () =>
+      isComplete() &&
+      props.resultScore() !== null &&
+      guidedStopReason() !== 'discomfort' &&
+      !guidedRunNeedsEvidence(),
   })
+  const voiceSaveInFlight = take.saving
   // A finished run returns to the selector + Start screen, where a result
   // card (grade, personal-best delta, the exercise's metric summary) makes
   // the payoff moment explicit before the next attempt.
@@ -346,8 +339,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         setLastGuidedRunCompleted(false)
         setGuidedRunNeedsEvidence(false)
         setGuidedStopReason(null)
-        voiceKeepGeneration += 1
-        setVoiceKeepState('idle')
+        take.reset()
         if (props.guidedPractice === undefined) {
           const stats = getExerciseStats(props.type)
           setPrevBest(stats.totalPlays > 0 ? stats.bestScore : null)
@@ -410,64 +402,9 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
     return score - last
   }
 
-  function keepVoiceTake(): void {
-    if (voiceSaveInFlight()) return
-    const take = props.voiceCapture?.take()
-    const exerciseTitle = props.title
-    if (take === null || take === undefined) return
-    setVoiceKeepState('saving')
-    trackEvent('voice_keep_attempt')
-    const generation = voiceKeepGeneration
-
-    void (async () => {
-      try {
-        const result = await keepExerciseVoiceTake({ exerciseTitle, take })
-        if (result.ok) {
-          trackEvent('voice_keep_success')
-          if (generation !== voiceKeepGeneration) return
-          setVoiceKeepState('saved')
-          showNotification(
-            'Exercise take kept in Hear Yourself on this device.',
-            'success',
-            { channel: 'voice-take-save' },
-          )
-          return
-        }
-
-        trackEvent('voice_keep_failure')
-        if (generation !== voiceKeepGeneration) return
-        setVoiceKeepState('error')
-        if (result.quotaExceeded || !result.roomAvailable) {
-          trackEvent('voice_storage_warning')
-          showNotification(
-            'This device is too low on browser storage to keep the take. Export or clear space, then retry.',
-            'warning',
-            { channel: 'voice-take-save' },
-          )
-        } else {
-          showNotification(
-            'The take could not be kept. Its temporary copy remains until you retry or leave this exercise.',
-            'error',
-            { channel: 'voice-take-save' },
-          )
-        }
-      } catch {
-        trackEvent('voice_keep_failure')
-        if (generation !== voiceKeepGeneration) return
-        setVoiceKeepState('error')
-        showNotification(
-          'The take could not be kept. Its temporary copy remains until you retry or leave this exercise.',
-          'error',
-          { channel: 'voice-take-save' },
-        )
-      }
-    })()
-  }
-
   function tryAgain(): void {
     if (voiceSaveInFlight()) return
-    voiceKeepGeneration += 1
-    setVoiceKeepState('idle')
+    take.reset()
     props.onTryAgain()
   }
 
@@ -521,9 +458,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
 
   function reportGuidedDiscomfort(): void {
     if (props.guidedPractice === undefined || voiceSaveInFlight()) return
-    voiceKeepGeneration += 1
-    props.voiceCapture?.discard()
-    setVoiceKeepState('idle')
+    take.discard()
     setGuidedStopReason('discomfort')
     queueMicrotask(() => guidedResultCard?.focus())
   }
@@ -532,12 +467,6 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
     if (props.guidedPractice === undefined || voiceSaveInFlight()) return
     setGuidedStopReason('paused')
     queueMicrotask(() => guidedResultCard?.focus())
-  }
-
-  function discardVoiceTake(): void {
-    if (voiceSaveInFlight()) return
-    props.voiceCapture?.discard()
-    setVoiceKeepState('idle')
   }
 
   function leaveExercise(): void {
@@ -661,8 +590,8 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // opt out: after clicking Start (or any control) focus rests on that
   // button, and users expect Space to keep toggling the exercise — the
   // preventDefault below suppresses the native button re-activation, so
-  // there's no double-trigger. Result voice actions opt back into native
-  // button behavior: Space on Keep or Discard must activate that decision,
+  // there's no double-trigger. The take notice's buttons opt back into native
+  // button behavior: Space on Keep or its close must activate that decision,
   // not silently start the next exercise run.
   onMount(() => {
     const onKey = (e: KeyboardEvent): void => {
@@ -914,8 +843,21 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
             run's instruction while it lasts. Out here, above the sheet and
             its scroll, he is one Merc for the whole visit, and the
             instruction spans the tracker and the drill's own visual as it
-            did at the top of the card. */}
-      <StageCoach pose={mercPose}>
+            did at the top of the card. After a run his bubble carries the
+            voice take's notice, which gives the bubble back to "Hear it
+            first" while the example sounds. */}
+      <StageCoach
+        pose={mercPose}
+        notice={
+          props.voiceCapture === undefined
+            ? undefined
+            : {
+                notice: () => (demoPlaying() ? null : take.notice()),
+                onPrimary: take.keep,
+                onClose: take.close,
+              }
+        }
+      >
         <Show
           when={demoPlaying() && props.demo}
           fallback={
@@ -1067,66 +1009,18 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                     {(trace) => <RunTraceCanvas trace={trace()} />}
                   </Show>
                 </div>
+                {/* A take that was never recorded has nothing to keep, so
+                    no notice asks: the card says so, quietly, at its foot. */}
                 <Show
-                  when={
-                    props.voiceCapture !== undefined &&
-                    guidedStopReason() !== 'discomfort' &&
-                    !guidedRunNeedsEvidence()
-                  }
+                  when={exerciseReplayNote(
+                    take.captureState(),
+                    // Neither has a score for a replay to leave alone.
+                    props.ungraded !== undefined || stoppedEarly(),
+                  )}
                 >
-                  <div class="exercise-result-voice">
-                    <div class="exercise-result-voice-copy">
-                      <strong>{voiceCaptureHeading()}</strong>
-                      <span role="status" aria-live="polite">
-                        {exerciseReplayNote(
-                          voiceKeepState(),
-                          props.voiceCapture!.state(),
-                          // Neither has a score for a replay to leave alone.
-                          props.ungraded !== undefined || stoppedEarly(),
-                        )}
-                      </span>
-                    </div>
-                    <Show
-                      when={
-                        props.voiceCapture!.state() === 'ready' ||
-                        voiceKeepState() === 'saving' ||
-                        voiceKeepState() === 'saved' ||
-                        voiceKeepState() === 'error'
-                      }
-                    >
-                      <div class="exercise-result-voice-actions">
-                        <button
-                          type="button"
-                          class="exercise-btn exercise-keep-voice"
-                          data-exercise-native-space="true"
-                          disabled={
-                            voiceKeepState() === 'saving' ||
-                            voiceKeepState() === 'saved'
-                          }
-                          onClick={keepVoiceTake}
-                        >
-                          {voiceKeepState() === 'saving'
-                            ? 'Saving'
-                            : voiceKeepState() === 'saved'
-                              ? 'Kept'
-                              : voiceKeepState() === 'error'
-                                ? 'Retry Keep'
-                                : 'Keep Take'}
-                        </button>
-                        <Show when={voiceKeepState() !== 'saved'}>
-                          <button
-                            type="button"
-                            class="exercise-btn exercise-discard-voice"
-                            data-exercise-native-space="true"
-                            disabled={voiceSaveInFlight()}
-                            onClick={discardVoiceTake}
-                          >
-                            Discard
-                          </button>
-                        </Show>
-                      </div>
-                    </Show>
-                  </div>
+                  {(note) => (
+                    <p class="exercise-result-replay-note">{note()}</p>
+                  )}
                 </Show>
               </div>
             </Show>
