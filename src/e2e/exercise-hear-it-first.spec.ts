@@ -68,6 +68,10 @@ const EXAMPLES: readonly { title: string; says: RegExp }[] = [
     ),
   },
   {
+    title: 'Name the Cadence',
+    says: /^Listen: home, then V to I\. A perfect cadence: it comes home\.$/,
+  },
+  {
     title: 'Call & Response',
     says: /^Listen: a short phrase\. In a run you sing one back\.$/,
   },

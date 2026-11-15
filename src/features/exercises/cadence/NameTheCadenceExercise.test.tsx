@@ -89,6 +89,49 @@ describe('Name the Cadence', () => {
     localStorage.clear()
   })
 
+  it('shows a round on the setup screen, and Hear it first plays and names it', async () => {
+    const drill = open(1)
+    const preview = () => drill.getByTestId('cadence-preview')
+    const tiles = () => Array.from(preview().querySelectorAll('[data-role]'))
+    const shown = () =>
+      tiles().map((tile) => tile.firstElementChild?.textContent)
+    const lit = () =>
+      tiles().findIndex((tile) => tile.getAttribute('data-sounding') === 'true')
+    const note = () => preview().parentElement?.querySelector('p')?.textContent
+
+    // Before it is heard the ending keeps its secret, as a round's does.
+    expect(shown()).toEqual(['I', '?', '?'])
+    expect(note()).toBe(
+      "A round is three chords: the key's own, then the two of an ending.",
+    )
+
+    fireEvent.click(drill.getByRole('button', { name: 'Hear it first' }))
+    expect(drill.playChord).toHaveBeenCalledTimes(1)
+    expect(lit()).toBe(0)
+    expect(
+      drill.container.querySelector('.exercise-stage-demo-line')?.textContent,
+    ).toBe('Listen: home, then V to I. A perfect cadence: it comes home.')
+
+    await vi.advanceTimersByTimeAsync(CHORD_MS + GAP_MS)
+    expect(lit()).toBe(1)
+    expect(shown()).toEqual(['I', '?', '?'])
+
+    // The ending's second chord sounds: the cadence has been heard.
+    await vi.advanceTimersByTimeAsync(CHORD_MS + GAP_MS)
+    expect(lit()).toBe(2)
+    expect(shown()).toEqual(['I', 'V', 'I'])
+    expect(note()).toBe('V to I: a perfect cadence.')
+
+    await vi.advanceTimersByTimeAsync(playbackMs(drill.rounds[0]!))
+    expect(lit()).toBe(-1)
+    expect(drill.playChord).toHaveBeenCalledTimes(3)
+    expect(
+      drill.container.querySelector('.exercise-stage-demo-line'),
+    ).toBeNull()
+    // What it showed stays, for the singer to look at before starting.
+    expect(shown()).toEqual(['I', 'V', 'I'])
+  })
+
   it('opens on its brief, with a Start that carries no microphone', () => {
     const drill = open(1)
     expect(drill.container.querySelector('.idle-hint')?.textContent).toBe(

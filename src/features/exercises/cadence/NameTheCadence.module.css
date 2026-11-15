@@ -119,6 +119,37 @@
   color: var(--yellow);
 }
 
+/* ── The setup: a round, before one is asked ──────────────── */
+
+/* As wide as a run draws its figure, and never wider than the sheet: the
+   setup is as wide as its content, so the width is said here, not left to
+   a percentage of it. */
+.preview {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(420px, 100vw);
+  max-width: 100%;
+}
+
+.preview .chords {
+  width: 100%;
+  margin-top: 0;
+}
+
+/* Two lines tall whichever sentence it holds, so the figure does not move
+   when the example has been heard and the note gets shorter. */
+.previewNote {
+  max-width: 36ch;
+  min-height: 2.9em;
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+  line-height: 1.45;
+  text-align: center;
+}
+
 /* ── The answers ──────────────────────────────────────────── */
 
 .answers {
