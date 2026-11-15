@@ -13,7 +13,7 @@
 
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack, useContext, } from 'solid-js'
-import { IconQuestion } from '@/components/exercise-icons'
+import { IconMic, IconQuestion } from '@/components/exercise-icons'
 import type { ExercisePitchTrackerProps } from '@/components/ExercisePitchTracker'
 import { ExercisePitchTracker } from '@/components/ExercisePitchTracker'
 import { MicButton } from '@/components/MicButton'
@@ -37,6 +37,9 @@ import { gradeForScore, STOPPED_EARLY_LINE } from './feedback'
 import type { RunTrace } from './last-run-trace'
 import { lastRunTrace } from './last-run-trace'
 import { RunTraceCanvas } from './RunTraceCanvas'
+import stage from './stage/ExerciseStage.module.css'
+import { stagePose } from './stage/stage-pose'
+import { StageCoach } from './stage/StageCoach'
 import { activeTimerSeconds, CUSTOM_MAX_SEC, CUSTOM_MIN_SEC, CUSTOM_STEP_SEC, customTimerSeconds, pinTimerForRun, releaseTimerPin, setCustomTimerSeconds, setTimerMode, TIMER_PRESETS, timerMode, } from './timer-preference'
 import type { ExerciseStatus, ExerciseType, GuidedPracticeLaunchConfig, } from './types'
 import type { ExerciseVoiceCaptureController } from './use-base-exercise'
@@ -271,6 +274,14 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // card (grade, personal-best delta, the exercise's metric summary) makes
   // the payoff moment explicit before the next attempt.
   const isIdleLike = () => status() === 'idle' || status() === 'complete'
+  /** Merc's pose beside the sheet: he listens to a run and cheers a good
+   *  one (stage/stage-pose.ts). */
+  const mercPose = createMemo(() =>
+    stagePose({
+      status: status(),
+      score: gradesResult() ? props.resultScore() : null,
+    }),
+  )
 
   // Personal-best detection: snapshot the stats when a run STARTS — by the
   // time the run completes, the history already contains the new entry, so
@@ -434,6 +445,14 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
     }
     tryAgain()
   }
+
+  /** The idle button opens the microphone, except where a finished or
+   *  stopped guided dose has turned it into the way back to Focus. */
+  const idlePrimaryStartsRun = (): boolean =>
+    !(
+      isComplete() &&
+      (guidedDoseComplete() || guidedStopReason() === 'discomfort')
+    )
 
   const idlePrimaryLabel = (): string => {
     if (!isComplete()) return props.startLabel ?? 'Start'
@@ -751,7 +770,11 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
       : 'Stop this guided set if anything feels uncomfortable.'
 
   return (
-    <div class="exercise-runner">
+    <div
+      class={`exercise-runner mp-dark-stage ${stage.stage}`}
+      data-run={status()}
+    >
+      <div class={stage.backdrop} aria-hidden="true" />
       <div class="exercise-runner-header">
         <div class="exercise-header-left">
           <button
@@ -841,6 +864,30 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         </aside>
       </Show>
 
+      {/* Merc and his bubble: the drill's brief until a run starts, the
+            run's instruction while it lasts. Out here, above the sheet and
+            its scroll, he is one Merc for the whole visit, and the
+            instruction spans the tracker and the drill's own visual as it
+            did at the top of the card. */}
+      <StageCoach pose={mercPose}>
+        <Show
+          when={isActive() && props.activePhase}
+          fallback={
+            <Show
+              when={props.idlePlaceholder}
+              fallback={
+                <div class="exercise-idle-placeholder">
+                  <p>{help().summary}</p>
+                </div>
+              }
+            >
+              {props.idlePlaceholder}
+            </Show>
+          }
+        >
+          <div class="exercise-active-phase">{props.activePhase}</div>
+        </Show>
+      </StageCoach>
       <div
         class="exercise-canvas-area"
         classList={{ 'is-idle': isIdleLike(), 'is-active': isActive() }}
@@ -1026,16 +1073,6 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                 </Show>
               </div>
             </Show>
-            <Show
-              when={props.idlePlaceholder}
-              fallback={
-                <div class="exercise-idle-placeholder">
-                  <p>{help().summary}</p>
-                </div>
-              }
-            >
-              {props.idlePlaceholder}
-            </Show>
             {/* Two groups, not one column of five.
                 The setup — a dial, a scale picker — is the part that needs
                 room and the part a singer studies. The launch — how long, and
@@ -1133,6 +1170,11 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                     disabled={voiceSaveInFlight()}
                     onClick={activateIdlePrimary}
                   >
+                    <Show when={idlePrimaryStartsRun()}>
+                      <span class={stage.startMic} aria-hidden="true">
+                        <IconMic size={20} />
+                      </span>
+                    </Show>
                     {idlePrimaryLabel()}
                   </button>
                 </Show>
@@ -1154,16 +1196,6 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
             own visuals and then off the bottom entirely. Scrolling in here
             leaves Stop anchored to the card where it belongs. */}
         <Show when={isActive()}>
-          {/* Above the stage, not inside it. The instruction speaks for the
-              whole run — both the tracker and the drill's own visual — so it
-              spans both of them and stays centred whether they are stacked or
-              side by side. Inside the drill's column it was squeezed into the
-              narrow half, captioning the thing it was standing next to. It is
-              also outside the scroll, since an instruction you have to scroll
-              to is not an instruction. */}
-          <Show when={props.activePhase}>
-            <div class="exercise-active-phase">{props.activePhase}</div>
-          </Show>
           <div class="exercise-active-stage">
             <Show when={props.tracker}>
               {(tracker) => (

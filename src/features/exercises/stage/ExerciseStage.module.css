@@ -1,0 +1,645 @@
+/* ============================================================
+   The drill stage: one look for every drill in ExerciseShell
+   ============================================================
+
+   A drill used to be a card on the app's page. It is now a stage: the vocal
+   booth behind, a dark glass sheet that holds the drill, and Merc beside the
+   sheet saying what to do. The shell keeps every class it had, so each
+   drill's own styles, the tests and the tours still find what they look for;
+   this file restyles those classes where they sit on the stage.
+
+   The stage is dark in every app theme (`mp-dark-stage` on the root): the
+   pitch tracker's canvas has always been dark, and a light card around it
+   was the odd one out.
+
+   Selectors here start at `.stage`, so they outrank the global rules in
+   src/styles/exercises.css and mobile-polish.css without `!important`. A
+   rule that a phone or a short window must still change is restated in a
+   media query of its own below. */
+
+.stage {
+  --stage-glass: rgb(13 17 23 / 82%);
+  --stage-panel: rgb(22 27 34 / 86%);
+  --stage-edge: rgb(255 255 255 / 12%);
+  --stage-edge-strong: rgb(255 255 255 / 24%);
+  --stage-shadow: 0 18px 46px rgb(0 0 0 / 46%);
+
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+/* The booth. A painting, already softened and dimmed, so the sheet over it
+   needs no backdrop blur: a blur on an element that large costs frames on a
+   phone while the tracker is drawing, and a filter on the sheet would make it
+   the containing block of the settings sheet's fixed panel. */
+.backdrop {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background-color: #0b0e14;
+  background-image:
+    linear-gradient(
+      180deg,
+      rgb(8 10 16 / 70%) 0%,
+      rgb(8 10 16 / 34%) 34%,
+      rgb(8 10 16 / 66%) 100%
+    ),
+    url('./art/booth-portrait.webp');
+  background-position: center top;
+  background-size: cover;
+  pointer-events: none;
+}
+
+@media (min-aspect-ratio: 1 / 1) {
+  .backdrop {
+    background-image:
+      linear-gradient(
+        180deg,
+        rgb(8 10 16 / 70%) 0%,
+        rgb(8 10 16 / 34%) 34%,
+        rgb(8 10 16 / 66%) 100%
+      ),
+      url('./art/booth-wide.webp');
+    background-position: center;
+  }
+}
+
+/* ── The bar over the art ─────────────────────────────────── */
+
+.stage :global(.exercise-runner-header) {
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.stage :global(.exercise-runner-header) :global(.back-btn) {
+  min-height: 40px;
+  padding: 6px 14px;
+  border: 1px solid var(--stage-edge);
+  border-radius: 999px;
+  background: var(--stage-glass);
+  color: var(--text-primary);
+  font-size: 0.82rem;
+  font-weight: 600;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.stage
+  :global(.exercise-runner-header)
+  :global(.back-btn):hover:not(:disabled) {
+  border-color: var(--stage-edge-strong);
+  background: var(--stage-panel);
+}
+
+.stage :global(.exercise-help-btn) {
+  width: 40px;
+  height: 40px;
+  border-color: var(--stage-edge);
+  background: var(--stage-glass);
+  color: var(--text-primary);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.stage :global(.exercise-title) {
+  text-shadow: 0 1px 10px rgb(0 0 0 / 70%);
+}
+
+.stage :global(.exercise-level-chip) {
+  padding: 5px 11px;
+  border-color: var(--stage-edge);
+  background: var(--stage-glass);
+  color: var(--text-primary);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.stage :global(.exercise-score-display) {
+  text-shadow: 0 1px 10px rgb(0 0 0 / 70%);
+}
+
+/* Outside a run the header's score is a dash, and on a phone the dash was
+   costing the drill's name its last letters. */
+.stage:not([data-run='active']) :global(.exercise-score-display) {
+  display: none;
+}
+
+.stage :global(.exercise-help-panel) {
+  border-color: var(--stage-edge);
+  background: var(--stage-panel);
+  color: var(--text-primary);
+  box-shadow: var(--stage-shadow);
+}
+
+/* ── Merc and the sheet ───────────────────────────────────── */
+
+/* The coach above the sheet. From 1440px he stands beside it (below), which
+   costs the sheet no height at all. The rail starts no narrower than that:
+   the drills' run layouts are fitted to a 1280px tablet's sheet, and a rail
+   there would take a quarter of its width. */
+.coach {
+  display: flex;
+  flex: none;
+  align-items: flex-end;
+  gap: 8px;
+  min-width: 0;
+  margin: 0 2px 10px;
+}
+
+.merc {
+  position: relative;
+  flex: none;
+}
+
+/* The lamp he stands in, and his shadow on the floor. */
+.merc::before {
+  position: absolute;
+  inset: 6% 2% 0;
+  z-index: -1;
+  border-radius: 50%;
+  background: radial-gradient(
+    closest-side,
+    rgb(110 140 255 / 40%),
+    rgb(154 135 240 / 12%) 60%,
+    transparent
+  );
+  content: '';
+}
+
+.merc::after {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  z-index: -1;
+  width: 62%;
+  height: 10%;
+  border-radius: 50%;
+  background: radial-gradient(closest-side, rgb(0 0 0 / 70%), transparent);
+  content: '';
+  transform: translateX(-50%);
+}
+
+/* What he says. The corner nearest him is the square one. */
+.bubble {
+  flex: 0 1 auto;
+  min-width: 0;
+  max-width: 64ch;
+  padding: 10px 14px;
+  border: 1px solid var(--stage-edge);
+  border-radius: 16px 16px 16px 4px;
+  background: var(--stage-panel);
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 1.4;
+  box-shadow: 0 10px 26px rgb(0 0 0 / 38%);
+}
+
+/* The brief is each drill's own block, written for the middle of a card:
+   centred, padded, and tall enough to fill one. In the bubble it is a few
+   lines of speech. */
+.bubble :global(.exercise-idle-placeholder) {
+  display: block;
+  height: auto;
+  min-height: 0;
+  padding: 0;
+  color: var(--text-primary);
+  text-align: left;
+}
+
+.bubble :global(.exercise-idle-placeholder) p {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.4;
+}
+
+.bubble :global(.exercise-idle-placeholder) > * + * {
+  margin-top: 4px;
+}
+
+.bubble :global(.exercise-idle-placeholder) :global(.idle-hint) {
+  display: block;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+  opacity: 1;
+}
+
+.bubble
+  :global(.exercise-idle-placeholder)
+  :global(.exercise-idle-target-note) {
+  color: var(--text-secondary);
+  font-size: 0.8rem;
+}
+
+/* The run's instruction was a centred row at the top of the card. */
+.bubble :global(.exercise-active-phase) {
+  display: block;
+  width: auto;
+  padding: 0;
+  text-align: left;
+}
+
+.stage :global(.exercise-canvas-area) {
+  border-color: var(--stage-edge);
+  border-radius: 20px;
+  background: var(--stage-glass);
+  box-shadow:
+    var(--stage-shadow),
+    inset 0 1px 0 rgb(255 255 255 / 7%);
+}
+
+/* The tracker is the first thing in a run's sheet and has a border of its
+   own; flush against the sheet's rounded corner the two edges fought. */
+.stage :global(.exercise-canvas-area.is-active) {
+  padding-top: 12px;
+}
+
+/* ── The mic ──────────────────────────────────────────────── */
+
+.stage :global(.exercise-idle-start) {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 56px;
+  padding: 12px 30px;
+  border: 1px solid rgb(255 255 255 / 30%);
+  border-radius: 999px;
+  background: linear-gradient(135deg, #6ea8ff 0%, #8a7bff 58%, #f0a868 135%);
+  color: #0d1117;
+  font-size: 1.02rem;
+  font-weight: 750;
+  letter-spacing: 0.01em;
+  box-shadow:
+    0 12px 30px rgb(110 168 255 / 34%),
+    inset 0 1px 0 rgb(255 255 255 / 45%);
+  transition:
+    filter 0.15s,
+    transform 0.15s;
+}
+
+.stage :global(.exercise-idle-start):hover:not(:disabled) {
+  background: linear-gradient(135deg, #6ea8ff 0%, #8a7bff 58%, #f0a868 135%);
+  filter: brightness(1.07);
+  transform: translateY(-1px);
+}
+
+.stage :global(.exercise-idle-start):active:not(:disabled) {
+  transform: scale(0.98);
+}
+
+.stage :global(.exercise-idle-start):focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.startMic {
+  display: inline-flex;
+  flex: none;
+}
+
+.stage :global(.exercise-settings-trigger) {
+  min-height: 44px;
+  border: 1px solid var(--stage-edge-strong);
+  border-radius: 999px;
+  background: var(--stage-panel);
+  color: var(--text-primary);
+}
+
+/* ── The run ──────────────────────────────────────────────── */
+
+.stage :global(.exercise-btn-stop) {
+  border-color: rgb(255 123 114 / 70%);
+  background: rgb(248 81 73 / 24%);
+  color: #ffb3ad;
+  box-shadow: 0 8px 22px rgb(0 0 0 / 42%);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+}
+
+/* ── The result ───────────────────────────────────────────── */
+
+.stage :global(.exercise-result-card) {
+  padding: 16px 20px;
+  border-color: var(--stage-edge-strong);
+  border-radius: 18px;
+  background: var(--stage-panel);
+  box-shadow: 0 12px 34px rgb(0 0 0 / 40%);
+}
+
+/* The grade in a ring of its own ink. */
+.stage :global(.exercise-result-grade) {
+  display: grid;
+  width: 64px;
+  min-width: 64px;
+  height: 64px;
+  border: 2px solid currentcolor;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 5%);
+  font-size: 1.9rem;
+  place-items: center;
+}
+
+/* One number, large enough to read from where a singer stands. */
+.stage :global(.exercise-result-score) {
+  flex-wrap: wrap;
+  font-size: 2.1rem;
+  letter-spacing: -0.01em;
+  line-height: 1.05;
+}
+
+.stage :global(.exercise-result-summary) {
+  font-size: 0.88rem;
+}
+
+/* Off a phone the recent-scores card floats in the sheet's corner, which is
+   where a result card as wide as the sheet has its own corner. The result
+   says the same and more (the score, a new best, the change since last
+   time), so it has the corner to itself. */
+@media (min-width: 769px) {
+  .stage[data-run='complete'] :global(.exercise-score-history) {
+    display: none;
+  }
+}
+
+/* Between the runs of a routine's segment the card stays a strip. */
+.stage :global(.exercise-result-card.mid-reps) {
+  padding: 10px 16px;
+}
+
+.stage :global(.exercise-result-card.mid-reps) :global(.exercise-result-grade) {
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  font-size: 1.3rem;
+}
+
+.stage :global(.exercise-result-card.mid-reps) :global(.exercise-result-score) {
+  font-size: 1.3rem;
+}
+
+/* ── A phone ──────────────────────────────────────────────── */
+
+@media (max-width: 768px) {
+  .stage :global(.exercise-runner-header) {
+    margin-bottom: 10px;
+  }
+
+  .stage :global(.exercise-runner-header) :global(.back-btn) {
+    padding: 6px 11px;
+    font-size: 0.78rem;
+  }
+
+  .stage :global(.exercise-help-btn) {
+    width: 36px;
+    height: 36px;
+  }
+
+  .stage :global(.exercise-canvas-area.is-active) {
+    padding-top: 10px;
+  }
+
+  .coach {
+    margin-bottom: 8px;
+  }
+
+  .bubble {
+    padding: 9px 12px;
+    font-size: 0.86rem;
+  }
+
+  .bubble :global(.exercise-idle-placeholder) p {
+    font-size: 0.86rem;
+  }
+
+  .stage :global(.exercise-canvas-area) {
+    border-radius: 18px;
+  }
+
+  /* A setup shorter than the sheet sits in its middle, not under its top
+     edge. The column is at least as tall as the sheet and grows with what
+     it holds, so centring it can never put its top out of reach. */
+  .stage :global(.exercise-idle-center) {
+    justify-content: center;
+  }
+
+  /* The mic first, and always on screen. A phone's setup can be taller than
+     its sheet (a dial, a style switch, a timer), and Start used to be the
+     last thing in it, a scroll away; after a run, Try Again sat under the
+     result and the dial. So on a phone the button leads the sheet, under
+     the result when there is one, and the setup follows it. The two groups
+     around the button give up their boxes so that it is a child of the
+     whole column: that is what lets `order` lift it over the setup, and
+     lets it hold to the sheet's edge for the column's full length, at the
+     top once the setup has scrolled past it and at the foot under a result
+     taller than the sheet. The tree keeps its order (setup, then Start),
+     which is the order a screen reader walks. */
+  .stage :global(.exercise-idle-body),
+  .stage :global(.exercise-idle-launch) {
+    display: contents;
+  }
+
+  .stage :global(.exercise-result-card) {
+    order: -3;
+  }
+
+  .stage :global(.exercise-idle-start),
+  .stage :global(.exercise-guided-stop-question) {
+    order: -2;
+  }
+
+  .stage :global(.exercise-error),
+  .stage :global(.exercise-capture-note) {
+    order: -1;
+  }
+
+  .stage :global(.exercise-idle-start) {
+    position: sticky;
+    top: 10px;
+    bottom: 10px;
+    z-index: 5;
+    padding: 12px 22px;
+    font-size: 1rem;
+    box-shadow:
+      0 12px 30px rgb(0 0 0 / 55%),
+      0 0 0 6px rgb(13 17 23 / 72%),
+      inset 0 1px 0 rgb(255 255 255 / 45%);
+  }
+
+  .stage :global(.exercise-result-grade) {
+    width: 54px;
+    min-width: 54px;
+    height: 54px;
+    font-size: 1.6rem;
+  }
+
+  .stage :global(.exercise-result-score) {
+    font-size: 1.8rem;
+  }
+}
+
+/* A narrow phone: the drill's name is worth more than its mark, which the
+   menu's card has just shown. */
+@media (max-width: 430px) {
+  .stage :global(.exercise-title-icon) {
+    display: none;
+  }
+}
+
+/* ── A tablet and a laptop ────────────────────────────────── */
+
+/* Between a phone and the rail, a window is wide and seldom tall, and
+   several setups fit a tablet in landscape with nothing to spare. So the
+   coach is one line here: a smaller Merc, and a brief that runs on as one
+   sentence with its hint, in a bubble free to take the window's width. A
+   phone on its side is as short, and gets the same. */
+@media (min-width: 769px) and (max-width: 1439.98px),
+  (max-height: 720px) and (max-width: 1439.98px) {
+  .coach {
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .merc {
+    margin: -12px -12px 0 0;
+    transform: scale(0.78);
+    transform-origin: left bottom;
+  }
+
+  .bubble {
+    max-width: none;
+    padding: 6px 12px;
+    font-size: 0.84rem;
+  }
+
+  .bubble :global(.exercise-idle-placeholder) p {
+    display: inline;
+    font-size: 0.84rem;
+  }
+
+  .bubble :global(.exercise-idle-placeholder) :global(.idle-hint) {
+    display: inline;
+  }
+
+  .bubble :global(.exercise-idle-placeholder) > * + * {
+    margin-top: 0;
+    margin-left: 0.7em;
+  }
+}
+
+/* ── A short window ───────────────────────────────────────── */
+
+/* Under 720px of height every row counts: a 560px laptop window holds some
+   setups to the pixel. The coach gives a little more of his back. */
+@media (max-height: 720px) and (max-width: 1439.98px) {
+  .stage :global(.exercise-runner-header) {
+    margin-bottom: 8px;
+  }
+
+  .coach {
+    margin-bottom: 4px;
+  }
+
+  .merc {
+    margin: -20px -20px 0 0;
+    transform: scale(0.64);
+  }
+
+  .bubble {
+    padding: 5px 12px;
+    font-size: 0.82rem;
+  }
+
+  .bubble :global(.exercise-idle-placeholder) p {
+    font-size: 0.82rem;
+  }
+
+  .stage :global(.exercise-idle-start) {
+    min-height: 48px;
+    padding: 9px 26px;
+  }
+}
+
+/* ── A wide window: the coach in a rail ───────────────────── */
+
+/* Keep this width in step with STAGE_RAIL_QUERY (StageCoach.tsx), which
+   picks Merc's size for the rail.
+
+   The shell is one column and stays one: the coach keeps his place in it,
+   just above the sheet, but gives up his height, and what he holds hangs
+   down beside a sheet that has moved over to make room. A row around the
+   two would have been a wrapper in a shell that every drill's test reads. */
+@media (min-width: 1440px) {
+  .stage {
+    --stage-rail: 236px;
+    --stage-rail-gap: 18px;
+  }
+
+  .coach {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 4px;
+    width: var(--stage-rail);
+    height: 0;
+    margin: 0;
+  }
+
+  .merc {
+    margin: 4px 0 0 6px;
+    transform: none;
+  }
+
+  /* He is above the bubble here, so the square corner is the top one. */
+  .bubble {
+    width: 100%;
+    max-width: none;
+    padding: 12px 14px;
+    border-radius: 4px 16px 16px;
+    font-size: 0.9rem;
+  }
+
+  .bubble :global(.exercise-idle-placeholder) p {
+    font-size: 0.9rem;
+  }
+
+  .stage > :global(.exercise-canvas-area) {
+    margin-left: calc(var(--stage-rail) + var(--stage-rail-gap));
+  }
+}
+
+/* ── Arriving ─────────────────────────────────────────────── */
+
+/* Opacity only for the sheet: a transform would move the boxes the layout
+   tests measure, and would make the sheet the containing block of the
+   settings sheet's fixed panel while it ran. */
+@media (prefers-reduced-motion: no-preference) {
+  .coach {
+    animation: coach-in 420ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+  }
+
+  .stage :global(.exercise-canvas-area) {
+    animation: sheet-in 320ms ease-out both;
+  }
+}
+
+@keyframes coach-in {
+  from {
+    opacity: 0;
+    translate: -10px 0;
+  }
+
+  to {
+    opacity: 1;
+    translate: 0 0;
+  }
+}
+
+@keyframes sheet-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}

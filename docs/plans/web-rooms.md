@@ -1,8 +1,9 @@
 # The exercise rooms on the web
 
 **Status:** in progress. Seven rooms open from the web's Exercises tab (15 Nov 2026): Long note,
-Echo, Lip roll, Ng slides, Home note, Leap and Harmony. First note and the Warm-up follow. The web's
-own drills, old and new, move onto the same kit after them (see "What follows").
+Echo, Lip roll, Ng slides, Home note, Leap and Harmony. The web's eighteen own drills run on one
+stage with Merc beside it (15 Nov 2026, "The stage the web's own drills run on"). First note, the
+Warm-up and the new drills follow (see "What follows").
 
 **The owner's decision of 15 Nov 2026**, after the web drills' mock-ups ("Web drills: Season 2
 mock-ups", a design canvas of six boards).
@@ -50,6 +51,30 @@ The native shell gives a room three things, and the web now gives the same three
 - **A lesson's link** can open one: a slug whose exercise is a room. `/exercises/harmony-line`
   opens Harmony, for Lessons 26 and 28.
 
+## The stage the web's own drills run on
+
+The eighteen drills that are not rooms share one shell (`src/features/exercises/ExerciseShell.tsx`),
+so one change restaged all of them (`src/features/exercises/stage/`). The shell kept every class it
+had, so each drill's own styles, the tests and the tours find what they looked for.
+
+- **The booth behind, a sheet of dark glass in front.** The shell's root is a dark stage in either
+  app theme (`mp-dark-stage`): the pitch tracker's canvas was always dark, and a light card around
+  it was the odd one out. The backdrop is cut from the Jam room's singer painting
+  (`public/jam/room-singer.webp`), softened and dimmed, so the sheet needs no backdrop blur.
+- **One Merc beside the sheet, for the whole visit** (`stage/StageCoach.tsx`). His bubble holds the
+  drill's brief (its `idlePlaceholder`) until a run starts and the run's instruction (its
+  `activePhase`) while it lasts; both used to sit inside the card. He listens to a run and cheers
+  one graded S or A (`stage/stage-pose.ts`). He stands above the sheet on a phone and in a rail
+  beside it from 1440px, where he costs the sheet no height.
+- **The mic.** Start is a pill with a microphone on it. On a phone it holds to the sheet's foot,
+  so a tall setup or a result never puts it a scroll away.
+- **The result.** The grade in a ring of its own ink and the score as one large number, over the
+  drill's own summary line.
+
+Not yet, and drill by drill from here (Interval Trainer first): Merc singing a drill's example
+before the singer's first try and giving the answer after a miss, one figure per drill that is
+itself the feedback, and one line of words per note.
+
 ## What keeps them out of a store build
 
 The native app renders the web's App under its shell, so the Exercises page and its menu are in the
@@ -85,8 +110,8 @@ rooms and the kit); their paintings and Merc's lines are not precached.
    sheet holding the drill's one figure, Merc beside it): sight-singing in time, note reading, and
    cadence types; the harmony line is the Harmony room, which differs from the lesson plan's drill
    in three ways (`docs/plans/find-your-pitch/SEASON-2.md` § 7 item 14).
-3. The web's eighteen old drills. Where a room covers the same skill it takes the drill's place on
-   the tab (Long Note, Call and Response, the Warm-up). The others move onto the kit, Interval
-   Trainer first.
+3. The web's eighteen old drills, now on the stage above. Where a room covers the same skill it
+   takes the drill's place on the tab (Long Note, Call and Response, the Warm-up). The others get
+   Merc's example, the answer after a miss and a figure of their own, Interval Trainer first.
 4. Season 2's modes (`SEASON-2.md` § 5.2 items 10, 12, 15, 18, 19, 20), and the lessons' practice
    cards re-pointed as each lands.
