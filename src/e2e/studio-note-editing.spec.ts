@@ -212,6 +212,8 @@ test.describe('Studio note editing on a computer', () => {
     await page.mouse.down()
     await page.mouse.move(tickX(view, 2900), pitchY(view, 67), { steps: 8 })
     await page.mouse.up()
+    // Taken: their velocities 114, 102 and 89, on average 102.
+    await expect(selectionVelocity(page)).toHaveText('102')
     await page.keyboard.press('Delete')
 
     await expect
