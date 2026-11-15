@@ -1,7 +1,12 @@
 /* The rooms at the top of the Exercises tab: a card a room, its picture
-   over its words. Two across on a phone, as many as fit on a wider screen. */
+   over its words. Two across on a phone, as many as fit on a wider screen.
+
+   The strip sits between the tab's header and its difficulty pills, which
+   were 18px apart (the header's bottom margin). It keeps that distance on
+   both sides: the pills' frame is what the tab's tour spotlights, and
+   exercises-touch-targets.spec.ts holds the space above it to 18px. */
 .rooms {
-  margin: 4px 0 20px;
+  margin: 0 0 18px;
 }
 
 .head {
