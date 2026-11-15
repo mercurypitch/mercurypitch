@@ -1,5 +1,6 @@
 // Studio comp panel tests — Clip details lists the passes to use whole and opens the comp, the lane sheet's bars take a tap, the clip bar's Comp waits for a take, a MIDI loop take plays a whole pass with no Comp anywhere, and a comped clip draws each stretch from its pass.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
 import type { StudioClip } from '@/lib/studio/model/types'
@@ -250,6 +251,41 @@ describe("the clip bar's Comp", () => {
     })
     expect(picker.selectedOptions[0]?.textContent).toBe('Comped')
     expect(screen.getByRole('button', { name: 'Comp' })).toBeInTheDocument()
+  })
+
+  it('says Comped once a swipe makes the comp, and the pass again once undo takes it back', () => {
+    // Arrange: the bar open on the take, as it stays while the passes are swiped.
+    const [clip, setClip] = createSignal(take)
+    render(() => (
+      <StudioClipToolbar
+        clip={clip()}
+        playheadFrame={0}
+        writable
+        label="Voice"
+        left={0}
+        bottom={0}
+        onCommand={vi.fn(() => true)}
+        onDetails={vi.fn()}
+        onRemove={vi.fn()}
+      />
+    ))
+    const picker = screen.getByRole<HTMLSelectElement>('combobox', {
+      name: 'Pass this clip plays',
+    })
+    const shown = () => picker.selectedOptions[0]?.textContent
+
+    // Act and assert: the swipe, then its undo.
+    expect(shown()).toBe('3 of 3')
+    setClip({
+      ...take,
+      comp: [
+        { fromSourceFrame: 4 * BAR, toSourceFrame: 5 * BAR, pass: 0 },
+        { fromSourceFrame: 5 * BAR, toSourceFrame: 6 * BAR, pass: 2 },
+      ],
+    })
+    expect(shown()).toBe('Comped')
+    setClip(take)
+    expect(shown()).toBe('3 of 3')
   })
 
   it('waits for a take, and is not there for a clip with one pass', () => {
