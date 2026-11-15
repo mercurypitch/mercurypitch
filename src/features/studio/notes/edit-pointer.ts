@@ -16,11 +16,12 @@
 // last sound, and the pitch it lands on sounds when it is let go if the
 // last sound was another. A velocity dragged sounds its note when let go.
 import type { RollViewport } from '@/lib/roll-geometry'
-import { studioWindowRollNotes } from '@/lib/studio/midi/roll-rows'
+import { deleteStudioNotes } from '@/lib/studio/midi/notes'
 import { noteById, noteEditCommit, playedNotes } from './edit-changes'
 import type { NoteDragPoint } from './edit-drag'
 import { draftNoteDrag } from './edit-drag'
-import { NOTE_POINTER_PROFILES, pickRollNote } from './edit-pick'
+import { editTopRow, pickEditNote } from './edit-kit'
+import { NOTE_POINTER_PROFILES } from './edit-pick'
 import { panNoteGesture, pressNoteGesture } from './edit-press'
 import type { NoteEditContext, NoteEditEffect, NoteEditHover, NoteEditPointer, NoteEditState, NoteEditStep, NoteGesture, NotePinchGesture, NoteSingleGesture, NoteTouch, } from './edit-types'
 import { pickLollipop } from './edit-velocity'
@@ -28,6 +29,8 @@ import { dragNoteRoll, noteEdgeScroll, pinchNoteRoll, sameRollViewport, } from '
 
 /** The least time between two sounds of a dragged note, in milliseconds. */
 export const NOTE_AUDITION_GAP_MS = 100
+/** The drags that put a note down, which takes the last pressed note's velocity rather than setting it. */
+const DRAWS = new Set(['draw', 'paint'])
 /** The longest frame an edge scroll counts, so a stalled page does not jump. */
 const MAX_FRAME_SECONDS = 0.05
 
@@ -132,6 +135,7 @@ function sound(
 function pressedNote(ctx: NoteEditContext, gesture: NoteSingleGesture) {
   const intent = gesture.intent
   if (intent.kind === 'draw') return intent.note
+  if (intent.kind === 'paint') return intent.hit
   return 'noteId' in intent ? noteById(ctx.sequence, intent.noteId) : undefined
 }
 
@@ -147,10 +151,10 @@ function press(
   const note = pressedNote(ctx, pressed.gesture)
   if (note === undefined) return also(quietStep(started), notice)
   // A drawn note takes the velocity of the note pressed last.
-  const remembered =
-    pressed.gesture.intent.kind === 'draw'
-      ? started
-      : { ...started, drawVelocity: note.velocity }
+  const drawn = DRAWS.has(pressed.gesture.intent.kind)
+  const remembered = drawn
+    ? started
+    : { ...started, drawVelocity: note.velocity }
   return also(sound(remembered, note, pointer.time, true), notice)
 }
 
@@ -211,12 +215,30 @@ function pastSlop(
   )
 }
 
-/** A dragged note sounds on each new pitch it reaches, past the gap. */
+/** A paint sounds the newest hit it put down, past the gap, the same drum again included. */
+function paintSound(
+  state: NoteEditState,
+  before: NoteSingleGesture,
+  after: NoteSingleGesture,
+  time: number,
+): NoteEditStep {
+  const was = (before.draft.sequence ?? before.base).notes.length
+  const notes = (after.draft.sequence ?? after.base).notes
+  if (notes.length === was) return quietStep(state)
+  const last = state.sounded
+  const due = last === null || time - last.time >= NOTE_AUDITION_GAP_MS
+  return sound(state, notes[notes.length - 1], time, due)
+}
+
+/** A dragged note sounds on each new pitch it reaches, past the gap; a paint, each hit it puts down. */
 function dragSound(
   state: NoteEditState,
+  before: NoteSingleGesture,
   gesture: NoteSingleGesture,
   time: number,
 ): NoteEditStep {
+  if (gesture.intent.kind === 'paint')
+    return paintSound(state, before, gesture, time)
   if (gesture.intent.kind !== 'move') return quietStep(state)
   const note = noteById(
     gesture.draft.sequence ?? gesture.base,
@@ -237,6 +259,7 @@ function panTo(
     ctx.window,
     at.x - gesture.last.x,
     rows ? at.y - gesture.last.y : 0,
+    editTopRow(ctx),
   )
   const next = { ...gesture, dragging: true, last: at }
   return viewportStep({ ...state, gesture: next }, ctx.viewport, viewport)
@@ -259,7 +282,7 @@ function dragTo(
     frameTime: gesture.dragging ? gesture.frameTime : pointer.time,
     draft: draftNoteDrag(gesture, ctx, at, state.snap),
   }
-  return dragSound({ ...state, gesture: next }, next, pointer.time)
+  return dragSound({ ...state, gesture: next }, gesture, next, pointer.time)
 }
 
 /** Two fingers as a pinch reads them, and whether both are on the roll, whose y is a pitch. */
@@ -279,7 +302,14 @@ function pinchTo(
   const from = fingersOf(before.touches, pinch)
   const to = fingersOf(after.touches, pinch)
   if (from === null || to === null) return quietStep(after)
-  const viewport = pinchNoteRoll(ctx.viewport, ctx.window, from, to, from.rows)
+  const viewport = pinchNoteRoll(
+    ctx.viewport,
+    ctx.window,
+    from,
+    to,
+    from.rows,
+    editTopRow(ctx),
+  )
   return viewportStep(after, ctx.viewport, viewport)
 }
 
@@ -300,11 +330,7 @@ function hoverAt(
     y: pointer.y,
     pointerType: pointer.pointerType,
   }
-  if (pointer.surface === 'roll')
-    return pickRollNote({
-      ...input,
-      notes: studioWindowRollNotes(ctx.sequence, ctx.window),
-    })
+  if (pointer.surface === 'roll') return pickEditNote(ctx, input)
   const id = pickLollipop({
     ...input,
     notes: playedNotes(ctx.sequence, ctx.window),
@@ -358,15 +384,36 @@ function commitDraft(
     : { state: next, effects: [{ type: 'commit', commit }], handled: false }
 }
 
-/** A tap: the selection it leaves, or the note drawn at its press kept. */
+/** A tap in Draw on a kit's hit: the hit taken away, and out of the selection. */
+function removeHit(
+  state: NoteEditState,
+  gesture: NoteSingleGesture,
+  id: number,
+): NoteEditStep {
+  const selection = gesture.before.filter((each) => each !== id)
+  const { sequence } = deleteStudioNotes(gesture.base, [id])
+  const commit = noteEditCommit(gesture.base, { sequence, selection })
+  const next = { ...state, selection }
+  return commit === null
+    ? quietStep(next)
+    : { state: next, effects: [{ type: 'commit', commit }], handled: false }
+}
+
+/** A tap: the selection it leaves, the note drawn at its press kept, or a kit's hit taken away. */
 function finishTap(
   state: NoteEditState,
   gesture: NoteSingleGesture,
 ): NoteEditStep {
   const idle = { ...state, gesture: null }
-  return gesture.tap.kind === 'select'
-    ? quietStep({ ...idle, selection: gesture.tap.selection })
-    : commitDraft(idle, gesture)
+  const tap = gesture.tap
+  switch (tap.kind) {
+    case 'select':
+      return quietStep({ ...idle, selection: tap.selection })
+    case 'remove':
+      return removeHit(idle, gesture, tap.id)
+    default:
+      return commitDraft(idle, gesture)
+  }
 }
 
 /** The sound a drag ends on: a moved note's landing pitch if it is new, a velocity's note at its new velocity. */
@@ -471,7 +518,7 @@ export function notePointerCancel(
 }
 
 /** The drags a frame scrolls at an edge; a resize or a drawn note runs along time alone. */
-const EDGE_DRAGS = new Set(['move', 'resize', 'draw', 'marquee'])
+const EDGE_DRAGS = new Set(['move', 'resize', 'draw', 'paint', 'marquee'])
 const ALONG_TIME = new Set(['resize', 'draw'])
 
 /** Whether a drag is under way that a frame scrolls at an edge: the host sends frames while this holds. */
@@ -501,7 +548,13 @@ export function noteFrame(
     seconds,
     !ALONG_TIME.has(gesture.intent.kind),
   )
-  const viewport = dragNoteRoll(ctx.viewport, ctx.window, -scroll.x, -scroll.y)
+  const viewport = dragNoteRoll(
+    ctx.viewport,
+    ctx.window,
+    -scroll.x,
+    -scroll.y,
+    editTopRow(ctx),
+  )
   const timed = { ...gesture, frameTime: time }
   if (sameRollViewport(viewport, ctx.viewport))
     return quietStep({ ...state, gesture: timed })
@@ -509,7 +562,7 @@ export function noteFrame(
     ...timed,
     draft: draftNoteDrag(timed, { ...ctx, viewport }, gesture.last, state.snap),
   }
-  const sounded = dragSound({ ...state, gesture: next }, next, time)
+  const sounded = dragSound({ ...state, gesture: next }, gesture, next, time)
   return {
     state: sounded.state,
     effects: [{ type: 'viewport', viewport }, ...sounded.effects],

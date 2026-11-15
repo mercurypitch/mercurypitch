@@ -16,11 +16,12 @@
 // the grid line past the pointer, a step at the least.
 import { xToTime } from '@/lib/roll-geometry'
 import type { StudioNoteEdit, StudioNoteSet } from '@/lib/studio/midi/notes'
-import { addStudioNote, moveStudioNotes, resizeStudioNotes, studioNotesInRange, } from '@/lib/studio/midi/notes'
+import { addStudioNote, resizeStudioNotes } from '@/lib/studio/midi/notes'
 import { studioRollPitchAt, studioRollRowOf } from '@/lib/studio/midi/roll-rows'
 import { noteById, playedIds } from './edit-changes'
+import { draftPaint, editNotesInRange, moveEditNotes } from './edit-kit'
 import type { NoteSnap } from './edit-snap'
-import { lineAfter, noteSnapGrid, snapCeil, snapTravel } from './edit-snap'
+import { lineAfter, noteSnapGrid, noteStepGrid, snapCeil, snapTravel, } from './edit-snap'
 import type { NoteDraft, NoteDragIntent, NoteEditContext, NoteMarquee, NoteSingleGesture, NoteVelocityReadout, } from './edit-types'
 import { noteVelocityValue, stepStudioNoteVelocities } from './edit-velocity'
 import { velocitySteps } from './velocity-lane'
@@ -80,7 +81,7 @@ function draftMove(
   )
   return draftOf(
     gesture.base,
-    moveStudioNotes(gesture.base, intent.ids, dTick, dPitch, ctx.window),
+    moveEditNotes(ctx, gesture.base, intent.ids, dTick, dPitch),
   )
 }
 
@@ -152,11 +153,11 @@ function notesUnder(
   ctx: NoteEditContext,
   marquee: NoteMarquee,
 ): readonly number[] {
-  const ids = studioNotesInRange(base, {
+  const ids = editNotesInRange(base, ctx, {
     startTick: Math.min(marquee.fromTick, marquee.toTick),
     endTick: Math.max(marquee.fromTick, marquee.toTick),
-    lowPitch: studioRollRowOf(Math.min(marquee.fromPitch, marquee.toPitch)),
-    highPitch: studioRollRowOf(Math.max(marquee.fromPitch, marquee.toPitch)),
+    lowRow: studioRollRowOf(Math.min(marquee.fromPitch, marquee.toPitch)),
+    highRow: studioRollRowOf(Math.max(marquee.fromPitch, marquee.toPitch)),
   })
   return playedIds(ids, base, ctx.window)
 }
@@ -197,6 +198,14 @@ export function draftNoteDrag(
       return draftVelocity(gesture, intent, ctx, at)
     case 'draw':
       return draftDraw(gesture, intent, ctx, at, snap)
+    case 'paint':
+      return draftPaint(
+        gesture,
+        intent.hit,
+        ctx,
+        at,
+        noteStepGrid(snap, ctx.gridOffsetTick ?? 0),
+      )
     case 'marquee':
       return draftMarquee(gesture, intent, ctx, at)
     default:

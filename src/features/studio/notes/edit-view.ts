@@ -15,6 +15,7 @@ import type { StudioNoteSet } from '@/lib/studio/midi/notes'
 import { studioRollYOf, studioWindowRollNotes, } from '@/lib/studio/midi/roll-rows'
 import type { StudioNote } from '@/lib/studio/model/types'
 import { holdGesture } from './edit-hold'
+import { onKit } from './edit-kit'
 import { noteGripRect } from './edit-pick'
 import { singleGesture } from './edit-pointer'
 import type { NoteDragIntent, NoteEditContext, NoteEditHover, NoteEditState, NoteMarquee, NoteSingleGesture, NoteVelocityReadout, } from './edit-types'
@@ -46,6 +47,7 @@ const DRAG_CURSORS: Readonly<Record<NoteDragIntent['kind'], NoteEditCursor>> = {
   resize: 'ew-resize',
   velocity: 'ns-resize',
   draw: 'crosshair',
+  paint: 'crosshair',
   marquee: 'crosshair',
   pan: 'grabbing',
   none: 'default',
@@ -77,7 +79,8 @@ function grips(
   selection: readonly number[],
   ctx: NoteEditContext,
 ): RollRect[] {
-  if (selection.length === 0) return []
+  // A hit's length changes nothing it plays: a kit has no grips.
+  if (selection.length === 0 || onKit(ctx)) return []
   const chosen = new Set(selection)
   return studioWindowRollNotes({ notes }, ctx.window)
     .filter((note) => chosen.has(note.id))
