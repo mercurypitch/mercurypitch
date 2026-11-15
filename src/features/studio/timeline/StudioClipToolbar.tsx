@@ -40,7 +40,12 @@ interface StudioClipToolbarProps {
   onRemove(): void
 }
 
-/** A loop take's passes: which one the clip plays, picked from a list; a comp plays several. */
+/**
+ * A loop take's passes: which one the clip plays, picked from a list; a comp
+ * plays several. The list's value is set once its options are in: set with
+ * them, it ran before a swipe's Comped option was there and left the list
+ * showing nothing.
+ */
 function PassPicker(props: {
   clip: StudioClip
   writable: boolean
@@ -49,37 +54,43 @@ function PassPicker(props: {
   const pass = () => studioClipPass(props.clip)
   return (
     <Show when={pass()}>
-      {(shown) => (
-        <label class={styles.toolbarPass} title="The pass this clip plays">
-          <span class={styles.toolbarText}>Pass</span>
-          <select
-            aria-label="Pass this clip plays"
-            data-studio-pass-picker=""
-            disabled={!props.writable}
-            value={props.clip.comp ? 'comp' : shown().number - 1}
-            onChange={(event) =>
-              props.onCommand({
-                type: 'choose-pass',
-                clipId: props.clip.id,
-                pass: Number(event.currentTarget.value),
-              })
-            }
-          >
-            <Show when={props.clip.comp}>
-              <option value="comp" disabled>
-                Comped
-              </option>
-            </Show>
-            <For each={Array.from({ length: shown().count }, (_, i) => i)}>
-              {(index) => (
-                <option value={index}>
-                  {`${index + 1} of ${shown().count}`}
+      {(shown) => {
+        let list!: HTMLSelectElement
+        createEffect(() => {
+          list.value = props.clip.comp ? 'comp' : String(shown().number - 1)
+        })
+        return (
+          <label class={styles.toolbarPass} title="The pass this clip plays">
+            <span class={styles.toolbarText}>Pass</span>
+            <select
+              ref={list}
+              aria-label="Pass this clip plays"
+              data-studio-pass-picker=""
+              disabled={!props.writable}
+              onChange={(event) =>
+                props.onCommand({
+                  type: 'choose-pass',
+                  clipId: props.clip.id,
+                  pass: Number(event.currentTarget.value),
+                })
+              }
+            >
+              <Show when={props.clip.comp}>
+                <option value="comp" disabled>
+                  Comped
                 </option>
-              )}
-            </For>
-          </select>
-        </label>
-      )}
+              </Show>
+              <For each={Array.from({ length: shown().count }, (_, i) => i)}>
+                {(index) => (
+                  <option value={index}>
+                    {`${index + 1} of ${shown().count}`}
+                  </option>
+                )}
+              </For>
+            </select>
+          </label>
+        )
+      }}
     </Show>
   )
 }
