@@ -27,6 +27,52 @@ async function openDrill(page: Page, title: string): Promise<void> {
   })
 }
 
+const NOTE = '[A-G]#?\\d'
+
+/** The other drills with an example: the card's title, and what Merc says. */
+const EXAMPLES: readonly { title: string; says: RegExp }[] = [
+  {
+    title: 'Arpeggio Jumper',
+    says: new RegExp(`^Listen: the Major arpeggio, up from ${NOTE}\\.$`),
+  },
+  {
+    title: 'Chord Stacker',
+    says: new RegExp(`^Listen: a major seventh chord, up from ${NOTE}\\.$`),
+  },
+  {
+    title: 'Staccato Precision',
+    says: new RegExp(`^Listen: three short notes, up from ${NOTE}\\.$`),
+  },
+  {
+    title: 'Drone Intonation',
+    says: new RegExp(
+      `^Listen: the drone, ${NOTE}, then ${NOTE} above it \\(Perfect 5th\\)\\.$`,
+    ),
+  },
+  {
+    title: 'Siren / Range Explorer',
+    says: new RegExp(
+      `^Listen: ${NOTE}, then ${NOTE}\\. Your voice glides between them\\.$`,
+    ),
+  },
+  {
+    title: 'Slide In/Out',
+    says: new RegExp(
+      `^Listen: ${NOTE}, then ${NOTE}\\. You slide from one to the other\\.$`,
+    ),
+  },
+  {
+    title: 'Dynamic Swell',
+    says: new RegExp(
+      `^Listen: ${NOTE}, the note to hold\\. The swell is yours\\.$`,
+    ),
+  },
+  {
+    title: 'Call & Response',
+    says: /^Listen: a short phrase\. In a run you sing one back\.$/,
+  },
+]
+
 test.describe('Hear it first', () => {
   test.use({ viewport: { width: 390, height: 844 } })
 
@@ -95,6 +141,38 @@ test.describe('Hear it first', () => {
     await expect(
       page.getByRole('button', { name: 'Hear it first' }),
     ).toBeEnabled()
+    expect(errors).toEqual([])
+  })
+
+  test('has each of the other drills say what its example is', async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    await openDrill(page, EXAMPLES[0]!.title)
+
+    for (const [index, example] of EXAMPLES.entries()) {
+      if (index > 0) {
+        await page
+          .locator('.exercise-card', { hasText: example.title })
+          .first()
+          .click()
+      }
+      const button = page.getByRole('button', { name: 'Hear it first' })
+      await expect(button, example.title).toBeVisible({ timeout: 10000 })
+      await button.click()
+      await expect(
+        page.locator('.exercise-stage-demo-line'),
+        example.title,
+      ).toHaveText(example.says)
+
+      // Back cuts the example short; the next drill starts from silence.
+      await page.locator('.back-btn').click()
+      await expect(page.locator('.exercise-card').first()).toBeVisible({
+        timeout: 10000,
+      })
+    }
     expect(errors).toEqual([])
   })
 })

@@ -20,7 +20,7 @@ import type { ExerciseResult } from '../types'
 import { EXERCISE_ARPEGGIO_JUMPER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
 import type { ArpeggioMode, SungNote } from './use-arpeggio-jumper-controller'
-import { arpeggioRunHeard, arpeggioRunStopped, arpeggioTimings, bestOctaveOffset, MIN_SINGING_MS, octaveLine, useArpeggioJumperController, } from './use-arpeggio-jumper-controller'
+import { arpeggioNotes, arpeggioRunHeard, arpeggioRunStopped, arpeggioTimings, bestOctaveOffset, MIN_SINGING_MS, octaveLine, useArpeggioJumperController, } from './use-arpeggio-jumper-controller'
 
 function freqToMidi(freq: number): number {
   return 12 * Math.log2(freq / 440) + 69
@@ -231,6 +231,24 @@ const isNote = (hz: number, midi: number) =>
   Math.abs(freqToMidi(hz) - midi) < 0.01
 
 // ── Tests ─────────────────────────────────────────────────────────
+
+describe("an arpeggio's notes, as Hear it first plays them", () => {
+  it('climbs root, third, fifth and octave of each chord type', () => {
+    expect(arpeggioNotes(48, 'major', 'up')).toEqual([48, 52, 55, 60])
+    expect(arpeggioNotes(48, 'minor', 'up')).toEqual([48, 51, 55, 60])
+    expect(arpeggioNotes(48, 'diminished', 'up')).toEqual([48, 51, 54, 60])
+    expect(arpeggioNotes(48, 'augmented', 'up')).toEqual([48, 52, 56, 60])
+  })
+
+  it('comes down from the octave to the root', () => {
+    expect(arpeggioNotes(48, 'major', 'down')).toEqual([60, 55, 52, 48])
+  })
+
+  it('leaves the table it reads alone, so a second arpeggio is the same', () => {
+    arpeggioNotes(48, 'minor', 'down')
+    expect(arpeggioNotes(48, 'minor', 'up')).toEqual([48, 51, 55, 60])
+  })
+})
 
 describe('useArpeggioJumperController', () => {
   it('computeResult returns zero and real metric keys for empty history', () => {

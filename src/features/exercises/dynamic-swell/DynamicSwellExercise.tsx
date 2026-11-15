@@ -11,6 +11,7 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
+import { createNoteDemo } from '../stage/note-demo'
 import { EXERCISE_DYNAMIC_SWELL, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { dynamicRangeDb, levelFraction, rangeVerdict, rmsToDb, targetFraction, } from './swell-dynamics'
@@ -59,6 +60,11 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
   }
 
   onCleanup(() => base.reset())
+
+  // "Hear it first": Merc plays one example before the singer tries. The
+  // app's instrument holds one loudness, so the example is the note alone.
+  const demo = createNoteDemo(audioEngine)
+  onCleanup(() => demo.stop())
 
   onMount(() => {
     if (props.autoStart === true && base.state().status === 'idle') {
@@ -140,6 +146,12 @@ const DynamicSwellExercise: Component<DynamicSwellExerciseProps> = (props) => {
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconExpand size={20} />}
+      demo={{
+        play: () => demo.play([noteToMidi(startNote())], { noteMs: 2000 }),
+        stop: demo.stop,
+        line: () =>
+          `Listen: ${startNote()}, the note to hold. The swell is yours.`,
+      }}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <p>

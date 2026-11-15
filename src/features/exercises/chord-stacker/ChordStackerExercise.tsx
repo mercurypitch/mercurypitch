@@ -12,9 +12,13 @@ import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
+import { createNoteDemo } from '../stage/note-demo'
 import { EXERCISE_CHORD_STACKER, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import { useChordStackerController } from './use-chord-stacker-controller'
+
+/** "Hear it first" plays a major seventh, the first chord type of a run's five. */
+const EXAMPLE_CHORD = [0, 4, 7, 11] as const
 
 interface ChordStackerExerciseProps {
   audioEngine: AudioEngine
@@ -59,6 +63,10 @@ const ChordStackerExercise: Component<ChordStackerExerciseProps> = (props) => {
   }
 
   onCleanup(() => base.reset())
+
+  // "Hear it first": Merc plays one example before the singer tries.
+  const demo = createNoteDemo(audioEngine)
+  onCleanup(() => demo.stop())
 
   onMount(() => {
     if (props.autoStart === true && base.state().status === 'idle') {
@@ -120,6 +128,15 @@ const ChordStackerExercise: Component<ChordStackerExerciseProps> = (props) => {
           <span class="idle-hint">5 chords · maj7, min7, dom7, dim7, maj6</span>
         </div>
       }
+      demo={{
+        play: () =>
+          demo.play(
+            EXAMPLE_CHORD.map((step) => noteToMidi(startNote()) + step),
+            { noteMs: 520, gapMs: 80 },
+          ),
+        stop: demo.stop,
+        line: () => `Listen: a major seventh chord, up from ${startNote()}.`,
+      }}
       idleSettings={
         <NoteDial
           label="Root Note"
