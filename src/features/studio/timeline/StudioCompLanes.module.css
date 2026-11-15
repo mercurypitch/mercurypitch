@@ -175,7 +175,15 @@
   border-radius: 4px;
 }
 
+/* A finger's Done is 44px tall: the bar grows to hold it, 4px either side,
+   and the hint moves down to stay on Comp's line. */
 @media (pointer: coarse) {
+  .bar {
+    height: 52px;
+  }
+  .hint {
+    padding-top: 18px;
+  }
   .row {
     height: 56px;
   }

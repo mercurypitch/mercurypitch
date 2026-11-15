@@ -712,6 +712,57 @@ test.describe('Studio comping', () => {
     )
   })
 
+  test.describe('on a tablet', () => {
+    test.use({
+      viewport: { width: 1024, height: 900 },
+      hasTouch: true,
+      isMobile: true,
+    })
+
+    test("a finger-sized Done fits the comp bar, on the hint's line", async ({
+      page,
+    }) => {
+      test.setTimeout(240_000)
+      const recorded = await recordLoop(page)
+      const studio = studioRegion(page)
+      await takeButton(page, /, Take 1, pass 3 of 3, /).click()
+      await studio
+        .getByRole('toolbar', { name: 'Selected clip' })
+        .getByRole('button', { name: 'Comp', exact: true })
+        .click()
+      const rows = studio.locator(`[data-studio-comp="${recorded.id}"]`)
+      await expect(
+        rows.getByRole('button', { name: 'Done', exact: true }),
+      ).toBeVisible()
+      await rows.scrollIntoViewIfNeeded()
+      // The bar, its Done, and the middles of Comp and the hint's text.
+      const sizes = await rows.evaluate((comp) => {
+        const bar = comp.firstElementChild!
+        const middle = (element: Element) => {
+          const range = document.createRange()
+          range.selectNodeContents(element)
+          const box = range.getBoundingClientRect()
+          return box.top + box.height / 2
+        }
+        const box = (element: Element) => {
+          const { top, bottom, height } = element.getBoundingClientRect()
+          return { top, bottom, height }
+        }
+        return {
+          bar: box(bar),
+          done: box(bar.querySelector('button')!),
+          comp: middle(bar.querySelector('strong')!),
+          hint: middle(bar.querySelector('p')!),
+        }
+      })
+      console.log(`[studio-comp] tablet bar ${JSON.stringify(sizes)}`)
+      expect(sizes.done.height).toBeGreaterThanOrEqual(44)
+      expect(sizes.done.top).toBeGreaterThanOrEqual(sizes.bar.top)
+      expect(sizes.done.bottom).toBeLessThanOrEqual(sizes.bar.bottom)
+      expect(Math.abs(sizes.comp - sizes.hint)).toBeLessThanOrEqual(2)
+    })
+  })
+
   test('a phone comps a bar at a tap in the lane sheet', async ({ page }) => {
     test.setTimeout(240_000)
     await recordLoop(page)
