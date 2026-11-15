@@ -952,9 +952,10 @@ and First Light does not step aside. Item 21 fixes it.
 17. **A harmony-line drill** (code with tests): the app plays a melody and the learner sings a
     diatonic third above or below it, scored per note, octave-folded, against the line computed with
     `diatonicStepUp` (`src/lib/jam/jam-modes.ts:108`), with a headphones prompt. Lessons 26 and 28.
-    Met in part, in the native app only: its Harmony room sings a line and has the singer sing a
-    third above it, but no lesson page can open it (§ 7 item 14). The web still needs the drill;
-    that room's line, its third and its judge are there to build on (`src/features/harmony/`).
+    Met in part by the Harmony room, which sings a line and has the singer sing a third above it.
+    Since 15 November 2026 the web opens that room, and `/exercises/harmony-line` is its address
+    for a lesson (`docs/plans/web-rooms.md`); Lessons 26 and 28's cards do not link it yet. It
+    still differs from this item in three ways (§ 7 item 14).
 18. **Chord Stacker's chord types and inversions** (code with tests): a chord-type launch field and
     triads (CURRICULUM § 4 item 4), and inversions; today a run is five rounds, one four-note chord
     each, shuffled (`use-chord-stacker-controller.ts:13-19`, :86-99). The two fixes beside it have
@@ -1230,7 +1231,7 @@ with Lessons 26 and 28.
     sings it a third above, in the key, each note heard until it holds in a band, taking turns on
     the speaker or together in headphones (`src/features/harmony/harmony-rules.ts:5-7`, `:17-21`).
     But it is the native app's, as the owner decided on 29 October 2026
-    (`docs/plans/ear-rooms.md:27-28`): it rides `PREMIUM_EXERCISES`, which is false on the web
+    (`docs/plans/ear-rooms.md:35-37`): it rides `PREMIUM_EXERCISES`, which is false on the web
     (`src/lib/native-build.ts:53-56`, `:68`), so no lesson page can open it. And it differs from
     item 17 in three ways: its lines are three to five notes of a major key, drawn at random, not a
     tune the lesson chooses (`src/features/harmony/harmony-rules.ts:10-15`; `harmony-line.ts:5-8`,
@@ -1240,12 +1241,18 @@ with Lessons 26 and 28.
     Drone Intonation, Lesson 28's keeps Karaoke Night and Cadence, and item 17 stays open for the
     web. When the lessons reach the native app, Harmony is the drill a learner can do alone, and its
     "How it works" demo sings the harmony wrong, with Merc's own note where the third goes, then
-    right (`docs/plans/ear-rooms.md:487-496`), the slip Lesson 26's reader names ("That was Merc's
+    right (`docs/plans/ear-rooms.md:496-505`), the slip Lesson 26's reader names ("That was Merc's
     note"). But it is a premium room, a free taste and then the paywall once the V1 flip brings the
-    gate (`docs/plans/ear-rooms.md:13-14`; `src/lib/native-build.ts:59-66`), and the card says
+    gate (`docs/plans/ear-rooms.md:21-22`; `src/lib/native-build.ts:59-66`), and the card says
     "Practise it free", so whether the card opens it first waits on MASTER-PLAN § 12 item 3, whether
     premium stays the Merc practice rooms. Reason: a card must open where its reader is, and on a
     web page a room the web cannot open is a dead end.
+15. **Decided (15 November 2026): the rooms open on the web, Merc and his voice with them.** The
+    owner's word after the web drills' mock-ups: the web's exercises are to be as good as the native
+    app's, and nothing is held back for it. So item 14's reason is gone: the web opens the Harmony
+    room, free, and `/exercises/harmony-line` is its address for a lesson
+    (`docs/plans/web-rooms.md`). Its three differences from § 5 item 17 stand, so Lessons 26 and
+    28's cards change only when their words are written for the room as it is.
 
 ## 8. Risks and a production order
 

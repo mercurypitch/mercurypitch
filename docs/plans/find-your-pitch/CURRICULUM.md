@@ -482,9 +482,9 @@ lesson is marked done.
 The app can open these today: `/mirror`, `/vocal-range-test`, `/voice-type-test`,
 `/which-singer-has-my-vocal-range`, `/free-sing`, `/pitch-training`, `/ear-lab`, `/drum-night`,
 `/piano-night`, `/karaoke-night`, tab hashes (`#/exercises`, `#/path`, `#/singing`,
-`#/learn/<chapterId>`), and eleven exercise slugs (`/exercises/speed-scales`, `/exercises/leap-ladder`,
-`/exercises/thirds-on-a-drone`, six for Season 2's lessons (SEASON-2 § 5.2 items 13, 15 and 16) and
-two that open tabs). `/exercises/perfect-octave` also opens, but it only sets Interval Trainer's
+`#/learn/<chapterId>`), and twelve exercise slugs (`/exercises/speed-scales`, `/exercises/leap-ladder`,
+`/exercises/thirds-on-a-drone`, seven for Season 2's lessons (SEASON-2 § 5.2 items 13 and 15 to 17)
+and two that open tabs). `/exercises/perfect-octave` also opens, but it only sets Interval Trainer's
 start note, so it does not drill an octave yet (item 3).
 
 Data alone is not enough. A slug launch carries `exercise`, `notes`, `scaleId`, `difficulty`,
@@ -527,8 +527,8 @@ exit includes every Lesson 8 to 14 link opening its drill (MASTER-PLAN § 7).
 
 Gaps with no drill today (candidates for new content): straw phonation, register work, vowels,
 keyboard and note-naming drills, sharps and enharmonics, the circle of fifths, sung minor and
-descending intervals, sung triads, rhythm scored while singing, solo harmony lines (on the web; the
-native app's Harmony room is one), major-versus-minor scale by ear.
+descending intervals, sung triads, rhythm scored while singing, a harmony line on a tune a lesson
+chooses (the Harmony room draws its own lines), major-versus-minor scale by ear.
 
 ## 5. Seasons 2 and 3
 
