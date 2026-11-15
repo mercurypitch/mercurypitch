@@ -425,8 +425,14 @@ async function hearClip(page: Page): Promise<Float32Array & { at: number }> {
   const pressed = await audioClock(page)
   await toggle.click()
   const capture = await captureSpan(page, pressed + 5.5, pressed + 10.7)
-  await toggle.click()
-  await expect(toggle).toHaveAccessibleName('Play song')
+  // A song stops by itself when it plays out (transport.ts, playedOut), and
+  // this one ends near 10.7 s: a click after its end would start it again.
+  // Pause only a song that still plays, and again if it ended in between.
+  await expect(async () => {
+    if ((await toggle.getAttribute('aria-label')) === 'Pause song')
+      await toggle.click()
+    await expect(toggle).toHaveAccessibleName('Play song', { timeout: 1_000 })
+  }).toPass({ timeout: 10_000 })
   return Object.assign(capture.samples, { at: 5.5 })
 }
 
