@@ -498,7 +498,7 @@ describe('studioRollRegions and studioRollNoteBox', () => {
     expect(studioRollNoteBox(kit, note(9, 36, 960, 240, 1))).not.toBeNull()
   })
 
-  it('draws a kit’s hit as a square at its start sized to its row, however long it is', () => {
+  it('draws a kit’s hit as a square at its start sized to its row, however long it is, and short of the next hit on its row', () => {
     // Two rows of 150 px, the snare's on top; 5 ticks a pixel, so the hit
     // starts 192 px into the grid and its two beats would run 384 px.
     const kit = input({
@@ -514,8 +514,14 @@ describe('studioRollRegions and studioRollNoteBox', () => {
 
     const box = studioRollNoteBox(kit, note(9, 38, 960, 1920, 1))
 
-    expect(box).toEqual(kitHitSquare(72 + 192, 26, 150, kit.viewport))
+    expect(box).toEqual(kitHitSquare(72 + 192, 26, 150))
     expect(box?.width).toBe(box?.height)
     expect(box?.width).toBeLessThan(384)
+    // A second snare a sixteenth (48 px) later: the first stops 2 px short.
+    const close = {
+      ...kit,
+      notes: [note(9, 38, 960, 1920, 1), note(10, 38, 1200, 240, 1)],
+    }
+    expect(studioRollNoteBox(close, note(9, 38, 960, 1920, 1))?.width).toBe(46)
   })
 })

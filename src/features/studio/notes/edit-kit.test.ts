@@ -201,7 +201,8 @@ describe('Select on a kit', () => {
 
 describe('A finger on a kit', () => {
   it("takes a hit anywhere in its row's height about it, and a finger's reach past that", () => {
-    // A snare on bar 1's fourth beat, its square 8 px wide at 100 px.
+    // A snare on bar 1's fourth beat, alone on its row: its square 20 px
+    // wide from 100 px, its target 32 px wide about that.
     const tapAt = (px: number) => {
       const host = noteHost({
         notes: [note(1, SNARE, 2400, 240)],

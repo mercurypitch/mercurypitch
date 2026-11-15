@@ -222,11 +222,20 @@ export function notePianoOpening(
   return touch ? fitStudioRollRows(opened, NOTE_TOUCH_ROW_HEIGHT) : opened
 }
 
-/** A kit's roll as it opens or is fitted again: on a touch screen, rows of 32 px at the least among the kit's rows up to `top`. */
+/**
+ * A kit's roll as it opens or is fitted again: on a touch screen, rows of
+ * 32 px at the least among the kit's rows up to `top`, from its lowest row
+ * shown up. A kit that does not fit loses its top rows, its cymbals, before
+ * its kick and its snare.
+ */
 export function noteKitOpening(
   opened: RollViewport,
   touch: boolean,
   top: number,
 ): RollViewport {
-  return touch ? fitStudioRollRows(opened, KIT_TOUCH_ROW_HEIGHT, top) : opened
+  if (!touch) return opened
+  const fitted = fitStudioRollRows(opened, KIT_TOUCH_ROW_HEIGHT, top)
+  if (fitted === opened) return opened
+  const span = fitted.maxMidi - fitted.minMidi
+  return { ...fitted, minMidi: opened.minMidi, maxMidi: opened.minMidi + span }
 }

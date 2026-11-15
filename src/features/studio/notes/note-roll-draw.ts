@@ -20,7 +20,7 @@
 import { rowHeight } from '@/lib/roll-geometry'
 import { studioRollRow } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioNote } from '@/lib/studio/model/types'
-import { kitHitSquare } from './kit-hit'
+import { kitHitSquare, kitNextStart, kitRowStarts } from './kit-hit'
 import { studioNoteName } from './note-names'
 import { drawRollDividers, drawRollGrid, drawRollKeys, drawRollRuler, drawRollStick, drawRollVelocities, rollStickHead, } from './note-roll-frame'
 import type { RollContext, StudioRollDraft, StudioRollInput, StudioRollRect, } from './note-roll-geometry'
@@ -42,7 +42,33 @@ export { studioRollRegions } from './note-roll-geometry'
 const LABEL_WIDTH = 30
 const LABEL_HEIGHT = 11
 
-/** A kit's hit: a square at its start sized to its row (kit-hit.ts); null outside the view. */
+/** Each kit row's hits' starts, worked out once a draw: the drafts in place of the notes they stand in for. */
+const KIT_STARTS = new WeakMap<
+  StudioRollInput,
+  ReadonlyMap<number, readonly number[]>
+>()
+
+function kitStarts(
+  input: StudioRollInput,
+): ReadonlyMap<number, readonly number[]> {
+  const known = KIT_STARTS.get(input)
+  if (known !== undefined) return known
+  const drafted = new Set(input.drafts.map((draft) => draft.id))
+  const hits = [
+    ...input.notes.filter((each) => !drafted.has(each.id)),
+    ...input.drafts,
+  ]
+  const starts = kitRowStarts(
+    hits.flatMap((hit) => {
+      const row = studioRollRow(input.rows, hit.pitch)
+      return row === null ? [] : [{ row, start: hit.startTick }]
+    }),
+  )
+  KIT_STARTS.set(input, starts)
+  return starts
+}
+
+/** A kit's hit: a square at its start sized to its row, short of the next hit on it (kit-hit.ts); null outside the view. */
 function kitHitBox(
   input: StudioRollInput,
   row: number,
@@ -54,11 +80,12 @@ function kitHitBox(
   const lead =
     (height / Math.max(1, viewport.width)) * (viewport.end - viewport.start)
   if (startTick > viewport.end || startTick < viewport.start - lead) return null
+  const next = kitNextStart(kitStarts(input), row, startTick)
   return kitHitSquare(
     tickX(input, startTick),
     rowTop(input, row),
     height,
-    viewport,
+    next === Infinity ? Infinity : tickX(input, next),
   )
 }
 
