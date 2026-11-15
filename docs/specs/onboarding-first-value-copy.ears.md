@@ -110,7 +110,7 @@ you. Verified by `FVC-6`.
 ### REQ-FVC-007 — Lines lead with the thing, not the verb
 
 **Ubiquitous:** Every room line shall open with a noun phrase ("A library of
-eighteen short drills…", "The live singing stage: …") rather than an
+nineteen short drills…", "The live singing stage: …") rather than an
 instruction, so the card answers "what is this?" before "what do I do?".
 Verified by `FVC-7`.
 

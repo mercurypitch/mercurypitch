@@ -858,7 +858,7 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 
 | Lesson | Opens today                                                           | Waits for                                                                                                           |
 | ------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| 15     | Compose, Sheet Music view (`/?lesson=15#/compose`), a sandbox         | Note-reading drill (item 9, code)                                                                                   |
+| 15     | Compose, Sheet Music view (`/?lesson=15#/compose`), a sandbox         | Its card's link to Read the Note, once the drill has a slug (item 9 shipped on 15 November 2026)                    |
 | 16     | Sight-Singing, with its limits said                                   | Fixed phrases (item 10a, data); hear do, bass clef, key signature, names off, octave-folded (item 10b to 10f, code) |
 | 17     | Ear Lab: The Chart, Pulse                                             | `ear-drill` and its subset (item 12, code then data)                                                                |
 | 18     | Sight-Singing (pitch only), The Chart                                 | Sight-singing in time (item 11, code); a sheet-view address (item 20, code)                                         |
@@ -879,8 +879,17 @@ and First Light does not step aside. Item 21 fixes it.
 
 ### 5.2 What needs building
 
-9. **A note-reading drill** (code with tests): a note on the treble or bass staff, up to two ledger
-   lines, answered on a keyboard or by letter; clef chosen by the singer's range. Lessons 15 and 21.
+9. **A note-reading drill: shipped on 15 November 2026.** Read the Note
+   (`src/features/exercises/note-reading/`) writes a note on the treble or the bass staff, or on
+   either by turns, and takes its letter from seven buttons, from a piano's seven white keys or
+   from the keyboard. A voice whose range starts below C3 opens on the bass clef (`clefForRange`,
+   `NoteReadingExercise.tsx`), and the setup screen offers the other clef and both. The level sets
+   how far the notes go: the staff's own nine places up to level 5, one ledger line each way to
+   level 7 and two from level 8 (`spanFor`, `note-reading-rounds.ts`). After a miss Merc names the
+   note and says where it sits, in Lesson 15's words for the staff
+   (`src/features/lessons/kit/staff-places.ts`). It opens no microphone. It writes naturals only,
+   with no key signature and no accidental, which Lesson 21 would want of it. Lessons 15 and 21,
+   whose cards do not link it yet: it has no slug yet.
 10. **Sight-Singing for the lessons.** (a) Fixed phrases by data slug: data, since a launch's `notes`
     already replace the random round when there are two or more
     (`src/features/exercises/sight-singing/SightSingingExercise.tsx:151-195`). The rest is code with
