@@ -1,5 +1,6 @@
 import type { Accessor } from 'solid-js'
-import { Show } from 'solid-js'
+import { lazy, Show, Suspense } from 'solid-js'
+import { Dynamic } from 'solid-js/web'
 import { IconChevronRight } from '@/components/exercise-icons'
 import { useEngines } from '@/contexts/EngineContext'
 import ArpeggioJumperExercise from '@/features/exercises/arpeggio-jumper/ArpeggioJumperExercise'
@@ -13,6 +14,7 @@ import LongNoteExercise from '@/features/exercises/long-note/LongNoteExercise'
 import MirrorMelodyExercise from '@/features/exercises/mirror-melody/MirrorMelodyExercise'
 import PitchHoldExercise from '@/features/exercises/pitch-hold/PitchHoldExercise'
 import PitchPursuitExercise from '@/features/exercises/pitch-pursuit/PitchPursuitExercise'
+import { isWebRoom } from '@/features/exercises/rooms/web-room-ids'
 import RoutineRunnerExercise from '@/features/exercises/routine-runner/RoutineRunnerExercise'
 import ScaleRunnerExercise from '@/features/exercises/scale-runner/ScaleRunnerExercise'
 import SightSingingExercise from '@/features/exercises/sight-singing/SightSingingExercise'
@@ -23,7 +25,18 @@ import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import VibratoExercise from '@/features/exercises/vibrato/VibratoExercise'
 import WarmupExercise from '@/features/exercises/warmup/WarmupExercise'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
+import { WEB_ROOMS } from '@/lib/native-build'
 import styles from './ExercisesPage.module.css'
+
+/**
+ * The web's frame for an exercise room, in the web build alone. Behind the
+ * constant and lazy, so a native build carries neither the frame nor a room
+ * through this page (web-rooms-fold.test.ts); the native app opens its
+ * rooms from the Sing screen.
+ */
+const WebRoomHost = WEB_ROOMS
+  ? lazy(() => import('@/features/exercises/rooms/WebRoomHost'))
+  : null
 
 interface ExercisesPageProps {
   /** The app's single pitch-frame stream. Only the warm-up needs it — it
@@ -43,6 +56,11 @@ interface ExercisesPageProps {
 /** Exercises tab (TAB_EXERCISES): the menu plus the selected exercise. */
 export function ExercisesPage(props: ExercisesPageProps) {
   const { audioEngine, practiceEngine } = useEngines()
+  /** The room to open, when the selected exercise is one of the web's. */
+  const room = () => {
+    const selected = props.selectedExercise()
+    return isWebRoom(selected) ? selected : null
+  }
 
   return (
     <div id="exercises-panel">
@@ -74,6 +92,23 @@ export function ExercisesPage(props: ExercisesPageProps) {
           />
         }
       >
+        <Show when={WebRoomHost}>
+          {(Host) => (
+            <Show when={room()}>
+              {(id) => (
+                <Suspense
+                  fallback={
+                    <p class={styles.roomOpening} role="status">
+                      Opening the room
+                    </p>
+                  }
+                >
+                  <Dynamic component={Host()} id={id()} onBack={props.onBack} />
+                </Suspense>
+              )}
+            </Show>
+          )}
+        </Show>
         <Show when={props.selectedExercise() === 'warmup'}>
           <WarmupExercise
             audioEngine={audioEngine}

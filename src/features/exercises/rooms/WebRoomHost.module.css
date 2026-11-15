@@ -1,0 +1,146 @@
+/* The web's frame round an exercise room: the whole window, over the app's
+   own bars, with a bar of its own over the room's art. The native shell's
+   pushed screen is the model (apps/mercurypitch/src/shell/shell.css,
+   .mp-pushed--bleed); the rooms read the same two lengths from here that
+   they read from it there. */
+.host {
+  /* The bar's own height: its padding round the 44 px Back button. A room
+     pads its world by these, so nothing of its own sits under the bar or
+     under a phone's home indicator. */
+  --pushed-top: calc(env(safe-area-inset-top, 0px) + 56px);
+  --pushed-bottom: env(safe-area-inset-bottom, 0px);
+  /* The rooms' words are set in the app's own face. */
+  --font-body:
+    var(--app-font, 'Inter'), -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, Helvetica, Arial, sans-serif;
+
+  position: fixed;
+  inset: 0;
+  /* Over the app's header, its tab bar and its sidebar: a room is the whole
+     screen while it is open. */
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  background: #050816;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+}
+
+.bar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: calc(env(safe-area-inset-top, 0px) + 4px)
+    max(12px, env(safe-area-inset-right, 0px)) 8px
+    max(12px, env(safe-area-inset-left, 0px));
+  /* Only its controls take clicks: the rest of the bar is the room's art. */
+  pointer-events: none;
+}
+
+.back {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 22%, transparent);
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--bg-primary) 62%, transparent);
+  color: var(--text-primary);
+  cursor: pointer;
+  pointer-events: auto;
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
+.back:hover {
+  background: color-mix(in srgb, var(--bg-primary) 82%, transparent);
+}
+
+.back:focus-visible,
+.title:focus-visible,
+.end button:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.back svg {
+  width: 22px;
+  height: 22px;
+}
+
+/* A soft scrim behind the word alone, so the room's sky stays open
+   everywhere else. */
+.title {
+  min-width: 0;
+  margin: 0 0 0 -6px;
+  padding: 6px 12px;
+  overflow-x: clip;
+  border-radius: 999px;
+  background: radial-gradient(
+    closest-side,
+    color-mix(in srgb, var(--bg-primary) 60%, transparent),
+    transparent
+  );
+  color: var(--text-primary);
+  font: 600 17px/1.2 var(--font-body);
+  text-overflow: ellipsis;
+  text-shadow: 0 1px 6px color-mix(in srgb, var(--bg-primary) 70%, transparent);
+  white-space: nowrap;
+  pointer-events: auto;
+}
+
+/* The bar's right side, which the room fills: its level pill and its "?"
+   (RoomBarEnd in the room kit). Solid's Portal wraps what it draws here in a
+   div of its own, which takes no box, so the controls are the slot's own
+   items. */
+.end {
+  flex: none;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-left: auto;
+  pointer-events: none;
+}
+
+.end > * {
+  display: contents;
+}
+
+.end:empty {
+  display: none;
+}
+
+.end button {
+  pointer-events: auto;
+}
+
+.body {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* While a room's code and art arrive. */
+.loading {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  color: var(--text-secondary);
+  font: 500 15px/1.4 var(--font-body);
+}
+
+/* The page under the room does not scroll while it is open. */
+:global(html.web-room-open),
+:global(html.web-room-open body) {
+  overflow: hidden;
+}

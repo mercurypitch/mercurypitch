@@ -6,9 +6,10 @@
 
 import { describe, expect, it } from 'vitest'
 import { droneIntervalLabel } from '@/features/exercises/drone-intonation/use-drone-intonation-controller'
+import { isWebRoom } from '@/features/exercises/rooms/web-room-ids'
 import { SCALE_RUNNER_SCALES } from '@/features/exercises/scale-runner/scale-runner-scales'
 import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
-import { EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
+import { EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
 import { difficultyLabel } from '@/features/practice-intelligence/adaptive-difficulty'
 import { clearLaunchOverride, launchIntervals, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
@@ -172,6 +173,19 @@ describe('EXERCISE_SLUGS', () => {
     expect(starts.filter((s) => !s.fits || !s.unfolded)).toEqual([])
     // The mezzo-soprano's two fitting octaves tie; she gets the lower.
     expect(starts.find((s) => s.preset === 'mezzo-soprano')?.start).toBe('A3')
+  })
+
+  it("opens the Harmony room, one of the web's, for harmony-line", () => {
+    const launch = EXERCISE_SLUGS['harmony-line']
+
+    expect(launch).toEqual({
+      kind: 'exercise',
+      exercise: EXERCISE_HARMONY_LAKE,
+    })
+    // A slug for a room the web does not open would land on a bare panel.
+    expect(isWebRoom(launch.kind === 'exercise' ? launch.exercise : null)).toBe(
+      true,
+    )
   })
 
   it('keys are lowercase kebab-case', () => {

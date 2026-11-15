@@ -1,0 +1,169 @@
+/* The rooms at the top of the Exercises tab: a card a room, its picture
+   over its words. Two across on a phone, as many as fit on a wider screen. */
+.rooms {
+  margin: 4px 0 20px;
+}
+
+.head {
+  margin: 0 0 12px;
+}
+
+.title {
+  margin: 0;
+  color: var(--text-primary);
+  font-size: 1.05rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.lead {
+  margin: 4px 0 0;
+  color: var(--text-secondary);
+  font-size: 0.875rem;
+  line-height: 1.45;
+}
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(min(100%, 210px), 1fr));
+  gap: 12px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.item {
+  display: flex;
+  min-width: 0;
+}
+
+.card {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  min-width: 0;
+  padding: 0;
+  overflow: hidden;
+  border: 1px solid var(--border-subtle, var(--border));
+  border-radius: 14px;
+  background: var(--bg-card);
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition:
+    border-color 0.16s ease,
+    transform 0.16s ease,
+    box-shadow 0.16s ease;
+}
+
+.card:hover {
+  border-color: var(--accent);
+  box-shadow: 0 8px 24px rgb(0 0 0 / 22%);
+  transform: translateY(-2px);
+}
+
+.card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+.card:active {
+  transform: translateY(0);
+}
+
+/* The picture is the room's own night, in either app theme. */
+.art {
+  display: block;
+  aspect-ratio: 16 / 10;
+  overflow: hidden;
+  background: #070f25;
+}
+
+.art img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.4s ease;
+}
+
+.card:hover .art img {
+  transform: scale(1.04);
+}
+
+.text {
+  display: flex;
+  flex: 1 1 auto;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px 12px;
+}
+
+.name {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 0.975rem;
+  font-weight: 650;
+  line-height: 1.25;
+}
+
+.glyph {
+  display: inline-flex;
+  flex: none;
+  width: 20px;
+  height: 20px;
+  color: var(--accent);
+}
+
+.glyph svg {
+  width: 100%;
+  height: 100%;
+}
+
+.line {
+  color: var(--text-secondary);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+}
+
+.meta {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  color: var(--text-secondary);
+  font-size: 0.75rem;
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.meta svg {
+  flex: none;
+  width: 14px;
+  height: 14px;
+}
+
+@media (max-width: 480px) {
+  .cards {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+
+  .text {
+    padding: 8px 10px 10px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .art img {
+    transition: none;
+  }
+
+  .card:hover,
+  .card:hover .art img {
+    transform: none;
+  }
+}

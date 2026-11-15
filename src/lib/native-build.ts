@@ -68,6 +68,20 @@ export const KARAOKE_IMPORT: boolean =
 export const PREMIUM_EXERCISES: boolean = KARAOKE_IMPORT
 
 /**
+ * Whether this build opens the exercise rooms from the web's Exercises tab:
+ * Long note, Echo and the others, with Merc and his voice, free. On in the
+ * web build alone (owner, 15 Nov 2026: the web's exercises are to be as good
+ * as the native app's, with nothing held back for it). The native app opens
+ * the rooms its own way, from the Sing screen, behind `PREMIUM_EXERCISES`;
+ * this constant folds to false there, and the web's way in goes with it, so
+ * a store build still carries no room (web-rooms-fold.test.ts). False under
+ * vitest, like the constants above: a test that needs the web's answer mocks
+ * this module.
+ */
+export const WEB_ROOMS: boolean =
+  typeof __NATIVE_BUILD__ !== 'undefined' && !__NATIVE_BUILD__
+
+/**
  * Whether the premium rooms hold back once their free taste is used: so
  * many finished runs each (src/lib/free-taste.ts), then the Cloud offer in
  * the room's place, for a singer without the subscription. Off until the V1
