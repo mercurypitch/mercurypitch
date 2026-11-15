@@ -14,6 +14,8 @@ import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_SCALE_RUNNER, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
+import type { ScaleRunDirection, ScaleRunnerScale } from './scale-runner-scales'
+import { SCALE_RUNNER_SCALES, scaleRunnerLaunchScale, scaleRunnerScaleLabel, scaleRunNotes, } from './scale-runner-scales'
 import { useScaleRunnerController } from './use-scale-runner-controller'
 
 interface ScaleRunnerExerciseProps {
@@ -22,15 +24,6 @@ interface ScaleRunnerExerciseProps {
   onBack: () => void
   autoStart?: boolean
 }
-
-type ScaleType = 'major' | 'minor' | 'pentatonic' | 'chromatic'
-
-const SCALE_TYPES: { value: ScaleType; label: string }[] = [
-  { value: 'major', label: 'Major' },
-  { value: 'minor', label: 'Minor' },
-  { value: 'pentatonic', label: 'Pentatonic' },
-  { value: 'chromatic', label: 'Chromatic' },
-]
 
 const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
   const [startNote, setStartNote] = createSignal(
@@ -49,8 +42,11 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
       )
     }),
   )
-  const [scaleType, setScaleType] = createSignal<ScaleType>('major')
-  const [direction, setDirection] = createSignal<'up' | 'down'>('up')
+  // A lesson's slug can ask for its own scale; the picker stays free after.
+  const [scaleType, setScaleType] = createSignal<ScaleRunnerScale>(
+    untrack(() => scaleRunnerLaunchScale() ?? 'major'),
+  )
+  const [direction, setDirection] = createSignal<ScaleRunDirection>('up')
   const audioEngine = untrack(() => props.audioEngine)
 
   const practiceEngine = untrack(() => props.practiceEngine)
@@ -97,6 +93,11 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
     }
   })
 
+  // The run the setup screen is about to start, counted from the choices
+  // themselves: the metrics hold a length only once a run has begun.
+  const idleNoteCount = () =>
+    scaleRunNotes(noteToMidi(startNote()), scaleType(), direction()).length
+
   const phase = () => base.state().metrics.phase ?? 0
   const currentMidi = () => base.state().metrics.currentMidi ?? 0
   const noteIndex = () => base.state().metrics.noteIndex ?? 0
@@ -133,7 +134,8 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
             by note.
           </p>
           <span class="idle-hint">
-            {scaleLength() || 8} notes · {scaleType()} · {direction()}
+            {idleNoteCount()} notes · {scaleRunnerScaleLabel(scaleType())} ·{' '}
+            {direction()}
           </span>
         </div>
       }
@@ -149,9 +151,11 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
             <span>Scale</span>
             <select
               value={scaleType()}
-              onChange={(e) => setScaleType(e.currentTarget.value as ScaleType)}
+              onChange={(e) =>
+                setScaleType(e.currentTarget.value as ScaleRunnerScale)
+              }
             >
-              <For each={SCALE_TYPES}>
+              <For each={SCALE_RUNNER_SCALES}>
                 {(s) => <option value={s.value}>{s.label}</option>}
               </For>
             </select>
@@ -161,7 +165,7 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
             <select
               value={direction()}
               onChange={(e) =>
-                setDirection(e.currentTarget.value as 'up' | 'down')
+                setDirection(e.currentTarget.value as ScaleRunDirection)
               }
             >
               <option value="up">Ascending</option>

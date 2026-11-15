@@ -178,6 +178,10 @@ export interface ExerciseConfig {
    *  (e.g. `[5, 7]`, a fourth and a fifth): this launch's own set in place
    *  of the exercise's pool. Read it through `launchIntervals`. */
   intervals?: number[]
+  /** Scale to open a scale-driven exercise on, by that exercise's own name
+   *  for it (Scale Runner's `harmonic-minor`). Read it through
+   *  `launchScale`; the exercise checks the name against its own list. */
+  scale?: string
   /** Reviewed guided-practice prescription for this one launch. */
   guidedPractice?: GuidedPracticeLaunchConfig
 }

@@ -446,14 +446,26 @@ export function melodyIndexAtBeat(melody: MelodyItem[], beat: number): number {
   return -1
 }
 
-/** Get scale degrees for a simplified scale type name */
+/** Get scale degrees for a simplified scale type name: `minor` is the
+ *  natural minor and `pentatonic` the major pentatonic, and the rest keep
+ *  the names their definitions have. */
 export function getScaleDegrees(
-  type: 'major' | 'minor' | 'pentatonic' | 'chromatic',
+  type:
+    | 'major'
+    | 'minor'
+    | 'harmonic-minor'
+    | 'melodic-minor'
+    | 'pentatonic'
+    | 'pentatonic-minor'
+    | 'chromatic',
 ): number[] {
-  const map: Record<string, string> = {
+  const map: Record<typeof type, string> = {
     major: 'major',
     minor: 'natural-minor',
+    'harmonic-minor': 'harmonic-minor',
+    'melodic-minor': 'melodic-minor',
     pentatonic: 'pentatonic-major',
+    'pentatonic-minor': 'pentatonic-minor',
     chromatic: 'chromatic',
   }
   return SCALE_DEFINITIONS[map[type]]?.degrees ?? MAJOR_SCALE_INTERVALS

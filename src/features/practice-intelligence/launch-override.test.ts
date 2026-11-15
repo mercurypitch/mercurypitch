@@ -4,8 +4,8 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import type { GuidedPracticeLaunchConfig } from '@/features/exercises/types'
-import { EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, } from '@/features/exercises/types'
-import { clearLaunchOverride, launchGuidedPractice, launchIntervals, setLaunchOverride, } from './launch-override'
+import { EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
+import { clearLaunchOverride, launchGuidedPractice, launchIntervals, launchScale, setLaunchOverride, } from './launch-override'
 
 const GUIDED_PRACTICE: GuidedPracticeLaunchConfig = {
   assessmentRunId: 'run-1',
@@ -111,5 +111,40 @@ describe('intervals launch override', () => {
     const intervals = launchIntervals(EXERCISE_INTERVAL_TRAINER)
 
     expect(intervals).toBeUndefined()
+  })
+})
+
+describe('scale launch override', () => {
+  it('carries the scale only to the exercise it was launched for', () => {
+    setLaunchOverride(EXERCISE_SCALE_RUNNER, {
+      type: EXERCISE_SCALE_RUNNER,
+      scale: 'harmonic-minor',
+    })
+
+    const forRunner = launchScale(EXERCISE_SCALE_RUNNER)
+    const forOther = launchScale(EXERCISE_INTERVAL_TRAINER)
+
+    expect(forRunner).toBe('harmonic-minor')
+    expect(forOther).toBeUndefined()
+  })
+
+  it('clears the scale with the rest of the one-shot launch', () => {
+    setLaunchOverride(EXERCISE_SCALE_RUNNER, {
+      type: EXERCISE_SCALE_RUNNER,
+      scale: 'harmonic-minor',
+    })
+
+    clearLaunchOverride()
+
+    expect(launchScale(EXERCISE_SCALE_RUNNER)).toBeUndefined()
+  })
+
+  it('reads no scale from a launch that brought none', () => {
+    setLaunchOverride(EXERCISE_SCALE_RUNNER, {
+      type: EXERCISE_SCALE_RUNNER,
+      difficulty: 8,
+    })
+
+    expect(launchScale(EXERCISE_SCALE_RUNNER)).toBeUndefined()
   })
 })
