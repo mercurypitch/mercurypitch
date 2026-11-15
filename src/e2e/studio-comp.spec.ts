@@ -1,4 +1,4 @@
-// Studio comping — a loop take's passes comped by a mouse swipe, by keys and by a phone's taps: the clip plays the comp, and Export renders it.
+// Studio comping — a loop take's passes comped by a mouse swipe, by keys and by a phone's taps: the clip plays the comp, and Export renders it; two lanes recorded in one loop each comp their own take, and a take holds comping until it is kept.
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
@@ -227,11 +227,32 @@ async function takeClip(page: Page): Promise<StudioClip> {
   return takes[0]
 }
 
+/** A clip of the saved song, by its id. */
+async function savedClip(page: Page, id: string): Promise<StudioClip> {
+  const clip = (await readStudioProject(page)).clips.find(
+    (item) => item.id === id,
+  )
+  expect(clip).toBeDefined()
+  return clip!
+}
+
 /**
  * A loop take of three whole passes over the Phrase clip's four seconds, on
  * a lane of its own, the Phrase then removed so the take sings alone.
  */
 async function recordLoop(page: Page): Promise<StudioClip> {
+  const [clip] = await recordLoops(page, ['Lane 2'])
+  return clip
+}
+
+/**
+ * recordLoop on new lanes named `lanes`, armed together and recorded from
+ * one press of R: a loop take on each, in the order given.
+ */
+async function recordLoops(
+  page: Page,
+  lanes: readonly string[],
+): Promise<StudioClip[]> {
   await captureStudioOutput(page)
   await openArrangement(page)
   const studio = studioRegion(page)
@@ -251,7 +272,12 @@ async function recordLoop(page: Page): Promise<StudioClip> {
   await expect(
     studio.getByRole('slider', { name: 'Range end', exact: true }),
   ).toHaveAttribute('aria-valuetext', '0:10.000')
-  await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+  for (const lane of lanes) {
+    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await expect(
+      studio.getByRole('button', { name: `${lane} details`, exact: true }),
+    ).toBeVisible()
+  }
   const repeat = studio.getByRole('button', {
     name: 'Repeat range',
     exact: true,
@@ -259,16 +285,21 @@ async function recordLoop(page: Page): Promise<StudioClip> {
   await repeat.click()
   await expect(repeat).toHaveAttribute('aria-pressed', 'true')
 
-  // Armed from its header, the new lane records at one press of R.
+  // Armed from their headers, the new lanes record at one press of R.
   await expect(recordButton(page)).toHaveAccessibleName('Record')
-  const arm = studio.getByRole('button', {
-    name: 'Arm Lane 2 for recording',
-    exact: true,
-  })
-  await arm.click()
-  await expect(recordButton(page)).toHaveAttribute('data-phase', 'armed', {
-    timeout: 15_000,
-  })
+  const arms = lanes.map((lane) =>
+    studio.getByRole('button', {
+      name: `Arm ${lane} for recording`,
+      exact: true,
+    }),
+  )
+  for (const arm of arms) {
+    await arm.click()
+    await expect(arm).toHaveAttribute('aria-pressed', 'true')
+    await expect(recordButton(page)).toHaveAttribute('data-phase', 'armed', {
+      timeout: 15_000,
+    })
+  }
   await page.keyboard.press('r')
   await expect(recordButton(page)).toHaveAccessibleName('Stop recording', {
     timeout: 15_000,
@@ -285,8 +316,8 @@ async function recordLoop(page: Page): Promise<StudioClip> {
   await expect(
     studio.getByText('Saved in this browser', { exact: true }),
   ).toBeVisible({ timeout: 30_000 })
-  // Disarmed, the lane lets its microphone go: only the song plays from here.
-  await arm.click()
+  // Disarmed, the lanes let their microphone go: only the song plays from here.
+  for (const arm of arms) await arm.click()
   await expect(recordButton(page)).toHaveAttribute('data-phase', 'idle')
   await repeat.click()
   await expect(repeat).toHaveAttribute('aria-pressed', 'false')
@@ -297,13 +328,22 @@ async function recordLoop(page: Page): Promise<StudioClip> {
     .getByRole('button', { name: 'Delete', exact: true })
     .click()
   await expect(studioClip(page, 'Phrase')).toHaveCount(0)
-  const clip = await takeClip(page)
-  expect(clip.passes).toMatchObject({ frames: OUT - IN, count: 3 })
-  expect(clip.startFrame).toBe(IN)
-  return clip
+  const project = await readStudioProject(page)
+  const takes = lanes.map((lane) => {
+    const track = project.tracks.find((item) => item.name === lane)
+    const clips = project.clips.filter(
+      (clip) => clip.trackId === track?.id && clip.passes !== undefined,
+    )
+    expect(clips).toHaveLength(1)
+    return clips[0]
+  })
+  for (const clip of takes) {
+    expect(clip.passes).toMatchObject({ frames: OUT - IN, count: 3 })
+    expect(clip.startFrame).toBe(IN)
+  }
+  return takes
 }
 
-/** The take's clip on the timeline, by what its label says it plays. */
 /** The theme as the app's theme store sets it, once its colour transitions have run. */
 async function showTheme(page: Page, theme: 'dark' | 'light'): Promise<void> {
   await page.evaluate(async (value) => {
@@ -319,6 +359,7 @@ async function showTheme(page: Page, theme: 'dark' | 'light'): Promise<void> {
   }, theme)
 }
 
+/** The take's clip on the timeline, by what its label says it plays. */
 function takeButton(page: Page, plays: RegExp): Locator {
   return studioRegion(page).getByRole('button', { name: plays })
 }
@@ -471,6 +512,116 @@ test.describe('Studio comping', () => {
     expect(rendered.agreed / rendered.windows).toBeGreaterThan(0.97)
     expect(heard.windows).toBeGreaterThan(100)
     expect(heard.agreed / heard.windows).toBeGreaterThan(0.9)
+  })
+
+  test('two lanes recorded in one loop each comp their own take, and a take holds comping', async ({
+    page,
+  }) => {
+    test.setTimeout(300_000)
+    const [first, second] = await recordLoops(page, ['Lane 2', 'Lane 3'])
+    const studio = studioRegion(page)
+    // One press recorded both: the same passes, a clip on each lane. Both
+    // lanes heard the one fake microphone, so the import keeps their equal
+    // audio once and the clips share it: a comp is the clip's, not the audio's.
+    expect(second.passes).toEqual(first.passes)
+    expect(second.sourceInFrame).toBe(first.sourceInFrame)
+    expect(second.trackId).not.toBe(first.trackId)
+    expect(second.assetId).toBe(first.assetId)
+    const comp = studio
+      .getByRole('toolbar', { name: 'Selected clip' })
+      .getByRole('button', { name: 'Comp', exact: true })
+    const passes = async (clip: StudioClip) =>
+      ((await savedClip(page, clip.id)).comp ?? []).map((part) => part.pass)
+
+    // Lane 2 plays pass 1 over its second second.
+    await takeButton(page, /^Lane 2, Take 1, pass 3 of 3, /).click()
+    await comp.click()
+    await swipe(page, passRow(page, 1), 7.1, 7.9)
+    await expect.poll(() => passes(first)).toEqual([2, 0, 2])
+    // Lane 3's Comp closes Lane 2's passes and opens its own: pass 2 over its third second.
+    await takeButton(page, /^Lane 3, Take 1, pass 3 of 3, /).click()
+    await comp.click()
+    await expect(
+      studio.getByRole('group', { name: /^Pass \d of 3/ }),
+    ).toHaveCount(3)
+    await swipe(page, passRow(page, 2), 8.1, 8.9)
+    await expect.poll(() => passes(second)).toEqual([2, 1, 2])
+    expect(await passes(first)).toEqual([2, 0, 2])
+
+    // One undo takes back Lane 3's swipe alone, and redo brings it back.
+    await studio.locator('[data-tour="studio.workspace"]').focus()
+    await page.keyboard.press('Control+z')
+    await expect.poll(() => passes(second)).toEqual([])
+    expect(await passes(first)).toEqual([2, 0, 2])
+    await page.keyboard.press('Control+Shift+z')
+    await expect.poll(() => passes(second)).toEqual([2, 1, 2])
+
+    // Each lane alone in the export sings its own comp.
+    const mute = (lane: string) =>
+      studio.getByRole('button', { name: `Mute ${lane}`, exact: true })
+    const unmute = (lane: string) =>
+      studio.getByRole('button', { name: `Unmute ${lane}`, exact: true })
+    const heard: Record<string, Agreement> = {}
+    for (const [lane, other] of [
+      ['Lane 2', 'Lane 3'],
+      ['Lane 3', 'Lane 2'],
+    ] as const) {
+      await mute(other).click()
+      await expect(unmute(other)).toBeVisible()
+      const take = lane === 'Lane 2' ? first : second
+      const clip = await savedClip(page, take.id)
+      const exported = await exportWav(page)
+      heard[lane] = agreement(clip, await takeAudio(page, clip), (frame) =>
+        toneAt(exported, frame),
+      )
+      await unmute(other).click()
+      await expect(mute(other)).toBeVisible()
+    }
+    console.log(`[studio-comp] two lanes ${JSON.stringify(heard)}`)
+    for (const reading of Object.values(heard)) {
+      expect(reading.windows).toBeGreaterThan(100)
+      expect(reading.comped).toBeGreaterThan(20)
+      expect(reading.agreed / reading.windows).toBeGreaterThan(0.97)
+    }
+
+    // A take holds comping: the passes step aside and Comp waits, then both
+    // come back. The take starts at the song's end, clear of both clips.
+    await takeButton(page, /^Lane 3, Take 1, comp of 3 passes, /).click()
+    await expect(comp).toBeEnabled()
+    await expect(comp).toHaveAttribute('aria-pressed', 'true')
+    const arm = studio.getByRole('button', {
+      name: 'Arm Lane 2 for recording',
+      exact: true,
+    })
+    await arm.click()
+    await expect(recordButton(page)).toHaveAttribute('data-phase', 'armed', {
+      timeout: 15_000,
+    })
+    await studio.locator('[data-tour="studio.workspace"]').focus()
+    await page.keyboard.press('End')
+    await page.keyboard.press('r')
+    await expect(recordButton(page)).toHaveAccessibleName('Stop recording', {
+      timeout: 15_000,
+    })
+    await expect(
+      studio.getByRole('group', { name: /^Pass \d of 3/ }),
+    ).toHaveCount(0)
+    await expect(comp).toBeDisabled()
+    await expect(comp).toHaveAttribute('title', 'Stop the take to comp')
+    await untilAudioClock(page, (await audioClock(page)) + 1)
+    await page.keyboard.press('r')
+    await expect(recordButton(page)).toHaveAccessibleName('Record', {
+      timeout: 30_000,
+    })
+    await expect(
+      studio.getByText('Saved in this browser', { exact: true }),
+    ).toBeVisible({ timeout: 30_000 })
+    await arm.click()
+    await expect(
+      studio.getByRole('group', { name: /^Pass \d of 3/ }),
+    ).toHaveCount(3)
+    expect(await passes(first)).toEqual([2, 0, 2])
+    expect(await passes(second)).toEqual([2, 1, 2])
   })
 
   test('the keys pick a stretch and Enter plays the focused pass there', async ({
