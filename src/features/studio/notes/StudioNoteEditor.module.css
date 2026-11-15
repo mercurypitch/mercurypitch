@@ -204,6 +204,20 @@
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+/* The clip's render: running, shown only once it takes a moment, or
+   failed. */
+.rendering {
+  animation: studio-note-rendering 0.2s ease-out 0.4s both;
+}
+@keyframes studio-note-rendering {
+  from {
+    opacity: 0;
+  }
+}
+.renderFailed {
+  color: var(--studio-warning);
+  font-weight: 600;
+}
 .chip {
   flex: none;
   padding: 2px 8px;
@@ -327,6 +341,9 @@
 @media (prefers-reduced-motion: reduce) {
   .editor {
     animation: none;
+  }
+  .rendering {
+    animation: studio-note-rendering 0s linear 0.4s both;
   }
   .resize::before {
     transition: none;

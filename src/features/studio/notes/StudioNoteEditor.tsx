@@ -12,8 +12,11 @@
 // the lane and the clip and holds the editing tools (StudioNoteTools.tsx);
 // the roll (StudioNoteRoll.tsx) draws the notes, and edits a piano's
 // through the engine (useStudioNoteEditing.ts). A note the editor touches
-// sounds through the lane's instrument (note-audition.ts).
-import { createMemo, createSignal, onCleanup, onMount, Show } from 'solid-js'
+// sounds through the lane's instrument (note-audition.ts); a gesture's draft
+// goes to the render service (midi/midi-render-editor.ts), so the clip
+// plays as the gesture would leave it, and the header says while the
+// clip's render runs and when it failed.
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
 import { Maximize2, Minimize2 } from '@/components/icons'
 import { isTypingTarget } from '@/lib/space-playback'
 import { studioLaneInstrument } from '@/lib/studio/instruments/resolve'
@@ -21,6 +24,8 @@ import { studioClipTickWindow, studioSongBeats } from '@/lib/studio/midi/time'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import { studioSequence } from '@/lib/studio/model/sequences'
 import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model/types'
+import type { StudioMidiRenderState } from '../midi/midi-render-editor'
+import { useStudioMidiEditor } from '../midi/midi-render-editor'
 import { studioMidiSound, studioMidiSoundWords, } from '../record/midi/studio-midi-sound'
 import { FitWidth, ZoomIn, ZoomOut } from '../studio-icons'
 import common from '../StudioPage.module.css'
@@ -60,6 +65,9 @@ const LANES_LEFT = 36 + 64
 const RESIZE_STEP = 16
 /** How long a word from the editor stays in its status line. */
 const NOTICE_MS = 5000
+/** Said when the clip's render fails: it plays its earlier audio. */
+export const NOTE_RENDER_FAILED =
+  "Studio couldn't render the new notes. The clip plays its earlier audio."
 
 export function StudioNoteEditor(props: StudioNoteEditorProps) {
   let section: HTMLElement | undefined
@@ -147,6 +155,16 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
     sound,
   })
   onCleanup(audition.dispose)
+  const renders = useStudioMidiEditor()
+  // What the clip's render is doing: idle, rendering a draft or an edit, or failed.
+  const rendering = createMemo(
+    () => renders?.renderState(props.clip.id)() ?? 'idle',
+  )
+  createEffect(
+    on(rendering, (now, before) => {
+      if (now === 'failed' && before !== 'failed') announce(NOTE_RENDER_FAILED)
+    }),
+  )
   const editor = useStudioNoteEditing({
     clip: () => props.clip,
     sequence,
@@ -161,10 +179,14 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
     clipboard: () => props.state.clipboard(),
     setClipboard: (clipboard) => props.state.setClipboard(clipboard),
     audition,
+    preview: (draft) => renders?.preview(props.clip.id, draft),
     announce,
   })
   // A piano's notes are edited here; a kit's wait for the drum editor.
   const edits = () => sound() === 'piano'
+  // The notes the tools edit: a piano's, once the clip has them.
+  const editable = () => (edits() ? sequence() : undefined)
+  const thumbNotes = () => (props.phone ? editable() : undefined)
 
   /** B switches between Select and Draw. */
   function toolKey(event: KeyboardEvent): boolean {
@@ -328,14 +350,17 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
                 )}
               </Show>
             </h2>
-            <p class={styles.sound}>{soundWords()}</p>
+            <p class={styles.sound}>
+              {soundWords()}
+              <StudioNoteRenderState state={rendering()} />
+            </p>
           </div>
         </div>
         <span class={styles.chip}>
           {sound() === 'drums' ? 'MIDI · KIT' : 'MIDI · PIANO'}
         </span>
         <div class={styles.tools} data-studio-note-tools="">
-          <Show when={edits() && sequence()}>
+          <Show when={editable()}>
             {(shown) => (
               <>
                 <StudioNoteTools
@@ -403,7 +428,7 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
           />
         )}
       </Show>
-      <Show when={props.phone && edits() && sequence()}>
+      <Show when={thumbNotes()}>
         {(shown) => (
           <div class={styles.thumbBar}>
             <StudioNoteSelectionTools
@@ -456,5 +481,21 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
         </div>
       </div>
     </section>
+  )
+}
+
+/** What the clip's render is doing, after the lane's words: running, shown once it takes a moment, or failed; nothing while idle. */
+function StudioNoteRenderState(props: { state: StudioMidiRenderState }) {
+  const failed = () => props.state === 'failed'
+  return (
+    <Show when={props.state !== 'idle'}>
+      <span
+        class={failed() ? styles.renderFailed : styles.rendering}
+        title={failed() ? NOTE_RENDER_FAILED : undefined}
+        data-studio-note-render={props.state}
+      >
+        {failed() ? " \u00b7 Couldn't render" : ' \u00b7 Rendering\u2026'}
+      </span>
+    </Show>
   )
 }

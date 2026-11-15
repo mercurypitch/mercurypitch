@@ -5,8 +5,12 @@
 // The editor, its roll and its drawing load on the first open, never with
 // the Studio or any page before it. One editor a clip: opening another
 // clip's notes mounts it again, so its view starts on that clip and its
-// focus goes back to the clip it was opened for.
-import { lazy, Show, Suspense } from 'solid-js'
+// focus goes back to the clip it was opened for. However an editor closes
+// (Done, Escape, its clip deleted, another clip's notes or Mix in its
+// place), the render service hears of it: its drafts end, and the clips it
+// edited keep their renders as their audio.
+import { createEffect, lazy, on, Show, Suspense } from 'solid-js'
+import { useStudioMidiEditor } from '../midi/midi-render-editor'
 import common from '../StudioPage.module.css'
 import type { StudioNoteEditorProps } from './StudioNoteEditor'
 
@@ -19,6 +23,16 @@ const StudioNoteEditor = lazy(() =>
 export type StudioNoteEditorHostProps = Omit<StudioNoteEditorProps, 'clip'>
 
 export function StudioNoteEditorHost(props: StudioNoteEditorHostProps) {
+  const renders = useStudioMidiEditor()
+  createEffect(
+    on(
+      () => props.state.clipId(),
+      (clipId, was) => {
+        if (was != null && clipId !== was)
+          void renders?.editorClosed().catch(() => undefined)
+      },
+    ),
+  )
   return (
     <Show when={props.state.clipId()} keyed>
       {(clipId) => (

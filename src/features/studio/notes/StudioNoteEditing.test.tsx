@@ -1,11 +1,15 @@
-// Studio note editing tests — the open editor carries its tools, each named, the selection's edits off with a word until notes are selected; B switches to Draw and back; a key's edit is one set-sequence-notes with its own fork id; the toolbar's velocity reads the selection 1 to 127 and moves it by 8; Escape clears the selection and then closes; a refused edit says so; notes copied in one opening paste in the next; and a song that cannot be edited now edits nothing.
+// Studio note editing tests — the open editor carries its tools, each named, the selection's edits off with a word until notes are selected; B switches to Draw and back; a key's edit is one set-sequence-notes with its own fork id; the toolbar's velocity reads the selection 1 to 127 and moves it by 8; Escape clears the selection and then closes; a refused edit says so; notes copied in one opening paste in the next; a song that cannot be edited now edits nothing; and the render service hears a draft until its commit, is told when the editor closes, and its render's state shows in the header.
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, } from 'vitest'
+import type { StudioNoteSet } from '@/lib/studio/midi/notes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import { studioMidiFixture } from '@/lib/studio/model/model.test-fixtures'
 import type { StudioProject } from '@/lib/studio/model/types'
+import type { StudioMidiEditorApi, StudioMidiRenderState, } from '../midi/midi-render-editor'
+import { StudioMidiEditorContext } from '../midi/midi-render-editor'
 import { createStudioNoteEditorState } from './note-editor-state'
+import { NOTE_RENDER_FAILED } from './StudioNoteEditor'
 import { StudioNoteEditorHost } from './StudioNoteEditorHost'
 
 beforeAll(async () => {
@@ -40,19 +44,28 @@ const transport = {
 }
 
 /** The fixture's song with its MIDI clip on a Keys lane: middle C (id 1, 0.8) and the E above (id 2, 0.5) in its window. */
-function renderEditor(options: { writable?: boolean; refuse?: boolean } = {}) {
+function renderEditor(
+  options: {
+    writable?: boolean
+    refuse?: boolean
+    renders?: StudioMidiEditorApi
+    /** What happened, in order: each command's type. */
+    log?: string[]
+  } = {},
+) {
   const fixture = studioMidiFixture()
   const [project] = createSignal<StudioProject>(fixture.project)
   const commands: StudioCommand[] = []
   const dispatch = vi.fn((command: StudioCommand) => {
     commands.push(command)
+    options.log?.push(command.type)
     return options.refuse !== true
   })
   let state!: ReturnType<typeof createStudioNoteEditorState>
   render(() => {
     state = createStudioNoteEditorState({ project })
     return (
-      <div>
+      <StudioMidiEditorContext.Provider value={options.renders}>
         <button type="button" data-studio-clip={fixture.clip.id}>
           Keys
         </button>
@@ -66,7 +79,7 @@ function renderEditor(options: { writable?: boolean; refuse?: boolean } = {}) {
           dispatch={dispatch}
           writable={options.writable !== false}
         />
-      </div>
+      </StudioMidiEditorContext.Provider>
     )
   })
   state.open(fixture.clip.id)
@@ -89,6 +102,25 @@ async function opened() {
 /** The notes a set-sequence-notes command sets. */
 const notesOf = (command: StudioCommand | undefined) =>
   command?.type === 'set-sequence-notes' ? command.notes : []
+
+/** The render service's editor API, faked: it logs each preview, and its render's state is a signal. */
+function fakeRenders(
+  log: string[] = [],
+  start: StudioMidiRenderState = 'idle',
+) {
+  const [render, setRender] = createSignal<StudioMidiRenderState>(start)
+  const previews: (StudioNoteSet | null)[] = []
+  const editorClosed = vi.fn(() => Promise.resolve())
+  const renders: StudioMidiEditorApi = {
+    preview(_clipId, draft) {
+      previews.push(draft)
+      log.push(draft === null ? 'draft ended' : 'draft')
+    },
+    editorClosed,
+    renderState: () => render,
+  }
+  return { renders, previews, editorClosed, setRender }
+}
 
 const press = (target: Element, key: string, extra = {}) => {
   fireEvent.keyDown(target, { key, ...extra })
@@ -236,5 +268,56 @@ describe('a song that cannot be edited now', () => {
       'title',
       'The song is busy for a moment',
     )
+  })
+})
+
+describe('the render service', () => {
+  it("hears a held arrow's draft, then its end once the commit is dispatched", async () => {
+    // Arrange: both notes selected.
+    const log: string[] = []
+    const { renders, previews } = fakeRenders(log)
+    const { commands } = renderEditor({ renders, log })
+    const region = await opened()
+    press(region, 'a', { ctrlKey: true })
+
+    // Act: Up held, then let go.
+    fireEvent.keyDown(region, { key: 'ArrowUp' })
+    fireEvent.keyUp(region, { key: 'ArrowUp' })
+
+    // Assert: middle C and the E above, a semitone up, drafted then kept.
+    expect(log).toEqual(['draft', 'set-sequence-notes', 'draft ended'])
+    expect(previews[0]?.notes.map((note) => note.pitch)).toEqual([61, 65])
+    expect(notesOf(commands[0])).toEqual(previews[0]?.notes)
+  })
+
+  it('is told when the editor closes', async () => {
+    const { renders, editorClosed } = fakeRenders()
+    renderEditor({ renders })
+    await opened()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Done' }))
+
+    await waitFor(() => expect(editorClosed).toHaveBeenCalledTimes(1))
+  })
+
+  it("has the header say while the clip's render runs, and when it failed", async () => {
+    // Arrange
+    const { renders, setRender } = fakeRenders([], 'rendering')
+    renderEditor({ renders })
+    const region = await opened()
+    const shown = () => region.querySelector('[data-studio-note-render]')
+    const running = shown()?.textContent
+
+    // Act
+    setRender('failed')
+
+    // Assert: the failure said once in the status line, and marked.
+    expect(running).toBe(' \u00b7 Rendering\u2026')
+    expect(shown()).toHaveTextContent("Couldn't render")
+    expect(region.querySelector('[data-studio-note-status]')).toHaveTextContent(
+      NOTE_RENDER_FAILED,
+    )
+    setRender('idle')
+    expect(shown()).toBeNull()
   })
 })

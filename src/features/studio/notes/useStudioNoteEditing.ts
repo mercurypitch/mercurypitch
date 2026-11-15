@@ -12,6 +12,10 @@
 // say) the editor shows its notes and edits nothing: a gesture under way
 // is let go.
 //
+// A gesture's draft goes to the render service as its notes change, so the
+// clip sounds as the gesture would leave it, and null once the gesture
+// ends: after its commit, so the committed notes keep the draft's render.
+//
 // Frames: while the engine wants them (a drag held at an edge), one runs
 // each display frame, and none otherwise. A lost focus or a hidden page
 // lets go of everything, undone; the notes or the window changing under a
@@ -19,17 +23,17 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, untrack, } from 'solid-js'
 import type { RollViewport } from '@/lib/roll-geometry'
-import type { StudioNoteClipboard } from '@/lib/studio/midi/notes'
+import type { StudioNoteClipboard, StudioNoteSet, } from '@/lib/studio/midi/notes'
 import type { StudioTickWindow } from '@/lib/studio/midi/time'
 import { studioClipTickWindow, studioSongBeats, studioSongFrameToTick, } from '@/lib/studio/midi/time'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioClip, StudioSequence } from '@/lib/studio/model/types'
 import { createNoteEditState, noteEditWantsFrames, stepNoteEditor, } from './edit-engine'
-import { noteCommitCommand, noteEditKeyInput } from './edit-host'
+import { noteCommitCommand, noteEditKeyInput, sameNoteDraft } from './edit-host'
 import type { NoteSnap } from './edit-snap'
 import type { NoteEditCommand, NoteEditContext, NoteEditEffect, NoteEditInput, NoteEditState, NoteEditTool, } from './edit-types'
 import type { NoteEditView } from './edit-view'
-import { noteEditView } from './edit-view'
+import { noteEditDraft, noteEditView } from './edit-view'
 import type { StudioNoteAudition } from './note-audition'
 
 /** What the roll lends the engine: its view, and the velocity lane's height. */
@@ -64,6 +68,8 @@ export interface StudioNoteEditingOptions {
   clipboard(): StudioNoteClipboard | null
   setClipboard(clipboard: StudioNoteClipboard | null): void
   audition?: StudioNoteAudition
+  /** The notes a gesture drafts, for the clip to sound as they would be kept; null once it ends. */
+  preview?(draft: StudioNoteSet | null): void
   /** Words for the editor's live region. */
   announce(words: string): void
   createId?(): string
@@ -79,6 +85,7 @@ export function useStudioNoteEditing(options: StudioNoteEditingOptions) {
   const [roll, setRoll] = createSignal<StudioNoteRollView | null>(null)
   const createId = options.createId ?? (() => globalThis.crypto.randomUUID())
   let frame = 0
+  let previewed: StudioNoteSet | null = null
 
   const clipWindow = createMemo(
     () => {
@@ -155,8 +162,16 @@ export function useStudioNoteEditing(options: StudioNoteEditingOptions) {
     if (step.state.clipboard !== before.clipboard)
       options.setClipboard(step.state.clipboard)
     for (const effect of step.effects) carryOut(effect)
+    previewDraft(noteEditDraft(step.state))
     queueFrame()
     return step.handled
+  }
+
+  /** A draft whose notes changed, to the render service; null once there is none. */
+  function previewDraft(draft: StudioNoteSet | null): void {
+    if (sameNoteDraft(draft, previewed)) return
+    previewed = draft
+    options.preview?.(draft)
   }
 
   /** One frame now while a drag held at an edge wants them, and none otherwise. */
@@ -195,6 +210,7 @@ export function useStudioNoteEditing(options: StudioNoteEditingOptions) {
   document.addEventListener('visibilitychange', hidden)
   onCleanup(() => {
     cancelAnimationFrame(frame)
+    previewDraft(null)
     globalThis.removeEventListener('blur', letGo)
     document.removeEventListener('visibilitychange', hidden)
   })

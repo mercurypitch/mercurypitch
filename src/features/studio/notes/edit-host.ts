@@ -16,10 +16,13 @@
 //   note.
 // - A commit becomes one `set-sequence-notes`, with an id for the clip's
 //   own copy of a shared sequence: one undo step.
+// - A draft goes to the render service as it changes (sameNoteDraft), so
+//   the clip sounds as the gesture would leave it.
 //
 // The piano opens with rows a finger can take on a touch screen, about
 // 24 px (fitStudioRollRows), and with the notes fitted to a mouse's.
 import type { RollViewport } from '@/lib/roll-geometry'
+import type { StudioNoteSet } from '@/lib/studio/midi/notes'
 import { fitStudioRollRows } from '@/lib/studio/midi/roll-rows'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioNote } from '@/lib/studio/model/types'
@@ -196,6 +199,15 @@ export function noteCommitCommand(
     nextNoteId: commit.nextNoteId,
     forkSequenceId: createId(),
   }
+}
+
+/** Whether two drafts hold the same notes: a drag that moved no note further has nothing new to render. */
+export function sameNoteDraft(
+  a: StudioNoteSet | null,
+  b: StudioNoteSet | null,
+): boolean {
+  if (a === null || b === null) return a === b
+  return a.nextNoteId === b.nextNoteId && sameNotes(a.notes, b.notes)
 }
 
 /** A piano roll as it opens: on a touch screen, rows a finger can take. */
