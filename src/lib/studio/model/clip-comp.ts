@@ -19,6 +19,13 @@
 // the comp where it splits, a trim cuts it at the new edge, and a trim back
 // out plays the edge stretch's pass on into the frames it uncovers. Choose
 // pass plays one pass whole and leaves no comp.
+//
+// Only an audio loop take is comped. A MIDI take's notes are its source
+// and its audio a render of them, and the notes heard are the ones inside
+// the clip's window (docs/plans/studio-midi.md, decisions 7 and 9). A comp
+// would play other passes' stretches of the render, notes the window does
+// not hold, so a MIDI loop take plays one pass whole: choose pass moves the
+// window, and its notes with it.
 import { studioClipOnPass, studioPassAt } from './clip-passes'
 import type { StudioClip, StudioCompSegment, StudioProject } from './types'
 import { requireValue } from './validation-values'
@@ -44,6 +51,14 @@ type LoopClip = StudioClip & {
 /** The pass a loop take's clip is counted on: the one its own source frames sit in. */
 function ownPass(clip: LoopClip): number {
   return studioPassAt(clip.passes, clip.sourceInFrame)
+}
+
+/** What a comp of a MIDI take is refused with (see the header). */
+export const STUDIO_MIDI_COMP_REFUSAL = 'A MIDI take plays one whole pass'
+
+/** Whether a clip can be comped: an audio loop take. A MIDI one plays a whole pass (see the header). */
+export function studioCanComp(clip: StudioClip): boolean {
+  return clip.passes !== undefined && clip.midi === undefined
 }
 
 /** What plays over a loop take's clip, stretch by stretch: its comp, or its own pass throughout. Null for any other clip. */
@@ -170,6 +185,7 @@ export function applyStudioCompEdit(
   const comp = studioClipComp(clip)
   const path = `clip.${clip.id}.comp`
   requireValue(comp !== null, path, 'Only a loop take can be comped')
+  requireValue(clip.midi === undefined, path, STUDIO_MIDI_COMP_REFUSAL)
   const { fromSourceFrame: from, toSourceFrame: to, pass } = edit
   requireValue(
     Number.isSafeInteger(from) &&

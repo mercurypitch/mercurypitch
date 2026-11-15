@@ -1,4 +1,4 @@
-// Studio comp lanes tests — a loop take's passes open under its lane newest on top, a swipe or Enter plays a pass over a stretch as one edit, and a take holds them.
+// Studio comp lanes tests — a loop take's passes open under its lane newest on top, a swipe or Enter plays a pass over a stretch as one edit, a take holds them, and a MIDI loop take never opens them.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -136,6 +136,15 @@ describe('Studio comp lanes', () => {
     expect(screen.queryByRole('group', { name: /^Pass/ })).toBeNull()
     setStudioTakeRunning(false)
     expect(screen.getAllByRole('group', { name: /^Pass/ })).toHaveLength(3)
+  })
+
+  it('stays shut for a MIDI loop take, which plays one whole pass', () => {
+    setup({
+      clip: { ...take, midi: { sequenceId: 'sequence', renderKey: 'key' } },
+    })
+    openStudioComp('take')
+    expect(screen.queryByRole('group', { name: /^Comp/ })).toBeNull()
+    expect(screen.queryByRole('group', { name: /^Pass/ })).toBeNull()
   })
 
   it('plays the pass swiped across over that stretch, snapped to the grid', () => {

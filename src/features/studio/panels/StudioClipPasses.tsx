@@ -1,6 +1,7 @@
-// Studio clip passes — a loop take's passes in Clip details: one played whole, or the best stretch of each picked under the lane.
+// Studio clip passes — a loop take's passes in Clip details: one played whole, or for an audio take the best stretch of each picked under the lane.
 import { Index, Show } from 'solid-js'
 import styles from '@/features/studio/StudioPage.module.css'
+import { studioCanComp } from '@/lib/studio/model/clip-comp'
 import { studioClipPass } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioClip } from '@/lib/studio/model/types'
@@ -58,23 +59,34 @@ export function StudioClipPasses(props: StudioClipPassesProps) {
           )}
         </Index>
       </ul>
-      <button
-        type="button"
-        class={styles.button}
-        data-studio-comp-toggle=""
-        aria-pressed={open()}
-        disabled={!props.writable || studioCompHeld()}
-        title={studioCompHeld() ? STUDIO_COMP_HELD_TITLE : undefined}
-        onClick={() => toggleStudioComp(props.clip.id)}
+      {/* A MIDI take is never comped (clip-comp.ts): its notes come from one pass. */}
+      <Show
+        when={studioCanComp(props.clip)}
+        fallback={
+          <p class={styles.help}>
+            A MIDI take plays one whole pass, so every note you hear comes from
+            that pass.
+          </p>
+        }
       >
-        <CompPasses size={16} />
-        {open() ? 'Close the passes' : 'Comp the passes'}
-      </button>
-      <p class={styles.help}>
-        {props.clip.comp
-          ? 'This clip plays a comp: a stretch of one pass, then another. Use whole pass plays one from start to end instead.'
-          : 'Comp stands the passes under the lane, so you can keep the best stretch of each.'}
-      </p>
+        <button
+          type="button"
+          class={styles.button}
+          data-studio-comp-toggle=""
+          aria-pressed={open()}
+          disabled={!props.writable || studioCompHeld()}
+          title={studioCompHeld() ? STUDIO_COMP_HELD_TITLE : undefined}
+          onClick={() => toggleStudioComp(props.clip.id)}
+        >
+          <CompPasses size={16} />
+          {open() ? 'Close the passes' : 'Comp the passes'}
+        </button>
+        <p class={styles.help}>
+          {props.clip.comp
+            ? 'This clip plays a comp: a stretch of one pass, then another. Use whole pass plays one from start to end instead.'
+            : 'Comp stands the passes under the lane, so you can keep the best stretch of each.'}
+        </p>
+      </Show>
     </Show>
   )
 }

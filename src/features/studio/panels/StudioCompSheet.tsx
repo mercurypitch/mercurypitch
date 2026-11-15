@@ -1,4 +1,4 @@
-// Studio comp sheet — a lane's loop takes in its details, each pass a row of the song's bars: tap one to use that pass there.
+// Studio comp sheet — a lane's audio loop takes in its details, each pass a row of the song's bars: tap one to use that pass there.
 //
 // A phone has no room for rows under its lanes (StudioCompLanes.tsx), so its
 // lane sheet stacks the passes instead, newest on top, every bar a cell big
@@ -8,6 +8,7 @@
 import type { Accessor } from 'solid-js'
 import { createMemo, For, Index, Show } from 'solid-js'
 import styles from '@/features/studio/StudioPage.module.css'
+import { studioCanComp } from '@/lib/studio/model/clip-comp'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import { studioTakeRunning } from '../record/take-running'
@@ -27,7 +28,7 @@ interface StudioCompSheetProps {
 export function StudioCompSheet(props: StudioCompSheetProps) {
   const takes = createMemo(() =>
     props.clips.filter(
-      (clip) => clip.trackId === props.trackId && clip.passes !== undefined,
+      (clip) => clip.trackId === props.trackId && studioCanComp(clip),
     ),
   )
   return (

@@ -2,10 +2,11 @@
 // or stacked as icons in the dock beside the arrangement while the desk is open. The dock has room for
 // its seven icons only (dockColumns, StudioTimeline.tsx), so Range and a loop take's pass list stay on
 // the floating bar: with the desk open, a range is drawn on the ruler instead. So does Comp, which
-// opens a loop take's passes under its lane (StudioCompLanes.tsx). The floating bar folds to icons
-// when its names would run into zoom (clip-bar-fold.ts).
+// opens an audio loop take's passes under its lane (StudioCompLanes.tsx). The floating bar folds to
+// icons when its names would run into zoom (clip-bar-fold.ts).
 import { createEffect, For, onCleanup, onMount, Show } from 'solid-js'
 import { Copy, Split, Trash2 } from '@/components/icons'
+import { studioCanComp } from '@/lib/studio/model/clip-comp'
 import { studioClipPass } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioClip } from '@/lib/studio/model/types'
@@ -184,7 +185,7 @@ export function StudioClipToolbar(props: StudioClipToolbarProps) {
           onCommand={(command) => props.onCommand(command)}
         />
       </Show>
-      <Show when={props.docked !== true && props.clip.passes}>
+      <Show when={props.docked !== true && studioCanComp(props.clip)}>
         <button
           type="button"
           class={compStyles.toggle}
