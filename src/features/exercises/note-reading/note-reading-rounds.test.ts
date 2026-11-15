@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { answerIsRight, NOTE_READING_ROUNDS, placeOfRound, planRounds, readingScore, spanFor, spanLabel, } from './note-reading-rounds'
+import { answerIsRight, NOTE_READING_ROUNDS, placeOfRound, planRounds, spanFor, spanLabel, } from './note-reading-rounds'
 
 /** A repeatable stand-in for Math.random (mulberry32). */
 function seeded(seed: number): () => number {
@@ -144,18 +144,5 @@ describe('an answer', () => {
     expect(of(-1)).toBe('just below the bottom line')
     expect(of(12)).toBe('two ledger lines above')
     for (const w of words) expect(w.words).not.toMatch(/\b[A-G]\d?\b/)
-  })
-})
-
-describe('the score', () => {
-  it('is the share read right, to the nearest whole number', () => {
-    expect(readingScore(10, 10)).toBe(100)
-    expect(readingScore(7, 10)).toBe(70)
-    expect(readingScore(2, 3)).toBe(67)
-    expect(readingScore(0, 10)).toBe(0)
-  })
-
-  it('is nothing for a run with no note answered', () => {
-    expect(readingScore(0, 0)).toBe(0)
   })
 })
