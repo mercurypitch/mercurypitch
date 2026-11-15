@@ -1,4 +1,4 @@
-// Studio note editing tests — the open editor carries its tools, each named, the selection's edits off with a word until notes are selected; B switches to Draw and back; a key's edit is one set-sequence-notes with its own fork id; the toolbar's velocity reads the selection 1 to 127 and moves it by 8; Escape clears the selection and then closes; a refused edit says so; notes copied in one opening paste in the next; a song that cannot be edited now edits nothing; and the render service hears a draft until its commit, is told when the editor closes, and its render's state shows in the header; on a drum lane the tools have no transpose, and Up moves the selection a row up the kit.
+// Studio note editing tests — the open editor carries its tools, each named, the selection's edits off with a word until notes are selected; B switches to Draw and back; a key's edit is one set-sequence-notes with its own fork id; the toolbar's velocity reads the selection 1 to 127 and moves it by 8; Escape clears the selection and then closes; a refused edit says so; notes copied in one opening paste in the next; a song that cannot be edited now edits nothing; and the render service hears a draft until its commit, is told when the editor closes, and its render's state shows in the header; on a drum lane the tools have no transpose, and Up moves the selection a row up the kit; and Undo and Redo in the header are the Studio's.
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, } from 'vitest'
@@ -9,6 +9,7 @@ import type { StudioProject } from '@/lib/studio/model/types'
 import type { StudioMidiEditorApi, StudioMidiRenderState, } from '../midi/midi-render-editor'
 import { StudioMidiEditorContext } from '../midi/midi-render-editor'
 import { createStudioNoteEditorState } from './note-editor-state'
+import type { StudioNoteHistory } from './StudioNoteEditor'
 import { NOTE_RENDER_FAILED } from './StudioNoteEditor'
 import { StudioNoteEditorHost } from './StudioNoteEditorHost'
 
@@ -76,6 +77,7 @@ function renderEditor(
     /** What happened, in order: each command's type. */
     log?: string[]
     drums?: boolean
+    history?: StudioNoteHistory
   } = {},
 ) {
   const fixture = options.drums === true ? drumFixture() : studioMidiFixture()
@@ -103,6 +105,7 @@ function renderEditor(
           transport={transport}
           dispatch={dispatch}
           writable={options.writable !== false}
+          history={options.history}
         />
       </StudioMidiEditorContext.Provider>
     )
@@ -371,5 +374,25 @@ describe('a drum lane', () => {
     press(region, 'ArrowUp')
 
     expect(notesOf(commands[0]).map((note) => note.pitch)).toEqual([38, 45])
+  })
+})
+
+describe('the history', () => {
+  it("has the Studio's Undo and Redo in the header, each off when there is nothing to take back or do again", async () => {
+    const undo = vi.fn()
+    renderEditor({
+      history: {
+        undo,
+        redo: vi.fn(),
+        canUndo: () => true,
+        canRedo: () => false,
+      },
+    })
+    await opened()
+
+    fireEvent.click(screen.getByRole('button', { name: 'Undo' }))
+
+    expect(undo).toHaveBeenCalledTimes(1)
+    expect(screen.getByRole('button', { name: 'Redo' })).toBeDisabled()
   })
 })

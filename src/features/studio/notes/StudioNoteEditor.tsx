@@ -17,7 +17,7 @@
 // plays as the gesture would leave it, and the header says while the
 // clip's render runs and when it failed.
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
-import { Maximize2, Minimize2 } from '@/components/icons'
+import { Maximize2, Minimize2, RotateCcw } from '@/components/icons'
 import { isTypingTarget } from '@/lib/space-playback'
 import { studioLaneInstrument } from '@/lib/studio/instruments/resolve'
 import { studioClipTickWindow, studioSongBeats } from '@/lib/studio/midi/time'
@@ -27,7 +27,7 @@ import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model
 import type { StudioMidiRenderState } from '../midi/midi-render-editor'
 import { useStudioMidiEditor } from '../midi/midi-render-editor'
 import { studioMidiSound, studioMidiSoundWords, } from '../record/midi/studio-midi-sound'
-import { FitWidth, ZoomIn, ZoomOut } from '../studio-icons'
+import { FitWidth, RotateCw, ZoomIn, ZoomOut } from '../studio-icons'
 import common from '../StudioPage.module.css'
 import { studioClipTakeName } from '../timeline/StudioTimelineClip'
 import { studioTrackColor, studioTrackHue } from '../timeline/track-hues'
@@ -40,6 +40,14 @@ import type { StudioNoteRollControls, StudioNoteRollTransport, } from './StudioN
 import { StudioNoteRoll } from './StudioNoteRoll'
 import { StudioNoteSelectionTools, StudioNoteTools } from './StudioNoteTools'
 import { useStudioNoteEditing } from './useStudioNoteEditing'
+
+/** The Studio's own undo and redo, for the editor's buttons: a phone's editor covers the top bar's. */
+export interface StudioNoteHistory {
+  undo(): void
+  redo(): void
+  canUndo(): boolean
+  canRedo(): boolean
+}
 
 export interface StudioNoteEditorProps {
   state: StudioNoteEditorState
@@ -54,6 +62,7 @@ export interface StudioNoteEditorProps {
   dispatch(command: StudioCommand): boolean
   /** Whether the song can be edited now. */
   writable: boolean
+  history?: StudioNoteHistory
 }
 
 /** The drawer's least height, and how much of the arrangement it takes on its own. */
@@ -386,6 +395,11 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
           </Show>
         </div>
         <div class={styles.actions}>
+          <Show when={props.history}>
+            {(history) => (
+              <HistoryButtons history={history()} writable={props.writable} />
+            )}
+          </Show>
           <Show when={!props.phone}>
             <button
               type="button"
@@ -502,5 +516,38 @@ function StudioNoteRenderState(props: { state: StudioMidiRenderState }) {
         {failed() ? " \u00b7 Couldn't render" : ' \u00b7 Rendering\u2026'}
       </span>
     </Show>
+  )
+}
+
+/** Undo and Redo, the Studio's: each edit the editor made is one step. */
+function HistoryButtons(props: {
+  history: StudioNoteHistory
+  writable: boolean
+}) {
+  return (
+    <>
+      <button
+        type="button"
+        class={common.iconButton}
+        aria-label="Undo"
+        aria-keyshortcuts="Control+Z Meta+Z"
+        title="Undo (Ctrl+Z)"
+        disabled={!props.writable || !props.history.canUndo()}
+        onClick={() => props.history.undo()}
+      >
+        <RotateCcw size={17} />
+      </button>
+      <button
+        type="button"
+        class={common.iconButton}
+        aria-label="Redo"
+        aria-keyshortcuts="Control+Shift+Z Meta+Shift+Z"
+        title="Redo (Ctrl+Shift+Z)"
+        disabled={!props.writable || !props.history.canRedo()}
+        onClick={() => props.history.redo()}
+      >
+        <RotateCw size={17} />
+      </button>
+    </>
   )
 }

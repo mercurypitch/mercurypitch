@@ -595,6 +595,12 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             transport={transport}
             dispatch={props.studio.dispatch}
             writable={writable()}
+            history={{
+              undo: () => historyAction('undo'),
+              redo: () => historyAction('redo'),
+              canUndo: () => props.studio.canUndo(),
+              canRedo: () => props.studio.canRedo(),
+            }}
           />
         </div>
         <Show when={panel() !== null && !deskOpen()}>
