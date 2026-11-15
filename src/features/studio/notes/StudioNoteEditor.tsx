@@ -59,6 +59,8 @@ export interface StudioNoteEditorProps {
 /** The drawer's least height, and how much of the arrangement it takes on its own. */
 export const STUDIO_NOTE_EDITOR_MIN_HEIGHT = 220
 const AUTO_SHARE = 0.56
+/** A tablet's drawer takes more: rows a finger can take, eight of a piano's or seven of a kit's at 1180 by 820. */
+const TABLET_SHARE = 0.7
 const AUTO_MOST = 560
 /** The ruler and one lane stay in view over a drawer at its tallest. */
 const LANES_LEFT = 36 + 64
@@ -125,7 +127,11 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
   const drawer = () => !props.phone && !props.state.expanded()
   const tallest = () =>
     Math.max(STUDIO_NOTE_EDITOR_MIN_HEIGHT, room() - LANES_LEFT)
-  const automatic = () => Math.min(AUTO_MOST, Math.round(room() * AUTO_SHARE))
+  const automatic = () =>
+    Math.min(
+      AUTO_MOST,
+      Math.round(room() * (props.tablet ? TABLET_SHARE : AUTO_SHARE)),
+    )
   const height = () => {
     const wanted = dragged() ?? props.state.height() ?? automatic()
     return Math.round(
