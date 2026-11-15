@@ -133,7 +133,7 @@ alone names a noun the visitor has no picture of (`ROOMS` in
 | Room           | Line                                                                                                               | Target          |
 | -------------- | ------------------------------------------------------------------------------------------------------------------ | --------------- |
 | **Practice**   | The live singing stage — every note you sing, drawn and scored as it happens                                       | `TAB_SINGING`   |
-| **Exercises**  | A library of nineteen short drills for range, agility, intervals and control                                       | `TAB_EXERCISES` |
+| **Exercises**  | A library of twenty short drills for range, agility, intervals and control                                         | `TAB_EXERCISES` |
 | **The Ascent** | A seven-week guided course — one themed week at a time                                                             | `TAB_PATH`      |
 | **Karaoke**    | Your own songs turned into karaoke — the vocal split out, with lyrics and scoring                                  | `/karaoke`      |
 | **Jam**        | A shared room for singing together in real time — send someone the code                                            | `TAB_JAM`       |

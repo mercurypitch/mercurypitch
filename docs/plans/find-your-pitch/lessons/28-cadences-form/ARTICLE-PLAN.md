@@ -209,9 +209,9 @@ For everyone (prerequisites Lessons 18 and 26); Lesson 14's shows once Lesson 14
 - **Linked: Ear Lab's Cadence**, `/ear-lab?lesson=28`, then tap Cadence: it names progressions
   (I–IV–V, I–V–vi–IV, ii–V–I and five more), not cadence types (R15); the card says "listen for how
   each progression ends".
-- **Waits:** a cadence-type ear drill (SEASON-2 § 5 item 19: a bank of perfect, imperfect, plagal and
-  interrupted is data, the drill or mode is code); the harmony-line drill (item 17); `?lesson=28`
-  (item 21).
+- **Waits:** the card for the cadence-type ear drill, which shipped on 15 November 2026 as Name the
+  Cadence (SEASON-2 § 5 item 19: perfect, imperfect, plagal and interrupted, named by ear) and
+  still wants a slug; the harmony-line drill (item 17); `?lesson=28` (item 21).
 
 ## Go deeper
 

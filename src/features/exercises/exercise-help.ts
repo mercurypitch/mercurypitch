@@ -6,7 +6,7 @@
 // "vibrato" mean — `summary` is the one-liner, `body` is the gentle detail.
 
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_NOTE_READING, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CADENCE, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_NOTE_READING, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
 
 export interface ExerciseHelp {
   /** One-line summary shown in the idle area and the menu card. */
@@ -248,6 +248,14 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
       'A staff is five lines and four spaces. Each line and each space holds one letter, and the clef at the left says which: the treble clef for higher notes, the bass clef for lower ones.',
       'A note appears on the staff. Tap its letter, or its key on the piano. Nothing listens here: this drill trains reading, not singing, so it opens no microphone.',
       'Miss one and Merc names it and says where it sits. Higher levels add ledger lines, the short lines that carry a note above or below the staff.',
+    ],
+  },
+  [EXERCISE_CADENCE]: {
+    summary: 'Hear a phrase end, and name its cadence.',
+    body: [
+      'A cadence is the two chords a phrase ends on. Four have names: perfect (V to I, also called authentic), plagal (IV to I, the "Amen"), imperfect (an ending on V, also called a half cadence) and interrupted (V to vi, also called deceptive).',
+      "You hear the key's own chord first, then the two chords of the ending. Tap the name. Hear it again as often as you like: nothing listens here, and nothing times you.",
+      'Miss one and Merc names it, says its two chords, and plays it once more. The first levels ask only whether a phrase sounds finished (perfect) or not (imperfect); the plagal and the interrupted cadence join as you level up.',
     ],
   },
 }

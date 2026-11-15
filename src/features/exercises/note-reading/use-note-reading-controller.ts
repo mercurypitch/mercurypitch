@@ -2,17 +2,15 @@
 // Read the Note: one run, from its first note to its result
 // ============================================================
 //
-// The one drill with no microphone, so it does not stand on
-// use-base-exercise, whose start is the microphone's. A run here is a row of
-// notes and an answer to each: this holds which note is up, what was
-// answered, the moment the answer is shown before the next note, and the
-// result the shell and the history take.
+// A quiz run (quiz/quiz-run.ts) whose rounds are notes on a staff and whose
+// answers are letters. This adds what is the drill's own: the row of notes a
+// run draws, the note's own letter beside the answer on show, how long each
+// verdict stays up, and the note sounding once it is named.
 
-import { createSignal } from 'solid-js'
-import type { ExerciseResult, ExerciseStatus } from '../types'
-import { EXERCISE_NOTE_READING, stoppedEarlyMark } from '../types'
+import { createQuizRun } from '../quiz/quiz-run'
+import { EXERCISE_NOTE_READING } from '../types'
 import type { ClefChoice, NoteReadingRound } from './note-reading-rounds'
-import { answerIsRight, planRounds, readingScore } from './note-reading-rounds'
+import { answerIsRight, planRounds } from './note-reading-rounds'
 import type { Letter } from './staff-kit'
 import { midiOf } from './staff-kit'
 
@@ -44,120 +42,42 @@ export interface NoteReadingStart {
 }
 
 export function useNoteReadingController(deps: NoteReadingDeps = {}) {
-  const now = deps.now ?? (() => performance.now())
-  const [status, setStatus] = createSignal<ExerciseStatus>('idle')
-  const [rounds, setRounds] = createSignal<readonly NoteReadingRound[]>([])
-  const [index, setIndex] = createSignal(0)
-  const [marks, setMarks] = createSignal<readonly boolean[]>([])
-  const [feedback, setFeedback] = createSignal<NoteReadingFeedback | null>(null)
-  const [result, setResult] = createSignal<ExerciseResult | null>(null)
+  const run = createQuizRun<NoteReadingRound, Letter>({
+    type: EXERCISE_NOTE_READING,
+    isRight: answerIsRight,
+    holdMs: (right) => (right ? RIGHT_MS : WRONG_MS),
+    onAnswer: (round) => deps.onNote?.(midiOf(round.note)),
+    now: deps.now,
+  })
 
-  let timer: ReturnType<typeof setTimeout> | undefined
-  let shownAt = 0
-  let answerMs: number[] = []
-
-  const round = (): NoteReadingRound | null => rounds()[index()] ?? null
-  const right = (): number => marks().filter(Boolean).length
-  const score = (): number => readingScore(right(), marks().length)
-
-  function clearTimer(): void {
-    if (timer !== undefined) clearTimeout(timer)
-    timer = undefined
-  }
-
-  function start(options: NoteReadingStart): void {
-    clearTimer()
-    setRounds(planRounds({ ...options, random: deps.random }))
-    setIndex(0)
-    setMarks([])
-    setFeedback(null)
-    setResult(null)
-    answerMs = []
-    shownAt = now()
-    setStatus('active')
-  }
-
-  /** One answer a note: a second tap while the first is on show is dropped. */
-  function answer(letter: Letter): void {
-    const current = round()
-    if (status() !== 'active' || current === null || feedback() !== null) {
-      return
+  const feedback = (): NoteReadingFeedback | null => {
+    const shown = run.feedback()
+    const round = run.round()
+    if (shown === null || round === null) return null
+    return {
+      letter: round.note.letter,
+      chosen: shown.chosen,
+      right: shown.right,
     }
-    const isRight = answerIsRight(current, letter)
-    answerMs.push(now() - shownAt)
-    setMarks((m) => [...m, isRight])
-    setFeedback({ letter: current.note.letter, chosen: letter, right: isRight })
-    deps.onNote?.(midiOf(current.note))
-    timer = setTimeout(next, isRight ? RIGHT_MS : WRONG_MS)
-  }
-
-  function next(): void {
-    timer = undefined
-    setFeedback(null)
-    if (index() + 1 >= rounds().length) {
-      finish()
-      return
-    }
-    setIndex((i) => i + 1)
-    shownAt = now()
-  }
-
-  function finish(): void {
-    clearTimer()
-    const asked = rounds().length
-    const answered = marks().length
-    const avgMs =
-      answerMs.length === 0
-        ? 0
-        : Math.round(answerMs.reduce((a, b) => a + b, 0) / answerMs.length)
-    setResult({
-      type: EXERCISE_NOTE_READING,
-      // A stopped run is scored on the notes it reached; the history files
-      // it as practice either way (`stoppedEarly`).
-      score: readingScore(right(), answered),
-      metrics: {
-        correct: right(),
-        total: asked,
-        answered,
-        avgMs,
-        ...stoppedEarlyMark(answered < asked),
-      },
-      completedAt: Date.now(),
-    })
-    setFeedback(null)
-    setStatus('complete')
-  }
-
-  /** Stop, from the shell's Stop: the run ends on the notes answered so far. */
-  function stop(): void {
-    if (status() === 'active') finish()
-  }
-
-  function reset(): void {
-    clearTimer()
-    setStatus('idle')
-    setResult(null)
-    setFeedback(null)
-    setMarks([])
-    setIndex(0)
   }
 
   return {
-    status,
+    status: run.status,
     /** The note that is up, or null outside a run. */
-    round,
+    round: run.round,
     /** The row of this run's notes. */
-    rounds,
-    index,
+    rounds: run.rounds,
+    index: run.index,
     /** Right or wrong, for each note answered so far. */
-    marks,
+    marks: run.marks,
     feedback,
-    score,
-    result,
-    start,
-    answer,
-    stop,
-    reset,
+    score: run.score,
+    result: run.result,
+    start: (options: NoteReadingStart): void =>
+      run.start(planRounds({ ...options, random: deps.random })),
+    answer: run.answer,
+    stop: run.stop,
+    reset: run.reset,
   }
 }
 

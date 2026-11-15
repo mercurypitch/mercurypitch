@@ -141,6 +141,17 @@ export function IconMic(p: IconProps): JSX.Element {
   )
 }
 
+/** Two chords and the step from one to the other: a cadence. */
+export function IconCadence(p: IconProps): JSX.Element {
+  return (
+    <svg {...iconProps(p.size ?? 24)} class={p.class} {...strokeProps}>
+      <path d="M3 7h5M3 12h5M3 17h5" />
+      <path d="M16 7h5M16 12h5M16 17h5" />
+      <path d="M10.5 12h3.5m-1.5-1.8 1.8 1.8-1.8 1.8" />
+    </svg>
+  )
+}
+
 /** A staff's five lines with a notehead on the middle one: reading. */
 export function IconStaff(p: IconProps): JSX.Element {
   return (

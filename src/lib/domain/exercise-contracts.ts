@@ -32,6 +32,11 @@ export const EXERCISE_SIGHT_SINGING = 'sight-singing' as const
  * singer does not sing: nothing listens, so a run opens no microphone.
  */
 export const EXERCISE_NOTE_READING = 'note-reading' as const
+/**
+ * Name the Cadence: a phrase's last two chords, named by ear. Like Read the
+ * Note, a drill the singer does not sing: a run opens no microphone.
+ */
+export const EXERCISE_CADENCE = 'name-the-cadence' as const
 export const EXERCISE_WARMUP = 'warmup' as const
 /**
  * The premium Long note (a lantern fills while the note holds). Its own id,
@@ -120,6 +125,7 @@ export type ExerciseType =
   | typeof EXERCISE_ROUTINE_RUNNER
   | typeof EXERCISE_SIGHT_SINGING
   | typeof EXERCISE_NOTE_READING
+  | typeof EXERCISE_CADENCE
   | typeof EXERCISE_WARMUP
   | typeof EXERCISE_LONG_NOTE_LANTERN
   | typeof EXERCISE_ECHO_STARS

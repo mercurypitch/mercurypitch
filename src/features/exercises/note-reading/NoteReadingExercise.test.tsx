@@ -73,7 +73,13 @@ describe('Read the Note', () => {
     expect(drill.say()?.textContent).toBe('Which note is this?')
     const label = drill.staff().getAttribute('aria-label') ?? ''
     expect(label).toMatch(/^Treble staff\. A note: /)
-    expect(label).not.toContain(drill.letterUp())
+    // What follows "A note:" is a place on the staff, with no letter name in
+    // it. (The words before it hold a capital A of their own, so the whole
+    // label cannot be searched for the note's letter: one run in nine, the
+    // note is an A.)
+    expect(label.replace(/^Treble staff\. A note: /, '')).not.toMatch(
+      /\b[A-G]\b/,
+    )
     // Seven answers, a keyboard's order from C.
     const answers = drill.getByRole('group', { name: 'Name the note' })
     expect(

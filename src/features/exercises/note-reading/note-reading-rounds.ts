@@ -145,7 +145,3 @@ export const answerIsRight = (
  */
 export const placeOfRound = (round: NoteReadingRound): string =>
   placeWords(round.place, round.clef)
-
-/** The share of a run's notes read right, as the score: 0 to 100. */
-export const readingScore = (right: number, asked: number): number =>
-  asked <= 0 ? 0 : Math.round((100 * right) / asked)
