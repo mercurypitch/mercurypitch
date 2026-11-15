@@ -217,6 +217,21 @@ describe('A finger on a kit', () => {
     expect([tapAt(118), tapAt(130), tapAt(140)]).toEqual([[1], [1], []])
   })
 
+  it("lets a mouse take a hit squeezed by its neighbour anywhere in its row's height about it", () => {
+    // Snares a sixteenth apart on the phone: the first's square is 8 px
+    // wide from 100 px, its target 32 px about that, from 88.5 px.
+    const host = noteHost({
+      notes: [note(1, SNARE, 2400, 240), note(2, SNARE, 2640, 240)],
+      rows: ROWS,
+      viewport: PHONE_KIT,
+    })
+    const y = rowY(SNARE, PHONE_KIT)
+
+    play(host, mouse('down', 92, y), mouse('up', 92, y))
+
+    expect(host.state.selection).toEqual([1])
+  })
+
   it('pans the rows no higher than the kit’s first row', () => {
     const host = kit({}, { ...KIT, minMidi: 0, maxMidi: 5 })
 
