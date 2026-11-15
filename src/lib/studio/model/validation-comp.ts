@@ -1,10 +1,10 @@
-// Studio comp validation — a saved comp covers its loop take's clip stretch after stretch, each on one of the take's passes.
-import { STUDIO_MAX_COMP_SEGMENTS } from './clip-comp'
+// Studio comp validation — a saved comp covers its audio loop take's clip stretch after stretch, each on one of the take's passes.
+import { STUDIO_MAX_COMP_SEGMENTS, STUDIO_MIDI_COMP_REFUSAL } from './clip-comp'
 import type { StudioClip } from './types'
 import { arrayValue, frameValue, record, requireValue, } from './validation-values'
 
 /**
- * A loop take's comp (clip-comp.ts): two or more stretches in order, the
+ * An audio loop take's comp (clip-comp.ts): two or more stretches in order, the
  * first from the clip's first source frame, each from where the one before
  * it ends, the last to the clip's end, each on a pass the take has and no
  * two neighbours on the same pass. Nothing is merged or repaired here.
@@ -16,6 +16,7 @@ export function validateClipComp(
 ): void {
   const passes = clip.passes
   requireValue(passes !== undefined, path, 'Only a loop take can be comped')
+  requireValue(clip.midi === undefined, path, STUDIO_MIDI_COMP_REFUSAL)
   const parts = arrayValue(raw, path)
   requireValue(
     parts.length >= 2 && parts.length <= STUDIO_MAX_COMP_SEGMENTS,

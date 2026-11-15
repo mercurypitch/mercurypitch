@@ -1,4 +1,4 @@
-// Studio comp panel tests — Clip details lists the passes to use whole and opens the comp, the lane sheet's bars take a tap, the clip bar's Comp waits for a take, and a comped clip draws each stretch from its pass.
+// Studio comp panel tests — Clip details lists the passes to use whole and opens the comp, the lane sheet's bars take a tap, the clip bar's Comp waits for a take, a MIDI loop take plays a whole pass with no Comp anywhere, and a comped clip draws each stretch from its pass.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
@@ -22,6 +22,12 @@ const take: StudioClip = {
   gainDb: 0,
   fades: { curve: 'linear-amplitude' },
   passes: { firstFrame: 0, frames: 2 * BAR, count: 3 },
+}
+/** The same loop take recorded on a MIDI lane: its notes beside its audio. */
+const keysTake: StudioClip = {
+  ...take,
+  id: 'keys',
+  midi: { sequenceId: 'sequence', renderKey: 'key' },
 }
 
 afterEach(() => {
@@ -87,6 +93,33 @@ describe('Clip details for a loop take', () => {
     ).toHaveLength(3)
   })
 
+  it('lists a MIDI take’s passes to use whole, with no comp, and says why', () => {
+    const command = vi.fn(() => true)
+    render(() => (
+      <StudioClipDetails
+        clip={keysTake}
+        asset={{ ...studioFixture().asset, id: 'asset-1' }}
+        writable
+        onCommand={command}
+      />
+    ))
+
+    fireEvent.click(
+      screen.getAllByRole('button', { name: 'Use whole pass' })[0],
+    )
+    expect(command).toHaveBeenCalledWith({
+      type: 'choose-pass',
+      clipId: 'keys',
+      pass: 1,
+    })
+    expect(screen.queryByRole('button', { name: /Comp/ })).toBeNull()
+    expect(
+      screen.getByText(
+        'A MIDI take plays one whole pass, so every note you hear comes from that pass.',
+      ),
+    ).toBeInTheDocument()
+  })
+
   it('has nothing to say about passes for a clip without them', () => {
     const { clip, asset } = studioFixture()
     render(() => (
@@ -148,6 +181,22 @@ describe('the lane sheet on a phone', () => {
       toSourceFrame: 6 * BAR,
       pass: 0,
     })
+  })
+
+  it('leaves out a MIDI loop take on the lane', () => {
+    render(() => (
+      <StudioCompSheet
+        trackId="lane"
+        clips={[keysTake]}
+        assets={[]}
+        tempoBpm={120}
+        writable
+        onCommand={vi.fn(() => true)}
+      />
+    ))
+
+    expect(screen.queryByRole('heading', { name: 'Comp' })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Bar/ })).toBeNull()
   })
 
   it('holds its cells while a take runs, and says why', () => {
@@ -215,6 +264,14 @@ describe("the clip bar's Comp", () => {
 
     bar({ ...take, passes: undefined })
     expect(screen.queryByRole('button', { name: 'Comp' })).toBeNull()
+  })
+
+  it('is not there for a MIDI loop take, whose pass picker stays', () => {
+    bar(keysTake)
+    expect(screen.queryByRole('button', { name: 'Comp' })).toBeNull()
+    expect(
+      screen.getByRole('combobox', { name: 'Pass this clip plays' }),
+    ).toBeInTheDocument()
   })
 })
 

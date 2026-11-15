@@ -11,6 +11,7 @@
 // instead (StudioCompSheet.tsx).
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, createUniqueId, For, on, onCleanup, Show, } from 'solid-js'
+import { studioCanComp } from '@/lib/studio/model/clip-comp'
 import { studioClipOnPass } from '@/lib/studio/model/clip-passes'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
@@ -63,7 +64,7 @@ export function StudioCompLanes(props: StudioCompLanesProps) {
     const open = clip()
     return !props.timeline.phone &&
       open?.trackId === props.trackId &&
-      open.passes !== undefined
+      studioCanComp(open)
       ? open
       : null
   }
