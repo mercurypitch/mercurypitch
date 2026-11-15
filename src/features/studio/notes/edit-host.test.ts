@@ -245,10 +245,10 @@ describe('noteKitOpening', () => {
     height: 160,
   }
 
-  it('opens a touch screen on rows of 32 px at the least, about the kit’s middle', () => {
+  it('opens a touch screen on rows of 32 px at the least, from the kick up: the cymbals go first', () => {
     expect(noteKitOpening(kit, true, 7)).toMatchObject({
-      minMidi: 2,
-      maxMidi: 6,
+      minMidi: 0,
+      maxMidi: 4,
     })
   })
 

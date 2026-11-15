@@ -13,7 +13,7 @@
 // one commit. Up and Down move a hit to the next row; an octave means
 // nothing on a kit.
 import type { RollRect } from '@/lib/roll-geometry'
-import { noteRect, rowHeight, xToTime } from '@/lib/roll-geometry'
+import { noteRect, rowHeight, timeToX, xToTime } from '@/lib/roll-geometry'
 import type { StudioNoteDraft, StudioNoteEdit, StudioNoteSet, } from '@/lib/studio/midi/notes'
 import { addStudioNote, moveStudioNotes, studioNotesInRange, transposeStudioNotes, } from '@/lib/studio/midi/notes'
 import type { StudioRollNote } from '@/lib/studio/midi/roll'
@@ -25,7 +25,7 @@ import { NOTE_POINTER_PROFILES, pickRollNote } from './edit-pick'
 import type { NoteGridLines } from './edit-snap'
 import { snapFloor } from './edit-snap'
 import type { NoteDraft, NoteEditContext, NoteSingleGesture, } from './edit-types'
-import { kitHitSquare, kitHitTarget } from './kit-hit'
+import { kitHitSquare, kitHitTarget, kitNextStart, kitRowStarts, } from './kit-hit'
 
 type RowsContext = Pick<NoteEditContext, 'rows'>
 type KitRows = Extract<StudioRollRows, { kind: 'drums' }>
@@ -72,27 +72,43 @@ export function editKeyAt(ctx: RowsContext, position: number): number | null {
   return kit === null ? row : studioRollRowPitch(kit, row)
 }
 
-/** By the clip's notes on the keyboard: the same notes on a kit's rows, for those rows. */
-const KIT_NOTES = new WeakMap<
-  readonly StudioRollNote[],
-  { readonly rows: KitRows; readonly notes: readonly StudioRollNote[] }
->()
+/** The clip's hits on a kit's rows, and each row's starts, for those rows. */
+interface KitNotes {
+  readonly rows: KitRows
+  readonly notes: readonly StudioRollNote[]
+  readonly starts: ReadonlyMap<number, readonly number[]>
+}
+
+/** By the clip's notes on the keyboard. */
+const KIT_NOTES = new WeakMap<readonly StudioRollNote[], KitNotes>()
+
+function kitNotes(
+  ctx: Pick<NoteEditContext, 'sequence' | 'window'>,
+  kit: KitRows,
+): KitNotes {
+  const played = studioWindowRollNotes(ctx.sequence, ctx.window)
+  const known = KIT_NOTES.get(played)
+  if (known?.rows === kit) return known
+  const notes = played.flatMap((note) => {
+    const row = studioRollRow(kit, note.midi)
+    return row === null ? [] : [{ ...note, midi: row }]
+  })
+  const starts = kitRowStarts(
+    notes.map((note) => ({ row: note.midi, start: note.start })),
+  )
+  const found = { rows: kit, notes, starts }
+  KIT_NOTES.set(played, found)
+  return found
+}
 
 /** The notes the clip plays as the roll's rows hold them: on a kit, each on its key's row. */
 export function editRollNotes(
   ctx: Pick<NoteEditContext, 'sequence' | 'window' | 'rows'>,
 ): readonly StudioRollNote[] {
-  const played = studioWindowRollNotes(ctx.sequence, ctx.window)
   const kit = kitRows(ctx)
-  if (kit === null) return played
-  const known = KIT_NOTES.get(played)
-  if (known?.rows === kit) return known.notes
-  const notes = played.flatMap((note) => {
-    const row = studioRollRow(kit, note.midi)
-    return row === null ? [] : [{ ...note, midi: row }]
-  })
-  KIT_NOTES.set(played, { rows: kit, notes })
-  return notes
+  return kit === null
+    ? studioWindowRollNotes(ctx.sequence, ctx.window)
+    : kitNotes(ctx, kit).notes
 }
 
 /** How far a press is from `rect`, 0 inside it. */
@@ -103,9 +119,19 @@ function distanceTo(rect: RollRect, x: number, y: number): number {
 }
 
 /** How a hit ranks for a press, lower first: inside its target by how near its square's middle is, then within reach by how far out; past reach, never. */
-function hitRank(note: StudioRollNote, input: NotePickInput): number {
+function hitRank(
+  note: StudioRollNote,
+  input: NotePickInput,
+  starts: ReadonlyMap<number, readonly number[]>,
+): number {
   const row = noteRect(note, input.viewport)
-  const square = kitHitSquare(row.x, row.y, row.height, input.viewport)
+  const next = kitNextStart(starts, note.midi, note.start)
+  const square = kitHitSquare(
+    row.x,
+    row.y,
+    row.height,
+    next === Infinity ? Infinity : timeToX(next, input.viewport),
+  )
   const outside = distanceTo(
     kitHitTarget(square, row.y, row.height),
     input.x,
@@ -119,12 +145,15 @@ function hitRank(note: StudioRollNote, input: NotePickInput): number {
   )
 }
 
-/** The hit a press takes: one whose target holds it, the nearest square winning, else the nearest within the pointer's reach; a later hit wins a tie, as it draws on top. Never a resize. */
-export function pickKitHit(input: NotePickInput): NotePick | null {
+/** The hit a press takes: one whose target holds it, the nearest square winning, else the nearest within the pointer's reach; a later hit wins a tie, as it draws on top. Never a resize. `starts` are each row's hits' starts (kitRowStarts), which bound a square. */
+export function pickKitHit(
+  input: NotePickInput,
+  starts: ReadonlyMap<number, readonly number[]>,
+): NotePick | null {
   let found: NotePick | null = null
   let best = Infinity
   for (const note of input.notes) {
-    const rank = hitRank(note, input)
+    const rank = hitRank(note, input, starts)
     if (rank === Infinity || rank > best) continue
     best = rank
     found = { id: note.id, zone: 'body' }
@@ -137,8 +166,15 @@ export function pickEditNote(
   ctx: Pick<NoteEditContext, 'sequence' | 'window' | 'rows' | 'viewport'>,
   input: Omit<NotePickInput, 'notes' | 'viewport'>,
 ): NotePick | null {
-  const pick = { ...input, notes: editRollNotes(ctx), viewport: ctx.viewport }
-  return onKit(ctx) ? pickKitHit(pick) : pickRollNote(pick)
+  const kit = kitRows(ctx)
+  if (kit === null)
+    return pickRollNote({
+      ...input,
+      notes: editRollNotes(ctx),
+      viewport: ctx.viewport,
+    })
+  const { notes, starts } = kitNotes(ctx, kit)
+  return pickKitHit({ ...input, notes, viewport: ctx.viewport }, starts)
 }
 
 /** Hits moved `dTick` along time inside the window and `dRows` up the kit, as far as every one stays on it. */
