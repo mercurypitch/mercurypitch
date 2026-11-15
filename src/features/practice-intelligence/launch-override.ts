@@ -10,7 +10,7 @@
 // when the exercise is exited so it never leaks into the next session.
 
 import type { ExerciseConfig, ExerciseType, GuidedPracticeLaunchConfig, } from '@/features/exercises/types'
-import { clearExerciseLaunchOverride, exerciseLaunchChords, exerciseLaunchDifficulty, exerciseLaunchGuidedPractice, exerciseLaunchIntervals, exerciseLaunchInversions, exerciseLaunchPattern, exerciseLaunchScale, exerciseLaunchTargetNote, exerciseLaunchTargetNotes, setExerciseLaunchOverride, } from '@/lib/domain/exercise-launch'
+import { clearExerciseLaunchOverride, exerciseLaunchChords, exerciseLaunchDifficulty, exerciseLaunchGuidedPractice, exerciseLaunchIntervals, exerciseLaunchInversions, exerciseLaunchPattern, exerciseLaunchScale, exerciseLaunchTargetNote, exerciseLaunchTargetNotes, exerciseLaunchTuning, setExerciseLaunchOverride, } from '@/lib/domain/exercise-launch'
 import { clampDifficulty } from './adaptive-difficulty'
 import { getDifficulty } from './difficulty-store'
 
@@ -101,6 +101,15 @@ export function launchChords(type: ExerciseType): string[] | undefined {
  *  it did not say, so the exercise keeps the singer's own choice). */
 export function launchInversions(type: ExerciseType): boolean | undefined {
   return exerciseLaunchInversions(type)
+}
+
+/**
+ * The tuning a launch asked `type` to score in, by the exercise's own name
+ * for it (Drone Intonation's `pure`), if any. The exercise keeps it only
+ * when its own list has it, and keeps the singer's choice otherwise.
+ */
+export function launchTuning(type: ExerciseType): string | undefined {
+  return exerciseLaunchTuning(type)
 }
 
 /** Reviewed guided-practice prescription attached to this one launch. */

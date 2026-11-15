@@ -76,6 +76,11 @@ export function exerciseLaunchInversions(
   return current?.type === type ? current.config.inversions : undefined
 }
 
+export function exerciseLaunchTuning(type: ExerciseType): string | undefined {
+  const current = launchOverride()
+  return current?.type === type ? current.config.tuning : undefined
+}
+
 export function exerciseLaunchGuidedPractice(
   type: ExerciseType,
 ): GuidedPracticeLaunchConfig | undefined {

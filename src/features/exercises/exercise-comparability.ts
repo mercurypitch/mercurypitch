@@ -26,7 +26,8 @@
 // list, the averages and the trends.
 //
 // Some drills are sung in more than one form, and a form changes what the
-// score measures: Chord Stacker's triads are not its sevenths. Each form is
+// score measures: Chord Stacker's triads are not its sevenths, and Drone
+// Intonation's pure intervals are not the piano's notes. Each form is
 // a record of its own (`exerciseRunRecord`). Its key goes on the end of the
 // drill's comparability key, so its runs thread apart on Progress, and the
 // result card's best and "vs last" read the runs of its form alone. The
@@ -125,6 +126,10 @@ export function exerciseRunRecord(
     if (chords.length > 0) {
       return chordStackerRecord(chords, metrics.inversions === 1)
     }
+  }
+  // A pure third is 13.69 cents under the piano's: one note, two scores.
+  if (type === EXERCISE_DRONE_INTONATION && metrics.pureTuning === 1) {
+    return { key: 'pure', words: 'Pure tuning' }
   }
   return FIRST_FORM
 }

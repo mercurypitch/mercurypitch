@@ -5,7 +5,7 @@
 import { afterEach, describe, expect, it } from 'vitest'
 import type { GuidedPracticeLaunchConfig } from '@/features/exercises/types'
 import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
-import { clearLaunchOverride, launchChords, launchGuidedPractice, launchIntervals, launchInversions, launchScale, setLaunchOverride, } from './launch-override'
+import { clearLaunchOverride, launchChords, launchGuidedPractice, launchIntervals, launchInversions, launchScale, launchTuning, setLaunchOverride, } from './launch-override'
 
 const GUIDED_PRACTICE: GuidedPracticeLaunchConfig = {
   assessmentRunId: 'run-1',
@@ -197,5 +197,28 @@ describe('chords and inversions launch override', () => {
 
     expect(launchChords(EXERCISE_CHORD_STACKER)).toBeUndefined()
     expect(launchInversions(EXERCISE_CHORD_STACKER)).toBeUndefined()
+  })
+})
+
+describe('tuning launch override', () => {
+  it('carries the tuning only to the exercise it was launched for', () => {
+    setLaunchOverride(EXERCISE_DRONE_INTONATION, {
+      type: EXERCISE_DRONE_INTONATION,
+      tuning: 'pure',
+    })
+
+    expect(launchTuning(EXERCISE_DRONE_INTONATION)).toBe('pure')
+    expect(launchTuning(EXERCISE_INTERVAL_TRAINER)).toBeUndefined()
+  })
+
+  it('clears the tuning with the rest of the one-shot launch', () => {
+    setLaunchOverride(EXERCISE_DRONE_INTONATION, {
+      type: EXERCISE_DRONE_INTONATION,
+      tuning: 'pure',
+    })
+
+    clearLaunchOverride()
+
+    expect(launchTuning(EXERCISE_DRONE_INTONATION)).toBeUndefined()
   })
 })

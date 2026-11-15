@@ -14,17 +14,17 @@
   width: 100%;
 }
 
-/* As wide as the column allows, to a thumb-friendly row's worth: on a
-   phone the chips share one row; beside the dial on a wide screen, where
-   the column is narrow, they stack, each as wide as the column, a list
-   rather than a row that broke. */
+/* As wide as the column allows, to Start's width on a phone: there the
+   chips share one row; beside the dial on a wide screen, where the column
+   is narrow, they stack, each as wide as the column, a list rather than a
+   row that broke. */
 .choice {
   display: flex;
   flex-direction: column;
   align-items: center;
   gap: 6px;
   width: 100%;
-  max-width: 300px;
+  max-width: 260px;
 }
 
 .label {

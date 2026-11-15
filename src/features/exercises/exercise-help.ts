@@ -176,11 +176,12 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
   },
   [EXERCISE_DRONE_INTONATION]: {
     summary:
-      'Match and hold notes against a steady drone. Every target is equal-tempered.',
+      "Match and hold notes against a steady drone, on the piano's notes or as pure intervals.",
     body: [
       'A "drone" is a constant background note. Each round names an interval, such as a minor 3rd, for you to sing against it and hold.',
-      'The targets use the same twelve equal steps to the octave as the rest of the app. Adjust tiny amounts until your note sits on the target.',
-      'The exercise runs in short rounds and scores how cleanly your notes sit against the drone.',
+      "In Piano tuning the targets are equal-tempered: they use the same twelve equal steps to the octave as the rest of the app. In Pure tuning each target is the pure interval over the drone, a 3:2 fifth or a 5:4 major third, a few cents off the piano's note. Adjust tiny amounts until your note sits on the target.",
+      'The drone carries its own harmonics, so a fifth or a third a little out of tune beats against it.',
+      'The exercise runs in short rounds and scores how cleanly your notes sit against the drone, in the tuning you chose.',
     ],
   },
   [EXERCISE_SIREN]: {

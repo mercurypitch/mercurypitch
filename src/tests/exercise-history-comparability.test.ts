@@ -323,3 +323,43 @@ describe("a drill's forms are records of their own", () => {
     })
   })
 })
+
+describe("Drone Intonation's two tunings are records of their own", () => {
+  // A pure major third is 13.69 cents under the piano's: one note held
+  // true scores 100 in one tuning and 79 in the other.
+  beforeEach(() => {
+    saveSessionRecord.mockClear()
+    localStorage.clear()
+  })
+
+  it('reads a pure run as its own form, and a piano run as the first', () => {
+    expect(
+      exerciseRunRecord(EXERCISE_DRONE_INTONATION, { pureTuning: 1 }),
+    ).toEqual({ key: 'pure', words: 'Pure tuning' })
+    expect(
+      exerciseRunRecord(EXERCISE_DRONE_INTONATION, { pureTuning: 0 }).key,
+    ).toBe('')
+    expect(exerciseRunRecord(EXERCISE_DRONE_INTONATION, {}).key).toBe('')
+  })
+
+  it('persists a pure run under its own key, named for its tuning', async () => {
+    const { recordExerciseResult } =
+      await import('@/stores/exercise-history-store')
+    recordExerciseResult({
+      type: EXERCISE_DRONE_INTONATION,
+      score: 91,
+      metrics: { pureTuning: 1 },
+      completedAt: 8,
+    })
+    await vi.waitFor(() => expect(saveSessionRecord).toHaveBeenCalledOnce())
+    const payload = saveSessionRecord.mock.calls[0]![0] as {
+      melodyName: string
+      comparabilityKey?: string
+    }
+
+    expect(payload.comparabilityKey).toBe(
+      'voice:exercise:drone-intonation:v2:pure',
+    )
+    expect(payload.melodyName).toBe('Exercise: Drone Intonation · Pure tuning')
+  })
+})

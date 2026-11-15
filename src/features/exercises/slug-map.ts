@@ -19,6 +19,7 @@
 // 2's follow them.
 
 import type { ChordStackerChord } from '@/features/exercises/chord-stacker/chord-stacker-chords'
+import type { DroneTuning } from '@/features/exercises/drone-intonation/drone-tuning'
 import type { ScaleRunnerScale } from '@/features/exercises/scale-runner/scale-runner-scales'
 import type { ExerciseType } from '@/features/exercises/types'
 import { EXERCISE_CADENCE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
@@ -54,6 +55,9 @@ export interface ExerciseLaunch {
    *  inversions, false in root position, whatever the singer last chose.
    *  The singer can still change it. */
   inversions?: boolean
+  /** The tuning Drone Intonation scores in, `piano` or `pure`, in place of
+   *  the singer's own. The singer can still change it. */
+  tuning?: DroneTuning
 }
 
 /** Open a top-level tab/view (e.g. Karaoke, Jam). */
@@ -87,11 +91,14 @@ export const EXERCISE_SLUGS: Record<string, Launch> = {
     intervals: [3, 4, 7, 5, 12],
   },
   // Drone exercise on Lesson 10's thirds (Major and minor): the minor and
-  // the major third above the drone, each upward.
+  // the major third above the drone, each upward, on the piano's notes, as
+  // the cards of Lessons 10 and 24 say it scores, whatever the singer last
+  // chose.
   'thirds-on-a-drone': {
     kind: 'exercise',
     exercise: EXERCISE_DRONE_INTONATION,
     intervals: [3, 4],
+    tuning: 'piano',
   },
   // Scale exercise on Lesson 20's two scales (Runs and the pentatonic
   // scale): the pentatonic the lesson runs, and the minor pentatonic it
@@ -118,11 +125,13 @@ export const EXERCISE_SLUGS: Record<string, Launch> = {
     intervals: [5, 7, 12],
   },
   // Drone exercise on Lesson 24's notes (Harmony against a drone): the
-  // fifth, the major third and the octave above the drone.
+  // fifth, the major third and the octave above the drone, scored as pure
+  // intervals, the ones the lesson teaches the singer to listen for.
   'harmony-on-a-drone': {
     kind: 'exercise',
     exercise: EXERCISE_DRONE_INTONATION,
     intervals: [7, 4, 12],
+    tuning: 'pure',
   },
   // Scale exercise on Lesson 25's two minors (Minor, properly), from A as
   // the lesson sings them, at the singer's own level. The notes are the

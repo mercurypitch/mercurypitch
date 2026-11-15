@@ -209,6 +209,10 @@ export interface ExerciseConfig {
    *  with inversions, false in root position. Read it through
    *  `launchInversions`. */
   inversions?: boolean
+  /** The tuning a drill scored against intervals is scored in, by its own
+   *  name for it (Drone Intonation's `pure`). Read it through
+   *  `launchTuning`; the exercise keeps a name on its own list. */
+  tuning?: string
   /** Reviewed guided-practice prescription for this one launch. */
   guidedPractice?: GuidedPracticeLaunchConfig
 }

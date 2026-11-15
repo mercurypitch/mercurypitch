@@ -18,9 +18,12 @@ describe('exercise help', () => {
     expect(body).not.toMatch(/—|calm|practise/i)
   })
 
-  it("says Drone Intonation's targets are equal-tempered, and promises no pure or just tuning", () => {
-    // Every target is midiToFreq of the note, twelve equal steps to the
-    // octave (Lesson 10 FACTS 49), so the help promises no other tuning.
+  it("names Drone Intonation's two tunings, the piano's notes and pure intervals, and their ratios", () => {
+    // Piano tuning scores against midiToFreq of the note, twelve equal
+    // steps to the octave (Lesson 10 FACTS 49); Pure against the just
+    // interval over the drone (drone-tuning.ts). The help says which is
+    // which, and promises no beats stopping, which a singer's own vibrato
+    // can keep from happening.
     // Arrange
     const help = EXERCISE_HELP[EXERCISE_DRONE_INTONATION]
 
@@ -28,8 +31,10 @@ describe('exercise help', () => {
     const words = [help.summary, ...help.body].join(' ')
 
     // Assert
-    expect(help.summary).toMatch(/equal-tempered/)
-    expect(words).not.toMatch(/just intonation|pure intonation|stop beating/i)
+    expect(help.summary).toMatch(/piano's notes or as pure intervals/)
+    expect(words).toMatch(/equal-tempered/)
+    expect(words).toMatch(/3:2 fifth or a 5:4 major third/)
+    expect(words).not.toMatch(/stop beating|just intonation/i)
   })
 
   it('says Staccato scores pitch, and promises no timing', () => {

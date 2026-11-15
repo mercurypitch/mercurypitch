@@ -7,6 +7,7 @@
 import { describe, expect, it } from 'vitest'
 import { typesFor } from '@/features/exercises/cadence/cadence-rounds'
 import { CHORD_SETS, isChordStackerChord, } from '@/features/exercises/chord-stacker/chord-stacker-chords'
+import { isDroneTuning } from '@/features/exercises/drone-intonation/drone-tuning'
 import { droneIntervalLabel } from '@/features/exercises/drone-intonation/use-drone-intonation-controller'
 import { isWebRoom } from '@/features/exercises/rooms/web-room-ids'
 import { SCALE_RUNNER_SCALES } from '@/features/exercises/scale-runner/scale-runner-scales'
@@ -76,11 +77,14 @@ describe('EXERCISE_SLUGS', () => {
     })
   })
 
-  it("opens Drone Intonation on Lesson 10's two thirds for thirds-on-a-drone", () => {
+  it("opens Drone Intonation on Lesson 10's two thirds for thirds-on-a-drone, on the piano's notes", () => {
+    // Lessons 10 and 24's cards say the link scores to the piano's notes,
+    // so it does not take the singer's saved tuning.
     expect(EXERCISE_SLUGS['thirds-on-a-drone']).toEqual({
       kind: 'exercise',
       exercise: EXERCISE_DRONE_INTONATION,
       intervals: [3, 4],
+      tuning: 'piano',
     })
   })
 
@@ -123,11 +127,12 @@ describe('EXERCISE_SLUGS', () => {
     })
   })
 
-  it("opens Drone Intonation on Lesson 24's fifth, major third and octave for harmony-on-a-drone", () => {
+  it("opens Drone Intonation on Lesson 24's fifth, major third and octave, tuned pure, for harmony-on-a-drone", () => {
     expect(EXERCISE_SLUGS['harmony-on-a-drone']).toEqual({
       kind: 'exercise',
       exercise: EXERCISE_DRONE_INTONATION,
       intervals: [7, 4, 12],
+      tuning: 'pure',
     })
   })
 
@@ -336,6 +341,24 @@ describe('EXERCISE_SLUGS', () => {
     )
 
     expect(withChords.length).toBeGreaterThan(0)
+    expect(misplaced).toEqual([])
+  })
+
+  it('names a tuning only for Drone Intonation, and only one of its two', () => {
+    // Drone keeps a launch's tuning only when it is `piano` or `pure`, so
+    // a slug that wrote one for another drill, or misspelt it, would lose
+    // it silently.
+    const withTuning = Object.values(EXERCISE_SLUGS).flatMap((launch) =>
+      launch.kind === 'exercise' && launch.tuning !== undefined ? [launch] : [],
+    )
+
+    const misplaced = withTuning.filter(
+      (launch) =>
+        launch.exercise !== EXERCISE_DRONE_INTONATION ||
+        !isDroneTuning(launch.tuning),
+    )
+
+    expect(withTuning.length).toBeGreaterThan(0)
     expect(misplaced).toEqual([])
   })
 
