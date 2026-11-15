@@ -741,7 +741,7 @@ still images when WebGL fails or would run on the CPU.
   link (FACTS 67).
 - **In the app, not yet linked: `/exercises/thirds-on-a-drone`** (CURRICULUM § 4 item 2, the
   `intervals` launch field; FACTS 52, 53): Drone Intonation on the minor and major thirds, 3 and 4
-  semitones up, registered in `EXERCISE_SLUGS` (`src/features/exercises/slug-map.ts:59-146`) with a
+  semitones up, registered in `EXERCISE_SLUGS` (`src/features/exercises/slug-map.ts:59-162`) with a
   line in `src/tests/slug-map.test.ts`. A run is as long as the difficulty asks, six rounds at the
   default level and up to eight, not capped at the two thirds, and deals them as Interval Trainer
   deals a launched list, never the same one twice running, so they take turns

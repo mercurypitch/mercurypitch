@@ -50,7 +50,7 @@ module in `src/features/lessons/lesson-28/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season builds Lessons 24, 26 and 28
 last, with one coach batch for all three (SEASON-2 § 8.2 item 7,
-`docs/plans/find-your-pitch/SEASON-2.md:1315-1316`).
+`docs/plans/find-your-pitch/SEASON-2.md:1316-1317`).
 
 ## Look
 
@@ -629,7 +629,7 @@ stills when WebGL fails.
   widens the marker, and until then the quiz's answers are refused whole; the page is not built
   before that (FACTS 75).
 - **Shipped on 15 November 2026: the cadence-type ear drill** (SEASON-2 § 5.2 item 19,
-  `docs/plans/find-your-pitch/SEASON-2.md:977-987`), as Name the Cadence, a drill in the Exercises
+  `docs/plans/find-your-pitch/SEASON-2.md:977-988`), as Name the Cadence, a drill in the Exercises
   tab (`src/features/exercises/cadence/`): the key's own chord, then an ending's two chords, and
   the names perfect, imperfect, plagal and interrupted to choose from. Still needed: its slug, and
   this page's card, where it takes the second drill's place and says what it plays and asks.
