@@ -56,6 +56,13 @@ describe('intervalRangeLabel', () => {
     expect(intervalRangeLabel(LEAP_LADDER)).toBe('Minor 3rd through Octave')
   })
 
+  it('names all three intervals of a three-interval list', () => {
+    // Lesson 23's perfect intervals: "through" would promise the tritone.
+    expect(intervalRangeLabel([5, 7, 12])).toBe(
+      'Perfect 4th, Perfect 5th and Octave',
+    )
+  })
+
   it('names both intervals of a two-interval list', () => {
     expect(intervalRangeLabel([7, 5])).toBe('Perfect 4th and Perfect 5th')
   })

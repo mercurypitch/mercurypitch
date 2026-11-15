@@ -94,13 +94,16 @@ const INTERVAL_NAMES: readonly string[] = [
 ]
 
 /** The idle hint's words for a launch's own intervals, in place of the
- *  pool's: from the list's narrowest interval to its widest, or named
- *  outright when it holds only one or two. */
+ *  pool's: named outright when the list holds three or fewer, or else from
+ *  its narrowest interval to its widest. Three still fit the hint's line,
+ *  and "Perfect 4th through Octave" would promise the tritone that lies
+ *  between a list of the fourth, the fifth and the octave. */
 export function intervalRangeLabel(intervals: readonly number[]): string {
   const names = [...new Set(intervals)]
     .sort((a, b) => a - b)
     .map((s) => INTERVAL_NAMES[s] ?? `${s} semitones`)
   if (names.length <= 2) return names.join(' and ')
+  if (names.length === 3) return `${names[0]}, ${names[1]} and ${names[2]}`
   return `${names[0]} through ${names[names.length - 1]}`
 }
 
