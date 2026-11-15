@@ -64,6 +64,18 @@ export function exerciseLaunchScale(type: ExerciseType): string | undefined {
   return current?.type === type ? current.config.scale : undefined
 }
 
+export function exerciseLaunchChords(type: ExerciseType): string[] | undefined {
+  const current = launchOverride()
+  return current?.type === type ? current.config.chords : undefined
+}
+
+export function exerciseLaunchInversions(
+  type: ExerciseType,
+): boolean | undefined {
+  const current = launchOverride()
+  return current?.type === type ? current.config.inversions : undefined
+}
+
 export function exerciseLaunchGuidedPractice(
   type: ExerciseType,
 ): GuidedPracticeLaunchConfig | undefined {

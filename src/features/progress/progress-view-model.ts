@@ -662,9 +662,12 @@ function buildRhythm(model: ProgressModel): ProgressRhythmView {
  * `voice:exercise:<type>:v<n>` (exerciseComparabilityKey in
  * exercises/exercise-comparability.ts). A rescored drill's runs start a new
  * thread under the same name, so a period spanning the rescore would show
- * two threads called the same. The thread on the older ruler says so.
+ * two threads called the same. The thread on the older ruler says so. A
+ * drill sung in more than one form keys each form apart after the version
+ * (`voice:exercise:chord-stacker:v1:triads`), and its run's name says the
+ * form, so those threads read apart already.
  */
-const EXERCISE_THREAD_KEY = /^voice:exercise:(.+):v(\d+)$/
+const EXERCISE_THREAD_KEY = /^voice:exercise:([^:]+):v(\d+)(?::[^:]+)?$/
 
 function exerciseThreadVersion(
   comparisonKey: string,

@@ -9,7 +9,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { exerciseHistory, getExerciseStats, } from '@/stores/exercise-history-store'
-import { isComparableRun } from './exercise-comparability'
+import { exerciseRunRecord, isComparableRun } from './exercise-comparability'
 import type { ExerciseType } from './types'
 
 const RECENT_COUNT = 3
@@ -17,18 +17,29 @@ const RECENT_COUNT = 3
 const scoreTier = (s: number): string =>
   s >= 80 ? 'good' : s >= 50 ? 'ok' : 'poor'
 
-export const ExerciseScoreHistory: Component<{ type: ExerciseType }> = (
-  props,
-) => {
+export const ExerciseScoreHistory: Component<{
+  type: ExerciseType
+  /** The form the setup has chosen (`exerciseRunRecord`'s key): its runs
+   *  alone, for a drill sung in more than one. */
+  record?: string
+}> = (props) => {
   // history() is most-recent-first; take this exercise's latest few, of
-  // the runs that compare (whole, and scored the way it scores now), which
-  // its Best also reads.
+  // the runs that compare (whole, and scored the way it scores now) and
+  // were sung in the chosen form, which its Best also reads.
   const recent = createMemo(() =>
     exerciseHistory()
-      .filter((e) => e.type === props.type && isComparableRun(e))
+      .filter(
+        (e) =>
+          e.type === props.type &&
+          isComparableRun(e) &&
+          (props.record === undefined ||
+            exerciseRunRecord(e.type, e.metrics).key === props.record),
+      )
       .slice(0, RECENT_COUNT),
   )
-  const best = createMemo(() => getExerciseStats(props.type).bestScore)
+  const best = createMemo(
+    () => getExerciseStats(props.type, props.record).bestScore,
+  )
 
   return (
     <Show when={recent().length > 0}>

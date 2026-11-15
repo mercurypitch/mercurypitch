@@ -10,7 +10,7 @@
 // when the exercise is exited so it never leaks into the next session.
 
 import type { ExerciseConfig, ExerciseType, GuidedPracticeLaunchConfig, } from '@/features/exercises/types'
-import { clearExerciseLaunchOverride, exerciseLaunchDifficulty, exerciseLaunchGuidedPractice, exerciseLaunchIntervals, exerciseLaunchPattern, exerciseLaunchScale, exerciseLaunchTargetNote, exerciseLaunchTargetNotes, setExerciseLaunchOverride, } from '@/lib/domain/exercise-launch'
+import { clearExerciseLaunchOverride, exerciseLaunchChords, exerciseLaunchDifficulty, exerciseLaunchGuidedPractice, exerciseLaunchIntervals, exerciseLaunchInversions, exerciseLaunchPattern, exerciseLaunchScale, exerciseLaunchTargetNote, exerciseLaunchTargetNotes, setExerciseLaunchOverride, } from '@/lib/domain/exercise-launch'
 import { clampDifficulty } from './adaptive-difficulty'
 import { getDifficulty } from './difficulty-store'
 
@@ -82,6 +82,25 @@ export function launchIntervals(type: ExerciseType): number[] | undefined {
  */
 export function launchScale(type: ExerciseType): string | undefined {
   return exerciseLaunchScale(type)
+}
+
+/**
+ * Chord types a launch asked `type` to deal, by the exercise's own names
+ * for them (Chord Stacker's `major`, `dom7`), each once, in the order
+ * given. The names are whatever the launch wrote: the exercise keeps those
+ * its own list has, and falls back to its setup's set when none is.
+ */
+export function launchChords(type: ExerciseType): string[] | undefined {
+  const requested = exerciseLaunchChords(type)
+  if (requested === undefined) return undefined
+  const named = [...new Set(requested)]
+  return named.length > 0 ? named : undefined
+}
+
+/** Whether a launch asked `type` to turn its chords over (undefined when
+ *  it did not say, so the exercise keeps the singer's own choice). */
+export function launchInversions(type: ExerciseType): boolean | undefined {
+  return exerciseLaunchInversions(type)
 }
 
 /** Reviewed guided-practice prescription attached to this one launch. */

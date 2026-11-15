@@ -9,8 +9,9 @@
 // Skill Thread and every plain row read "cannot be compared like for like".
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { exerciseComparabilityKey } from '@/features/exercises/exercise-comparability'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SCALE_RUNNER, EXERCISE_SIREN, } from '@/features/exercises/types'
+import { CHORD_SETS, chordMask, } from '@/features/exercises/chord-stacker/chord-stacker-chords'
+import { exerciseComparabilityKey, exerciseRunRecord, } from '@/features/exercises/exercise-comparability'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SCALE_RUNNER, EXERCISE_SIREN, } from '@/features/exercises/types'
 import { applyPersistedValue } from '@/lib/storage'
 
 const saveSessionRecord = vi.fn(async (..._args: unknown[]) => null)
@@ -216,6 +217,109 @@ describe('local bests compare only runs scored the same way', () => {
     expect(getExerciseStats(EXERCISE_LONG_NOTE)).toMatchObject({
       bestScore: 82,
       totalPlays: 1,
+    })
+  })
+})
+
+describe("a drill's forms are records of their own", () => {
+  // Chord Stacker's triads are not its sevenths: a run's form goes on the
+  // end of its key, so Progress threads each apart, and the result card's
+  // best reads the runs of the form chosen. The five sevenths in root
+  // position keep the key every run before the forms was recorded under.
+  const seed = (entries: object[]) =>
+    applyPersistedValue(
+      'mercurypitch_exercise_history',
+      JSON.stringify(entries),
+    )
+  const sevenths = chordMask(CHORD_SETS.sevenths)
+  const triads = chordMask(CHORD_SETS.triads)
+
+  beforeEach(() => {
+    saveSessionRecord.mockClear()
+    localStorage.clear()
+    seed([])
+  })
+
+  it('keys a form after the version, and the first form as it always was', () => {
+    expect(exerciseComparabilityKey(EXERCISE_CHORD_STACKER, 'triads')).toBe(
+      'voice:exercise:chord-stacker:v1:triads',
+    )
+    expect(exerciseComparabilityKey(EXERCISE_CHORD_STACKER, '')).toBe(
+      'voice:exercise:chord-stacker:v1',
+    )
+  })
+
+  it('reads a run recorded before the forms as the first form', () => {
+    expect(
+      exerciseRunRecord(EXERCISE_CHORD_STACKER, { avgAccuracy: 80 }),
+    ).toEqual({
+      key: '',
+      words: '',
+    })
+    expect(
+      exerciseRunRecord(EXERCISE_CHORD_STACKER, {
+        chordMask: sevenths,
+        inversions: 0,
+      }).key,
+    ).toBe('')
+  })
+
+  it("persists a triad run under its form's key, named for it", async () => {
+    const { recordExerciseResult } =
+      await import('@/stores/exercise-history-store')
+    recordExerciseResult({
+      type: EXERCISE_CHORD_STACKER,
+      score: 88,
+      metrics: { chordMask: triads, inversions: 1 },
+      completedAt: 7,
+    })
+    await vi.waitFor(() => expect(saveSessionRecord).toHaveBeenCalledOnce())
+    const payload = saveSessionRecord.mock.calls[0]![0] as {
+      melodyName: string
+      comparabilityKey?: string
+    }
+
+    expect(payload.comparabilityKey).toBe(
+      'voice:exercise:chord-stacker:v1:triads-inversions',
+    )
+    expect(payload.melodyName).toBe(
+      'Exercise: Chord Stacker · Triads, with inversions',
+    )
+  })
+
+  it("holds a form's best to that form's runs, and the menu's to all of them", async () => {
+    const { getExerciseStats } = await import('@/stores/exercise-history-store')
+    seed([
+      {
+        type: EXERCISE_CHORD_STACKER,
+        score: 95,
+        metrics: { chordMask: triads, inversions: 0 },
+        completedAt: 3,
+        scoringVersion: 1,
+      },
+      {
+        type: EXERCISE_CHORD_STACKER,
+        score: 70,
+        metrics: { chordMask: sevenths, inversions: 0 },
+        completedAt: 2,
+        scoringVersion: 1,
+      },
+      // Recorded before the forms: the sevenths, in root position.
+      { type: EXERCISE_CHORD_STACKER, score: 60, metrics: {}, completedAt: 1 },
+    ])
+
+    expect(getExerciseStats(EXERCISE_CHORD_STACKER, '')).toMatchObject({
+      bestScore: 70,
+      lastScore: 70,
+      totalPlays: 2,
+    })
+    expect(getExerciseStats(EXERCISE_CHORD_STACKER, 'triads')).toMatchObject({
+      bestScore: 95,
+      totalPlays: 1,
+    })
+    expect(getExerciseStats(EXERCISE_CHORD_STACKER)).toMatchObject({
+      bestScore: 95,
+      totalPlays: 3,
     })
   })
 })

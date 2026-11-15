@@ -428,6 +428,43 @@ describe('skill threads across a rescore', () => {
     expect(labelOf('old-2')).toBe('Arpeggio Jumper (earlier scoring)')
   })
 
+  it("threads a drill's forms apart, each under the name its runs carry", () => {
+    // Arrange: Chord Stacker's sevenths in root position, its first form,
+    // and its triads, each a record of its own after the version.
+    const stacker = (
+      id: string,
+      at: string,
+      score: number,
+      form: { name: string; key: string },
+    ): SessionRecord =>
+      record(id, at, score, {
+        melodyName: form.name,
+        comparabilityKey: `voice:exercise:chord-stacker:v1${form.key}`,
+      })
+    const sevenths = { name: 'Exercise: Chord Stacker', key: '' }
+    const triads = {
+      name: 'Exercise: Chord Stacker · Triads',
+      key: ':triads',
+    }
+    const model = modelOf([
+      stacker('7-1', '2026-07-20T10:00:00.000Z', 62, sevenths),
+      stacker('7-2', '2026-07-27T10:00:00.000Z', 68, sevenths),
+      stacker('3-1', '2026-08-05T10:00:00.000Z', 85, triads),
+      stacker('3-2', '2026-08-09T10:00:00.000Z', 88, triads),
+    ])
+
+    // Act
+    const threads = buildProgressPageSnapshot(model, {
+      accountHeld: true,
+    }).skillThreads
+
+    // Assert: two threads, and neither reads as the other's earlier ruler.
+    expect(threads.map((t) => t.label).sort()).toEqual([
+      'Exercise: Chord Stacker',
+      'Exercise: Chord Stacker · Triads',
+    ])
+  })
+
   it("leaves a drill's only thread under its own name", () => {
     const model = modelOf([
       jumper('old-1', '2026-07-20T10:00:00.000Z', 62, 1),

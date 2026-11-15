@@ -213,7 +213,8 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
     summary:
       'Hear a chord one note at a time, then sing each note back in tune.',
     body: [
-      'You hear a chord one note at a time, from the root up, then sing each note back on its own.',
+      'You hear a chord one note at a time, from its bottom note up, then sing each note back on its own.',
+      'Choose triads, seventh chords or both, and whether the chords come in their inversions, turned over so another of their notes is at the bottom. Each round names its chord.',
       'Each note is scored against the note played, in the octave it was played.',
       'It runs in five rounds, one chord each, and scores how in tune each sung note is.',
     ],

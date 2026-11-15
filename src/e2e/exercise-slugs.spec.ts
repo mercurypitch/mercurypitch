@@ -203,3 +203,47 @@ test("/exercises/sing-it-in-time opens Sing It in Time on Lesson 18's two bars",
     '3 tunes · 60 BPM · quarters and halves, steps and thirds',
   )
 })
+
+test('/exercises/triads opens Chord Stacker on the four triads in root position', async ({
+  page,
+}) => {
+  await openSlug(page, 'triads', '27')
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Chord Stacker')
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '5 chords · Triads · Root position',
+  )
+  // The pickers say the same: the launch chose for this visit.
+  const chords = page.getByRole('group', { name: 'Chords' })
+  await expect(chords.getByRole('button', { name: 'Triads' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  const inversions = page.getByRole('group', { name: 'Inversions' })
+  await expect(inversions.getByRole('button', { name: 'Off' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+})
+
+test("leaving triads' drill leaves the menu's Chord Stacker on the singer's own chords", async ({
+  page,
+}) => {
+  await openSlug(page, 'triads', '27')
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '5 chords · Triads · Root position',
+  )
+
+  // Back clears the launch (resetExerciseLaunchState in App.tsx), and the
+  // launch never wrote over the singer's saved choice: the sevenths.
+  await page.locator('.back-btn').click()
+  await page
+    .locator('.exercise-card', { hasText: 'Chord Stacker' })
+    .first()
+    .click()
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Chord Stacker')
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '5 chords · Seventh chords · Root position',
+  )
+})

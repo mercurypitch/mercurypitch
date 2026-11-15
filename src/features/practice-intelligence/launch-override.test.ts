@@ -4,8 +4,8 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import type { GuidedPracticeLaunchConfig } from '@/features/exercises/types'
-import { EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
-import { clearLaunchOverride, launchGuidedPractice, launchIntervals, launchScale, setLaunchOverride, } from './launch-override'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
+import { clearLaunchOverride, launchChords, launchGuidedPractice, launchIntervals, launchInversions, launchScale, setLaunchOverride, } from './launch-override'
 
 const GUIDED_PRACTICE: GuidedPracticeLaunchConfig = {
   assessmentRunId: 'run-1',
@@ -146,5 +146,56 @@ describe('scale launch override', () => {
     })
 
     expect(launchScale(EXERCISE_SCALE_RUNNER)).toBeUndefined()
+  })
+})
+
+describe('chords and inversions launch override', () => {
+  it('carries the chords and the inversions only to the exercise they were launched for', () => {
+    setLaunchOverride(EXERCISE_CHORD_STACKER, {
+      type: EXERCISE_CHORD_STACKER,
+      chords: ['major', 'minor'],
+      inversions: false,
+    })
+
+    expect(launchChords(EXERCISE_CHORD_STACKER)).toEqual(['major', 'minor'])
+    expect(launchInversions(EXERCISE_CHORD_STACKER)).toBe(false)
+    expect(launchChords(EXERCISE_ARPEGGIO_JUMPER)).toBeUndefined()
+    expect(launchInversions(EXERCISE_ARPEGGIO_JUMPER)).toBeUndefined()
+  })
+
+  it('keeps each chord once, in the order given, and none from an empty list', () => {
+    setLaunchOverride(EXERCISE_CHORD_STACKER, {
+      type: EXERCISE_CHORD_STACKER,
+      chords: ['dom7', 'major', 'dom7'],
+    })
+    expect(launchChords(EXERCISE_CHORD_STACKER)).toEqual(['dom7', 'major'])
+
+    setLaunchOverride(EXERCISE_CHORD_STACKER, {
+      type: EXERCISE_CHORD_STACKER,
+      chords: [],
+    })
+    expect(launchChords(EXERCISE_CHORD_STACKER)).toBeUndefined()
+  })
+
+  it("leaves the singer's own inversions to a launch that did not say", () => {
+    setLaunchOverride(EXERCISE_CHORD_STACKER, {
+      type: EXERCISE_CHORD_STACKER,
+      chords: ['dom7'],
+    })
+
+    expect(launchInversions(EXERCISE_CHORD_STACKER)).toBeUndefined()
+  })
+
+  it('clears both with the rest of the one-shot launch', () => {
+    setLaunchOverride(EXERCISE_CHORD_STACKER, {
+      type: EXERCISE_CHORD_STACKER,
+      chords: ['dom7'],
+      inversions: true,
+    })
+
+    clearLaunchOverride()
+
+    expect(launchChords(EXERCISE_CHORD_STACKER)).toBeUndefined()
+    expect(launchInversions(EXERCISE_CHORD_STACKER)).toBeUndefined()
   })
 })

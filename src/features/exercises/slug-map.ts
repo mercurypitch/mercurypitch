@@ -18,9 +18,10 @@
 // Lesson 9's practice card and `thirds-on-a-drone` Lesson 10's, and Season
 // 2's follow them.
 
+import type { ChordStackerChord } from '@/features/exercises/chord-stacker/chord-stacker-chords'
 import type { ScaleRunnerScale } from '@/features/exercises/scale-runner/scale-runner-scales'
 import type { ExerciseType } from '@/features/exercises/types'
-import { EXERCISE_CADENCE, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
+import { EXERCISE_CADENCE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
 
@@ -45,6 +46,14 @@ export interface ExerciseLaunch {
   /** The scale Scale Runner opens on, by its own name for it, in place of
    *  the first on its list. The singer can still pick another. */
   scale?: ScaleRunnerScale
+  /** The chord types Chord Stacker deals, by its own names for them, in
+   *  place of the set its setup screen has chosen. The singer can still
+   *  pick a set. */
+  chords?: ChordStackerChord[]
+  /** Whether Chord Stacker turns its chords over: true opens it with
+   *  inversions, false in root position, whatever the singer last chose.
+   *  The singer can still change it. */
+  inversions?: boolean
 }
 
 /** Open a top-level tab/view (e.g. Karaoke, Jam). */
@@ -145,6 +154,16 @@ export const EXERCISE_SLUGS: Record<string, Launch> = {
   'read-the-note': {
     kind: 'exercise',
     exercise: EXERCISE_NOTE_READING,
+  },
+  // Chord Stacker on the four triads, major, minor, diminished and
+  // augmented, in root position: Lesson 27's (Seventh chords and
+  // inversions), whose page names no address of its own, and the triads
+  // CURRICULUM § 4 item 4 asked for.
+  triads: {
+    kind: 'exercise',
+    exercise: EXERCISE_CHORD_STACKER,
+    chords: ['major', 'minor', 'diminished', 'augmented'],
+    inversions: false,
   },
   // Name the Cadence, for Lesson 28 (Cadences, form and a song in two
   // parts), which teaches all four. Level 7 is the first that asks for the

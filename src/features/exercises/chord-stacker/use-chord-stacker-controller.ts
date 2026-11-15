@@ -1,3 +1,13 @@
+// ============================================================
+// Chord Stacker's run: five chords, each heard a note at a time and sung back
+// ============================================================
+//
+// A round plays its chord from the bottom note up, each note in full, then
+// asks for each note back on its own, nothing sounding. Which chords a run
+// deals from, and whether it turns them over, is the setup's choice or a
+// launch's (chord-stacker-chords.ts); the five sevenths in root position
+// are the run every run was before the choice existed.
+
 import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
@@ -7,23 +17,18 @@ import { noteDeviationCents, scoreNoteAccuracy, } from '../exercise-scoring-util
 import type { ExerciseResult } from '../types'
 import { EXERCISE_CHORD_STACKER, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
+import type { ChordRound, ChordStackerChord } from './chord-stacker-chords'
+import { CHORD_SETS, CHORD_STACKER_CHORDS, chordMask, chordNotes, dealChordRounds, DEFAULT_CHORD_SET, } from './chord-stacker-chords'
 
-type ChordType = 'maj7' | 'min7' | 'dom7' | 'dim7' | 'maj6'
-
-const CHORD_DEGREES: Record<ChordType, number[]> = {
-  maj7: [0, 4, 7, 11],
-  min7: [0, 3, 7, 10],
-  dom7: [0, 4, 7, 10],
-  dim7: [0, 3, 6, 9],
-  maj6: [0, 4, 7, 9],
+/** What a run deals from: the chords, and whether it turns them over. */
+export interface ChordStackerChoice {
+  chords: readonly ChordStackerChord[]
+  inversions: boolean
 }
 
-const CHORD_LABELS: Record<ChordType, string> = {
-  maj7: 'Major 7th',
-  min7: 'Minor 7th',
-  dom7: 'Dominant 7th',
-  dim7: 'Diminished 7th',
-  maj6: 'Major 6th',
+const DEFAULT_CHOICE: ChordStackerChoice = {
+  chords: CHORD_SETS[DEFAULT_CHORD_SET],
+  inversions: false,
 }
 
 // Baselines at difficulty 5 (difficultyFactor(5) === 1.0). Harder levels
@@ -38,21 +43,14 @@ function avgOf(arr: number[]): number {
     : 0
 }
 
-function shuffleArray<T>(arr: T[]): T[] {
-  const a = [...arr]
-  for (let i = a.length - 1; i > 0; i--) {
-    const j = Math.floor(Math.random() * (i + 1))
-    ;[a[i], a[j]] = [a[j], a[i]]
-  }
-  return a
-}
-
 export function useChordStackerController(
   base: BaseExerciseController,
   audioEngine: { playTone: (freq: number, duration?: number) => Promise<void> },
 ) {
-  let chordTypes: ChordType[] = []
-  let chordNotes: number[] = []
+  let choice: ChordStackerChoice = DEFAULT_CHOICE
+  let rounds: ChordRound[] = []
+  // The notes of the round being played or sung, low to high.
+  let roundNotes: number[] = []
   let roundIndex = 0
   let noteIndex = 0
   let noteScores: number[] = []
@@ -86,10 +84,16 @@ export function useChordStackerController(
   let notePlayDurationMs = NOTE_PLAY_DURATION_BASE_MS
   let matchWindowMs = MATCH_WINDOW_BASE_MS
 
-  function setBase(midi: number): void {
+  /** Deal a run on `midi`'s chords: the five sevenths in root position
+   *  unless the setup or a launch chose others. */
+  function setBase(
+    midi: number,
+    chosen: ChordStackerChoice = DEFAULT_CHOICE,
+  ): void {
     _cancelled = false
     baseMidi = midi
-    chordTypes = shuffleArray(Object.keys(CHORD_DEGREES) as ChordType[])
+    choice = chosen
+    rounds = dealChordRounds(chosen.chords, chosen.inversions)
     roundIndex = 0
     allRoundScores = []
     noteDeviations = []
@@ -112,22 +116,27 @@ export function useChordStackerController(
   }
 
   function playRound(): void {
-    if (roundIndex >= chordTypes.length) {
+    if (roundIndex >= rounds.length) {
       finish()
       return
     }
 
-    const type = chordTypes[roundIndex]
-    const degrees = CHORD_DEGREES[type]
-    chordNotes = degrees.map((d) => baseMidi + d)
+    const { chord, position } = rounds[roundIndex]
+    roundNotes = chordNotes(baseMidi, chord, position)
     noteIndex = 0
     noteScores = []
 
     batch(() => {
       base._updateMetrics({
         round: roundIndex,
-        totalRounds: chordTypes.length,
-        chordLength: chordNotes.length,
+        totalRounds: rounds.length,
+        chordLength: roundNotes.length,
+        // The round's chord, for its name on the stage: which of the
+        // table's chords, on which root, in which position (-1 while the
+        // run plays every chord in root position, so none is named).
+        chordIndex: CHORD_STACKER_CHORDS.indexOf(chord),
+        rootMidi: baseMidi,
+        chordPosition: choice.inversions ? position : -1,
         phase: 1,
       })
     })
@@ -147,8 +156,8 @@ export function useChordStackerController(
 
   async function playChordNotes(): Promise<void> {
     if (_cancelled) return
-    for (let i = 0; i < chordNotes.length; i++) {
-      const midi = chordNotes[i]
+    for (let i = 0; i < roundNotes.length; i++) {
+      const midi = roundNotes[i]
       batch(() => base._updateMetrics({ currentMidi: midi }))
       await audioEngine.playTone(midiToFreq(midi), notePlayDurationMs)
       if (_cancelled) return
@@ -158,7 +167,7 @@ export function useChordStackerController(
       // singing starts.
       await delay(notePlayDurationMs)
       if (_cancelled) return
-      if (i < chordNotes.length - 1) {
+      if (i < roundNotes.length - 1) {
         await delay(GAP_BETWEEN_NOTES_MS)
         if (_cancelled) return
       }
@@ -173,12 +182,12 @@ export function useChordStackerController(
 
   function startMatchingNote(): void {
     if (_cancelled) return
-    if (noteIndex >= chordNotes.length) {
+    if (noteIndex >= roundNotes.length) {
       evaluateChordRound()
       return
     }
 
-    const midi = chordNotes[noteIndex]
+    const midi = roundNotes[noteIndex]
     batch(() => {
       base._setTargetPitch(midiToFreq(midi))
       base._updateMetrics({
@@ -195,7 +204,7 @@ export function useChordStackerController(
   }
 
   function scoreCurrentNote(): void {
-    const targetMidi = chordNotes[noteIndex]
+    const targetMidi = roundNotes[noteIndex]
     const noteScore = scoreNoteAccuracy(
       base.pitchHistory(),
       targetMidi,
@@ -253,6 +262,29 @@ export function useChordStackerController(
     base._completeWithResult(result)
   }
 
+  /** Each chord's average round score, `maj7Avg` for the major seventh:
+   *  0 for a chord the run did not reach or does not deal. */
+  function chordAverages(): Record<string, number> {
+    const byChord = new Map<ChordStackerChord, number[]>()
+    allRoundScores.forEach((score, i) => {
+      const chord = rounds[i]?.chord
+      if (chord !== undefined)
+        byChord.set(chord, [...(byChord.get(chord) ?? []), score])
+    })
+    return Object.fromEntries(
+      CHORD_STACKER_CHORDS.map((c) => [`${c}Avg`, avgOf(byChord.get(c) ?? [])]),
+    )
+  }
+
+  /** What the run dealt from, as numbers a result's metrics can carry:
+   *  which record it belongs to (exercise-comparability.ts). */
+  function choiceMetrics(): Record<string, number> {
+    return {
+      chordMask: chordMask(choice.chords),
+      inversions: choice.inversions ? 1 : 0,
+    }
+  }
+
   function computeResult(): ExerciseResult {
     if (allRoundScores.length === 0) {
       return {
@@ -262,11 +294,8 @@ export function useChordStackerController(
           roundsCompleted: 0,
           avgAccuracy: 0,
           bestRound: 0,
-          maj7Avg: 0,
-          min7Avg: 0,
-          dom7Avg: 0,
-          dim7Avg: 0,
-          maj6Avg: 0,
+          ...chordAverages(),
+          ...choiceMetrics(),
           ...EMPTY_NOTE_TALLY,
           ...stoppedEarlyMark(stoppedEarly),
         },
@@ -278,29 +307,6 @@ export function useChordStackerController(
     )
     const bestRound = Math.max(...allRoundScores)
 
-    // Per-chord-type breakdown
-    const chordScores: Record<ChordType, number[]> = {
-      maj7: [],
-      min7: [],
-      dom7: [],
-      dim7: [],
-      maj6: [],
-    }
-    for (
-      let i = 0;
-      i < Math.min(chordTypes.length, allRoundScores.length);
-      i++
-    ) {
-      chordScores[chordTypes[i]].push(allRoundScores[i])
-    }
-    const chordAvgs = {
-      maj7Avg: avgOf(chordScores.maj7),
-      min7Avg: avgOf(chordScores.min7),
-      dom7Avg: avgOf(chordScores.dom7),
-      dim7Avg: avgOf(chordScores.dim7),
-      maj6Avg: avgOf(chordScores.maj6),
-    }
-
     return {
       type: EXERCISE_CHORD_STACKER,
       score: Math.round(avgAccuracy * 0.7 + bestRound * 0.3),
@@ -308,7 +314,8 @@ export function useChordStackerController(
         roundsCompleted: allRoundScores.length,
         avgAccuracy,
         bestRound,
-        ...chordAvgs,
+        ...chordAverages(),
+        ...choiceMetrics(),
         ...tallyFromDeviations(noteDeviations),
         ...stoppedEarlyMark(stoppedEarly),
       },
@@ -319,10 +326,10 @@ export function useChordStackerController(
   function stopRounds(): void {
     _cancelled = true
     if (phaseTimer) clearTimeout(phaseTimer)
-    stoppedEarly = allRoundScores.length < chordTypes.length
+    stoppedEarly = allRoundScores.length < rounds.length
     base._setRunning(false)
     finish()
   }
 
-  return { setBase, startRounds, stopRounds, computeResult, CHORD_LABELS }
+  return { setBase, startRounds, stopRounds, computeResult }
 }

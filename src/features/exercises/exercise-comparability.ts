@@ -24,9 +24,18 @@
 // made (`stoppedEarlyMark`, in the result contract), and every bar reads
 // only runs that compare (`isComparableRun`): the level, the best, the weak
 // list, the averages and the trends.
+//
+// Some drills are sung in more than one form, and a form changes what the
+// score measures: Chord Stacker's triads are not its sevenths. Each form is
+// a record of its own (`exerciseRunRecord`). Its key goes on the end of the
+// drill's comparability key, so its runs thread apart on Progress, and the
+// result card's best and "vs last" read the runs of its form alone. The
+// drill's first form has the empty key, so the runs recorded before the
+// forms existed stay in its thread.
 
+import { chordsOfMask, chordStackerRecord, } from './chord-stacker/chord-stacker-chords'
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, EXERCISE_SIREN, runStoppedEarly, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, EXERCISE_SIREN, runStoppedEarly, } from './types'
 
 /** Bump when a drill's SCORING changes meaning — never for UI changes. */
 const SCORING_VERSION: Partial<Record<ExerciseType, number>> = {
@@ -92,12 +101,45 @@ export function isComparableRun(run: {
   )
 }
 
+/** Which of a drill's forms a run was sung in. */
+export interface ExerciseRunRecord {
+  /** '' for the drill's first form; otherwise kebab-case, `triads`. */
+  readonly key: string
+  /** The form in words, "Triads, with inversions"; '' for the first. */
+  readonly words: string
+}
+
+const FIRST_FORM: ExerciseRunRecord = { key: '', words: '' }
+
+/**
+ * The form a recorded run was sung in, read from its own metrics, where
+ * its controller wrote what it dealt. A run recorded before a drill had
+ * forms carries none of them and was sung in the first.
+ */
+export function exerciseRunRecord(
+  type: ExerciseType,
+  metrics: Readonly<Record<string, number>>,
+): ExerciseRunRecord {
+  if (type === EXERCISE_CHORD_STACKER && metrics.chordMask !== undefined) {
+    const chords = chordsOfMask(metrics.chordMask)
+    if (chords.length > 0) {
+      return chordStackerRecord(chords, metrics.inversions === 1)
+    }
+  }
+  return FIRST_FORM
+}
+
 /**
  * The persisted key that lets two plain runs of the same drill compare
  * like for like. Same shape family as the challenge/weekly keys
  * (`voice:challenge:<id>:v<n>:<sig>`), scoped by drill type and its
- * scoring version.
+ * scoring version, and by the run's form where the drill has more than
+ * one (`voice:exercise:chord-stacker:v1:triads`).
  */
-export function exerciseComparabilityKey(type: ExerciseType): string {
-  return `voice:exercise:${type}:v${exerciseScoringVersion(type)}`
+export function exerciseComparabilityKey(
+  type: ExerciseType,
+  record = '',
+): string {
+  const key = `voice:exercise:${type}:v${exerciseScoringVersion(type)}`
+  return record === '' ? key : `${key}:${record}`
 }

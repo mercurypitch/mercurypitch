@@ -102,6 +102,12 @@ export interface ExerciseShellProps {
    */
   icon?: JSX.Element
   status: () => ExerciseStatus
+  /**
+   * The form the setup has chosen, for a drill sung in more than one
+   * (`exerciseRunRecord`'s key in exercise-comparability.ts): the recent
+   * scores, the best and "vs last" read that form's runs alone.
+   */
+  record?: () => string
   /** Live score 0-100 (shown in the header during a run). */
   currentScore: () => number
   /** Final score 0-100 once complete (drives the result overlay color). */
@@ -365,7 +371,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         setGuidedStopReason(null)
         take.reset()
         if (props.guidedPractice === undefined) {
-          const stats = getExerciseStats(props.type)
+          const stats = getExerciseStats(props.type, props.record?.())
           setPrevBest(stats.totalPlays > 0 ? stats.bestScore : null)
           setPrevLast(stats.totalPlays > 0 ? stats.lastScore : null)
         } else {
@@ -910,7 +916,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
         <Show when={status() === 'count-in'}>{props.countInContent}</Show>
         <Show when={isIdleLike()}>
           <Show when={showsScore()}>
-            <ExerciseScoreHistory type={props.type} />
+            <ExerciseScoreHistory type={props.type} record={props.record?.()} />
           </Show>
           {/* Description + settings + Start live together in the centre of the
               panel before the run; they slide out of view once it's active. A

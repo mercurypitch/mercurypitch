@@ -1,0 +1,23 @@
+/* ============================================================
+   Chord Stacker: the round's chord by name, and the result's words
+   ============================================================
+
+   On the shell's dark stage, so these read the stage's tokens. */
+
+/* The chord the round plays and asks for, over its dots: "C major, first
+   inversion". It stays up while the notes are sung, since Merc's bubble
+   then names one note at a time. */
+.chordName {
+  margin: 2px 0 6px;
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 650;
+  text-align: center;
+  overflow-wrap: anywhere;
+}
+
+/* What the finished run dealt from, over its numbers. */
+.resultWords {
+  color: var(--text-primary);
+  font-weight: 600;
+}

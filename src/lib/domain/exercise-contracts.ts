@@ -200,6 +200,15 @@ export interface ExerciseConfig {
    *  for it (Scale Runner's `harmonic-minor`). Read it through
    *  `launchScale`; the exercise checks the name against its own list. */
   scale?: string
+  /** Chord types to deal, by a chord-driven exercise's own names for them
+   *  (Chord Stacker's `major`, `dom7`): this launch's own set in place of
+   *  the setup's. Read it through `launchChords`; the exercise keeps the
+   *  names on its own list. */
+  chords?: string[]
+  /** Whether a chord-driven exercise turns its chords over: true opens it
+   *  with inversions, false in root position. Read it through
+   *  `launchInversions`. */
+  inversions?: boolean
   /** Reviewed guided-practice prescription for this one launch. */
   guidedPractice?: GuidedPracticeLaunchConfig
 }
