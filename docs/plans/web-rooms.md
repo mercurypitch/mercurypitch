@@ -77,15 +77,21 @@ had, so each drill's own styles, the tests and the tours find what they looked f
 - **Hear it first.** Under Start, a drill can offer one example of what it asks for
   (`ExerciseShell`'s `demo`): Merc takes his singing pose, his bubble says what it is ("Listen:
   E3, then B3. That is a Perfect 5th."), and the example gives way to a run the moment one
-  starts. Interval Trainer, Scale Runner, Long Note and Pitch Hold have one, each a row of notes
-  (`stage/note-demo.ts`).
+  starts. Twelve drills have one, each a row of notes (`stage/note-demo.ts`): Interval Trainer,
+  Scale Runner, Long Note, Pitch Hold, Arpeggio Jumper, Chord Stacker, Staccato Precision, Drone
+  Intonation, Siren, Slide, Dynamic Swell and Call & Response. An example says what it is and
+  what it is not: Slide and Siren play the two notes a voice glides between, and Dynamic Swell
+  plays the note alone, since the app's instrument holds one loudness.
 - **The answer after a miss.** In Interval Trainer a round with a missed note is answered before
   the next: the pair plays once more under its name ("That was B3, a Perfect 5th above E3.
   Listen."). Read the Note and Name the Cadence do the same in their own way.
 
-Not yet, and drill by drill from here: an example and an answer for the other drills; Merc's own
-sung voice for them (the examples sound in the app's instrument); one figure per drill that is
-itself the feedback; and one line of words per note.
+Not yet, and drill by drill from here: an answer after a miss for the other drills; Merc's own
+sung voice for the examples (they sound in the app's instrument); one figure per drill that is
+itself the feedback; and one line of words per note. Six microphone drills have no example, each
+for its own reason: Mirror the Melody and Sight-Singing play or show their melody as the run
+itself, Pitch Pursuit is a chase with no fixed note, Routine Runner is a row of other drills and
+Guided Warmup a row of its own steps, and Vibrato's words are the coach's to write.
 
 ## What keeps them out of a store build
 

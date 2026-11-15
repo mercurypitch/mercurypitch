@@ -790,7 +790,7 @@ still images when WebGL fails or would run on the CPU.
   types beside its five, `maj` and `min`, at 0, 4, 7 and 0, 3, 7 semitones. Its setup has no chord
   type to choose today: it shuffles every type into each run
   (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:92`), and its setup only
-  lists the five (`ChordStackerExercise.tsx:120`), so the triads need a chord-type setting and a
+  lists the five (`ChordStackerExercise.tsx:128`), so the triads need a chord-type setting and a
   launch field as well as their two rows. When they ship, LESSON.md's editorial note says the card
   may name Chord Stacker on major and minor; until then the card names Arpeggio Jumper. A
   data-only slug that opens Chord Stacker on a triad (`EXERCISE_SLUGS`,
