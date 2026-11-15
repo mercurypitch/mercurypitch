@@ -513,7 +513,7 @@ other, paused off screen, and the still images when WebGL fails or would run on 
 - **Needed, proposed: `/exercises/fourths-and-fifths`** (CURRICULUM § 4 item 2, the Phase 1 App
   track): Interval Trainer with the `intervals` field (`[5, 7]`) set to a perfect fourth and a
   perfect fifth, both up (5 and 7 semitones), registered in `EXERCISE_SLUGS`
-  (`src/features/exercises/slug-map.ts:59-146`) with a line in `src/tests/slug-map.test.ts`. The
+  (`src/features/exercises/slug-map.ts:59-162`) with a line in `src/tests/slug-map.test.ts`. The
   difficulty stays the viewer's own; the director may add a beginner difficulty, as Lesson 4's
   proposed slug does. Beyond its registry line it needs (FACTS 47, 49):
   - repeats: done (`use-interval-trainer-controller.ts:53-83`,

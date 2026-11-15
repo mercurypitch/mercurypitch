@@ -20,7 +20,7 @@
 
 import type { ScaleRunnerScale } from '@/features/exercises/scale-runner/scale-runner-scales'
 import type { ExerciseType } from '@/features/exercises/types'
-import { EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
+import { EXERCISE_CADENCE, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
 
@@ -138,6 +138,22 @@ export const EXERCISE_SLUGS: Record<string, Launch> = {
   'harmony-line': {
     kind: 'exercise',
     exercise: EXERCISE_HARMONY_LAKE,
+  },
+  // Read the Note, for Lessons 15 and 21 (The staff; Keys and the circle of
+  // fifths): a note on the staff, named by its letter. It opens on the
+  // singer's own level and on the clef their voice reads.
+  'read-the-note': {
+    kind: 'exercise',
+    exercise: EXERCISE_NOTE_READING,
+  },
+  // Name the Cadence, for Lesson 28 (Cadences, form and a song in two
+  // parts), which teaches all four. Level 7 is the first that asks for the
+  // interrupted cadence too; the singer's own level would start a newcomer
+  // on three.
+  'name-the-cadence': {
+    kind: 'exercise',
+    exercise: EXERCISE_CADENCE,
+    difficulty: 7,
   },
   // Open the Karaoke view.
   'karaoke-duel': { kind: 'tab', tab: TAB_KARAOKE },

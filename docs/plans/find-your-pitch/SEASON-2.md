@@ -858,7 +858,7 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 
 | Lesson | Opens today                                                           | Waits for                                                                                                           |
 | ------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| 15     | Compose, Sheet Music view (`/?lesson=15#/compose`), a sandbox         | Its card's link to Read the Note, once the drill has a slug (item 9 shipped on 15 November 2026)                    |
+| 15     | Compose, Sheet Music view (`/?lesson=15#/compose`), a sandbox         | Its card's link to `/exercises/read-the-note` (item 9 and its slug shipped on 15 November 2026)                     |
 | 16     | Sight-Singing, with its limits said                                   | Fixed phrases (item 10a, data); hear do, bass clef, key signature, names off, octave-folded (item 10b to 10f, code) |
 | 17     | Ear Lab: The Chart, Pulse                                             | `ear-drill` and its subset (item 12, code then data)                                                                |
 | 18     | Sight-Singing (pitch only), The Chart                                 | Sight-singing in time (item 11, code); a sheet-view address (item 20, code)                                         |
@@ -871,7 +871,7 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 | 25     | Ear Lab: Gravity; Singing tab's harmonic and melodic minor            | A Scale Runner card for `/exercises/harmonic-minor-run` and `melodic-minor-run` (item 13 shipped)                   |
 | 26     | Jam's Harmony Stack (two or more people); Drone Intonation's thirds   | Harmony-line drill (item 17, code)                                                                                  |
 | 27     | Chord Stacker; Ear Lab: Stack                                         | Chord-type field and inversions (item 18, code); `ear-drill` subset (item 12)                                       |
-| 28     | Karaoke Night; Ear Lab: Cadence                                       | A card for Name the Cadence, with its slug (item 19 shipped on 15 November 2026); harmony-line drill (item 17)      |
+| 28     | Karaoke Night; Ear Lab: Cadence                                       | Its card's link to `/exercises/name-the-cadence` (item 19 shipped); harmony-line drill (item 17)                    |
 
 Every Season 2 link waits for one thing first: the lesson marker. `?lesson=` is read only for 01 to
 14 (`SEASON_1_LESSON`, `src/lib/lesson-marker.ts:11-19`), so `?lesson=15` is today an ordinary visit,
@@ -888,8 +888,8 @@ and First Light does not step aside. Item 21 fixes it.
    level 7 and two from level 8 (`spanFor`, `note-reading-rounds.ts`). After a miss Merc names the
    note and says where it sits, in Lesson 15's words for the staff
    (`src/features/lessons/kit/staff-places.ts`). It opens no microphone. It writes naturals only,
-   with no key signature and no accidental, which Lesson 21 would want of it. Lessons 15 and 21,
-   whose cards do not link it yet: it has no slug yet.
+   with no key signature and no accidental, which Lesson 21 would want of it. Its address is
+   `/exercises/read-the-note`. Lessons 15 and 21, whose cards do not link it yet.
 10. **Sight-Singing for the lessons.** (a) Fixed phrases by data slug: data, since a launch's `notes`
     already replace the random round when there are two or more
     (`src/features/exercises/sight-singing/SightSingingExercise.tsx:151-195`). The rest is code with
@@ -983,8 +983,9 @@ and First Light does not step aside. Item 21 fixes it.
     perfect against imperfect up to level 3, the plagal from level 4, the interrupted from level
     7 (`typesFor`). An answer is taken once the ending has sounded, the round can be heard again,
     and after a miss Merc names the cadence, says its two chords and it plays once more
-    (`use-cadence-controller.ts`). It opens no microphone. Major keys only. Lesson 28, whose card
-    does not link it yet: it has no slug yet.
+    (`use-cadence-controller.ts`). It opens no microphone. Major keys only. Its address is
+    `/exercises/name-the-cadence`, which opens it at level 7, so that all four are asked. Lesson
+    28, whose card does not link it yet.
 20. **Keys and the sheet view in the Singing tab** (code with tests): all twelve major keys and
     their relative minors in the key picker, with flat names (eight today,
     `src/features/sidebar/panels/PlaybackSetupPanel.tsx:87-94`); and an address that opens the sheet

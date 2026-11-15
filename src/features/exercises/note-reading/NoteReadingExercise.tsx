@@ -14,7 +14,8 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, For, onCleanup, onMount, Show, untrack } from 'solid-js'
 import { IconStaff } from '@/components/exercise-icons'
-import { getDifficulty, updateDifficultyFromEma, } from '@/features/practice-intelligence/difficulty-store'
+import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { createPersistedSignal } from '@/lib/storage'
@@ -132,7 +133,7 @@ const NoteReadingExercise: Component<NoteReadingExerciseProps> = (props) => {
     },
   })
 
-  const level = () => getDifficulty(EXERCISE_NOTE_READING)
+  const level = () => launchDifficulty(EXERCISE_NOTE_READING)
 
   const handleStart = (): void => {
     quiz.start({ clef: clef(), difficulty: level() })

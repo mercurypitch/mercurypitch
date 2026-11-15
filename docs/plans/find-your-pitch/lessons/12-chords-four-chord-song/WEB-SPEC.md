@@ -794,7 +794,7 @@ still images when WebGL fails or would run on the CPU.
   launch field as well as their two rows. When they ship, LESSON.md's editorial note says the card
   may name Chord Stacker on major and minor; until then the card names Arpeggio Jumper. A
   data-only slug that opens Chord Stacker on a triad (`EXERCISE_SLUGS`,
-  `src/features/exercises/slug-map.ts:59-146`) would need the chord type in the launch, which a slug
+  `src/features/exercises/slug-map.ts:59-162`) would need the chord type in the launch, which a slug
   cannot carry today (FACTS 51): proposed
   with it, not before.
 - **Needed, proposed: an `ear-drill` launch for Cadence** (CURRICULUM § 4 item 5, the planned

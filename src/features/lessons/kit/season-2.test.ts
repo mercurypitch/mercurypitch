@@ -74,7 +74,7 @@ describe('Season 2', () => {
       note: 'then choose Sheet Music',
     })
     // the drill it still needs stays the team's
-    expect(L15?.pr.needs).toMatch(/^A note-reading drill/)
+    expect(L15?.pr.needs).toMatch(/^A practice card for Read the Note/)
     expect(SEASON_2.prereq[15]).toEqual([2])
   })
 
@@ -376,9 +376,7 @@ describe('Season 2', () => {
       note: 'with a friend: the host picks Harmony Stack',
     })
     // the drill it still needs stays the team's
-    expect(L26?.pr.needs).toBe(
-      'The harmony-line drill (SEASON-2 § 5.2 item 17)',
-    )
+    expect(L26?.pr.needs).toMatch(/^A practice card for the Harmony room/)
     // Lesson 12 from Season 1, and Lesson 24
     expect(SEASON_2.prereq[26]).toEqual([12, 24])
   })
@@ -438,9 +436,7 @@ describe('Season 2', () => {
       label: 'Karaoke Night',
     })
     // the drills it still needs stay the team's
-    expect(L28?.pr.needs).toBe(
-      'A cadence-type ear drill (SEASON-2 § 5.2 item 19); the harmony-line drill (item 17)',
-    )
+    expect(L28?.pr.needs).toMatch(/^A practice card for Name the Cadence/)
     expect(SEASON_2.prereq[28]).toEqual([18, 26])
   })
 

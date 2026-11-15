@@ -67,7 +67,7 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'A piano has 88 keys. How can five lines write down every one of them?',
     pr: {
       needs:
-        'A note-reading drill: a note on the treble or bass staff, up to two ledger lines, answered on a keyboard or by letter',
+        'A practice card for Read the Note, which shipped on 15 November 2026 (mercurypitch.com/exercises/read-the-note)',
       link: {
         href: '/?lesson=15#/compose',
         addr: 'mercurypitch.com/#/compose',
@@ -308,7 +308,8 @@ const ENTRIES_2: readonly Lesson[] = [
     page: '/learn/26',
     hook: 'Can you make a harmony by singing the tune a third higher?',
     pr: {
-      needs: 'The harmony-line drill (SEASON-2 § 5.2 item 17)',
+      needs:
+        'A practice card for the Harmony room (mercurypitch.com/exercises/harmony-line), which differs from the planned harmony-line drill in three ways (SEASON-2 § 7 item 14)',
       link: {
         href: '/jam?lesson=26',
         addr: 'mercurypitch.com/jam',
@@ -352,7 +353,7 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: "How can a song sound as if it's ending, then keep going?",
     pr: {
       needs:
-        'A cadence-type ear drill (SEASON-2 § 5.2 item 19); the harmony-line drill (item 17)',
+        'A practice card for Name the Cadence, which shipped on 15 November 2026 (mercurypitch.com/exercises/name-the-cadence); the harmony-line drill (SEASON-2 § 5.2 item 17)',
       link: {
         href: '/karaoke-night?lesson=28',
         addr: 'mercurypitch.com/karaoke-night',

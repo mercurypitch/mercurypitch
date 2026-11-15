@@ -4,6 +4,7 @@
 
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { clearLaunchOverride, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { clearExerciseHistory, exerciseHistory, flushExerciseHistoryWrites, } from '@/stores/exercise-history-store'
 import { EXERCISE_CADENCE } from '../types'
@@ -95,6 +96,21 @@ describe('Name the Cadence', () => {
     )
     const start = drill.getByRole('button', { name: 'Start' })
     expect(start.querySelector('svg')).toBeNull()
+  })
+
+  it("asks for all four on a launch at Lesson 28's level", () => {
+    setLaunchOverride(EXERCISE_CADENCE, {
+      type: EXERCISE_CADENCE,
+      difficulty: 7,
+    })
+    try {
+      const drill = open(1)
+      expect(drill.container.querySelector('.idle-hint')?.textContent).toBe(
+        '8 cadences · Perfect, Imperfect, Plagal and Interrupted',
+      )
+    } finally {
+      clearLaunchOverride()
+    }
   })
 
   it('plays the round and asks only once the ending has sounded', () => {

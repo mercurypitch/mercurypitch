@@ -582,7 +582,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   lesson's leaps, registered in `EXERCISE_SLUGS` as
   `{ kind: 'exercise', exercise: EXERCISE_INTERVAL_TRAINER, intervals: [3, 4, 7, 5, 12] }`, each
   upward (`src/features/exercises/slug-map.ts:75-79`), with its line in
-  `src/tests/slug-map.test.ts:67-73`. The `intervals` field on `ExerciseLaunch`
+  `src/tests/slug-map.test.ts:68-74`. The `intervals` field on `ExerciseLaunch`
   (`src/features/exercises/slug-map.ts:28-48`) is passed by `applyExerciseSlug` into the launch
   override beside the notes and the difficulty (`src/App.tsx:764-766`), and the trainer reads it in
   place of its fixed pool, which still has no minor third (FACTS 51, 59); a launched list runs as

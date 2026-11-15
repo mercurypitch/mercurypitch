@@ -165,3 +165,28 @@ test("leaving harmonic-minor-run's drill leaves the menu's Scale Runner on its o
   await expect(page.locator('h2.exercise-title')).toHaveText('Scale Runner')
   await expect(page.locator('.idle-hint')).toHaveText('8 notes · Major · up')
 })
+
+test("/exercises/read-the-note opens Read the Note, Lesson 15's drill", async ({
+  page,
+}) => {
+  await openSlug(page, 'read-the-note', '15')
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Read the Note')
+  // A fresh profile's level keeps to the staff, on the default tenor
+  // preset's treble clef.
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '10 notes · Treble staff · lines and spaces',
+  )
+})
+
+test("/exercises/name-the-cadence opens Name the Cadence on Lesson 28's four cadences", async ({
+  page,
+}) => {
+  await openSlug(page, 'name-the-cadence', '28')
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Name the Cadence')
+  // The slug's level, not a fresh profile's, which would ask for three.
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '8 cadences · Perfect, Imperfect, Plagal and Interrupted',
+  )
+})

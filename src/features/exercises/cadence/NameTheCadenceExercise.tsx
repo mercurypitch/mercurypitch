@@ -13,7 +13,8 @@
 import type { Component } from 'solid-js'
 import { createEffect, For, onCleanup, onMount, Show, untrack } from 'solid-js'
 import { IconCadence } from '@/components/exercise-icons'
-import { getDifficulty, updateDifficultyFromEma, } from '@/features/practice-intelligence/difficulty-store'
+import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
+import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { romanOf } from '@/lib/ear/progressions'
 import { midiToFrequency } from '@/lib/frequency-to-note'
@@ -43,7 +44,7 @@ const NameTheCadenceExercise: Component<NameTheCadenceExerciseProps> = (
     stopSound: () => audioEngine.stopTone(),
   })
 
-  const level = () => getDifficulty(EXERCISE_CADENCE)
+  const level = () => launchDifficulty(EXERCISE_CADENCE)
   const types = () => typesFor(level())
 
   const handleStart = (): void => {
