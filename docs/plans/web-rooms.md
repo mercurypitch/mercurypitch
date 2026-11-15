@@ -65,7 +65,7 @@ had, so each drill's own styles, the tests and the tours find what they looked f
   drill's brief (its `idlePlaceholder`) until a run starts and the run's instruction (its
   `activePhase`) while it lasts; both used to sit inside the card. He listens to a run and cheers
   one graded S or A (`stage/stage-pose.ts`). He stands above the sheet on a phone and in a rail
-  beside it from 1280px, where he costs the sheet no height.
+  beside it from 1440px, where he costs the sheet no height.
 - **The mic.** Start is a pill with a microphone on it. On a phone it holds to the sheet's foot,
   so a tall setup or a result never puts it a scroll away.
 - **The result.** The grade in a ring of its own ink and the score as one large number, over the

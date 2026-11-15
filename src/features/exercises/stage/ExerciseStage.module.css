@@ -134,8 +134,10 @@
 
 /* ── Merc and the sheet ───────────────────────────────────── */
 
-/* The coach above the sheet. In a wide window he stands beside it (below),
-   which costs the sheet no height at all. */
+/* The coach above the sheet. From 1440px he stands beside it (below), which
+   costs the sheet no height at all. The rail starts no narrower than that:
+   the drills' run layouts are fitted to a 1280px tablet's sheet, and a rail
+   there would take a quarter of its width. */
 .coach {
   display: flex;
   flex: none;
@@ -421,19 +423,39 @@
     justify-content: center;
   }
 
-  /* The mic stays on screen. A phone's setup can be taller than its sheet
-     (a dial, a style switch, a timer), and Start used to be the last thing
-     in it, a scroll away; after a run, Try Again sat under the result and
-     the dial. The two groups around the button give up their boxes so that
-     it is a child of the whole column, which is what lets it hold to the
-     sheet's foot for the column's full length. */
+  /* The mic first, and always on screen. A phone's setup can be taller than
+     its sheet (a dial, a style switch, a timer), and Start used to be the
+     last thing in it, a scroll away; after a run, Try Again sat under the
+     result and the dial. So on a phone the button leads the sheet, under
+     the result when there is one, and the setup follows it. The two groups
+     around the button give up their boxes so that it is a child of the
+     whole column: that is what lets `order` lift it over the setup, and
+     lets it hold to the sheet's edge for the column's full length, at the
+     top once the setup has scrolled past it and at the foot under a result
+     taller than the sheet. The tree keeps its order (setup, then Start),
+     which is the order a screen reader walks. */
   .stage :global(.exercise-idle-body),
   .stage :global(.exercise-idle-launch) {
     display: contents;
   }
 
+  .stage :global(.exercise-result-card) {
+    order: -3;
+  }
+
+  .stage :global(.exercise-idle-start),
+  .stage :global(.exercise-guided-stop-question) {
+    order: -2;
+  }
+
+  .stage :global(.exercise-error),
+  .stage :global(.exercise-capture-note) {
+    order: -1;
+  }
+
   .stage :global(.exercise-idle-start) {
     position: sticky;
+    top: 10px;
     bottom: 10px;
     z-index: 5;
     padding: 12px 22px;
@@ -464,44 +486,72 @@
   }
 }
 
+/* ── A tablet and a laptop ────────────────────────────────── */
+
+/* Between a phone and the rail, a window is wide and seldom tall, and
+   several setups fit a tablet in landscape with nothing to spare. So the
+   coach is one line here: a smaller Merc, and a brief that runs on as one
+   sentence with its hint, in a bubble free to take the window's width. A
+   phone on its side is as short, and gets the same. */
+@media (min-width: 769px) and (max-width: 1439.98px),
+  (max-height: 720px) and (max-width: 1439.98px) {
+  .coach {
+    gap: 6px;
+    margin-bottom: 6px;
+  }
+
+  .merc {
+    margin: -12px -12px 0 0;
+    transform: scale(0.78);
+    transform-origin: left bottom;
+  }
+
+  .bubble {
+    max-width: none;
+    padding: 6px 12px;
+    font-size: 0.84rem;
+  }
+
+  .bubble :global(.exercise-idle-placeholder) p {
+    display: inline;
+    font-size: 0.84rem;
+  }
+
+  .bubble :global(.exercise-idle-placeholder) :global(.idle-hint) {
+    display: inline;
+  }
+
+  .bubble :global(.exercise-idle-placeholder) > * + * {
+    margin-top: 0;
+    margin-left: 0.7em;
+  }
+}
+
 /* ── A short window ───────────────────────────────────────── */
 
-/* Height is what a short window lacks, and several setups fit a 560px
-   laptop window with nothing to spare. So the coach gives his back: a
-   smaller Merc, tighter margins, and a brief that runs on as one sentence
-   with its hint, in a bubble free to take the window's width. In the rail
-   (below) he costs the sheet no height, so none of this applies there. */
-@media (max-height: 720px) and (max-width: 1279.98px) {
+/* Under 720px of height every row counts: a 560px laptop window holds some
+   setups to the pixel. The coach gives a little more of his back. */
+@media (max-height: 720px) and (max-width: 1439.98px) {
   .stage :global(.exercise-runner-header) {
     margin-bottom: 8px;
   }
 
   .coach {
-    gap: 6px;
     margin-bottom: 4px;
   }
 
   .merc {
     margin: -20px -20px 0 0;
     transform: scale(0.64);
-    transform-origin: left bottom;
   }
 
   .bubble {
-    max-width: none;
     padding: 5px 12px;
     font-size: 0.82rem;
   }
 
-  .bubble :global(.exercise-idle-placeholder) p,
-  .bubble :global(.exercise-idle-placeholder) :global(.idle-hint) {
-    display: inline;
+  .bubble :global(.exercise-idle-placeholder) p {
     font-size: 0.82rem;
-  }
-
-  .bubble :global(.exercise-idle-placeholder) > * + * {
-    margin-top: 0;
-    margin-left: 0.7em;
   }
 
   .stage :global(.exercise-idle-start) {
@@ -519,7 +569,7 @@
    just above the sheet, but gives up his height, and what he holds hangs
    down beside a sheet that has moved over to make room. A row around the
    two would have been a wrapper in a shell that every drill's test reads. */
-@media (min-width: 1280px) {
+@media (min-width: 1440px) {
   .stage {
     --stage-rail: 236px;
     --stage-rail-gap: 18px;

@@ -19,7 +19,7 @@ const MERC_STRIP_PX = 56
 const MERC_RAIL_PX = 112
 
 /** The window in which the stylesheet puts the coach in a rail. */
-export const STAGE_RAIL_QUERY = '(min-width: 1280px)'
+export const STAGE_RAIL_QUERY = '(min-width: 1440px)'
 
 /**
  * His size is chosen once, when the drill opens, as MercPresence chooses
