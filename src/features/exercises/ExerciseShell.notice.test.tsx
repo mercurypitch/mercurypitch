@@ -289,9 +289,12 @@ describe('the take notice on the stage', () => {
         ?.closest('[aria-hidden="true"]'),
     ).toBeNull()
 
+    // The notice is back when the line goes, which is two seconds after it
+    // came however short the example was.
     finish()
-    await waitFor(() =>
-      expect(drill.notice()?.textContent).toContain('Keep this take?'),
+    await waitFor(
+      () => expect(drill.notice()?.textContent).toContain('Keep this take?'),
+      { timeout: 4000 },
     )
   })
 

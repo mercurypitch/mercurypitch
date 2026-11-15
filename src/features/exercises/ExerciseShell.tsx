@@ -75,6 +75,10 @@ export interface ExerciseTrackerConfig {
   when?: () => boolean
 }
 
+/** The least an example's line stays in Merc's bubble, however short the
+ *  example itself. */
+export const DEMO_LINE_MIN_MS = 2000
+
 /** One example of what a drill asks for, played before the singer tries. */
 export interface ExerciseDemo {
   /** Play it; resolves when it has finished sounding. */
@@ -283,26 +287,46 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // card (grade, personal-best delta, the exercise's metric summary) makes
   // the payoff moment explicit before the next attempt.
   const isIdleLike = () => status() === 'idle' || status() === 'complete'
-  // "Hear it first" (props.demo): true while the example sounds. Each play
-  // has a number, so one cut short cannot switch off the one after it.
+  // "Hear it first" (props.demo): `demoPlaying` while the example sounds,
+  // `demoLineUp` while its line is in Merc's bubble, which is for at least
+  // DEMO_LINE_MIN_MS: some examples are over sooner than their line can be
+  // read. Each play has a number, so one cut short cannot switch off the
+  // one after it.
   const [demoPlaying, setDemoPlaying] = createSignal(false)
+  const [demoLineUp, setDemoLineUp] = createSignal(false)
   let demoRun = 0
+  let demoLinger: ReturnType<typeof setTimeout> | undefined
   const playDemo = async (): Promise<void> => {
     const demo = props.demo
     if (demo === undefined || demoPlaying()) return
     const run = ++demoRun
+    clearTimeout(demoLinger)
+    const began = Date.now()
     setDemoPlaying(true)
+    setDemoLineUp(true)
     try {
       await demo.play()
     } finally {
-      if (run === demoRun) setDemoPlaying(false)
+      if (run === demoRun) {
+        setDemoPlaying(false)
+        const left = DEMO_LINE_MIN_MS - (Date.now() - began)
+        if (left <= 0) {
+          setDemoLineUp(false)
+        } else {
+          demoLinger = setTimeout(() => {
+            if (run === demoRun) setDemoLineUp(false)
+          }, left)
+        }
+      }
     }
   }
   const stopDemo = (): void => {
-    if (!demoPlaying()) return
+    if (!demoPlaying() && !demoLineUp()) return
     demoRun += 1
-    props.demo?.stop()
+    clearTimeout(demoLinger)
+    if (demoPlaying()) props.demo?.stop()
     setDemoPlaying(false)
+    setDemoLineUp(false)
   }
   // The example gives way to the run, however the run was started (the
   // button, Space, a routine), and to the drill being left.
@@ -848,43 +872,35 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
             first" while the example sounds. */}
       <StageCoach
         pose={mercPose}
+        example={() =>
+          demoLineUp() && props.demo !== undefined ? props.demo.line() : null
+        }
         notice={
           props.voiceCapture === undefined
             ? undefined
             : {
-                notice: () => (demoPlaying() ? null : take.notice()),
+                notice: () => (demoLineUp() ? null : take.notice()),
                 onPrimary: take.keep,
                 onClose: take.close,
               }
         }
       >
         <Show
-          when={demoPlaying() && props.demo}
+          when={isActive() && props.activePhase}
           fallback={
             <Show
-              when={isActive() && props.activePhase}
+              when={props.idlePlaceholder}
               fallback={
-                <Show
-                  when={props.idlePlaceholder}
-                  fallback={
-                    <div class="exercise-idle-placeholder">
-                      <p>{help().summary}</p>
-                    </div>
-                  }
-                >
-                  {props.idlePlaceholder}
-                </Show>
+                <div class="exercise-idle-placeholder">
+                  <p>{help().summary}</p>
+                </div>
               }
             >
-              <div class="exercise-active-phase">{props.activePhase}</div>
+              {props.idlePlaceholder}
             </Show>
           }
         >
-          {(demo) => (
-            <div class="exercise-stage-demo-line" role="status">
-              {demo().line()}
-            </div>
-          )}
+          <div class="exercise-active-phase">{props.activePhase}</div>
         </Show>
       </StageCoach>
       <div

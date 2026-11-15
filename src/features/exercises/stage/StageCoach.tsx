@@ -50,6 +50,9 @@ export interface StageCoachProps {
   /** The run's voice take, as a notice over the bubble. Absent in a drill
    *  that records nothing. */
   notice?: TakeNoticeProps
+  /** "Hear it first": the example's line while it is up, else null. It
+   *  lies over the brief inside the bubble, which keeps the brief's size. */
+  example?: () => string | null
 }
 
 export function StageCoach(props: StageCoachProps): JSX.Element {
@@ -57,6 +60,10 @@ export function StageCoach(props: StageCoachProps): JSX.Element {
   // The bubble under a notice is out of sight, and out of a screen
   // reader's way, so its words are not read twice.
   const covered = (): boolean => (props.notice?.notice() ?? null) !== null
+  // The example's line takes the brief's place inside the bubble, and the
+  // brief keeps its box under it: a line shorter than the brief used to
+  // shrink the bubble and pull the sheet up for as long as it played.
+  const exampleLine = (): string | null => props.example?.() ?? null
   return (
     <div class={styles.coach} data-testid="exercise-stage-coach">
       <MercPresence
@@ -67,12 +74,27 @@ export function StageCoach(props: StageCoachProps): JSX.Element {
         testId="exercise-stage-merc"
       />
       <div class={styles.say}>
-        <div
-          class={styles.bubble}
-          classList={{ [styles.covered]: covered() }}
-          aria-hidden={covered() ? 'true' : undefined}
-        >
-          {props.children}
+        <div class={styles.bubble} classList={{ [styles.covered]: covered() }}>
+          <div class={styles.layers}>
+            <div
+              class={styles.layer}
+              classList={{ [styles.under]: exampleLine() !== null }}
+              aria-hidden={
+                covered() || exampleLine() !== null ? 'true' : undefined
+              }
+            >
+              {props.children}
+            </div>
+            <Show when={exampleLine()}>
+              {(line) => (
+                <div class={`${styles.layer} ${styles.example}`}>
+                  <div class="exercise-stage-demo-line" role="status">
+                    {line()}
+                  </div>
+                </div>
+              )}
+            </Show>
+          </div>
         </div>
         <Show when={props.notice}>
           {(notice) => <TakeNotice {...notice()} />}

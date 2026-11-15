@@ -221,6 +221,33 @@
   opacity: 0;
 }
 
+/* Inside the bubble the brief and, while "Hear it first" is up, the
+   example's line share one grid cell, which is as large as the larger of
+   the two. A line shorter than the brief (most are) leaves the bubble, and
+   the sheet under it, exactly where they were; before, the bubble shrank
+   to the line and the sheet jumped up for as long as the example played,
+   59px in Name the Cadence on a phone. */
+.layers {
+  display: grid;
+  min-width: 0;
+}
+
+.layer {
+  grid-area: 1 / 1;
+  min-width: 0;
+}
+
+/* The brief under the example's line: its box stays, it is not seen and
+   not read. */
+.under {
+  visibility: hidden;
+}
+
+.example {
+  display: flex;
+  align-items: center;
+}
+
 /* The brief is each drill's own block, written for the middle of a card:
    centred, padded, and tall enough to fill one. In the bubble it is a few
    lines of speech. */
