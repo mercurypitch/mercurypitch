@@ -136,7 +136,6 @@ describe('a finished run in the shell', () => {
   it.each([
     ['unsupported', 'This browser cannot record a replay.'],
     ['error', 'No replay was captured.'],
-    ['idle', 'Replay discarded.'],
   ] as const)(
     'says only "%s" replay news after an ungraded run, never a score',
     async (state, note) => {
@@ -146,8 +145,7 @@ describe('a finished run in the shell', () => {
       })
 
       expect(
-        card.querySelector('.exercise-result-voice-copy [role="status"]')
-          ?.textContent,
+        card.querySelector('.exercise-result-replay-note')?.textContent,
       ).toBe(note)
     },
   )
@@ -158,7 +156,6 @@ describe('a finished run in the shell', () => {
       'This browser can score the run but cannot record a replay.',
     ],
     ['error', 'No replay was captured. Your score is unchanged.'],
-    ['idle', 'Replay discarded. Your score is unchanged.'],
   ] as const)('keeps the graded replay news for "%s"', async (state, note) => {
     const { card } = await finishRun({
       ungraded: false,
@@ -166,9 +163,17 @@ describe('a finished run in the shell', () => {
     })
 
     expect(
-      card.querySelector('.exercise-result-voice-copy [role="status"]')
-        ?.textContent,
+      card.querySelector('.exercise-result-replay-note')?.textContent,
     ).toBe(note)
+  })
+
+  it('says nothing of a take that was discarded', async () => {
+    const { card } = await finishRun({
+      ungraded: true,
+      voiceCapture: captureIn('idle'),
+    })
+
+    expect(card.querySelector('.exercise-result-replay-note')).toBeNull()
   })
 
   it('promises an ungraded run saves, not a score, before it starts', () => {

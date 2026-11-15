@@ -137,8 +137,14 @@
 /* The coach above the sheet. From 1440px he stands beside it (below), which
    costs the sheet no height at all. The rail starts no narrower than that:
    the drills' run layouts are fitted to a 1280px tablet's sheet, and a rail
-   there would take a quarter of its width. */
+   there would take a quarter of its width.
+
+   Raised over the sheet: a notice from his bubble may hang a little down
+   over the sheet's top edge (TakeNotice.module.css), and has to be on top
+   of it there. */
 .coach {
+  position: relative;
+  z-index: 8;
   display: flex;
   flex: none;
   align-items: flex-end;
@@ -180,6 +186,19 @@
   transform: translateX(-50%);
 }
 
+/* The bubble's place: all the row beside him, with the bubble at its foot as
+   it stood in the coach. A notice lies over it (TakeNotice.module.css), and
+   takes its size from this box, not from the bubble, so a short brief does
+   not squeeze the notice's words. */
+.say {
+  position: relative;
+  display: flex;
+  flex: 1 1 auto;
+  align-items: flex-end;
+  align-self: stretch;
+  min-width: 0;
+}
+
 /* What he says. The corner nearest him is the square one. */
 .bubble {
   flex: 0 1 auto;
@@ -193,6 +212,13 @@
   font-size: 0.9rem;
   line-height: 1.4;
   box-shadow: 0 10px 26px rgb(0 0 0 / 38%);
+}
+
+/* Under a notice the bubble keeps its box, so nothing moves, and gives up
+   its look: a notice narrower than a long brief would otherwise leave the
+   brief's tail showing beside it. */
+.covered {
+  opacity: 0;
 }
 
 /* The brief is each drill's own block, written for the middle of a card:
@@ -626,6 +652,11 @@
     transform: none;
   }
 
+  .say {
+    flex: none;
+    width: 100%;
+  }
+
   /* He is above the bubble here, so the square corner is the top one. */
   .bubble {
     width: 100%;
@@ -656,6 +687,11 @@
 
   .stage :global(.exercise-canvas-area) {
     animation: sheet-in 320ms ease-out both;
+  }
+
+  /* The bubble gives way to a notice as the notice leaves it. */
+  .bubble {
+    transition: opacity 160ms ease-out;
   }
 }
 

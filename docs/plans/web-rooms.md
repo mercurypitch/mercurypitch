@@ -73,6 +73,16 @@ had, so each drill's own styles, the tests and the tours find what they looked f
   so a tall setup or a result never puts it a scroll away.
 - **The result.** The grade in a ring of its own ink and the score as one large number, over the
   drill's own summary line.
+- **The take notice** (15 Nov 2026). Whether to keep a run's voice take is no longer a block in the
+  result card, with Keep Take and Discard over Try Again. It is a notice that pops out of Merc's
+  bubble, with Merc beside it as an iOS banner has its app's icon beside it
+  (`stage/TakeNotice.tsx`, its words by state in `stage/take-notice.ts`, the keep in
+  `stage/useTakeNotice.ts`). It lies over the bubble, out of the flow, so the sheet does not move
+  when it comes or goes and it covers no control. It asks ("Keep this take?", Keep, a close that
+  discards), says it is keeping, then "Take kept", which leaves by itself after 4 s, or offers a
+  retry when keeping failed; it says all of that in one place, so a keep raises no toast. "Hear it
+  first" has the bubble while it plays. A take that was never recorded is not a notice: the card
+  says so in one quiet line at its foot.
 
 - **Hear it first.** Under Start, a drill can offer one example of what it asks for
   (`ExerciseShell`'s `demo`): Merc takes his singing pose, his bubble says what it is ("Listen:

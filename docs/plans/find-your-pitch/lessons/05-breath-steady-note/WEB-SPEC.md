@@ -450,7 +450,7 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
   2. The `durationSec` launch field: on `ExerciseLaunch` and the launch override (beside
      `difficulty`), passed by `applyExerciseSlug` (`src/App.tsx:595-639`); read by `ExerciseShell`
      as guided length, then launch length, then saved timer (`effectiveTimerSeconds`,
-     `ExerciseShell.tsx:599-601`); shown selected on the timer toggle without writing the saved
+     `ExerciseShell.tsx:528-530`); shown selected on the timer toggle without writing the saved
      preference, and dropped if the viewer picks another length. Pitch Hold shares the field
      (Lesson 3's spec).
   3. Long Note's duration score reads that same effective length, not `activeTimerSeconds()`

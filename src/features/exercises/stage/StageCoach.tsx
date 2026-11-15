@@ -7,12 +7,19 @@
 // pose and the words in his bubble: the drill's brief before a run, the
 // instruction during one. A Merc inside each state would be unmounted and
 // drawn again at every Start and every Stop.
+//
+// After a run his bubble can carry a notice (TakeNotice.tsx): it lies over
+// the bubble while it lasts, and the bubble keeps its place under it, so
+// nothing on the stage moves when it comes or goes.
 
 import type { JSX } from 'solid-js'
+import { Show } from 'solid-js'
 import { MercPresence } from '@/components/room-kit/MercPresence'
 import type { MercState } from '@/lib/merc/constants'
 import { stillFor } from '@/lib/merc/stills'
 import styles from './ExerciseStage.module.css'
+import type { TakeNoticeProps } from './TakeNotice'
+import { TakeNotice } from './TakeNotice'
 
 /** Merc's box in px: above the sheet, and in the rail beside it. */
 const MERC_STRIP_PX = 56
@@ -40,10 +47,16 @@ export interface StageCoachProps {
   pose: () => MercState
   /** What he says: the brief, or the run's instruction. */
   children: JSX.Element
+  /** The run's voice take, as a notice over the bubble. Absent in a drill
+   *  that records nothing. */
+  notice?: TakeNoticeProps
 }
 
 export function StageCoach(props: StageCoachProps): JSX.Element {
   const size = mercSize()
+  // The bubble under a notice is out of sight, and out of a screen
+  // reader's way, so its words are not read twice.
+  const covered = (): boolean => (props.notice?.notice() ?? null) !== null
   return (
     <div class={styles.coach} data-testid="exercise-stage-coach">
       <MercPresence
@@ -53,7 +66,18 @@ export function StageCoach(props: StageCoachProps): JSX.Element {
         class={styles.merc}
         testId="exercise-stage-merc"
       />
-      <div class={styles.bubble}>{props.children}</div>
+      <div class={styles.say}>
+        <div
+          class={styles.bubble}
+          classList={{ [styles.covered]: covered() }}
+          aria-hidden={covered() ? 'true' : undefined}
+        >
+          {props.children}
+        </div>
+        <Show when={props.notice}>
+          {(notice) => <TakeNotice {...notice()} />}
+        </Show>
+      </div>
     </div>
   )
 }
