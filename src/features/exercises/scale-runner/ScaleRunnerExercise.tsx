@@ -12,6 +12,7 @@ import { fitScaleBaseNote, getDefaultNote, getNoteOptions, } from '@/lib/vocal-r
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
+import { createNoteDemo } from '../stage/note-demo'
 import { EXERCISE_SCALE_RUNNER, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
 import type { ScaleRunDirection, ScaleRunnerScale } from './scale-runner-scales'
@@ -72,6 +73,10 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
 
   onCleanup(() => base.reset())
 
+  // "Hear it first": Merc plays one example before the singer tries.
+  const demo = createNoteDemo(audioEngine)
+  onCleanup(() => demo.stop())
+
   onMount(() => {
     if (props.autoStart === true && base.state().status === 'idle') {
       void handleStart()
@@ -127,6 +132,16 @@ const ScaleRunnerExercise: Component<ScaleRunnerExerciseProps> = (props) => {
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconArrowUpDown size={20} />}
+      demo={{
+        play: () =>
+          demo.play(
+            scaleRunNotes(noteToMidi(startNote()), scaleType(), direction()),
+            { noteMs: 420, gapMs: 60 },
+          ),
+        stop: demo.stop,
+        line: () =>
+          `Listen: the ${scaleRunnerScaleLabel(scaleType())} scale, ${direction() === 'up' ? 'up from' : 'down to'} ${startNote()}.`,
+      }}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <p>

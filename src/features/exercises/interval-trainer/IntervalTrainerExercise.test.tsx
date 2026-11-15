@@ -100,3 +100,44 @@ describe('the Interval Trainer idle hint', () => {
     expect(totalRounds).toBe(6)
   })
 })
+
+describe('Hear it first, on the Interval Trainer', () => {
+  afterEach(() => {
+    cleanup()
+    clearLaunchOverride()
+    baseRef.metrics = []
+    vi.useRealTimers()
+  })
+
+  it("plays one pair from the starting note and names it on Merc's line", () => {
+    vi.useFakeTimers()
+    const tones: number[] = []
+    const { container } = render(() => (
+      <IntervalTrainerExercise
+        audioEngine={
+          {
+            playTone: async (freq: number) => {
+              tones.push(freq)
+            },
+            stopTone: () => {},
+          } as never
+        }
+        practiceEngine={{} as never}
+        onBack={() => {}}
+      />
+    ))
+
+    fireEvent.click(screen.getByRole('button', { name: 'Hear it first' }))
+    // The first note at once, the second after it.
+    expect(tones).toHaveLength(1)
+    const line = container.querySelector('.exercise-stage-demo-line')
+    expect(line?.textContent).toMatch(
+      /^Listen: [A-G]#?\d, then [A-G]#?\d\. That is a Perfect 5th\.$/,
+    )
+
+    vi.advanceTimersByTime(1100)
+    expect(tones).toHaveLength(2)
+    // A fifth: seven semitones up, a ratio of 2^(7/12).
+    expect(tones[1] / tones[0]).toBeCloseTo(2 ** (7 / 12), 5)
+  })
+})

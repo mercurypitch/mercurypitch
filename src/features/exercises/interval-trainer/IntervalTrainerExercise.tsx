@@ -13,9 +13,10 @@ import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseFeedback } from '../ExerciseFeedback'
 import { ExerciseShell } from '../ExerciseShell'
+import { createNoteDemo } from '../stage/note-demo'
 import { EXERCISE_INTERVAL_TRAINER, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
-import { intervalRangeLabel, plannedRounds, useIntervalTrainerController, } from './use-interval-trainer-controller'
+import { exampleInterval, intervalRangeLabel, intervalWithArticle, plannedRounds, useIntervalTrainerController, } from './use-interval-trainer-controller'
 
 interface IntervalTrainerExerciseProps {
   audioEngine: AudioEngine
@@ -66,6 +67,9 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
 
   onCleanup(() => base.reset())
 
+  const demo = createNoteDemo(audioEngine)
+  onCleanup(() => demo.stop())
+
   onMount(() => {
     if (props.autoStart === true && base.state().status === 'idle') {
       void handleStart()
@@ -93,6 +97,15 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
   const roundsCompleted = () => base.state().metrics.roundsCompleted ?? 0
   const totalRounds = () => base.state().metrics.totalRounds ?? 6
   const lastRoundScore = () => base.state().metrics.lastRoundScore ?? 0
+  /** After a missed note (phase 3), the pair's name on Merc's line while it
+   *  plays again: "That was B3, a Perfect 5th above E3. Listen." */
+  const answerLine = (): string => {
+    const low = base.state().metrics.answerLow ?? 0
+    const high = base.state().metrics.answerHigh ?? 0
+    return `That was ${midiToNoteName(high)}, ${intervalWithArticle(high - low)} above ${midiToNoteName(low)}. Listen.`
+  }
+  /** "Hear it first": one pair from the chosen starting note. */
+  const example = () => exampleInterval(noteToMidi(startNote()))
   // The hint promises what setBase will play: the same difficulty and the
   // same intervals, read from the same launch.
   const launchedIntervals = () => launchIntervals(EXERCISE_INTERVAL_TRAINER)
@@ -124,6 +137,14 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconArrowUpDown size={20} />}
+      demo={{
+        play: () => demo.play(example()),
+        stop: demo.stop,
+        line: () => {
+          const [low, high] = example()
+          return `Listen: ${midiToNoteName(low)}, then ${midiToNoteName(high)}. That is ${intervalWithArticle(high - low)}.`
+        },
+      }}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <p>
@@ -159,7 +180,12 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
       }}
       activePhase={
         <div class="mirror-melody-phase">
-          <span classList={{ listen: phase() === 1, sing: phase() === 2 }}>
+          <span
+            classList={{
+              listen: phase() === 1 || phase() === 3,
+              sing: phase() === 2,
+            }}
+          >
             {phase() === 1 ? (
               <>
                 <IconMusic size={16} /> Listen: note {noteIndex() + 1} of 2...
@@ -168,11 +194,15 @@ const IntervalTrainerExercise: Component<IntervalTrainerExerciseProps> = (
               <>
                 <IconMic size={16} /> Sing note {noteIndex() + 1} of 2
               </>
+            ) : phase() === 3 ? (
+              <>
+                <IconMusic size={16} /> {answerLine()}
+              </>
             ) : (
               '...'
             )}
           </span>
-          {phase() > 0 && (
+          {phase() > 0 && phase() !== 3 && (
             <span class="mirror-melody-current-note">
               {midiToNoteName(currentMidi())}
             </span>
