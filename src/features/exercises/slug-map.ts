@@ -20,7 +20,7 @@
 
 import type { ScaleRunnerScale } from '@/features/exercises/scale-runner/scale-runner-scales'
 import type { ExerciseType } from '@/features/exercises/types'
-import { EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
+import { EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
 
@@ -130,6 +130,14 @@ export const EXERCISE_SLUGS: Record<string, Launch> = {
     exercise: EXERCISE_SCALE_RUNNER,
     notes: ['A3', 'A4'],
     scale: 'melodic-minor',
+  },
+  // Harmony, the room where Merc sings a short line and the singer sings it
+  // a third above him: the second voice of Lessons 26 and 28 (A second
+  // voice; Cadences, form and a song in two parts). A room, so the web opens
+  // it over the whole window (src/features/exercises/rooms).
+  'harmony-line': {
+    kind: 'exercise',
+    exercise: EXERCISE_HARMONY_LAKE,
   },
   // Open the Karaoke view.
   'karaoke-duel': { kind: 'tab', tab: TAB_KARAOKE },

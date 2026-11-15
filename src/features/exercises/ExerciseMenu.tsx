@@ -1,12 +1,21 @@
 import type { Component } from 'solid-js'
-import { createMemo, createSignal, For, Show } from 'solid-js'
+import { createMemo, createSignal, For, lazy, Show, Suspense } from 'solid-js'
 import type { JSX } from 'solid-js/jsx-runtime'
+import { Dynamic } from 'solid-js/web'
 import { IconArrowUpDown, IconCircleEmpty, IconCircleFill, IconDiamond, IconDrone, IconExpand, IconFire, IconGame, IconLayers, IconList, IconLock, IconMirror, IconMusic, IconReply, IconSiren, IconSlide, IconStar, IconTarget, IconWave, IconZap, } from '@/components/exercise-icons'
 import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import { WeaknessPanel } from '@/features/practice-intelligence/components/WeaknessPanel'
+import { WEB_ROOMS } from '@/lib/native-build'
 import { exerciseHistory, getExerciseStats, } from '@/stores/exercise-history-store'
 import type { ExerciseConfig, ExerciseType } from './types'
 import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, runStoppedEarly, } from './types'
+
+/**
+ * The rooms, at the top of the tab, in the web build alone. Behind the
+ * constant and lazy, so a native build carries neither the strip nor the
+ * catalogue it reads (web-rooms-fold.test.ts).
+ */
+const RoomsStrip = WEB_ROOMS ? lazy(() => import('./rooms/RoomsStrip')) : null
 
 interface ExerciseMenuProps {
   onSelect: (type: ExerciseType) => void
@@ -353,6 +362,14 @@ const ExerciseMenu: Component<ExerciseMenuProps> = (props) => {
         </div>
         <Show when={props.headerAction}>{props.headerAction}</Show>
       </div>
+
+      <Show when={RoomsStrip}>
+        {(Strip) => (
+          <Suspense>
+            <Dynamic component={Strip()} onOpen={props.onSelect} />
+          </Suspense>
+        )}
+      </Show>
 
       {/* A frame and the row of pills in it. On a phone the row scrolls,
           and a scroller cuts off whatever reaches past it, so under a

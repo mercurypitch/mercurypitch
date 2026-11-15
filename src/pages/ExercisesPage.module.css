@@ -80,3 +80,12 @@
     display: none;
   }
 }
+
+/* While a room's frame arrives: the panel under it would otherwise be bare. */
+.roomOpening {
+  margin: 0;
+  padding: 48px 16px;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  text-align: center;
+}

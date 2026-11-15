@@ -8,6 +8,14 @@ way on to the Karaoke room, and gives Home note its painted harbour. Leap and Ha
 works" demo (2 Nov 2026), and Home note and First note have one too (3 Nov 2026). The owner's design
 canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear Lab's way in.
 
+**The owner's decision of 15 Nov 2026**, which takes the place of two below (29 Oct and 3 Nov).
+
+- Decided: the web's exercises are to be as good as the native app's, with Merc and his voice, and
+  nothing is held back for the native app, which has its own selling points beyond the exercises.
+  So the rooms open on the web too, free: Home note, Leap and Harmony from its Exercises tab, with
+  Long note, Echo, Lip roll and Ng slides (`docs/plans/web-rooms.md`). First note follows; its
+  songs are the native Karaoke's. The native app's own gates are unchanged.
+
 **The owner's decision and requests of 28 Oct 2026.**
 
 - Decided: the free taste is three runs per room, then the paywall. The gate comes with the V1 flip.
@@ -25,7 +33,8 @@ canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear 
   one of three songs, all of which have a clear tune. The third round fixes what made that so (see
   "What the read of a song of your own found", under Room 2).
 - Decided: there is no native release yet. When there is, the Ear rooms ship in it as they are on
-  TestFlight now. The web keeps its own interface; this work is the native app's.
+  TestFlight now. The web keeps its own interface; this work is the native app's. (The web's part
+  of this was superseded on 15 Nov 2026: see below.)
 - For the Ear Lab with Merc: Pulse's and the Chart's round-trip check stays where it is, in their
   "?" sheet. The three extras are approved: Compare after a miss, "Remind me tomorrow" on Today
   done, and Hairline's loupe turned vertical.
@@ -61,7 +70,7 @@ canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear 
 **The owner's answers of 3 Nov 2026**, after the last two demos.
 
 - Decided: First note, and the other Ear rooms with it, stay in the native app for now; none goes
-  to the web version yet.
+  to the web version yet. (Superseded on 15 Nov 2026: see below.)
 - Asked to carry on with the smaller follow-ups. Built: each Ear room's bests follow the account,
   as Long note's and Echo's do. They sync under `pitchperfect_home_note_bests`,
   `pitchperfect_first_note_bests`, `pitchperfect_leap_bests` and `pitchperfect_harmony_bests`; a

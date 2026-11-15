@@ -41,7 +41,7 @@ module in `src/features/lessons/lesson-26/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season builds Lessons 24, 26 and 28
 last, with one coach batch for all three (SEASON-2 § 8.2 item 7,
-`docs/plans/find-your-pitch/SEASON-2.md:1291-1292`). Lesson 28 sings one part of a two-part song with
+`docs/plans/find-your-pitch/SEASON-2.md:1298-1299`). Lesson 28 sings one part of a two-part song with
 the other part played, so it reuses this page's part under a take, the reader's new line and the
 headphones and quiet checks as they are specified here.
 

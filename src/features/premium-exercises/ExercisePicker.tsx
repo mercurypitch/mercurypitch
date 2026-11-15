@@ -32,7 +32,7 @@ import { exerciseLevel, exerciseLevelName } from '@/stores/exercise-level'
 import { tasteRunsUsed, tasteShows } from '@/stores/free-taste-store'
 import type { LegendCardWords } from '@/stores/native-shell-store'
 import type { CatalogueGroup, PremiumExercise } from './catalogue'
-import { catalogueGroups } from './catalogue'
+import { bestLine, catalogueGroups } from './catalogue'
 import { LegendGlyph } from './glyphs'
 import { lastExercise } from './last-exercise'
 import styles from './premium-exercises.module.css'
@@ -63,17 +63,6 @@ const CloseGlyph: Component = () => (
     <path d="M6.5 6.5l11 11M17.5 6.5l-11 11" />
   </svg>
 )
-
-/**
- * "Best 9.4 s on A3" for a best on a note, "Best 18 of 20" for a best at
- * the card's level; null with no best (or no note to have it on).
- */
-function bestLine(exercise: PremiumExercise): string | null {
-  const best = exercise.progress()
-  if (best === null || !exercise.bestOnNote) return best
-  const note = exercise.note()
-  return note === null ? null : `${best} on ${note}`
-}
 
 const Card: Component<{
   exercise: PremiumExercise

@@ -182,3 +182,16 @@ export function catalogueGroups(): readonly CatalogueGroup[] {
     exercises: EXERCISE_CATALOGUE.filter((one) => one.group === group.id),
   })).filter((group) => group.exercises.length > 0)
 }
+
+/**
+ * A card's line about the singer's best: "Best 9.4 s on A3" for a best on a
+ * note, "Best 18 of 20" for a best at the card's level; null with no best
+ * (or no note to have it on). The native picker's cards and the web's say
+ * it the same way.
+ */
+export function bestLine(exercise: PremiumExercise): string | null {
+  const best = exercise.progress()
+  if (best === null || !exercise.bestOnNote) return best
+  const note = exercise.note()
+  return note === null ? null : `${best} on ${note}`
+}
