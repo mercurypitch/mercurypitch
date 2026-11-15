@@ -76,7 +76,7 @@ These are the rules that break things when ignored.
 |---|---|---|---|
 | `lessons` | [staff-draw.ts](../../src/features/lessons/kit/staff-draw.ts) | 124.5k | Staff drawing — staves, clefs, notes and the pitch line, engraved as SVG The staff toy's picture (staff.ts; Lesson 15's WEB-SPEC, Toys 1... |
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
-| `studio` | [StudioTimeline.tsx](../../src/features/studio/timeline/StudioTimeline.tsx) | 32.3k | Studio timeline — one aligned scroll surface for real audio clips, track headers and silent seeking. |
+| `studio` | [StudioTimeline.tsx](../../src/features/studio/timeline/StudioTimeline.tsx) | 33.9k | Studio timeline — one aligned scroll surface for real audio clips, track headers and silent seeking. |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 32.2k | The room's lit instruments, by the name each web instrument exports itself under (instrument-skin.ts). |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 19.0k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |

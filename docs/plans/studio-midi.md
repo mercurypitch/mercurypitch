@@ -379,15 +379,69 @@ its context in, a state and its effects out. Its scripts are the tests.
   pointers while down, so a palm cannot undo a pen's drag.
 - **A drag held at an edge scrolls**, toward the side it went, on each
   animation frame the host sends while the engine wants them.
-- **One commit a gesture or a key press.** A held arrow repeats, a commit
-  each, as in a DAW; a held Delete or Ctrl+D acts once. Undo and redo stay
-  the Studio's.
+- **One commit a gesture or a key press.** A held Delete or Ctrl+D acts
+  once. Undo and redo stay the Studio's. (D2 made a held arrow one commit
+  too: see D2's decisions.)
 - **A duplicate or a paste must land inside the clip.** One whose notes
   would start past the clip's end is refused with a reason to announce.
   A paste goes to the playhead over the clip, else after the selection,
   else to the clip's start.
 - **Drawn notes take the velocity of the last note pressed**, 100 of 127
   until one is, so a note added to a soft take sounds like its neighbours.
+
+### Design decisions made while building D2
+
+D2 makes the editor edit: D's engine drives a piano's roll (C's), each
+edit is one `set-sequence-notes` (A's), and a draft is heard through the
+render service (B2's).
+
+- **A piano's rows are the engine's.** The piano roll pans and zooms its
+  rows in fractions of a semitone (`roll-rows.ts`) and draws every row it
+  shows in part (`rowSpan`). A kit keeps C's whole rows
+  (`roll-keyboard.ts`) for the drum editor. The engine takes a piano's
+  pointers and wheel (`note-roll-pointers.ts`); a kit's keep C's
+  navigation, and the zoom buttons and keys zoom both.
+- **One model, converted in one place.** The engine's marquee and grips
+  come back in the grid's pixels and become the canvas's in `edit-host.ts`.
+  The velocity lane's geometry (`velocity-lane.ts`) is read by its drawing
+  and its picking alike, so a lollipop is taken where it is drawn.
+- **A pointer counts from the surface it pressed**, the grid or the
+  velocity lane, and keeps counting from it while captured. A lost capture
+  cancels, and a blur or a hidden page lets everything go, undone. A finger
+  the roll no longer captures is cancelled before the next press, so a
+  finger the browser forgot cannot turn the next press into a pinch.
+- **A held arrow drafts, and commits once when let go.** Its repeats move
+  a draft, and the release keeps the whole move as one undo step. A press,
+  a command or another key commits it first; Escape and a lost focus put
+  the notes back.
+- **Each commit is one `set-sequence-notes`** with a fork id of its own,
+  so a sequence another clip shares is copied for this one, in one undo
+  step. A refused commit says "This edit could not be applied. The notes
+  are unchanged."
+- **B switches between Draw and Select.** V is voice control's key across
+  the app (`useVoiceToggleKey`), so B does both ways.
+- **The engine's state lives with the open editor; the clipboard with the
+  editor's state**, so notes copied in one opening paste in the next, in
+  the same clip or another.
+- **While the song cannot be edited, the editor edits nothing.** Its tools
+  say why, and a gesture under way is let go.
+- **A touch screen opens a piano on rows of 24 px, a mouse on the notes
+  fitted.** A drawer resized or filled out keeps its rows' height and its
+  top row.
+- **A note sounds through its lane's instrument**, on the Studio's clock.
+  A press makes or resumes the clock inside the gesture, so a note sounds
+  before the song was ever played. A note holds 0.28 s, and the one before
+  it stops as it starts.
+- **A draft goes to the render service as its notes change, and null once
+  its commit is dispatched**, so the committed notes keep the draft's
+  render. However the editor closes, the service hears of it and keeps the
+  renders. The header says "Rendering…" once a render takes a moment, and
+  "Couldn't render" when one failed.
+- **A phone's toolbar** has the tools on a row of their own under the
+  names, and the selection's edits in a bar over the status line, in a
+  thumb's reach, each target 44 px.
+- **A MIDI lane's header says what it plays**, MIDI · Piano or MIDI · Kit,
+  rather than where its render's file came from.
 
 ### Design decisions made while building B
 
@@ -574,3 +628,16 @@ on either.
 | `src/features/studio/midi/midi-preview-snapshot.ts`     | B2: the song as the transport plays it, stale clips on their previews.                                    |
 | `src/features/studio/midi/midi-render-editor.ts`        | B2: the note editor's API: `preview`, `editorClosed`, `renderState`, and its context.                     |
 | `src/features/studio/midi/useStudioMidiRenders.ts`      | B2: the service on the open song: the transport's song and reader, the export's wait, the notice, a hook. |
+
+## 8. Where D2 lives
+
+| File                                                | What it answers                                                                                                   |
+| --------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| `src/features/studio/notes/edit-host.ts`            | The browser's events as the engine's inputs, and its view, drafts and commits as the roll and the song take them. |
+| `src/features/studio/notes/useStudioNoteEditing.ts` | The open editor's engine: each input's context, the effects carried out, its frames and its drafts heard.         |
+| `src/features/studio/notes/note-roll-pointers.ts`   | A piano roll's pointers and wheel to the engine: capture, the surface each counts from, fingers forgotten.        |
+| `src/features/studio/notes/StudioNoteTools.tsx`     | The toolbar: Select and Draw, snap, quantize, transpose, duplicate, delete and velocity.                          |
+| `src/features/studio/notes/note-audition.ts`        | A note sounded through its lane's instrument on the Studio's clock.                                               |
+| `src/features/studio/notes/velocity-lane.ts`        | Where a lollipop stands, for the lane's drawing and its picking.                                                  |
+| `src/features/studio/notes/edit-hold.ts`            | A held arrow: its repeats drafted, one commit when let go.                                                        |
+| `src/e2e/studio-note-editing.spec.ts`               | Fingers on a phone and a tablet, a mouse and the keys on a computer, each edit read back from the saved song.     |
