@@ -28,6 +28,7 @@ import { resizeStudioRollRows } from '@/lib/studio/midi/roll-rows'
 import type { StudioTickWindow } from '@/lib/studio/midi/time'
 import { studioClipTickWindow, studioSongBeats, studioSongFrameToTick, } from '@/lib/studio/midi/time'
 import type { StudioClip, StudioSequence } from '@/lib/studio/model/types'
+import type { NoteRollDrawing } from './edit-host'
 import { notePianoOpening, noteRollDrafts, noteRollDrawing } from './edit-host'
 import { studioRollWords } from './note-editor-words'
 import type { StudioRollDraft, StudioRollInput, StudioRollLayout, StudioRollMeter, StudioRollTheme, } from './note-roll-draw'
@@ -73,6 +74,15 @@ interface StudioNoteRollProps {
 
 const NO_SELECTION: ReadonlySet<number> = new Set()
 const NO_DRAFTS: readonly StudioRollDraft[] = []
+/** The engine's marks over a roll it has no view of yet: none. */
+const NO_MARKS: NoteRollDrawing = {
+  selected: NO_SELECTION,
+  drafts: NO_DRAFTS,
+  marquee: null,
+  grips: [],
+  hover: null,
+  readout: null,
+}
 /** The Studio's bars are of four beats (timeline-geometry.ts). */
 const BEATS_PER_BAR = 4
 
@@ -326,17 +336,11 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     const context = contextFor(overlay, input)
     if (context === null) return
     const shown = editView()
-    const drawing =
-      shown === null
-        ? null
-        : noteRollDrawing(shown, props.sequence.notes, regions().grid)
     drawStudioRollOverlay(context, {
       ...input,
-      drafts: drawing?.drafts ?? NO_DRAFTS,
-      marquee: drawing?.marquee ?? null,
-      grips: drawing?.grips ?? [],
-      hover: drawing?.hover ?? null,
-      readout: drawing?.readout ?? null,
+      ...(shown === null
+        ? NO_MARKS
+        : noteRollDrawing(shown, props.sequence.notes, regions().grid)),
       playheadTick: liveTick ?? restingTick(),
     })
   }

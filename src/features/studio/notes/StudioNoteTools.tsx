@@ -154,8 +154,10 @@ export function StudioNoteSelectionTools(props: StudioNoteToolsProps) {
   })
   const none = () => chosen().length === 0
   const off = () => !props.writable || none()
-  const why = (title: string) =>
-    !props.writable ? BUSY : none() ? 'Select notes first' : title
+  const why = (title: string) => {
+    if (!props.writable) return BUSY
+    return none() ? 'Select notes first' : title
+  }
   const velocity = () => {
     const notes = chosen()
     if (notes.length === 0) return null
