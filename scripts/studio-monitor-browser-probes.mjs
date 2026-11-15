@@ -20,6 +20,9 @@
 //   quality, as a take on it plays back;
 // - cost: render time per 128-frame quantum, dry and through lanes, and the
 //   main thread's time to build a lane's path and to follow a change.
+// Each monitor here hears its input from the first sample (`settled`), as
+// it does an instrument: how a microphone's monitor rises on the arm is
+// measured by studio-record-monitor-disarm.spec.ts.
 // Latency, plumbing, live and lanes pass on the bar the lane line probes
 // hold an export to: -120 dBFS. Sound and cost are reports: sound passes
 // when every lane renders, cost while a monitored lane takes under a tenth
@@ -153,6 +156,7 @@ function monitorRender(input, sound, length = START + input.length) {
   return renderOffline(length, (ctx) => {
     const monitor = createStudioInputMonitor(ctx, sourceOf(ctx, input, START), {
       schedule: renderClock(ctx),
+      settled: true,
     })
     monitor.set(sound)
   })
@@ -341,7 +345,7 @@ async function liveRun(input, sound) {
   const { ctx, view, chunks } = await liveContext()
   const source = ctx.createBufferSource()
   source.buffer = input
-  const monitor = createStudioInputMonitor(view, source)
+  const monitor = createStudioInputMonitor(view, source, { settled: true })
   let started = performance.now()
   monitor.set(sound)
   const buildMs = performance.now() - started
@@ -462,6 +466,7 @@ function armedLanesRender(input, channels, lanes) {
       const armed = inputs.open(ctx, { stream, pick, release: () => {} })
       const monitor = createStudioInputMonitor(ctx, armed.node, {
         schedule: renderClock(ctx),
+        settled: true,
       })
       monitor.set(sound)
     }

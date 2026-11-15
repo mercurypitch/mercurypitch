@@ -11,7 +11,9 @@
 // one listens after every take, and hears itself through a monitor of its
 // own, through its lane's effects and faders (input-monitor.ts): a lane is
 // heard once, and lanes armed on one input are heard together, as a DAW
-// sums its armed tracks. Disarming one lane leaves the others armed; a
+// sums its armed tracks. A lane's monitor rises a quarter of a second after
+// its capture first meters a sound, past a new microphone's first moments,
+// and an instrument's at once. Disarming one lane leaves the others armed; a
 // lane disarmed before its input opened lets that input go as it arrives,
 // and one disarmed while its monitor is heard keeps its input until the
 // monitor has glided out on it, a quarter of a second, so the singer hears
@@ -37,7 +39,7 @@ export interface StudioLaneArm {
   arming: boolean
   input: StudioArmedInput | null
   capture: StudioCaptureHandle | null
-  monitor: Pick<StudioInputMonitor, 'set' | 'dispose'> | null
+  monitor: Pick<StudioInputMonitor, 'set' | 'inputArrived' | 'dispose'> | null
   /** The loudest input sample lately, 0 to 1. */
   level: number
   /** Its take as it records, for the waveform growing in its lane. */
@@ -101,7 +103,7 @@ export function createStudioLaneArms(options: StudioLaneArmsOptions) {
     return context
   }
 
-  /** A capture of the lane's own on its node; one that a fresh one replaced is no longer heard. */
+  /** A capture of the lane's own on its node; one that a fresh one replaced is no longer heard. Its first sound tells the lane's monitor the input has arrived. */
   function listen(
     lane: StudioLaneArm,
     context: AudioContext,
@@ -112,6 +114,7 @@ export function createStudioLaneArms(options: StudioLaneArmsOptions) {
     const heard = () => capture !== null && lane.capture === capture
     capture = deps.openCapture(context, input.node, {
       level: (peak, frame) => {
+        if (peak > 0) lane.monitor?.inputArrived()
         if (heard()) events.level(peak, frame)
       },
       started: (frame) => {
@@ -138,7 +141,10 @@ export function createStudioLaneArms(options: StudioLaneArmsOptions) {
     lane.arming = false
     lane.level = 0
     listen(lane, clock.context, input)
-    lane.monitor = deps.createMonitor(clock.context, input.node)
+    // An instrument the page plays sounds cleanly from its first note.
+    lane.monitor = deps.createMonitor(clock.context, input.node, {
+      settled: input.stream === null,
+    })
     lane.monitor.set(deps.monitorSound(lane.trackId))
     if (input.opened !== null)
       deps.inputOpened?.({ ...input.opened, trackId: lane.trackId })

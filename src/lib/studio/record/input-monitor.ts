@@ -29,6 +29,22 @@
 // disposed, the monitor says when its path has come apart, and a
 // microphone's arm keeps its input open until then (lane-arms.ts `close`),
 // so a disarm while the singer is heard is a release, not a cut.
+//
+// A path rises only once its input has settled. A new microphone source
+// plays silence until the microphone's samples reach it, 10 to 202 ms after
+// the press in headless Chromium, and they begin wherever the waveform is.
+// The browser's buffer then runs dry for two quanta about 14 ms in, and in
+// 3 of 13 re-arms again 173 to 181 ms after the press, the input stepping
+// on either side of each gap. A path already rising carried those steps to
+// the singer as clicks, up to 17.6 times the tone's own steepest step. So
+// the lane says when its capture first meters a sound (lane-arms.ts
+// `listen`), and the path rises from silence a quarter of a second after
+// that. An input silent for longer, a muted microphone, comes up after a
+// second anyway, so the monitor never stays shut. The wait holds back the
+// first rise only: once up, the input plays straight through, no later than
+// before. An instrument the page plays has none of a microphone's first
+// moments, and its player expects to hear the first note: its monitor
+// rises at once (`settled`).
 import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
@@ -42,6 +58,10 @@ const RELEASE_SLACK_SECONDS = 0.06
 const LEVEL_TIME_CONSTANT = RELEASE_SECONDS / 5
 /** How fast a volume or pan the singer sets is reached. */
 const MOVE_SECONDS = 0.05
+/** How long the input sounds before a path rises on it: past the gaps a new source's first moments hold. */
+const SETTLE_MS = 250
+/** How long a path waits for the input's first sound before it rises anyway: five times the slowest arrival measured. */
+const ARRIVAL_WAIT_MS = 1000
 
 export interface StudioMonitorSound {
   /** The lane is monitored: monitoring is on, or the lane plays an instrument. */
@@ -53,8 +73,10 @@ export interface StudioMonitorSound {
 }
 
 export interface StudioInputMonitorOptions {
-  /** Timer for taking a released path apart; injectable for tests. */
+  /** Timer for taking a released path apart and for the input's settling; injectable for tests. */
   readonly schedule?: (callback: () => void, delayMs: number) => () => void
+  /** The input plays cleanly from its first sample, as an instrument the page plays does: a heard path rises at once. */
+  readonly settled?: boolean
 }
 
 /** The input through its lane: folded, spread, the chain, the faders, and the level that rises and releases. */
@@ -111,6 +133,23 @@ export function createStudioInputMonitor(
   let closed = false
   /** Told once the input feeds nothing here (dispose). */
   const silent: (() => void)[] = []
+  /** The input has settled, or the wait for its first sound is over: a heard path may rise. */
+  let settled = options.settled === true
+  /** Ends the settling the input's first sound began. */
+  let stopSettling: (() => void) | null = null
+  const stopWaiting = settled
+    ? () => undefined
+    : schedule(settle, ARRIVAL_WAIT_MS)
+
+  function settle(): void {
+    if (settled) return
+    settled = true
+    stopWaiting()
+    stopSettling?.()
+    stopSettling = null
+    if (path !== null && cancelRemoval === null)
+      glide(context, path.level.gain, 1, LEVEL_TIME_CONSTANT)
+  }
 
   function build(sound: StudioMonitorSound): MonitorPath {
     const fold = channelGain(context, STUDIO_CAPTURE_INPUT)
@@ -182,14 +221,14 @@ export function createStudioInputMonitor(
     )
   }
 
-  /** The path, built afresh or brought back from its release, rising from where it is; as it is while heard. */
+  /** The path, built afresh or brought back from its release, rising from where it is once the input has settled; as it is while heard. */
   function bringIn(sound: StudioMonitorSound): MonitorPath {
     if (path === null) path = build(sound)
     else if (cancelRemoval !== null) {
       cancelRemoval()
       cancelRemoval = null
     } else return path
-    glide(context, path.level.gain, 1, LEVEL_TIME_CONSTANT)
+    if (settled) glide(context, path.level.gain, 1, LEVEL_TIME_CONSTANT)
     return path
   }
 
@@ -208,6 +247,16 @@ export function createStudioInputMonitor(
         glide(context, gain.gain, sound.gains[side], MOVE_SECONDS / 5)
     },
     /**
+     * The input's first samples are here: the lane's capture metered a
+     * sound. A heard path rises from silence once they have settled, and
+     * at once after that; the wait for a silent input is over.
+     */
+    inputArrived(): void {
+      if (closed || settled || stopSettling !== null) return
+      stopWaiting()
+      stopSettling = schedule(settle, SETTLE_MS)
+    },
+    /**
      * Release the path for good. `whenSilent` runs once it has come apart
      * and the input feeds nothing here, at once when nothing is heard: until
      * then the input must stay open, or the release is cut.
@@ -215,6 +264,9 @@ export function createStudioInputMonitor(
     dispose(whenSilent?: () => void): void {
       if (!closed) {
         closed = true
+        stopWaiting()
+        stopSettling?.()
+        stopSettling = null
         release()
       }
       if (whenSilent === undefined) return

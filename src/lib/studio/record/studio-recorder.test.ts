@@ -1,4 +1,4 @@
-// Studio recorder — arming opens the clock and the microphone in the press, each lane arms beside the others and stays after a take, a take counts in on the song's grid, stops cleanly, survives a lost microphone, and is journaled until kept.
+// Studio recorder — arming opens the clock and the microphone in the press, each lane arms beside the others and stays after a take, a lane's monitor hears when its input first sounds, a take counts in on the song's grid, stops cleanly, survives a lost microphone, and is journaled until kept.
 import type { Mock } from 'vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { releaseMicLock } from '@/lib/mic-lock'
@@ -129,6 +129,16 @@ describe('arming', () => {
 
     h.worklet.level(0.4, 1536)
     expect(h.view().level).toBe(0.4)
+  })
+
+  it('tells the monitor its input has arrived on the first sound metered, not on the silence a new source starts with', async () => {
+    const h = harness()
+    await h.recorder.arm('lane-1')
+
+    h.worklet.level(0, 1536)
+    expect(h.monitor.inputArrived).not.toHaveBeenCalled()
+    h.worklet.level(0.02, 3584)
+    expect(h.monitor.inputArrived).toHaveBeenCalled()
   })
 
   it('says why when the microphone is refused, and holds nothing', async () => {

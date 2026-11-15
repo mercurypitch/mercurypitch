@@ -91,6 +91,7 @@ export function harness(
   // Hears nothing, so it lets its input go as it is disposed.
   const monitor = {
     set: vi.fn(),
+    inputArrived: vi.fn(),
     dispose: vi.fn((whenSilent?: () => void) => whenSilent?.()),
   }
   const transport = {
