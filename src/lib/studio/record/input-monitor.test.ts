@@ -1,5 +1,5 @@
-// Studio input monitor — off builds nothing; on plays the input folded as the take is, spread, through its lane's chain at the monitor profile and its faders, on one path however often it is set; a lane not heard, and dispose, take the graph apart after the release; a lane heard again while it releases plays on through the same path.
-import { describe, expect, it } from 'vitest'
+// Studio input monitor — off builds nothing; on plays the input folded as the take is, spread, through its lane's chain at the monitor profile and its faders, on one path however often it is set; a lane not heard, and dispose, take the graph apart after the release; a lane heard again while it releases plays on through the same path; and dispose says when its input may close: at once with nothing heard, once the path has come apart otherwise.
+import { describe, expect, it, vi } from 'vitest'
 import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { FakeGain } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { createManualScheduler, FakeAudioContext, FakeNode, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
@@ -166,5 +166,46 @@ describe('the input monitor', () => {
     scheduler.advance(RELEASED_MS)
     expect(stillWired(ctx)).toEqual([])
     expect(input.targets).toEqual([])
+  })
+
+  it('lets its input go at once when nothing is heard', () => {
+    const { monitor } = setup()
+    monitor.set(sound({ on: false }))
+    const silent = vi.fn()
+
+    monitor.dispose(silent)
+
+    expect(silent).toHaveBeenCalledOnce()
+  })
+
+  it('keeps its input until the path it heard has come apart, then lets it go', () => {
+    const { input, scheduler, monitor } = setup()
+    monitor.set(sound())
+    const silent = vi.fn()
+
+    monitor.dispose(silent)
+
+    scheduler.advance(RELEASED_MS - 1)
+    expect(silent).not.toHaveBeenCalled()
+    expect(input.targets).toHaveLength(1)
+    scheduler.advance(1)
+    expect(input.targets).toEqual([])
+    expect(silent).toHaveBeenCalledOnce()
+  })
+
+  it('lets its input go when a path already releasing comes apart, not a release later', () => {
+    const { scheduler, monitor } = setup()
+    monitor.set(sound())
+    // Muted at 0, disposed at 100: the release that began at 0 decides.
+    monitor.set(sound({ gains: [0, 0] }))
+    scheduler.advance(100)
+    const silent = vi.fn()
+
+    monitor.dispose(silent)
+
+    scheduler.advance(RELEASED_MS - 101)
+    expect(silent).not.toHaveBeenCalled()
+    scheduler.advance(1)
+    expect(silent).toHaveBeenCalledOnce()
   })
 })

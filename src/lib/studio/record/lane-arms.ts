@@ -12,8 +12,11 @@
 // own, through its lane's effects and faders (input-monitor.ts): a lane is
 // heard once, and lanes armed on one input are heard together, as a DAW
 // sums its armed tracks. Disarming one lane leaves the others armed; a
-// lane disarmed before its input opened lets that input go as it arrives.
-// The click track is the clock's, shared by every lane.
+// lane disarmed before its input opened lets that input go as it arrives,
+// and one disarmed while its monitor is heard keeps its input until the
+// monitor has glided out on it, a quarter of a second, so the singer hears
+// a release, not a cut. An instrument goes at once, its port free for the
+// next lane. The click track is the clock's, shared by every lane.
 import type { StudioArmedInput } from './armed-input'
 import { createStudioArmedInputs } from './armed-input'
 import type { StudioCaptureEvents, StudioCaptureHandle } from './capture-node'
@@ -141,16 +144,37 @@ export function createStudioLaneArms(options: StudioLaneArmsOptions) {
       deps.inputOpened?.({ ...input.opened, trackId: lane.trackId })
   }
 
-  /** Take the lane out: its capture, its monitor and its input, which goes with the last lane on it. */
+  /** Take the lane out: its capture, its monitor, and its input, which goes with the last lane on it once a heard monitor has glided out. */
   function close(lane: StudioLaneArm): void {
     const index = lanes.indexOf(lane)
     if (index < 0) return
     lanes.splice(index, 1)
+    const { input, monitor } = lane
     lane.capture?.dispose()
-    lane.monitor?.dispose()
-    lane.input?.close()
     lane.capture = null
     lane.monitor = null
+    // Closed under a heard monitor, the input would cut its release
+    // (CONVENTIONS.md 5b). Late, this closes only this lane's own pick and
+    // hold: a lane armed on the input since holds its own (armed-input.ts),
+    // and a hold ends only through itself (studio-mic-share.ts). Closed
+    // late, the recorder shows its lanes again: the input they shared may
+    // be gone with it (`capture`).
+    if (monitor === null) input?.close()
+    else if (input !== null && input.stream === null) {
+      // An instrument goes at once, as it did: its sound is its arm's own,
+      // and its port must be free for the next lane, since a port plays one
+      // lane at a time (studio-midi-lanes.ts). Its monitor glides out on
+      // what the lane's effects still ring with.
+      monitor.dispose()
+      input.close()
+    } else {
+      let late = false
+      monitor.dispose(() => {
+        input?.close()
+        if (late) options.changed()
+      })
+      late = true
+    }
     if (lanes.length > 0 || clock === null) return
     clock.clicks.stop()
     clock = null

@@ -88,7 +88,11 @@ export function harness(
   /** The node each monitor listened to, in order. */
   const monitorInputs: AudioNode[] = []
   const clicks = { schedule: vi.fn(), stop: vi.fn() }
-  const monitor = { set: vi.fn(), dispose: vi.fn() }
+  // Hears nothing, so it lets its input go as it is disposed.
+  const monitor = {
+    set: vi.fn(),
+    dispose: vi.fn((whenSilent?: () => void) => whenSilent?.()),
+  }
   const transport = {
     playing: vi.fn(() => false),
     playheadFrame: vi.fn(() => 96000),
