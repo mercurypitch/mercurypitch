@@ -70,6 +70,8 @@ interface IdleShape {
   placeholderIcon: boolean
   dial: Box | null
   launch: Box | null
+  /** How far the setup, or a dial in it, sticks out of the sheet's sides. */
+  setupOverhang: number
 }
 
 interface Box {
@@ -112,6 +114,16 @@ async function idleShape(
       placeholderIcon: el('.exercise-idle-placeholder svg') !== null,
       dial: box(dial),
       launch: box(launch),
+      setupOverhang:
+        cardBox === undefined || dial === null
+          ? 0
+          : Math.max(
+              0,
+              ...[dial, ...dial.querySelectorAll('svg')].flatMap((part) => {
+                const b = part.getBoundingClientRect()
+                return [cardBox.left - b.left, b.right - cardBox.right]
+              }),
+            ),
     }
   })
 }
@@ -166,6 +178,15 @@ test.describe('the setup screen fits, for every drill', () => {
         // the panel not fitting.
         if (vp.mustFit && shape.overflow > 2) {
           problems.push(`${drill}: card overflows by ${shape.overflow}px`)
+        }
+
+        // The sheet clips what is wider than it, so a setup that sticks out
+        // is not a scrollbar, it is a dial with its side cut off: Slide's two
+        // dials on a phone, 127 px too wide between them.
+        if (shape.setupOverhang > 1) {
+          problems.push(
+            `${drill}: the setup sticks ${Math.round(shape.setupOverhang)}px out of the sheet`,
+          )
         }
 
         // The icon belongs to the header now, and only to the header. A drill

@@ -498,6 +498,12 @@
     display: contents;
   }
 
+  /* The setup is the sheet's own child now, and a child of a centred column
+     is as wide as its content unless told otherwise: it stops at the sheet. */
+  .stage :global(.exercise-idle-setup) {
+    max-width: 100%;
+  }
+
   .stage :global(.exercise-result-card) {
     order: -4;
   }

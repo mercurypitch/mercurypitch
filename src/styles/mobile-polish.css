@@ -235,6 +235,19 @@
     width: clamp(180px, min(54vw, 42dvh), 260px);
   }
 
+  /* Two dials sit side by side only where two fit. A face here is at least
+     180 px (the rule above), so on a phone Slide's From and To came to 489 px
+     in a 362 px sheet and were cut off at both edges. Each dial keeps its own
+     width and the second wraps under the first; a small tablet, with room
+     for both, keeps them beside each other. */
+  .exercise-dial-pair {
+    flex-wrap: wrap;
+  }
+
+  .exercise-dial-pair > * {
+    flex: 0 1 auto;
+  }
+
   .exercise-target-selector {
     gap: 2px;
     width: 100%;

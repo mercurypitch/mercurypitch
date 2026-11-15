@@ -11,17 +11,18 @@
 // what they do, and the cadence plays once more under its name.
 
 import type { Component } from 'solid-js'
-import { createEffect, For, onCleanup, onMount, Show, untrack } from 'solid-js'
+import { createEffect, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconCadence } from '@/components/exercise-icons'
 import { updateDifficultyFromEma } from '@/features/practice-intelligence/difficulty-store'
 import { launchDifficulty } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
-import { romanOf } from '@/lib/ear/progressions'
 import { midiToFrequency } from '@/lib/frequency-to-note'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { ExerciseShell } from '../ExerciseShell'
 import { EXERCISE_CADENCE, runStoppedEarly } from '../types'
-import { CADENCE_NAME, CADENCE_ROUNDS, CADENCE_SAYS, chordsOf, stepsOf, typesFor, typesLabel, } from './cadence-rounds'
+import { createCadenceDemo, EXAMPLE_CADENCE, exampleLine } from './cadence-demo'
+import { CADENCE_NAME, CADENCE_ROUNDS, CADENCE_SAYS, chordsOf, typesFor, typesLabel, } from './cadence-rounds'
+import { CadenceChords } from './CadenceChords'
 import styles from './NameTheCadence.module.css'
 import { useCadenceController } from './use-cadence-controller'
 
@@ -52,6 +53,26 @@ const NameTheCadenceExercise: Component<NameTheCadenceExerciseProps> = (
   }
 
   onCleanup(() => quiz.reset())
+
+  // "Hear it first": Merc plays one cadence and names it before a run. The
+  // setup screen shows that cadence as a round's figure: each tile lights as
+  // its chord sounds, and once the ending has been heard its two chords say
+  // what they are.
+  const [exampleSounding, setExampleSounding] = createSignal(-1)
+  const [exampleHeard, setExampleHeard] = createSignal(false)
+  const demo = createCadenceDemo({
+    playChord: (midis, ms) => {
+      audioEngine.playChord(midis.map(midiToFrequency), ms).catch(() => {
+        // A chord that cannot sound ends nothing: the example runs on.
+      })
+    },
+    stopSound: () => audioEngine.stopTone(),
+    onSounding: (index, last) => {
+      setExampleSounding(index)
+      if (last) setExampleHeard(true)
+    },
+  })
+  onCleanup(() => demo.stop())
 
   onMount(() => {
     if (props.autoStart === true && quiz.status() === 'idle') handleStart()
@@ -110,6 +131,26 @@ const NameTheCadenceExercise: Component<NameTheCadenceExerciseProps> = (
           </span>
         </div>
       }
+      demo={{
+        play: () => demo.play(),
+        stop: demo.stop,
+        line: () => exampleLine(),
+      }}
+      idleSettings={
+        <div class={styles.preview}>
+          <CadenceChords
+            round={EXAMPLE_CADENCE}
+            sounding={exampleSounding()}
+            revealed={exampleHeard()}
+            testId="cadence-preview"
+          />
+          <p class={styles.previewNote}>
+            {exampleHeard()
+              ? `${chordsOf(EXAMPLE_CADENCE)}: a ${CADENCE_NAME[EXAMPLE_CADENCE.type].toLowerCase()} cadence.`
+              : "A round is three chords: the key's own, then the two of an ending."}
+          </p>
+        </div>
+      }
       onStart={handleStart}
       stopLabel="Stop"
       onStop={() => quiz.stop()}
@@ -149,42 +190,13 @@ const NameTheCadenceExercise: Component<NameTheCadenceExerciseProps> = (
               {/* The figure: the three chords of the round, each lit while
                   it sounds. The key's own chord is named; the ending's two
                   keep their names until the answer is on show. */}
-              <div
-                class={styles.chords}
-                classList={{
-                  [styles.toneRight]: tone() === 'right',
-                  [styles.toneWrong]: tone() === 'wrong',
-                }}
-                data-testid="cadence-chords"
-                aria-hidden="true"
-              >
-                <For each={stepsOf(round())}>
-                  {(step, i) => (
-                    <>
-                      <Show when={step.role === 'last'}>
-                        <span class={styles.arrow}>→</span>
-                      </Show>
-                      <div
-                        class={styles.chord}
-                        classList={{
-                          [styles.home]: step.role === 'home',
-                          [styles.sounding]: quiz.sounding() === i(),
-                        }}
-                        data-role={step.role}
-                      >
-                        <span class={styles.numeral}>
-                          {step.role === 'home' || quiz.feedback() !== null
-                            ? romanOf(step.degree)
-                            : '?'}
-                        </span>
-                        <span class={styles.role}>
-                          {step.role === 'home' ? 'home' : 'the ending'}
-                        </span>
-                      </div>
-                    </>
-                  )}
-                </For>
-              </div>
+              <CadenceChords
+                round={round()}
+                sounding={quiz.sounding()}
+                revealed={quiz.feedback() !== null}
+                tone={tone()}
+                testId="cadence-chords"
+              />
 
               <div
                 class={styles.answers}
