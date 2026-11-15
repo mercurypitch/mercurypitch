@@ -25,7 +25,10 @@
 //
 // Level changes follow the house envelopes (CONVENTIONS.md 5b): toward the
 // new level with setTargetAtTime, and to silence with the release, the
-// nodes coming apart only after it.
+// nodes coming apart only after it. The input is the release's source too:
+// disposed, the monitor says when its path has come apart, and a
+// microphone's arm keeps its input open until then (lane-arms.ts `close`),
+// so a disarm while the singer is heard is a release, not a cut.
 import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
@@ -106,6 +109,8 @@ export function createStudioInputMonitor(
   /** Stops the take-apart of a path that is releasing; null while it is heard, or there is none. */
   let cancelRemoval: (() => void) | null = null
   let closed = false
+  /** Told once the input feeds nothing here (dispose). */
+  const silent: (() => void)[] = []
 
   function build(sound: StudioMonitorSound): MonitorPath {
     const fold = channelGain(context, STUDIO_CAPTURE_INPUT)
@@ -150,19 +155,21 @@ export function createStudioInputMonitor(
     const gone = path
     path = null
     cancelRemoval = null
-    if (gone === null) return
-    try {
-      input.disconnect(gone.fold)
-    } catch {
-      // Already apart: the arm closed its input first.
+    if (gone !== null) {
+      try {
+        input.disconnect(gone.fold)
+      } catch {
+        // Already apart: the arm closed its input first.
+      }
+      gone.fold.disconnect()
+      gone.spread.disconnect()
+      gone.chain.dispose()
+      gone.split.disconnect()
+      for (const side of gone.sides) side.disconnect()
+      gone.merge.disconnect()
+      gone.level.disconnect()
     }
-    gone.fold.disconnect()
-    gone.spread.disconnect()
-    gone.chain.dispose()
-    gone.split.disconnect()
-    for (const side of gone.sides) side.disconnect()
-    gone.merge.disconnect()
-    gone.level.disconnect()
+    for (const told of silent.splice(0)) told()
   }
 
   /** Fade the path out on the release, then take it apart. */
@@ -200,11 +207,19 @@ export function createStudioInputMonitor(
       for (const [side, gain] of heard.sides.entries())
         glide(context, gain.gain, sound.gains[side], MOVE_SECONDS / 5)
     },
-    /** Release the path for good; it comes apart after the release. */
-    dispose(): void {
-      if (closed) return
-      closed = true
-      release()
+    /**
+     * Release the path for good. `whenSilent` runs once it has come apart
+     * and the input feeds nothing here, at once when nothing is heard: until
+     * then the input must stay open, or the release is cut.
+     */
+    dispose(whenSilent?: () => void): void {
+      if (!closed) {
+        closed = true
+        release()
+      }
+      if (whenSilent === undefined) return
+      if (path === null) whenSilent()
+      else silent.push(whenSilent)
     },
   }
 }
