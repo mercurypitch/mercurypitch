@@ -4,6 +4,7 @@ import { Dynamic } from 'solid-js/web'
 import { IconChevronRight } from '@/components/exercise-icons'
 import { useEngines } from '@/contexts/EngineContext'
 import ArpeggioJumperExercise from '@/features/exercises/arpeggio-jumper/ArpeggioJumperExercise'
+import NameTheCadenceExercise from '@/features/exercises/cadence/NameTheCadenceExercise'
 import CallResponseExercise from '@/features/exercises/call-response/CallResponseExercise'
 import ChordStackerExercise from '@/features/exercises/chord-stacker/ChordStackerExercise'
 import DroneIntonationExercise from '@/features/exercises/drone-intonation/DroneIntonationExercise'
@@ -257,6 +258,13 @@ export function ExercisesPage(props: ExercisesPageProps) {
         </Show>
         <Show when={props.selectedExercise() === 'note-reading'}>
           <NoteReadingExercise
+            audioEngine={audioEngine}
+            onBack={props.onBack}
+            autoStart={props.autoStartExercise()}
+          />
+        </Show>
+        <Show when={props.selectedExercise() === 'name-the-cadence'}>
+          <NameTheCadenceExercise
             audioEngine={audioEngine}
             onBack={props.onBack}
             autoStart={props.autoStartExercise()}

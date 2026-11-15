@@ -1,0 +1,239 @@
+/* ============================================================
+   Name the Cadence: the three chords, the names and Merc's line
+   ============================================================
+
+   The drill sits on the shell's dark stage, so these read the stage's
+   tokens: light ink on a dark sheet in either app theme. */
+
+.say {
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.sayRight {
+  color: var(--green);
+}
+
+.sayWrong {
+  color: var(--yellow);
+}
+
+.run {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  padding: 4px 8px 0;
+}
+
+.dotRight {
+  border-color: var(--green);
+  background: var(--green);
+}
+
+.dotWrong {
+  border-color: var(--red);
+  background: var(--red);
+}
+
+/* ── The figure ───────────────────────────────────────────── */
+
+.chords {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: min(100%, 420px);
+  margin-top: 18px;
+}
+
+.chord {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  min-width: 0;
+  max-width: 116px;
+  height: 104px;
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  background: var(--bg-tertiary);
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    box-shadow 0.12s,
+    transform 0.12s;
+}
+
+.home {
+  border-style: dashed;
+  background: transparent;
+}
+
+.numeral {
+  color: var(--text-primary);
+  font-size: 1.7rem;
+  font-weight: 750;
+  line-height: 1;
+}
+
+.role {
+  color: var(--text-secondary);
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+}
+
+.arrow {
+  flex: none;
+  color: var(--text-secondary);
+  font-size: 1.2rem;
+}
+
+/* The chord that is sounding. */
+.sounding {
+  border-color: var(--accent);
+  border-style: solid;
+  background: var(--accent-dim);
+  box-shadow: 0 0 26px var(--accent-glow);
+  transform: translateY(-3px);
+}
+
+.toneRight .chord:not(.home) {
+  border-color: var(--green);
+}
+
+.toneRight .chord:not(.home) .numeral {
+  color: var(--green);
+}
+
+.toneWrong .chord:not(.home) {
+  border-color: var(--yellow);
+}
+
+.toneWrong .chord:not(.home) .numeral {
+  color: var(--yellow);
+}
+
+/* ── The answers ──────────────────────────────────────────── */
+
+.answers {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  width: min(100%, 420px);
+  margin-top: 18px;
+}
+
+.answer {
+  min-height: 54px;
+  padding: 10px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 14px;
+  background: var(--bg-tertiary);
+  color: var(--text-primary);
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition:
+    background 0.12s,
+    border-color 0.12s,
+    opacity 0.12s,
+    transform 0.12s;
+}
+
+.answer:hover {
+  border-color: var(--accent);
+}
+
+.answer:active {
+  transform: scale(0.98);
+}
+
+.answer:focus-visible,
+.again:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
+/* Not yet: the ending has not sounded. */
+.answer[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.answer[aria-disabled='true']:hover {
+  border-color: var(--border-color);
+}
+
+.answerRight {
+  border-color: var(--green);
+  background: var(--green-dim);
+  color: var(--green);
+}
+
+.answerWrong {
+  border-color: var(--red);
+  background: var(--danger-dim);
+  color: var(--red);
+}
+
+.again {
+  min-height: 44px;
+  margin-top: 12px;
+  padding: 8px 18px;
+  border: 1px solid var(--border-color);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--text-secondary);
+  font-size: 0.86rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.again:hover:not(:disabled) {
+  border-color: var(--accent);
+  color: var(--text-primary);
+}
+
+.again:disabled {
+  cursor: default;
+  opacity: 0.45;
+}
+
+@media (max-height: 720px) {
+  .chords {
+    margin-top: 10px;
+  }
+
+  .chord {
+    height: 78px;
+  }
+
+  .answers {
+    margin-top: 10px;
+  }
+
+  .answer {
+    min-height: 46px;
+  }
+
+  .again {
+    margin-top: 8px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .chord,
+  .answer {
+    transition: none;
+  }
+
+  .sounding {
+    transform: none;
+  }
+}
