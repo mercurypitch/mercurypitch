@@ -470,9 +470,10 @@ _[Editorial: the first address links `/exercises/thirds-on-a-drone?lesson=24` an
 (SEASON-2 § 5.2 item 21), so First Light, the app's intro, steps aside on a first visit and the card
 has no first-visit line (FACTS 64). "About 79 a round" is a round's score, "Last round: 79%" on the
 drill's screen, not the run's, which weighs in the best round and the steadiness and since the
-app's fix reaches 100 (FACTS 60, 66). When a slug for the fifth, the major third and the octave
-ships (SEASON-2 § 5.2 item 15), the link swaps to it, and the text's second sentence becomes "This
-link opens it on this lesson's fifth, major third and octave; do is the drone itself." When a
+app's fix reaches 100 (FACTS 60, 66). The slug for the fifth, the major third and the octave
+shipped on 15 November 2026, `/exercises/harmony-on-a-drone` (SEASON-2 § 5.2 item 15): the link
+swaps to it, and the text's second sentence becomes "This link opens it on this lesson's fifth,
+major third and octave; do is the drone itself." When a
 pure-tuning option ships (item 15), the sentence on 79 goes. The headphones sentence stays while the
 drill's drone plays from the speakers as it listens; the card says nothing of its drone's timbre, a
 plain sine by default, which the app's item for a drone with harmonics would change (FACTS 51,

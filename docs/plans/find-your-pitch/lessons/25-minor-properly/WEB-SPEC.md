@@ -482,8 +482,9 @@ other, paused off screen, and the still images when WebGL fails.
 - **Needed: the `ear-drill` launch kind** (SEASON-2 § 5.2 item 12), which would open Gravity on Te
   and Ti alone. When it ships, the card's last sentence goes and the link opens the subset (FACTS
   49).
-- **Needed: Scale Runner's harmonic and melodic minor** (SEASON-2 § 5.2 item 13). When they ship, a
-  Scale Runner card can replace Sight-Singing as the second drill, with its own care lines and the
+- **Shipped on 15 November 2026: Scale Runner's harmonic and melodic minor** (SEASON-2 § 5.2 item
+  13), with `/exercises/harmonic-minor-run` and `/exercises/melodic-minor-run`, from A. A Scale
+  Runner card can replace Sight-Singing as the second drill, with its own care lines and the
   coach's look (FACTS 51).
 - **Needed: Sight-Singing for the lessons** (SEASON-2 § 5.2 item 10), whose parts each remove a
   sentence of the second drill, as Lesson 16's card shrinks: (g) a `key` launch field lets the link
@@ -607,7 +608,8 @@ first; they are listed so this page's needs are in one place.
     structured-data blocks with `alternativeHeadline`, `description`, `teaches` and `timeRequired`
     `PT15M`, and on release the llms.txt line, each checked against the predict (FACTS 1a).
 15. **The practise links that wait** (Practice links), the app's work: the `ear-drill` launch kind
-    (SEASON-2 § 5.2 item 12); Scale Runner's harmonic and melodic minor (item 13); and Sight-Singing
+    (SEASON-2 § 5.2 item 12); a card for Scale Runner's harmonic and melodic minor, which shipped
+    on 15 November 2026 (item 13); and Sight-Singing
     for the lessons (item 10): (g) a `key` launch field, which lets the card's link open
     Sight-Singing in A harmonic minor directly, in Lesson 16's way, in place of the route through
     the Singing tab; (b) a "hear do" start; (c) the bass clef for lower voices; (e) letter names off;

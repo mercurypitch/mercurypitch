@@ -194,14 +194,15 @@ For everyone (S20a needs T14, Lesson 10, and T13, Lesson 23).
 
 ## Practise links (verified at `b803c7d43`)
 
-- **Linked: Drone Intonation's thirds**, `/exercises/thirds-on-a-drone` (`slug-map.ts:75-81`):
+- **Linked: Drone Intonation's thirds**, `/exercises/thirds-on-a-drone` (`slug-map.ts:80-86`):
   the minor and major third above a drone, the drone sounding during each 4 s window, scored
   against the piano's notes, so a pure third scores about 79 (R11). The card says so, and adds
   Lesson 10's lines on its sharps and its octave. **[coach]**
 - **Linked: Ear Lab's Beat Hunt**, `/ear-lab?lesson=24`, then tap Beat Hunt: two near-unison pairs,
   which one beats (R12). No voice needed, so it stays on the rest card.
-- **Waits:** a slug for the fifth, the major third and the octave (data, one line; SEASON-2 § 5 item
-  15); a pure-tuning scoring option (code with tests, item 15); `?lesson=24` (item 21). Until the
+- **Waits:** the card's swap to `harmony-on-a-drone`, the slug for the fifth, the major third and
+  the octave, which shipped on 15 November 2026 (SEASON-2 § 5 item 15); a pure-tuning scoring option
+  (code with tests, item 15); `?lesson=24` (item 21). Until the
   pure option ships, the card says the drill scores to the piano.
 
 ## Closing tease and next card

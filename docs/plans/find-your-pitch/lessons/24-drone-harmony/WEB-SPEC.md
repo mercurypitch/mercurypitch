@@ -38,7 +38,7 @@ module in `src/features/lessons/lesson-24/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season puts Lessons 24, 26 and 28
 last, for their engineering and the headphones work, with one coach batch for all three (SEASON-2 §
-8.2 item 7, `docs/plans/find-your-pitch/SEASON-2.md:1272-1273`); Lesson 26 reuses this page's drone,
+8.2 item 7, `docs/plans/find-your-pitch/SEASON-2.md:1291-1292`); Lesson 26 reuses this page's drone,
 headphones check, quiet check and band.
 
 ## Look
@@ -648,7 +648,7 @@ stills when WebGL fails.
 ## Practice links: what exists and what needs engineering
 
 - **Today, Drone Intonation's thirds.** The link is `/exercises/thirds-on-a-drone?lesson=24`,
-  printed mercurypitch.com/exercises/thirds-on-a-drone (`src/features/exercises/slug-map.ts:75-81`):
+  printed mercurypitch.com/exercises/thirds-on-a-drone (`src/features/exercises/slug-map.ts:80-86`):
   it opens Drone Intonation on the minor and the major third only, so this lesson's do and so are
   not in it, and it scores against the piano's notes, so a pure major third held through a round
   scores about 79 a round (FACTS 60), as the lead answered. The card says both, and that headphones
@@ -659,9 +659,10 @@ stills when WebGL fails.
   fix let reach 100 (below); its editorial note says "about 79 a round" is a round's score, not the
   run's.
   It is the season plan's link for this lesson (SEASON-2 § 5.1, row 24,
-  `docs/plans/find-your-pitch/SEASON-2.md:861`).
-- **The link to swap.** When the slug for the fifth, the major third and the octave ships (SEASON-2
-  § 5.2 item 15, `docs/plans/find-your-pitch/SEASON-2.md:917-929`), the card's link becomes that
+  `docs/plans/find-your-pitch/SEASON-2.md:870`).
+- **The link to swap.** The slug for the fifth, the major third and the octave shipped on 15
+  November 2026, `/exercises/harmony-on-a-drone` (SEASON-2 § 5.2 item 15,
+  `docs/plans/find-your-pitch/SEASON-2.md:930-944`): the card's link becomes that
   slug with `?lesson=24`, and the text's second sentence becomes "This link opens it on this
   lesson's fifth, major third and octave; do is the drone itself." When the pure-tuning option ships
   (the same item), the sentence on 79 goes. Both are lines in LESSON.md's editorial note.
@@ -804,9 +805,10 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
     head test already has its word for sixteen (`src/tests/lesson-pages.test.ts:84`).
 13. **Lesson 23's questions as a module** (`lesson-23/quiz-questions.ts`), so this page imports its
     question 3 (Toys 5).
-14. **Drone Intonation, the app's work** (Practice links): the fifth, third and octave slug and the
-    pure-tuning option (SEASON-2 § 5.2 item 15); and a drone with harmonics (proposed here). Its run
-    score, reweighted so a full score reads 100 and the drill can level up, has shipped.
+14. **Drone Intonation, the app's work** (Practice links): the pure-tuning option (SEASON-2 § 5.2
+    item 15), and a drone with harmonics (proposed here). The fifth, third and octave slug shipped
+    on 15 November 2026, and the card's link waits to swap to it. Its run score, reweighted so a
+    full score reads 100 and the drill can level up, has shipped.
 15. **At release, the room's link back**, optional: SEARCH § 8's rows for the exercises and Ear Lab
     gain 24.
 

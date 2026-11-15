@@ -160,7 +160,7 @@ Strong. **New**: the season plan's list does not name it.
 **R16-16. A launch with two or more notes replaces the random round.** `SightSingingExercise.tsx:180-195`
 (`authored.length >= 2` then `controller.setNotes(authored)`); `use-sight-singing-controller.ts:141-154`
 (`setNotes`, "Sing exactly these notes, in order"). The slug registry's `notes` field is the data route
-(`src/features/exercises/slug-map.ts:25-43`, `notes?: string[]`, :31). Whether a slug's notes are
+(`src/features/exercises/slug-map.ts:27-48`, `notes?: string[]`, :33). Whether a slug's notes are
 fitted to the singer's octave, as a routine's are ("the notes arrive already fitted to the singer's
 range (App's launch choke point)", :181-184), was **not verified** for slug launches. Code read.
 

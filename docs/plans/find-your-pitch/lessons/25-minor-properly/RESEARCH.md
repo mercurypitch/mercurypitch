@@ -130,10 +130,11 @@ descending form. Sight-Singing reads the chosen scale when no phrase is launched
 as a sharp (`use-sight-singing-controller.ts:31-44`), so A harmonic minor's G♯ is right and C
 minor's E♭, A♭ and B♭ read as D♯, G♯ and A♯. Read: code.
 
-**R11. Scale Runner's Minor is natural minor only.** Its types are Major, Minor, Pentatonic and
-Chromatic (`src/features/exercises/scale-runner/ScaleRunnerExercise.tsx:26-33`), and `minor` maps
-to `natural-minor` (`src/lib/scale-data.ts:449-459`). Harmonic and melodic minor there wait for
-SEASON-2 § 5 item 13. The sheet view gives a minor scale its relative major's signature
+**R11. Scale Runner's Minor is natural minor.** Its types were Major, Minor, Pentatonic and
+Chromatic when this was read (`src/features/exercises/scale-runner/scale-runner-scales.ts:15-23`),
+and `minor` maps to `natural-minor` (`src/lib/scale-data.ts:449-472`). Harmonic and melodic minor
+there shipped on 15 November 2026 (SEASON-2 § 5 item 13), melodic coming down as the natural minor
+(`src/features/exercises/scale-runner/scale-runner-scales.ts:53-69`). The sheet view gives a minor scale its relative major's signature
 (`src/lib/sheet-music-renderer.ts:157-169`: "Minor scales inherit the signature of their relative
 major"), which matches R6. `?lesson=25` is not read (`src/lib/lesson-marker.ts:11-19`). Read: code.
 

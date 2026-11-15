@@ -138,12 +138,16 @@ note"; staccato exercises "develop onset, and breath coordination". Full text. P
 
 **R20-11. Scale Runner sings one note at a time: it plays each note, then listens; its Pentatonic is
 the major pentatonic, up or down one octave, scored against the octave it plays.**
-`src/features/exercises/scale-runner/ScaleRunnerExercise.tsx:26-33` (types Major, Minor, Pentatonic,
-Chromatic); :52-53 (opens on Major, up); `src/lib/scale-data.ts:450-460` (`getScaleDegrees`: pentatonic
-is `'pentatonic-major'`, minor `'natural-minor'`); `src/features/exercises/scale-runner/use-scale-runner-controller.ts:16-18`
-(`NOTE_PLAY_DURATION_MS = 700`, `GAP_BETWEEN_NOTES_MS = 250`, `MATCH_WINDOW_MS = 2000`), :20-37
-(`buildScaleNotes`: the degrees from a base note, closing on the octave, reversed for down), :88-120
-(play the note, then a match window), :72-78 (difficulty scales the times); scoring by
+`src/features/exercises/scale-runner/scale-runner-scales.ts:15-23` (types Major, Minor, Pentatonic,
+Chromatic when this was read; Harmonic Minor, Melodic Minor and Minor Pentatonic since 15 November
+2026); `src/features/exercises/scale-runner/ScaleRunnerExercise.tsx:46-49` (opens on Major, up);
+`src/lib/scale-data.ts:452-472` (`getScaleDegrees`: pentatonic
+is `'pentatonic-major'`, minor `'natural-minor'`); `src/features/exercises/scale-runner/use-scale-runner-controller.ts:15-17`
+(`NOTE_PLAY_DURATION_MS = 700`, `GAP_BETWEEN_NOTES_MS = 250`, `MATCH_WINDOW_MS = 2000`);
+`src/features/exercises/scale-runner/scale-runner-scales.ts:53-69`
+(`scaleRunNotes`: the degrees from a base note, closing on the octave, reversed for down);
+`src/features/exercises/scale-runner/use-scale-runner-controller.ts:68-100`
+(play the note, then a match window), :52-58 (difficulty scales the times); scoring by
 `noteDeviationCents` (:133), which compares to the target MIDI with no octave folding
 (`src/features/exercises/exercise-scoring-utils.ts:119-132`). So C pentatonic up is C D E G A C, six
 notes, with no way back down in one run. Code read. Strong.
@@ -155,7 +159,7 @@ reference then a 1.5 s window.**
 (`generateNotes`, :18-22: the major scale's eight degrees, shuffled). Code read. Strong. It is echo, not a run.
 
 **R20-13. `/exercises/speed-scales` opens Scale Runner at difficulty 8, fast.**
-`src/features/exercises/slug-map.ts:61-67` (the comment, then the entry, :62-67). Code read. Strong. Not linked (no score may reward speed).
+`src/features/exercises/slug-map.ts:66-72` (the comment, then the entry, :62-67). Code read. Strong. Not linked (no score may reward speed).
 
 **R20-14. `?lesson=20` is not a lesson marker today.** R15-19.
 

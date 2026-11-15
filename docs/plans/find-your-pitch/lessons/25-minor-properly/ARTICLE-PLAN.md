@@ -181,8 +181,10 @@ For everyone. One from Lesson 10, one from Lesson 21 (Arc C's plan writes Lesson
   signature (`sheet-music-renderer.ts:157-169`). Sight-Singing reads the scale
   (`SightSingingExercise.tsx:188-195`) with sharps only: link A harmonic minor (G♯ right), never C
   minor.
-- **Waits:** harmonic and melodic minor in Scale Runner (SEASON-2 § 5 item 13; its Minor is natural,
-  `ScaleRunnerExercise.tsx:26-33`); the Te against Ti subset of Gravity (§ 5 item 12, needs the
+- **Shipped on 15 November 2026:** harmonic and melodic minor in Scale Runner (SEASON-2 § 5 item
+  13; `scale-runner-scales.ts:15-23`), with `harmonic-minor-run` and `melodic-minor-run`, from A. A
+  Scale Runner card waits for its care lines and the coach's look.
+- **Waits:** the Te against Ti subset of Gravity (§ 5 item 12, needs the
   `ear-drill` launch); a Singing tab address (§ 5 item 20); `?lesson=25` (§ 5 item 21).
 - **App content to fix first (risk 16):** `scale-data.ts:83`, :88, :93 and :98's descriptions are
   not displayed today (RESEARCH R13); change them before any screen shows them.

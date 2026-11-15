@@ -377,8 +377,8 @@ Season 2's numbers (SEASON-2 § 5.2 item 21), so First Light, the app's intro, s
 visit and the card has no first-visit line (FACTS 62). When the `ear-drill` launch kind ships
 (SEASON-2 § 5.2 item 12), the card can open Leap with only its P4, TT, P5 and P8, and "you name the
 distance from twelve answers, a semitone to an octave. Listen for" becomes "you name which of four
-it is:"; when the `perfect-intervals` slug ships (item 16), a sung card can follow, with the care
-lines and the coach's look (FACTS 63). The rest version is Lesson 8's: Leap asks for no voice, so it
+it is:"; the `perfect-intervals` slug shipped on 15 November 2026 (item 16), so a sung card can
+follow, with the care lines and the coach's look (FACTS 63). The rest version is Lesson 8's: Leap asks for no voice, so it
 stays, and only the sung line is put off (FACTS 56).]_
 
 **Next lesson:** Lesson 24, Harmony against a drone. "Hold a note against a drone: how can you hear
