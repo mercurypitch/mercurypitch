@@ -34,6 +34,12 @@ const GAP_BEFORE_MATCH_MS = 600
  *  ("sing them back") scoreable at all. */
 const BASE_SLOT_MS = 2500
 const GAP_BETWEEN_ROUNDS_MS = 600
+/**
+ * A note scored under this was missed: more than a third of a semitone off
+ * on average (the shared rule takes 1.5 points a cent), or not heard at all.
+ * A round with a missed note is answered before the next one starts.
+ */
+export const MISS_BELOW = 50
 
 const INTERVAL_POOL: ReadonlyArray<readonly [number, number]> = [
   [0, 2], // Major 2nd
@@ -92,6 +98,29 @@ const INTERVAL_NAMES: readonly string[] = [
   'Major 7th',
   'Octave',
 ]
+
+/** An interval's name by its span in semitones: "Perfect 5th". */
+export const intervalName = (span: number): string =>
+  INTERVAL_NAMES[span] ?? `${span} semitones`
+
+/**
+ * The name with its article, for a sentence: "a Perfect 5th", "an Octave".
+ * By sound, not by letter: "a Unison" opens on a consonant's sound.
+ */
+export function intervalWithArticle(span: number): string {
+  const name = intervalName(span)
+  return `${/^[AEIO]/.test(name) ? 'an' : 'a'} ${name}`
+}
+
+/**
+ * The pair "Hear it first" plays from a starting note: the first interval of
+ * a launch's own list, so a lesson's link demonstrates what it drills, and
+ * a fifth where the drill runs on its pool.
+ */
+export function exampleInterval(baseMidi: number): [number, number] {
+  const given = launchIntervals(EXERCISE_INTERVAL_TRAINER)
+  return [baseMidi, baseMidi + (given?.[0] ?? 7)]
+}
 
 /** The idle hint's words for a launch's own intervals, in place of the
  *  pool's: named outright when the list holds three or fewer, or else from
@@ -284,9 +313,48 @@ export function useIntervalTrainerController(
     })
 
     roundIndex++
+    const next = (): void => {
+      phaseTimer = setTimeout(() => {
+        if (_cancelled) return
+        playRound()
+      }, GAP_BETWEEN_ROUNDS_MS)
+    }
+    if (note1Score < MISS_BELOW || note2Score < MISS_BELOW) {
+      playAnswer(target1, target2, next)
+    } else {
+      next()
+    }
+  }
+
+  /**
+   * After a missed note, the pair once more with its name on Merc's line
+   * (phase 3): the answer the singer was reaching for, heard straight after
+   * the reach, while the ear still holds what it sang. Nothing is scored
+   * here, and no target is drawn: this is for listening.
+   */
+  function playAnswer(note1: number, note2: number, then: () => void): void {
+    batch(() => {
+      base._setTargetPitch(0)
+      base._updateMetrics({
+        phase: 3, // the answer
+        currentMidi: note1,
+        noteIndex: 0,
+        answerLow: note1,
+        answerHigh: note2,
+      })
+    })
     phaseTimer = setTimeout(() => {
       if (_cancelled) return
-      playRound()
+      void audioEngine.playTone(midiToFreq(note1), NOTE_PLAY_DURATION_MS)
+      phaseTimer = setTimeout(() => {
+        if (_cancelled) return
+        base._updateMetrics({ currentMidi: note2, noteIndex: 1 })
+        void audioEngine.playTone(midiToFreq(note2), NOTE_PLAY_DURATION_MS)
+        phaseTimer = setTimeout(() => {
+          if (_cancelled) return
+          then()
+        }, NOTE_PLAY_DURATION_MS)
+      }, NOTE_PLAY_DURATION_MS + GAP_BETWEEN_NOTES_MS)
     }, GAP_BETWEEN_ROUNDS_MS)
   }
 

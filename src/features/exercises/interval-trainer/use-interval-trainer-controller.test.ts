@@ -19,7 +19,7 @@ import { clearLaunchOverride, setLaunchOverride, } from '@/features/practice-int
 import { seededRandom } from '@/lib/sequence/phrase-bank'
 import { EXERCISE_INTERVAL_TRAINER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
-import { intervalRangeLabel, plannedRounds, useIntervalTrainerController, } from './use-interval-trainer-controller'
+import { exampleInterval, intervalName, intervalRangeLabel, intervalWithArticle, plannedRounds, useIntervalTrainerController, } from './use-interval-trainer-controller'
 
 /** Lesson 9's leaps: minor and major thirds, the fifth, the fourth, the octave. */
 const LEAP_LADDER = [3, 4, 7, 5, 12]
@@ -196,4 +196,114 @@ describe('the trainer launched with intervals', () => {
       expect(rounds.every((r) => r.total === promised)).toBe(true)
     },
   )
+})
+
+// ── The answer after a missed note ────────────────────────────────
+
+/**
+ * A base whose singer either sings every note asked for dead on, or says
+ * nothing. It keeps the phases the trainer goes through and the pairs it
+ * gave as answers.
+ */
+function singerBase(inTune: boolean) {
+  const { base: silent } = recordingBase()
+  const started = Date.now()
+  const asked: Array<{ time: number; freq: number }> = []
+  const phases: number[] = []
+  const answers: Array<[number, number]> = []
+  const base: BaseExerciseController = {
+    ...silent,
+    _getElapsed: () => Date.now() - started,
+    _setTargetPitch: ((freq: number | null) => {
+      if (freq !== null && freq > 0) {
+        asked.push({ time: (Date.now() - started) / 1000, freq })
+      }
+    }) as BaseExerciseController['_setTargetPitch'],
+    // Each note asked for, sung on its pitch for the two seconds after it
+    // was asked: inside its slot, and over before the next one.
+    pitchHistory: (() =>
+      inTune
+        ? asked.flatMap((note) =>
+            Array.from({ length: 40 }, (_unused, i) => ({
+              time: note.time + 0.05 * i,
+              freq: note.freq,
+            })),
+          )
+        : []) as BaseExerciseController['pitchHistory'],
+    _updateMetrics: (m) => {
+      if (typeof m.phase === 'number') phases.push(m.phase)
+      if (m.phase === 3) answers.push([m.answerLow, m.answerHigh])
+    },
+  }
+  return { base, phases, answers }
+}
+
+/** A whole run of fifths from C4, by a singer in tune or silent. */
+async function runOfFifths(inTune: boolean) {
+  setLaunchOverride(EXERCISE_INTERVAL_TRAINER, {
+    type: EXERCISE_INTERVAL_TRAINER,
+    intervals: [7],
+  })
+  const { base, phases, answers } = singerBase(inTune)
+  const tones: number[] = []
+  const ctrl = useIntervalTrainerController(base, {
+    playTone: async (freq) => {
+      tones.push(freq)
+    },
+  })
+  ctrl.setBase(60)
+  ctrl.startRounds()
+  await vi.runAllTimersAsync()
+  return { phases, answers, tones }
+}
+
+describe('the answer after a missed note', () => {
+  afterEach(() => {
+    clearLaunchOverride()
+    vi.useRealTimers()
+  })
+
+  it('plays the pair again, under its name, after every round a silent singer misses', async () => {
+    vi.useFakeTimers()
+    const { phases, answers, tones } = await runOfFifths(false)
+
+    // Six rounds: each heard, then heard again as its answer.
+    expect(answers).toHaveLength(6)
+    expect(answers.every(([low, high]) => low === 60 && high === 67)).toBe(true)
+    expect(tones).toHaveLength(24)
+    // A round is listen, sing, sing, then the answer.
+    expect(phases.slice(0, 4)).toEqual([1, 2, 2, 3])
+  })
+
+  it('goes straight to the next round when both notes were sung in tune', async () => {
+    vi.useFakeTimers()
+    const { phases, answers, tones } = await runOfFifths(true)
+
+    expect(answers).toEqual([])
+    expect(phases).not.toContain(3)
+    // Six rounds, two notes each, and no more.
+    expect(tones).toHaveLength(12)
+  })
+})
+
+describe('the names "Hear it first" and the answer use', () => {
+  afterEach(() => {
+    clearLaunchOverride()
+  })
+
+  it('names an interval by its span, with the article a sentence needs', () => {
+    expect(intervalName(7)).toBe('Perfect 5th')
+    expect(intervalWithArticle(7)).toBe('a Perfect 5th')
+    expect(intervalWithArticle(12)).toBe('an Octave')
+    expect(intervalWithArticle(0)).toBe('a Unison')
+  })
+
+  it("demonstrates a fifth on the pool, and a launch's first interval on a launch", () => {
+    expect(exampleInterval(60)).toEqual([60, 67])
+    setLaunchOverride(EXERCISE_INTERVAL_TRAINER, {
+      type: EXERCISE_INTERVAL_TRAINER,
+      intervals: [5, 7, 12],
+    })
+    expect(exampleInterval(60)).toEqual([60, 65])
+  })
 })
