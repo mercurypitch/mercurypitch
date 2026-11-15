@@ -1,4 +1,4 @@
-// Studio recorder, each lane's monitor — every armed lane hears its own input through a monitor of its own, through the lane's chain: one channel of an input alone and never the whole input beside it, lanes armed on one input each once, a lane on a whole input once, and a MIDI lane its instrument's node alone; a lane disarmed while it is heard keeps its input until its monitor has glided out, and that late close ends only its own pick and hold; an instrument goes at once.
+// Studio recorder, each lane's monitor — every armed lane hears its own input through a monitor of its own, through the lane's chain: one channel of an input alone and never the whole input beside it, lanes armed on one input each once, a lane on a whole input once, and a MIDI lane its instrument's node alone; a lane's monitor rises a quarter of a second after its own capture first meters a sound, an instrument's at once; a lane disarmed while it is heard keeps its input until its monitor has glided out, and that late close ends only its own pick and hold; an instrument goes at once.
 import type { Mock } from 'vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ChannelPick } from '@/lib/audio-input/input-channels'
@@ -13,6 +13,8 @@ import { fakeGraphNode, harness, laneSound, settle, } from './studio-recorder.te
 
 /** The house release and its slack, in ms: when a released monitor path comes apart. */
 const RELEASED_MS = 240
+/** How long a lane's input sounds before its monitor rises, in ms. */
+const SETTLE_MS = 250
 
 /** The recorder with the real monitor on a graph of fakes, every lane sounding as `sound` says. */
 function monitored(
@@ -22,8 +24,9 @@ function monitored(
   const graph = new FakeAudioContext()
   const scheduler = createManualScheduler()
   const h = harness({
-    createMonitor: (_context, input) =>
+    createMonitor: (_context, input, options) =>
       createStudioInputMonitor(graph.asContext, input, {
+        ...options,
         schedule: scheduler.schedule,
       }),
     monitorSound: () => sound,
@@ -66,6 +69,15 @@ const levelsOf = (graph: FakeAudioContext) =>
 /** Whether `node` was taken apart whole, as an input's last lane leaves it. */
 const disconnectedWhole = (node: FakeGraphNode) =>
   node.disconnect.mock.calls.some((call) => call.length === 0)
+
+/** Every armed lane's input sounds, each capture metering a first level, and settles: each monitor rises. */
+function hear(
+  h: ReturnType<typeof harness>,
+  scheduler: ReturnType<typeof createManualScheduler>,
+): void {
+  for (const worklet of h.worklets) worklet.level(0.3, 1536)
+  scheduler.advance(SETTLE_MS)
+}
 
 describe("each armed lane's monitor", () => {
   it('hears each lane on one input through its own channel and a path of its own, and the whole input through none', async () => {
@@ -143,6 +155,82 @@ describe("each armed lane's monitor", () => {
   })
 })
 
+describe("a lane's monitor rising", () => {
+  it('stays silent until its input has sounded a quarter of a second, then rises from silence', async () => {
+    // Arrange
+    const { h, graph, scheduler } = monitored()
+    await h.recorder.arm('lane-1')
+    const [level] = levelsOf(graph)
+
+    // Act
+    h.worklet.level(0, 1536)
+    scheduler.advance(SETTLE_MS)
+    const beforeSound = level.gain.destination
+    h.worklet.level(0.3, 3584)
+    scheduler.advance(SETTLE_MS - 1)
+    const settling = level.gain.destination
+    scheduler.advance(1)
+
+    // Assert
+    expect(beforeSound).toBe(0)
+    expect(settling).toBe(0)
+    expect(level.gain.lastWrite).toMatchObject({
+      kind: 'target',
+      value: 1,
+      timeConstant: 0.036,
+    })
+  })
+
+  it("rises on its own capture's sound alone: a lane beside it on another input waits for its own", async () => {
+    // Arrange
+    const inputs = [oneInput(undefined), oneInput(undefined)]
+    const sources: FakeGraphNode[] = []
+    const { h, graph, scheduler } = monitored({
+      acquireMic: (trackId) =>
+        inputs[trackId === 'lane-1' ? 0 : 1].acquireMic(trackId),
+      createSource: () => {
+        sources.push(fakeGraphNode('source'))
+        return sources.at(-1) as unknown as AudioNode
+      },
+    })
+    await h.recorder.arm('lane-1')
+    await h.recorder.arm('lane-2')
+    const [first, second] = levelsOf(graph)
+
+    // Act
+    h.worklets[1].level(0.3, 1536)
+    scheduler.advance(SETTLE_MS)
+
+    // Assert
+    expect(second.gain.lastWrite).toMatchObject({ kind: 'target', value: 1 })
+    expect(first.gain.destination).toBe(0)
+  })
+
+  it("rises a MIDI lane's monitor at once: an instrument plays cleanly from its first note", async () => {
+    // Arrange
+    const hold: StudioInstrumentHold = {
+      kind: 'instrument',
+      play: () => fakeGraphNode('instrument') as unknown as AudioNode,
+      connected: () => true,
+      release: vi.fn(),
+    }
+    const { h, graph, scheduler } = monitored({
+      acquireInstrument: () => Promise.resolve(hold),
+    })
+
+    // Act
+    await h.recorder.arm('keys')
+
+    // Assert
+    expect(levelsOf(graph)[0].gain.lastWrite).toMatchObject({
+      kind: 'target',
+      value: 1,
+      timeConstant: 0.036,
+    })
+    expect(scheduler.pendingCount).toBe(0)
+  })
+})
+
 describe('a lane disarmed while its monitor is heard', () => {
   afterEach(() => releaseMicLock())
 
@@ -151,6 +239,7 @@ describe('a lane disarmed while its monitor is heard', () => {
     const input = oneInput(undefined)
     const { h, scheduler } = monitored({ acquireMic: input.acquireMic })
     await h.recorder.arm('lane-1')
+    hear(h, scheduler)
 
     // Act
     h.recorder.disarm()
@@ -194,6 +283,7 @@ describe('a lane disarmed while its monitor is heard', () => {
     const { h, graph, scheduler } = monitored({ acquireMic: input.acquireMic })
     await h.recorder.arm('lane-1')
     await h.recorder.arm('lane-2')
+    hear(h, scheduler)
     const [splitter] = h.splitters
     const [left, right] = h.gains
 
@@ -219,6 +309,7 @@ describe('a lane disarmed while its monitor is heard', () => {
     const input = oneInput(undefined)
     const { h, scheduler } = monitored({ acquireMic: input.acquireMic })
     await h.recorder.arm('lane-1')
+    hear(h, scheduler)
     h.recorder.disarm()
     scheduler.advance(100)
 
@@ -251,6 +342,7 @@ describe('a lane disarmed while its monitor is heard', () => {
       },
     })
     await h.recorder.arm('lane-1')
+    hear(h, scheduler)
     h.recorder.disarm()
     scheduler.advance(100)
 
@@ -291,6 +383,7 @@ describe('a lane disarmed while its monitor is heard', () => {
       acquireMic: () => mic.acquireFrom('studio-record', 'usb-1'),
     })
     await h.recorder.arm('lane-1')
+    hear(h, scheduler)
     h.recorder.disarm()
     scheduler.advance(100)
 
@@ -309,11 +402,41 @@ describe('a lane disarmed while its monitor is heard', () => {
     expect(mic.getScopedHold()).not.toBeNull()
   })
 
+  it('rises a re-arm inside the release once its own input has settled, while the lane before it still closes late', async () => {
+    // Arrange
+    const input = oneInput(undefined)
+    const { h, graph, scheduler } = monitored({ acquireMic: input.acquireMic })
+    await h.recorder.arm('lane-1')
+    hear(h, scheduler)
+    const [first] = levelsOf(graph)
+    h.recorder.disarm()
+    scheduler.advance(100)
+
+    // Act
+    expect(await h.recorder.arm('lane-1')).toBe(true)
+    const [, second] = levelsOf(graph)
+    // The input sounds on: the re-arm's capture meters it at once.
+    h.worklet.level(0.3, 1536)
+    scheduler.advance(RELEASED_MS - 100)
+    const atRelease = second.gain.destination
+
+    // Assert
+    expect(input.releases[0]).toHaveBeenCalledOnce()
+    expect(levelsOf(graph)).toEqual([second])
+    expect(atRelease).toBe(0)
+    scheduler.advance(SETTLE_MS - (RELEASED_MS - 100))
+    expect(second.gain.lastWrite).toMatchObject({ kind: 'target', value: 1 })
+    expect(first.gain.lastWrite).toMatchObject({ kind: 'target', value: 0 })
+    expect(input.releases[1]).not.toHaveBeenCalled()
+    expect(disconnectedWhole(h.source)).toBe(false)
+  })
+
   it('still lets its input go once the Studio closes inside the glide', async () => {
     // Arrange
     const input = oneInput(undefined)
     const { h, scheduler } = monitored({ acquireMic: input.acquireMic })
     await h.recorder.arm('lane-1')
+    hear(h, scheduler)
 
     // Act
     h.recorder.disarm()

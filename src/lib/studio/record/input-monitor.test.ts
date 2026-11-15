@@ -1,4 +1,4 @@
-// Studio input monitor — off builds nothing; on plays the input folded as the take is, spread, through its lane's chain at the monitor profile and its faders, on one path however often it is set; a lane not heard, and dispose, take the graph apart after the release; a lane heard again while it releases plays on through the same path; and dispose says when its input may close: at once with nothing heard, once the path has come apart otherwise.
+// Studio input monitor — off builds nothing; on plays the input folded as the take is, spread, through its lane's chain at the monitor profile and its faders, on one path however often it is set, rising a quarter of a second after the input's first sound, after a second without one, or at once on an input that plays cleanly from its first sample; a lane not heard, and dispose, take the graph apart after the release; a lane heard again while it releases plays on through the same path; and dispose says when its input may close: at once with nothing heard, once the path has come apart otherwise.
 import { describe, expect, it, vi } from 'vitest'
 import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { FakeGain } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
@@ -21,7 +21,13 @@ function sound(over: Partial<StudioMonitorSound> = {}): StudioMonitorSound {
   return { on: true, spec: LANE_CHAIN, gains: [0.5, 0.25], ...over }
 }
 
-function setup() {
+/** How long the input sounds before a path rises on it, in ms. */
+const SETTLE_MS = 250
+/** How long a rise waits for the input's first sound, in ms. */
+const ARRIVAL_WAIT_MS = 1000
+
+/** A monitor on a graph of fakes, its input `arrived`: sounding and settled, as a microphone is a moment into an arm. */
+function setup({ arrived = true, settled = false } = {}) {
   const ctx = new FakeAudioContext()
   // Stands for the microphone's source node, which the arm owns.
   const input = new FakeNode('source')
@@ -29,8 +35,12 @@ function setup() {
   const monitor = createStudioInputMonitor(
     ctx.asContext,
     input as unknown as AudioNode,
-    { schedule: scheduler.schedule },
+    { schedule: scheduler.schedule, settled },
   )
+  if (arrived && !settled) {
+    monitor.inputArrived()
+    scheduler.advance(SETTLE_MS)
+  }
   return { ctx, input, scheduler, monitor }
 }
 
@@ -207,5 +217,100 @@ describe('the input monitor', () => {
     expect(silent).not.toHaveBeenCalled()
     scheduler.advance(1)
     expect(silent).toHaveBeenCalledOnce()
+  })
+})
+
+describe("the input monitor before its input's first sound", () => {
+  it('holds a heard path silent until its input has sounded a quarter of a second, then rises from silence on the house time constant', () => {
+    const { ctx, scheduler, monitor } = setup({ arrived: false })
+
+    monitor.set(sound())
+
+    const [level] = levels(ctx)
+    expect(level.gain.value).toBe(0)
+    expect(level.gain.lastWrite).toBeUndefined()
+    monitor.inputArrived()
+    scheduler.advance(SETTLE_MS - 1)
+    expect(level.gain.lastWrite).toBeUndefined()
+    scheduler.advance(1)
+    expect(level.gain.lastWrite).toMatchObject({
+      kind: 'target',
+      value: 1,
+      timeConstant: 0.036,
+    })
+  })
+
+  it('rises after a second without a sound anyway, as for a muted microphone, and only once', () => {
+    const { ctx, scheduler, monitor } = setup({ arrived: false })
+    monitor.set(sound())
+    const [level] = levels(ctx)
+
+    scheduler.advance(ARRIVAL_WAIT_MS - 1)
+    expect(level.gain.lastWrite).toBeUndefined()
+    scheduler.advance(1)
+    expect(level.gain.lastWrite).toMatchObject({ kind: 'target', value: 1 })
+    const written = level.gain.events.length
+    monitor.inputArrived()
+    scheduler.advance(SETTLE_MS)
+    expect(level.gain.events).toHaveLength(written)
+  })
+
+  it('lets a sound that comes late in the wait settle all the same, rather than rise on it at the second', () => {
+    const { ctx, scheduler, monitor } = setup({ arrived: false })
+    monitor.set(sound())
+    const [level] = levels(ctx)
+    scheduler.advance(ARRIVAL_WAIT_MS - 100)
+
+    monitor.inputArrived()
+
+    scheduler.advance(SETTLE_MS - 1)
+    expect(level.gain.lastWrite).toBeUndefined()
+    scheduler.advance(1)
+    expect(level.gain.lastWrite).toMatchObject({ kind: 'target', value: 1 })
+  })
+
+  it('rises at once on an input that settled before monitoring was turned on, and waits no longer', () => {
+    const { ctx, scheduler, monitor } = setup({ arrived: false })
+    monitor.set(sound({ on: false }))
+    monitor.inputArrived()
+    scheduler.advance(SETTLE_MS)
+    expect(scheduler.pendingCount).toBe(0)
+
+    monitor.set(sound())
+
+    expect(levels(ctx)[0].gain.lastWrite).toMatchObject({
+      kind: 'target',
+      value: 1,
+    })
+  })
+
+  it('rises at once on an input that plays cleanly from its first sample, an instrument, and waits for nothing', () => {
+    const { ctx, scheduler, monitor } = setup({ settled: true })
+
+    monitor.set(sound())
+
+    expect(levels(ctx)[0].gain.lastWrite).toMatchObject({
+      kind: 'target',
+      value: 1,
+      timeConstant: 0.036,
+    })
+    expect(scheduler.pendingCount).toBe(0)
+  })
+
+  it('never rises once disposed, waits no longer, and lets its input go after the release', () => {
+    const { ctx, input, scheduler, monitor } = setup({ arrived: false })
+    monitor.set(sound())
+    const [level] = levels(ctx)
+    monitor.inputArrived()
+    const silent = vi.fn()
+
+    monitor.dispose(silent)
+    monitor.inputArrived()
+    scheduler.advance(RELEASED_MS)
+
+    expect(level.gain.events.filter(({ value }) => value === 1)).toEqual([])
+    expect(silent).toHaveBeenCalledOnce()
+    expect(input.targets).toEqual([])
+    expect(scheduler.pendingCount).toBe(0)
   })
 })
