@@ -55,6 +55,7 @@ export function StudioNoteEditorHost(props: StudioNoteEditorHostProps) {
                 transport={props.transport}
                 dispatch={props.dispatch}
                 writable={props.writable}
+                history={props.history}
               />
             )}
           </Show>
