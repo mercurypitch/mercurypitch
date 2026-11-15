@@ -298,6 +298,39 @@
   flex: none;
 }
 
+/* "Hear it first", under the mic: Merc plays one example of the drill. */
+.stage :global(.exercise-demo-btn) {
+  min-height: 44px;
+  padding: 8px 20px;
+  border: 1px solid var(--stage-edge-strong);
+  border-radius: 999px;
+  background: var(--stage-glass);
+  color: var(--text-primary);
+  font-size: 0.86rem;
+  font-weight: 650;
+}
+
+.stage :global(.exercise-demo-btn):hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--stage-panel);
+}
+
+.stage :global(.exercise-demo-btn):focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 3px;
+}
+
+.stage :global(.exercise-demo-btn):disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+/* What Merc says while the example sounds. */
+.bubble :global(.exercise-stage-demo-line) {
+  color: var(--accent-hover);
+  font-weight: 650;
+}
+
 .stage :global(.exercise-settings-trigger) {
   min-height: 44px;
   border: 1px solid var(--stage-edge-strong);
@@ -440,11 +473,15 @@
   }
 
   .stage :global(.exercise-result-card) {
-    order: -3;
+    order: -4;
   }
 
   .stage :global(.exercise-idle-start),
   .stage :global(.exercise-guided-stop-question) {
+    order: -3;
+  }
+
+  .stage :global(.exercise-demo-btn) {
     order: -2;
   }
 

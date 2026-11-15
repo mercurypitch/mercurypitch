@@ -12,6 +12,7 @@ import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
 import { unscoredRunLine } from '../feedback'
+import { createNoteDemo } from '../stage/note-demo'
 import { stopLabelForTimer } from '../timer-preference'
 import { EXERCISE_LONG_NOTE, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
@@ -69,6 +70,10 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
 
   onCleanup(() => base.reset())
 
+  // "Hear it first": Merc plays one example before the singer tries.
+  const demo = createNoteDemo(audioEngine)
+  onCleanup(() => demo.stop())
+
   onMount(() => {
     if (props.autoStart === true && base.state().status === 'idle') {
       void handleStart()
@@ -109,6 +114,11 @@ const LongNoteExercise: Component<LongNoteExerciseProps> = (props) => {
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconTarget size={20} />}
+      demo={{
+        play: () => demo.play([targetMidi()], { noteMs: 1600 }),
+        stop: demo.stop,
+        line: () => `Listen: ${targetNote()}. Hold it as steady as that.`,
+      }}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
           <p>Hold a steady pitch. The longer and steadier, the better.</p>

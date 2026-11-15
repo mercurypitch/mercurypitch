@@ -13,6 +13,7 @@ import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
 import { unscoredRunLine } from '../feedback'
+import { createNoteDemo } from '../stage/note-demo'
 import { stopLabelForTimer } from '../timer-preference'
 import type { GuidedPracticeLaunchConfig } from '../types'
 import { EXERCISE_PITCH_HOLD, runStoppedEarly } from '../types'
@@ -124,6 +125,10 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
 
   onCleanup(() => base.reset())
 
+  // "Hear it first": Merc plays one example before the singer tries.
+  const demo = createNoteDemo(audioEngine)
+  onCleanup(() => demo.stop())
+
   onMount(() => {
     if (props.autoStart === true && base.state().status === 'idle') {
       void handleStart()
@@ -179,6 +184,11 @@ const PitchHoldExercise: Component<PitchHoldExerciseProps> = (props) => {
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconLock size={20} />}
+      demo={{
+        play: () => demo.play([noteToMidi(targetNote())], { noteMs: 1600 }),
+        stop: demo.stop,
+        line: () => `Listen: ${targetNote()}. That is the note to stay on.`,
+      }}
       guidedPractice={guidedPractice}
       guidedCompletionReady={controller.hasSufficientVoicedEvidence}
       idlePlaceholder={

@@ -77,6 +77,16 @@ export interface ExerciseTrackerConfig {
   when?: () => boolean
 }
 
+/** One example of what a drill asks for, played before the singer tries. */
+export interface ExerciseDemo {
+  /** Play it; resolves when it has finished sounding. */
+  play: () => Promise<void>
+  /** Cut it short: the run has started, or the drill was left. */
+  stop: () => void
+  /** What Merc says while it sounds: "Listen: E3, then B3." */
+  line: () => string
+}
+
 export interface ExerciseShellProps {
   type: ExerciseType
   title: string
@@ -185,6 +195,9 @@ export interface ExerciseShellProps {
   /** A drill nothing listens to (Read the Note). Its header carries no
    *  microphone switch and its idle button no microphone. */
   micless?: boolean
+  /** "Hear it first": Merc plays one example of what the drill asks for,
+   *  from a button under Start, and says what it is while it sounds. */
+  demo?: ExerciseDemo
   /** Present only for drills that support a timed auto-score mode. */
   autoTimer?: AutoTimerConfig
 }
@@ -277,13 +290,43 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // card (grade, personal-best delta, the exercise's metric summary) makes
   // the payoff moment explicit before the next attempt.
   const isIdleLike = () => status() === 'idle' || status() === 'complete'
-  /** Merc's pose beside the sheet: he listens to a run and cheers a good
-   *  one (stage/stage-pose.ts). */
+  // "Hear it first" (props.demo): true while the example sounds. Each play
+  // has a number, so one cut short cannot switch off the one after it.
+  const [demoPlaying, setDemoPlaying] = createSignal(false)
+  let demoRun = 0
+  const playDemo = async (): Promise<void> => {
+    const demo = props.demo
+    if (demo === undefined || demoPlaying()) return
+    const run = ++demoRun
+    setDemoPlaying(true)
+    try {
+      await demo.play()
+    } finally {
+      if (run === demoRun) setDemoPlaying(false)
+    }
+  }
+  const stopDemo = (): void => {
+    if (!demoPlaying()) return
+    demoRun += 1
+    props.demo?.stop()
+    setDemoPlaying(false)
+  }
+  // The example gives way to the run, however the run was started (the
+  // button, Space, a routine), and to the drill being left.
+  createEffect(() => {
+    if (!isIdleLike()) stopDemo()
+  })
+  onCleanup(stopDemo)
+
+  /** Merc's pose beside the sheet: he sings the example, listens to a run
+   *  and cheers a good one (stage/stage-pose.ts). */
   const mercPose = createMemo(() =>
-    stagePose({
-      status: status(),
-      score: gradesResult() ? props.resultScore() : null,
-    }),
+    demoPlaying()
+      ? 'sing'
+      : stagePose({
+          status: status(),
+          score: gradesResult() ? props.resultScore() : null,
+        }),
   )
 
   // Personal-best detection: snapshot the stats when a run STARTS — by the
@@ -874,21 +917,32 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
             did at the top of the card. */}
       <StageCoach pose={mercPose}>
         <Show
-          when={isActive() && props.activePhase}
+          when={demoPlaying() && props.demo}
           fallback={
             <Show
-              when={props.idlePlaceholder}
+              when={isActive() && props.activePhase}
               fallback={
-                <div class="exercise-idle-placeholder">
-                  <p>{help().summary}</p>
-                </div>
+                <Show
+                  when={props.idlePlaceholder}
+                  fallback={
+                    <div class="exercise-idle-placeholder">
+                      <p>{help().summary}</p>
+                    </div>
+                  }
+                >
+                  {props.idlePlaceholder}
+                </Show>
               }
             >
-              {props.idlePlaceholder}
+              <div class="exercise-active-phase">{props.activePhase}</div>
             </Show>
           }
         >
-          <div class="exercise-active-phase">{props.activePhase}</div>
+          {(demo) => (
+            <div class="exercise-stage-demo-line" role="status">
+              {demo().line()}
+            </div>
+          )}
         </Show>
       </StageCoach>
       <div
@@ -1182,6 +1236,19 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
                     </Show>
                     {idlePrimaryLabel()}
                   </button>
+                  <Show
+                    when={props.demo !== undefined && idlePrimaryStartsRun()}
+                  >
+                    <button
+                      type="button"
+                      class="exercise-btn exercise-demo-btn"
+                      data-exercise-native-space="true"
+                      disabled={demoPlaying() || voiceSaveInFlight()}
+                      onClick={() => void playDemo()}
+                    >
+                      {demoPlaying() ? 'Listen…' : 'Hear it first'}
+                    </button>
+                  </Show>
                 </Show>
               </div>
             </div>

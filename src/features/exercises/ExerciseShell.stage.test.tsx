@@ -8,11 +8,12 @@
 // starts and the run's instruction while it lasts, and the idle button
 // carries a microphone.
 
-import { cleanup, render } from '@solidjs/testing-library'
+import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import type { JSX } from 'solid-js'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EXERCISE_HELP } from './exercise-help'
+import type { ExerciseDemo } from './ExerciseShell'
 import { ExerciseShell } from './ExerciseShell'
 import type { ExerciseStatus } from './types'
 import { EXERCISE_INTERVAL_TRAINER } from './types'
@@ -30,6 +31,7 @@ interface Staged {
   brief?: JSX.Element
   instruction?: JSX.Element
   score?: number
+  demo?: ExerciseDemo
 }
 
 /** A drill on the stage, and the handle that moves its run along. */
@@ -46,6 +48,7 @@ function stage(options: Staged = {}) {
       }
       idlePlaceholder={options.brief}
       activePhase={options.instruction}
+      demo={options.demo}
       onBack={() => {}}
       onStart={() => {}}
       activeContent={<div>the drill's own visual</div>}
@@ -181,5 +184,78 @@ describe('the drill stage', () => {
     const glyph = start.querySelector('svg')
     expect(glyph).not.toBeNull()
     expect(glyph?.closest('[aria-hidden="true"]')).not.toBeNull()
+  })
+})
+
+describe('Hear it first', () => {
+  afterEach(cleanup)
+
+  /** An example that sounds until the test says it has finished. */
+  function example() {
+    let finish: () => void = () => {}
+    const calls = { play: 0, stop: 0 }
+    const demo: ExerciseDemo = {
+      play: () => {
+        calls.play += 1
+        return new Promise<void>((resolve) => {
+          finish = resolve
+        })
+      },
+      stop: () => {
+        calls.stop += 1
+        finish()
+      },
+      line: () => 'Listen: E3, then B3.',
+    }
+    return { demo, calls, finish: () => finish() }
+  }
+
+  it('is not offered by a drill that has no example', () => {
+    const drill = stage({ brief: BRIEF })
+    expect(drill.queryByRole('button', { name: 'Hear it first' })).toBeNull()
+  })
+
+  it("plays the drill's example and puts what it is in Merc's bubble", async () => {
+    const { demo, calls, finish } = example()
+    const drill = stage({ brief: BRIEF, demo })
+    const button = drill.getByRole('button', { name: 'Hear it first' })
+
+    fireEvent.click(button)
+    expect(calls.play).toBe(1)
+    expect(drill.coach().textContent).toBe('Listen: E3, then B3.')
+    expect(button.textContent).toBe('Listen…')
+    expect(button.hasAttribute('disabled')).toBe(true)
+
+    finish()
+    await tick()
+    // The brief is back, and the example can be heard again.
+    expect(drill.coach().querySelector('.idle-hint')).not.toBeNull()
+    expect(button.textContent).toBe('Hear it first')
+    expect(button.hasAttribute('disabled')).toBe(false)
+  })
+
+  it('gives way to the run the moment it starts', async () => {
+    const { demo, calls } = example()
+    const drill = stage({
+      brief: BRIEF,
+      instruction: <span>Sing note 1 of 2</span>,
+      demo,
+    })
+    fireEvent.click(drill.getByRole('button', { name: 'Hear it first' }))
+
+    drill.setStatus('active')
+    await tick()
+    expect(calls.stop).toBe(1)
+    expect(
+      drill.coach().querySelector('.exercise-active-phase')?.textContent,
+    ).toBe('Sing note 1 of 2')
+  })
+
+  it('is cut short when the drill is left', () => {
+    const { demo, calls } = example()
+    const drill = stage({ brief: BRIEF, demo })
+    fireEvent.click(drill.getByRole('button', { name: 'Hear it first' }))
+    drill.unmount()
+    expect(calls.stop).toBe(1)
   })
 })

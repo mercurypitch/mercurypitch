@@ -954,7 +954,7 @@ and First Light does not step aside. Item 21 fixes it.
 16. **Interval Trainer's `perfect-intervals`** slug, intervals 5, 7 and 12 (data): shipped on 15
     November 2026. Its setup screen names all three, since "Perfect 4th through Octave" would
     promise the tritone
-    (`src/features/exercises/interval-trainer/use-interval-trainer-controller.ts:96-108`). Lesson
+    (`src/features/exercises/interval-trainer/use-interval-trainer-controller.ts:125-137`). Lesson
     23, whose card does not link it yet. The
     native app's Leap, the third Ear room, has the singer sing fourths and fifths up at its first
     level (`src/features/leap/leap-rules.ts:11-13`), but no lesson page can open it (§ 7 item 14).

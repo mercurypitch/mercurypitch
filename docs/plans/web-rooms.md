@@ -74,9 +74,18 @@ had, so each drill's own styles, the tests and the tours find what they looked f
 - **The result.** The grade in a ring of its own ink and the score as one large number, over the
   drill's own summary line.
 
-Not yet, and drill by drill from here (Interval Trainer first): Merc singing a drill's example
-before the singer's first try and giving the answer after a miss, one figure per drill that is
-itself the feedback, and one line of words per note.
+- **Hear it first.** Under Start, a drill can offer one example of what it asks for
+  (`ExerciseShell`'s `demo`): Merc takes his singing pose, his bubble says what it is ("Listen:
+  E3, then B3. That is a Perfect 5th."), and the example gives way to a run the moment one
+  starts. Interval Trainer, Scale Runner, Long Note and Pitch Hold have one, each a row of notes
+  (`stage/note-demo.ts`).
+- **The answer after a miss.** In Interval Trainer a round with a missed note is answered before
+  the next: the pair plays once more under its name ("That was B3, a Perfect 5th above E3.
+  Listen."). Read the Note and Name the Cadence do the same in their own way.
+
+Not yet, and drill by drill from here: an example and an answer for the other drills; Merc's own
+sung voice for them (the examples sound in the app's instrument); one figure per drill that is
+itself the feedback; and one line of words per note.
 
 ## What keeps them out of a store build
 
