@@ -425,8 +425,11 @@ async function hearClip(page: Page): Promise<Float32Array & { at: number }> {
   const pressed = await audioClock(page)
   await toggle.click()
   const capture = await captureSpan(page, pressed + 5.5, pressed + 10.7)
-  await toggle.click()
-  await expect(toggle).toHaveAccessibleName('Play song')
+  // The song ends with the clip, ten seconds in, and stops there by itself.
+  // A Pause pressed once the capture returns can land after that stop and
+  // start the song again: on CI the capture returned 13 s after Play. So
+  // wait for the stop instead.
+  await expect(toggle).toHaveAccessibleName('Play song', { timeout: 20_000 })
   return Object.assign(capture.samples, { at: 5.5 })
 }
 
