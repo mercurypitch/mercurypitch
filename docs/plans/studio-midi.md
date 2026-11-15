@@ -443,6 +443,43 @@ render service (B2's).
 - **A MIDI lane's header says what it plays**, MIDI · Piano or MIDI · Kit,
   rather than where its render's file came from.
 
+### Design decisions made while building E
+
+E makes a drum lane's notes edit, on the same engine and roll as a
+piano's.
+
+- **A kit's rows are C's; the engine counts them.** A kit's rows
+  (`roll-keyboard.ts`, `drum-rows.ts`: the usual kit and every key played,
+  cymbals on top) are the engine's rows on a kit. A press's anchor, a drag
+  and the viewport count rows, and `edit-kit.ts` turns them into keys. A
+  pan, a pinch and the wheel keep the rows on the kit.
+- **A hit is a square at its start.** Its length changes nothing a kit
+  plays, so it draws as a square of the lane's glass, its row's height less
+  a margin and 2 px short of the next hit on its row (`kit-hit.ts`), with no
+  grips and no resize. A hit drawn or painted is stored a grid step long.
+- **A press takes a hit anywhere in its row's height about its square**,
+  and a finger 12 px past that, so a hit squeezed between close neighbours
+  is still a row tall to a finger.
+- **Draw toggles and paints.** A tap on an empty cell puts a hit there, on
+  its step; a tap on a hit takes it away (with Shift it selects it); a drag
+  paints a hit in every empty cell it crosses, in one commit, each sounding
+  as it goes down. A press on a hit that travels moves it, as on a piano.
+- **Up and Down move to the next row; an octave means nothing on a kit,**
+  so a kit's toolbar has no transpose.
+- **A touch screen opens a kit on rows of 32 px at the least**, from the
+  kick up: a kit that does not fit loses its cymbals before its kick.
+- **A tablet's drawer opens at 70 % of the arrangement**, so at 1180 by
+  820 a piano shows ten rows of 24 px and a kit seven of 32. A computer's
+  is as C made it.
+- **The roll keeps its touches from the browser.** Chromium does not click
+  on a tap that stops a fling, even over an element with `touch-action:
+none`, so a tap on a button straight after a fast pan did nothing. A
+  probe on a plain page, with none of the app's code, showed the same. The
+  roll's canvas now cancels its touchstart with a listener that is not
+  passive, so its touches start nothing of the browser's.
+- **Undo and Redo sit in the editor's header**, the Studio's own: a phone's
+  editor covers the top bar, as the mockups had it.
+
 ### Design decisions made while building B
 
 The render service (B2):
@@ -641,3 +678,12 @@ on either.
 | `src/features/studio/notes/velocity-lane.ts`        | Where a lollipop stands, for the lane's drawing and its picking.                                                  |
 | `src/features/studio/notes/edit-hold.ts`            | A held arrow: its repeats drafted, one commit when let go.                                                        |
 | `src/e2e/studio-note-editing.spec.ts`               | Fingers on a phone and a tablet, a mouse and the keys on a computer, each edit read back from the saved song.     |
+
+## 9. Where E lives
+
+| File                                    | What it answers                                                                                                |
+| --------------------------------------- | -------------------------------------------------------------------------------------------------------------- |
+| `src/features/studio/notes/edit-kit.ts` | The engine on a kit: rows turned into keys, hits picked, moved between rows and painted, rows kept on the kit. |
+| `src/features/studio/notes/kit-hit.ts`  | A hit's square and where a press takes it, for the drawing and the picking alike.                              |
+| `src/lib/studio/midi/roll-rows.ts`      | E adds a top row, so a kit's rows pan and zoom on the kit.                                                     |
+| `src/e2e/studio-drum-editing.spec.ts`   | Fingers on a phone and a tablet, a mouse and the keys on a computer, on a kit.                                 |
