@@ -321,15 +321,20 @@
   background: var(--studio-bar);
 }
 
-/* A phone's editor: a taller header with the names in the middle and Done
-   in reach of a thumb. */
+/* A phone's editor: a taller header with the names and Done in reach of a
+   thumb on its first row, and the editing tools on a row of their own
+   under them, where they need not squeeze between the two. */
 .full .header {
-  flex-wrap: nowrap;
   min-height: 56px;
   padding: 6px 8px 6px 14px;
 }
 .full .identity {
-  flex: 1 1 auto;
+  flex: 1 1 0;
+}
+.full .tools {
+  flex: 1 1 100%;
+  flex-wrap: nowrap;
+  order: 1;
 }
 .full .chip {
   display: none;
