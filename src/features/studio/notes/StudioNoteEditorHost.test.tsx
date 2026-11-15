@@ -32,7 +32,7 @@ const transport = {
 }
 
 /** The fixture's song in a signal, its MIDI clip's button, and the host. */
-function renderHost(options: { phone?: boolean } = {}) {
+function renderHost(options: { phone?: boolean; tablet?: boolean } = {}) {
   const base = studioMidiFixture()
   // A recorded take is kept under its name, which the editor shows.
   const fixture = {
@@ -57,7 +57,7 @@ function renderHost(options: { phone?: boolean } = {}) {
           project={project()}
           assets={fixture.assets}
           phone={options.phone === true}
-          tablet={false}
+          tablet={options.tablet === true}
           transport={transport}
           dispatch={() => true}
           writable
@@ -188,6 +188,23 @@ describe('the drawer', () => {
     )
     fireEvent.dblClick(edge)
     expect(state.height()).toBeNull()
+  })
+
+  it('opens a tablet’s drawer at 70 % of the arrangement, and a computer’s at 56 %', async () => {
+    // jsdom lays nothing out: the arrangement says it is 700 px.
+    vi.spyOn(HTMLElement.prototype, 'clientHeight', 'get').mockReturnValue(700)
+    const heights: string[] = []
+
+    for (const tablet of [true, false]) {
+      const { state, fixture } = renderHost({ tablet })
+      state.open(fixture.clip.id)
+      const region = await editor()
+      await waitFor(() => expect(region.style.height).toMatch(/px$/))
+      heights.push(region.style.height)
+      cleanup()
+    }
+
+    expect(heights).toEqual(['490px', '392px'])
   })
 
   it('fills a phone’s screen with no edge to drag and no Expand', async () => {

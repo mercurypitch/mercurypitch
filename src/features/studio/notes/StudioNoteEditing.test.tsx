@@ -1,4 +1,4 @@
-// Studio note editing tests — the open editor carries its tools, each named, the selection's edits off with a word until notes are selected; B switches to Draw and back; a key's edit is one set-sequence-notes with its own fork id; the toolbar's velocity reads the selection 1 to 127 and moves it by 8; Escape clears the selection and then closes; a refused edit says so; notes copied in one opening paste in the next; a song that cannot be edited now edits nothing; and the render service hears a draft until its commit, is told when the editor closes, and its render's state shows in the header; on a drum lane the tools have no transpose, and Up moves the selection a row up the kit; and Undo and Redo in the header are the Studio's.
+// Studio note editing tests — the open editor carries its tools, each named, the selection's edits off with a word until notes are selected; B switches to Draw and back; a key's edit is one set-sequence-notes with its own fork id; the toolbar's velocity reads the selection 1 to 127 and moves it by 8; Escape clears the selection and then closes; a refused edit says so; notes copied in one opening paste in the next; a song that cannot be edited now edits nothing; and the render service hears a draft until its commit, is told when the editor closes, and its render's state shows in the header; on a drum lane the tools have no transpose, and Up moves the selection a row up the kit; Undo and Redo in the header are the Studio's; and the roll keeps its touches from the browser.
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, } from 'vitest'
@@ -394,5 +394,19 @@ describe('the history', () => {
 
     expect(undo).toHaveBeenCalledTimes(1)
     expect(screen.getByRole('button', { name: 'Redo' })).toBeDisabled()
+  })
+})
+
+describe('the roll', () => {
+  it('keeps its touches from the browser, so a fast pan starts no fling to swallow the next tap', async () => {
+    const region = await (renderEditor(), opened())
+    const roll = region.querySelector(
+      '[data-studio-note-roll] canvas[role="img"]',
+    )!
+    const touch = new Event('touchstart', { cancelable: true })
+
+    roll.dispatchEvent(touch)
+
+    expect(touch.defaultPrevented).toBe(true)
   })
 })
