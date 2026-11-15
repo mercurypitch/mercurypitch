@@ -8,14 +8,14 @@
 // landscape tablet that did not fit and Start went under the fold.
 //
 // The icon moved up beside the title and the launch controls moved beside the
-// dial. What follows checks the outcome for ALL EIGHTEEN drills rather than
+// dial. What follows checks the outcome for EVERY drill rather than
 // the two or three that were reported, because the setups vary more than the
 // runs do: some have a dial, some a scale picker, some a timer, and two hide
 // theirs behind a bottom sheet on phones. A layout that fits Siren and Long
 // Note tells you very little about Guided Warmup.
 //
-// One page load per viewport, walking the gallery — eighteen separate loads
-// would be eighteen cold starts for the same question.
+// One page load per viewport, walking the gallery — a load for each drill
+// would be nineteen cold starts for the same question.
 
 import { expect, test } from '@playwright/test'
 import { dismissOverlays, openNavTab, waitForNav } from './helpers/ui'
@@ -40,6 +40,7 @@ const DRILLS = [
   'Staccato Precision',
   'Routine Runner',
   'Sight-Singing',
+  'Read the Note',
 ] as const
 
 const VIEWPORTS = [
@@ -123,7 +124,7 @@ test.describe('the setup screen fits, for every drill', () => {
   })
 
   for (const vp of VIEWPORTS) {
-    test(`all eighteen at ${vp.name}`, async ({ page }) => {
+    test(`every drill at ${vp.name}`, async ({ page }) => {
       test.slow()
       await page.setViewportSize({ width: vp.width, height: vp.height })
       await page.goto('/')

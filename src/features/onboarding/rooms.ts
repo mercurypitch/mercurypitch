@@ -96,7 +96,7 @@ export const ROOMS: readonly Room[] = [
     // cards (LIBRARY_EXERCISE_COUNT in ExerciseMenu.tsx), so adding a drill
     // without updating this line fails. It said "fourteen" through four
     // additions before that.
-    line: 'A library of eighteen short drills for range, agility, intervals and control.',
+    line: 'A library of nineteen short drills for range, agility, intervals and control.',
     target: { kind: 'tab', tab: TAB_EXERCISES },
     tourTab: TAB_EXERCISES,
     cover: cover('exercises', '50% 35%'),

@@ -27,6 +27,11 @@ export const EXERCISE_CHORD_STACKER = 'chord-stacker' as const
 export const EXERCISE_STACCATO = 'staccato-precision' as const
 export const EXERCISE_ROUTINE_RUNNER = 'routine-runner' as const
 export const EXERCISE_SIGHT_SINGING = 'sight-singing' as const
+/**
+ * Read the Note: a note on a staff, named by its letter. The one drill the
+ * singer does not sing: nothing listens, so a run opens no microphone.
+ */
+export const EXERCISE_NOTE_READING = 'note-reading' as const
 export const EXERCISE_WARMUP = 'warmup' as const
 /**
  * The premium Long note (a lantern fills while the note holds). Its own id,
@@ -114,6 +119,7 @@ export type ExerciseType =
   | typeof EXERCISE_STACCATO
   | typeof EXERCISE_ROUTINE_RUNNER
   | typeof EXERCISE_SIGHT_SINGING
+  | typeof EXERCISE_NOTE_READING
   | typeof EXERCISE_WARMUP
   | typeof EXERCISE_LONG_NOTE_LANTERN
   | typeof EXERCISE_ECHO_STARS

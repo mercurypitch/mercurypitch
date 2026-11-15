@@ -450,13 +450,13 @@ reduced motion or Pause animations each Merc holds a still frame and skips the r
   2. The `durationSec` launch field: on `ExerciseLaunch` and the launch override (beside
      `difficulty`), passed by `applyExerciseSlug` (`src/App.tsx:595-639`); read by `ExerciseShell`
      as guided length, then launch length, then saved timer (`effectiveTimerSeconds`,
-     `ExerciseShell.tsx:553-555`); shown selected on the timer toggle without writing the saved
+     `ExerciseShell.tsx:556-558`); shown selected on the timer toggle without writing the saved
      preference, and dropped if the viewer picks another length. Pitch Hold shares the field
      (Lesson 3's spec).
   3. Long Note's duration score reads that same effective length, not `activeTimerSeconds()`
      (`use-long-note-controller.ts:163`). Without this, a ten-second launch on a device that saved
      30 s scores ten seconds of coverage out of thirty.
-  4. App content: the card's two sentences and its "Breath Control" tag (`ExerciseMenu.tsx:96-103`;
+  4. App content: the card's two sentences and its "Breath Control" tag (`ExerciseMenu.tsx:97-104`;
      FACTS 62), the help's summary and its "and how long you hold it" (`exercise-help.ts:28-36`),
      and the setup screen's "The longer and steadier, the better." (`LongNoteExercise.tsx:106`)
      invite the longest hold, and the card's second sentence promises what the claims rules forbid

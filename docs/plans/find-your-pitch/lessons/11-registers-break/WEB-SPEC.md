@@ -666,7 +666,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
     connected it is, becomes "Most of your score is how close you come to the second note.", as the
     code scores it (70 %, FACTS 41), and stays true with the slide part below fixed (#1192): no
     change. With the help changed, the card's sentence about it went (LESSON.md's editorial note).
-  - its menu card (`src/features/exercises/ExerciseMenu.tsx:188-189`), "Glide smoothly across your
+  - its menu card (`src/features/exercises/ExerciseMenu.tsx:189-190`), "Glide smoothly across your
     range. Develop seamless register transitions and vocal flexibility.", becomes "Glide smoothly
     between two notes and back. Develop vocal flexibility.", which promises nothing about the
     switch.

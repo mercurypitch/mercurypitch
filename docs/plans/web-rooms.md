@@ -53,8 +53,10 @@ The native shell gives a room three things, and the web now gives the same three
 
 ## The stage the web's own drills run on
 
-The eighteen drills that are not rooms share one shell (`src/features/exercises/ExerciseShell.tsx`),
-so one change restaged all of them (`src/features/exercises/stage/`). The shell kept every class it
+The drills that are not rooms share one shell (`src/features/exercises/ExerciseShell.tsx`), so
+one change restaged all eighteen of them (`src/features/exercises/stage/`), and a drill written
+since stands on the same stage: Read the Note, the nineteenth
+(`src/features/exercises/note-reading/`). The shell kept every class it
 had, so each drill's own styles, the tests and the tours find what they looked for.
 
 - **The booth behind, a sheet of dark glass in front.** The shell's root is a dark stage in either
@@ -106,10 +108,11 @@ rooms and the kit); their paintings and Merc's lines are not precached.
 ## What follows
 
 1. First note and the Warm-up on the web.
-2. The four drills Season 2 still lacks, as rooms on the mock-ups' stage (the vocal booth, a glass
-   sheet holding the drill's one figure, Merc beside it): sight-singing in time, note reading, and
-   cadence types; the harmony line is the Harmony room, which differs from the lesson plan's drill
-   in three ways (`docs/plans/find-your-pitch/SEASON-2.md` § 7 item 14).
+2. The drills Season 2 still lacks, on the stage (the vocal booth, a glass sheet holding the
+   drill's one figure, Merc beside it): sight-singing in time and cadence types. Note reading has
+   shipped as Read the Note (`docs/plans/find-your-pitch/SEASON-2.md` § 5.2 item 9). The harmony
+   line is the Harmony room, which differs from the lesson plan's drill in three ways (the same
+   plan, § 7 item 14).
 3. The web's eighteen old drills, now on the stage above. Where a room covers the same skill it
    takes the drill's place on the tab (Long Note, Call and Response, the Warm-up). The others get
    Merc's example, the answer after a miss and a figure of their own, Interval Trainer first.
