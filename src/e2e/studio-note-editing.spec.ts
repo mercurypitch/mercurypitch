@@ -164,14 +164,15 @@ for (const screen of TOUCH_SCREENS) {
       const live = await routeNetwork(page)
       await openNotesByTouch(page, screen.phone)
       const editor = noteEditor(page)
-      // A pan on the top rows late in the clip, lifted still moving: the
-      // tap straight after it still presses Draw.
+      // A fast pan late in the clip, four rows up in four moves and lifted
+      // still moving: Chromium flings it, and the tap straight after it
+      // still presses Draw.
       const panned = await readNoteRoll(page, screen.phone)
       const flick = {
         x: tickX(panned, 7200),
-        y: panned.top + 2 * rowHeight(panned),
+        y: panned.top + 5 * rowHeight(panned),
       }
-      await touchDrag(page, flick, moved(flick, 0, -rowHeight(panned)))
+      await touchDrag(page, flick, moved(flick, 0, -4 * rowHeight(panned)), 4)
 
       await editor.getByRole('button', { name: 'Draw', exact: true }).tap()
       await expect(
