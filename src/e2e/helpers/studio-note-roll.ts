@@ -1,14 +1,14 @@
-// Studio note roll for browser tests — where the open note editor's piano roll draws a note, a tick or a note's velocity, worked out from the roll's view and its box; a finger pressed, drawn along and lifted through Chromium's own touch input; and the MIDI clip's notes as the song saved them.
+// Studio note roll for browser tests — where the open note editor's roll, a piano's or a kit's, draws a note, a tick or a note's velocity, worked out from the roll's view and its box; a finger pressed, drawn along and lifted through Chromium's own touch input; and the MIDI clip's notes as the song saved them.
 import { expect, type Locator, type Page } from '@playwright/test'
 import type { StudioNote } from '@/lib/studio/model/types'
 import { readStudioProject } from './dedicatedstudio-fixture'
 import { noteEditor } from './studio-notes'
 
-/** The piano roll's bands (StudioNoteRoll.tsx): the ruler over the grid, the keys left of it and the velocity lane under it, a phone's narrower and shorter. */
+/** The roll's bands (StudioNoteRoll.tsx): the ruler over the grid, the keys (or a kit's named rows) left of it and the velocity lane under it, a phone's narrower and shorter. */
 const RULER_HEIGHT = 26
-const PIANO_BANDS = {
-  phone: { keys: 46, lane: 60 },
-  other: { keys: 72, lane: 76 },
+const BANDS = {
+  piano: { phone: { keys: 46, lane: 60 }, other: { keys: 72, lane: 76 } },
+  kit: { phone: { keys: 104, lane: 60 }, other: { keys: 136, lane: 76 } },
 } as const
 /** The velocity lane's room under its lowest head and over its highest, and how far right of its note a stick stands (velocity-lane.ts). */
 const LANE_FOOT = 10
@@ -41,10 +41,11 @@ export function noteRoll(page: Page): Locator {
   return noteEditor(page).locator('[data-studio-note-roll]')
 }
 
-/** The roll's view, once the editing engine draws it. */
+/** The roll's view, once the editing engine draws it; a kit's rows count from the kick at the foot. */
 export async function readNoteRoll(
   page: Page,
   phone = false,
+  kit = false,
 ): Promise<NoteRollView> {
   const roll = noteRoll(page)
   await expect(roll).toHaveAttribute('data-studio-note-editing', '')
@@ -54,7 +55,7 @@ export async function readNoteRoll(
     .split(':')
     .map(Number)
   const box = (await roll.boundingBox())!
-  const bands = PIANO_BANDS[phone ? 'phone' : 'other']
+  const bands = BANDS[kit ? 'kit' : 'piano'][phone ? 'phone' : 'other']
   const height = box.height - RULER_HEIGHT - bands.lane
   return {
     left: box.x + bands.keys,
@@ -130,14 +131,12 @@ export function moved(point: Point, x: number, y: number): Point {
   return { x: point.x + x, y: point.y + y }
 }
 
-/** How long a finger rests where a drag ends before it lifts. */
-const REST_MS = 120
-
 /**
- * A finger pressed at `from`, drawn to `to` in `steps` moves, rested there
- * and lifted, through Chromium's native touch input. It rests as a finger
- * placing a note does: one lifted while still moving starts a fling, and
- * Chromium does not click on the tap that stops a fling.
+ * A finger pressed at `from`, drawn to `to` in `steps` moves and lifted at
+ * once, still moving, through Chromium's native touch input. A lift like
+ * that would start a fling, whose end swallows the next tap anywhere; the
+ * roll keeps its touches from one (StudioNoteRoll.tsx), and a tap after
+ * one of these drags shows it does.
  */
 export async function touchDrag(
   page: Page,
@@ -162,11 +161,6 @@ export async function touchDrag(
         ),
       })
     }
-    await new Promise((resolve) => setTimeout(resolve, REST_MS))
-    await session.send('Input.dispatchTouchEvent', {
-      type: 'touchMove',
-      ...touch(to.x, to.y),
-    })
     await session.send('Input.dispatchTouchEvent', {
       type: 'touchEnd',
       touchPoints: [],

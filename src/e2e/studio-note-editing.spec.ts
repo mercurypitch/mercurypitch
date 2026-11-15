@@ -1,4 +1,4 @@
-// Studio note editing — on a phone and a tablet a tapped note drags up, down, left and right and an unselected note drags at once, a selected note's grip lengthens it and its lollipop dragged down makes it softer, and Draw draws a note as long as the finger drags, each edit saved in the song; on a computer a mouse's marquee selects the notes it crosses, the arrows, Shift with Down, Delete and Ctrl or Cmd with D, C and V edit the selection, each edit one step Ctrl+Z takes back, Escape clears the selection before it closes the editor, and a MIDI lane's header says what it plays. Nothing reaches the live site.
+// Studio note editing — on a phone and a tablet a tapped note drags up, down, left and right and an unselected note drags at once, a selected note's grip lengthens it and its lollipop dragged down makes it softer, and Draw, tapped just after a fast pan, draws a note as long as the finger drags, each edit saved in the song; on a computer a mouse's marquee selects the notes it crosses, the arrows, Shift with Down, Delete and Ctrl or Cmd with D, C and V edit the selection, each edit one step Ctrl+Z takes back, Escape clears the selection before it closes the editor, and a MIDI lane's header says what it plays. Nothing reaches the live site.
 import { expect, type Page, test } from '@playwright/test'
 import { center, studioRegion } from './helpers/dedicatedstudio-fixture'
 import { routeNetwork } from './helpers/studio-midi'
@@ -157,13 +157,21 @@ for (const screen of TOUCH_SCREENS) {
       expect(live).toEqual([])
     })
 
-    test('Draw draws a note where a finger presses, as long as it drags', async ({
+    test('Draw, tapped just after a fast pan, draws a note where a finger presses, as long as it drags', async ({
       page,
     }) => {
       test.setTimeout(120_000)
       const live = await routeNetwork(page)
       await openNotesByTouch(page, screen.phone)
       const editor = noteEditor(page)
+      // A pan on the top rows late in the clip, lifted still moving: the
+      // tap straight after it still presses Draw.
+      const panned = await readNoteRoll(page, screen.phone)
+      const flick = {
+        x: tickX(panned, 7200),
+        y: panned.top + 2 * rowHeight(panned),
+      }
+      await touchDrag(page, flick, moved(flick, 0, -rowHeight(panned)))
 
       await editor.getByRole('button', { name: 'Draw', exact: true }).tap()
       await expect(
