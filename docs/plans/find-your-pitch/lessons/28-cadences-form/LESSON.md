@@ -507,8 +507,8 @@ progressions end on V, as an imperfect cadence does; it draws no staff and calls
 are the room's tune moved up a third or a fifth, not a written part; its own card, Lesson 26's,
 carries its limits (FACTS 74). Neither room
 reads the lesson marker today, which reads Season 1's numbers only, so the page is not built before
-Season 2's plumbing (FACTS 75). When the cadence-type drill ships (SEASON-2 § 5.2 item 19), it takes
-the second drill's place.]_
+Season 2's plumbing (FACTS 75). The cadence-type drill shipped on 15 November 2026 as Name the
+Cadence (SEASON-2 § 5.2 item 19); once it has a slug it takes the second drill's place.]_
 
 **End of Season 2** · "You've read a song in two parts. Now sing a whole song."
 [ Karaoke Night ] [ See the season map ]

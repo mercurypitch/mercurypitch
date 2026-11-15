@@ -80,7 +80,7 @@ These are the rules that break things when ignored.
 | `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 32.2k | The room's lit instruments, by the name each web instrument exports itself under (instrument-skin.ts). |
 | `studio` | [StudioTimeline.tsx](../../src/features/studio/timeline/StudioTimeline.tsx) | 31.3k | Studio timeline — one aligned scroll surface for real audio clips, track headers and silent seeking. |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 19.0k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
-| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 16.5k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
+| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 17.2k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 15.5k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.3k | Hear Yourself History — local listening desk for kept performance takes |
 | `echo` | [echo-celebration.ts](../../src/features/echo/echo-celebration.ts) | 9.7k | Echo's celebration star, in numbers (generated) Written by scripts/sync-echo-art.mjs from the Echo A0 art's echo-celebration-star.json (i... |
@@ -302,8 +302,8 @@ These are the rules that break things when ignored.
 | [HomePage.tsx](../../src/pages/HomePage.tsx) | 700 | HomePage — the "today" landing surface One obvious next step: your streak (with forgiveness), today's generated 5–15 min session, this we... |
 | [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 400 | Route-neutral facade over the App-owned falling-notes runtime. |
 | [PathPage.tsx](../../src/pages/PathPage.tsx) | 350 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
+| [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 300 | The web's frame for an exercise room, in the web build alone. |
 | [EarLabPage.tsx](../../src/pages/EarLabPage.tsx) | 250 | EarLabPage — the Ear Lab tab: the Regulator Room around the bench and every drill stage. |
-| [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 250 | The web's frame for an exercise room, in the web build alone. |
 | [HomePlanCardMount.tsx](../../src/pages/HomePlanCardMount.tsx) | 150 | HomePlanCardMount — how Home reaches its "Your plan" card, and what Home does for it "Your plan" is the first week's card (src/features/p... |
 | [HomeCheckupCardMount.tsx](../../src/pages/HomeCheckupCardMount.tsx) | 100 | HomeCheckupCardMount — how Home reaches its weekly Check-up card The card (src/features/check-up/HomeCheckupCard) opens the Voice Mirror,... |
 | [LabPage.tsx](../../src/pages/LabPage.tsx) | 100 | Keep the real-mouse Lab specs runnable without putting a supporter token in CI. |

@@ -50,7 +50,7 @@ module in `src/features/lessons/lesson-28/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season builds Lessons 24, 26 and 28
 last, with one coach batch for all three (SEASON-2 § 8.2 item 7,
-`docs/plans/find-your-pitch/SEASON-2.md:1307-1308`).
+`docs/plans/find-your-pitch/SEASON-2.md:1315-1316`).
 
 ## Look
 
@@ -628,10 +628,11 @@ stills when WebGL fails.
 - **The first visit and the marker.** Nothing reads `?lesson=28` until SEASON-2 § 5.2 item 21
   widens the marker, and until then the quiz's answers are refused whole; the page is not built
   before that (FACTS 75).
-- **Needed: a cadence-type ear drill** (SEASON-2 § 5.2 item 19,
-  `docs/plans/find-your-pitch/SEASON-2.md:977-979`), the app's work: a bank of perfect, imperfect,
-  plagal and interrupted cadences, as a new drill or a mode of Cadence. When it ships, it takes the
-  second drill's place, with a card that says what it plays and asks.
+- **Shipped on 15 November 2026: the cadence-type ear drill** (SEASON-2 § 5.2 item 19,
+  `docs/plans/find-your-pitch/SEASON-2.md:977-987`), as Name the Cadence, a drill in the Exercises
+  tab (`src/features/exercises/cadence/`): the key's own chord, then an ending's two chords, and
+  the names perfect, imperfect, plagal and interrupted to choose from. Still needed: its slug, and
+  this page's card, where it takes the second drill's place and says what it plays and asks.
 - **Needed: the harmony-line drill** (SEASON-2 § 5.2 item 17,
   `docs/plans/find-your-pitch/SEASON-2.md:961-963`), the app's work, which Lesson 26's card takes
   first when it ships; this page's card can add it then, as a drill for singing a part alone. The
@@ -766,8 +767,9 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
     marker's range (`src/lib/lesson-marker.ts:11-19`) and the lesson-answer bounds
     (`workers/db-worker/src/mirror-metrics.ts:57-62`), which refuse Lesson 28's answers whole today
     (FACTS 75).
-14. **The cadence-type ear drill and the harmony-line drill** (SEASON-2 § 5.2 items 19 and 17), the
-    app's work (Practice links).
+14. **The harmony-line drill** (SEASON-2 § 5.2 item 17), the app's work, and **the card for the
+    cadence-type drill**, which shipped on 15 November 2026 as Name the Cadence (item 19) and
+    still wants a slug (Practice links).
 15. **At release, the rooms' links back**, optional: in SEARCH § 8 the shared row for
     `/karaoke-night` and `/jam`, Lesson 14 alone, splits into `/karaoke-night` with 14 and 28 and
     `/jam` with 14 (and 26, once Lesson 26's entry lands, which touches the same row), and the

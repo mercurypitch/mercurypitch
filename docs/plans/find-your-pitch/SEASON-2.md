@@ -871,7 +871,7 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 | 25     | Ear Lab: Gravity; Singing tab's harmonic and melodic minor            | A Scale Runner card for `/exercises/harmonic-minor-run` and `melodic-minor-run` (item 13 shipped)                   |
 | 26     | Jam's Harmony Stack (two or more people); Drone Intonation's thirds   | Harmony-line drill (item 17, code)                                                                                  |
 | 27     | Chord Stacker; Ear Lab: Stack                                         | Chord-type field and inversions (item 18, code); `ear-drill` subset (item 12)                                       |
-| 28     | Karaoke Night; Ear Lab: Cadence                                       | Cadence-type drill (item 19, data and code); harmony-line drill (item 17)                                           |
+| 28     | Karaoke Night; Ear Lab: Cadence                                       | A card for Name the Cadence, with its slug (item 19 shipped on 15 November 2026); harmony-line drill (item 17)      |
 
 Every Season 2 link waits for one thing first: the lesson marker. `?lesson=` is read only for 01 to
 14 (`SEASON_1_LESSON`, `src/lib/lesson-marker.ts:11-19`), so `?lesson=15` is today an ordinary visit,
@@ -974,9 +974,17 @@ and First Light does not step aside. Item 21 fixes it.
     chord heard a note at a time and each note sung back on its own
     (`src/features/exercises/exercise-help.ts:212-220`), with the summary and first sentence Lesson
     27 proposed (Lesson 27 WEB-SPEC, What the kit and the app still need, item 10). Lesson 27.
-19. **A cadence-type ear drill** (a bank of perfect, imperfect, plagal and interrupted cadences is
-    data; a new drill, or a mode of Cadence, which names progressions today,
-    `src/lib/ear/progressions.ts:57-59`, is code with tests). Lesson 28.
+19. **A cadence-type ear drill: shipped on 15 November 2026.** Name the Cadence
+    (`src/features/exercises/cadence/`) is a new drill in the Exercises tab, not a mode of the Ear
+    Lab's Cadence, which still names progressions (`src/lib/ear/progressions.ts:57-59`). A round
+    is the key's own chord and then the two chords of an ending, in a major key that changes every
+    round, and the answer is one of four names: perfect (V to I), imperfect (I, IV or ii to V),
+    plagal (IV to I), interrupted (V to vi) (`cadence-rounds.ts`). The level sets which are asked:
+    perfect against imperfect up to level 3, the plagal from level 4, the interrupted from level
+    7 (`typesFor`). An answer is taken once the ending has sounded, the round can be heard again,
+    and after a miss Merc names the cadence, says its two chords and it plays once more
+    (`use-cadence-controller.ts`). It opens no microphone. Major keys only. Lesson 28, whose card
+    does not link it yet: it has no slug yet.
 20. **Keys and the sheet view in the Singing tab** (code with tests): all twelve major keys and
     their relative minors in the key picker, with flat names (eight today,
     `src/features/sidebar/panels/PlaybackSetupPanel.tsx:87-94`); and an address that opens the sheet
