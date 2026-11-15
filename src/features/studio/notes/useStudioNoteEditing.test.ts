@@ -65,6 +65,7 @@ function controller() {
     editor.editing.attach({
       viewport: () => VIEWPORT,
       setViewport: vi.fn(),
+      rows: () => ({ kind: 'piano' }),
       velocityHeight: () => 76,
     })
     return { editor, log, commands, previews, setWritable }

@@ -20,7 +20,9 @@
 //   the clip sounds as the gesture would leave it.
 //
 // The piano opens with rows a finger can take on a touch screen, about
-// 24 px (fitStudioRollRows), and with the notes fitted to a mouse's.
+// 24 px (fitStudioRollRows), and with the notes fitted to a mouse's; a kit
+// with rows of 32 px at the least on a touch screen, a hit a finger's
+// target.
 import type { RollViewport } from '@/lib/roll-geometry'
 import type { StudioNoteSet } from '@/lib/studio/midi/notes'
 import { fitStudioRollRows } from '@/lib/studio/midi/roll-rows'
@@ -33,6 +35,8 @@ import type { StudioRollDraft, StudioRollInput, StudioRollRect, StudioRollRegion
 
 /** The rows a piano opens with on a touch screen: tall enough for a finger. */
 export const NOTE_TOUCH_ROW_HEIGHT = 24
+/** A kit's rows on a touch screen, at the least: a hit is a row tall to a finger. */
+export const KIT_TOUCH_ROW_HEIGHT = 32
 
 /** The pointer event's parts the engine reads. */
 export type NoteRollPointerEvent = Pick<
@@ -216,4 +220,13 @@ export function notePianoOpening(
   touch: boolean,
 ): RollViewport {
   return touch ? fitStudioRollRows(opened, NOTE_TOUCH_ROW_HEIGHT) : opened
+}
+
+/** A kit's roll as it opens or is fitted again: on a touch screen, rows of 32 px at the least among the kit's rows up to `top`. */
+export function noteKitOpening(
+  opened: RollViewport,
+  touch: boolean,
+  top: number,
+): RollViewport {
+  return touch ? fitStudioRollRows(opened, KIT_TOUCH_ROW_HEIGHT, top) : opened
 }

@@ -182,16 +182,13 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
     preview: (draft) => renders?.preview(props.clip.id, draft),
     announce,
   })
-  // A piano's notes are edited here; a kit's wait for the drum editor.
-  const edits = () => sound() === 'piano'
-  // The notes the tools edit: a piano's, once the clip has them.
-  const editable = () => (edits() ? sequence() : undefined)
-  const thumbNotes = () => (props.phone ? editable() : undefined)
+  // A phone's selection edits sit in a bar over the status line.
+  const thumbNotes = () => (props.phone ? sequence() : undefined)
+  const kit = () => sound() === 'drums'
 
   /** B switches between Select and Draw. */
   function toolKey(event: KeyboardEvent): boolean {
-    if (!edits() || event.key.toLowerCase() !== 'b' || event.repeat)
-      return false
+    if (event.key.toLowerCase() !== 'b' || event.repeat) return false
     if (event.ctrlKey || event.metaKey || event.altKey) return false
     editor.setTool(editor.tool() === 'draw' ? 'select' : 'draw')
     return true
@@ -199,7 +196,7 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
 
   function keyDown(event: KeyboardEvent): void {
     if (event.defaultPrevented || isTypingTarget(event.target)) return
-    if (toolKey(event) || (edits() && editor.keyDown(event))) {
+    if (toolKey(event) || editor.keyDown(event)) {
       event.preventDefault()
       event.stopPropagation()
       return
@@ -360,7 +357,7 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
           {sound() === 'drums' ? 'MIDI · KIT' : 'MIDI · PIANO'}
         </span>
         <div class={styles.tools} data-studio-note-tools="">
-          <Show when={editable()}>
+          <Show when={sequence()}>
             {(shown) => (
               <>
                 <StudioNoteTools
@@ -375,6 +372,7 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
                     notes={shown().notes}
                     writable={props.writable}
                     compact={false}
+                    kit={kit()}
                   />
                 </Show>
               </>
@@ -436,6 +434,7 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
               notes={shown().notes}
               writable={props.writable}
               compact
+              kit={kit()}
             />
           </div>
         )}

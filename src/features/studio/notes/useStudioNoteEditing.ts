@@ -24,6 +24,7 @@ import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, untrack, } from 'solid-js'
 import type { RollViewport } from '@/lib/roll-geometry'
 import type { StudioNoteClipboard, StudioNoteSet, } from '@/lib/studio/midi/notes'
+import type { StudioRollRows } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioTickWindow } from '@/lib/studio/midi/time'
 import { studioClipTickWindow, studioSongBeats, studioSongFrameToTick, } from '@/lib/studio/midi/time'
 import type { StudioCommand } from '@/lib/studio/model/commands'
@@ -36,10 +37,11 @@ import type { NoteEditView } from './edit-view'
 import { noteEditDraft, noteEditView } from './edit-view'
 import type { StudioNoteAudition } from './note-audition'
 
-/** What the roll lends the engine: its view, and the velocity lane's height. */
+/** What the roll lends the engine: its view, its rows (a piano's or a kit's), and the velocity lane's height. */
 export interface StudioNoteRollView {
   viewport(): RollViewport | null
   setViewport(viewport: RollViewport): void
+  rows(): StudioRollRows
   velocityHeight(): number
 }
 
@@ -117,6 +119,7 @@ export function useStudioNoteEditing(options: StudioNoteEditingOptions) {
       window: clipWindow(),
       viewport,
       velocityHeight: lent.velocityHeight(),
+      rows: lent.rows(),
       playheadTick: studioSongFrameToTick(
         options.clip(),
         sequence,

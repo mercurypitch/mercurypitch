@@ -1,7 +1,8 @@
-// Studio note roll drawing tests — each note in view is drawn where it sounds, as strong as it was played, named where it fits, and dimmed when it starts outside the clip's window; notes out of view cost nothing; a selected note gets a ring, and the editor's grips a bar each; a draft is drawn over the stored note it stands in for, which fades to a ghost; the marquee, the hover, a velocity's readout and the playhead are drawn on the overlay only; each note's velocity stands in its lane; rows sitting on fractions of a semitone draw every row they show part of; the keys name each C, a kit's rows their General MIDI names cut to fit; the ruler names the song's bars; and the grid leaves out lines too close to read.
+// Studio note roll drawing tests — each note in view is drawn where it sounds, as strong as it was played, named where it fits, and dimmed when it starts outside the clip's window; notes out of view cost nothing; a selected note gets a ring, and the editor's grips a bar each; a draft is drawn over the stored note it stands in for, which fades to a ghost; the marquee, the hover, a velocity's readout and the playhead are drawn on the overlay only; each note's velocity stands in its lane; rows sitting on fractions of a semitone draw every row they show part of; the keys name each C, a kit's rows their General MIDI names cut to fit, and its hits squares at their starts; the ruler names the song's bars; and the grid leaves out lines too close to read.
 import { describe, expect, it } from 'vitest'
 import type { StudioRollRows } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioNote } from '@/lib/studio/model/types'
+import { kitHitSquare } from './kit-hit'
 import type { RecordedPaint } from './note-roll-context.fixture'
 import { recordingRollContext } from './note-roll-context.fixture'
 import type { StudioRollInput, StudioRollTheme } from './note-roll-draw'
@@ -495,5 +496,26 @@ describe('studioRollRegions and studioRollNoteBox', () => {
 
     expect(studioRollNoteBox(kit, note(9, 38, 960, 240, 1))).toBeNull()
     expect(studioRollNoteBox(kit, note(9, 36, 960, 240, 1))).not.toBeNull()
+  })
+
+  it('draws a kit’s hit as a square at its start sized to its row, however long it is', () => {
+    // Two rows of 150 px, the snare's on top; 5 ticks a pixel, so the hit
+    // starts 192 px into the grid and its two beats would run 384 px.
+    const kit = input({
+      rows: {
+        kind: 'drums',
+        keys: [
+          { key: 38, name: 'Snare' },
+          { key: 36, name: 'Kick' },
+        ],
+      },
+      viewport: { ...input().viewport, minMidi: 0, maxMidi: 1 },
+    })
+
+    const box = studioRollNoteBox(kit, note(9, 38, 960, 1920, 1))
+
+    expect(box).toEqual(kitHitSquare(72 + 192, 26, 150, kit.viewport))
+    expect(box?.width).toBe(box?.height)
+    expect(box?.width).toBeLessThan(384)
   })
 })

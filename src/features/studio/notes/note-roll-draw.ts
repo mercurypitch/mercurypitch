@@ -13,12 +13,14 @@
 // drawStudioRoll draws both on one canvas.
 //
 // A note is glass in the lane's colour, as strong as it was played and
-// faint when it starts outside the clip's window. Only what the view shows
+// faint when it starts outside the clip's window. A kit's hit is a square
+// of that glass at its start, sized to its row (kit-hit.ts). Only what the view shows
 // is drawn: a sequence of 10,000 notes costs one pass over its notes to find
 // those in view, and a fill for each of them.
 import { rowHeight } from '@/lib/roll-geometry'
 import { studioRollRow } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioNote } from '@/lib/studio/model/types'
+import { kitHitSquare } from './kit-hit'
 import { studioNoteName } from './note-names'
 import { drawRollDividers, drawRollGrid, drawRollKeys, drawRollRuler, drawRollStick, drawRollVelocities, rollStickHead, } from './note-roll-frame'
 import type { RollContext, StudioRollDraft, StudioRollInput, StudioRollRect, } from './note-roll-geometry'
@@ -40,7 +42,27 @@ export { studioRollRegions } from './note-roll-geometry'
 const LABEL_WIDTH = 30
 const LABEL_HEIGHT = 11
 
-/** A note's box on the canvas, inset a little from its row and its end; null outside the view. */
+/** A kit's hit: a square at its start sized to its row (kit-hit.ts); null outside the view. */
+function kitHitBox(
+  input: StudioRollInput,
+  row: number,
+  startTick: number,
+): StudioRollRect | null {
+  const { viewport } = input
+  const height = rowHeight(viewport)
+  // A square that starts a row's width before the view still shows.
+  const lead =
+    (height / Math.max(1, viewport.width)) * (viewport.end - viewport.start)
+  if (startTick > viewport.end || startTick < viewport.start - lead) return null
+  return kitHitSquare(
+    tickX(input, startTick),
+    rowTop(input, row),
+    height,
+    viewport,
+  )
+}
+
+/** A note's box on the canvas, inset a little from its row and its end, or a kit's hit's square; null outside the view. */
 export function studioRollNoteBox(
   input: StudioRollInput,
   note: Pick<StudioNote, 'pitch' | 'startTick' | 'lengthTicks'>,
@@ -49,6 +71,7 @@ export function studioRollNoteBox(
   const { viewport } = input
   const shown = rowSpan(input)
   if (row === null || row < shown.bottom || row > shown.top) return null
+  if (input.rows.kind === 'drums') return kitHitBox(input, row, note.startTick)
   const end = note.startTick + note.lengthTicks
   if (end < viewport.start || note.startTick > viewport.end) return null
   const x = tickX(input, note.startTick)
