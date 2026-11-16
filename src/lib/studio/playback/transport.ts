@@ -127,11 +127,12 @@ export function createStudioTransport(options: StudioTransportOptions) {
     error: null,
     meter: null,
     masterReady: false,
+    masterGain: { gainDb: 0, safetyGainDb: 0 },
     lanes: [],
   }
   let watchedContext: AudioContext | null = null
   const publish = (update: Partial<StudioTransportState>) => {
-    state = { ...state, ...update }
+    state = { ...state, ...update, masterGain: master.heard(latest, heard()) }
     if (!disposed) options.changed(state)
   }
 
@@ -685,10 +686,10 @@ export function createStudioTransport(options: StudioTransportOptions) {
     /** A playing song glides to a newly measured master gain. */
     setMasterGain(value: StudioMasterGainToken | null) {
       master.set(value)
-      publish({ masterReady: master.fresh() !== null })
       for (const run of liveRuns())
         if (followMaster(run, master.fresh()))
           applySound(run, withDrafts(run.project, drafts))
+      publish({ masterReady: master.fresh() !== null })
     },
     resetPeakHold() {
       heard()?.meter?.clearPeakHold()

@@ -1,4 +1,4 @@
-// Studio master level tests — a run starts at the level heard: a fresh measurement, the held run's, or the song's last.
+// Studio master level tests — a run starts at the level heard: a fresh measurement, the held run's, or the song's last; the listener hears the playing run's, else the next run's start.
 import { describe, expect, it } from 'vitest'
 import { studioFixture } from '../model/model.test-fixtures'
 import { checkStudioMasterGain, createStudioMasterLevel } from './master-level'
@@ -60,5 +60,24 @@ describe('Studio master level', () => {
     expect(() => createStudioMasterLevel().set(token(40))).toThrow(
       /invalid gain settings/,
     )
+  })
+
+  it("says which gain the listener hears: the playing run's, else the next run's start, else a fresh measurement or 0 dB with no song", () => {
+    const level = createStudioMasterLevel()
+    expect(level.heard(null, null)).toEqual({ gainDb: 0, safetyGainDb: 0 })
+    level.set(token(4.5))
+    expect(level.heard(null, undefined)).toEqual({
+      gainDb: 4.5,
+      safetyGainDb: -1,
+    })
+    expect(
+      level.heard(project, { measured: { gainDb: 2, safetyGainDb: 0 } }),
+    ).toEqual({ gainDb: 2, safetyGainDb: 0 })
+
+    level.observe({ ...project, revision: project.revision + 1 })
+    expect(level.heard(project, { measured: null })).toEqual({
+      gainDb: 4.5,
+      safetyGainDb: -1,
+    })
   })
 })

@@ -119,6 +119,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     error: null,
     meter: null,
     masterReady: false,
+    masterGain: { gainDb: 0, safetyGainDb: 0 },
     lanes: [],
   })
   // A tick brings new levels and a new position. Whether the song plays, an
@@ -128,6 +129,10 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
   const statePending = createMemo(() => state().pending)
   const stateError = createMemo(() => state().error)
   const masterReady = createMemo(() => state().masterReady)
+  const masterGain = createMemo(() => state().masterGain, undefined, {
+    equals: (a, b) =>
+      a.gainDb === b.gainDb && a.safetyGainDb === b.safetyGainDb,
+  })
   const meterReady = createMemo(() => state().meter !== null)
   const laneLevels = createMemo(
     () => new Map(state().lanes.map((lane) => [lane.trackId, lane] as const)),
@@ -549,6 +554,8 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
     /** A lane's level after its fader while the song plays; undefined when it is not heard. */
     laneLevel: (trackId: string) => laneLevels().get(trackId),
     masterReady,
+    /** The master gain the listener hears: the playing song's, else the one the next Play starts at. */
+    masterGain,
     resetPeakHold: () => runtime.resetPeakHold(),
     /** Play a lane's moving fader or pan without saving it; null ends it. */
     previewLane: (trackId: string, draft: StudioLaneDraft | null) =>
