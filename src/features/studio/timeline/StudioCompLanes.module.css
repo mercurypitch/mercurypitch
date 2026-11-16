@@ -69,13 +69,17 @@
   position: relative;
   min-width: 0;
 }
-/* The secondary ink, not the muted one. Under the range's tint
-   (StudioRulerRange.module.css), where the selected clip's shadow can fall
-   across the bar too, the muted ink measured 4.53:1 at its worst letter in
-   the light theme; this one measures 5.23:1. */
+/* The secondary ink, not the muted one. Over the range's tint
+   (StudioRulerRange.module.css) the muted ink measured 4.53:1 at its worst
+   letter in the light theme; this one measures 5.23:1. Drawn above the
+   playhead (z-index 3) and the range's tint and edges (2), so neither line
+   cuts through a letter, as the playhead did; they still show between the
+   letters. Sticky right of the lane headers, which share its 4, it never
+   meets them. */
 .hint {
   position: sticky;
   left: calc(var(--studio-header-width) + 12px);
+  z-index: 4;
   display: inline-block;
   max-width: calc(100vw - var(--studio-header-width) - 24px);
   padding: 8px 0 0 12px;
