@@ -110,7 +110,10 @@ export function StudioPage() {
   }
 
   return (
-    <section class={styles.page} aria-label="Studio">
+    // `data-voice-pill-in-sidebar`: the lanes' headers fill the corner
+    // beside the sidebar from top to foot, so the floating voice pill keeps
+    // to the sidebar's empty foot (VoiceControlHud.module.css).
+    <section class={styles.page} aria-label="Studio" data-voice-pill-in-sidebar>
       <Show when={downloadError()}>
         <p role="alert" class={styles.help}>
           {downloadError()}
