@@ -21,6 +21,12 @@ interface StudioTrackDetailsProps {
   /** The song's audio: the lane lists what its clips play. */
   assets: readonly StudioAsset[]
   writable: boolean
+  /**
+   * A phone has no room for comp rows under its lanes: its details comp the
+   * lane's loop takes bar by bar instead (StudioCompSheet). A computer or a
+   * tablet comps under the lane (StudioCompLanes), so its details do not.
+   */
+  phone?: boolean
   /** A phone's lane headers have no arm: its details have, as its Mix sheet does. */
   arming?: StudioLaneArming
   /** The lane's own input and channel, on this device; absent where nothing records. */
@@ -152,14 +158,16 @@ export function StudioTrackDetails(props: StudioTrackDetailsProps) {
           )}
         </For>
       </ul>
-      <StudioCompSheet
-        trackId={props.track.id}
-        clips={props.project.clips}
-        assets={laneAssets()}
-        tempoBpm={props.project.tempoBpm}
-        writable={props.writable}
-        onCommand={props.onCommand}
-      />
+      <Show when={props.phone}>
+        <StudioCompSheet
+          trackId={props.track.id}
+          clips={props.project.clips}
+          assets={laneAssets()}
+          tempoBpm={props.project.tempoBpm}
+          writable={props.writable}
+          onCommand={props.onCommand}
+        />
+      </Show>
       <button
         type="button"
         class={styles.dangerButton}
