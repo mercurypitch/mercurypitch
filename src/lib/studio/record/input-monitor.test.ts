@@ -1,10 +1,11 @@
-// Studio input monitor — off builds nothing; on plays the input folded as the take is, spread, through its lane's chain at the monitor profile and its faders, on one path however often it is set, rising a quarter of a second after the input's first sound, after a second without one, or at once on an input that plays cleanly from its first sample; a lane not heard, and dispose, take the graph apart after the release, and at once a path that never began to rise; a lane heard again while it releases plays on through the same path; and dispose says when its input may close: at once with nothing heard, once the path has come apart otherwise.
+// Studio input monitor — off builds nothing; on plays the input folded as the take is, spread, through its lane's chain at the monitor profile and its faders, then the master and only through it, on one path however often it is set, rising a quarter of a second after the input's first sound, after a second without one, or at once on an input that plays cleanly from its first sample; a lane not heard, and dispose, take the graph apart after the release, the master with it, and at once a path that never began to rise; a lane heard again while it releases plays on through the same path; and dispose says when its input may close: at once with nothing heard, once the path has come apart otherwise.
 import { describe, expect, it, vi } from 'vitest'
-import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
+import { EMPTY_CHAIN, normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { FakeGain } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { createManualScheduler, FakeAudioContext, FakeNode, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import type { StudioMonitorSound } from './input-monitor'
 import { createStudioInputMonitor } from './input-monitor'
+import { createStudioMonitorMaster } from './monitor-master'
 
 /** A lane with an EQ and a compressor. */
 const LANE_CHAIN = normalizeChainSpec({
@@ -26,29 +27,49 @@ const SETTLE_MS = 250
 /** How long a rise waits for the input's first sound, in ms. */
 const ARRIVAL_WAIT_MS = 1000
 
+/** The master, with no effects so that only the path is under test; `inputs` holds where each path joined it. */
+function emptyMaster() {
+  const master = createStudioMonitorMaster(EMPTY_CHAIN)
+  const inputs: FakeNode[] = []
+  return {
+    inputs,
+    join(context: BaseAudioContext) {
+      const joined = master.join(context)
+      inputs.push(joined.node as unknown as FakeNode)
+      return joined
+    },
+  }
+}
+
 /** A monitor on a graph of fakes, its input `arrived`: sounding and settled, as a microphone is a moment into an arm. */
 function setup({ arrived = true, settled = false } = {}) {
   const ctx = new FakeAudioContext()
   // Stands for the microphone's source node, which the arm owns.
   const input = new FakeNode('source')
   const scheduler = createManualScheduler()
+  const master = emptyMaster()
   const monitor = createStudioInputMonitor(
     ctx.asContext,
     input as unknown as AudioNode,
-    { schedule: scheduler.schedule, settled },
+    { master, schedule: scheduler.schedule, settled },
   )
   if (arrived && !settled) {
     monitor.inputArrived()
     scheduler.advance(SETTLE_MS)
   }
-  return { ctx, input, scheduler, monitor }
+  return { ctx, input, scheduler, monitor, master }
 }
 
-/** The path's level: the gain feeding the destination. */
+/** The path's level: the gain after its faders' merger. */
 function levels(ctx: FakeAudioContext): FakeGain[] {
   return ctx
-    .ofType<FakeGain>('gain')
-    .filter((gain) => gain.targets.includes(ctx.destination))
+    .ofType<FakeNode>('merger')
+    .flatMap((merger) => merger.targets as FakeGain[])
+}
+
+/** What feeds the speakers. */
+function feedingDestination(ctx: FakeAudioContext): FakeNode[] {
+  return ctx.created.filter((node) => node.targets.includes(ctx.destination))
 }
 
 /** The fader gains: the gains feeding a path's merger. */
@@ -103,6 +124,36 @@ describe('the input monitor', () => {
       value: 1,
       timeConstant: 0.036,
     })
+  })
+
+  it('reaches the speakers only through the master: its level feeds the master, and the master alone feeds the destination', () => {
+    const { ctx, input, monitor, master } = setup()
+
+    monitor.set(sound())
+
+    expect(master.inputs).toHaveLength(1)
+    const [level] = levels(ctx)
+    expect(level.targets).toEqual(master.inputs)
+    const [speakers] = feedingDestination(ctx)
+    expect(feedingDestination(ctx)).toHaveLength(1)
+    expect(reaches(master.inputs[0], speakers)).toBe(true)
+    expect(reaches(input, speakers)).toBe(true)
+    expect(reaches(level, ctx.destination)).toBe(true)
+  })
+
+  it('takes the master apart with its path, and joins a fresh one when heard again', () => {
+    const { ctx, scheduler, monitor, master } = setup()
+    monitor.set(sound())
+
+    monitor.set(sound({ on: false }))
+    scheduler.advance(RELEASED_MS)
+
+    expect(feedingDestination(ctx)).toEqual([])
+    expect(stillWired(ctx)).toEqual([])
+    monitor.set(sound())
+    expect(master.inputs).toHaveLength(2)
+    expect(master.inputs[1]).not.toBe(master.inputs[0])
+    expect(feedingDestination(ctx)).toHaveLength(1)
   })
 
   it('runs the chain at the monitor profile, so the compressor sits out', () => {

@@ -1,5 +1,5 @@
 // ============================================================
-// Studio input monitor — an armed lane's input through the lane's effects, volume and pan, off unless asked for
+// Studio input monitor — an armed lane's input through the lane's effects, volume and pan, then the master, off unless asked for
 // ============================================================
 //
 // Off by default: the round trip makes a voice heard late against itself,
@@ -9,19 +9,23 @@
 // (useStudioRecorder.ts). When on, the input plays through its lane the way
 // the lane's clips do (graph-lanes.ts): folded to the take's mono as the
 // recorder's worklet folds it (capture-input.ts), spread to both sides,
-// through the lane's effects, then its volume and pan. The take itself is
-// recorded dry, straight from the lane's input; nothing here feeds it.
+// through the lane's effects, then its volume and pan, and then, as every
+// lane's clips do, through the master: one stage every monitored lane
+// shares (monitor-master.ts), its loudness gain the one the song is heard
+// at. The take itself is recorded dry, straight from the lane's input;
+// nothing here feeds it.
 //
-// The effects run at the monitor's profile (fx-profile.ts
+// The effects and the master run at the monitor's profile (fx-profile.ts
 // MONITOR_FX_PROFILE), in which nothing delays the signal: the singer hears
-// no later through the effects than without them. The lookahead dynamics
-// (compressor, de-esser, dynamic EQ, limiter) sit out; everything else plays.
+// no later through them than without them. The compressor, de-esser and
+// dynamic EQ sit out, a limiter plays its ceiling without its lookahead,
+// and everything else plays.
 //
 // Each armed lane has a monitor of its own on its own input (lane-arms.ts),
 // so a lane is heard once, and lanes armed on one input are heard together,
 // as a DAW sums its armed tracks. The monitor's one path is built when its
-// lane starts to sound and taken out of the graph when it stops: a silent
-// chain still costs its processing.
+// lane starts to sound and taken out of the graph when it stops, and the
+// master with the last path: a silent chain still costs its processing.
 //
 // Level changes follow the house envelopes (CONVENTIONS.md 5b): toward the
 // new level with setTargetAtTime, and to silence with the release, the
@@ -59,6 +63,7 @@ import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import { MONITOR_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
 import { STUDIO_CAPTURE_INPUT } from './capture-input'
+import type { StudioMonitorMaster, StudioMonitorMasterInput, } from './monitor-master'
 
 /** The house release, and the slack before the nodes come apart. */
 const RELEASE_SECONDS = 0.18
@@ -82,6 +87,8 @@ export interface StudioMonitorSound {
 }
 
 export interface StudioInputMonitorOptions {
+  /** The master every monitored input plays through (monitor-master.ts): the path reaches the speakers only through it. */
+  readonly master: Pick<StudioMonitorMaster, 'join'>
   /** Timer for taking a released path apart and for the input's settling; injectable for tests. */
   readonly schedule?: (callback: () => void, delayMs: number) => () => void
   /** The input plays cleanly from here on, as an instrument the page plays does, or a source already flowing: a heard path rises at once. */
@@ -90,7 +97,7 @@ export interface StudioInputMonitorOptions {
   readonly onSettled?: () => void
 }
 
-/** The input through its lane: folded, spread, the chain, the faders, and the level that rises and releases. */
+/** The input through its lane: folded, spread, the chain, the faders, the level that rises and releases, and the master after it. */
 interface MonitorPath {
   readonly fold: GainNode
   readonly spread: GainNode
@@ -99,6 +106,7 @@ interface MonitorPath {
   readonly sides: readonly GainNode[]
   readonly merge: ChannelMergerNode
   readonly level: GainNode
+  readonly master: StudioMonitorMasterInput
   /** What the sides were last asked for. */
   gains: readonly [number, number]
   /** Its level has begun to rise: from then on it leaves on the release. */
@@ -137,7 +145,7 @@ function glide(
 export function createStudioInputMonitor(
   context: BaseAudioContext,
   input: AudioNode,
-  options: StudioInputMonitorOptions = {},
+  options: StudioInputMonitorOptions,
 ) {
   const schedule = options.schedule ?? defaultSchedule
   let path: MonitorPath | null = null
@@ -192,10 +200,11 @@ export function createStudioInputMonitor(
     })
     const level = context.createGain()
     level.gain.value = 0
+    const master = options.master.join(context)
     input.connect(fold)
     fold.connect(spread).connect(chain.input)
     chain.output.connect(split)
-    merge.connect(level).connect(context.destination)
+    merge.connect(level).connect(master.node)
     return {
       fold,
       spread,
@@ -204,12 +213,13 @@ export function createStudioInputMonitor(
       sides,
       merge,
       level,
+      master,
       gains: sound.gains,
       rose: false,
     }
   }
 
-  /** Take the path out of the graph, the input's edge to it first: the input is its arm's. */
+  /** Take the path out of the graph, the input's edge to it first: the input is its arm's; the master goes with the last path. */
   function takeApart(): void {
     const gone = path
     path = null
@@ -227,6 +237,7 @@ export function createStudioInputMonitor(
       for (const side of gone.sides) side.disconnect()
       gone.merge.disconnect()
       gone.level.disconnect()
+      gone.master.leave()
     }
     for (const told of silent.splice(0)) told()
   }

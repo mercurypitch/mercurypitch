@@ -67,9 +67,10 @@ Night's words ("the guitar").
   inputs only, which now record input 1. Where the browser does not say how
   many channels it opened, the input still reaches the worklet as it is, and
   the fold applies there.
-- Monitoring is the dry input at the lane's volume and pan, off unless asked
-  for (`input-monitor.ts`); a lane hears what it records, from the same node
-  as its take.
+- Monitoring is the input through the lane's effects, volume and pan, then
+  the master, as the lane's clips play, off unless asked for
+  (`input-monitor.ts`, `monitor-master.ts`); a lane hears what it records,
+  from the same node as its take, which records dry.
 - Each take is lined up by the round trip measured for its input
   (`micLatencyMsForDevice`, `micLatencyPathMsForDevice`), which the latency
   wizard measures (`src/features/mic-feedback/MicLatencyWizard.tsx`): the

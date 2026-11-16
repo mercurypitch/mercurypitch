@@ -5,6 +5,8 @@ import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/
 import type { StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { schedulePlaybackBenchmark } from '@/lib/studio/playback/playback-benchmark'
+import type { StudioMonitorCompare } from '@/lib/studio/record/monitor-sound'
+import { studioMonitorMasterGain } from '@/lib/studio/record/monitor-sound'
 import { createReactiveMatch } from '@/lib/use-viewport'
 import { StudioOutputMeter } from './audio/StudioOutputMeter'
 import { useStudioTransport } from './audio/useStudioTransport'
@@ -143,6 +145,9 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     selectedTrackId,
     audioBusy: () => finishing(),
     liveMix,
+    masterGain: () =>
+      studioMonitorMasterGain(transport.masterGain(), comparing()),
+    masterBypassed: () => comparing()?.side === 'before',
   })
   /** A seek stops a take first: a take runs straight through the song. */
   const seek = (frame: number) => {
@@ -185,6 +190,13 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     beforePrepare: () => setPreviewEpoch((epoch) => epoch + 1),
     onPrepared: (result) => void transport.setMasterGain(result),
   })
+
+  /** The side Compare plays, which a monitored voice matches (monitor-sound.ts). */
+  function comparing(): StudioMonitorCompare | null {
+    const gains = comparison.result()
+    if (!comparison.playing() || gains === null) return null
+    return { side: comparison.side(), gains }
+  }
 
   function releaseFinishingAudio(): Promise<void> {
     comparison.stop()

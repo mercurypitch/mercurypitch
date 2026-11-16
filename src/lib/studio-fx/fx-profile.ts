@@ -13,9 +13,10 @@
 //
 // One profile is not a playback tier: MONITOR_FX_PROFILE, for the armed
 // lane's chain as the singer hears it while they sing
-// (src/lib/studio/record/input-monitor.ts). Nothing lines a monitor up with
-// the song, so it gives up the chain's latency instead of keeping it: an
-// input heard through it is heard no later than a dry one.
+// (src/lib/studio/record/input-monitor.ts), and the master after it
+// (src/lib/studio/record/monitor-master.ts). Nothing lines a monitor up
+// with the song, so it gives up the chains' latency instead of keeping it:
+// an input heard through them is heard no later than a dry one.
 
 /** The effects whose shapers run oversampled at full quality. */
 export type StudioShaperEffect = 'saturation' | 'exciter' | 'limiter'
@@ -76,14 +77,14 @@ export const LOOKAHEAD_DYNAMICS = [
 ] as const
 
 /**
- * The armed lane's chain while its input is monitored: every effect that
- * adds no delay sounds as it does on the lane (EQ, tilt, gain, stereo,
- * delay, reverb), saturation and the exciter without their oversampling,
- * the transient shaper without its 3 ms lookahead, a limiter as its input
- * gain and ceiling alone, and the compressor, de-esser and dynamic EQ not
- * at all. Measured
- * in Chromium 148 at 48 kHz, the lookahead dynamics would add 6 ms each
- * (the limiter 10), and a voice lane's chain 22 ms in all.
+ * The armed lane's chain while its input is monitored, and the master it
+ * plays through: every effect that adds no delay sounds as it does in
+ * playback (EQ, tilt, gain, stereo, delay, reverb), saturation and the
+ * exciter without their oversampling, the transient shaper without its
+ * 3 ms lookahead, a limiter as its input gain and ceiling alone, and the
+ * compressor, de-esser and dynamic EQ not at all. Measured in Chromium 148
+ * at 48 kHz, the lookahead dynamics would add 6 ms each (the limiter 10),
+ * and a voice lane's chain 22 ms in all.
  */
 export const MONITOR_FX_PROFILE: StudioFxProfile = {
   id: 'monitor',
