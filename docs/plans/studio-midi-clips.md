@@ -257,6 +257,62 @@ Each PR adds its own "Where it lives" section below.
   opens, so a drag begun at once is let go; the browser specs wait for the
   keep. This was so before PR 1.
 
+### Design decisions made while building PR 2
+
+PR 2's first half is 1.4, MIDI files out.
+
+- **A phone saves a clip's file from its clip note.** A phone has no Clip
+  details: the series edits clips on a tablet or a computer. The note a phone
+  shows for a selected clip already holds its Notes and its Range. For a MIDI
+  clip it now holds MIDI too, between them. The three keep together at the
+  note's end, and the lane's name gives way first.
+- **A clip's file keeps the clip where the song has it.** Its notes are
+  placed as they are in the song's file. It lines up with the song's audio
+  in another app, and 1.5's import, which starts a clip at the song's start,
+  puts it back where it was.
+- **A clip's file is named after the song and the clip**:
+  `<title> - <take>.mid`, the take as the clip's band names it, so it never
+  takes the song's file's name. The song's is `<title>.mid`, by the rule the
+  WAV's name follows (`studioDownloadName`).
+- **A pitch sounds once at a time on a track.** In most players a note-off
+  ends every sounding note of its pitch, and a sequence can hold two
+  overlapping notes of one pitch: a recording or an edit can make them.
+  - Where they overlap, the earlier note ends where the next starts.
+  - Of two starting on one tick, the longer is kept.
+  - A note shorter than one of the file's ticks stays a tick long.
+- **The file's beats are the song's.** Its ticks count at the song's tempo
+  exactly. The tempo event holds it to the nearest microsecond a quarter,
+  486,224 for 123.4 bpm, so a note on the song's beat stays on the file's,
+  and the time drifts by less than a microsecond a beat.
+- **Each track ends where its last clip ends**, past its last note, so a
+  clip's rests at its end stay in the file. The first track ends with the
+  last of them.
+- **The first track names the file's sequence after the song**, as the
+  format names a format 1 file's sequence. It carries the tempo and 4/4.
+- **Names are UTF-8.** `parseMidiProject` reads a name's bytes as Latin-1, so
+  1.5 reads a track's name as UTF-8 when it is valid UTF-8.
+- **The lane's sound decides the channel.** A note's own channel is not
+  written: the kit plays on channel 10 and the piano on channel 1, as the
+  Studio plays them.
+- **Mute, solo, gains, pans and fades belong to the mix.** Every lane holding
+  a MIDI clip is in the file, and nothing in it changes with the mix.
+- **Nothing waits for a render.** The WAV keeps edited MIDI clips' renders
+  first. The MIDI file is written from the notes as they stand, at once,
+  even while the song plays or a take records.
+- **One rule for what a clip plays.** `studioTickInWindow` (`time.ts`) is the
+  preview's test and the file's, so the lane and the file cannot disagree.
+- **A gap in a file holds 268,435,455 ticks**, four bytes of delta time:
+  about 15 hours at 300 bpm. The first track spans the song in one gap, so
+  a longer song is refused, and Export says the file could not be made.
+- **The take's name moved out of the clip's component.**
+  `studioClipTakeName` is now in `timeline/clip-take-name.ts`. Importing it
+  from the clip's component put that component's stylesheet ahead of the
+  timeline's, and a MIDI clip's tags fell out of its band (MISTAKES.md).
+- **Export's MIDI file stands under the WAV, a line apart**, laid out as the
+  WAV is: a card, its tracks and tempo, then Export MIDI. Its button is the
+  secondary one, and the WAV keeps the primary. When it is off, it says
+  "This song has no MIDI clips yet."
+
 ## 3. Where PR 1 lives
 
 | File                                                  | What it answers                                                                                                       |
@@ -284,3 +340,20 @@ Each PR adds its own "Where it lives" section below.
 | `src/features/studio/useStudioNewClips.ts`            | 1.3: a lane or a clip made, selected and opened in the editor in Draw.                                                |
 | `src/features/studio/notes/note-editor-state.ts`      | 1.3: the tool the editor opens in.                                                                                    |
 | `src/e2e/studio-midi-clips.spec.ts`                   | Every gesture by a mouse and by fingers on a phone and a tablet, each read back from the saved song.                  |
+
+## 4. Where PR 2 lives
+
+| File                                                   | What it answers                                                                                                                          |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/studio/midi/midi-file.ts`                     | The Standard MIDI File writer: format 1 at 960 PPQ, the first track's name, tempo and 4/4, then a named track a lane on one channel.     |
+| `src/lib/studio/midi/song-midi-file.ts`                | A song's MIDI clips, or one clip, as the writer's tracks: the window's notes cut at its end, placed through frames, one pitch at a time. |
+| `src/lib/studio/midi/time.ts`                          | PR 2 adds `studioTickInWindow`: whether a note is heard through a clip's window, for the preview and the file.                           |
+| `src/features/studio/export/midi-download.ts`          | The song's file or a clip's, written and handed to the browser, named after the song.                                                    |
+| `src/features/studio/export/export-download.ts`        | PR 2 adds `studioDownloadName`: a WAV's and a MIDI file's name from the song's title.                                                    |
+| `src/features/studio/export/StudioMidiExport.tsx`      | Export's MIDI file under the WAV: its tracks and tempo, Export MIDI, and why it is off.                                                  |
+| `src/features/studio/panels/StudioClipDetails.tsx`     | PR 2 adds Export MIDI beside a MIDI clip's Edit notes.                                                                                   |
+| `src/features/studio/timeline/StudioPhoneClipNote.tsx` | PR 2 adds a phone's MIDI button for a MIDI clip, between Notes and Range.                                                                |
+| `src/features/studio/studio-icons.tsx`                 | PR 2 adds `FileDown`, a page with an arrow into it: a clip's MIDI file.                                                                  |
+| `src/features/studio/timeline/clip-take-name.ts`       | A clip's take as its band names it, apart from the clip's component and its stylesheets.                                                 |
+| `src/tests/utils/studio-midi-file.fixture.ts`          | A file's bytes read back through `parseMidiProject`, its notes paired one sounding at a time, for the unit tests and the browser's.      |
+| `src/e2e/studio-midi-files.spec.ts`                    | The song's file and a clip's downloaded on a computer, a tablet and a phone, read back from their bytes.                                 |
