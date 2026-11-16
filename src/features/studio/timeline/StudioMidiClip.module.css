@@ -1,4 +1,4 @@
-/* Studio MIDI clip — a glass body in the lane's hue, its chip and note count in the title band, the mark of the clip the note editor shows, and the hint that opens it. */
+/* Studio MIDI clip — a glass body in the lane's hue, its chip, note count and Editing in the title band, each shown whole or not at all, the mark of the clip the note editor shows, and the hint that opens it. */
 /* The clip's colours are the lane's custom properties (StudioTimeline.module.css,
    .lane): set again here, the button and its band read these. The body's
    gradient carries `border-box`, which sets its origin and its clip, so the
@@ -38,7 +38,8 @@
   pointer-events: none;
 }
 
-/* The title band holds the take's name, the chip and the count in a row. */
+/* The title band holds the take's name and its tags in a row. The name gives
+   way first, down to nothing, and then the tags drop from the end. */
 .band {
   display: flex;
   align-items: center;
@@ -51,6 +52,22 @@
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
+}
+/* The chip, the count and Editing share one line, as wide as the band leaves
+   them after the name's gap. They never shrink, so the name gives way first.
+   A tag that does not fit wraps onto a second line, which the line's height
+   hides: a tag shows whole or not at all, never cut by the clip's edge.
+   Editing goes first, then the count. */
+.tags {
+  display: flex;
+  flex: 1 0 auto;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  align-items: center;
+  column-gap: 6px;
+  max-width: calc(100% - 6px);
+  height: 14px;
+  overflow: hidden;
 }
 .chip {
   flex: none;
