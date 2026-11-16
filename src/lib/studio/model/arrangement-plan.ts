@@ -5,7 +5,7 @@ import { applyMixMacros, trackMacros } from '@/lib/studio-fx/mix-macros'
 import { estimateTailSeconds } from '@/lib/studio-fx/render'
 import { withoutSafetyLimiter } from '@/lib/studio-fx/role-chains'
 import type { StudioPlannedCrossfades } from './comp-plan'
-import { crossStudioCompJoins, studioCompSegments } from './comp-plan'
+import { crossStudioCompJoins, studioLaneCompSegments } from './comp-plan'
 import type { StudioAsset, StudioClip, StudioProject, StudioTrack, } from './types'
 import { validateStudioProject } from './validation'
 import { frameValue, numberValue, requireValue } from './validation-values'
@@ -114,19 +114,21 @@ function laneSegments(
   start: number,
   end: number,
 ): StudioPlannedSegment[] {
-  const segments: StudioPlannedSegment[] = []
-  for (const clip of project.clips
+  const clips = project.clips
     .filter((item) => item.trackId === trackId)
-    .sort((a, b) => a.startFrame - b.startFrame)) {
-    const asset = assets.get(clip.assetId)
-    requireValue(
-      asset !== undefined,
-      `clip.${clip.id}`,
-      'Owned audio is missing',
-    )
-    // A comped clip plays a segment per stretch (comp-plan.ts).
-    segments.push(
-      ...studioCompSegments(clip, {
+    .sort((a, b) => a.startFrame - b.startFrame)
+  // A comped clip plays a segment per stretch, and split halves of a loop
+  // take on two passes meet as its stretches do (comp-plan.ts).
+  const segments = studioLaneCompSegments(
+    clips,
+    (clip): StudioPlannedSegment => {
+      const asset = assets.get(clip.assetId)
+      requireValue(
+        asset !== undefined,
+        `clip.${clip.id}`,
+        'Owned audio is missing',
+      )
+      return {
         clipIds: [clip.id],
         assetId: clip.assetId,
         startFrame: clip.startFrame,
@@ -138,9 +140,9 @@ function laneSegments(
         gainDb: clip.gainDb,
         preparationGainDb: asset.preparation.gainDb,
         fades: clip.fades,
-      }),
-    )
-  }
+      }
+    },
+  )
   return crossStudioCompJoins(coalesce(segments)).flatMap((segment) => {
     const from = Math.max(start, segment.startFrame)
     const to = Math.min(

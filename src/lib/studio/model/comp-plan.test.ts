@@ -57,6 +57,12 @@ const segmentsOf = (
 const end = (segment: StudioPlannedSegment) =>
   segment.startFrame + segment.sourceOutFrame - segment.sourceInFrame
 
+/** The summed power of every segment sounding at `frame`. */
+const powerAt = (segments: readonly StudioPlannedSegment[], frame: number) =>
+  segments
+    .filter((segment) => segment.startFrame <= frame && frame < end(segment))
+    .reduce((sum, segment) => sum + studioSegmentGain(segment, frame) ** 2, 0)
+
 describe('a comped clip in the plan', () => {
   it('plays each stretch from its own pass, crossing 5 ms either side of each join', () => {
     // Arrange
@@ -219,6 +225,44 @@ describe('a comped clip in the plan', () => {
     expect(key(comped(THREE))).toBe(key(one))
   })
 
+  it('plans a split at a join as the comp it splits, crossing there at equal power', () => {
+    // Arrange: the first join is at 3000 on the timeline.
+    const { project, assets } = comped(THREE, true)
+    const unsplit = segmentsOf(project, assets)
+
+    // Act
+    const split = applyStudioCommand(
+      project,
+      {
+        type: 'split-clip',
+        clipId: 'clip-1',
+        atFrame: 3000,
+        newClipId: 'clip-2',
+      },
+      { assets, now: TEST_NOW },
+    )
+    const segments = segmentsOf(split, assets)
+
+    // Assert: the left half collapses to pass 0 played whole, the right
+    // keeps two stretches, and the halves meet as the stretches did.
+    expect(
+      split.clips.map((clip) => [
+        clip.id,
+        clip.sourceInFrame,
+        clip.comp?.length,
+      ]),
+    ).toEqual([
+      ['clip-1', 1000, undefined],
+      ['clip-2', 6800, 2],
+    ])
+    const sound = (planned: readonly StudioPlannedSegment[]) =>
+      planned.map(({ clipIds: _clipIds, ...rest }) => rest)
+    expect(sound(segments)).toEqual(sound(unsplit))
+    // The clip's fades hold at 1 here, so the power is the crossing's alone.
+    for (let frame = 3000 - 300; frame <= 3000 + 300; frame++)
+      expect(powerAt(segments, frame)).toBeCloseTo(1, 12)
+  })
+
   it('plans a swipe as soon as it is made', () => {
     const { project, assets } = comped()
 
@@ -237,5 +281,114 @@ describe('a comped clip in the plan', () => {
     expect(
       segmentsOf(next, assets).map((segment) => segment.sourceInFrame),
     ).toEqual([5800, 6800 + PASS - 241, 8800 - 241])
+  })
+})
+
+describe('two clips of one loop take where they meet', () => {
+  /** The take's clip split at 3000 on the timeline, its right half on pass `right`. */
+  function halves(right: number) {
+    const { project, assets } = comped()
+    const split = applyStudioCommand(
+      project,
+      {
+        type: 'split-clip',
+        clipId: 'clip-1',
+        atFrame: 3000,
+        newClipId: 'clip-2',
+      },
+      { assets, now: TEST_NOW },
+    )
+    const project2 = applyStudioCommand(
+      split,
+      { type: 'choose-pass', clipId: 'clip-2', pass: right },
+      { assets, now: TEST_NOW },
+    )
+    return { project: project2, assets }
+  }
+
+  const lone = (segments: readonly StudioPlannedSegment[]) =>
+    segments.map((segment) => ({
+      crossfades: segment.crossfades,
+      group: [segment.groupStartFrame, segment.groupEndFrame],
+    }))
+
+  it('crosses split halves on two passes as a comp join, at equal power', () => {
+    const { project, assets } = halves(2)
+
+    const segments = segmentsOf(project, assets)
+
+    expect(
+      segments.map((segment) => ({
+        startFrame: segment.startFrame,
+        end: end(segment),
+        sourceInFrame: segment.sourceInFrame,
+        crossfades: segment.crossfades,
+        group: [segment.groupStartFrame, segment.groupEndFrame],
+      })),
+    ).toEqual([
+      {
+        // Pass 1 up to the cut, on past it.
+        startFrame: 2000,
+        end: 3000 + 241,
+        sourceInFrame: 5800,
+        crossfades: { out: { fromSourceFrame: 6560, toSourceFrame: 7040 } },
+        group: [2000, 6800],
+      },
+      {
+        // Pass 2 from the same moment of the range, a pass on.
+        startFrame: 3000 - 241,
+        end: 6800,
+        sourceInFrame: 6800 + PASS - 241,
+        crossfades: { in: { fromSourceFrame: 11_360, toSourceFrame: 11_840 } },
+        group: [2000, 6800],
+      },
+    ])
+    for (let frame = 3000 - 300; frame <= 3000 + 300; frame++)
+      expect(powerAt(segments, frame)).toBeCloseTo(1, 12)
+  })
+
+  it('leaves any other meeting of two clips as it was', () => {
+    const { project, assets } = halves(2)
+    const [left, right] = project.clips
+    const other: StudioAsset = { ...assets[0], id: 'take-2' }
+    const meetings: Record<string, StudioClip[]> = {
+      // A frame apart on the timeline.
+      gap: [left, { ...right, startFrame: right.startFrame + 1 }],
+      // Another take with the same passes.
+      otherTake: [left, { ...right, assetId: other.id }],
+      // Pass 1 whole, then pass 0 whole: two passes apart, but the end of
+      // the range meets its start, not one moment on two passes.
+      endToEnd: [
+        { ...left, sourceOutFrame: 1000 + 2 * PASS },
+        {
+          ...right,
+          startFrame: 2000 + PASS,
+          sourceInFrame: 1000,
+          sourceOutFrame: 1000 + PASS,
+        },
+      ],
+    }
+    for (const [name, clips] of Object.entries(meetings)) {
+      const segments = segmentsOf({ ...project, clips }, [...assets, other])
+      expect({ [name]: lone(segments) }).toEqual({
+        [name]: clips.map((clip) => ({
+          crossfades: undefined,
+          group: [
+            clip.startFrame,
+            clip.startFrame + clip.sourceOutFrame - clip.sourceInFrame,
+          ],
+        })),
+      })
+    }
+    // The same source carried on at another level: a plain split, not crossed.
+    const level = applyStudioCommand(
+      halves(1).project,
+      { type: 'set-clip-gain', clipId: 'clip-2', gainDb: -3 },
+      { assets, now: TEST_NOW },
+    )
+    expect(lone(segmentsOf(level, assets))).toEqual([
+      { crossfades: undefined, group: [2000, 3000] },
+      { crossfades: undefined, group: [3000, 6800] },
+    ])
   })
 })
