@@ -16,6 +16,7 @@ import { studioClipTickWindow } from '@/lib/studio/midi/time'
 import { studioClipPass } from '@/lib/studio/model/clip-passes'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import type { StudioClipNotes } from './clip-notes'
+import { STUDIO_AUDIO_EXTENSION } from './clip-take-name'
 import { createStudioDoubleTap } from './double-tap'
 import type { StudioGestureKind } from './gesture-draft'
 import midiStyles from './StudioMidiClip.module.css'
@@ -24,16 +25,6 @@ import { StudioWaveform } from './StudioWaveform'
 import { clipEndFrame, formatStudioTime, frameToPixel, pixelToFrame, } from './timeline-geometry'
 import type { StudioPointerEditor } from './useStudioPointer'
 import type { StudioWaveformResource } from './waveform-resource'
-
-// The title band names the take; the file's extension adds nothing there.
-const AUDIO_EXTENSION = /\.(wav|mp3|m4a|aac|ogg|oga|opus|flac|webm|aiff?)$/i
-/** A clip's take as its band names it: its file's name without the extension, or else the lane's. */
-export function studioClipTakeName(
-  asset: Pick<StudioAsset, 'originalName'> | undefined,
-  trackName: string,
-): string {
-  return (asset?.originalName ?? trackName).replace(AUDIO_EXTENSION, '')
-}
 
 /** The drawn span's grid, in CSS pixels: a scroll redraws a clip once per this much. */
 export const STUDIO_WAVE_SPAN_GRID = 512
@@ -219,7 +210,7 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
     const name =
       passOf() === ''
         ? title()
-        : title().replace(AUDIO_EXTENSION, '') + passOf()
+        : title().replace(STUDIO_AUDIO_EXTENSION, '') + passOf()
     const notes = midi() ? `, MIDI, ${countWords()}` : ''
     return `${props.trackName}, ${name}${notes}, ${formatStudioTime(clip().startFrame)} to ${formatStudioTime(clipEndFrame(clip()))}`
   }
@@ -271,12 +262,12 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
         >
           <Show
             when={props.notes}
-            fallback={title().replace(AUDIO_EXTENSION, '') + passOf()}
+            fallback={title().replace(STUDIO_AUDIO_EXTENSION, '') + passOf()}
           >
             {(notes) => (
               <>
                 <span class={midiStyles.name}>
-                  {title().replace(AUDIO_EXTENSION, '') + passOf()}
+                  {title().replace(STUDIO_AUDIO_EXTENSION, '') + passOf()}
                 </span>
                 <span class={midiStyles.tags} data-studio-clip-tags>
                   <span class={midiStyles.chip}>
