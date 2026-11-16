@@ -173,7 +173,7 @@ equal-tempered note.**
   "sine/piano/organ/strings/synth"), so whether it has harmonics to beat with depends on that
   setting.
 - `/exercises/thirds-on-a-drone` opens it on the minor and major thirds
-  (`src/features/exercises/slug-map.ts:93-102`). No slug asked for the fifth, third and octave when
+  (`src/features/exercises/slug-map.ts:108-117`). No slug asked for the fifth, third and octave when
   this was read (SEASON-2 § 5 item 15); `harmony-on-a-drone` does since 15 November 2026.
 - Read: code.
 

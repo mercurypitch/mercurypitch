@@ -741,7 +741,7 @@ still images when WebGL fails or would run on the CPU.
   link (FACTS 67).
 - **In the app, not yet linked: `/exercises/thirds-on-a-drone`** (CURRICULUM § 4 item 2, the
   `intervals` launch field; FACTS 52, 53): Drone Intonation on the minor and major thirds, 3 and 4
-  semitones up, registered in `EXERCISE_SLUGS` (`src/features/exercises/slug-map.ts:72-199`) with a
+  semitones up, registered in `EXERCISE_SLUGS` (`src/features/exercises/slug-map.ts:87-260`) with a
   line in `src/tests/slug-map.test.ts`. A run is as long as the difficulty asks, six rounds at the
   default level and up to eight, not capped at the two thirds, and deals them as Interval Trainer
   deals a launched list, never the same one twice running, so they take turns
@@ -752,7 +752,7 @@ still images when WebGL fails or would run on the CPU.
 - **Needed, proposed: `/exercises/major-or-minor`** (CURRICULUM § 4 item 5, the planned `ear-drill`
   launch kind): Stack with `stack:maj` and `stack:min` only. As Lesson 2 decided for its two-answer
   Leap run, it rates on a track of its own (`RunTrack`,
-  `src/features/ear-lab/use-identification-controller.ts:56-63`), never the shared Stack rating; its
+  `src/features/ear-lab/use-identification-controller.ts:62-69`), never the shared Stack rating; its
   guess floor matches the two pads it shows, a half (`src/lib/ear/drills.ts:58-60`, `:233-237`); and
   it passes `updateItem: false` (FACTS 53).
 - Once this page is live, LESSON.md's editorial note gives the copy for `thirds-on-a-drone`, and the
