@@ -6,6 +6,7 @@
 // it, the journal that keeps its takes and the views that draw it name one
 // set of shapes, and the recorder stays a readable length.
 import type { ChannelPick } from '@/lib/audio-input/input-channels'
+import type { AudioOutputLatencies } from '@/lib/mic-latency'
 import type { StudioCaptureEvents, StudioCaptureHandle } from './capture-node'
 import type { StudioClickTrack } from './click-track'
 import type { StudioInputMonitor, StudioMonitorSound } from './input-monitor'
@@ -214,8 +215,8 @@ export interface StudioRecorderDeps {
   /** What the next take keeps: a punch or a loop of the range, or null for a plain take. */
   takeCut?(): StudioTakeCut | null
   tempoBpm(): number
-  /** What a new take is moved earlier by, in seconds: a microphone's round trip, or an instrument's (`stream` null) output path; read for each lane's take. */
-  roundTrip(context: AudioContext, stream: MediaStream | null): number
+  /** What a new take is moved earlier by, in seconds: a microphone's round trip, or an instrument's (`stream` null) output path; asked for each lane's take, on the clock's latencies as the press read them once for every lane. */
+  roundTrip(clock: AudioOutputLatencies, stream: MediaStream | null): number
   /** Hold `bytes` for one lane's take; throws when there is not room. */
   reserveMemory(bytes: number): () => void
   journal?: StudioTakeJournalWriter

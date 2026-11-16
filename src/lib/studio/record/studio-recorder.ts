@@ -208,7 +208,7 @@ export function createStudioRecorder(deps: StudioRecorderDeps) {
     current.takes = lanes.map((lane, index) => ({
       lane,
       take: createStudioRunTake(deps, current, lane, {
-        context,
+        latencies: planned.latencies,
         startTime: planned.startTime,
         maxFrames,
         releaseMemory: releases[index],
