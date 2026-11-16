@@ -152,6 +152,35 @@ export function IconCadence(p: IconProps): JSX.Element {
   )
 }
 
+/** A metronome beside a note: a tune sung in time. */
+export function IconInTime(p: IconProps): JSX.Element {
+  return (
+    <svg {...iconProps(p.size ?? 24)} class={p.class} {...strokeProps}>
+      <path d="M3.5 21h9L10 4H6z" />
+      <path d="M8 17.5l3.6-9.5" />
+      <ellipse
+        cx="17"
+        cy="18.2"
+        rx="2.5"
+        ry="1.9"
+        fill="currentColor"
+        stroke="none"
+        transform="rotate(-22 17 18.2)"
+      />
+      <path d="M19.2 17.6V5.5c.9 1.3 2.2 2 2.4 3.6" />
+    </svg>
+  )
+}
+
+/** A play triangle, filled: hear something. */
+export function IconPlay(p: IconProps): JSX.Element {
+  return (
+    <svg {...iconProps(p.size ?? 24)} class={p.class}>
+      <path d="M7 4.5v15l12.5-7.5z" fill="currentColor" />
+    </svg>
+  )
+}
+
 /** A staff's five lines with a notehead on the middle one: reading. */
 export function IconStaff(p: IconProps): JSX.Element {
   return (

@@ -86,6 +86,36 @@ describe('worstMoment', () => {
     expect(worstMoment(trace({ targets: [at(0, C4)] }))).toBeNull()
   })
 
+  // A drill that keeps time moves its target on the beat; the voice reaches
+  // the new note a moment later, and the old note sung there is no miss.
+  it('reads the voice arriving on a new note as arriving, not off', () => {
+    const bad = worstMoment(
+      trace({
+        targets: [at(0, C4), at(2, E4)],
+        samples: [
+          at(1, C4 * 2 ** (10 / 1200)),
+          at(2.1, C4),
+          at(3, E4 * 2 ** (30 / 1200)),
+        ],
+      }),
+    )
+
+    expect(bad?.t).toBe(3)
+    expect(Math.round(bad!.cents)).toBe(30)
+  })
+
+  it("counts every moment of a glide's small steps", () => {
+    // a siren's target moves ten cents a step: never a new note
+    const targets = Array.from({ length: 40 }, (_, i) =>
+      at(i * 0.05, C4 * 2 ** ((i * 10) / 1200)),
+    )
+    const bad = worstMoment(
+      trace({ targets, samples: [at(1.02, C4 * 2 ** (280 / 1200))] }),
+    )
+
+    expect(Math.round(bad!.cents)).toBe(80)
+  })
+
   // A target set before the singer's first note is not something they missed.
   it('skips samples that precede the first target', () => {
     expect(

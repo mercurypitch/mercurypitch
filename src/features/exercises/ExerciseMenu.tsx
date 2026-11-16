@@ -2,13 +2,13 @@ import type { Component } from 'solid-js'
 import { createMemo, createSignal, For, lazy, Show, Suspense } from 'solid-js'
 import type { JSX } from 'solid-js/jsx-runtime'
 import { Dynamic } from 'solid-js/web'
-import { IconArrowUpDown, IconCadence, IconCircleEmpty, IconCircleFill, IconDiamond, IconDrone, IconExpand, IconFire, IconGame, IconLayers, IconList, IconLock, IconMirror, IconMusic, IconReply, IconSiren, IconSlide, IconStaff, IconStar, IconTarget, IconWave, IconZap, } from '@/components/exercise-icons'
+import { IconArrowUpDown, IconCadence, IconCircleEmpty, IconCircleFill, IconDiamond, IconDrone, IconExpand, IconFire, IconGame, IconInTime, IconLayers, IconList, IconLock, IconMirror, IconMusic, IconReply, IconSiren, IconSlide, IconStaff, IconStar, IconTarget, IconWave, IconZap, } from '@/components/exercise-icons'
 import piStyles from '@/features/practice-intelligence/components/PracticeIntelligence.module.css'
 import { WeaknessPanel } from '@/features/practice-intelligence/components/WeaknessPanel'
 import { WEB_ROOMS } from '@/lib/native-build'
 import { exerciseHistory, getExerciseStats, } from '@/stores/exercise-history-store'
 import type { ExerciseConfig, ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CADENCE, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_NOTE_READING, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, runStoppedEarly, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CADENCE, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_NOTE_READING, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SING_IN_TIME, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, runStoppedEarly, } from './types'
 
 /**
  * The rooms, at the top of the tab, in the web build alone. Behind the
@@ -69,6 +69,7 @@ const EXERCISE_DIFFICULTY: Record<ExerciseType, ExerciseDifficulty> = {
   [EXERCISE_SIGHT_SINGING]: 'hard',
   [EXERCISE_NOTE_READING]: 'easy',
   [EXERCISE_CADENCE]: 'medium',
+  [EXERCISE_SING_IN_TIME]: 'hard',
 }
 
 const DIFFICULTY_LABEL: Record<ExerciseDifficulty, string> = {
@@ -263,6 +264,15 @@ const CARDS: ExerciseCardDef[] = [
       'Hear a phrase end and name how: perfect, imperfect, plagal or interrupted. No microphone: you listen, and tap.',
     icon: () => <IconCadence size={24} />,
     tags: ['Ear', 'Harmony'],
+    available: true,
+  },
+  {
+    type: EXERCISE_SING_IN_TIME,
+    title: 'Sing It in Time',
+    description:
+      'Merc gives do and a count-in; you read a short tune and sing it on the beat. Pitch scored note by note, timing shown.',
+    icon: () => <IconInTime size={24} />,
+    tags: ['Reading', 'Rhythm'],
     available: true,
   },
 ]

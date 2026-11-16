@@ -133,7 +133,7 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: "How do singers read a tune they've never heard without stopping on every note?",
     pr: {
       needs:
-        'Sight-singing in time: a count-in, a click and notes that move on the beat, pitch scored per note (SEASON-2 § 5.2 item 11)',
+        'A practice card for Sing It in Time, which shipped on 15 November 2026 (mercurypitch.com/exercises/sing-it-in-time)',
       link: {
         href: '/pitch-training?lesson=18',
         addr: 'mercurypitch.com/pitch-training',
@@ -353,7 +353,7 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: "How can a song sound as if it's ending, then keep going?",
     pr: {
       needs:
-        'A practice card for Name the Cadence, which shipped on 15 November 2026 (mercurypitch.com/exercises/name-the-cadence); the harmony-line drill (SEASON-2 § 5.2 item 17)',
+        'A practice card for Name the Cadence, which shipped on 15 November 2026 (mercurypitch.com/exercises/name-the-cadence), and one for Sing It in Time (mercurypitch.com/exercises/sing-it-in-time); the harmony-line drill (SEASON-2 § 5.2 item 17)',
       link: {
         href: '/karaoke-night?lesson=28',
         addr: 'mercurypitch.com/karaoke-night',

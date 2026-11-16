@@ -20,7 +20,7 @@
 
 import type { ScaleRunnerScale } from '@/features/exercises/scale-runner/scale-runner-scales'
 import type { ExerciseType } from '@/features/exercises/types'
-import { EXERCISE_CADENCE, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
+import { EXERCISE_CADENCE, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
 
@@ -154,6 +154,15 @@ export const EXERCISE_SLUGS: Record<string, Launch> = {
     kind: 'exercise',
     exercise: EXERCISE_CADENCE,
     difficulty: 7,
+  },
+  // Sing It in Time, for Lesson 18 (Read and sing a whole line), and then
+  // Lesson 28's two-part song. Level 5 is the lesson's checkpoint: two bars
+  // of quarters and halves, steps and do-mi-so, at 60 BPM; a singer whose
+  // level has risen would otherwise be sent eighths at 72 or more.
+  'sing-it-in-time': {
+    kind: 'exercise',
+    exercise: EXERCISE_SING_IN_TIME,
+    difficulty: 5,
   },
   // Open the Karaoke view.
   'karaoke-duel': { kind: 'tab', tab: TAB_KARAOKE },

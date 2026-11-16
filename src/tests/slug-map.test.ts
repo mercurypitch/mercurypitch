@@ -9,8 +9,9 @@ import { typesFor } from '@/features/exercises/cadence/cadence-rounds'
 import { droneIntervalLabel } from '@/features/exercises/drone-intonation/use-drone-intonation-controller'
 import { isWebRoom } from '@/features/exercises/rooms/web-room-ids'
 import { SCALE_RUNNER_SCALES } from '@/features/exercises/scale-runner/scale-runner-scales'
+import { hintLine } from '@/features/exercises/sing-in-time/in-time-words'
 import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
-import { EXERCISE_CADENCE, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
+import { EXERCISE_CADENCE, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
 import { difficultyLabel } from '@/features/practice-intelligence/adaptive-difficulty'
 import { clearLaunchOverride, launchIntervals, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
@@ -213,6 +214,21 @@ describe('EXERCISE_SLUGS', () => {
       'interrupted',
     ])
     expect(typesFor(5)).toHaveLength(3)
+  })
+
+  it("opens Sing It in Time on Lesson 18's two bars for sing-it-in-time", () => {
+    const launch = EXERCISE_SLUGS['sing-it-in-time']
+
+    expect(launch).toEqual({
+      kind: 'exercise',
+      exercise: EXERCISE_SING_IN_TIME,
+      difficulty: 5,
+    })
+    // The lesson's checkpoint: quarters and halves, steps and thirds, at 60.
+    const level = launch.kind === 'exercise' ? (launch.difficulty ?? 5) : 5
+    expect(hintLine(level)).toBe(
+      '3 tunes · 60 BPM · quarters and halves, steps and thirds',
+    )
   })
 
   it('keys are lowercase kebab-case', () => {

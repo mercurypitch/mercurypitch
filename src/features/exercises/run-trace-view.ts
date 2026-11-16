@@ -14,6 +14,15 @@ import type { RunTrace, TracePoint } from './last-run-trace'
 const MIN_SPAN_OCTAVES = 0.5
 /** Breathing room above and below the extremes, in octaves. */
 const PADDING_OCTAVES = 0.12
+/** A target that moves this far or more at once has moved to a new note, cents; a glide's steps are smaller. */
+const NEW_NOTE_CENTS = 50
+/**
+ * For this long after the target moves to a new note, the voice is still
+ * arriving on it, seconds. A drill that keeps time moves its target on the
+ * beat, and the voice reaches the note a moment before or after: the old
+ * note sung there is the arrival, not a moment the singer was off.
+ */
+export const ARRIVAL_SEC = 0.25
 
 export interface WorstMoment {
   /** Seconds since the run started. */
@@ -65,22 +74,47 @@ export function centsBetween(f: number, target: number): number {
  *
  * This is the one place on the result card that says WHERE it went wrong
  * rather than by how much overall — a score of 71 tells a singer nothing they
- * can practice, and "you were 90 cents flat four seconds in" does.
+ * can practice, and "you were 90 cents flat four seconds in" does. The voice
+ * on its way to a new note, for `ARRIVAL_SEC` after the target moved there,
+ * is not counted: it names the moment between two notes, not a miss.
  */
 export function worstMoment(trace: RunTrace): WorstMoment | null {
   if (trace.targets.length === 0) return null
 
+  const arrivals = newNotesOf(trace.targets)
   let worst: WorstMoment | null = null
   for (const sample of trace.samples) {
     if (!Number.isFinite(sample.f) || sample.f <= 0) continue
     const target = targetAt(trace.targets, sample.t)
     if (target === null || target <= 0) continue
+    if (arriving(arrivals, sample.t)) continue
     const cents = centsBetween(sample.f, target)
     if (worst === null || Math.abs(cents) > Math.abs(worst.cents)) {
       worst = { t: sample.t, f: sample.f, target, cents }
     }
   }
   return worst
+}
+
+/** When the target moved to a new note: its first, and each jump of `NEW_NOTE_CENTS` or more. */
+function newNotesOf(targets: readonly TracePoint[]): number[] {
+  const times: number[] = []
+  let held: number | null = null
+  for (const point of targets) {
+    if (!Number.isFinite(point.f) || point.f <= 0) continue
+    if (
+      held === null ||
+      Math.abs(centsBetween(point.f, held)) >= NEW_NOTE_CENTS
+    )
+      times.push(point.t)
+    held = point.f
+  }
+  return times
+}
+
+/** Whether `t` falls within `ARRIVAL_SEC` after a move to a new note. */
+function arriving(arrivals: readonly number[], t: number): boolean {
+  return arrivals.some((at) => t >= at && t - at < ARRIVAL_SEC)
 }
 
 /**

@@ -79,8 +79,8 @@ These are the rules that break things when ignored.
 | `studio` | [StudioTimeline.tsx](../../src/features/studio/timeline/StudioTimeline.tsx) | 34.6k | Studio timeline — one aligned scroll surface for real audio clips, track headers and silent seeking. |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 32.2k | The room's lit instruments, by the name each web instrument exports itself under (instrument-skin.ts). |
+| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 21.5k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 19.0k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
-| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 18.2k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 15.5k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.3k | Hear Yourself History — local listening desk for kept performance takes |
 | `echo` | [echo-celebration.ts](../../src/features/echo/echo-celebration.ts) | 9.7k | Echo's celebration star, in numbers (generated) Written by scripts/sync-echo-art.mjs from the Echo A0 art's echo-celebration-star.json (i... |
@@ -166,8 +166,8 @@ These are the rules that break things when ignored.
 | `sequence` | [sequence-engine.ts](../../src/lib/sequence/sequence-engine.ts) | 1.9k | Sequence engine — a phrase sung back note by note: each lands or misses Echo's engine, and later Note runner's and the onboarding's sung... |
 | `hold` | [hold-engine.ts](../../src/lib/hold/hold-engine.ts) | 1.7k | Hold engine — one held note: lock, breaks, the lantern's fill and the end A pure tick on a state object, the shape of `tickPhysics` in `s... |
 | `audio-input` | [mic-roster.ts](../../src/lib/audio-input/mic-roster.ts) | 1.2k | Mic roster — every connected input, and which one is in charge `enumerateDevices()` answers "what is plugged in" in two dialects. |
+| `domain` | [performance-take.ts](../../src/lib/domain/performance-take.ts) | 1.2k | Performance Take — local replay and scored-result contract Hear Yourself still uses its original VoiceTake stores internally, but a kept... |
 | `cast-receiver` | [receiver.ts](../../src/lib/cast-receiver/receiver.ts) | 1.1k | Cast receiver — the stage on a Cast device, run by its senders REQ-TV-110: on a Google Cast device the stage is a Custom Web Receiver tha... |
-| `domain` | [performance-take.ts](../../src/lib/domain/performance-take.ts) | 1.1k | Performance Take — local replay and scored-result contract Hear Yourself still uses its original VoiceTake stores internally, but a kept... |
 | `pitch-pipeline` | [index.ts](../../src/lib/pitch-pipeline/index.ts) | 1.1k | Barrel for the shared vocal pitch denoise + note-segmentation pipeline. |
 | `sync` | [sync-protocol.ts](../../src/lib/sync/sync-protocol.ts) | 1.1k | ── Sync wire protocol How a portable bundle crosses a DataChannel: the receiver pulls. |
 | `glass` | [fracture.ts](../../src/lib/glass/fracture.ts) | 1.0k | Glass — fracture geometry, shard physics and the shatter timeline (spec §7 + §17.3). |

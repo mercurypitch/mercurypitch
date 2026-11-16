@@ -15,7 +15,7 @@
 // Note tells you very little about Guided Warmup.
 //
 // One page load per viewport, walking the gallery — a load for each drill
-// would be twenty cold starts for the same question.
+// would be twenty-one cold starts for the same question.
 
 import { expect, test } from '@playwright/test'
 import { dismissOverlays, openNavTab, waitForNav } from './helpers/ui'
@@ -42,6 +42,7 @@ const DRILLS = [
   'Sight-Singing',
   'Read the Note',
   'Name the Cadence',
+  'Sing It in Time',
 ] as const
 
 const VIEWPORTS = [
