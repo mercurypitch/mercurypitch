@@ -17,6 +17,7 @@ import { GM_PERCUSSION_KEY_GLYPHS } from '../instruments/import-sources'
 import type { StudioSequence } from '../model/types'
 import type { StudioMidiSoundKind } from './render-key'
 import type { StudioTickWindow } from './time'
+import { studioTickInWindow } from './time'
 
 /** One note as a clip draws it: from its start to its end in ticks, on a row counted from the top, at its velocity. */
 export interface StudioPreviewNote {
@@ -63,10 +64,7 @@ function inWindow(
   window: StudioTickWindow,
 ): WindowNotes {
   return sequence.notes
-    .filter(
-      (note) =>
-        note.startTick >= window.startTick && note.startTick < window.endTick,
-    )
+    .filter((note) => studioTickInWindow(note.startTick, window))
     .sort((a, b) => a.startTick - b.startTick || b.pitch - a.pitch)
 }
 
