@@ -23,8 +23,9 @@
 // device ends the old input at once all the same: MicManager ends the hold
 // the new device replaces before opening it, and WebKit keeps one capture
 // at a time anyway (mic-manager.ts `acquireFrom`), so the release does not
-// cover a device change. An instrument goes at once, its port free for the
-// next lane. The click track is the clock's, shared by every lane.
+// cover a device change. An instrument's port goes at once, free for the
+// next lane, and its sound glides out on the same release. The click track
+// is the clock's, shared by every lane.
 import type { StudioArmedInput } from './armed-input'
 import { createStudioArmedInputs } from './armed-input'
 import type { StudioCaptureEvents, StudioCaptureHandle } from './capture-node'
@@ -176,14 +177,11 @@ export function createStudioLaneArms(options: StudioLaneArmsOptions) {
     // late, the recorder shows its lanes again: the input they shared may
     // be gone with it (`capture`).
     if (monitor === null) input?.close()
-    else if (input !== null && input.stream === null) {
-      // An instrument goes at once, as it did: its sound is its arm's own,
-      // and its port must be free for the next lane, since a port plays one
-      // lane at a time (studio-midi-lanes.ts). Its monitor glides out on
-      // what the lane's effects still ring with.
-      monitor.dispose()
-      input.close()
-    } else {
+    else {
+      // An instrument's port goes at once, free for the next lane, since a
+      // port plays one lane at a time (studio-midi-lanes.ts); its sound
+      // rings out under the release as a microphone does.
+      input?.letGo()
       let late = false
       monitor.dispose(() => {
         input?.close()

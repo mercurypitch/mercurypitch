@@ -1,4 +1,4 @@
-// Studio recorder, each lane's monitor — every armed lane hears its own input through a monitor of its own, through the lane's chain: one channel of an input alone and never the whole input beside it, lanes armed on one input each once, a lane on a whole input once, and a MIDI lane its instrument's node alone; a lane's monitor rises a quarter of a second after its own capture first meters a sound, an instrument's at once; a lane disarmed while it is heard keeps its input until its monitor has glided out, and that late close ends only its own pick and hold, while one disarmed before its monitor rose lets its input go at once; an instrument goes at once.
+// Studio recorder, each lane's monitor — every armed lane hears its own input through a monitor of its own, through the lane's chain: one channel of an input alone and never the whole input beside it, lanes armed on one input each once, a lane on a whole input once, and a MIDI lane its instrument's node alone; a lane's monitor rises a quarter of a second after its own capture first meters a sound, an instrument's at once; a lane disarmed while it is heard keeps its input until its monitor has glided out, and that late close ends only its own pick and hold, while one disarmed before its monitor rose lets its input go at once; an instrument's port goes at once, and its sound after the glide.
 import type { Mock } from 'vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ChannelPick } from '@/lib/audio-input/input-channels'
@@ -139,6 +139,7 @@ describe("each armed lane's monitor", () => {
       kind: 'instrument',
       play: () => node as unknown as AudioNode,
       connected: () => true,
+      letGo: vi.fn(),
       release: vi.fn(),
     }
     const { h, graph } = monitored({
@@ -212,6 +213,7 @@ describe("a lane's monitor rising", () => {
       kind: 'instrument',
       play: () => fakeGraphNode('instrument') as unknown as AudioNode,
       connected: () => true,
+      letGo: vi.fn(),
       release: vi.fn(),
     }
     const { h, graph, scheduler } = monitored({
@@ -561,13 +563,15 @@ describe('a lane disarmed while its monitor is heard', () => {
     expect(input.releases[0]).toHaveBeenCalledOnce()
   })
 
-  it("lets a MIDI lane's instrument go at once, its port free for the next lane, while its monitor glides out", async () => {
+  it("lets a MIDI lane's port go at once, free for the next lane, and its sound only once its monitor has glided out", async () => {
     // Arrange
+    const letGo = vi.fn()
     const release = vi.fn()
     const hold: StudioInstrumentHold = {
       kind: 'instrument',
       play: () => fakeGraphNode('instrument') as unknown as AudioNode,
       connected: () => true,
+      letGo,
       release,
     }
     const { h, graph, scheduler } = monitored({
@@ -578,12 +582,20 @@ describe('a lane disarmed while its monitor is heard', () => {
 
     // Act
     h.recorder.disarm()
+    const atDisarm = {
+      letGo: letGo.mock.calls.length,
+      release: release.mock.calls.length,
+    }
+    scheduler.advance(RELEASED_MS - 1)
+    const inTheGlide = release.mock.calls.length
+    scheduler.advance(1)
 
-    // Assert
-    expect(release).toHaveBeenCalledOnce()
+    // Assert: a sound let go under a heard monitor would cut its release.
+    expect(atDisarm).toEqual({ letGo: 1, release: 0 })
     expect(level.gain.lastWrite).toMatchObject({ kind: 'target', value: 0 })
-    scheduler.advance(RELEASED_MS)
+    expect(inTheGlide).toBe(0)
     expect(levelsOf(graph)).toEqual([])
     expect(release).toHaveBeenCalledOnce()
+    expect(letGo).toHaveBeenCalledOnce()
   })
 })

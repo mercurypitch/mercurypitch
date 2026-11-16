@@ -17,7 +17,9 @@
 // logged at the time its sound started and stopped, the same clock the take
 // records on, so the notes and the audio line up. The player hears the
 // sound through the lane's monitor whatever the monitoring switch says: a
-// MIDI lane has no microphone to feed back.
+// MIDI lane has no microphone to feed back. A disarm lets the port go at
+// once, free for the next lane, and the notes it held ring on while the
+// lane's monitor glides out; the sound goes after it (lane-arms.ts `close`).
 import type { StudioLaneMidiInput } from '@/lib/studio/record/lane-inputs'
 import type { StudioInputLostWords, StudioInstrumentHold, } from '@/lib/studio/record/recorder-types'
 import type { StudioNoteLog } from '@/lib/studio/record/take-notes'
@@ -159,7 +161,8 @@ export async function openStudioMidiArm(
       options.log.started(voice.id, voice.midi, voice.velocity, at)
     }
     for (const voice of update.soundingStopped) {
-      sound.voice.stop(voice.id, at, voice.releaseVelocity)
+      // Let go, its notes ring on under the lane's monitor as it glides out.
+      if (!released) sound.voice.stop(voice.id, at, voice.releaseVelocity)
       options.log.stopped(voice.id, at)
     }
   }
@@ -175,6 +178,14 @@ export async function openStudioMidiArm(
     midi.dispose()
     throw new StudioMidiArmRefusal(`Connect ${name}, then arm again.`)
   }
+
+  function letGo(): void {
+    if (released) return
+    released = true
+    // The port's own goodbye ends every note in the log, not its sound.
+    midi.dispose()
+  }
+
   return {
     kind: 'instrument',
     play(context) {
@@ -183,11 +194,9 @@ export async function openStudioMidiArm(
       return sound.node
     },
     connected: () => !released && midi.snapshot().connected,
+    letGo,
     release() {
-      if (released) return
-      released = true
-      // The port's own goodbye stops every note at the release.
-      midi.dispose()
+      letGo()
       playing?.sound.detach()
       playing = null
     },

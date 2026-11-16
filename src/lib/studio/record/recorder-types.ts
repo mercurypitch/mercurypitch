@@ -155,6 +155,8 @@ export interface StudioInstrumentHold {
   play(context: AudioContext): AudioNode
   /** Its input is still there: the port connected. */
   connected(): boolean
+  /** Let its port go at once: what it played rings on until `release`. */
+  letGo(): void
   /** Stop its sound and let its input go. */
   release(): void
 }
