@@ -5,6 +5,7 @@ import { ExerciseShell } from '@/features/exercises/ExerciseShell'
 import type { ExerciseSessionVoiceTake, ExerciseVoiceCaptureController, ExerciseVoiceCaptureState, } from '@/features/exercises/use-base-exercise'
 import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
+import type * as NotificationsStore from '@/stores/notifications-store'
 
 const { keepMock, notificationMock, trackMock } = vi.hoisted(() => ({
   keepMock: vi.fn(),
@@ -15,7 +16,9 @@ const { keepMock, notificationMock, trackMock } = vi.hoisted(() => ({
 vi.mock('@/features/exercises/exercise-voice-take', () => ({
   keepExerciseVoiceTake: keepMock,
 }))
-vi.mock('@/stores/notifications-store', () => ({
+// The real store, but for its toast: the stage draws its notices from it.
+vi.mock('@/stores/notifications-store', async (importOriginal) => ({
+  ...(await importOriginal<typeof NotificationsStore>()),
   showNotification: notificationMock,
 }))
 vi.mock('@/lib/analytics', () => ({ trackEvent: trackMock }))

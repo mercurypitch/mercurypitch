@@ -4,7 +4,7 @@
 //
 // A drill records the singer's voice as a temporary local copy and keeps it
 // only when asked. The question, and then how keeping went, is a notice that
-// pops out of Merc's bubble on the drill stage (TakeNotice.tsx), as an iOS
+// pops out of Merc's bubble on the drill stage (StageNotice.tsx), as an iOS
 // banner pops out beside its app's icon; the result card says only the
 // result. This is the notice's words and buttons, by the keep's state, the
 // capture's, and whether the last keep failed for want of storage: null

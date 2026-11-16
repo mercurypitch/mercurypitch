@@ -8,9 +8,10 @@
 // instruction during one. A Merc inside each state would be unmounted and
 // drawn again at every Start and every Stop.
 //
-// After a run his bubble can carry a notice (TakeNotice.tsx): it lies over
-// the bubble while it lasts, and the bubble keeps its place under it, so
-// nothing on the stage moves when it comes or goes.
+// His bubble can carry a notice (StageNotice.tsx): the voice take's question
+// after a run, and in the web build the app's own notices. It lies over the
+// bubble while it lasts, and the bubble keeps its place under it, so nothing
+// on the stage moves when it comes or goes.
 
 import type { JSX } from 'solid-js'
 import { Show } from 'solid-js'
@@ -18,8 +19,8 @@ import { MercPresence } from '@/components/room-kit/MercPresence'
 import type { MercState } from '@/lib/merc/constants'
 import { stillFor } from '@/lib/merc/stills'
 import styles from './ExerciseStage.module.css'
-import type { TakeNoticeProps } from './TakeNotice'
-import { TakeNotice } from './TakeNotice'
+import type { StageNoticeModel } from './stage-notice'
+import { StageNotice } from './StageNotice'
 
 /** Merc's box in px: above the sheet, and in the rail beside it. */
 const MERC_STRIP_PX = 56
@@ -47,9 +48,9 @@ export interface StageCoachProps {
   pose: () => MercState
   /** What he says: the brief, or the run's instruction. */
   children: JSX.Element
-  /** The run's voice take, as a notice over the bubble. Absent in a drill
-   *  that records nothing. */
-  notice?: TakeNoticeProps
+  /** The notice over the bubble, or null when the bubble says its own
+   *  words (stage-notice.ts `bubbleNotice` says which). */
+  notice?: () => StageNoticeModel | null
   /** "Hear it first": the example's line while it is up, else null. It
    *  lies over the brief inside the bubble, which keeps the brief's size. */
   example?: () => string | null
@@ -59,7 +60,8 @@ export function StageCoach(props: StageCoachProps): JSX.Element {
   const size = mercSize()
   // The bubble under a notice is out of sight, and out of a screen
   // reader's way, so its words are not read twice.
-  const covered = (): boolean => (props.notice?.notice() ?? null) !== null
+  const notice = (): StageNoticeModel | null => props.notice?.() ?? null
+  const covered = (): boolean => notice() !== null
   // The example's line takes the brief's place inside the bubble, and the
   // brief keeps its box under it: a line shorter than the brief used to
   // shrink the bubble and pull the sheet up for as long as it played.
@@ -73,7 +75,7 @@ export function StageCoach(props: StageCoachProps): JSX.Element {
         class={styles.merc}
         testId="exercise-stage-merc"
       />
-      <div class={styles.say}>
+      <div class={styles.say} data-notice-place="">
         <div class={styles.bubble} classList={{ [styles.covered]: covered() }}>
           <div class={styles.layers}>
             <div
@@ -96,9 +98,7 @@ export function StageCoach(props: StageCoachProps): JSX.Element {
             </Show>
           </div>
         </div>
-        <Show when={props.notice}>
-          {(notice) => <TakeNotice {...notice()} />}
-        </Show>
+        <StageNotice notice={notice} />
       </div>
     </div>
   )

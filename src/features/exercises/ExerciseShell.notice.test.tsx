@@ -13,10 +13,11 @@ import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ExerciseSessionVoiceTake, ExerciseVoiceCaptureController, ExerciseVoiceCaptureState, } from '@/lib/domain/exercise-voice-capture'
 import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
+import type * as NotificationsStore from '@/stores/notifications-store'
 import type { ExerciseDemo } from './ExerciseShell'
 import { ExerciseShell } from './ExerciseShell'
+import { STAGE_NOTICE_EXIT_MS } from './stage/StageNotice'
 import { TAKE_KEPT_LINGER_MS } from './stage/take-notice'
-import { TAKE_NOTICE_EXIT_MS } from './stage/TakeNotice'
 import type { ExerciseStatus, GuidedPracticeLaunchConfig } from './types'
 import { EXERCISE_PITCH_HOLD } from './types'
 
@@ -26,7 +27,9 @@ const { keepMock, notificationMock } = vi.hoisted(() => ({
 }))
 
 vi.mock('./exercise-voice-take', () => ({ keepExerciseVoiceTake: keepMock }))
-vi.mock('@/stores/notifications-store', () => ({
+// The real store, but for its toast: the stage draws its notices from it.
+vi.mock('@/stores/notifications-store', async (importOriginal) => ({
+  ...(await importOriginal<typeof NotificationsStore>()),
   showNotification: notificationMock,
 }))
 vi.mock('@/lib/analytics', () => ({ trackEvent: () => {} }))
@@ -234,7 +237,7 @@ describe('the take notice on the stage', () => {
 
     await vi.advanceTimersByTimeAsync(1)
     expect(drill.brief().hasAttribute('aria-hidden')).toBe(false)
-    await vi.advanceTimersByTimeAsync(TAKE_NOTICE_EXIT_MS)
+    await vi.advanceTimersByTimeAsync(STAGE_NOTICE_EXIT_MS)
     expect(drill.notice()).toBeNull()
 
     // The take is still ready, but it has been kept: nothing more to ask.

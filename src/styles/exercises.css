@@ -2762,7 +2762,7 @@
 /* The card's word on a take that was never recorded (the browser cannot,
    or nothing came through): a quiet line at its foot, under everything the
    run says. A take that was recorded is offered by Merc's notice on the
-   stage instead (stage/TakeNotice.tsx). */
+   stage instead (stage/StageNotice.tsx). */
 .exercise-result-replay-note {
   flex: 1 0 100%;
   margin: 0;

@@ -8,9 +8,10 @@
 // Start beneath it), the active area (content + Stop + optional auto-timer),
 // and the result card with a primary retry action. Whether to keep the run's
 // voice take is asked by a notice over Merc's bubble (stage/useTakeNotice.ts),
-// not by the card. Exercise-specific JSX is passed in via slots so each
-// component only supplies its canvas, metrics, idle placeholder and result
-// summary.
+// not by the card, and in the web build the app's own notices are said there
+// too, in place of the toasts (stage/useStageNotices.ts). Exercise-specific
+// JSX is passed in via slots so each component only supplies its canvas,
+// metrics, idle placeholder and result summary.
 
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, untrack, useContext, } from 'solid-js'
@@ -35,8 +36,10 @@ import type { RunTrace } from './last-run-trace'
 import { lastRunTrace } from './last-run-trace'
 import { RunTraceCanvas } from './RunTraceCanvas'
 import stage from './stage/ExerciseStage.module.css'
+import { noticeFromTake } from './stage/stage-notice'
 import { stagePose } from './stage/stage-pose'
 import { StageCoach } from './stage/StageCoach'
+import { useStageNotices } from './stage/useStageNotices'
 import { useTakeNotice } from './stage/useTakeNotice'
 import { activeTimerSeconds, CUSTOM_MAX_SEC, CUSTOM_MIN_SEC, CUSTOM_STEP_SEC, customTimerSeconds, pinTimerForRun, releaseTimerPin, setCustomTimerSeconds, setTimerMode, TIMER_PRESETS, timerMode, } from './timer-preference'
 import type { ExerciseStatus, ExerciseType, GuidedPracticeLaunchConfig, } from './types'
@@ -340,6 +343,18 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
     if (!isIdleLike()) stopDemo()
   })
   onCleanup(stopDemo)
+
+  // What lies over Merc's bubble, if anything: the app's notices, which wait
+  // while a run is under way or an example plays unless they warn, and the
+  // take's.
+  const bubbleNotice = useStageNotices({
+    quiet: () => !isIdleLike() || demoLineUp(),
+    example: demoLineUp,
+    take: () => {
+      const notice = take.notice()
+      return notice === null ? null : noticeFromTake(notice, take)
+    },
+  })
 
   /** Merc's pose beside the sheet: he sings the example, listens to a run
    *  and cheers a good one (stage/stage-pose.ts). */
@@ -873,23 +888,15 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
             run's instruction while it lasts. Out here, above the sheet and
             its scroll, he is one Merc for the whole visit, and the
             instruction spans the tracker and the drill's own visual as it
-            did at the top of the card. After a run his bubble carries the
-            voice take's notice, which gives the bubble back to "Hear it
-            first" while the example sounds. */}
+            did at the top of the card. A notice can lie over his bubble:
+            the app's own, or after a run the voice take's, in the order
+            stage/stage-notice.ts gives them. */}
       <StageCoach
         pose={mercPose}
         example={() =>
           demoLineUp() && props.demo !== undefined ? props.demo.line() : null
         }
-        notice={
-          props.voiceCapture === undefined
-            ? undefined
-            : {
-                notice: () => (demoLineUp() ? null : take.notice()),
-                onPrimary: take.keep,
-                onClose: take.close,
-              }
-        }
+        notice={bubbleNotice}
       >
         <Show
           when={isActive() && props.activePhase}

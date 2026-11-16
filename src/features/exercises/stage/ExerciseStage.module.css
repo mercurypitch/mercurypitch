@@ -140,7 +140,7 @@
    there would take a quarter of its width.
 
    Raised over the sheet: a notice from his bubble may hang a little down
-   over the sheet's top edge (TakeNotice.module.css), and has to be on top
+   over the sheet's top edge (StageNotice.module.css), and has to be on top
    of it there. */
 .coach {
   position: relative;
@@ -187,7 +187,7 @@
 }
 
 /* The bubble's place: all the row beside him, with the bubble at its foot as
-   it stood in the coach. A notice lies over it (TakeNotice.module.css), and
+   it stood in the coach. A notice lies over it (StageNotice.module.css), and
    takes its size from this box, not from the bubble, so a short brief does
    not squeeze the notice's words. */
 .say {
