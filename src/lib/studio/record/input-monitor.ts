@@ -28,9 +28,12 @@
 // nodes coming apart only after it. The input is the release's source too:
 // disposed, the monitor says when its path has come apart, and a
 // microphone's arm keeps its input open until then (lane-arms.ts `close`),
-// so a disarm while the singer is heard is a release, not a cut. A path
-// that has not begun to rise is silent: it comes apart at once, and a lane
-// disarmed while its monitor waits to rise lets its input go at once.
+// so a disarm while the singer is heard is a release, not a cut. Not when
+// the lane re-arms on another input device: MicManager ends the hold the new
+// device replaces before opening it, since WebKit keeps one capture at a
+// time, and the old input stops under the release. A path that has not
+// begun to rise is silent: it comes apart at once, and a lane disarmed while
+// its monitor waits to rise lets its input go at once.
 //
 // A path rises only once its input has settled. A new microphone source
 // plays silence until the microphone's samples reach it, 10 to 202 ms after

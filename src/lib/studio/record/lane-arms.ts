@@ -19,9 +19,12 @@
 // as it arrives, and one disarmed while its monitor is heard keeps its input
 // until the monitor has glided out on it, a quarter of a second, so the
 // singer hears a release, not a cut; disarmed before its monitor rose, it
-// was not heard, and lets its input go at once. An instrument goes at once,
-// its port free for the next lane. The click track is the clock's, shared by
-// every lane.
+// was not heard, and lets its input go at once. A re-arm on another input
+// device ends the old input at once all the same: MicManager ends the hold
+// the new device replaces before opening it, and WebKit keeps one capture
+// at a time anyway (mic-manager.ts `acquireFrom`), so the release does not
+// cover a device change. An instrument goes at once, its port free for the
+// next lane. The click track is the clock's, shared by every lane.
 import type { StudioArmedInput } from './armed-input'
 import { createStudioArmedInputs } from './armed-input'
 import type { StudioCaptureEvents, StudioCaptureHandle } from './capture-node'
