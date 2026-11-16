@@ -59,6 +59,14 @@ export interface StudioTickWindow {
   readonly endTick: number
 }
 
+/** Whether a note starting on `tick` is heard through `window`: the lane's preview and a MIDI file both play by it. */
+export function studioTickInWindow(
+  tick: number,
+  window: StudioTickWindow,
+): boolean {
+  return tick >= window.startTick && tick < window.endTick
+}
+
 /** A clip's window in its sequence's ticks, from its source frames. */
 export function studioClipTickWindow(
   clip: Pick<StudioClip, 'sourceInFrame' | 'sourceOutFrame'>,
