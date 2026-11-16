@@ -1,4 +1,5 @@
 // Studio MIDI validation — sequences, their notes and the clips that play them, refused whole when any field is out of its range.
+import { STUDIO_MIDI_WINDOW_LIMIT, STUDIO_MIDI_WINDOW_MOST_FRAMES, studioSequenceCovers, } from './midi-window'
 import type { StudioClip, StudioClipMidi, StudioNote, StudioSequence, } from './types'
 import { STUDIO_PPQ } from './types'
 import { arrayValue, enumValue, frameValue, idValue, numberValue, record, requireValue, textValue, uniqueValue, } from './validation-values'
@@ -97,7 +98,31 @@ export function validateStudioClipMidi(
   return raw as StudioClipMidi
 }
 
-/** The song's sequences, ids unique, and every one a clip names among them. */
+/**
+ * A MIDI clip's window, fades and all, inside its sequence and five minutes
+ * at the most: past its audio it is silent, never past its notes
+ * (midi-window.ts).
+ */
+function validateMidiWindow(clip: StudioClip, sequence: StudioSequence): void {
+  requireValue(
+    studioSequenceCovers(sequence, clip.sourceOutFrame),
+    `clip.${clip.id}.sourceOutFrame`,
+    'Window runs past its sequence',
+  )
+  requireValue(
+    clip.sourceOutFrame <= STUDIO_MIDI_WINDOW_MOST_FRAMES,
+    `clip.${clip.id}.sourceOutFrame`,
+    STUDIO_MIDI_WINDOW_LIMIT,
+  )
+  for (const ramp of [clip.fades.in, clip.fades.out])
+    requireValue(
+      ramp === undefined || studioSequenceCovers(sequence, ramp.toSourceFrame),
+      `clip.${clip.id}.fades`,
+      'Fade runs past its sequence',
+    )
+}
+
+/** The song's sequences, ids unique, every one a clip names among them, and each MIDI clip's window inside its sequence. */
 export function validateStudioSequences(
   raw: unknown,
   clips: readonly StudioClip[],
@@ -108,14 +133,20 @@ export function validateStudioSequences(
     validateStudioSequence(sequence, `project.sequences[${index}]`),
   )
   const ids = new Set<string | number>()
-  for (const sequence of sequences)
+  const byId = new Map<string, StudioSequence>()
+  for (const sequence of sequences) {
     uniqueValue(sequence.id, ids, `sequence.${sequence.id}`)
-  for (const clip of clips)
-    if (clip.midi !== undefined)
-      requireValue(
-        ids.has(clip.midi.sequenceId),
-        `clip.${clip.id}.midi.sequenceId`,
-        'Sequence does not exist',
-      )
+    byId.set(sequence.id, sequence)
+  }
+  for (const clip of clips) {
+    if (clip.midi === undefined) continue
+    const sequence = byId.get(clip.midi.sequenceId)
+    requireValue(
+      sequence !== undefined,
+      `clip.${clip.id}.midi.sequenceId`,
+      'Sequence does not exist',
+    )
+    validateMidiWindow(clip, sequence)
+  }
   return sequences
 }

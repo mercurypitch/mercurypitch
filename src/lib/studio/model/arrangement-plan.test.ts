@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import { compileStudioArrangement, studioPanGains } from './arrangement-plan'
-import { studioFixture } from './model.test-fixtures'
+import { studioFixture, studioMidiFixture } from './model.test-fixtures'
 
 describe('shared Studio arrangement plan', () => {
   it('plays and exports a lane without its role safety limiter, which stays saved', () => {
@@ -135,6 +135,60 @@ describe('shared Studio arrangement plan', () => {
       plan.lanes[0].spec.effects.find((effect) => effect.id === 'level-match')
         ?.params,
     ).toEqual({ gainDb: 0 })
+  })
+
+  it('plays a MIDI clip past its audio up to the audio’s end, edged there, and runs the song to the window’s end', () => {
+    // Arrange: the keys clip plays its two seconds of audio from half a
+    // second in, its window running two seconds past it.
+    const { project, assets, sequence, clip } = studioMidiFixture()
+    const long = {
+      ...project,
+      clips: project.clips.map((each) =>
+        each.id === clip.id ? { ...clip, sourceOutFrame: 192_000 } : each,
+      ),
+      sequences: [{ ...sequence, lengthTicks: 7680 }],
+    }
+
+    // Act
+    const plan = compileStudioArrangement(long, assets)
+
+    // Assert
+    const keys = plan.lanes.find((lane) => lane.track.id === clip.trackId)!
+    expect(keys.segments).toEqual([
+      expect.objectContaining({
+        startFrame: 48_000,
+        sourceInFrame: 24_000,
+        sourceOutFrame: 96_000,
+        groupEndFrame: 120_000,
+      }),
+    ])
+    expect(plan.endFrame).toBe(48_000 + 192_000 - 24_000)
+  })
+
+  it('plays nothing of a MIDI clip wholly past its audio', () => {
+    // Arrange: split where the audio ends, the right half past it.
+    const { project, assets, sequence, clip } = studioMidiFixture()
+    const left = { ...clip, sourceOutFrame: 96_000 }
+    const right = {
+      ...clip,
+      id: 'right',
+      startFrame: 120_000,
+      sourceInFrame: 96_000,
+      sourceOutFrame: 192_000,
+    }
+    const split = {
+      ...project,
+      clips: [project.clips[0], left, right],
+      sequences: [{ ...sequence, lengthTicks: 7680 }],
+    }
+
+    // Act
+    const plan = compileStudioArrangement(split, assets)
+
+    // Assert
+    const keys = plan.lanes.find((lane) => lane.track.id === clip.trackId)!
+    expect(keys.segments.map((segment) => segment.clipIds)).toEqual([[clip.id]])
+    expect(plan.endFrame).toBe(216_000)
   })
 
   it('has explicit centre and edge pan gains with no centre gain change', () => {

@@ -107,6 +107,20 @@ function coalesce(
   return result
 }
 
+/**
+ * Where a clip's sound ends in its audio. A MIDI clip's window may run past
+ * its audio (midi-window.ts), and is silent there: its segment ends with
+ * the audio, so the edge envelope de-clicks the audio's last frame and no
+ * source plays past it. Every other clip's window is audio it owns.
+ */
+function heardSourceOut(clip: StudioClip, asset: StudioAsset): number {
+  if (clip.midi === undefined) return clip.sourceOutFrame
+  return Math.max(
+    clip.sourceInFrame,
+    Math.min(clip.sourceOutFrame, asset.normalizedFrameCount),
+  )
+}
+
 function laneSegments(
   project: StudioProject,
   trackId: string,
@@ -128,21 +142,21 @@ function laneSegments(
         `clip.${clip.id}`,
         'Owned audio is missing',
       )
+      const sourceOutFrame = heardSourceOut(clip, asset)
       return {
         clipIds: [clip.id],
         assetId: clip.assetId,
         startFrame: clip.startFrame,
         groupStartFrame: clip.startFrame,
-        groupEndFrame:
-          clip.startFrame + clip.sourceOutFrame - clip.sourceInFrame,
+        groupEndFrame: clip.startFrame + sourceOutFrame - clip.sourceInFrame,
         sourceInFrame: clip.sourceInFrame,
-        sourceOutFrame: clip.sourceOutFrame,
+        sourceOutFrame,
         gainDb: clip.gainDb,
         preparationGainDb: asset.preparation.gainDb,
         fades: clip.fades,
       }
     },
-  )
+  ).filter((segment) => segment.sourceOutFrame > segment.sourceInFrame)
   return crossStudioCompJoins(coalesce(segments)).flatMap((segment) => {
     const from = Math.max(start, segment.startFrame)
     const to = Math.min(

@@ -1,4 +1,4 @@
-// Studio controller MIDI takes — a take recorded on a MIDI lane comes into the song with its sequence, in the edit that adds its clip, its clip keyed by its notes and sound so nothing renders until an edit; one undo takes both away. A render of edited notes is kept as a take is, swapped in without an undo step, skipped when the notes changed meanwhile and refused when too short for its clip; undo and redo bring the notes back with the audio that matched them.
+// Studio controller MIDI takes — a take recorded on a MIDI lane comes into the song with its sequence, in the edit that adds its clip, its clip keyed by its notes and sound so nothing renders until an edit; one undo takes both away. A render of edited notes is kept as a take is, swapped in without an undo step, skipped when the notes changed meanwhile, and kept when shorter than its clip's window, which is silent past it; undo and redo bring the notes back with the audio that matched them.
 import { createRoot } from 'solid-js'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { StudioAssetInfo } from '@/lib/studio/audio/prepare-studio-asset'
@@ -188,19 +188,23 @@ describe('a MIDI render kept in the Studio', () => {
     expect(controller.assets()).toHaveLength(assets)
   })
 
-  it("is refused when shorter than its clip's window", async () => {
+  it("is kept when shorter than its clip's window, which is silent past it", async () => {
     // Arrange
     const { controller, take, key } = await editedTake()
 
     // Act
-    const keeping = controller.keepMidiRender({
+    const kept = await controller.keepMidiRender({
       samples: new Float32Array(2400),
       renderKey: key,
       title: 'Take 1',
     })
 
     // Assert
-    await expect(keeping).rejects.toThrow(/Source bounds exceed owned audio/)
-    expect(clipOf(controller).assetId).toBe(take.assetId)
+    const clip = clipOf(controller)
+    const asset = controller.assets().find((each) => each.id === clip.assetId)
+    expect(kept).toBe(true)
+    expect(clip.assetId).not.toBe(take.assetId)
+    expect(asset?.normalizedFrameCount).toBe(2400)
+    expect(clip.sourceOutFrame).toBe(take.sourceOutFrame)
   })
 })

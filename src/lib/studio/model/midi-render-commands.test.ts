@@ -1,4 +1,4 @@
-// Studio MIDI render command tests — a kept render becomes the audio of every stale clip whose notes have its key now, in one amendment with no undo step; a clip whose notes changed since, or whose audio already matches, keeps its audio; a render too short for a clip's window is refused; and undo takes the notes and the audio that matched them back together.
+// Studio MIDI render command tests — a kept render becomes the audio of every stale clip whose notes have its key now, in one amendment with no undo step; a clip whose notes changed since, or whose audio already matches, keeps its audio; a render shorter than a clip's window is kept, the window silent past it, and one too short for a loop take's passes refused; and undo takes the notes and the audio that matched them back together.
 import { describe, expect, it } from 'vitest'
 import { studioMidiRenderKey } from '../midi/render-key'
 import type { StudioCommand } from './commands'
@@ -111,16 +111,48 @@ describe('keeping a MIDI render', () => {
     expect(kept).toBe(project)
   })
 
-  it("refuses a render shorter than a clip's source window", () => {
-    // Arrange
+  it("keeps a render shorter than a clip's window, the window silent past it", () => {
+    // Arrange: the window runs to 96,000 frames.
     const edited = apply(fixture.project, EDIT)
+    const short = { ...RENDER, id: 'asset-short', normalizedFrameCount: 90_000 }
+    const options = { ...OPTIONS, assets: [...OPTIONS.assets, short] }
+
+    // Act
+    const kept = applyStudioCommand(
+      edited,
+      swap(editedKey(edited), short.id),
+      options,
+    )
+
+    // Assert
+    expect(kept.clips.find((clip) => clip.id === 'clip-midi')?.assetId).toBe(
+      short.id,
+    )
+  })
+
+  it("refuses a render too short for a loop take's passes", () => {
+    // Arrange: two passes of 48,000 frames, the clip on the second.
+    const looped = {
+      ...fixture.project,
+      clips: fixture.project.clips.map((clip) =>
+        clip.id === 'clip-midi'
+          ? {
+              ...clip,
+              sourceInFrame: 48_000,
+              sourceOutFrame: 96_000,
+              passes: { firstFrame: 0, frames: 48_000, count: 2 },
+            }
+          : clip,
+      ),
+    }
+    const edited = apply(looped, EDIT)
     const short = { ...RENDER, id: 'asset-short', normalizedFrameCount: 90_000 }
     const options = { ...OPTIONS, assets: [...OPTIONS.assets, short] }
 
     // Act, Assert
     expect(() =>
       applyStudioCommand(edited, swap(editedKey(edited), short.id), options),
-    ).toThrow(/Source bounds exceed owned audio/)
+    ).toThrow(/Passes exceed owned audio/)
   })
 
   it('takes no undo step, and undo and redo bring the notes back with the audio that matched them', () => {
