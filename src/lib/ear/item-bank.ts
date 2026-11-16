@@ -83,6 +83,13 @@ export interface DegreeSet {
   /** Guess floor for the tap menu: 1 / choices. */
   choices: number
   itemId: (degree: number) => string
+  /** A lesson's set of some of the drill's degrees (subsets.ts) keeps
+   *  the drill's every degree here. Its runs then ask each of the set's
+   *  as often as the others, leave the degrees' difficulties alone and
+   *  book nothing for Today; the fork draws, and a sung answer is read
+   *  against, every degree, so a sung note outside the set is a miss and
+   *  not an unclear take. */
+  whole?: readonly HomeDegree[]
 }
 
 export const HOME_SET: DegreeSet = {

@@ -20,6 +20,10 @@
 // Compare there: the answer's note, then the pick's, in the round's key.
 // Each slip on the rated plate starts a pair practice on its two
 // degrees (pair-practice.ts), which rates nothing.
+//
+// A lesson's set of some of the degrees (Gravity on Te and Ti, a set with
+// `whole`) draws only their pads, says at idle what it asks, and names its
+// rating as the set's own (use-home-controller.ts rates it apart).
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -29,6 +33,7 @@ import { useEngines } from '@/contexts/EngineContext'
 import { isProvisional, PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
 import type { DegreeSet } from '@/lib/ear/item-bank'
 import { degreeLabel, HOME_SET } from '@/lib/ear/item-bank'
+import { listWords, subsetLine, subsetRatingLine } from '@/lib/ear/subsets'
 import { micManager } from '@/lib/mic-manager'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import type { F0Stream } from '@/lib/pitch-f0-stream'
@@ -110,8 +115,11 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
   const set = props.set ?? HOME_SET
   // eslint-disable-next-line solid/reactivity
   const copy = props.copy ?? HOME_COPY
+  /** Every degree of the drill: a lesson's set asks some of them, and a
+   *  sung answer can name any. */
+  const allDegrees = set.whole ?? set.degrees
   const labelOf = (degree: number): string =>
-    degreeLabel(set.degrees.find((d) => d.degree === degree))
+    degreeLabel(allDegrees.find((d) => d.degree === degree))
   const answerBy = answerToggle(
     'How to answer',
     homeAnswerMode,
@@ -325,9 +333,31 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
 
   useArmingCue(() => phase() === 'answer')
 
+  /** Where a run's rating lives, as the plate names it: a lesson's set
+   *  rates apart from the drill. */
+  const ratingSource = (mode: HomeAnswerMode): string => {
+    const unit = mode === 'mic' ? 'Voice rating' : copy.ratingUnit
+    return set.whole === undefined ? unit : `${unit} on this set`
+  }
+
+  /** A lesson's set's degrees, as its words name them: "♭7 (Te)". */
+  const setDegrees = set.degrees.map(
+    (degree) => `${degreeLabel(degree)} (${degree.solfege})`,
+  )
+  /** What a lesson's set asks, said at idle: in a few words on the Begin
+   *  pad, in a sentence where the console has room. Null for the whole
+   *  drill. */
+  const lessonSet =
+    set.whole === undefined
+      ? null
+      : {
+          asks: listWords(setDegrees),
+          note: `${subsetLine(setDegrees, set.whole.length)} ${subsetRatingLine(copy.name)}`,
+        }
+
   /** A degree as the plate names it, its number and syllable: "4 Fa". */
   const degreeName = (degree: number): string => {
-    const entry = set.degrees.find((candidate) => candidate.degree === degree)
+    const entry = allDegrees.find((candidate) => candidate.degree === degree)
     return entry ? `${degreeLabel(entry)} ${entry.solfege}` : String(degree)
   }
   /** The degree a slip's id stands for: `deg-4` is 4. */
@@ -374,7 +404,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
           play: () => void controller.compare(),
           names: () => {
             const degree = target()
-            const picked = set.degrees.find(
+            const picked = allDegrees.find(
               (entry) => entry.degree === controller.answeredDegree(),
             )
             if (!controller.comparable() || !degree || !picked) return null
@@ -395,8 +425,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
         plate: (): RoomPlate | null => {
           const result = controller.result()
           if (result === null) return null
-          const source =
-            result.mode === 'mic' ? 'Voice rating' : copy.ratingUnit
+          const source = ratingSource(result.mode)
           const outcomes = result.outcomes.map((outcome) => ({
             correct: outcome.correct,
             skipped: !outcome.correct && outcome.answered === 0,
@@ -535,7 +564,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
           }
           ringing={phase() === 'probe'}
           listening={phase() === 'answer' && controller.mode() === 'mic'}
-          scale={set.degrees}
+          scale={allDegrees}
           reveal={
             phase() === 'reveal' && target()
               ? {
@@ -547,7 +576,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                   picked:
                     controller.answeredDegree() === null || correct()
                       ? null
-                      : (set.degrees.find(
+                      : (allDegrees.find(
                           (d) => d.degree === controller.answeredDegree(),
                         )?.semitone ?? null),
                 }
@@ -562,7 +591,9 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
             <>
               <PlayPad
                 label="Begin"
-                sub={`${controller.totalRounds} rounds`}
+                sub={`${controller.totalRounds} rounds${
+                  lessonSet === null ? '' : ` · ${lessonSet.asks}`
+                }`}
                 keycap="Space"
                 icon={
                   homeAnswerMode() === 'mic' ? (
@@ -574,6 +605,9 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                 onClick={() => void handleStart()}
               />
               <ConsoleStack>
+                <Show when={lessonSet}>
+                  {(lesson) => <ConsoleNote>{lesson().note}</ConsoleNote>}
+                </Show>
                 <ModeToggle {...answerBy} />
                 <Show when={homeAnswerMode() === 'mic'}>
                   <ConsoleNote>
@@ -640,7 +674,11 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
               mock-ups), and its orb shows the answer; the web keeps them,
               stilled, to show it. */}
           <Show when={!(EAR_LAB_WITH_MERC && controller.mode() === 'mic')}>
-            <Pads columns={copy.columns} compact label={copy.padLabel}>
+            <Pads
+              columns={Math.min(copy.columns, set.degrees.length)}
+              compact
+              label={copy.padLabel}
+            >
               <For each={set.degrees}>
                 {(degree, i) => (
                   <StagePad
@@ -665,7 +703,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
             <EndPlate
               kicker="Rating"
               value={String(Math.round(result().rating.rating))}
-              unit={result().mode === 'mic' ? 'Voice rating' : copy.ratingUnit}
+              unit={ratingSource(result().mode)}
               note={
                 <PlateDelta delta={result().ratingDelta} label="this run" />
               }

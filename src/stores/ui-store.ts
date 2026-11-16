@@ -632,7 +632,21 @@ export const [pendingEarDrill, setPendingEarDrill] = createSignal<
   string | null
 >(null)
 
-export function startEarDrill(drillId: string): void {
+/**
+ * The items a lesson's link narrows that drill to, by the drill's own
+ * bank ids (an `ear-drill` slug, src/features/exercises/slug-map.ts); null
+ * for the whole drill. The Ear Lab page takes it with the drill, and opens
+ * the drill whole when the items do not make a set (lib/ear/subsets.ts).
+ */
+export const [pendingEarItems, setPendingEarItems] = createSignal<
+  readonly string[] | null
+>(null)
+
+export function startEarDrill(
+  drillId: string,
+  items?: readonly string[],
+): void {
+  setPendingEarItems(items ?? null)
   setPendingEarDrill(drillId)
   setActiveTab(TAB_EAR_LAB)
 }

@@ -11,12 +11,18 @@
 //
 // In the native room a miss offers Compare: the answer's chord, then
 // the pick's, both stacked on the question's root.
+//
+// A lesson's link can narrow it to some of the six (Lesson 27's major
+// against the dominant seventh, lib/ear/subsets.ts): the set's pads only,
+// rated on the set's own track.
 // ============================================================
 
 import type { JSX } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { STACK_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
+import type { EarSubset } from '@/lib/ear/subsets'
+import { listWords, narrowBank, subsetLine, subsetRatingLine, } from '@/lib/ear/subsets'
 import { compareSequence, STACK_TIMING } from '@/lib/ear/timing'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { midiToFreq } from '@/lib/scale-data'
@@ -47,10 +53,18 @@ const STACK_COMPARE: IdentificationCompare | undefined = EAR_LAB_WITH_MERC
     }
   : undefined
 
-export function StackDrill(props: { onBack: () => void }): JSX.Element {
+export function StackDrill(props: {
+  onBack: () => void
+  /** A lesson's set of some of the six; the whole drill without. */
+  subset?: EarSubset | null
+}): JSX.Element {
   const { audioEngine } = useEngines()
   const drill = findIdentificationDrill('stack')
   if (!drill) throw new Error('stack drill missing from catalogue')
+  // A stage is mounted per drill and per set, never re-pointed.
+  // eslint-disable-next-line solid/reactivity
+  const subset = props.subset ?? null
+  const bank = narrowBank(STACK_BANK, subset)
 
   /** Which pair (or replay) is the live one. A flag reset at the top of
    *  every pair let a pair still sounding when Stop and Begin came within
@@ -107,11 +121,12 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
     }
   }
 
-  const controller = useIdentificationController(drill, STACK_BANK, makeTrial, {
+  const controller = useIdentificationController(drill, bank, makeTrial, {
     cancelAudio: () => {
       pair += 1
       audioEngine.stopTone(60)
     },
+    subset,
   })
 
   const itemOf = (id: string | null) =>
@@ -126,12 +141,23 @@ export function StackDrill(props: { onBack: () => void }): JSX.Element {
       prompt="One chord. Name its quality."
       listenHint="Listen to the stack…"
       answerHint="Which quality was that?"
-      choices={STACK_BANK.map((item) => ({
+      choices={bank.map((item) => ({
         id: item.itemId,
         label: item.label,
         sub: item.name,
       }))}
-      columns={3}
+      columns={Math.min(3, bank.length)}
+      lessonSet={
+        subset
+          ? {
+              asks: listWords(bank.map((item) => item.name.toLowerCase())),
+              note: `${subsetLine(
+                bank.map((item) => item.name.toLowerCase()),
+                STACK_BANK.length,
+              )} ${subsetRatingLine('Stack')}`,
+            }
+          : undefined
+      }
       controller={controller}
       revealName={(id) => itemOf(id)?.name ?? id}
       compare={STACK_COMPARE}

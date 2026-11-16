@@ -111,7 +111,8 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Why is a quarter note not a quarter of a second?',
     fig: 'rhythm',
     pr: {
-      needs: 'The Chart without triplets or sixteenths (an ear-drill link)',
+      needs:
+        'A practice card for The Chart on quarters, halves and eighths, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/quarters-halves-and-eighths)',
       link: {
         href: '/ear-lab?lesson=17',
         addr: 'mercurypitch.com/ear-lab',
@@ -156,7 +157,8 @@ const ENTRIES_2: readonly Lesson[] = [
     fig: 'pads',
     hook: 'Six notes in a bar, grouped two ways: why does one feel like two beats and the other like three?',
     pr: {
-      needs: 'Subdivide with only 3/4 and 6/8 (an ear-drill link)',
+      needs:
+        'A practice card for Subdivide on 3/4 and 6/8, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/three-four-or-six-eight)',
       link: {
         href: '/ear-lab?lesson=19',
         addr: 'mercurypitch.com/ear-lab',
@@ -243,7 +245,7 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Which interval splits the octave exactly in half, and why does it want to move?',
     pr: {
       needs:
-        'Leap with only the perfect intervals and the tritone (the ear-drill launch kind)',
+        'A practice card for Leap on the perfect intervals and the tritone, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/perfect-or-tritone)',
       link: {
         href: '/ear-lab?lesson=23',
         addr: 'mercurypitch.com/ear-lab',
@@ -287,7 +289,7 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Why does a minor key often raise one note just before it comes home?',
     pr: {
       needs:
-        "Gravity with only Te and Ti (the ear-drill launch kind); Scale Runner's harmonic and melodic minor; Sight-Singing with a key launch, a hear-do start, the bass clef, letter names off and octave-folded scoring",
+        "A practice card for Gravity on Te and Ti, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/te-or-ti); Scale Runner's harmonic and melodic minor; Sight-Singing with a key launch, a hear-do start, the bass clef, letter names off and octave-folded scoring",
       link: {
         href: '/ear-lab?lesson=25',
         addr: 'mercurypitch.com/ear-lab',
@@ -331,7 +333,7 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Add one note to the V chord and it pulls towards home. Which note, and why?',
     pr: {
       needs:
-        'Chord Stacker opening on the dominant seventh, with triads and inversions (today it shuffles maj7, min7, dom7, dim7 and maj6); Stack with major against dominant seventh alone (the ear-drill launch kind)',
+        'Chord Stacker opening on the dominant seventh, with triads and inversions (today it shuffles maj7, min7, dom7, dim7 and maj6); a practice card for Stack on major against dominant seventh, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/major-or-dominant-seventh)',
       link: {
         href: '/pitch-training?lesson=27',
         addr: 'mercurypitch.com/pitch-training',

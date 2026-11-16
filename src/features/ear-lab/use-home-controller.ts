@@ -31,6 +31,10 @@
 // A slip on the native room's rated plate can start a pair practice
 // (pair-practice.ts): a short run over just the two degrees it mixed
 // up, which rates nothing and books nothing for Today.
+//
+// A lesson's set of some of the degrees (a set with `whole`, item-bank.ts)
+// rates on its own two tracks, asks each degree as often as the others,
+// leaves the degrees' difficulties alone and books nothing for Today.
 // ============================================================
 
 import { batch, createSignal, onCleanup } from 'solid-js'
@@ -46,7 +50,7 @@ import { trackFirstValue } from '@/lib/first-value'
 import { midiToFreq } from '@/lib/scale-data'
 import type { RatedRunMark } from '@/stores/ear-lab-store'
 import { creditEarSession, earItemStates, earPlayerRating, markRatedRun, markSprintSegmentDone, recordIdentificationAnswer, rollBackRatedRun, takeSprintRunLength, } from '@/stores/ear-lab-store'
-import { PAIR_PRACTICE_ROUNDS, pairOrder } from './pair-practice'
+import { balancedOrder, PAIR_PRACTICE_ROUNDS, pairOrder } from './pair-practice'
 import { createRevealPacer } from './reveal-pacing'
 
 export type HomePhase =
@@ -129,6 +133,8 @@ export function useHomeController(
   options?: HomeOptions,
 ) {
   const set = options?.set ?? HOME_SET
+  /** A lesson's set of some of the drill's degrees. */
+  const narrowed = set.whole !== undefined
   const [phase, setPhase] = createSignal<HomePhase>('idle')
   const [mode, setMode] = createSignal<HomeAnswerMode>('tap')
   const [cadenceStep, setCadenceStep] = createSignal(0)
@@ -256,8 +262,14 @@ export function useHomeController(
     // A practice writes nothing to put back, and leaves a length Today
     // armed to the run it was armed for.
     mark = pair === null ? markRatedRun(drillIdFor(set, runMode)) : null
-    const armed = pair === null ? takeSprintRunLength(set.tapDrillId) : null
-    practiceOrder = pair === null ? [] : pairOrder(pair, PAIR_PRACTICE_ROUNDS)
+    const armed =
+      pair === null && !narrowed ? takeSprintRunLength(set.tapDrillId) : null
+    practiceOrder =
+      pair !== null
+        ? pairOrder(pair, PAIR_PRACTICE_ROUNDS)
+        : narrowed
+          ? balancedOrder(set.degrees, HOME_ROUNDS)
+          : []
     batch(() => {
       setPractice(pair === null ? null : [pair[0].degree, pair[1].degree])
       setShort(armed?.rounds !== undefined)
@@ -368,7 +380,7 @@ export function useHomeController(
     const sung = detectSungDegree(
       singCapture.takeFrames(),
       rootMidi,
-      set.degrees,
+      set.whole ?? set.degrees,
     )
     if (sung !== null) {
       submit(sung.degree.degree, sung.centsOff)
@@ -415,7 +427,7 @@ export function useHomeController(
             guessRate: isMic ? 0 : 1 / set.choices,
             expected: `deg-${target.degree}`,
             answered: `deg-${degree}`,
-            updateItem: !isMic,
+            updateItem: !isMic && !narrowed,
           })
     outcomes.push({
       degree: target.degree,
@@ -594,9 +606,10 @@ export function useHomeController(
     // Always the tap id: the sprint schedules the drill, not the way
     // you chose to answer it, and singing your answers is still Home. A
     // segment counts when the run reached its end, not when abandoned,
-    // and never for a pair practice: Today asked for the drill.
+    // and never for a pair practice or a lesson's set: Today asked for
+    // the drill.
     if (complete && practice() === null) {
-      markSprintSegmentDone(set.tapDrillId)
+      if (!narrowed) markSprintSegmentDone(set.tapDrillId)
       // A run of skipped rounds (no clear sung answer) got no result.
       if (outcomes.some((o) => o.answered > 0)) trackFirstValue('ear')
     }

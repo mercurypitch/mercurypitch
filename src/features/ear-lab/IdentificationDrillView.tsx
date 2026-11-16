@@ -15,6 +15,11 @@
 // the plate between two of the drill's items starts a pair practice on
 // them (pair-practice.ts), which rates nothing and ends on a plate of
 // its own.
+//
+// A lesson's set of some of the drill's items (lib/ear/subsets.ts) is
+// given only its own pads; the view says at idle what the set asks, on
+// the Begin pad on either face and in a sentence where the console has
+// room, and names the rating as the set's.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -24,7 +29,7 @@ import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { useArmingCue } from './arming-cue'
 import { IconPlay } from './ear-icons'
 import type { PadState, StageKey } from './EarStage'
-import { EndPlate, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
+import { ConsoleNote, EndPlate, OutcomeDots, Pads, PlateBadge, PlateDelta, PlateLine, PlayPad, StagePad, } from './EarStage'
 import { useLastCall } from './reveal-pacing'
 import { slipsOf } from './slips'
 import type { PlateSlip, RoomCompare, RoomPlate, StageRoom } from './stage-room'
@@ -73,6 +78,10 @@ interface IdentificationDrillViewProps {
   answerKeys?: () => StageKey[]
   /** Under the description at idle: a mode toggle, a mic warning. */
   idleAside?: JSX.Element
+  /** A lesson's set: what it asks in a few words for the Begin pad ("P4,
+   *  TT, P5 and P8"), and the sentence the console says under it where
+   *  it has room. The plate then names the rating as the set's own. */
+  lessonSet?: { asks: string; note: string }
   /** Starts a run; the controller's start unless the drill has to
    *  acquire something (a microphone) first. */
   onStart?: () => void
@@ -153,6 +162,12 @@ export function IdentificationDrillView(
       : correct()
         ? ('right' as const)
         : ('wrong' as const)
+
+  /** Where the run's rating lives: a lesson's set rates apart. */
+  const ratingSource = (): string =>
+    props.lessonSet === undefined
+      ? `${props.title} rating`
+      : `${props.title} rating on this set`
 
   /** Keycaps only where a digit can name the choice. */
   const keycap = (index: number): string | undefined =>
@@ -297,7 +312,7 @@ export function IdentificationDrillView(
             {
               rating: Math.round(result.rating.rating),
               before: Math.round(result.rating.rating - result.ratingDelta),
-              source: `${props.title} rating`,
+              source: ratingSource(),
               settling: isProvisional(result.rating)
                 ? PROVISIONAL_ATTEMPTS - result.rating.attempts
                 : null,
@@ -381,11 +396,18 @@ export function IdentificationDrillView(
             <>
               <PlayPad
                 label="Begin"
-                sub={`${props.controller.totalRounds} rounds`}
+                sub={`${props.controller.totalRounds} rounds${
+                  props.lessonSet === undefined
+                    ? ''
+                    : ` · ${props.lessonSet.asks}`
+                }`}
                 keycap="Space"
                 icon={<IconPlay size={20} />}
                 onClick={() => start()}
               />
+              <Show when={props.lessonSet}>
+                {(set) => <ConsoleNote>{set().note}</ConsoleNote>}
+              </Show>
               {props.idleAside}
             </>
           }
@@ -447,7 +469,7 @@ export function IdentificationDrillView(
             <EndPlate
               kicker="Rating"
               value={String(Math.round(result().rating.rating))}
-              unit={`${props.title} rating`}
+              unit={ratingSource()}
               note={
                 <PlateDelta delta={result().ratingDelta} label="this run" />
               }

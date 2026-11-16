@@ -127,7 +127,9 @@ describe('Season 2', () => {
       note: 'then tap The Chart',
     })
     // the drill it still needs stays the team's
-    expect(L17?.pr.needs).toMatch(/^The Chart without triplets/)
+    expect(L17?.pr.needs).toMatch(
+      /^A practice card for The Chart on quarters, halves and eighths, .*\/exercises\/quarters-halves-and-eighths\)$/,
+    )
     // Lesson 15 only helps, so Lesson 8 is its one way in
     expect(SEASON_2.prereq[17]).toEqual([8])
   })
@@ -179,7 +181,9 @@ describe('Season 2', () => {
       note: 'then tap Subdivide',
     })
     // the drill it still needs stays the team's
-    expect(L19?.pr.needs).toMatch(/^Subdivide with only 3\/4 and 6\/8/)
+    expect(L19?.pr.needs).toMatch(
+      /^A practice card for Subdivide on 3\/4 and 6\/8, .*\/exercises\/three-four-or-six-eight\)$/,
+    )
     // Lesson 17 is its one way in
     expect(SEASON_2.prereq[19]).toEqual([17])
   })
@@ -231,7 +235,9 @@ describe('Season 2', () => {
       note: 'then tap Leap',
     })
     // the drill it still needs stays the team's
-    expect(L23?.pr.needs).toMatch(/^Leap with only the perfect intervals/)
+    expect(L23?.pr.needs).toMatch(
+      /^A practice card for Leap on the perfect intervals and the tritone, .*\/exercises\/perfect-or-tritone\)$/,
+    )
     // a cross-season edge: Lesson 6 is its one way in
     expect(SEASON_2.prereq[23]).toEqual([6])
   })
@@ -346,7 +352,9 @@ describe('Season 2', () => {
       note: 'then tap Gravity',
     })
     // the drills it still needs stay the team's
-    expect(L25?.pr.needs).toMatch(/^Gravity with only Te and Ti/)
+    expect(L25?.pr.needs).toMatch(
+      /^A practice card for Gravity on Te and Ti, .*\/exercises\/te-or-ti\);/,
+    )
     // Lesson 10 from Season 1, and Lessons 21 and 23
     expect(SEASON_2.prereq[25]).toEqual([10, 21, 23])
   })
@@ -407,6 +415,9 @@ describe('Season 2', () => {
     // the drills it still needs stay the team's
     expect(L27?.pr.needs).toMatch(
       /^Chord Stacker opening on the dominant seventh/,
+    )
+    expect(L27?.pr.needs).toMatch(
+      /a practice card for Stack on major against dominant seventh, .*\/exercises\/major-or-dominant-seventh\)$/,
     )
     // Lesson 12 from Season 1, and Lesson 23
     expect(SEASON_2.prereq[27]).toEqual([12, 23])

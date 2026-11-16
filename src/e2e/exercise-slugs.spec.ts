@@ -8,8 +8,13 @@
 // only a browser reaches the hand-off between them, so this spec checks
 // what the drill's setup screen promises after the whole trip, and that
 // the launch ends when the singer leaves the drill.
+//
+// An `ear-drill` slug opens an Ear Lab drill on a lesson's set of its
+// items instead (src/lib/ear/subsets.ts, through EarLabPage.tsx): the
+// stage at idle names the set on its Begin pad, and a run's pads are the
+// set's alone.
 
-import type { Page } from '@playwright/test'
+import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
 
 /** Open a slug's address as production's Worker serves it, from a lesson. */
@@ -274,4 +279,130 @@ test("leaving triads' drill leaves the menu's Chord Stacker on the singer's own 
   await expect(page.locator('.idle-hint')).toHaveText(
     '5 chords · Seventh chords · Root position',
   )
+})
+
+/** The Ear Lab's stage, on the drill a slug opened. */
+const earStage = (page: Page): Locator => page.getByTestId('ear-stage')
+
+/** The Begin pad, where the stage names a set at idle on every width. */
+const begin = (page: Page): Locator =>
+  earStage(page).getByRole('button', { name: /^Begin/ })
+
+/** A run's answer pads, once Begin has started one. */
+async function runPads(page: Page): Promise<Locator> {
+  await begin(page).click()
+  return earStage(page).getByTestId('ear-stage-pads').getByRole('button')
+}
+
+test("/exercises/quarters-halves-and-eighths opens The Chart on Lesson 17's quarters, halves and eighths", async ({
+  page,
+}) => {
+  await openSlug(page, 'quarters-halves-and-eighths', '17')
+
+  await expect(earStage(page)).toHaveAttribute('data-ear-drill', 'chart')
+  // Eight of the fifteen charts, none on triplets or sixteenths.
+  await expect(begin(page)).toContainText(
+    '12 charts · quarters and eighths only',
+  )
+  await expect(page).toHaveURL(/\/#\/ear-lab$/)
+})
+
+test("/exercises/three-four-or-six-eight opens Subdivide on Lesson 19's 3/4 and 6/8, two pads every round", async ({
+  page,
+}) => {
+  await openSlug(page, 'three-four-or-six-eight', '19')
+
+  await expect(earStage(page)).toHaveAttribute('data-ear-drill', 'subdivide')
+  await expect(begin(page)).toContainText('12 rounds · 3/4 and 6/8')
+  await expect(await runPads(page)).toHaveText([/3\/4/, /6\/8/])
+})
+
+test("/exercises/perfect-or-tritone opens Leap on Lesson 23's perfect intervals and the tritone, on a phone", async ({
+  page,
+}) => {
+  await page.setViewportSize({ width: 390, height: 844 })
+  await openSlug(page, 'perfect-or-tritone', '23')
+
+  await expect(earStage(page)).toHaveAttribute('data-ear-drill', 'leap')
+  await expect(begin(page)).toContainText('12 rounds · P4, TT, P5 and P8')
+  await expect(await runPads(page)).toHaveText([
+    /P4\s*Perfect 4th/,
+    /TT\s*Tritone/,
+    /P5\s*Perfect 5th/,
+    /P8\s*Octave/,
+  ])
+})
+
+test("/exercises/te-or-ti opens Gravity on Lesson 25's Te and Ti", async ({
+  page,
+}) => {
+  await openSlug(page, 'te-or-ti', '25')
+
+  await expect(earStage(page)).toHaveAttribute('data-ear-drill', 'gravity')
+  await expect(begin(page)).toContainText('12 rounds · ♭7 (Te) and 7 (Ti)')
+  await expect(await runPads(page)).toHaveText([/♭7\s*Te/, /7\s*Ti/])
+})
+
+test("/exercises/major-or-dominant-seventh opens Stack on Lesson 27's major and dominant seventh", async ({
+  page,
+}) => {
+  await openSlug(page, 'major-or-dominant-seventh', '27')
+
+  await expect(earStage(page)).toHaveAttribute('data-ear-drill', 'stack')
+  await expect(begin(page)).toContainText('12 rounds · major and dominant 7th')
+  await expect(await runPads(page)).toHaveText([
+    /Maj\s*Major/,
+    /7\s*Dominant 7th/,
+  ])
+})
+
+test('an ear-drill slug opens its set from inside the app, signed in, over the drill already open', async ({
+  page,
+}) => {
+  // A signed-in profile: a session token the app reads as live.
+  await page.addInitScript(() => {
+    const part = (value: object): string =>
+      btoa(JSON.stringify(value)).replace(/=+$/u, '')
+    const exp = Math.floor(Date.now() / 1000) + 3600
+    localStorage.setItem(
+      'mp:authToken',
+      `${part({ alg: 'none' })}.${part({ sub: 'e2e-user', provider: 'password', exp })}.sig`,
+    )
+  })
+  // Inside the app first, on Leap whole.
+  await page.goto('/?lesson=23#/ear-lab')
+  await page
+    .getByRole('listitem', { name: /^Leap: / })
+    .first()
+    .click()
+  await expect(earStage(page)).toHaveAttribute('data-ear-drill', 'leap')
+  await expect(begin(page)).not.toContainText('P4')
+
+  await openSlug(page, 'perfect-or-tritone', '23')
+
+  await expect(earStage(page)).toHaveAttribute('data-ear-drill', 'leap')
+  await expect(begin(page)).toContainText('12 rounds · P4, TT, P5 and P8')
+  // Still signed in: the launch spent nothing of the session.
+  expect(
+    await page.evaluate(() => localStorage.getItem('mp:authToken')),
+  ).not.toBeNull()
+})
+
+test("leaving perfect-or-tritone's drill leaves the bench's Leap whole", async ({
+  page,
+}) => {
+  await openSlug(page, 'perfect-or-tritone', '23')
+  await expect(begin(page)).toContainText('P4, TT, P5 and P8')
+
+  // Back to the bench forgets the set (EarLabPage.tsx); the bench opens
+  // Leap whole, on all twelve and its own rating.
+  await page.getByRole('button', { name: 'Back to the bench' }).click()
+  await page
+    .getByRole('listitem', { name: /^Leap: / })
+    .first()
+    .click()
+
+  await expect(earStage(page)).toHaveAttribute('data-ear-drill', 'leap')
+  await expect(begin(page)).not.toContainText('P4')
+  await expect(await runPads(page)).toHaveCount(12)
 })

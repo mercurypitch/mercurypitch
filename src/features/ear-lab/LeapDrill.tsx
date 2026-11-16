@@ -12,6 +12,10 @@
 //
 // In the native room a miss offers Compare: the answer's leap, then
 // the pick's, both from the question's first note and the same way.
+//
+// A lesson's link can narrow it to some of the twelve (Lesson 23's
+// perfect intervals and the tritone, lib/ear/subsets.ts): the set's pads
+// only, rated on the set's own track.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -19,6 +23,8 @@ import { createSignal } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { LEAP_BANK } from '@/lib/ear/banks'
 import { findIdentificationDrill } from '@/lib/ear/drills'
+import type { EarSubset } from '@/lib/ear/subsets'
+import { listWords, narrowBank, subsetLine, subsetRatingLine, } from '@/lib/ear/subsets'
 import { compareSequence, LEAP_TIMING, sleep } from '@/lib/ear/timing'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { midiToFreq } from '@/lib/scale-data'
@@ -94,10 +100,18 @@ const LEAP_COMPARE: IdentificationCompare | undefined = EAR_LAB_WITH_MERC
     }
   : undefined
 
-export function LeapDrill(props: { onBack: () => void }): JSX.Element {
+export function LeapDrill(props: {
+  onBack: () => void
+  /** A lesson's set of some of the twelve; the whole drill without. */
+  subset?: EarSubset | null
+}): JSX.Element {
   const { audioEngine } = useEngines()
   const drill = findIdentificationDrill('leap')
   if (!drill) throw new Error('leap drill missing from catalogue')
+  // A stage is mounted per drill and per set, never re-pointed.
+  // eslint-disable-next-line solid/reactivity
+  const subset = props.subset ?? null
+  const bank = narrowBank(LEAP_BANK, subset)
 
   const [sounding, setSounding] = createSignal<0 | 1 | 2>(0)
 
@@ -169,12 +183,13 @@ export function LeapDrill(props: { onBack: () => void }): JSX.Element {
     }
   }
 
-  const controller = useIdentificationController(drill, LEAP_BANK, makeTrial, {
+  const controller = useIdentificationController(drill, bank, makeTrial, {
     cancelAudio: () => {
       pair += 1
       setSounding(0)
       audioEngine.stopTone(60)
     },
+    subset,
   })
 
   const revealName = (id: string) =>
@@ -189,12 +204,23 @@ export function LeapDrill(props: { onBack: () => void }): JSX.Element {
       prompt="Two notes. Name the distance between them."
       listenHint="Listen to the leap…"
       answerHint="Which interval was that?"
-      choices={LEAP_BANK.map((item) => ({
+      choices={bank.map((item) => ({
         id: item.itemId,
         label: item.label,
         sub: item.name,
       }))}
-      columns={6}
+      columns={subset ? 2 : 6}
+      lessonSet={
+        subset
+          ? {
+              asks: listWords(bank.map((item) => item.label)),
+              note: `${subsetLine(
+                bank.map((item) => item.label),
+                LEAP_BANK.length,
+              )} ${subsetRatingLine('Leap')}`,
+            }
+          : undefined
+      }
       controller={controller}
       revealName={revealName}
       compare={LEAP_COMPARE}
