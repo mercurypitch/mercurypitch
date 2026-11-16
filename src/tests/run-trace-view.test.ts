@@ -7,7 +7,9 @@ import type { RunTrace, TracePoint } from '@/features/exercises/last-run-trace'
 import { centsBetween, targetAt, traceBounds, worstMoment, } from '@/features/exercises/run-trace-view'
 
 const C4 = 261.63
+const D4 = 293.66
 const E4 = 329.63
+const G4 = 392.0
 
 function trace(over: Partial<RunTrace> = {}): RunTrace {
   return {
@@ -121,6 +123,90 @@ describe('worstMoment', () => {
 
     expect(bad?.t).toBe(3)
     expect(Math.round(bad!.cents)).toBe(30)
+  })
+
+  // A self-paced drill moves on when a note has been held, so the voice is
+  // still on that note when the next is asked for, and stays there for as
+  // long as the next one takes to read.
+  it('does not read a self-paced reader still on the last note as off the next', () => {
+    const samples = [
+      at(1, G4),
+      at(5.3, G4), // the target has moved; still reading
+      at(6.1, G4 * 2 ** (-8 / 1200)), // a second on, still on the last note
+      at(6.4, D4 * 2 ** (25 / 1200)), // on the new note, 25 cents sharp
+      at(7, D4 * 2 ** (-12 / 1200)),
+    ]
+    const targets = [at(0, G4), at(5, D4)]
+
+    const read = worstMoment(trace({ targets, samples, selfPaced: true }))
+    expect(read?.t).toBe(6.4)
+    expect(Math.round(read!.cents)).toBe(25)
+
+    // A drill that keeps time gives the voice the arrival and no more:
+    // there the old note, a second into the new one, is a miss.
+    const timed = worstMoment(trace({ targets, samples }))
+    expect(timed?.t).toBe(5.3)
+    expect(Math.round(timed!.cents)).toBe(500)
+  })
+
+  it('counts a wrong note once a self-paced voice has left the last one', () => {
+    // D4 is asked after G4 and the singer goes to E4: nearer the new note
+    // than the last, and two semitones sharp of it.
+    const read = worstMoment(
+      trace({
+        targets: [at(0, G4), at(5, D4)],
+        samples: [at(1, G4), at(5.6, G4), at(6, E4), at(6.5, E4)],
+        selfPaced: true,
+      }),
+    )
+
+    expect(read?.t).toBe(6)
+    expect(Math.round(read!.cents)).toBe(200)
+  })
+
+  it('keeps counting a self-paced voice that has left the last note, even back towards it', () => {
+    const read = worstMoment(
+      trace({
+        targets: [at(0, G4), at(5, D4)],
+        samples: [at(5.5, G4), at(6, D4), at(7, G4 * 2 ** (-20 / 1200))],
+        selfPaced: true,
+      }),
+    )
+
+    expect(read?.t).toBe(7)
+    expect(Math.round(read!.cents)).toBe(480)
+  })
+
+  it('asks in any octave whether a self-paced voice is still on the last note, where the drill hears any octave', () => {
+    // An octave under the last note is still that note, and an octave under
+    // the new one is on it.
+    const read = worstMoment(
+      trace({
+        targets: [at(0, G4), at(5, D4)],
+        samples: [
+          at(5.5, G4 / 2),
+          at(6.2, G4 / 2),
+          at(6.6, (D4 / 2) * 2 ** (15 / 1200)),
+        ],
+        selfPaced: true,
+        folded: true,
+      }),
+    )
+
+    expect(read?.t).toBe(6.6)
+    expect(Math.round(read!.cents)).toBe(15)
+  })
+
+  it('says nothing of a self-paced note the voice never left the last one for', () => {
+    expect(
+      worstMoment(
+        trace({
+          targets: [at(0, G4), at(5, D4)],
+          samples: [at(5.5, G4), at(6.5, G4), at(8, G4)],
+          selfPaced: true,
+        }),
+      ),
+    ).toBeNull()
   })
 
   it("counts every moment of a glide's small steps", () => {

@@ -80,19 +80,56 @@ export function centsBetween(f: number, target: number): number {
  * is not counted: it names the moment between two notes, not a miss. A
  * drill that hears any octave (`folded`) measures the distance in the
  * octave the voice is in.
+ *
+ * A drill that moves on when the singer has held a note (`selfPaced`) moves
+ * its target while the voice is still on that note, and a reader stays there
+ * for as long as the next note takes to read: a run sung in tune throughout
+ * read "506 cents sharp of D4", the fourth between two of its notes (seen in
+ * Sight-Singing, November 2026). So there the voice counts on a new note
+ * from the moment it is nearer that note than the last one, however long
+ * that takes, and a voice that never leaves the last note says nothing
+ * here: the note's own mark says it was not sung.
  */
 export function worstMoment(trace: RunTrace): WorstMoment | null {
   if (trace.targets.length === 0) return null
 
-  const arrivals = newNotesOf(trace.targets)
+  const off = (f: number, target: number): number => {
+    const cents = centsBetween(f, target)
+    return trace.folded === true ? foldCents(cents) : cents
+  }
+  const notes = newNotesOf(trace.targets)
   let worst: WorstMoment | null = null
+  // The note a sample falls in, and whether the voice has left the note
+  // before it. Samples come in the order they were heard; one out of order
+  // starts the walk again.
+  let n = -1
+  let left = false
+  let lastT = Number.NEGATIVE_INFINITY
   for (const sample of trace.samples) {
     if (!Number.isFinite(sample.f) || sample.f <= 0) continue
     const target = targetAt(trace.targets, sample.t)
     if (target === null || target <= 0) continue
-    if (arriving(arrivals, sample.t)) continue
-    const off = centsBetween(sample.f, target)
-    const cents = trace.folded === true ? foldCents(off) : off
+    if (sample.t < lastT) {
+      n = -1
+      left = false
+    }
+    lastT = sample.t
+    while (n + 1 < notes.length && notes[n + 1].t <= sample.t) {
+      n += 1
+      left = false
+    }
+    const cents = off(sample.f, target)
+    const note = n >= 0 ? notes[n] : undefined
+    if (note !== undefined) {
+      if (sample.t - note.t < ARRIVAL_SEC) continue
+      if (trace.selfPaced === true && !left) {
+        const stillOnLast =
+          note.last !== null &&
+          Math.abs(off(sample.f, note.last)) < Math.abs(cents)
+        if (stillOnLast) continue
+        left = true
+      }
+    }
     if (worst === null || Math.abs(cents) > Math.abs(worst.cents)) {
       worst = { t: sample.t, f: sample.f, target, cents }
     }
@@ -100,9 +137,16 @@ export function worstMoment(trace: RunTrace): WorstMoment | null {
   return worst
 }
 
-/** When the target moved to a new note: its first, and each jump of `NEW_NOTE_CENTS` or more. */
-function newNotesOf(targets: readonly TracePoint[]): number[] {
-  const times: number[] = []
+/** A note in the target's timeline: when it began, and the note before it. */
+interface NoteStart {
+  t: number
+  /** The target just before this note, in Hz; null for the first note. */
+  last: number | null
+}
+
+/** Where the target moved to a new note: its first, and each jump of `NEW_NOTE_CENTS` or more. */
+function newNotesOf(targets: readonly TracePoint[]): NoteStart[] {
+  const notes: NoteStart[] = []
   let held: number | null = null
   for (const point of targets) {
     if (!Number.isFinite(point.f) || point.f <= 0) continue
@@ -110,15 +154,10 @@ function newNotesOf(targets: readonly TracePoint[]): number[] {
       held === null ||
       Math.abs(centsBetween(point.f, held)) >= NEW_NOTE_CENTS
     )
-      times.push(point.t)
+      notes.push({ t: point.t, last: held })
     held = point.f
   }
-  return times
-}
-
-/** Whether `t` falls within `ARRIVAL_SEC` after a move to a new note. */
-function arriving(arrivals: readonly number[], t: number): boolean {
-  return arrivals.some((at) => t >= at && t - at < ARRIVAL_SEC)
+  return notes
 }
 
 /**

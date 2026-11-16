@@ -307,6 +307,12 @@
   padding-top: 12px;
 }
 
+/* The scrim behind a pinned launch button belongs to a phone's sheet (the
+   narrow block below); everywhere else, and at rest, it is not drawn. */
+.stage :global(.exercise-launch-scrim) {
+  display: none;
+}
+
 /* ── The mic ──────────────────────────────────────────────── */
 
 .stage :global(.exercise-idle-start) {
@@ -560,6 +566,63 @@
       0 12px 30px rgb(0 0 0 / 55%),
       0 0 0 6px rgb(13 17 23 / 72%),
       inset 0 1px 0 rgb(255 255 255 / 45%);
+  }
+
+  /* Pinned, the button lies over what scrolls under it. The sheet's scrim
+     is marked while it is (launch-pin.ts), and drawn then: a band the
+     width of the sheet at the edge the button holds to, behind the button,
+     into which the result's last line or the setup's chips fade instead of
+     running into the button's edges. Each band is a sticky box in a layer
+     over the whole column, so it stays at the sheet's edge as the column
+     scrolls; at rest the layer is not drawn at all. */
+  .stage :global(.exercise-idle-center) {
+    position: relative;
+  }
+
+  .stage :global(.exercise-launch-scrim[data-pinned]) {
+    position: absolute;
+    z-index: 4;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .stage :global(.exercise-launch-scrim)::before,
+  .stage :global(.exercise-launch-scrim)::after {
+    position: sticky;
+    flex: none;
+    content: '';
+    opacity: 0;
+  }
+
+  .stage :global(.exercise-launch-scrim)::before {
+    top: 0;
+    height: 104px;
+    background: linear-gradient(
+      to top,
+      rgb(13 17 23 / 0%),
+      rgb(13 17 23 / 98%) 36px
+    );
+  }
+
+  /* The sheet keeps 12 px of padding under its foot, which a sticky box
+     stops short of: the band reaches down through it, or the chips under
+     the button would show in that strip. */
+  .stage :global(.exercise-launch-scrim)::after {
+    bottom: -14px;
+    height: 118px;
+    background: linear-gradient(
+      to bottom,
+      rgb(13 17 23 / 0%),
+      rgb(13 17 23 / 98%) 36px
+    );
+  }
+
+  .stage :global(.exercise-launch-scrim[data-pinned='top'])::before,
+  .stage :global(.exercise-launch-scrim[data-pinned='bottom'])::after {
+    opacity: 1;
   }
 
   .stage :global(.exercise-result-grade) {

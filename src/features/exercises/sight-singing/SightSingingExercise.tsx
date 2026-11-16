@@ -161,6 +161,7 @@ const SightSingingExercise: Component<Props> = (props) => {
     audioEngine,
     practiceEngine,
     foldsOctaves: true,
+    selfPaced: true,
     config: () => ({
       type: 'sight-singing',
       targetNotes: shown().notes.map((n) => midiToNoteName(n.midi)),
