@@ -1,4 +1,4 @@
-// Studio light contrast — in the light theme every piece of Studio text holds 4.5:1 (3:1 when large) and every icon 3:1 over its painted ground: lane headers selected and not, the transport, the clip and line bars, Track details, Sound and Export, on a computer and a phone.
+// Studio light contrast — in the light theme every piece of Studio text holds 4.5:1 (3:1 when large) and every icon 3:1 over its painted ground: lane headers selected and not, the transport, the clip and line bars, Track details, Sound and Export, and the app's tabs around them, on a computer and a phone.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { importStudioAudio, openArrangement, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import { followDeviceTheme, switchTheme } from './helpers/theme'
@@ -203,6 +203,14 @@ for (const layout of LAYOUTS) {
         .click()
       found.Sound = await sweepOpenPanel(page, 'Sound')
       found.Export = await sweepOpenPanel(page, 'Export')
+      // The app's own way around the Studio: a phone's tab bar, with More
+      // lit for the Studio, and a computer's tabs, Drum Night's room among
+      // them.
+      found.navigation = await shortfalls(
+        layout.touch
+          ? page.getByRole('navigation', { name: 'Primary navigation' })
+          : page.locator('#app-tabs'),
+      )
 
       expect(found).toEqual(
         Object.fromEntries(Object.keys(found).map((key) => [key, []])),

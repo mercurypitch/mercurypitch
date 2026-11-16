@@ -40,8 +40,10 @@
   transform: scale(0.94);
 }
 
+/* The accent's text ink: the labels are 9.6 px, and the light theme's
+   accent drew the active tab's on the glass at 4.41:1 (the Studio's More). */
 .active {
-  color: var(--accent);
+  color: var(--accent-text, var(--accent));
 }
 
 .icon {
