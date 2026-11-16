@@ -136,14 +136,15 @@ describe('Clip details for a loop take', () => {
 })
 
 describe('the lane sheet on a phone', () => {
-  function sheet() {
+  function sheet(ruler: 'time' | 'bars' = 'bars', clip = take) {
     const command = vi.fn(() => true)
     render(() => (
       <StudioCompSheet
         trackId="lane"
-        clips={[take, { ...take, id: 'elsewhere', trackId: 'other' }]}
+        clips={[clip, { ...clip, id: 'elsewhere', trackId: 'other' }]}
         assets={[]}
         tempoBpm={120}
+        ruler={ruler}
         writable
         onCommand={command}
       />
@@ -169,6 +170,24 @@ describe('the lane sheet on a phone', () => {
     expect(lit(rows[2])).toEqual(['2:false', '3:false'])
   })
 
+  it('names its cells by time when the ruler counts time, as the ruler does', () => {
+    // Half a bar later, the clip starts a second into bar 2, at 0:02.5.
+    sheet('time', { ...take, startFrame: 1.25 * BAR })
+
+    const newest = screen.getAllByRole('group', { name: /^Pass/ })[0]
+    const cells = [...newest.querySelectorAll('button')]
+    expect(cells.map((cell) => cell.textContent)).toEqual([
+      '0:02.5',
+      '0:04',
+      '0:06',
+    ])
+    expect(cells.map((cell) => cell.getAttribute('aria-label'))).toEqual([
+      'Bar 2, from 0:02.5',
+      'Bar 3, from 0:04',
+      'Bar 4, from 0:06',
+    ])
+  })
+
   it('uses the tapped pass over the tapped bar', () => {
     const command = sheet()
     const oldest = screen.getAllByRole('group', { name: /^Pass/ })[2]
@@ -191,6 +210,7 @@ describe('the lane sheet on a phone', () => {
         clips={[keysTake]}
         assets={[]}
         tempoBpm={120}
+        ruler="bars"
         writable
         onCommand={vi.fn(() => true)}
       />

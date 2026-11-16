@@ -2,7 +2,8 @@
 //
 // A phone has no room for rows under its lanes (StudioCompLanes.tsx), so its
 // lane sheet stacks the passes instead, newest on top, every bar a cell big
-// enough for a thumb and lit where its pass plays. A tap is one edit and
+// enough for a thumb and lit where its pass plays. A cell is named as the
+// ruler counts: its bar on a bars ruler, the moment it starts on a time one. A tap is one edit and
 // one undo. The cells scroll sideways under the pass names; they stay put
 // through an edit, so the next bar is where the thumb left it.
 import type { Accessor } from 'solid-js'
@@ -13,7 +14,8 @@ import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import { studioTakeRunning } from '../record/take-running'
 import { STUDIO_COMP_HELD_TITLE } from '../timeline/comp-editor'
-import { studioCompBars, studioCompRows } from '../timeline/comp-rows'
+import type { StudioCompBar } from '../timeline/comp-rows'
+import { studioCompBarLabel, studioCompBars, studioCompRows, } from '../timeline/comp-rows'
 import local from './StudioCompPanels.module.css'
 
 interface StudioCompSheetProps {
@@ -21,6 +23,8 @@ interface StudioCompSheetProps {
   clips: readonly StudioClip[]
   assets: readonly StudioAsset[]
   tempoBpm: number
+  /** What the song's ruler counts in: a cell is named the same way. */
+  ruler: 'time' | 'bars'
   writable: boolean
   onCommand(command: StudioCommand): boolean
 }
@@ -50,6 +54,7 @@ export function StudioCompSheet(props: StudioCompSheetProps) {
                 ?.originalName ?? 'Loop take'
             }
             tempoBpm={props.tempoBpm}
+            ruler={props.ruler}
             writable={props.writable && !studioTakeRunning()}
             onCommand={props.onCommand}
           />
@@ -63,10 +68,13 @@ function CompBars(props: {
   clip: Accessor<StudioClip>
   name: string
   tempoBpm: number
+  ruler: 'time' | 'bars'
   writable: boolean
   onCommand(command: StudioCommand): boolean
 }) {
   const bars = createMemo(() => studioCompBars(props.clip(), props.tempoBpm))
+  const label = (bar: StudioCompBar) =>
+    studioCompBarLabel(props.clip(), bar, props.ruler)
   const rows = createMemo(() => studioCompRows(props.clip()), [], {
     equals: (before, after) => before.length === after.length,
   })
@@ -93,7 +101,7 @@ function CompBars(props: {
                   <button
                     type="button"
                     class={local.cell}
-                    aria-label={`Bar ${bar().bar}`}
+                    aria-label={label(bar()).name}
                     aria-pressed={bar().pass === row.pass}
                     disabled={!props.writable}
                     onClick={() =>
@@ -106,7 +114,7 @@ function CompBars(props: {
                       })
                     }
                   >
-                    {bar().bar}
+                    {label(bar()).text}
                   </button>
                 )}
               </Index>

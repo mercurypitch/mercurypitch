@@ -60,10 +60,12 @@
   font-size: 11px;
   font-weight: 400;
 }
+/* At least a thumb wide, and wider for a time on a time ruler (0:07.5). */
 .cell {
   appearance: none;
-  width: 44px;
+  min-width: 44px;
   height: 44px;
+  padding: 0 5px;
   border: 1px solid var(--studio-line-strong);
   border-radius: 8px;
   background: transparent;

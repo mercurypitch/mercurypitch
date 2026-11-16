@@ -14,8 +14,9 @@
 import type { StudioCompEdit } from '@/lib/studio/model/clip-comp'
 import { studioClipComp, studioCompPassAt } from '@/lib/studio/model/clip-comp'
 import type { StudioClip } from '@/lib/studio/model/types'
+import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { STUDIO_BEATS_PER_BAR, studioBeatFrames, } from '@/lib/studio/record/take-timing'
-import { clipEndFrame } from './timeline-geometry'
+import { clipEndFrame, formatStudioMoment } from './timeline-geometry'
 
 /** A stretch of the clip's own source frames. */
 export interface StudioCompSpan {
@@ -218,4 +219,18 @@ export function studioCompBars(
       pass: studioCompPassAt(clip, Math.floor((span.from + span.to) / 2)) ?? 0,
     }
   })
+}
+
+/** A phone's cell as the song's ruler counts: the bar's number, or on a time ruler the moment the cell starts, to a tenth of a second. */
+export function studioCompBarLabel(
+  clip: StudioClip,
+  bar: StudioCompBar,
+  ruler: 'time' | 'bars',
+): { text: string; name: string } {
+  if (ruler === 'bars') return { text: String(bar.bar), name: `Bar ${bar.bar}` }
+  const tenth = STUDIO_SAMPLE_RATE / 10
+  const at = formatStudioMoment(
+    Math.round(studioCompTimelineFrame(clip, bar.from) / tenth) * tenth,
+  )
+  return { text: at, name: `Bar ${bar.bar}, from ${at}` }
 }
