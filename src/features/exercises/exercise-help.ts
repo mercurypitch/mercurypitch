@@ -6,7 +6,7 @@
 // "vibrato" mean — `summary` is the one-liner, `body` is the gentle detail.
 
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CADENCE, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_NOTE_READING, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CADENCE, EXERCISE_CALL_RESPONSE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_DYNAMIC_SWELL, EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_INTERVAL_TRAINER, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_MIRROR_MELODY, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_NOTE_READING, EXERCISE_PITCH_HOLD, EXERCISE_PITCH_PURSUIT, EXERCISE_ROUTINE_RUNNER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SING_IN_TIME, EXERCISE_SIREN, EXERCISE_SLIDE, EXERCISE_STACCATO, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from './types'
 
 export interface ExerciseHelp {
   /** One-line summary shown in the idle area and the menu card. */
@@ -256,6 +256,14 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
       'A cadence is the two chords a phrase ends on. Four have names: perfect (V to I, also called authentic), plagal (IV to I, the "Amen"), imperfect (an ending on V, also called a half cadence) and interrupted (V to vi, also called deceptive).',
       "You hear the key's own chord first, then the two chords of the ending. Tap the name. Hear it again as often as you like: nothing listens here, and nothing times you.",
       'Miss one and Merc names it, says its two chords, and plays it once more. The first levels ask only whether a phrase sounds finished (perfect) or not (imperfect); the plagal and the interrupted cadence join as you level up.',
+    ],
+  },
+  [EXERCISE_SING_IN_TIME]: {
+    summary: 'Read a short tune on the staff and sing it on the beat.',
+    body: [
+      'Merc gives you do, then the click counts one bar in: one, two, ready, sing. Sing the two bars as they are written, keeping the beat going. The notes move on with the beat, not when you find them, so if one slips, come in on the next.',
+      'Your pitch is scored note by note, in any octave. Your timing is shown, early, on time or late, and counted from your first note, so a late start is never a wrong note.',
+      'The click counts you in and then goes quiet while you sing, and the beat is shown instead: a microphone hears a click. Turn on "Click while I sing" to keep it. The first levels move by step in quarter notes; halves and thirds, then eighths and wider leaps, come as you level up.',
     ],
   },
 }

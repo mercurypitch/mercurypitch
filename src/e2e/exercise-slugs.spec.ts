@@ -190,3 +190,16 @@ test("/exercises/name-the-cadence opens Name the Cadence on Lesson 28's four cad
     '8 cadences · Perfect, Imperfect, Plagal and Interrupted',
   )
 })
+
+test("/exercises/sing-it-in-time opens Sing It in Time on Lesson 18's two bars", async ({
+  page,
+}) => {
+  await openSlug(page, 'sing-it-in-time', '18')
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Sing It in Time')
+  // The slug's level, Lesson 18's checkpoint, whatever level the singer has
+  // reached: a raised one would ask for eighths at 72 or more.
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '3 tunes · 60 BPM · quarters and halves, steps and thirds',
+  )
+})

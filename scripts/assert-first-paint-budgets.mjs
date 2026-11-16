@@ -465,7 +465,11 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // Raised to 162 for Lesson 27's page shell, as on Lesson 5: 164,590
   // bytes before it, 165,153 with it, against 164,864 at 161. With Lesson
   // 27's cold open loading the predict it is 165,002, still 138 over 161.
-  'learn/04.html': 162,
+  // Raised to 163 for Sing It in Time, the app's drill on the kit's in-time
+  // reader, beat clock and staff: none of that code rides this page, but
+  // the app now shares the kit's modules around it, and the bundler cuts
+  // the kit's shared code differently. 165,961 bytes with it, 73 over 162.
+  'learn/04.html': 163,
   // Lesson 6, "Intervals: the distance between notes", a draft too, built
   // in every mode as Lesson 3 is: its own module on the kit, with the tune
   // line and the ear game it brings. Measured 125 with the lesson menu and

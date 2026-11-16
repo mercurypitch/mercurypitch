@@ -20,6 +20,7 @@ import { isWebRoom } from '@/features/exercises/rooms/web-room-ids'
 import RoutineRunnerExercise from '@/features/exercises/routine-runner/RoutineRunnerExercise'
 import ScaleRunnerExercise from '@/features/exercises/scale-runner/ScaleRunnerExercise'
 import SightSingingExercise from '@/features/exercises/sight-singing/SightSingingExercise'
+import SingInTimeExercise from '@/features/exercises/sing-in-time/SingInTimeExercise'
 import SirenExercise from '@/features/exercises/siren/SirenExercise'
 import SlideExercise from '@/features/exercises/slide/SlideExercise'
 import StaccatoPrecisionExercise from '@/features/exercises/staccato-precision/StaccatoPrecisionExercise'
@@ -266,6 +267,14 @@ export function ExercisesPage(props: ExercisesPageProps) {
         <Show when={props.selectedExercise() === 'name-the-cadence'}>
           <NameTheCadenceExercise
             audioEngine={audioEngine}
+            onBack={props.onBack}
+            autoStart={props.autoStartExercise()}
+          />
+        </Show>
+        <Show when={props.selectedExercise() === 'sing-in-time'}>
+          <SingInTimeExercise
+            audioEngine={audioEngine}
+            practiceEngine={practiceEngine}
             onBack={props.onBack}
             autoStart={props.autoStartExercise()}
           />

@@ -155,7 +155,7 @@ describe('Season 2', () => {
       note: 'then tap Sight-Singing',
     })
     // the drill it still needs stays the team's
-    expect(L18?.pr.needs).toMatch(/^Sight-singing in time/)
+    expect(L18?.pr.needs).toMatch(/^A practice card for Sing It in Time/)
     // Lesson 16's staff, and Lesson 17's beat grid
     expect(SEASON_2.prereq[18]).toEqual([16, 17])
   })

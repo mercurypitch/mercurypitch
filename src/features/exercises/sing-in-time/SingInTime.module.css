@@ -1,0 +1,718 @@
+/* ============================================================
+   Sing It in Time: the tune's sheet, the beat, and the note-by-note result
+   ============================================================
+
+   The drill sits on the shell's dark stage, so these read the stage's
+   tokens: light ink on a dark sheet in either app theme. Three inks of its
+   own say what the run heard: cyan for a note in tune, amber for one off
+   or a slip in time, and the stage's muted ink for one not heard. The note
+   under the cursor is white, with a glow. */
+
+.sheetCard {
+  --in-time-on: #5ee7ff;
+  --in-time-off: #f6b24a;
+  --in-time-now: #fff;
+  --in-time-dim: rgb(238 243 248 / 34%);
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  padding: 12px 12px 8px;
+  border: 1px solid var(--stage-edge, rgb(255 255 255 / 13%));
+  border-radius: 18px;
+  background: rgb(8 12 20 / 62%);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+/* While the tune is sung the sheet takes the cyan of a note heard. */
+.sheetCard[data-live='true'] {
+  border-color: rgb(94 231 255 / 38%);
+  box-shadow: 0 0 0 1px rgb(94 231 255 / 8%);
+}
+
+.label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.where {
+  color: var(--in-time-on);
+  white-space: nowrap;
+}
+
+/* ── The staff ────────────────────────────────────────────── */
+
+.staff {
+  display: block;
+  width: 100%;
+  height: auto;
+  overflow: visible;
+  color: var(--text-primary);
+}
+
+.line,
+.barLine,
+.ledger {
+  stroke: currentcolor;
+  stroke-width: 1;
+  opacity: 0.55;
+}
+
+.ledger {
+  opacity: 0.85;
+}
+
+.finalLine {
+  stroke: currentcolor;
+  stroke-width: 3;
+  opacity: 0.8;
+}
+
+.glyph,
+.metre {
+  fill: currentcolor;
+}
+
+.metre {
+  font-family: Outfit, system-ui, sans-serif;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.note {
+  color: var(--text-primary);
+  transition: opacity 0.2s;
+}
+
+.head {
+  fill: currentcolor;
+  stroke: currentcolor;
+  stroke-width: 0;
+  transition:
+    fill 0.15s,
+    stroke 0.15s;
+}
+
+.open {
+  fill: none;
+  stroke-width: 1.9;
+}
+
+.stem {
+  stroke: currentcolor;
+  stroke-linecap: round;
+}
+
+.beam {
+  fill: var(--text-primary);
+}
+
+.name {
+  fill: var(--text-secondary);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10px;
+  font-weight: 500;
+}
+
+.note[data-tone='next'] {
+  opacity: 0.62;
+}
+
+.note[data-tone='now'] {
+  color: var(--in-time-now);
+  filter: drop-shadow(0 0 5px rgb(94 231 255 / 95%));
+}
+
+.note[data-tone='now'] .name {
+  fill: var(--in-time-now);
+}
+
+.note[data-tone='in-tune'] {
+  color: var(--in-time-on);
+}
+
+.note[data-tone='off'] {
+  color: var(--in-time-off);
+}
+
+.note[data-tone='in-tune'] .name {
+  fill: var(--in-time-on);
+}
+
+.note[data-tone='off'] .name {
+  fill: var(--in-time-off);
+}
+
+/* Not heard: drawn hollow and faint, so the gap is seen where it was. */
+.note[data-tone='not-heard'] {
+  color: var(--in-time-dim);
+}
+
+.note[data-tone='not-heard'] .head {
+  fill: none;
+  stroke-width: 1.4;
+  stroke-dasharray: 2 2;
+}
+
+.beam[data-tone='next'] {
+  opacity: 0.62;
+}
+
+.beam[data-tone='in-tune'] {
+  fill: var(--in-time-on);
+}
+
+.beam[data-tone='off'] {
+  fill: var(--in-time-off);
+}
+
+.beam[data-tone='not-heard'] {
+  fill: var(--in-time-dim);
+}
+
+.cursor {
+  stroke: var(--in-time-on);
+  stroke-width: 1.6;
+  opacity: 0.8;
+}
+
+/* The voice now: on the note in cyan, off it in amber. */
+.voice {
+  fill: var(--in-time-off);
+  stroke: rgb(8 12 20 / 85%);
+  stroke-width: 1.2;
+  filter: drop-shadow(0 0 4px rgb(246 178 74 / 85%));
+}
+
+.voiceOn {
+  fill: var(--in-time-on);
+  filter: drop-shadow(0 0 5px rgb(94 231 255 / 95%));
+}
+
+/* ── The beat grid ────────────────────────────────────────── */
+
+.box rect {
+  fill: none;
+  stroke: rgb(238 243 248 / 28%);
+  stroke-width: 1;
+  transition:
+    fill 0.12s,
+    stroke 0.12s;
+}
+
+.count {
+  fill: var(--text-secondary);
+  font-family: Inter, system-ui, sans-serif;
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.box[data-state='past'] rect {
+  fill: rgb(94 231 255 / 14%);
+  stroke: var(--in-time-on);
+}
+
+.box[data-state='past'] .count {
+  fill: var(--text-primary);
+}
+
+.box[data-state='now'] rect {
+  fill: rgb(255 255 255 / 10%);
+  stroke: var(--in-time-now);
+  stroke-width: 1.6;
+}
+
+.box[data-state='now'] .count {
+  fill: var(--in-time-now);
+}
+
+/* When the voice arrived: a tick left of the middle early, right of it late. */
+.tick {
+  stroke: var(--in-time-on);
+  stroke-width: 3;
+  stroke-linecap: round;
+}
+
+.tick[data-timing='early'],
+.tick[data-timing='late'] {
+  stroke: var(--in-time-off);
+}
+
+/* ── The beat, seen ───────────────────────────────────────── */
+
+.pulse {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 12px;
+  min-height: 40px;
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+}
+
+.pulseWord {
+  min-width: 5.2em;
+  text-align: right;
+}
+
+.dots {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dot {
+  --pulse: 0;
+
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: rgb(255 255 255 / 22%);
+  transform: scale(calc(1 + var(--pulse) * 0.7));
+}
+
+.dot[data-lit='true'] {
+  background: #fff;
+  box-shadow: 0 0 calc(4px + var(--pulse) * 10px) #5ee7ff;
+}
+
+.dot[data-past='true'] {
+  background: #5ee7ff;
+}
+
+.dot[data-one='true'] {
+  width: 12px;
+  height: 12px;
+}
+
+.metronome {
+  width: 26px;
+  height: 34px;
+  flex: none;
+  color: var(--text-secondary);
+}
+
+.metronome path {
+  fill: none;
+  stroke: currentcolor;
+  stroke-linejoin: round;
+  stroke-width: 1.6;
+}
+
+.arm {
+  stroke: #5ee7ff;
+  stroke-linecap: round;
+  stroke-width: 2;
+}
+
+/* ── The run's tunes ──────────────────────────────────────── */
+
+/* The run's sheet, the pulse and the tunes under it fit the height there
+   is: on a short screen (a laptop's half window) the staff, about 2.15
+   times as wide as it is tall, narrows until the pulse is in view. */
+.run {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 720px, calc((100dvh - 390px) * 2.15));
+  min-width: 0;
+  margin: 0 auto;
+  padding: 2px 0 0;
+}
+
+.tunes {
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+.tunePip {
+  width: 26px;
+  height: 6px;
+  border-radius: 3px;
+  background: rgb(255 255 255 / 18%);
+}
+
+.tunePip[data-state='now'] {
+  background: #fff;
+}
+
+.tunePip[data-state='done'] {
+  background: #5ee7ff;
+}
+
+/* ── Merc's line ──────────────────────────────────────────── */
+
+.say {
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+.sayCount {
+  color: #5ee7ff;
+  letter-spacing: 0.02em;
+}
+
+/* ── The setup ────────────────────────────────────────────── */
+
+.setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  width: min(100%, 600px);
+}
+
+/* The tune is the setup here, and the thing to read before Start: on a
+   tall enough screen it takes the sheet's width over Start and Hear it
+   first, as the drill's mock-up has it, where the shell would put a setup
+   beside them. */
+@media (min-width: 769px) and (min-height: 860px) {
+  :global(.exercise-idle-body):has(.setup) {
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+
+  :global(.exercise-idle-setup):has(> .setup) {
+    width: 100%;
+  }
+}
+
+/* A shorter screen (a tablet on its side, a laptop's half window) keeps
+   the shell's row, the tune beside Start, and sizes the tune by the height
+   there is: the staff is about 2.15 times as wide as it is tall, and the
+   rest of the setup and the sheet's chrome take about 444 px. */
+@media (min-width: 769px) and (max-height: 859.98px) {
+  .setup {
+    width: min(520px, calc((100dvh - 444px) * 2.15));
+    min-width: 220px;
+  }
+}
+
+.pills {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+}
+
+.pill {
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 46px;
+  padding: 0 14px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 999px;
+  background: rgb(8 12 20 / 72%);
+  color: var(--text-primary);
+  font-size: 0.88rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.pill:hover:not(:disabled) {
+  border-color: var(--accent);
+}
+
+.pill:focus-visible,
+.switchRow:focus-visible,
+.again:focus-visible {
+  outline: 2px solid #fff;
+  outline-offset: 2px;
+}
+
+.pill:disabled {
+  cursor: default;
+  opacity: 0.6;
+}
+
+.pill[aria-pressed='true'] {
+  border-color: rgb(94 231 255 / 55%);
+  background: rgb(94 231 255 / 12%);
+}
+
+.switchRow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  min-height: 52px;
+  padding: 6px 14px;
+  border: 1px solid rgb(255 255 255 / 12%);
+  border-radius: 16px;
+  background: rgb(8 12 20 / 60%);
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.switchText {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.switchTitle {
+  font-size: 0.88rem;
+  font-weight: 600;
+}
+
+.switchNote {
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+}
+
+.switch {
+  position: relative;
+  flex: none;
+  width: 42px;
+  height: 26px;
+  border-radius: 13px;
+  background: rgb(255 255 255 / 18%);
+  transition: background 0.15s;
+}
+
+.switch::after {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #eef3f8;
+  content: '';
+  transition: transform 0.15s;
+}
+
+.switchRow[aria-checked='true'] .switch {
+  background: #46c6f0;
+}
+
+.switchRow[aria-checked='true'] .switch::after {
+  transform: translateX(16px);
+}
+
+/* ── The result ───────────────────────────────────────────── */
+
+.result {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.headline {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.92rem;
+}
+
+.headline strong {
+  color: var(--text-primary);
+  font-size: 1.2rem;
+}
+
+.levelUp {
+  align-self: flex-start;
+  padding: 5px 12px;
+  border: 1px solid rgb(255 212 121 / 55%);
+  border-radius: 999px;
+  color: #ffd479;
+  font-size: 0.76rem;
+  font-weight: 650;
+}
+
+.byNote {
+  --in-time-on: #5ee7ff;
+  --in-time-off: #f6b24a;
+
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 12px 10px 10px;
+  border: 1px solid rgb(255 255 255 / 13%);
+  border-radius: 16px;
+  background: rgb(8 12 20 / 56%);
+}
+
+.tuneRow {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.again {
+  display: grid;
+  flex: none;
+  width: 44px;
+  height: 44px;
+  border: 1px solid rgb(255 255 255 / 22%);
+  border-radius: 50%;
+  background: rgb(8 12 20 / 60%);
+  color: var(--text-primary);
+  cursor: pointer;
+  place-items: center;
+}
+
+.again[aria-pressed='true'] {
+  border-color: #5ee7ff;
+  color: #5ee7ff;
+}
+
+.notes {
+  display: flex;
+  flex: 1;
+  justify-content: space-between;
+  gap: 2px;
+  min-width: 0;
+}
+
+.nb {
+  display: flex;
+  flex: 1 1 0;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+}
+
+.nbName {
+  overflow: hidden;
+  max-width: 100%;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.68rem;
+  font-weight: 500;
+  text-overflow: clip;
+}
+
+.nbDot {
+  width: 9px;
+  height: 9px;
+  border: 1.5px solid transparent;
+  border-radius: 50%;
+}
+
+.nb[data-pitch='in-tune'] .nbDot {
+  background: var(--in-time-on);
+}
+
+.nb[data-pitch='off'] .nbDot {
+  background: var(--in-time-off);
+}
+
+.nb[data-pitch='off'] .nbName {
+  color: var(--in-time-off);
+}
+
+.nb[data-pitch='not-heard'] .nbDot,
+.nb[data-pitch='none'] .nbDot {
+  border-color: rgb(238 243 248 / 40%);
+  border-style: dashed;
+}
+
+/* A line for the beat, its middle marked: the tick left of it early, right late. */
+.nbTime {
+  position: relative;
+  width: 100%;
+  max-width: 34px;
+  height: 12px;
+}
+
+.nbTime::before {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 1px;
+  height: 12px;
+  background: rgb(255 255 255 / 34%);
+  content: '';
+}
+
+.nbTime::after {
+  position: absolute;
+  top: 50%;
+  right: 0;
+  left: 0;
+  height: 1px;
+  background: rgb(255 255 255 / 14%);
+  content: '';
+}
+
+.nbTick {
+  position: absolute;
+  top: 1px;
+  width: 4px;
+  height: 10px;
+  border-radius: 2px;
+  background: var(--in-time-on);
+  transform: translateX(-50%);
+}
+
+.nbTick[data-timing='early'],
+.nbTick[data-timing='late'] {
+  background: var(--in-time-off);
+}
+
+.caption {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.76rem;
+}
+
+/* ── A phone ──────────────────────────────────────────────── */
+
+/* The shell lifts Start above the setup on a phone, so it is never a scroll
+   away. Here the setup is the tune to read before Start is pressed, so the
+   tune goes first, as the drill's mock-up has it, and Start stays on screen
+   under it. After a run the result keeps the top: it shares this order and
+   comes first in the sheet. */
+@media (max-width: 768px) {
+  :global(.exercise-idle-setup):has(> .setup) {
+    order: -4;
+  }
+
+  .sheetCard {
+    padding: 10px 8px 6px;
+  }
+
+  .pill {
+    min-height: 44px;
+    font-size: 0.84rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    transform: none;
+  }
+
+  .note,
+  .head,
+  .box rect,
+  .switch,
+  .switch::after {
+    transition: none;
+  }
+}

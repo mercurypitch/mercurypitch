@@ -37,6 +37,11 @@ export const EXERCISE_NOTE_READING = 'note-reading' as const
  * Note, a drill the singer does not sing: a run opens no microphone.
  */
 export const EXERCISE_CADENCE = 'name-the-cadence' as const
+/**
+ * Sing It in Time: a short tune on the staff, sung on the beat after a
+ * count-in, its pitch scored note by note and its timing shown.
+ */
+export const EXERCISE_SING_IN_TIME = 'sing-in-time' as const
 export const EXERCISE_WARMUP = 'warmup' as const
 /**
  * The premium Long note (a lantern fills while the note holds). Its own id,
@@ -126,6 +131,7 @@ export type ExerciseType =
   | typeof EXERCISE_SIGHT_SINGING
   | typeof EXERCISE_NOTE_READING
   | typeof EXERCISE_CADENCE
+  | typeof EXERCISE_SING_IN_TIME
   | typeof EXERCISE_WARMUP
   | typeof EXERCISE_LONG_NOTE_LANTERN
   | typeof EXERCISE_ECHO_STARS
