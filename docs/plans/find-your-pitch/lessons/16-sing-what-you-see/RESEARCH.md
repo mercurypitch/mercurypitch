@@ -152,7 +152,7 @@ the season plan's list.
 
 **R16-15. During a run it draws the live pitch tracker above the staff, with the target band and the
 upcoming notes, the next two named.** `SightSingingExercise.tsx:287-294` (`tracker` with
-`targetNoteMidi` and `upcomingTargets`); `src/features/exercises/ExerciseShell.tsx:1166-1178` (the
+`targetNoteMidi` and `upcomingTargets`); `src/features/exercises/ExerciseShell.tsx:1182-1194` (the
 shell draws `ExercisePitchTracker` with both); `src/components/PitchOverTimeCanvas.tsx:540-559` (the
 upcoming rungs; "Only the next two carry a name", :552-553, `noteNameFromFreq`, :558). Code read.
 Strong. **New**: the season plan's list does not name it.

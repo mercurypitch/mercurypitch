@@ -99,18 +99,29 @@ test.describe('Hear it first', () => {
     expect(demo.top).toBeGreaterThanOrEqual(start.bottom)
     expect(demo.height).toBeGreaterThanOrEqual(44)
 
+    const sheetTop = () =>
+      page
+        .locator('.exercise-canvas-area')
+        .evaluate((sheet) => sheet.getBoundingClientRect().top)
+    const before = await sheetTop()
+
     await button.click()
     const line = page.locator('.exercise-stage-demo-line')
     await expect(line).toHaveText(
       /^Listen: [A-G]#?\d, then [A-G]#?\d\. That is a Perfect 5th\.$/,
     )
-    await expect(page.locator('.idle-hint')).toHaveCount(0)
+    // The brief keeps its place under the line, unseen, so the bubble keeps
+    // its size and the sheet (and the button just pressed) stay where they
+    // were.
+    await expect(page.locator('.idle-hint')).toBeHidden()
+    expect(await sheetTop()).toBeCloseTo(before, 0)
 
     // Two notes and the gap between them: under three seconds.
     await expect(line).toHaveCount(0, { timeout: 6000 })
     await expect(page.locator('.idle-hint')).toHaveText(
       '6 rounds · Major 2nd through Octave',
     )
+    expect(await sheetTop()).toBeCloseTo(before, 0)
     await expect(button).toBeEnabled()
   })
 
@@ -146,6 +157,40 @@ test.describe('Hear it first', () => {
       page.getByRole('button', { name: 'Hear it first' }),
     ).toBeEnabled()
     expect(errors).toEqual([])
+  })
+
+  // Name the Cadence's brief is four lines on a phone and its example's
+  // line two: the bubble used to shrink by 59px, and the sheet came up with
+  // it, for as long as the example played.
+  test("holds the sheet still under Name the Cadence's example", async ({
+    page,
+  }) => {
+    await openDrill(page, 'Name the Cadence')
+    const button = page.getByRole('button', { name: 'Hear it first' })
+    const places = () =>
+      page.evaluate(() => {
+        const top = (selector: string) =>
+          document.querySelector(selector)?.getBoundingClientRect().top ?? -1
+        return {
+          sheet: top('.exercise-canvas-area'),
+          button: top('.exercise-demo-btn'),
+        }
+      })
+    const before = await places()
+
+    await button.click()
+    const line = page.locator('.exercise-stage-demo-line')
+    await expect(line).toHaveText(
+      'Listen: home, then V to I. A perfect cadence: it comes home.',
+    )
+    const during = await places()
+    expect(during.sheet).toBeCloseTo(before.sheet, 0)
+    expect(during.button).toBeCloseTo(before.button, 0)
+
+    await expect(line).toHaveCount(0, { timeout: 8000 })
+    const after = await places()
+    expect(after.sheet).toBeCloseTo(before.sheet, 0)
+    expect(after.button).toBeCloseTo(before.button, 0)
   })
 
   test('has each of the other drills say what its example is', async ({

@@ -14,7 +14,7 @@ import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EXERCISE_HELP } from './exercise-help'
 import type { ExerciseDemo } from './ExerciseShell'
-import { ExerciseShell } from './ExerciseShell'
+import { DEMO_LINE_MIN_MS, ExerciseShell } from './ExerciseShell'
 import type { ExerciseStatus } from './types'
 import { EXERCISE_INTERVAL_TRAINER } from './types'
 
@@ -188,7 +188,10 @@ describe('the drill stage', () => {
 })
 
 describe('Hear it first', () => {
-  afterEach(cleanup)
+  afterEach(() => {
+    vi.useRealTimers()
+    cleanup()
+  })
 
   /** An example that sounds until the test says it has finished. */
   function example() {
@@ -210,28 +213,86 @@ describe('Hear it first', () => {
     return { demo, calls, finish: () => finish() }
   }
 
+  /** The example's line in the bubble, and the brief it lies over. */
+  const line = (drill: ReturnType<typeof stage>) =>
+    drill.coach().querySelector('.exercise-stage-demo-line')?.textContent
+  const briefHidden = (drill: ReturnType<typeof stage>) =>
+    drill
+      .coach()
+      .querySelector('.idle-hint')
+      ?.closest('[aria-hidden="true"]') != null
+
   it('is not offered by a drill that has no example', () => {
     const drill = stage({ brief: BRIEF })
     expect(drill.queryByRole('button', { name: 'Hear it first' })).toBeNull()
   })
 
-  it("plays the drill's example and puts what it is in Merc's bubble", async () => {
+  it("plays the drill's example and lays what it is over the brief", async () => {
+    vi.useFakeTimers()
+    const { demo, calls, finish } = example()
+    const drill = stage({ brief: BRIEF, demo })
+    const button = drill.getByRole('button', { name: 'Hear it first' })
+    expect(briefHidden(drill)).toBe(false)
+
+    fireEvent.click(button)
+    expect(calls.play).toBe(1)
+    expect(line(drill)).toBe('Listen: E3, then B3.')
+    // The brief keeps its place under the line, so the bubble keeps its
+    // size and the sheet stays put; it is neither seen nor read.
+    expect(drill.coach().querySelector('.idle-hint')).not.toBeNull()
+    expect(briefHidden(drill)).toBe(true)
+    expect(button.textContent).toBe('Listen…')
+    expect(button.hasAttribute('disabled')).toBe(true)
+
+    // A long example takes its line with it the moment it ends.
+    await vi.advanceTimersByTimeAsync(DEMO_LINE_MIN_MS + 500)
+    finish()
+    await vi.advanceTimersByTimeAsync(0)
+    expect(line(drill)).toBeUndefined()
+    expect(briefHidden(drill)).toBe(false)
+    expect(button.textContent).toBe('Hear it first')
+    expect(button.hasAttribute('disabled')).toBe(false)
+  })
+
+  it('keeps the line of a short example up long enough to read', async () => {
+    vi.useFakeTimers()
+    const { demo, finish } = example()
+    const drill = stage({ brief: BRIEF, demo })
+    const button = drill.getByRole('button', { name: 'Hear it first' })
+
+    fireEvent.click(button)
+    await vi.advanceTimersByTimeAsync(600)
+    finish()
+    await vi.advanceTimersByTimeAsync(0)
+    // The sound is over, so the example can be asked for again, and Merc
+    // stops singing; the line stays for the rest of its two seconds.
+    expect(button.hasAttribute('disabled')).toBe(false)
+    expect(line(drill)).toBe('Listen: E3, then B3.')
+    expect(briefHidden(drill)).toBe(true)
+
+    await vi.advanceTimersByTimeAsync(DEMO_LINE_MIN_MS - 600 - 1)
+    expect(line(drill)).toBe('Listen: E3, then B3.')
+    await vi.advanceTimersByTimeAsync(1)
+    expect(line(drill)).toBeUndefined()
+    expect(briefHidden(drill)).toBe(false)
+  })
+
+  it('played again while its line lingers, keeps the line for the new play', async () => {
+    vi.useFakeTimers()
     const { demo, calls, finish } = example()
     const drill = stage({ brief: BRIEF, demo })
     const button = drill.getByRole('button', { name: 'Hear it first' })
 
     fireEvent.click(button)
-    expect(calls.play).toBe(1)
-    expect(drill.coach().textContent).toBe('Listen: E3, then B3.')
-    expect(button.textContent).toBe('Listen…')
-    expect(button.hasAttribute('disabled')).toBe(true)
-
+    await vi.advanceTimersByTimeAsync(500)
     finish()
-    await tick()
-    // The brief is back, and the example can be heard again.
-    expect(drill.coach().querySelector('.idle-hint')).not.toBeNull()
-    expect(button.textContent).toBe('Hear it first')
-    expect(button.hasAttribute('disabled')).toBe(false)
+    await vi.advanceTimersByTimeAsync(0)
+    fireEvent.click(button)
+    expect(calls.play).toBe(2)
+
+    // The first play's two seconds run out while the second still sounds.
+    await vi.advanceTimersByTimeAsync(DEMO_LINE_MIN_MS)
+    expect(line(drill)).toBe('Listen: E3, then B3.')
   })
 
   it('gives way to the run the moment it starts', async () => {
@@ -246,9 +307,31 @@ describe('Hear it first', () => {
     drill.setStatus('active')
     await tick()
     expect(calls.stop).toBe(1)
+    expect(line(drill)).toBeUndefined()
     expect(
       drill.coach().querySelector('.exercise-active-phase')?.textContent,
     ).toBe('Sing note 1 of 2')
+  })
+
+  it('gives way to a run though only its line was still up', async () => {
+    vi.useFakeTimers()
+    const { demo, calls, finish } = example()
+    const drill = stage({
+      brief: BRIEF,
+      instruction: <span>Sing note 1 of 2</span>,
+      demo,
+    })
+    fireEvent.click(drill.getByRole('button', { name: 'Hear it first' }))
+    await vi.advanceTimersByTimeAsync(300)
+    finish()
+    await vi.advanceTimersByTimeAsync(0)
+
+    drill.setStatus('active')
+    await vi.advanceTimersByTimeAsync(0)
+    // Nothing was sounding, so there is nothing to stop; the line goes.
+    expect(calls.stop).toBe(0)
+    expect(line(drill)).toBeUndefined()
+    expect(briefHidden(drill)).toBe(false)
   })
 
   it('is cut short when the drill is left', () => {
