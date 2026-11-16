@@ -1,4 +1,4 @@
-// Studio recorder, each lane's monitor — every armed lane hears its own input through a monitor of its own, through the lane's chain: one channel of an input alone and never the whole input beside it, lanes armed on one input each once, a lane on a whole input once, and a MIDI lane its instrument's node alone; a lane's monitor rises a quarter of a second after its own capture first meters a sound, an instrument's at once; a lane disarmed while it is heard keeps its input until its monitor has glided out, and that late close ends only its own pick and hold; an instrument goes at once.
+// Studio recorder, each lane's monitor — every armed lane hears its own input through a monitor of its own, through the lane's chain: one channel of an input alone and never the whole input beside it, lanes armed on one input each once, a lane on a whole input once, and a MIDI lane its instrument's node alone; a lane's monitor rises a quarter of a second after its own capture first meters a sound, an instrument's at once; a lane disarmed while it is heard keeps its input until its monitor has glided out, and that late close ends only its own pick and hold, while one disarmed before its monitor rose lets its input go at once; an instrument goes at once.
 import type { Mock } from 'vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ChannelPick } from '@/lib/audio-input/input-channels'
@@ -271,6 +271,29 @@ describe('a lane disarmed while its monitor is heard', () => {
       expect(disconnectedWhole(h.source)).toBe(true)
       expect(input.releases[0]).toHaveBeenCalledOnce()
       expect(h.view().capture).toBeNull()
+    }
+  })
+
+  it('lets them go at once when the lane is disarmed before its monitor rose, in the settle or the wait for a first sound', async () => {
+    for (const sounded of [true, false]) {
+      // Arrange
+      const input = oneInput(undefined)
+      const { h, graph, scheduler } = monitored({
+        acquireMic: input.acquireMic,
+      })
+      await h.recorder.arm('lane-1')
+      if (sounded) h.worklet.level(0.3, 1536)
+      scheduler.advance(SETTLE_MS - 1)
+
+      // Act
+      h.recorder.disarm()
+
+      // Assert
+      expect(disconnectedWhole(h.source)).toBe(true)
+      expect(input.releases[0]).toHaveBeenCalledOnce()
+      expect(levelsOf(graph)).toEqual([])
+      expect(h.view()).toMatchObject({ phase: 'idle', capture: null })
+      expect(scheduler.pendingCount).toBe(0)
     }
   })
 

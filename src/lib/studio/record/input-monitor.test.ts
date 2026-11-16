@@ -1,4 +1,4 @@
-// Studio input monitor — off builds nothing; on plays the input folded as the take is, spread, through its lane's chain at the monitor profile and its faders, on one path however often it is set, rising a quarter of a second after the input's first sound, after a second without one, or at once on an input that plays cleanly from its first sample; a lane not heard, and dispose, take the graph apart after the release; a lane heard again while it releases plays on through the same path; and dispose says when its input may close: at once with nothing heard, once the path has come apart otherwise.
+// Studio input monitor — off builds nothing; on plays the input folded as the take is, spread, through its lane's chain at the monitor profile and its faders, on one path however often it is set, rising a quarter of a second after the input's first sound, after a second without one, or at once on an input that plays cleanly from its first sample; a lane not heard, and dispose, take the graph apart after the release, and at once a path that never began to rise; a lane heard again while it releases plays on through the same path; and dispose says when its input may close: at once with nothing heard, once the path has come apart otherwise.
 import { describe, expect, it, vi } from 'vitest'
 import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { FakeGain } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
@@ -297,7 +297,7 @@ describe("the input monitor before its input's first sound", () => {
     expect(scheduler.pendingCount).toBe(0)
   })
 
-  it('never rises once disposed, waits no longer, and lets its input go after the release', () => {
+  it('comes apart and lets its input go at once when disposed before it rose, silent as it was, and never rises', () => {
     const { ctx, input, scheduler, monitor } = setup({ arrived: false })
     monitor.set(sound())
     const [level] = levels(ctx)
@@ -305,12 +305,45 @@ describe("the input monitor before its input's first sound", () => {
     const silent = vi.fn()
 
     monitor.dispose(silent)
-    monitor.inputArrived()
-    scheduler.advance(RELEASED_MS)
 
-    expect(level.gain.events.filter(({ value }) => value === 1)).toEqual([])
     expect(silent).toHaveBeenCalledOnce()
     expect(input.targets).toEqual([])
+    expect(stillWired(ctx)).toEqual([])
     expect(scheduler.pendingCount).toBe(0)
+    monitor.inputArrived()
+    scheduler.advance(ARRIVAL_WAIT_MS)
+    expect(level.gain.events).toEqual([])
+  })
+
+  it('takes a path released before it rose apart at once, and builds a fresh one when heard again', () => {
+    const { ctx, input, monitor } = setup({ arrived: false })
+    monitor.set(sound())
+
+    monitor.set(sound({ on: false }))
+
+    expect(stillWired(ctx)).toEqual([])
+    expect(input.targets).toEqual([])
+    monitor.set(sound())
+    expect(levels(ctx)).toHaveLength(1)
+    expect(reaches(input, ctx.destination)).toBe(true)
+  })
+
+  it('keeps its input through the release once its path has begun to rise, however little', () => {
+    const { ctx, input, scheduler, monitor } = setup({ arrived: false })
+    monitor.set(sound())
+    monitor.inputArrived()
+    scheduler.advance(SETTLE_MS)
+    const silent = vi.fn()
+
+    // The rise began this instant: the level is on its way up.
+    monitor.dispose(silent)
+
+    expect(levels(ctx)[0].gain.lastWrite).toMatchObject({ value: 0 })
+    scheduler.advance(RELEASED_MS - 1)
+    expect(silent).not.toHaveBeenCalled()
+    expect(input.targets).toHaveLength(1)
+    scheduler.advance(1)
+    expect(silent).toHaveBeenCalledOnce()
+    expect(input.targets).toEqual([])
   })
 })
