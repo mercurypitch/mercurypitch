@@ -10,6 +10,12 @@
 // a loop take on another pass, split halves on different passes, a seek
 // and a range end, and a frozen lane's chunk crossovers. A digest that
 // moves means an uncomped song no longer renders bit-identically.
+//
+// One moved on purpose. Split halves of a loop take on different passes
+// meet as a comp's stretches do, at the same moment of the range on two
+// passes, and now cross there the same way (comp-plan.ts): before, each
+// half ramped to silence at the cut. Its digest was taken again with that
+// change; the other five are still the ones from before comping.
 import { createHash } from 'node:crypto'
 import { describe, expect, it } from 'vitest'
 import type { StudioPlannedSegment } from '../model/arrangement-plan'
@@ -109,7 +115,7 @@ describe('a song with no comp', () => {
     })
   })
 
-  it('plans split halves of a loop take on different passes as before', () => {
+  it('plans split halves of a loop take on different passes crossing where they meet', () => {
     const { project, take, looped } = loopTake()
     const left = { ...looped, sourceOutFrame: 1600 }
     const right = {
@@ -161,13 +167,14 @@ describe('a song with no comp', () => {
   })
 })
 
-/** Taken from origin/main 2868c2cc5, before comping. */
+/** Taken from origin/main 2868c2cc5, before comping, but for splitPasses (see the header). */
 const DIGESTS = {
   clip: '0de70effd0dee93c776577c7c0e1813d06ea2cd4c0acf76b4f91071852a03262',
   split: '57461b7913f3ce385ecc0ccb63e21473cff72dec65c150e29d3352d91924638b',
   loopTake: '8c6d9170f5671326ccb3d0de454aa4554e01d72ae818012c10af4ab84b6b8a02',
+  // Before the halves crossed: b20cf6c0bbd39ca61ae38d21fd3ea998af9f6c06a19cb3149ecc5568d7d518bd.
   splitPasses:
-    'b20cf6c0bbd39ca61ae38d21fd3ea998af9f6c06a19cb3149ecc5568d7d518bd',
+    '23b6257a5d1a00236bb8ae3daa5bc4f5e85541bb0cd2e20ac862f0708e59571d',
   range: '80358c299c1392e9275085966917411c93112b5f695a404ff47a4c999c2e8e19',
   frozen: '5b41ea2305903ebd634724676da2e996afdb44e94ce24dcb2afc1d41bc97432e',
 }

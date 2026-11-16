@@ -24,6 +24,15 @@
 // they play, so a split inside a stretch crosses its joins as before. A song
 // with no comp gets no crossfades and plans exactly as it did before comping
 // (uncomped-schedule.test.ts).
+//
+// Two clips of one take meet the same way where one starts as the other
+// ends, at the same moment of the range on two passes: split halves of a
+// loop take that play different passes. A comp split at a join leaves
+// exactly that, each half a pass played whole (clip-comp.ts), and its
+// halves cross as its stretches did, so the split plans as the comp it
+// split. Without the join they would each get the safety ramp at the cut
+// and dip to silence there. Any other meeting of two clips is left as it
+// was: the same source carried on is a plain split, which coalesces.
 import { studioPassAt } from './clip-passes'
 import type { FadeRamp, StudioClip } from './types'
 
@@ -60,7 +69,7 @@ const joinAt = (sourceFrame: number): FadeRamp => ({
  * segment, for a clip with no comp; else one per stretch, each on its
  * pass, the joins between them marked to be crossed.
  */
-export function studioCompSegments<T extends CompSpan>(
+function studioCompSegments<T extends CompSpan>(
   clip: StudioClip,
   whole: T,
 ): T[] {
@@ -92,6 +101,68 @@ export function studioCompSegments<T extends CompSpan>(
       },
     }
   })
+}
+
+/**
+ * Whether `next` starts as `previous` ends on the same take, at the same
+ * moment of the range on another pass: their segments `last` and `first`
+ * meet as a comp's stretches do (see the header).
+ */
+function passesMeet(
+  previous: StudioClip,
+  last: CompSpan,
+  next: StudioClip,
+  first: CompSpan,
+): boolean {
+  const { passes } = previous
+  if (
+    !passes ||
+    next.assetId !== previous.assetId ||
+    next.passes?.firstFrame !== passes.firstFrame ||
+    next.passes.frames !== passes.frames ||
+    last.startFrame + last.sourceOutFrame - last.sourceInFrame !==
+      first.startFrame
+  )
+    return false
+  const apart =
+    studioPassAt(passes, first.sourceInFrame) -
+    studioPassAt(passes, last.sourceInFrame)
+  return (
+    apart !== 0 &&
+    first.sourceInFrame - last.sourceOutFrame === apart * passes.frames
+  )
+}
+
+/** `segment` with a join marked at its first frame (`in`) or past its last (`out`). */
+function withJoin<T extends CompSpan>(segment: T, side: 'in' | 'out'): T {
+  const at = side === 'in' ? segment.sourceInFrame : segment.sourceOutFrame
+  return {
+    ...segment,
+    crossfades: { ...segment.crossfades, [side]: joinAt(at) },
+  }
+}
+
+/**
+ * A lane's clips, in order on the timeline, as segments before the lane
+ * coalesces: each clip's own (studioCompSegments), and a join marked to be
+ * crossed wherever a clip meets the one before it on another pass of the
+ * same take (see the header).
+ */
+export function studioLaneCompSegments<T extends CompSpan>(
+  clips: readonly StudioClip[],
+  whole: (clip: StudioClip) => T,
+): T[] {
+  const result: T[] = []
+  clips.forEach((clip, index) => {
+    const own = studioCompSegments(clip, whole(clip))
+    const last = result.at(-1)
+    if (last && passesMeet(clips[index - 1], last, clip, own[0])) {
+      result[result.length - 1] = withJoin(last, 'out')
+      own[0] = withJoin(own[0], 'in')
+    }
+    result.push(...own)
+  })
+  return result
 }
 
 /** The crossfade across a join at source frame `join`, `half` frames either side. */
