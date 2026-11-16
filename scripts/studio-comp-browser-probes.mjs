@@ -415,10 +415,25 @@ async function exportCompedLinedLane() {
 
 /**
  * The comped clip through the voice chain at Best: Play and export line up
- * at lag 0 and differ no more than two Plays of the same song do, one
- * pressed a whole number of quanta after the other (exportFourLanes in
+ * at lag 0 and differ no more than Plays of the same song do, each pressed a
+ * whole number of quanta after the first (exportFourLanes in
  * studio-epoch-browser-probes.mjs: a compressor works in 32-frame steps of
  * each quantum, so placing the song elsewhere in one moves it a little).
+ *
+ * No two renders through the voice chain are bit-identical in Chromium
+ * (MISTAKES.md, "Prove a Studio change exact on one chain"), and each
+ * render lands its own way: two Plays of one build came -65.6 to -124.5
+ * dBFS apart at their worst frame, and two exports -67.9 to -109.4. Read
+ * from one pair each, the floor and the export's distance were two draws
+ * of that spread, and the rule failed 4 runs of 25 with nothing wrong. So
+ * the floor is the worst of the pairs of Plays and of the two exports, and
+ * the export's distance is the nearest of each export to each Play: a
+ * render that lands far out raises the floor, never the distance. A fault
+ * between Play and export (a stretch from the wrong pass, another
+ * crossfade, a chain built otherwise) parts every export from every Play
+ * alike. Over 40 runs the floor stayed at or under -65.2 dBFS and the rule
+ * held with 10.2 dB to spare at the least; an export put 0.03 dB louder,
+ * -59.2 dBFS from its Plays, failed 10 runs of 10.
  */
 async function exportCompedVoice() {
   setPlaybackChoice('best')
@@ -427,20 +442,34 @@ async function exportCompedVoice() {
   const first = await renderPlay(made, prepared, 2, CALLBACK - 0.5)
   const epoch = Math.round(first.heardFrame - prepared.latency * SR)
   const shift = (((24000 - epoch) % 128) + 128) % 128
-  const play =
+  const plays = [
     shift === 0
       ? first
-      : await renderPlay(made, prepared, 2, CALLBACK - 0.5 + shift)
-  const later = await renderPlay(
-    made,
-    prepared,
-    2,
-    CALLBACK - 0.5 + shift + 148 * 128,
+      : await renderPlay(made, prepared, 2, CALLBACK - 0.5 + shift),
+  ]
+  for (const quanta of [148, 296])
+    plays.push(
+      await renderPlay(
+        made,
+        prepared,
+        2,
+        CALLBACK - 0.5 + shift + quanta * 128,
+      ),
+    )
+  const exports = [await renderExport(made), await renderExport(made)]
+  const apart = (a, b) => worstBetween(a, b, 0, SONG_FRAMES)
+  const within = [
+    apart(plays[0], plays[1]),
+    apart(plays[0], plays[2]),
+    apart(plays[1], plays[2]),
+    apart(exports[0], exports[1]),
+  ]
+  const across = exports.flatMap((exported) =>
+    plays.map((play) => apart(play, exported)),
   )
-  const floorDbfs = worstBetween(play, later, 0, SONG_FRAMES)
-  const exported = await renderExport(made)
-  const worstDbfs = worstBetween(play, exported, 0, SONG_FRAMES)
-  const lag = lagBetween(play, exported, 0, SONG_FRAMES)
+  const floorDbfs = Math.max(...within)
+  const worstDbfs = Math.min(...across)
+  const lag = lagBetween(plays[0], exports[0], 0, SONG_FRAMES)
   return {
     worstDbfs,
     floorDbfs,
