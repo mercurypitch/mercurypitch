@@ -1,7 +1,7 @@
-// Studio touch targets — on a phone, the header's menu and heart, each sheet's close, and every button and field in Track details take a 44 px press.
+// Studio touch targets — on a phone, the header's menu and heart, each sheet's close, and every button and field in Track details take a 44 px press; on a phone on its side, the heart and the voice pill's mic do too.
 import { expect, type Locator, test } from '@playwright/test'
 import { importStudioAudio, openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
-import { bringToMiddle, hitArea } from './helpers/hit-area'
+import { bringToMiddle, hitArea, neighbourAreas, sharePress, } from './helpers/hit-area'
 
 test.use({
   viewport: { width: 390, height: 844 },
@@ -72,4 +72,32 @@ test('a phone’s Studio takes a 44 px press on the menu, the heart, every sheet
     expect(width, `${name} width`).toBeGreaterThanOrEqual(44)
     expect(height, `${name} height`).toBeGreaterThanOrEqual(44)
   }
+})
+
+test.describe('on a phone on its side', () => {
+  test.use({ viewport: { width: 844, height: 390 } })
+
+  test('the heart and the voice pill’s mic take a 44 px press, and leave their neighbours theirs', async ({
+    page,
+  }) => {
+    await openArrangement(page)
+    const controls = {
+      Heart: page.getByTestId('support-heart'),
+      Mic: page.getByRole('button', { name: /^Turn voice control on/ }),
+    }
+    for (const [name, control] of Object.entries(controls)) {
+      await expect(control, name).toBeVisible()
+      const own = await hitArea(control)
+      console.log(`[studio-touch] ${name} ${JSON.stringify(own)}`)
+      expect.soft(own.hit[0], `${name} width`).toBeGreaterThanOrEqual(44)
+      expect.soft(own.hit[1], `${name} height`).toBeGreaterThanOrEqual(44)
+      for (const near of await neighbourAreas(control))
+        expect
+          .soft(
+            sharePress(own.rect, near.rect),
+            `${name} takes a neighbour's press`,
+          )
+          .toBe(false)
+    }
+  })
 })
