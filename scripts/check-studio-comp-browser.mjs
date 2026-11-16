@@ -1,4 +1,4 @@
-// Studio comp browser check: a comped loop take exports as it plays, its joins step no further than its passes do, and songs with no comp render bit for bit as a baseline did, in real Chromium.
+// Studio comp browser check: a comped loop take exports as it plays, its joins step no further than its passes do, a split where two passes meet plays as their comp does, and songs with no comp render bit for bit as a baseline did, in real Chromium.
 // Usage: pnpm dev (or any local Vite server), then
 //   timeout 600s node scripts/check-studio-comp-browser.mjs --origin https://127.0.0.1:5173 [--out report.json] [--baseline before.json] [--no-comp]
 // --no-comp runs only the songs with no comp, as a build without comping can;
