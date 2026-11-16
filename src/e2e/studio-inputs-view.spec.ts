@@ -109,7 +109,9 @@ test.describe('Studio Inputs view', () => {
     test.setTimeout(120_000)
     await openArrangement(page)
     const studio = studioRegion(page)
-    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await studio
+      .getByRole('button', { name: 'New audio lane', exact: true })
+      .click()
     const panel = await openInputs(page)
     const listed = await page.evaluate(() =>
       navigator.mediaDevices

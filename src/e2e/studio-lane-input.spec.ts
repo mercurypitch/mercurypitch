@@ -42,7 +42,9 @@ test.describe('Studio lane inputs', () => {
     test.setTimeout(240_000)
     await openArrangement(page)
     const studio = studioRegion(page)
-    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await studio
+      .getByRole('button', { name: 'New audio lane', exact: true })
+      .click()
 
     // The first arm opens the input and learns its channels.
     await armLane(page, 'Lane 2')
@@ -267,7 +269,7 @@ for (const layout of CHIP_LAYOUTS)
       await openArrangement(page)
       const studio = studioRegion(page)
       await studio
-        .getByRole('button', { name: 'New lane', exact: true })
+        .getByRole('button', { name: 'New audio lane', exact: true })
         .click()
       await setLaneInput(page, 'Lane 2', 'Input', 'Fake Audio Input 1')
 

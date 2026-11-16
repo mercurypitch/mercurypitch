@@ -1,14 +1,16 @@
-// Studio timeline lane — one track's header (its instrument, name, arm, Mute and Solo; in a tall lane its lines and mix) and clips, and its volume or pan line while that is open.
+// Studio timeline lane — one track's header (its instrument, name, arm, Mute and Solo; in a tall lane its lines and mix) and clips, its volume or pan line while that is open, and an empty MIDI clip from a double-click or two taps on an empty stretch of a lane that plays MIDI.
 import type { Accessor } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { studioLaneInstrument } from '@/lib/studio/instruments/resolve'
 import { hasStudioAutomation } from '@/lib/studio/model/automation'
+import { studioLaneMakesMidiClips, studioNewClipPlace, } from '@/lib/studio/model/new-midi-clips'
 import { studioSequence } from '@/lib/studio/model/sequences'
 import type { StudioAsset, StudioClip, StudioTrack, } from '@/lib/studio/model/types'
 import { studioLaneInputBadge } from '../record/lane-input-badge'
 import { studioMidiSound } from '../record/midi/studio-midi-sound'
 import { StudioLaneTake } from '../record/StudioLaneTake'
 import type { StudioClipNotes } from './clip-notes'
+import { createStudioDoubleTap } from './double-tap'
 import type { StudioLineEditor } from './line-editor'
 import { createStudioLineActions } from './line-editor'
 import { LaneLine } from './line-icons'
@@ -20,6 +22,7 @@ import lineStyles from './StudioLaneLine.module.css'
 import styles from './StudioTimeline.module.css'
 import { StudioTimelineClip } from './StudioTimelineClip'
 import { StudioTrackControls, StudioTrackName } from './StudioTrackControls'
+import { pixelToFrame } from './timeline-geometry'
 import { studioTrackColor, studioTrackHue } from './track-hues'
 import type { StudioTimelineProps } from './types'
 import type { StudioPointerEditor } from './useStudioPointer'
@@ -43,6 +46,9 @@ export interface StudioLaneView {
   /** Said in the timeline's status pill. */
   status(message: string): void
 }
+
+/** One count of taps for every lane's empty stretches: a tap on another lane starts again. */
+const laneTaps = createStudioDoubleTap()
 
 interface StudioTimelineLaneProps {
   id: string
@@ -158,6 +164,29 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
   const silent = () =>
     props.track.mute || (props.view.anySolo() && !props.track.solo)
 
+  // A double-click with a mouse, or two taps counted by hand (double-tap.ts),
+  // on an empty stretch of a lane that plays MIDI makes an empty clip there.
+  let pressedWith = 'mouse'
+  const madeHere = () =>
+    props.timeline.writable &&
+    props.timeline.onNewMidiClip !== undefined &&
+    studioLaneMakesMidiClips(props.track, props.clips)
+
+  /** An empty clip from the bar under the press (new-midi-clips.ts), or the reason there is no room. */
+  function newClipAt(event: MouseEvent): void {
+    const make = props.timeline.onNewMidiClip
+    if (!madeHere() || make === undefined) return
+    const lane = (event.currentTarget as HTMLElement).getBoundingClientRect()
+    const frame = pixelToFrame(
+      event.clientX - lane.left,
+      props.view.scale(),
+      Number.MAX_SAFE_INTEGER,
+    )
+    const place = studioNewClipPlace(props.timeline.project, props.id, frame)
+    if ('refusal' in place) props.view.status(place.refusal)
+    else make(props.id, place)
+  }
+
   /**
    * A phone header is one button: the instrument's glyph and the name, which
    * open the lane's details, where its arm and its lines are. Its arm is in
@@ -253,10 +282,21 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
       <div
         class={styles.laneAudio}
         data-studio-lane-audio=""
+        title={madeHere() ? 'Double-click for a new clip' : undefined}
+        onPointerDown={(event) => {
+          pressedWith = event.pointerType
+        }}
         onClick={(event) => {
           if (event.target !== event.currentTarget) return
           props.timeline.onSelectClip(null)
           props.timeline.onSelectTrack?.(props.id)
+          if (pressedWith === 'mouse' || event.detail === 0) return
+          const tap = { target: props.id, x: event.clientX, y: event.clientY }
+          if (laneTaps.tap({ ...tap, time: event.timeStamp })) newClipAt(event)
+        }}
+        onDblClick={(event) => {
+          if (event.target === event.currentTarget && pressedWith === 'mouse')
+            newClipAt(event)
         }}
       >
         <For each={clipIds()}>

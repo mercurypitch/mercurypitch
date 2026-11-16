@@ -203,8 +203,9 @@ for (const layout of LAYOUTS) {
       isMobile: layout.touch,
     })
 
-    // A phone has no New lane button and no room to select an empty lane:
-    // its second lane is a file, armed from its header before Record.
+    // A phone makes a lane from Add takes and has no room to select an
+    // empty one: its second lane is a file, armed from its header before
+    // Record.
     const phone = layout.name === 'phone'
     const lane = phone ? 'Bass' : 'Lane 2'
 
@@ -218,7 +219,7 @@ for (const layout of LAYOUTS) {
       if (phone) await importStudioAudio(page, 'Bass', 2)
       else
         await studio
-          .getByRole('button', { name: 'New lane', exact: true })
+          .getByRole('button', { name: 'New audio lane', exact: true })
           .click()
 
       for (const theme of ['dark', 'light'] as const) {
@@ -312,7 +313,9 @@ test.describe('Studio lane arming', () => {
     await captureStudioOutput(page)
     await openArrangement(page)
     const studio = studioRegion(page)
-    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await studio
+      .getByRole('button', { name: 'New audio lane', exact: true })
+      .click()
     const record = recordButton(page)
 
     // Ready, whatever the card says the input records.

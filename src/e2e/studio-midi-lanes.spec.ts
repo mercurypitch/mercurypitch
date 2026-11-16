@@ -18,7 +18,9 @@ test.describe('Studio MIDI lanes', () => {
     await page.addInitScript(installFakeMidi)
     await openArrangement(page)
     const studio = studioRegion(page)
-    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await studio
+      .getByRole('button', { name: 'New audio lane', exact: true })
+      .click()
     await playLaneFromKeys(page, 'Lane 2')
     await expect(
       studio.getByRole('button', {
@@ -90,7 +92,9 @@ test.describe('Studio MIDI lanes', () => {
     await page.addInitScript(installFakeMidi)
     await openArrangement(page)
     const studio = studioRegion(page)
-    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await studio
+      .getByRole('button', { name: 'New audio lane', exact: true })
+      .click()
     await playLaneFromKeys(page, 'Lane 2')
 
     await studio.getByRole('button', { name: 'Sound', exact: true }).click()
@@ -120,7 +124,9 @@ test.describe('Studio MIDI lanes', () => {
     await captureStudioOutput(page)
     await openArrangement(page)
     const studio = studioRegion(page)
-    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await studio
+      .getByRole('button', { name: 'New audio lane', exact: true })
+      .click()
     await playLaneFromKeys(page, 'Lane 2')
     await armLane(page, 'Lane 2')
 

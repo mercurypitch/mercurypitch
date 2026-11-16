@@ -286,7 +286,7 @@ test('Mix fits every strip at the same width, scrolls them sideways under a vert
   // A seventh lane overflows the row; a vertical wheel scrolls it sideways.
   await page.keyboard.press('Escape')
   await studioRegion(page)
-    .getByRole('button', { name: 'New lane', exact: true })
+    .getByRole('button', { name: 'New audio lane', exact: true })
     .click()
   const again = await openDesk(page)
   const lanes = again.getByRole('group', { name: 'Lanes' })

@@ -66,7 +66,7 @@ test('Studio rejects an occupied drop and accepts the explicit new lane target @
   expect(rejected.revision).toBe(before.revision)
   expect(rejected.tracks).toEqual(before.tracks)
   expect(rejected.clips).toEqual(before.clips)
-  const newLane = studioRegion(page).getByLabel('New lane', { exact: true })
+  const newLane = studioRegion(page).locator('[data-studio-new-lane]')
   const newLaneBox = await newLane.boundingBox()
   if (!newLaneBox)
     throw new Error('The explicit new lane drop target must be visible.')

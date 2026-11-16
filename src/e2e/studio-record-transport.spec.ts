@@ -115,7 +115,9 @@ test.describe('Studio take transport', () => {
     const studio = studioRegion(page)
     // A backing long enough to play under the whole take.
     await importWav(page, 'Backing', steadyWav(14, [262], 0.4))
-    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await studio
+      .getByRole('button', { name: 'New audio lane', exact: true })
+      .click()
     await arm(page, 'Lane 3')
     const toggle = studio.getByRole('button', { name: /^(Play|Pause) song$/ })
 
@@ -232,7 +234,9 @@ test.describe('Studio take transport', () => {
     test.setTimeout(120_000)
     await openArrangement(page)
     const studio = studioRegion(page)
-    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await studio
+      .getByRole('button', { name: 'New audio lane', exact: true })
+      .click()
     const clock = studio.getByLabel('Playhead in seconds', { exact: true })
     await clock.fill('2')
     await clock.press('Enter')

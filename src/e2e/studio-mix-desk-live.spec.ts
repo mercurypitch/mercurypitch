@@ -160,7 +160,9 @@ test.describe('Studio mixing desk, live', () => {
       () =>
         desk.getByRole('button', { name: 'Reset sound', exact: true }).click(),
       () =>
-        studio.getByRole('button', { name: 'New lane', exact: true }).click(),
+        studio
+          .getByRole('button', { name: 'New audio lane', exact: true })
+          .click(),
     ]) {
       const level = await traceLevel(page, action)
       expect(level.dip).toBeLessThan(3)

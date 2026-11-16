@@ -1,10 +1,11 @@
-// Studio source picker tests — stale reads and playback completions cannot restart previews.
-import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
+// Studio source picker tests — New lane's three choices stand at its head, and stale reads and playback completions cannot restart previews.
+import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createStudioProject } from '@/lib/studio/model/defaults'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import { StudioSourcePicker } from './StudioSourcePicker'
+import type { StudioNewLaneKind } from './timeline/types'
 import type { StudioController } from './useStudioController'
 
 afterEach(cleanup)
@@ -24,7 +25,7 @@ const entries: StudioSourceEntry[] = ['First take', 'Second take'].map(
   }),
 )
 
-function mount() {
+function mount(onNewLane?: (kind: StudioNewLaneKind) => void) {
   const [epoch, setEpoch] = createSignal(0)
   const [playing, setPlaying] = createSignal(false)
   const [pending, setPending] = createSignal(false)
@@ -58,6 +59,7 @@ function mount() {
       studio={studio}
       onAdd={onAdd}
       onFile={() => undefined}
+      onNewLane={onNewLane}
       onPreview={onPreview}
       onPreviewGesture={onPreviewGesture}
       onStopPreview={onStopPreview}
@@ -286,5 +288,29 @@ describe('Studio selected source previews', () => {
     expect(
       (screen.getAllByRole('checkbox')[1] as HTMLInputElement).checked,
     ).toBe(true)
+  })
+})
+
+describe('New lane in Add takes', () => {
+  it('offers an audio, a piano and a drum lane, as the row under the lanes does', async () => {
+    // Arrange
+    const lanes: StudioNewLaneKind[] = []
+    mount((kind) => lanes.push(kind))
+    const group = screen.getByRole('group', { name: 'New lane' })
+
+    // Act
+    for (const name of ['New audio lane', 'New piano lane', 'New drums lane'])
+      await fireEvent.click(within(group).getByRole('button', { name }))
+
+    // Assert
+    expect(lanes).toEqual(['audio', 'piano', 'drums'])
+  })
+
+  it('offers none when the song cannot take a lane', () => {
+    // Act
+    mount()
+
+    // Assert
+    expect(screen.queryByRole('group', { name: 'New lane' })).toBeNull()
   })
 })

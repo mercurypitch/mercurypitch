@@ -90,7 +90,9 @@ async function rangeOverPhrase(page: Page): Promise<void> {
   await expect(
     studio.getByRole('slider', { name: 'Range end', exact: true }),
   ).toHaveAttribute('aria-valuetext', '0:10.000')
-  await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+  await studio
+    .getByRole('button', { name: 'New audio lane', exact: true })
+    .click()
 }
 
 async function press(page: Page, target: Locator): Promise<number> {

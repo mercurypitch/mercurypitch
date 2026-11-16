@@ -2,7 +2,6 @@
 import { createEffect, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { Plus } from '@/components/icons'
 import { installSpacePlaybackToggle, isInsideOverlay, isTypingTarget, } from '@/lib/space-playback'
-import { createStudioTrack } from '@/lib/studio/model/defaults'
 import type { StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { schedulePlaybackBenchmark } from '@/lib/studio/playback/playback-benchmark'
@@ -42,6 +41,7 @@ import { StudioRecordStatus, StudioWorkspaceNotices, } from './StudioWorkspaceNo
 import { StudioTimeline } from './timeline/StudioTimeline'
 import { studioContentEnd } from './timeline/timeline-geometry'
 import type { StudioController } from './useStudioController'
+import { useStudioNewClips } from './useStudioNewClips'
 
 interface StudioWorkspaceProps {
   studio: StudioController
@@ -302,20 +302,17 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     return context?.state === 'running' ? context : null
   }
 
-  /** A new empty lane, selected, so the next take lands on it. */
-  function addLane(): void {
-    const tracks = project().tracks
-    const track = createStudioTrack({
-      id: globalThis.crypto.randomUUID(),
-      name: `Lane ${tracks.length + 1}`,
-      order: Math.max(-1, ...tracks.map((item) => item.order)) + 1,
-    })
-    if (props.studio.dispatch({ type: 'add-track', track })) {
+  // New lane's choices, and a clip made in a lane, each opened to draw in.
+  const newClips = useStudioNewClips({
+    studio: () => props.studio,
+    playheadFrame: () => transport.frameNow(),
+    selectLane: (trackId) => {
       setSelectedClipId(null)
-      setSelectedTrackId(track.id)
-      setAnnouncement(`${track.name} added and selected.`)
-    }
-  }
+      setSelectedTrackId(trackId)
+    },
+    openNotes: (clipId, tool) => void notes.open(clipId, tool),
+    announce: setAnnouncement,
+  })
 
   function chooseFile(): void {
     importFrame = transport.frameNow()
@@ -533,7 +530,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             selectedClipId={selectedClipId()}
             selectedTrackId={selectedTrackId()}
             onSelectTrack={setSelectedTrackId}
-            onNewLane={writable() ? addLane : undefined}
+            onNewLane={writable() ? newClips.newLane : undefined}
+            onNewMidiClip={writable() ? newClips.newClip : undefined}
             keyboardPreviewClip={keyboardPreview()}
             notice={midi.notice()}
             onPointerEditStart={editor.cancel}
@@ -663,6 +661,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
                 studio={props.studio}
                 onAdd={addTakes}
                 onFile={chooseFile}
+                onNewLane={writable() ? newClips.newLane : undefined}
+                touch={coarse()}
                 previewEpoch={previewEpoch()}
                 previewing={transport.previewing()}
                 previewPending={transport.previewPending()}

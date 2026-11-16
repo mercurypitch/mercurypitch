@@ -306,7 +306,9 @@ test.describe('Studio recording', () => {
     const studio = studioRegion(page)
 
     // An empty lane, selected: the take lands on it at the playhead.
-    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await studio
+      .getByRole('button', { name: 'New audio lane', exact: true })
+      .click()
     await arm(page, 'Lane 2')
     // Ready, whatever the card says the input records.
     await expect(
@@ -401,7 +403,9 @@ test.describe('Studio recording', () => {
     await captureStudioOutput(page)
     await openArrangement(page)
     const studio = studioRegion(page)
-    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await studio
+      .getByRole('button', { name: 'New audio lane', exact: true })
+      .click()
     await arm(page, 'Lane 2')
 
     let countIn: number[] = []
