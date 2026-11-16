@@ -1133,6 +1133,13 @@ import handler, issue #813.
 **Rule:** an overlay that must cover no control measures the controls under it (a tap at each one's centre, `elementsFromPoint`, as the native pill does) and fits itself to that room, here by keeping the lines of the message that fit. Check it at 360 and 390 wide, idle and after a run, with the browser check that lists the controls under the overlay.
 **See:** `src/features/exercises/stage/StageNotice.tsx` (`roomBelow`), `src/features/exercises/stage/stage-notice.ts` (`linesThatFit`), `src/e2e/exercise-stage-notices.spec.ts`
 
+### Take a helper from a module with no stylesheet, never from a component
+
+**Symptom:** once Export named a clip's MIDI file, every MIDI clip's band lost its MIDI · PIANO chip and note count, on a computer and a phone. Nothing that changed touched the band.
+**Cause:** `studioClipTakeName` lived in `StudioTimelineClip.tsx`. Importing it from `export/midi-download.ts`, which the workspace imports before the timeline, put `StudioMidiClip.module.css` before `StudioTimeline.module.css` in the bundle. `.band { display: flex }` and `.clipTitle { display: block }` tie on specificity, so the later sheet won, and the tags fell to a second line the band's height hides.
+**Rule:** import a helper from a module with no stylesheet, and move it out of a component that holds it. A new import of a component, from anywhere, can reorder CSS modules and flip the rules that tie. Look at the screens a change did not touch, too.
+**See:** `src/features/studio/timeline/clip-take-name.ts`, `src/e2e/studio-note-editor.spec.ts` (`clipTags`)
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry
