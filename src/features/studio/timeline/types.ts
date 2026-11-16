@@ -39,6 +39,15 @@ export interface StudioTimelineNotice {
   text: string
 }
 
+/** What New lane makes: an audio lane for takes, or a Piano or Drums lane with an empty clip to draw in. */
+export type StudioNewLaneKind = 'audio' | 'piano' | 'drums'
+
+/** Where a new clip goes: from a song frame, for so many frames. */
+export interface StudioNewClipSpan {
+  readonly startFrame: number
+  readonly frames: number
+}
+
 export interface StudioTimelineProps {
   project: StudioProject
   assets: readonly StudioAsset[]
@@ -46,8 +55,10 @@ export interface StudioTimelineProps {
   /** The lane new takes join when they fit there. */
   selectedTrackId?: string | null
   onSelectTrack?(id: string): void
-  /** Double-click or double-tap under the lane headers makes a new lane. */
-  onNewLane?(): void
+  /** New lane's choices, and a double-click or double-tap under the lane headers, which makes an audio lane. */
+  onNewLane?(kind: StudioNewLaneKind): void
+  /** A double-click or two taps on an empty stretch of a lane that plays MIDI: an empty clip where `place` says (new-midi-clips.ts). */
+  onNewMidiClip?(trackId: string, place: StudioNewClipSpan): void
   /** The playhead for readouts and edits; it trails a playing song by up to a tenth of a second. */
   playheadFrame: number
   /** The clock a playing song's line follows every display frame, and the frame a split uses. */

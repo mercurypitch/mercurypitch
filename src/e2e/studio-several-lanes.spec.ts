@@ -26,7 +26,9 @@ test.use({
 async function addTwoLanes(page: Page): Promise<void> {
   const studio = studioRegion(page)
   for (const lane of ['Lane 2', 'Lane 3']) {
-    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await studio
+      .getByRole('button', { name: 'New audio lane', exact: true })
+      .click()
     await expect(
       studio.getByRole('button', { name: `${lane} details`, exact: true }),
     ).toBeVisible()

@@ -1,9 +1,11 @@
-// Studio source picker — metadata browsing, explicit previews and one batch at the playhead.
-import { batch, createEffect, createMemo, createSignal, For, on, onCleanup, onMount, Show, } from 'solid-js'
+// Studio source picker — New lane's choices, metadata browsing, explicit previews and one batch at the playhead.
+import { batch, createEffect, createMemo, createSignal, createUniqueId, For, on, onCleanup, onMount, Show, } from 'solid-js'
 import { FileUpload, Pause, Play } from '@/components/icons'
 import { STUDIO_TAKE_DRAG_TYPE } from './integration/drop-audio'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import styles from './StudioPage.module.css'
+import { StudioNewLaneChoices } from './timeline/StudioNewLane'
+import type { StudioNewLaneKind } from './timeline/types'
 import type { StudioController } from './useStudioController'
 
 interface StudioSourcePickerProps {
@@ -21,6 +23,10 @@ interface StudioSourcePickerProps {
   >
   onAdd(entries: readonly StudioSourceEntry[]): Promise<boolean>
   onFile(): void
+  /** New lane's choices, as the row under the lanes offers them: a phone has no such row, and an empty song shows none. */
+  onNewLane?: (kind: StudioNewLaneKind) => void
+  /** Finger-sized choices. */
+  touch?: boolean
   onPreviewGesture(): Promise<boolean>
   onPreview(blob: Blob): Promise<boolean>
   onStopPreview(): void
@@ -44,6 +50,7 @@ const duration = (ms: number) =>
     .padStart(2, '0')}`
 
 export function StudioSourcePicker(props: StudioSourcePickerProps) {
+  const newLaneHeading = createUniqueId()
   const [filter, setFilter] = createSignal('All')
   const [selected, setSelected] = createSignal<ReadonlySet<string>>(
     new Set<string>(),
@@ -166,6 +173,24 @@ export function StudioSourcePicker(props: StudioSourcePickerProps) {
 
   return (
     <div class={styles.sources}>
+      <Show when={props.onNewLane}>
+        {(add) => (
+          <section class={styles.newLanes} aria-labelledby={newLaneHeading}>
+            <h3 id={newLaneHeading}>New lane</h3>
+            <StudioNewLaneChoices
+              onNewLane={(kind) => {
+                stopPreview()
+                add()(kind)
+              }}
+              touch={props.touch}
+            />
+            <p class={styles.help}>
+              Piano and Drums come with an empty clip to draw notes in, no MIDI
+              keyboard needed.
+            </p>
+          </section>
+        )}
+      </Show>
       <Show when={props.studio.sources().length > 0}>
         <div class={styles.filters} role="group" aria-label="Take source">
           <For each={FILTERS}>

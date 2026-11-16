@@ -467,18 +467,20 @@ describe('Studio timeline', () => {
     expect(seek).not.toHaveBeenCalled()
   })
 
-  it('makes a new lane from its button or a double tap under the headers', () => {
+  it('makes a new lane of each kind New lane offers, and an audio lane from a double tap under the headers', () => {
     const add = vi.fn()
     const { container } = render(() => (
       <StudioTimeline {...base} onNewLane={add} />
     ))
-    fireEvent.click(screen.getByRole('button', { name: 'New lane' }))
-    expect(add).toHaveBeenCalledOnce()
+    const choices = screen.getByRole('group', { name: 'New lane' })
+    for (const name of ['New audio lane', 'New piano lane', 'New drums lane'])
+      fireEvent.click(within(choices).getByRole('button', { name }))
+    expect(add.mock.calls).toEqual([['audio'], ['piano'], ['drums']])
     const area = container.querySelector('[data-studio-new-lane-area]')!
     fireEvent.pointerUp(area, { button: 0 })
-    expect(add).toHaveBeenCalledOnce()
+    expect(add).toHaveBeenCalledTimes(3)
     fireEvent.pointerUp(area, { button: 0 })
-    expect(add).toHaveBeenCalledTimes(2)
+    expect(add).toHaveBeenLastCalledWith('audio')
   })
 
   it('selects a lane from its empty space and marks it', () => {

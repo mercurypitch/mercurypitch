@@ -161,7 +161,9 @@ test.describe('Studio MIDI renders', () => {
       .locator('[data-studio-track]')
       .getByRole('button', { name: 'Mute Phrase', exact: true })
       .click()
-    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await studio
+      .getByRole('button', { name: 'New audio lane', exact: true })
+      .click()
     await playLaneFromKeys(page, 'Lane 2')
     await armLane(page, 'Lane 2')
     await recordTake(page, 'Take 1', async () => {

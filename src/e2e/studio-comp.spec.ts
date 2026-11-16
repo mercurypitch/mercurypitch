@@ -273,7 +273,9 @@ async function recordLoops(
     studio.getByRole('slider', { name: 'Range end', exact: true }),
   ).toHaveAttribute('aria-valuetext', '0:10.000')
   for (const lane of lanes) {
-    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await studio
+      .getByRole('button', { name: 'New audio lane', exact: true })
+      .click()
     await expect(
       studio.getByRole('button', { name: `${lane} details`, exact: true }),
     ).toBeVisible()

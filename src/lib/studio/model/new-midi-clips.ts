@@ -137,9 +137,10 @@ export function studioNewMidiClips(
       track = createStudioTrack({
         id: createId(),
         name: lane.name,
-        order: order++,
+        order,
         role: lane.role,
       })
+      order += 1
       edits.push({ type: 'add-track', track })
     }
     const sequence = newSequence(wanted, project.tempoBpm, createId())
@@ -162,6 +163,25 @@ export function studioNewMidiClips(
     clipIds.push(clip.id)
   }
   return { command: { type: 'batch', commands: edits }, clipIds }
+}
+
+/** The roles whose lanes make a MIDI clip where a double-click or two taps land on an empty stretch. */
+const MIDI_ROLES: ReadonlySet<StudioTrack['role']> = new Set([
+  'piano',
+  'keys',
+  'drums',
+  'bass',
+])
+
+/** Whether a press on an empty stretch of `track` makes a MIDI clip: a piano, keys, drums or bass lane, or one that holds a MIDI clip already. */
+export function studioLaneMakesMidiClips(
+  track: Pick<StudioTrack, 'id' | 'role'>,
+  clips: readonly Pick<StudioClip, 'trackId' | 'midi'>[],
+): boolean {
+  return (
+    MIDI_ROLES.has(track.role) ||
+    clips.some((clip) => clip.trackId === track.id && clip.midi !== undefined)
+  )
 }
 
 /** Where a new clip goes in a lane, or why none can go there. */

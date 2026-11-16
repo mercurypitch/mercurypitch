@@ -1,0 +1,97 @@
+/* Studio new lane — New lane's choices: a caption over three buttons, each its instrument's chip and its word, in the header column of the row under the lanes, or in Add takes on a phone. */
+.header {
+  position: sticky;
+  left: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 5px;
+  box-sizing: border-box;
+  min-width: 0;
+  padding: 6px 8px 6px 10px;
+  border-right: 1px solid var(--studio-line);
+  background: var(--studio-bar);
+}
+.caption {
+  padding-left: 2px;
+  color: var(--studio-muted);
+  font-size: 10px;
+  font-weight: 650;
+  letter-spacing: 0.08em;
+  line-height: 12px;
+  text-transform: uppercase;
+}
+.choices {
+  display: flex;
+  gap: 4px;
+  min-width: 0;
+}
+.choice {
+  display: inline-flex;
+  flex: 1 1 0;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  box-sizing: border-box;
+  min-width: 0;
+  height: 30px;
+  margin: 0;
+  padding: 0 5px;
+  border: 1px solid var(--studio-line);
+  border-radius: 9px;
+  background: var(--studio-card);
+  color: var(--studio-text);
+  font: inherit;
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition:
+    background-color 0.12s ease-out,
+    border-color 0.12s ease-out;
+}
+/* The glyph in its family's ink, as a lane's chip inks it (InstrumentGlyph.module.css). */
+.glyph {
+  display: inline-grid;
+  flex: none;
+  color: color-mix(in srgb, var(--chip-hue) 62%, var(--studio-text));
+}
+:global(html[data-theme='light']) .glyph {
+  color: color-mix(in srgb, var(--chip-hue) 70%, var(--studio-text));
+}
+.word {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+@media (hover: hover) {
+  .choice:hover:not(:disabled) {
+    border-color: var(--studio-line-strong);
+    background: color-mix(in srgb, var(--studio-accent) 8%, var(--studio-card));
+  }
+}
+.choice:focus-visible {
+  outline: 2px solid var(--studio-accent);
+  outline-offset: 1px;
+}
+.choice:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+/* A finger's: each choice its chip over its word, 48 px tall. */
+.touch .choice {
+  flex-direction: column;
+  justify-content: center;
+  gap: 2px;
+  height: auto;
+  min-height: 48px;
+  padding: 4px 2px;
+  font-size: 11px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .choice {
+    transition: none;
+  }
+}

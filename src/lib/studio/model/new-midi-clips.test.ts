@@ -1,4 +1,4 @@
-// Studio new MIDI clip tests — the builder adds each clip with its sequence, on a lane of the song or a new one below the others, as one undo step over a quarter second of silence; a clip made empty is keyed as that silence so nothing renders, and one made with notes is stale; the notes take ids in order and only their fields away from defaults; and a clip made in a lane starts at the bar under the press, runs four bars, ends sooner at the lane's next clip, starts after a clip running into its bar, and is refused with no room for a bar.
+// Studio new MIDI clip tests — the builder adds each clip with its sequence, on a lane of the song or a new one below the others, as one undo step over a quarter second of silence; a clip made empty is keyed as that silence so nothing renders, and one made with notes is stale; the notes take ids in order and only their fields away from defaults; only a piano, keys, drums or bass lane, or one holding a MIDI clip, makes one where it is pressed; and a clip made in a lane starts at the bar under the press, runs four bars, ends sooner at the lane's next clip, starts after a clip running into its bar, and is refused with no room for a bar.
 import { describe, expect, it } from 'vitest'
 import { studioMidiKeys } from '../midi/clip-keys'
 import { studioMidiRenderKey } from '../midi/render-key'
@@ -7,8 +7,8 @@ import { applyStudioCommand } from './commands'
 import { createStudioHistory, executeStudioCommand, undoStudioCommand, } from './history'
 import { studioMidiFixture, TEST_NOW } from './model.test-fixtures'
 import type { StudioNewMidiClip } from './new-midi-clips'
-import { STUDIO_NEW_CLIP_NO_ROOM, STUDIO_NEW_CLIP_SILENCE_FRAMES, studioNewClipPlace, studioNewMidiClips, } from './new-midi-clips'
-import type { StudioAsset, StudioProject } from './types'
+import { STUDIO_NEW_CLIP_NO_ROOM, STUDIO_NEW_CLIP_SILENCE_FRAMES, studioLaneMakesMidiClips, studioNewClipPlace, studioNewMidiClips, } from './new-midi-clips'
+import type { StudioAsset, StudioProject, StudioTrack } from './types'
 
 const fixture = studioMidiFixture()
 
@@ -196,6 +196,25 @@ describe('the new MIDI clip builder', () => {
     expect(() =>
       build([{ lane: { trackId: 'gone' }, startFrame: 0, frames: FOUR_BARS }]),
     ).toThrow(/track.gone: Lane does not exist/)
+  })
+})
+
+describe('which lanes make a clip where they are pressed', () => {
+  it('are piano, keys, drums and bass lanes, and any lane holding a MIDI clip', () => {
+    // Arrange
+    const lane = (role: StudioTrack['role']) => ({ id: 'lane', role })
+    const { clips } = fixture.project
+
+    // Act, Assert
+    for (const role of ['piano', 'keys', 'drums', 'bass'] as const)
+      expect(studioLaneMakesMidiClips(lane(role), [])).toBe(true)
+    expect(studioLaneMakesMidiClips(lane('voice'), [])).toBe(false)
+    expect(
+      studioLaneMakesMidiClips({ id: 'track-keys', role: 'other' }, clips),
+    ).toBe(true)
+    expect(
+      studioLaneMakesMidiClips({ id: 'track-1', role: 'other' }, clips),
+    ).toBe(false)
   })
 })
 

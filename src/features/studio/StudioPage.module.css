@@ -1265,6 +1265,19 @@ button.laneAction {
   font-size: 12px;
   font-weight: 400;
 }
+/* New lane's choices at the head of Add takes (timeline/StudioNewLane.tsx). */
+.newLanes {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--studio-line);
+}
+.newLanes h3 {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 600;
+}
 .sourceHeading {
   display: flex;
   align-items: center;

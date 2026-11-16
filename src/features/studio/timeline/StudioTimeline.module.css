@@ -1355,6 +1355,10 @@
 .newLane {
   height: 56px;
 }
+/* A tablet's choices stand their chips over their words, a finger's height. */
+.tablet .newLane {
+  height: 80px;
+}
 .newLaneLabel,
 .fillerHeader {
   position: sticky;

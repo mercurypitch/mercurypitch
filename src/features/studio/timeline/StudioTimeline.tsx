@@ -16,6 +16,7 @@ import { createStudioRulerGesture } from './ruler-gesture'
 import { publishStudioScrubGrid } from './scrub-step'
 import { StudioClipToolbar } from './StudioClipToolbar'
 import { StudioLineBar } from './StudioLineBar'
+import { StudioNewLane } from './StudioNewLane'
 import { StudioPhoneClipNote } from './StudioPhoneClipNote'
 import { createStudioRangeTools, StudioRangeShade, StudioRulerRange, } from './StudioRulerRange'
 import styles from './StudioTimeline.module.css'
@@ -616,39 +617,11 @@ export function StudioTimeline(props: StudioTimelineProps) {
             )}
           </Show>
           <Show when={!props.phone && props.project.tracks.length > 0}>
-            <div
-              class={styles.newLane}
-              data-studio-new-lane=""
-              aria-label="New lane"
-            >
-              <Show
-                when={props.onNewLane}
-                fallback={
-                  <span class={styles.newLaneLabel}>
-                    <Plus size={14} />
-                    New lane
-                  </span>
-                }
-              >
-                {(add) => (
-                  <button
-                    type="button"
-                    class={styles.newLaneLabel}
-                    onClick={() => add()()}
-                  >
-                    <Plus size={14} />
-                    New lane
-                  </button>
-                )}
-              </Show>
-              <span class={styles.newLaneDrop}>
-                <span>
-                  {pointer.active()
-                    ? 'Drop here to start a new lane'
-                    : 'Drag a clip here to give it its own lane'}
-                </span>
-              </span>
-            </div>
+            <StudioNewLane
+              onNewLane={props.onNewLane}
+              dragging={pointer.active()}
+              tablet={props.tablet === true}
+            />
           </Show>
           <div class={styles.filler} aria-hidden="true">
             <span
@@ -663,7 +636,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
                 if (!props.onNewLane || event.button !== 0) return
                 if (event.timeStamp - lastFillerTap < 400) {
                   lastFillerTap = -Infinity
-                  props.onNewLane()
+                  props.onNewLane('audio')
                 } else lastFillerTap = event.timeStamp
               }}
             />
