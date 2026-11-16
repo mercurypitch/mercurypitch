@@ -61,13 +61,17 @@
   position: relative;
   min-width: 0;
 }
+/* The secondary ink, not the muted one. Under the range's tint
+   (StudioRulerRange.module.css), where the selected clip's shadow can fall
+   across the bar too, the muted ink measured 4.53:1 at its worst letter in
+   the light theme; this one measures 5.23:1. */
 .hint {
   position: sticky;
   left: calc(var(--studio-header-width) + 12px);
   display: inline-block;
   max-width: calc(100vw - var(--studio-header-width) - 24px);
   padding: 8px 0 0 12px;
-  color: var(--studio-muted);
+  color: var(--studio-text-2);
   font-size: 12px;
   line-height: 16px;
   white-space: nowrap;
