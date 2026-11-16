@@ -1,4 +1,4 @@
-// Studio MIDI lanes — with a fake Web MIDI keyboard in the page, a lane set to it plays the piano's synth (the sampled grand's samples refused, so the run is the same every time), arms with no microphone, records the sound as a take, and saves the note played in the song as the sequence its clip plays, its sound in the take starting at its frame or within one audio callback after; and the Inputs view lists the keyboard with its lane and a light while it plays. Its notes are heard once, through the lane, whether monitoring is on or off, and not at all with the lane muted. Nothing reaches the live site.
+// Studio MIDI lanes — with a fake Web MIDI keyboard in the page, a lane set to it plays the piano's synth (the sampled grand's samples refused, so the run is the same every time), arms with no microphone, records the sound as a take, and saves the note played in the song as the sequence its clip plays, its sound in the take starting at its frame or within one audio callback after, the arm's first note as loud as the same note after it; and the Inputs view lists the keyboard with its lane and a light while it plays. Its notes are heard once, through the lane, whether monitoring is on or off, and not at all with the lane muted. Nothing reaches the live site.
 import { expect, test } from '@playwright/test'
 import { openArrangement, readStudioProject, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import { armLane, recordTake, setMonitoring } from './helpers/studio-arming'
@@ -84,6 +84,50 @@ test.describe('Studio MIDI lanes', () => {
     expect(live).toEqual([])
   })
 
+  test("records an arm's first note as loud as the same note played after it", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    const live = await routeNetwork(page)
+    await page.addInitScript(installFakeMidi)
+    await openArrangement(page)
+    const studio = studioRegion(page)
+    await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+    await playLaneFromKeys(page, 'Lane 2')
+    await armLane(page, 'Lane 2')
+
+    // Middle C at velocity 100, three times: the arm's first note, then two.
+    await recordTake(page, 'Take 1', async () => {
+      for (let note = 0; note < 3; note += 1) {
+        await play(page, [0x90, 60, 100])
+        await page.evaluate(() => new Promise((done) => setTimeout(done, 400)))
+        await play(page, [0x80, 60, 0])
+        await page.evaluate(() => new Promise((done) => setTimeout(done, 400)))
+      }
+    })
+
+    const take = await storedTake(
+      page,
+      { title: 'Take 1' },
+      { hz: [261.63], over: 'onset', eachNote: 0.25 },
+    )
+    const [first, second, third] = take.noteTones
+    const db = (level: number, against: number) =>
+      20 * Math.log10(level / against)
+    const firstDb = db(first, (second + third) / 2)
+    console.log(
+      `[studio-midi-lanes] ${JSON.stringify({ noteTones: take.noteTones, firstAgainstLaterDb: firstDb, laterDb: db(third, second) })}`,
+    )
+
+    expect(take.notes).toHaveLength(3)
+    expect(second).toBeGreaterThan(0.005)
+    expect(Math.abs(db(third, second))).toBeLessThan(0.1)
+    // A new limiter starts as if it were compressing hard: the first note
+    // was 1.39 dB under the rest before it eased in (piano-fallback-synth.ts).
+    expect(Math.abs(firstDb)).toBeLessThan(0.1)
+    expect(live).toEqual([])
+  })
+
   test('lists the keyboard in the Inputs view with its lane, lit while it plays', async ({
     page,
   }) => {
@@ -145,10 +189,11 @@ test.describe('Studio MIDI lanes', () => {
       expect(onset + window).toBeLessThanOrEqual(capture.samples.length)
       return toneAmplitude(capture, onset, window, 261.63)
     }
-    // The synth plays an arm's first note 1.4 dB under the ones after it,
-    // in the take as well: one note first, so the two compared are alike.
-    await heard()
+    // The lane's monitor rises on the arm over the house release (input-
+    // monitor.ts): past it, the arm's first note is as loud as the rest.
+    await untilAudioClock(page, (await audioClock(page)) + 0.3)
     const off = await heard()
+    const again = await heard()
     await setMonitoring(page, true)
     const on = await heard()
     await studio
@@ -157,10 +202,11 @@ test.describe('Studio MIDI lanes', () => {
     await untilAudioClock(page, (await audioClock(page)) + 0.3)
     const muted = await heard()
     console.log(
-      `[studio-midi-lanes] ${JSON.stringify({ off, on, muted, onAgainstOffDb: 20 * Math.log10(on / off) })}`,
+      `[studio-midi-lanes] ${JSON.stringify({ off, again, on, muted, againstFirstDb: 20 * Math.log10(again / off), onAgainstOffDb: 20 * Math.log10(on / off) })}`,
     )
 
     expect(off).toBeGreaterThan(0.005)
+    expect(Math.abs(20 * Math.log10(again / off))).toBeLessThan(0.1)
     // The one path through the lane: a second would put the note 6 dB up.
     expect(Math.abs(20 * Math.log10(on / off))).toBeLessThan(1.5)
     expect(muted).toBeLessThan(off / 100)
