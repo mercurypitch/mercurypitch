@@ -1,10 +1,10 @@
-// Studio clip details — numeric alternatives to move, trim and source-anchored fades, and a loop take's passes; a MIDI clip's notes open from here.
-import { Show } from 'solid-js'
+// Studio clip details — numeric alternatives to move, trim and source-anchored fades, and a loop take's passes; a MIDI clip's notes open from here, and save as a MIDI file.
+import { createEffect, createSignal, on, Show } from 'solid-js'
 import styles from '@/features/studio/StudioPage.module.css'
 import { studioClipSourceBounds } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
-import { NoteBars } from '../studio-icons'
+import { FileDown, NoteBars } from '../studio-icons'
 import { studioTrimTail } from '../timeline/gesture-draft'
 import { StudioClipPasses } from './StudioClipPasses'
 import { StudioNumberField } from './StudioNumberField'
@@ -16,6 +16,8 @@ interface StudioClipDetailsProps {
   onCommand(command: StudioCommand): boolean
   /** Open a MIDI clip's notes in the note editor. */
   onEditNotes?(): void
+  /** Save a MIDI clip's notes alone as a MIDI file: whether its download was asked for. */
+  onExportMidi?(): boolean
 }
 
 // Preserve the exact displayed source bounds even for a one-frame clip.
@@ -23,6 +25,15 @@ const seconds = (frames: number) => frames / 48_000
 const frames = (value: number) => Math.round(value * 48_000)
 
 export function StudioClipDetails(props: StudioClipDetailsProps) {
+  // What became of the last Export MIDI, until another clip is shown.
+  const [saved, setSaved] = createSignal<boolean | null>(null)
+  createEffect(
+    on(
+      () => props.clip.id,
+      () => setSaved(null),
+      { defer: true },
+    ),
+  )
   const duration = () => props.clip.sourceOutFrame - props.clip.sourceInFrame
   // A loop take's clip trims inside its pass, and a MIDI clip's end past its
   // audio, growing its sequence (clip-passes.ts).
@@ -91,20 +102,46 @@ export function StudioClipDetails(props: StudioClipDetailsProps) {
       <Show when={props.clip.midi !== undefined && props.onEditNotes}>
         {(edit) => (
           <>
-            <button
-              type="button"
-              class={styles.primaryButton}
-              aria-keyshortcuts="E"
-              data-studio-edit-notes=""
-              onClick={() => edit()()}
-            >
-              <NoteBars size={16} />
-              Edit notes
-            </button>
+            <div class={styles.detailsActions}>
+              <button
+                type="button"
+                class={styles.primaryButton}
+                aria-keyshortcuts="E"
+                data-studio-edit-notes=""
+                onClick={() => edit()()}
+              >
+                <NoteBars size={16} />
+                Edit notes
+              </button>
+              <Show when={props.onExportMidi}>
+                {(save) => (
+                  <button
+                    type="button"
+                    class={styles.button}
+                    data-studio-export-clip-midi=""
+                    onClick={() => setSaved(save()())}
+                  >
+                    <FileDown size={16} />
+                    Export MIDI
+                  </button>
+                )}
+              </Show>
+            </div>
             <p class={styles.help}>
-              Opens the clip's notes under the lanes. A double-click on the
-              clip, or E, opens them too.
+              {props.onExportMidi
+                ? "Edit notes opens the clip's notes under the lanes; a double-click on the clip, or E, opens them too. Export MIDI saves them as a .mid file."
+                : "Opens the clip's notes under the lanes. A double-click on the clip, or E, opens them too."}
             </p>
+            <Show when={saved() !== null}>
+              <p
+                role={saved() === true ? 'status' : 'alert'}
+                class={saved() === true ? styles.help : styles.inlineError}
+              >
+                {saved() === true
+                  ? 'Download requested. Your browser handles the file.'
+                  : 'The MIDI file could not be made. Try Export MIDI again.'}
+              </p>
+            </Show>
             <div class={styles.fieldDivider} />
           </>
         )}

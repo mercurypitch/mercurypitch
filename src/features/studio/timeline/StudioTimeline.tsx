@@ -748,6 +748,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
             clip={selectedClip() ?? null}
             onRange={props.onRange}
             onEditNotes={props.onOpenNotes}
+            onExportMidi={props.onExportClipMidi}
           />
         )}
       </Show>

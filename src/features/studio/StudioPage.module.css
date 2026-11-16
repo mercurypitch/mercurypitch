@@ -959,6 +959,21 @@
     min-height: 44px;
   }
 }
+/* A MIDI clip's actions, Edit notes and Export MIDI, sharing one row. */
+.detailsActions {
+  display: flex;
+  gap: 8px;
+}
+.detailsActions > button {
+  flex: 1 1 0;
+  min-width: 0;
+  min-height: 40px;
+}
+@media (pointer: coarse) {
+  .detailsActions > button {
+    min-height: 44px;
+  }
+}
 .field {
   display: grid;
   grid-template-columns: minmax(0, 1fr) 140px;

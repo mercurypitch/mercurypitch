@@ -399,3 +399,13 @@ export const VelocityBars: Component<{ size?: number }> = (p) => (
     <path d="M20 20V5" />
   </svg>
 )
+
+// A page with an arrow down into it — a clip's notes saved as a MIDI file.
+export const FileDown: Component<{ size?: number }> = (p) => (
+  <svg {...outline(p.size)}>
+    <path d="M14 3H7a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V8Z" />
+    <path d="M14 3v5h5" />
+    <path d="M12 11v6" />
+    <path d="m9 14 3 3 3-3" />
+  </svg>
+)

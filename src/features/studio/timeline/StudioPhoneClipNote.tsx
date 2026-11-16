@@ -1,9 +1,9 @@
-// Studio phone clip note — on a phone a clip is edited elsewhere, but its toolbar's Range lives here: Repeat and Punch work from a phone too. A MIDI clip's notes open here as well.
+// Studio phone clip note — on a phone a clip is edited elsewhere, but its toolbar's Range lives here: Repeat and Punch work from a phone too. A MIDI clip's notes open here as well, and save as a MIDI file: a phone has no Clip details.
 import { Show } from 'solid-js'
 import type { StudioClip } from '@/lib/studio/model/types'
 import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
 import { studioTakeRunning } from '../record/take-running'
-import { InfoCircle, NoteBars, RangeBrackets } from '../studio-icons'
+import { FileDown, InfoCircle, NoteBars, RangeBrackets } from '../studio-icons'
 import styles from './StudioTimeline.module.css'
 import { clipEndFrame } from './timeline-geometry'
 
@@ -13,6 +13,8 @@ export function StudioPhoneClipNote(props: {
   onRange?(range: StudioFrameRange): void
   /** Open a MIDI clip's notes: the editor fills a phone's screen. */
   onEditNotes?(clipId: string): void
+  /** Save a MIDI clip's notes alone as a MIDI file. */
+  onExportMidi?(clipId: string): void
 }) {
   const midi = () =>
     props.clip?.midi !== undefined && props.onEditNotes !== undefined
@@ -35,6 +37,25 @@ export function StudioPhoneClipNote(props: {
           >
             <NoteBars size={15} />
             <span>Notes</span>
+          </button>
+        )}
+      </Show>
+      <Show
+        when={
+          props.clip?.midi !== undefined && props.onExportMidi && props.clip
+        }
+      >
+        {(clip) => (
+          <button
+            type="button"
+            class={styles.phoneNoteRange}
+            aria-label="Export MIDI"
+            title="Save this clip's notes as a MIDI file"
+            data-studio-phone-export-midi=""
+            onClick={() => props.onExportMidi?.(clip().id)}
+          >
+            <FileDown size={15} />
+            <span>MIDI</span>
           </button>
         )}
       </Show>

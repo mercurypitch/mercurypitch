@@ -1,4 +1,4 @@
-// Studio clip detail tests — submillisecond bounds, a MIDI clip's end trimmed past its audio, and source-anchored fade preservation.
+// Studio clip detail tests — submillisecond bounds, a MIDI clip's end trimmed past its audio, and source-anchored fade preservation; a MIDI clip's Export MIDI beside Edit notes, saying whether its file was asked for.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { studioFixture, studioMidiFixture, } from '@/lib/studio/model/model.test-fixtures'
@@ -115,5 +115,73 @@ describe('Studio clip details', () => {
     expect(command).not.toHaveBeenCalled()
     expect(fade).toHaveValue(200 / 48000)
     expect(fade).toHaveAttribute('aria-invalid', 'true')
+  })
+})
+
+describe('a MIDI clip in Clip details', () => {
+  function mount(saves: boolean) {
+    const { clip, assets } = studioMidiFixture()
+    const exportMidi = vi.fn(() => saves)
+    render(() => (
+      <StudioClipDetails
+        clip={clip}
+        asset={assets[1]}
+        writable
+        onCommand={vi.fn(() => true)}
+        onEditNotes={vi.fn()}
+        onExportMidi={exportMidi}
+      />
+    ))
+    return exportMidi
+  }
+
+  it('offers Export MIDI beside Edit notes, and says its download was asked for', async () => {
+    // Arrange
+    const exportMidi = mount(true)
+
+    // Act
+    await fireEvent.click(screen.getByRole('button', { name: 'Export MIDI' }))
+
+    // Assert
+    expect(exportMidi).toHaveBeenCalledTimes(1)
+    expect(
+      screen.getByRole('button', { name: 'Edit notes' }).parentElement,
+    ).toBe(screen.getByRole('button', { name: 'Export MIDI' }).parentElement)
+    expect(screen.getByRole('status')).toHaveTextContent(
+      'Download requested. Your browser handles the file.',
+    )
+  })
+
+  it('says when the clip’s file could not be made', async () => {
+    // Arrange
+    mount(false)
+
+    // Act
+    await fireEvent.click(screen.getByRole('button', { name: 'Export MIDI' }))
+
+    // Assert
+    expect(screen.getByRole('alert')).toHaveTextContent(
+      'The MIDI file could not be made. Try Export MIDI again.',
+    )
+  })
+
+  it('offers no Export MIDI for an audio clip', () => {
+    // Arrange
+    const { clip, asset } = studioFixture()
+
+    // Act
+    render(() => (
+      <StudioClipDetails
+        clip={clip}
+        asset={asset}
+        writable
+        onCommand={vi.fn(() => true)}
+        onEditNotes={vi.fn()}
+        onExportMidi={vi.fn(() => true)}
+      />
+    ))
+
+    // Assert
+    expect(screen.queryByRole('button', { name: 'Export MIDI' })).toBeNull()
   })
 })
