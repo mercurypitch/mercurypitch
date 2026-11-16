@@ -9,6 +9,7 @@ import { createReactiveMatch } from '@/lib/use-viewport'
 import { StudioOutputMeter } from './audio/StudioOutputMeter'
 import { useStudioTransport } from './audio/useStudioTransport'
 import { createStudioEditor } from './editor/studio-editor'
+import { downloadStudioClipMidi } from './export/midi-download'
 import { StudioExportPanel } from './export/StudioExportPanel'
 import { useStudioExport } from './export/useStudioExport'
 import { StudioInputsPanel } from './inputs/StudioInputsPanel'
@@ -302,6 +303,23 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     return context?.state === 'running' ? context : null
   }
 
+  /** Save MIDI clip `clipId`'s notes alone as a MIDI file; whether its download was asked for. */
+  function exportClipMidi(clipId: string): boolean {
+    try {
+      const name = downloadStudioClipMidi(
+        project(),
+        props.studio.assets(),
+        clipId,
+      )
+      if (name === null) return false
+      setAnnouncement(`${name}: download requested.`)
+      return true
+    } catch {
+      setAnnouncement('The MIDI file could not be made.')
+      return false
+    }
+  }
+
   // New lane's choices, and a clip made in a lane, each opened to draw in.
   const newClips = useStudioNewClips({
     studio: () => props.studio,
@@ -547,6 +565,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             deskOpen={deskOpen() || notes.drawer()}
             editingClipId={notes.state.clipId()}
             onOpenNotes={(id) => void notes.open(id)}
+            onExportClipMidi={(id) => void exportClipMidi(id)}
             covered={notes.covering()}
             onAddTakes={
               panel() === 'sources' ? undefined : () => openPanel('sources')
@@ -691,6 +710,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
                 writable={writable()}
                 onCommand={props.studio.dispatch}
                 onEditNotes={() => void notes.open(selectedClip()!.id)}
+                onExportMidi={() => exportClipMidi(selectedClip()!.id)}
               />
             </Show>
             <Show when={panel() === 'track' && selectedTrack()}>

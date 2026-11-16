@@ -1682,8 +1682,10 @@
   flex: none;
   color: var(--studio-accent-text);
 }
+/* The lane's name gives way before the clip's actions do. */
 .phoneNote strong {
-  flex: none;
+  flex: 0 1 auto;
+  min-width: 0;
   max-width: 40%;
   overflow: hidden;
   color: var(--studio-text);
@@ -1709,6 +1711,13 @@
 }
 .phoneNoteRange:disabled {
   opacity: 0.5;
+}
+/* A MIDI clip's Notes, MIDI and Range keep together at the bar's end. */
+.phoneNoteRange + .phoneNoteRange {
+  margin-left: 0;
+}
+.phoneNoteRange:not(:last-child) {
+  margin-right: 0;
 }
 
 .srOnly {
