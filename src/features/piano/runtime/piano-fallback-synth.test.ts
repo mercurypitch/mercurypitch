@@ -191,6 +191,20 @@ describe('createPianoFallbackSynth', () => {
     )
   })
 
+  it('eases a new limiter in: a one-second attack while it settles, its first quarter second, then 3 ms', () => {
+    const { context, synth } = harness()
+
+    synth.noteOn({ id: 'first', midi: 60, velocity: 0.8 })
+    context.currentTime = 9
+    synth.noteOn({ id: 'later', midi: 60, velocity: 0.8 })
+
+    expect(context.compressors).toHaveLength(1)
+    expect(context.compressors[0].attack.events).toEqual([
+      { kind: 'set', value: 1, at: 5 },
+      { kind: 'set', value: 0.003, at: 5.25 },
+    ])
+  })
+
   it('stages normalized master volume without constructing an audio graph', () => {
     const { context, getAudioContext, synth } = harness()
 

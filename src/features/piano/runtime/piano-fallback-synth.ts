@@ -48,6 +48,10 @@ interface SynthVoice {
 const MINIMUM_GAIN = 0.0001
 const MASTER_GAIN = 0.72
 const RELEASE_SECONDS = 0.085
+const LIMITER_ATTACK_SECONDS = 0.003
+/** The limiter's attack while a new one settles, the longest a compressor allows, and how long it settles for. */
+const LIMITER_SETTLING_ATTACK_SECONDS = 1
+const LIMITER_SETTLE_SECONDS = 0.25
 
 function clamp(value: number, minimum: number, maximum: number): number {
   if (!Number.isFinite(value)) return minimum
@@ -184,7 +188,17 @@ export function createPianoFallbackSynth(
     limiter.threshold.value = -8
     limiter.knee.value = 5
     limiter.ratio.value = 12
-    limiter.attack.value = 0.003
+    // A new compressor starts as if it were compressing hard, and eases off
+    // over its first 0.1 s: the first note, which builds this graph, played
+    // 1.5 to 1.8 dB under the same note after it (headless Chromium, a
+    // Studio take). A slow attack while it settles keeps its gain where it
+    // is, then the limiter catches peaks at its usual 3 ms.
+    const builtAt = context.currentTime
+    limiter.attack.setValueAtTime(LIMITER_SETTLING_ATTACK_SECONDS, builtAt)
+    limiter.attack.setValueAtTime(
+      LIMITER_ATTACK_SECONDS,
+      builtAt + LIMITER_SETTLE_SECONDS,
+    )
     limiter.release.value = 0.16
     master.connect(limiter)
     limiter.connect(options.getOutput?.() ?? context.destination)

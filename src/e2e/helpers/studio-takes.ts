@@ -1,4 +1,4 @@
-// Studio takes for browser tests — a kept take read back from the page's database: its audio's loudest sample and first sound, how strong each asked-for tone is in it, and the notes its clip plays from the saved song.
+// Studio takes for browser tests — a kept take read back from the page's database: its audio's loudest sample and first sound, how strong each asked-for tone is in it, at each of its notes too, and the notes its clip plays from the saved song.
 import { expect, type Page } from '@playwright/test'
 
 /** Which take: by the name its file was kept under, or by its asset's id. */
@@ -11,6 +11,8 @@ export interface StudioTakeRead {
   readonly hz: readonly number[]
   /** Where to measure them: the second in the middle of the take, or half a second from its first sound. */
   readonly over: 'middle' | 'onset'
+  /** Also measure the first tone at each of the take's notes, over this many seconds from where the note's sound starts. */
+  readonly eachNote?: number
 }
 
 export interface StudioStoredTake {
@@ -20,6 +22,8 @@ export interface StudioStoredTake {
   readonly onset: number
   /** Each asked tone's amplitude where it was measured, in the order asked. */
   readonly tones: readonly number[]
+  /** The first tone's amplitude at each note, in the notes' order; empty unless `eachNote` asked for it. */
+  readonly noteTones: readonly number[]
   /** The notes its clip plays, from the saved song's sequence, in ticks from the take's first sample; none for an audio take. */
   readonly notes: readonly {
     pitch: number
@@ -56,7 +60,7 @@ function readTake(
   read: StudioTakeRead,
 ): Promise<StudioStoredTake> {
   return page.evaluate(
-    async ({ match, hz, over }) => {
+    async ({ match, hz, over, eachNote }) => {
       const database = await new Promise<IDBDatabase>((resolve, reject) => {
         const request = indexedDB.open('MercuryPitchDB')
         request.onsuccess = () => resolve(request.result)
@@ -138,9 +142,12 @@ function readTake(
             ? Math.max(0, onset)
             : Math.max(0, Math.floor(frames / 2) - 24_000)
         const length = over === 'onset' ? 24_000 : 48_000
-        const window = samples.subarray(from, Math.min(frames, from + length))
-        // A Goertzel filter at each tone.
-        const amplitude = (tone: number) => {
+        // A Goertzel filter at a tone, over `length` frames from `start`.
+        const amplitudeIn = (tone: number, start: number, length: number) => {
+          const window = samples.subarray(
+            start,
+            Math.min(frames, start + length),
+          )
           const w = (2 * Math.PI * tone) / 48_000
           const k = 2 * Math.cos(w)
           let s1 = 0
@@ -154,18 +161,33 @@ function readTake(
           const im = s2 * Math.sin(w)
           return (2 * Math.sqrt(re * re + im * im)) / window.length
         }
+        const notes = sequence?.notes ?? []
+        // Each note from the first sample its sound reaches 0.002, past the
+        // frame it was kept at: a note is kept at or before its sound.
+        const noteTones =
+          eachNote === undefined || sequence === undefined
+            ? []
+            : notes.map((note) => {
+                let start = Math.round(
+                  (note.startTick / 960) * (60 / sequence.tempoBpm) * 48_000,
+                )
+                while (start < frames && Math.abs(samples[start]) <= 0.002)
+                  start += 1
+                return amplitudeIn(hz[0], start, Math.round(eachNote * 48_000))
+              })
         return {
           assetId: take.id,
           peak,
           onset,
-          tones: hz.map(amplitude),
-          notes: sequence?.notes ?? [],
+          tones: hz.map((tone) => amplitudeIn(tone, from, length)),
+          noteTones,
+          notes,
           tempoBpm: sequence?.tempoBpm ?? null,
         }
       } finally {
         database.close()
       }
     },
-    { match, hz: read.hz, over: read.over },
+    { match, hz: read.hz, over: read.over, eachNote: read.eachNote },
   )
 }
