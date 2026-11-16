@@ -38,7 +38,7 @@ module in `src/features/lessons/lesson-24/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season puts Lessons 24, 26 and 28
 last, for their engineering and the headphones work, with one coach batch for all three (SEASON-2 §
-8.2 item 7, `docs/plans/find-your-pitch/SEASON-2.md:1380-1381`); Lesson 26 reuses this page's drone,
+8.2 item 7, `docs/plans/find-your-pitch/SEASON-2.md:1402-1403`); Lesson 26 reuses this page's drone,
 headphones check, quiet check and band.
 
 ## Look
@@ -648,7 +648,7 @@ stills when WebGL fails.
 ## Practice links: what exists and what needs engineering
 
 - **Today, Drone Intonation's thirds.** The link is `/exercises/thirds-on-a-drone?lesson=24`,
-  printed mercurypitch.com/exercises/thirds-on-a-drone (`src/features/exercises/slug-map.ts:108-117`):
+  printed mercurypitch.com/exercises/thirds-on-a-drone (`src/features/exercises/slug-map.ts:118-127`):
   it opens Drone Intonation on the minor and the major third only, so this lesson's do and so are
   not in it, and it scores against the piano's notes, its Piano tuning, whatever the learner last
   chose, so a pure major third held through a round scores about 79 a round (FACTS 60), as the lead
@@ -663,7 +663,7 @@ stills when WebGL fails.
   `docs/plans/find-your-pitch/SEASON-2.md:875`).
 - **The link to swap.** The slug for the fifth, the major third and the octave shipped on 15
   November 2026, `/exercises/harmony-on-a-drone` (SEASON-2 § 5.2 item 15,
-  `docs/plans/find-your-pitch/SEASON-2.md:970-999`): the card's link becomes that
+  `docs/plans/find-your-pitch/SEASON-2.md:992-1021`): the card's link becomes that
   slug with `?lesson=24`, and the text's second sentence becomes "This link opens it on this
   lesson's fifth, major third and octave; do is the drone itself." The slug opens on Pure tuning, which
   shipped with it (the same item), so with the swap the sentence on 79 goes: a pure third scores 100

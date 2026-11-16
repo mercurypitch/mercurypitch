@@ -139,8 +139,8 @@ major's, and spells the melody all in flats in a flat key, all in sharps otherwi
 :115-120 (`midiToVFKey` picks `FLAT_NAMES` or `SHARP_NAMES`). Code read. Strong.
 
 **R21-16. Sight-Singing writes every black key as a sharp, so F major's B♭ would show as A♯.**
-`src/features/exercises/sight-singing/use-sight-singing-controller.ts:31-44` (`NOTE_NAMES`);
-`SightSingingExercise.tsx:108-118` (♯ drawn). R16-12. Code read. Strong.
+`src/features/exercises/sight-singing/use-sight-singing-controller.ts:50-63` (`NOTE_NAMES`);
+`SightSingingExercise.tsx:108-118` at `bcd86153b` (♯ drawn). R16-12. Code read. Strong.
 
 **R21-17. Ear Lab's Home asks for scale degrees heard in a key.**
 `src/features/ear-lab/HomeDrill.tsx:1-11` ("A cadence plants the key ..., a probe note sets the fork

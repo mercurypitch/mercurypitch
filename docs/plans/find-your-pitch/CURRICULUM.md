@@ -482,14 +482,14 @@ lesson is marked done.
 The app can open these today: `/mirror`, `/vocal-range-test`, `/voice-type-test`,
 `/which-singer-has-my-vocal-range`, `/free-sing`, `/pitch-training`, `/ear-lab`, `/drum-night`,
 `/piano-night`, `/karaoke-night`, tab hashes (`#/exercises`, `#/path`, `#/singing`,
-`#/learn/<chapterId>`), and twenty-one exercise slugs (`/exercises/speed-scales`,
-`/exercises/leap-ladder`, `/exercises/thirds-on-a-drone`, sixteen for Season 2's lessons (SEASON-2
-§ 5.2 items 9, 11 to 13 and 15 to 19), five of them opening an Ear Lab drill on a lesson's set,
+`#/learn/<chapterId>`), and twenty-three exercise slugs (`/exercises/speed-scales`,
+`/exercises/leap-ladder`, `/exercises/thirds-on-a-drone`, eighteen for Season 2's lessons (SEASON-2
+§ 5.2 items 9 to 13 and 15 to 19), five of them opening an Ear Lab drill on a lesson's set,
 and two that open tabs). `/exercises/perfect-octave` also opens, but it only sets Interval Trainer's
 start note, so it does not drill an octave yet (item 3).
 
 Data alone is not enough. A slug launch carries `exercise`, `notes`, `scaleId`, `difficulty`,
-`intervals`, `scale`, `chords`, `inversions` and `tuning` (`ExerciseLaunch` in
+`intervals`, `key`, `ownOctave`, `scale`, `chords`, `inversions` and `tuning` (`ExerciseLaunch` in
 `src/features/exercises/slug-map.ts`), and most drills read only the first note and the difficulty.
 Interval Trainer shuffles a fixed pool (M2, M3, P4, P5, M6, P8, no minor third) unless a launch
 names its own intervals, as `/exercises/leap-ladder` does; Drone Intonation shuffles its own six
@@ -505,12 +505,16 @@ tests, estimated as such:
 2. New launch fields: `intervals` is in for Interval Trainer (whole semitones 1 to 12, each upward),
    which gives Lesson 9 its minor third and leaves Lesson 6 a registry line, and for Drone
    Intonation, which drills those its own pool names and so gives Lesson 10 its two thirds; `scale`
-   is in for Scale Runner, which opens on any of its seven; `chords` and `inversions` are in for
-   Chord Stacker (item 4), and `tuning` for Drone Intonation, which `/exercises/harmony-on-a-drone`
-   opens on pure intervals; no launch carries a direction. Still needed: `durationSec` for Long Note
-   and Pitch Hold (Lessons 3 and 5), and a `pattern` field on slug launches for warm-up patterns
-   such as lip trill and sirens (`launch-override.ts` already exposes `launchPattern`, which the
-   warm-up reads; `ExerciseLaunch` lacks it).
+   is in for Scale Runner, which opens on any of its seven; `key` is in for Sight-Singing, which
+   writes in that key, its `scale` naming the scale, major when it names none; `ownOctave` has a
+   link's `notes` read in each voice's own octave, as given for a higher voice and an octave down
+   for a lower one, in place of the fit into the saved range (SEASON-2 § 5.2 item 10, Lesson 16's
+   two phrases); `chords` and `inversions` are in for Chord Stacker (item 4), and `tuning` for Drone
+   Intonation, which `/exercises/harmony-on-a-drone` opens on pure intervals; no launch carries a
+   direction. Still needed: `durationSec` for Long Note and Pitch Hold (Lessons 3 and 5), and a
+   `pattern` field on slug launches for warm-up patterns such as lip trill and sirens
+   (`launch-override.ts` already exposes `launchPattern`, which the warm-up reads; `ExerciseLaunch`
+   lacks it).
 3. Fix `perfect-octave` so Interval Trainer drills the octave: one registry line, `intervals: [12]`.
 4. Chord Stacker triad chord types (major and minor) for Lesson 12: shipped on 15 November 2026
    (SEASON-2 § 5.2 item 18), with the diminished and the augmented triads and inversions. The
@@ -522,7 +526,8 @@ tests, estimated as such:
    records attribution.
 7. An octave-folded scoring option for Pitch Hold and the other pitch-matching drills (Pitch Hold
    scores raw cents against the written octave today), or an explicit written-octave note in
-   Lessons 3 and 9.
+   Lessons 3 and 9. Sight-Singing folds the octave since 16 November 2026 (SEASON-2 § 5.2 item
+   10).
 8. A rewrite of the Ascent's weeks 2, 3 and 4 in `src/features/path/path-content.ts` ("Breath &
    Power" says "Build breath support"; "Reach New Notes" says "Extend your range"; "Tuning & Ear"
    says "Your voice can only sing as true as your ear can hear"), focus, goals and curated videos,

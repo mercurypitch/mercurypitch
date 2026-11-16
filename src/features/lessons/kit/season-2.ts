@@ -89,7 +89,7 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: "Can you sing a tune you've never heard, just by reading it?",
     pr: {
       needs:
-        'Sight-Singing for the lessons: fixed phrases, a hear-do start, the bass clef, names off and octave-folded scoring (SEASON-2 § 5.2 item 10)',
+        'A practice card for Sight-Singing on the two phrases, which shipped on 16 November 2026 (mercurypitch.com/exercises/sing-what-you-see)',
       link: {
         href: '/pitch-training?lesson=16',
         addr: 'mercurypitch.com/pitch-training',
@@ -134,7 +134,7 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: "How do singers read a tune they've never heard without stopping on every note?",
     pr: {
       needs:
-        'A practice card for Sing It in Time, which shipped on 15 November 2026 (mercurypitch.com/exercises/sing-it-in-time)',
+        'A practice card for Sing It in Time, which shipped on 15 November 2026 (mercurypitch.com/exercises/sing-it-in-time), with Sight-Singing as it is since 16 November 2026',
       link: {
         href: '/pitch-training?lesson=18',
         addr: 'mercurypitch.com/pitch-training',
@@ -202,7 +202,7 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'G major needs one sharp and D major two. Why does each key a fifth up keep its sharps and add one?',
     pr: {
       needs:
-        'A note-reading drill that reads key signatures, and Sight-Singing that spells by key',
+        'A note-reading drill that reads key signatures, and a practice card for Sight-Singing, which spells by key since 16 November 2026',
       link: {
         href: '/?lesson=21#/compose',
         addr: 'mercurypitch.com/#/compose',
@@ -289,7 +289,7 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Why does a minor key often raise one note just before it comes home?',
     pr: {
       needs:
-        "A practice card for Gravity on Te and Ti, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/te-or-ti); Scale Runner's harmonic and melodic minor; Sight-Singing with a key launch, a hear-do start, the bass clef, letter names off and octave-folded scoring",
+        "A practice card for Gravity on Te and Ti, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/te-or-ti); Scale Runner's harmonic and melodic minor; a practice card for Sight-Singing in A harmonic minor, which shipped on 16 November 2026 (mercurypitch.com/exercises/sight-sing-harmonic-minor)",
       link: {
         href: '/ear-lab?lesson=25',
         addr: 'mercurypitch.com/ear-lab',

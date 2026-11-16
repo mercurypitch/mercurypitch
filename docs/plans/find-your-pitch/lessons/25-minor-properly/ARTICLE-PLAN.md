@@ -179,7 +179,7 @@ For everyone. One from Lesson 10, one from Lesson 21 (Arc C's plan writes Lesson
   (`PlaybackSetupPanel.tsx:145-148`); its melodic minor is the ascending form only
   (`scale-data.ts:95-99`), so the card says "going up". The sheet view shows the relative major's
   signature (`sheet-music-renderer.ts:157-169`). Sight-Singing reads the scale
-  (`SightSingingExercise.tsx:188-195`) with sharps only: link A harmonic minor (G♯ right), never C
+  (`SightSingingExercise.tsx:188-195` at `bcd86153b`) with sharps only: link A harmonic minor (G♯ right), never C
   minor.
 - **Shipped on 15 November 2026:** harmonic and melodic minor in Scale Runner (SEASON-2 § 5 item
   13; `scale-runner-scales.ts:15-23`), with `harmonic-minor-run` and `melodic-minor-run`, from A. A

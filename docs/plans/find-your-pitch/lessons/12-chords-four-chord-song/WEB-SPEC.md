@@ -790,7 +790,7 @@ still images when WebGL fails or would run on the CPU.
   minor triads, at 0, 4, 7 and 0, 3, 7 semitones, with the diminished and the augmented, chosen on
   its setup screen (Triads, Sevenths or Both) or by a launch's `chords` field
   (`src/features/exercises/chord-stacker/chord-stacker-chords.ts:41-71`;
-  `src/features/exercises/slug-map.ts:51-54`). `/exercises/triads` opens it on all four
+  `src/features/exercises/slug-map.ts:61-64`). `/exercises/triads` opens it on all four
   (`EXERCISE_SLUGS`, `src/features/exercises/slug-map.ts:87-260`); a slug on this lesson's major
   and minor alone is one registry line, `chords: ['major', 'minor']`, proposed with the card's
   change. LESSON.md's editorial note says the card may then name Chord Stacker on major and minor;

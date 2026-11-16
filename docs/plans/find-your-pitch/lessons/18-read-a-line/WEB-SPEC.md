@@ -473,7 +473,7 @@ kit and the app still need, item 15).
   note is folded into one octave (`foldCents`, `src/lib/pitch-measurements/f0.ts:57-59`); a frame
   within 60 cents adds its time to the note's total, and a frame outside, or with no voice, takes
   back half its time, never below zero: Sight-Singing's rule
-  (`src/features/exercises/sight-singing/use-sight-singing-controller.ts:199-202`). The note is heard
+  (`src/features/exercises/sight-singing/use-sight-singing-controller.ts:258-261`). The note is heard
   on its note once the total reaches 0.45 s, and is read from the frames that counted towards it, as
   their median folded distance, with the octave they sat in. This rule only finds the note: its line
   says "In the band" only within 35 cents.
