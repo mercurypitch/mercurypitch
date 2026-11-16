@@ -726,6 +726,50 @@ test.describe('Studio comping', () => {
     )
   })
 
+  test('the comp bar stands clear of the selected clip', async ({ page }) => {
+    test.setTimeout(240_000)
+    const recorded = await recordLoop(page)
+    const studio = studioRegion(page)
+    await takeButton(page, /, Take 1, pass 3 of 3, /).click()
+    await studio
+      .getByRole('toolbar', { name: 'Selected clip' })
+      .getByRole('button', { name: 'Comp', exact: true })
+      .click()
+    const comp = studio.locator(`[data-studio-comp="${recorded.id}"]`)
+    await expect(comp).toBeVisible()
+    await comp.scrollIntoViewIfNeeded()
+    const clip = takeButton(page, /, Take 1, pass 3 of 3, /)
+
+    // The clip's shadows, each as far as it reaches below the clip, against
+    // the gap between the clip and the bar: a lift fell across the bar.
+    for (const theme of ['dark', 'light'] as const) {
+      await showTheme(page, theme)
+      const { reach, gap } = await clip.evaluate((element, barId) => {
+        const bar = document.querySelector(`[data-studio-comp="${barId}"]`)!
+        const shadows =
+          getComputedStyle(element).boxShadow.match(
+            /-?[\d.]+px -?[\d.]+px [\d.]+px -?[\d.]+px/g,
+          ) ?? []
+        const reach = Math.max(
+          0,
+          ...shadows.map((shadow) => {
+            const [, y, blur, spread] = shadow.split(' ').map(parseFloat)
+            return y + blur + spread
+          }),
+        )
+        const gap =
+          bar.getBoundingClientRect().top -
+          element.getBoundingClientRect().bottom
+        return { reach, gap }
+      }, recorded.id)
+      console.log(
+        `[studio-comp] ${theme} shadow ${JSON.stringify({ reach, gap })}`,
+      )
+      expect(gap).toBeGreaterThan(0)
+      expect(reach).toBeLessThanOrEqual(gap)
+    }
+  })
+
   test.describe('on a tablet', () => {
     test.use({
       viewport: { width: 1024, height: 900 },

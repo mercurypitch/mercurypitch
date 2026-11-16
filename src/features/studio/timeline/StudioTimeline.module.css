@@ -1109,6 +1109,14 @@
       0 6px 18px rgb(1 4 9 / 0.28);
   }
 }
+/* With the lane's passes open under it (StudioCompLanes.tsx), the selected
+   clip keeps its ring and gives up its lift: the shadow reached 24 px below
+   the clip, past the 6 or 7 px gap, and darkened the Comp bar's top 14 px,
+   by up to 11 levels a channel in the light theme. */
+.timeline .lane:has(> [data-studio-comp]) button.selectedClip,
+.timeline .lane:has(> [data-studio-comp]) button.selectedClip:hover {
+  box-shadow: 0 0 0 1px var(--studio-accent);
+}
 .timeline button.editableClip {
   touch-action: none;
   cursor: grab;
