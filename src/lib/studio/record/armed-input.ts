@@ -36,6 +36,8 @@ export interface StudioArmedInput {
   settled(): void
   /** Still there to record from. */
   live(): boolean
+  /** Let what plays it go at once, its sound left to ring out: an instrument's port, free for the next lane; nothing for a microphone. */
+  letGo(): void
   /** Take apart what the lane took, and give its hold back: the microphone goes with the last lane on it. */
   close(): void
 }
@@ -123,6 +125,7 @@ export function createStudioArmedInputs(
         shared.flowing = true
       },
       live: () => studioMicrophoneLive(stream),
+      letGo: () => undefined,
       close: () => {
         if (closed) return
         closed = true
@@ -149,6 +152,7 @@ export function createStudioArmedInputs(
         flowing: true,
         settled: () => undefined,
         live: () => hold.connected(),
+        letGo: () => hold.letGo(),
         close: () => hold.release(),
       }
     },

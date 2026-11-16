@@ -11,6 +11,7 @@ function instrument(connected = true) {
     kind: 'instrument',
     play,
     connected: () => connected,
+    letGo: vi.fn(),
     release,
   }
   return { node, hold, play, release }
@@ -138,6 +139,7 @@ describe('the Studio recorder on an instrument', () => {
       kind: 'instrument',
       play: () => node as unknown as AudioNode,
       connected: () => connected,
+      letGo: vi.fn(),
       release,
     }
     const h = harness(

@@ -338,6 +338,21 @@ describe('the Studio recorder on a MIDI lane', () => {
     )
   })
 
+  it('frees the port for another lane as soon as its lane lets it go, while its sound rings out', async () => {
+    // Arrange
+    const { hook, deps } = mount()
+    hook.laneInputs.choose('lane-2', KEYS)
+    const hold = (await deps.acquireInstrument('lane-1'))!
+
+    // Act
+    hold.letGo()
+    const second = await deps.acquireInstrument('lane-2')
+
+    // Assert
+    expect(second).toMatchObject({ kind: 'instrument' })
+    expect(hook.midiArmed('lane-1')).toBeNull()
+  })
+
   it("saves the notes played into a kept take with its clip, in ticks from its first sample at the song's tempo", async () => {
     // Arrange
     const { deps } = mount()

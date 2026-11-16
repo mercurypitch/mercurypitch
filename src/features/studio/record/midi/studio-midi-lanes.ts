@@ -139,6 +139,10 @@ export function createStudioMidiLanes(options: StudioMidiLanesOptions) {
     }).then(
       (hold) => ({
         ...hold,
+        letGo: () => {
+          hold.letGo()
+          forget(trackId, arm)
+        },
         release: () => {
           hold.release()
           forget(trackId, arm)

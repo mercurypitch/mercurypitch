@@ -34,6 +34,7 @@ function instrument(name: string) {
     kind: 'instrument',
     play: () => node as unknown as AudioNode,
     connected: () => true,
+    letGo: vi.fn(),
     release,
   }
   return { node, hold, release }

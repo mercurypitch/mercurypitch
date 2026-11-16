@@ -1,4 +1,4 @@
-// Studio MIDI arm tests — a MIDI lane's arm plays each note on its sound at the clock time its message arrived and logs it there, keeps a drum key with no drum, finds a port by its name when its id changed, refuses a gone port in its name and MIDI denied or missing in their words, says its port went when unplugged, and lets the port and the sound go on release without saying so.
+// Studio MIDI arm tests — a MIDI lane's arm plays each note on its sound at the clock time its message arrived and logs it there, keeps a drum key with no drum, finds a port by its name when its id changed, refuses a gone port in its name and MIDI denied or missing in their words, says its port went when unplugged, and lets the port and the sound go on release without saying so, the port first when it is let go before the sound, its notes ringing on.
 import { describe, expect, it, vi } from 'vitest'
 import type { StudioLaneMidiInput } from '@/lib/studio/record/lane-inputs'
 import { createStudioNoteLog } from '@/lib/studio/record/take-notes'
@@ -185,6 +185,31 @@ describe('a MIDI lane arm', () => {
     expect(armed.onLost).not.toHaveBeenCalled()
     expect(armed.detach).toHaveBeenCalledOnce()
     expect(armed.voice.start).not.toHaveBeenCalled()
+    expect(hold.connected()).toBe(false)
+  })
+
+  it('lets its port go first, its held notes ringing on and ended in the log, and its sound only on release', async () => {
+    // Arrange
+    const keys = fakeMidiInput('keys', 'Keystation 49')
+    const armed = arm([keys])
+    const hold = await armed.opening
+    hold.play({ currentTime: 10 } as AudioContext)
+    keys.send([0x90, 60, 100], 2_000)
+
+    // Act
+    hold.letGo()
+    keys.send([0x90, 64, 100], 2_000)
+    const beforeRelease = armed.detach.mock.calls.length
+    hold.release()
+
+    // Assert
+    expect(armed.onLost).not.toHaveBeenCalled()
+    expect(armed.voice.start).toHaveBeenCalledOnce()
+    expect(armed.voice.stop).not.toHaveBeenCalled()
+    expect(armed.log.notes()[0].end).not.toBeNull()
+    expect(armed.voice.silence).not.toHaveBeenCalled()
+    expect(beforeRelease).toBe(0)
+    expect(armed.detach).toHaveBeenCalledOnce()
     expect(hold.connected()).toBe(false)
   })
 })
