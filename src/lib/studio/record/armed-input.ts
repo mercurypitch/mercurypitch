@@ -45,7 +45,8 @@ interface SharedMicrophone {
   lanes: number
 }
 
-function trackLive(stream: MediaStream): boolean {
+/** A microphone's stream is still there to record from: its track is live, or it names none. */
+export function studioMicrophoneLive(stream: MediaStream): boolean {
   const tracks = stream.getAudioTracks?.()
   return (
     tracks === undefined ||
@@ -103,7 +104,7 @@ export function createStudioArmedInputs(
         pick: lane.pick,
         missing: lane.missing,
       },
-      live: () => trackLive(stream),
+      live: () => studioMicrophoneLive(stream),
       close: () => {
         if (closed) return
         closed = true

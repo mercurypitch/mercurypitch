@@ -10,11 +10,15 @@
 // stream MicManager opened for the Studio (its one scoped hold), and takes
 // its own input or pair of it (armed-input.ts); the hold goes with the last
 // lane that held it, so arming, disarming or re-arming a lane on it never
-// reopens it. A lane that follows the Studio's input and a lane set to that
-// same input are on one input: they are compared as the arm plans them
-// (lane-inputs.ts). A lane asking for another input while one is held is
-// refused, in words that name both lanes and both inputs.
+// reopens it. MicManager can still end it under a lane that is gliding out
+// (a hidden page, another tab, an unplug, the input-loss watch): an arm that
+// finds its track ended opens the input afresh (`open`). A lane that follows
+// the Studio's input and a lane set to that same input are on one input:
+// they are compared as the arm plans them (lane-inputs.ts). A lane asking
+// for another input while one is held is refused, in words that name both
+// lanes and both inputs.
 import { joinNames } from '@/lib/jam/jam-arrivals'
+import { studioMicrophoneLive } from '@/lib/studio/record/armed-input'
 
 /** A lane's arm refused before it opened anything, in words for its card. */
 export class StudioInputRefusal extends Error {
@@ -58,6 +62,8 @@ interface Shared {
   readonly name: string
   readonly opening: Promise<StudioOpenedInput>
   readonly holders: Set<Holder>
+  /** Its stream once it has opened; null while it opens. */
+  stream: MediaStream | null
 }
 
 const deviceKey = (deviceId: string | null) => deviceId ?? 'default'
@@ -99,15 +105,20 @@ export function createStudioMicShare(options: StudioMicShareOptions) {
   }
 
   /**
-   * Lane `trackId`'s input: the shared one when it is the input asked for,
-   * else opened now, inside the press; refused while other lanes are armed
-   * on another input.
+   * Lane `trackId`'s input: the shared one when it is the input asked for
+   * and still live, else opened now, inside the press; refused while other
+   * lanes are armed on another input.
    */
   async function open(
     trackId: string | null,
     ask: StudioInputAsk,
   ): Promise<StudioOpenedInput> {
     const device = deviceKey(ask.deviceId)
+    // MicManager ended it while a lane gliding out still held it: its stream
+    // records nothing now. That lane's late release gives back only its own
+    // hold, which MicManager has ended already.
+    if (shared?.stream != null && !studioMicrophoneLive(shared.stream))
+      shared = null
     if (shared !== null && shared.device !== device) {
       const armedOn = inTheWay(trackId)
       if (armedOn.length > 0)
@@ -127,6 +138,7 @@ export function createStudioMicShare(options: StudioMicShareOptions) {
       name: ask.name,
       opening: options.open(ask.deviceId),
       holders: new Set(),
+      stream: null,
     })
     const holder: Holder = { trackId }
     share.holders.add(holder)
@@ -138,6 +150,7 @@ export function createStudioMicShare(options: StudioMicShareOptions) {
       if (shared === share && share.holders.size === 0) shared = null
       throw error
     }
+    share.stream = opened.stream
     let released = false
     return {
       stream: opened.stream,

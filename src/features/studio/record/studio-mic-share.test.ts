@@ -1,4 +1,4 @@
-// Studio microphone share tests — every armed audio lane records from the one input opened once, held until its last lane lets go; a lane asking for another input while lanes are armed on one is refused in words that name both; an input whose lanes have all left gives way; a re-arm keeps it open; a failed open holds nothing.
+// Studio microphone share tests — every armed audio lane records from the one input opened once, held until its last lane lets go; a lane asking for another input while lanes are armed on one is refused in words that name both; an input whose lanes have all left gives way; a re-arm keeps it open; an input that went dead under a lane still holding it is opened afresh; a failed open holds nothing.
 import { describe, expect, it, vi } from 'vitest'
 import type { StudioOpenedInput } from './studio-mic-share'
 import { createStudioMicShare, StudioInputRefusal, studioOneInputWords, } from './studio-mic-share'
@@ -128,6 +128,48 @@ describe('the one input armed audio lanes share', () => {
     after.release()
     await Promise.resolve()
     expect(releases[0]).toHaveBeenCalledOnce()
+  })
+
+  it('opens the input afresh for an arm when the one a lane still holds went dead, and the late release gives back only the old hold', async () => {
+    // Arrange: each open is a stream with one live track.
+    const tracks: { readyState: MediaStreamTrackState }[] = []
+    const releases: ReturnType<typeof vi.fn>[] = []
+    const open = vi.fn(async () => {
+      const track = { readyState: 'live' as MediaStreamTrackState }
+      tracks.push(track)
+      const release = vi.fn()
+      releases.push(release)
+      return {
+        stream: { getAudioTracks: () => [track] } as unknown as MediaStream,
+        missing: false,
+        release,
+      } satisfies StudioOpenedInput
+    })
+    const mic = createStudioMicShare({
+      open,
+      armed: () => false,
+      laneName: (trackId) => String(trackId),
+    })
+    // A lane disarmed while heard holds its input until its monitor has
+    // glided out; MicManager lets the input go inside that glide.
+    const gliding = await mic.open('vox', SCARLETT)
+    tracks[0].readyState = 'ended'
+
+    // Act
+    const again = await mic.open('vox', SCARLETT)
+    gliding.release()
+    await Promise.resolve()
+
+    // Assert
+    expect(open).toHaveBeenCalledTimes(2)
+    expect(again.stream).not.toBe(gliding.stream)
+    expect(tracks[1].readyState).toBe('live')
+    expect(releases[0]).toHaveBeenCalledOnce()
+    expect(releases[1]).not.toHaveBeenCalled()
+    expect(mic.name()).toBe('Scarlett 2i2')
+    again.release()
+    await Promise.resolve()
+    expect(releases[1]).toHaveBeenCalledOnce()
   })
 
   it('holds nothing when the input is refused, and tries again on the next arm', async () => {
