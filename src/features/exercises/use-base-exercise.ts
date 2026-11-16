@@ -27,6 +27,10 @@ interface BaseExerciseDeps {
   /** The drill hears a target in any octave: the run's trace says so
    *  (`RunTrace.folded`), so the result card measures in the voice's. */
   foldsOctaves?: boolean
+  /** The drill moves on when the singer has held a note, not on a clock:
+   *  the run's trace says so (`RunTrace.selfPaced`), so the voice still on
+   *  the last note at the start of the next is not read as off it. */
+  selfPaced?: boolean
 }
 
 export interface BaseExerciseStartOptions {
@@ -468,6 +472,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
       ),
       targets: targetTimeline,
       ...(deps.foldsOctaves === true ? { folded: true } : {}),
+      ...(deps.selfPaced === true ? { selfPaced: true } : {}),
     })
     batch(() => {
       setResult(exerciseResult)

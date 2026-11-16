@@ -36,6 +36,7 @@ import type { RunTrace } from './last-run-trace'
 import { lastRunTrace } from './last-run-trace'
 import { RunTraceCanvas } from './RunTraceCanvas'
 import stage from './stage/ExerciseStage.module.css'
+import { watchLaunchPin } from './stage/launch-pin'
 import { noticeFromTake } from './stage/stage-notice'
 import { stagePose } from './stage/stage-pose'
 import { StageCoach } from './stage/StageCoach'
@@ -236,6 +237,12 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   // stays adjustable between runs, rather than collapsing after every pick.
   const [customOpen, setCustomOpen] = createSignal(false)
   let guidedResultCard: HTMLDivElement | undefined
+  // The sheet: on a phone it scrolls under the pinned launch button, and
+  // its scrim is drawn while the button is pinned (stage/launch-pin.ts).
+  let sheet: HTMLDivElement | undefined
+  onMount(() => {
+    if (sheet !== undefined) onCleanup(watchLaunchPin(sheet))
+  })
   let guidedResultFocusTimer: ReturnType<typeof setTimeout> | undefined
 
   // Heavy idle settings → mobile bottom sheet (opt-in via settingsSheetLabel).
@@ -919,6 +926,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
       <div
         class="exercise-canvas-area"
         classList={{ 'is-idle': isIdleLike(), 'is-active': isActive() }}
+        ref={sheet}
       >
         <Show when={status() === 'count-in'}>{props.countInContent}</Show>
         <Show when={isIdleLike()}>
@@ -929,6 +937,7 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
               panel before the run; they slide out of view once it's active. A
               finished run returns here with the score now in the corner chip. */}
           <div class="exercise-idle-center">
+            <div class="exercise-launch-scrim" aria-hidden="true" />
             <Show when={isComplete() && props.resultScore() !== null}>
               {/* Between runs of a multi-rep segment the card stays compact:
                   no contour, no pop-in. The trace is analysis, and mid-rep

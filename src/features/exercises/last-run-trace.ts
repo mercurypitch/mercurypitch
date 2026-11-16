@@ -33,6 +33,10 @@ export interface RunTrace {
   /** The drill hears a target in any octave (Sight-Singing), so a voice an
    *  octave from it is on it: "furthest off" folds the octave too. */
   folded?: boolean
+  /** The drill moves to its next note when the singer has held this one
+   *  (Sight-Singing), so at each new note the voice is still on the last:
+   *  that is reading the next note, not a moment off it (run-trace-view.ts). */
+  selfPaced?: boolean
 }
 
 /** Keeps stored traces small (~600 points ≈ 10s at 60fps after downsample). */

@@ -80,19 +80,28 @@ export function centsBetween(f: number, target: number): number {
  * is not counted: it names the moment between two notes, not a miss. A
  * drill that hears any octave (`folded`) measures the distance in the
  * octave the voice is in.
+ *
+ * A drill that moves on when the singer has held a note (`selfPaced`) moves
+ * its target while the voice is still on that note, and a reader stays there
+ * for as long as the next note takes to read: a run sung in tune throughout
+ * read "506 cents sharp of D4", the fourth between two of its notes (seen in
+ * Sight-Singing, November 2026). So there the voice counts on a new note
+ * from the moment it is nearer that note than the last one, however long
+ * that takes, and a voice that never leaves the last note says nothing
+ * here: the note's own mark says it was not sung.
  */
 export function worstMoment(trace: RunTrace): WorstMoment | null {
   if (trace.targets.length === 0) return null
 
-  const arrivals = newNotesOf(trace.targets)
+  const off = distanceAs(trace)
+  const arrived = arrivalsOf(trace, off)
   let worst: WorstMoment | null = null
   for (const sample of trace.samples) {
     if (!Number.isFinite(sample.f) || sample.f <= 0) continue
     const target = targetAt(trace.targets, sample.t)
     if (target === null || target <= 0) continue
-    if (arriving(arrivals, sample.t)) continue
-    const off = centsBetween(sample.f, target)
-    const cents = trace.folded === true ? foldCents(off) : off
+    const cents = off(sample.f, target)
+    if (!arrived(sample, cents)) continue
     if (worst === null || Math.abs(cents) > Math.abs(worst.cents)) {
       worst = { t: sample.t, f: sample.f, target, cents }
     }
@@ -100,9 +109,61 @@ export function worstMoment(trace: RunTrace): WorstMoment | null {
   return worst
 }
 
-/** When the target moved to a new note: its first, and each jump of `NEW_NOTE_CENTS` or more. */
-function newNotesOf(targets: readonly TracePoint[]): number[] {
-  const times: number[] = []
+/** Cents from a target to a voice, as the run's drill hears it: in the
+ *  octave the voice is in where it hears any octave. */
+function distanceAs(trace: RunTrace): (f: number, target: number) => number {
+  return trace.folded === true
+    ? (f, target) => foldCents(centsBetween(f, target))
+    : centsBetween
+}
+
+/**
+ * Whether the voice has arrived on the note a sample falls in, asked of a
+ * run's samples in the order they were heard (one out of order starts the
+ * walk again). `cents` is the sample's distance from its target.
+ */
+function arrivalsOf(
+  trace: RunTrace,
+  off: (f: number, target: number) => number,
+): (sample: TracePoint, cents: number) => boolean {
+  const notes = newNotesOf(trace.targets)
+  // The note the last sample fell in, and whether the voice has left the
+  // note before it.
+  let n = -1
+  let left = false
+  let lastT = Number.NEGATIVE_INFINITY
+  return (sample, cents) => {
+    if (sample.t < lastT) {
+      n = -1
+      left = false
+    }
+    lastT = sample.t
+    while (n + 1 < notes.length && notes[n + 1].t <= sample.t) {
+      n += 1
+      left = false
+    }
+    if (n < 0) return true
+    const note = notes[n]
+    if (sample.t - note.t < ARRIVAL_SEC) return false
+    if (trace.selfPaced !== true || left) return true
+    const stillOnLast =
+      note.last !== null && Math.abs(off(sample.f, note.last)) < Math.abs(cents)
+    if (stillOnLast) return false
+    left = true
+    return true
+  }
+}
+
+/** A note in the target's timeline: when it began, and the note before it. */
+interface NoteStart {
+  t: number
+  /** The target just before this note, in Hz; null for the first note. */
+  last: number | null
+}
+
+/** Where the target moved to a new note: its first, and each jump of `NEW_NOTE_CENTS` or more. */
+function newNotesOf(targets: readonly TracePoint[]): NoteStart[] {
+  const notes: NoteStart[] = []
   let held: number | null = null
   for (const point of targets) {
     if (!Number.isFinite(point.f) || point.f <= 0) continue
@@ -110,15 +171,10 @@ function newNotesOf(targets: readonly TracePoint[]): number[] {
       held === null ||
       Math.abs(centsBetween(point.f, held)) >= NEW_NOTE_CENTS
     )
-      times.push(point.t)
+      notes.push({ t: point.t, last: held })
     held = point.f
   }
-  return times
-}
-
-/** Whether `t` falls within `ARRIVAL_SEC` after a move to a new note. */
-function arriving(arrivals: readonly number[], t: number): boolean {
-  return arrivals.some((at) => t >= at && t - at < ARRIVAL_SEC)
+  return notes
 }
 
 /**
