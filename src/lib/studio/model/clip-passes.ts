@@ -20,6 +20,7 @@
 // same windows (commands.ts), so each stretch of the range can play a pass
 // of its own. A clip stays inside its pass, so its trims stop at the pass's
 // edges (studioClipSourceBounds) and every pass it can move to holds it.
+import { STUDIO_MIDI_WINDOW_MOST_FRAMES } from './midi-window'
 import type { StudioClip, StudioClipPasses } from './types'
 
 /** The most passes one loop take keeps; recording stops after the last. */
@@ -50,16 +51,22 @@ export function studioClipPass(
   }
 }
 
-/** The source frames a clip's trims can reach: its pass's for a loop take, else all its audio's. */
+/**
+ * The source frames a clip's trims can reach: its pass's for a loop take;
+ * for any other MIDI clip five minutes of its sequence, which a trim of its
+ * end grows (midi-window.ts); else all its audio's.
+ */
 export function studioClipSourceBounds(
   clip: StudioClip,
   audioFrames: number,
 ): { readonly first: number; readonly end: number } {
-  if (!clip.passes) return { first: 0, end: audioFrames }
-  return studioPassWindow(
-    clip.passes,
-    studioPassAt(clip.passes, clip.sourceInFrame),
-  )
+  if (clip.passes)
+    return studioPassWindow(
+      clip.passes,
+      studioPassAt(clip.passes, clip.sourceInFrame),
+    )
+  if (clip.midi) return { first: 0, end: STUDIO_MIDI_WINDOW_MOST_FRAMES }
+  return { first: 0, end: audioFrames }
 }
 
 /** The clip playing pass `index` whole instead: its source frames and fades moved by whole passes, any comp let go (clip-comp.ts). */

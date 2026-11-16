@@ -1,7 +1,8 @@
-// Studio MIDI window tests — a MIDI clip's window may run past its audio to its sequence's end, never past it and never past five minutes, and its fades with it; an audio clip and a loop take's passes stay inside their audio; and a split, a move, a fade and a duplicate of a MIDI clip past its audio are kept.
+// Studio MIDI window tests — a MIDI clip's window may run past its audio to its sequence's end, never past it and never past five minutes, and its fades with it; an audio clip and a loop take's passes stay inside their audio; a split, a move, a fade and a duplicate of a MIDI clip past its audio are kept; and a trim of its end past its sequence grows the sequence, a shared one copied first, in one undo step, while a shorter trim leaves it as it was.
 import { describe, expect, it } from 'vitest'
 import type { StudioCommand } from './commands'
 import { applyStudioCommand } from './commands'
+import { createStudioHistory, executeStudioCommand, undoStudioCommand, } from './history'
 import { STUDIO_MIDI_WINDOW_LIMIT, STUDIO_MIDI_WINDOW_MOST_FRAMES, studioSequenceCovers, } from './midi-window'
 import { studioMidiFixture, TEST_NOW } from './model.test-fixtures'
 import type { StudioClip, StudioProject } from './types'
@@ -207,5 +208,111 @@ describe('editing a MIDI clip past its audio', () => {
       sourceOutFrame: 192_000,
       midi: song.clip.midi,
     })
+  })
+})
+
+describe('lengthening a MIDI clip', () => {
+  /** The fixture's song, its keys clip on a two-second sequence of 3840 ticks. */
+  const recorded = () => pastItsAudio({ sourceOutFrame: 96_000 }, 3840)
+
+  it('grows its sequence to the fewest ticks that cover its new end, one undo step', () => {
+    // Arrange: 150,010 frames is 6000.4 ticks at 120 bpm.
+    const song = recorded()
+    const options = { assets: song.assets, now: TEST_NOW }
+    const history = createStudioHistory(song.project)
+
+    // Act
+    const longer = executeStudioCommand(
+      history,
+      { type: 'trim-tail', clipId: song.clip.id, sourceOutFrame: 150_010 },
+      options,
+    )
+    const undone = undoStudioCommand(longer, options)
+
+    // Assert
+    expect(longer.past).toHaveLength(1)
+    expect(clipById(longer.present, song.clip.id).sourceOutFrame).toBe(150_010)
+    expect(longer.present.sequences).toEqual([
+      { ...song.sequence, lengthTicks: 6001 },
+    ])
+    expect(undone.present.sequences).toEqual([song.sequence])
+    expect(clipById(undone.present, song.clip.id).sourceOutFrame).toBe(96_000)
+  })
+
+  it('leaves its sequence as long as it was when trimmed shorter, its notes past the window kept', () => {
+    // Arrange
+    const song = pastItsAudio()
+
+    // Act
+    const shorter = apply(song, {
+      type: 'trim-tail',
+      clipId: song.clip.id,
+      sourceOutFrame: 60_000,
+    })
+
+    // Assert
+    expect(clipById(shorter, song.clip.id).sourceOutFrame).toBe(60_000)
+    expect(shorter.sequences).toEqual([song.sequence])
+  })
+
+  it('lengthens a copy of its own when another clip shares its sequence, the other clip as it was', () => {
+    // Arrange: a duplicate shares the clip's sequence.
+    const song = recorded()
+    const shared = apply(song, {
+      type: 'duplicate-clip',
+      clipId: song.clip.id,
+      newClipId: 'copy',
+      newTrackId: 'unused',
+    })
+
+    // Act
+    const longer = applyStudioCommand(
+      shared,
+      {
+        type: 'trim-tail',
+        clipId: 'copy',
+        sourceOutFrame: 192_000,
+        forkSequenceId: 'own',
+      },
+      { assets: song.assets, now: TEST_NOW },
+    )
+
+    // Assert
+    expect(clipById(longer, 'copy').midi?.sequenceId).toBe('own')
+    expect(clipById(longer, song.clip.id).midi?.sequenceId).toBe(
+      song.sequence.id,
+    )
+    expect(longer.sequences).toEqual([
+      song.sequence,
+      { ...song.sequence, id: 'own', lengthTicks: 7680 },
+    ])
+  })
+
+  it('is refused for a shared sequence with no id for the copy, and past five minutes', () => {
+    // Arrange
+    const song = recorded()
+    const shared = apply(song, {
+      type: 'duplicate-clip',
+      clipId: song.clip.id,
+      newClipId: 'copy',
+      newTrackId: 'unused',
+    })
+    const options = { assets: song.assets, now: TEST_NOW }
+
+    // Act, Assert
+    expect(() =>
+      applyStudioCommand(
+        shared,
+        { type: 'trim-tail', clipId: 'copy', sourceOutFrame: 192_000 },
+        options,
+      ),
+    ).toThrow(/needs an id for the clip’s own copy/)
+    expect(() =>
+      apply(song, {
+        type: 'trim-tail',
+        clipId: song.clip.id,
+        sourceOutFrame: STUDIO_MIDI_WINDOW_MOST_FRAMES + 1,
+      }),
+    ).toThrow(STUDIO_MIDI_WINDOW_LIMIT)
   })
 })

@@ -1,7 +1,7 @@
-// Studio clip detail tests — submillisecond bounds and source-anchored fade preservation.
+// Studio clip detail tests — submillisecond bounds, a MIDI clip's end trimmed past its audio, and source-anchored fade preservation.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
+import { studioFixture, studioMidiFixture, } from '@/lib/studio/model/model.test-fixtures'
 import { StudioClipDetails } from './StudioClipDetails'
 
 afterEach(cleanup)
@@ -66,6 +66,34 @@ describe('Studio clip details', () => {
         ...clip.fades,
         in: { fromSourceFrame: 100, toSourceFrame: 150 },
       },
+    })
+  })
+
+  it('trims a MIDI clip’s end past its audio, five minutes in at the most, naming a copy of its own sequence', () => {
+    // Arrange: two seconds of audio.
+    const { clip, assets } = studioMidiFixture()
+    const command = vi.fn(() => true)
+    render(() => (
+      <StudioClipDetails
+        clip={clip}
+        asset={assets[1]}
+        writable
+        onCommand={command}
+      />
+    ))
+    const tail = screen.getByRole('spinbutton', { name: 'Trim end' })
+
+    // Act
+    fireEvent.input(tail, { target: { value: '6' } })
+    fireEvent.keyDown(tail, { key: 'Enter' })
+
+    // Assert
+    expect(tail).toHaveAttribute('max', '300')
+    expect(command).toHaveBeenCalledExactlyOnceWith({
+      type: 'trim-tail',
+      clipId: clip.id,
+      sourceOutFrame: 288_000,
+      forkSequenceId: expect.any(String),
     })
   })
 

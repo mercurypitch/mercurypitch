@@ -109,7 +109,8 @@ export function draftStudioGesture(
     })
   let next = clip
   let snapFrame: number | null = null
-  // A loop take's clip trims inside its pass (clip-passes.ts).
+  // A loop take's clip trims inside its pass, and a MIDI clip's end past
+  // its audio and its sequence's end (clip-passes.ts).
   const bounds = studioClipSourceBounds(
     clip,
     input.asset?.normalizedFrameCount ?? clip.sourceOutFrame,
@@ -170,6 +171,23 @@ export function draftStudioGesture(
   }
 }
 
+/**
+ * A trim of `clip`'s end to source frame `sourceOutFrame`. A MIDI clip's
+ * end may pass its sequence's end, which grows its sequence: the command
+ * names the clip's own copy for when other clips share it (midi-window.ts).
+ */
+export function studioTrimTail(
+  clip: Pick<StudioClip, 'id' | 'midi'>,
+  sourceOutFrame: number,
+): StudioCommand {
+  return {
+    type: 'trim-tail',
+    clipId: clip.id,
+    sourceOutFrame,
+    ...(clip.midi && { forkSequenceId: globalThis.crypto.randomUUID() }),
+  }
+}
+
 export function studioGestureCommand(
   draft: StudioGestureDraft,
   original: StudioClip,
@@ -196,7 +214,7 @@ export function studioGestureCommand(
     case 'trim-head':
       return { type: 'trim-head', clipId, sourceInFrame: next.sourceInFrame }
     case 'trim-tail':
-      return { type: 'trim-tail', clipId, sourceOutFrame: next.sourceOutFrame }
+      return studioTrimTail(original, next.sourceOutFrame)
     default:
       return { type: 'set-fades', clipId, fades: next.fades }
   }

@@ -6,7 +6,7 @@ import { studioClipOnPass, studioClipPass, studioClipSourceBounds, studioFitPass
 import type { StudioCommand } from './commands'
 import { applyStudioCommand } from './commands'
 import { createStudioHistory, executeStudioCommand, undoStudioCommand, } from './history'
-import { studioFixture, TEST_NOW } from './model.test-fixtures'
+import { studioFixture, studioMidiFixture, TEST_NOW, } from './model.test-fixtures'
 import type { StudioAsset, StudioClip, StudioProject } from './types'
 import { validateStudioProject } from './validation'
 
@@ -57,6 +57,25 @@ describe('Studio clip passes', () => {
     const plain = studioFixture().clip
     expect(studioClipPass(plain)).toBeNull()
     expect(studioClipSourceBounds(plain, 1000)).toEqual({ first: 0, end: 1000 })
+  })
+
+  it('lets a MIDI clip’s trims reach five minutes of its sequence, past its audio, and a MIDI loop take its pass', () => {
+    // Arrange
+    const { clip } = studioMidiFixture()
+    const looped = {
+      ...clip,
+      passes: { firstFrame: 0, frames: 48_000, count: 2 },
+    }
+
+    // Act, Assert
+    expect(studioClipSourceBounds(clip, 96_000)).toEqual({
+      first: 0,
+      end: 48_000 * 300,
+    })
+    expect(studioClipSourceBounds(looped, 96_000)).toEqual({
+      first: 0,
+      end: 48_000,
+    })
   })
 
   it('saves a loop take whose clip sits inside one of its passes, and refuses any other', () => {
