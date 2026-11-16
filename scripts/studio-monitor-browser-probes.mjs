@@ -3,7 +3,9 @@
 //
 // The input monitor (input-monitor.ts) plays the armed input through its
 // lane's chain at the monitor profile (fx-profile.ts MONITOR_FX_PROFILE),
-// in which no effect delays the signal. These probes measure, at 48 kHz:
+// in which no effect delays the signal, then through the master every
+// monitored lane shares (monitor-master.ts). These probes measure, at
+// 48 kHz:
 // - latency: the frames each effect, and each role's new lane, adds before
 //   anything is heard, monitored and at full quality;
 // - plumbing: the monitor rendered offline against the lane's path built as
@@ -18,15 +20,27 @@
 //   another's side, would show;
 // - sound: each role's new lane monitored, against the same lane at full
 //   quality, as a take on it plays back;
-// - cost: render time per 128-frame quantum, dry and through lanes, and the
-//   main thread's time to build a lane's path and to follow a change.
+// - master: the song's master after the lane at a measured gain of 0, +6
+//   and -4 dB, and as on each side of Compare, against the lane alone: the
+//   level it plays a tone at, the frames it adds, the steepest step while a
+//   tone heard live meets a gain change and a switch to each side of
+//   Compare, and its ceiling with +8 dB on a tone peaking at -3 dBFS;
+// - cost: render time per 128-frame quantum, dry and through lanes, through
+//   the song's master and through none, and the main thread's time to
+//   build a lane's path and to follow a change.
 // Each monitor here hears its input from the first sample (`settled`), as
 // it does an instrument: how a microphone's monitor rises on the arm is
-// measured by studio-record-monitor-disarm.spec.ts.
+// measured by studio-record-monitor-disarm.spec.ts. Each plays through a
+// master with no effects, so that only its lane is measured, except where
+// a probe names the song's master.
 // Latency, plumbing, live and lanes pass on the bar the lane line probes
-// hold an export to: -120 dBFS. Sound and cost are reports: sound passes
-// when every lane renders, cost while a monitored lane takes under a tenth
-// of a quantum's time.
+// hold an export to: -120 dBFS. The master passes when a tone's level moves
+// by the gain within 0.1 dB, it adds no frame, no step at a change is
+// steeper than 1.1 times the tone's own (while a step with no glide, there
+// for scale, is), and its ceiling holds, passing a tone 3 dB or more under
+// it within 0.1 dB. Sound and cost are reports:
+// sound passes when every lane renders, cost while a monitored lane takes
+// under a tenth of a quantum's time.
 import { createStudioFxChain } from '/src/lib/studio-fx/chain.ts'
 import { normalizeChainSpec } from '/src/lib/studio-fx/chain-spec.ts'
 import { measureCompressorLatency } from '/src/lib/studio-fx/compressor-twin.ts'
@@ -39,7 +53,8 @@ import { createStudioProject, createStudioTrack, } from '/src/lib/studio/model/d
 import { frameTime } from '/src/lib/studio/playback/whole-frame.ts'
 import { createStudioArmedInputs } from '/src/lib/studio/record/armed-input.ts'
 import { createStudioInputMonitor } from '/src/lib/studio/record/input-monitor.ts'
-import { studioMonitorSound } from '/src/lib/studio/record/monitor-sound.ts'
+import { createStudioMonitorMaster } from '/src/lib/studio/record/monitor-master.ts'
+import { studioMonitorMasterGain, studioMonitorMasterSpec, studioMonitorSound, } from '/src/lib/studio/record/monitor-sound.ts'
 import { scaleTo, syntheticVoice } from '/scripts/studio-fx-browser-probes.mjs'
 
 const SR = 48000
@@ -73,6 +88,43 @@ function laneProject(role, over = {}) {
 function laneSound(role, over) {
   return studioMonitorSound(laneProject(role, over), 'lane', { on: true })
 }
+
+/** A new song's master as the monitor plays it, at a measured `gainDb`; `bypassed` as on Compare's Before side. */
+function songMaster(gainDb, bypassed = false) {
+  return studioMonitorMasterSpec(
+    laneProject('voice'),
+    { gainDb, safetyGainDb: 0 },
+    { bypassed },
+  )
+}
+
+/**
+ * Compare's gains for a song the master lifts +6 dB, matched on a side
+ * turned down: Before by 5 dB, After by 3 dB, so both sides move.
+ */
+const COMPARED = {
+  beforeGainDb: -5,
+  afterGainDb: -3,
+  gainDb: 6,
+  safetyGainDb: 0,
+}
+
+/** The master the monitor plays while Compare plays `side` (monitor-sound.ts): the side's gain, and no master on Before. */
+function comparedMaster(side) {
+  const gain = studioMonitorMasterGain(
+    { gainDb: 0, safetyGainDb: 0 },
+    { side, gains: COMPARED },
+  )
+  return {
+    gainDb: gain.gainDb,
+    spec: studioMonitorMasterSpec(laneProject('voice'), gain, {
+      bypassed: side === 'before',
+    }),
+  }
+}
+
+/** A lane with no effects at unity: what reaches the master is the input. */
+const PLAIN_LANE = { on: true, spec: EMPTY_SPEC, gains: [1, 1] }
 
 function withoutKinds(sound, kinds) {
   const spec = normalizeChainSpec({
@@ -151,10 +203,16 @@ function renderClock(ctx) {
   }
 }
 
-/** The monitor itself, rendered offline: `sound` set at 0, the input from START. */
-function monitorRender(input, sound, length = START + input.length) {
+/** The monitor itself, rendered offline: `sound` set at 0, the input from START, through `masterSpec`. */
+function monitorRender(
+  input,
+  sound,
+  length = START + input.length,
+  masterSpec = EMPTY_SPEC,
+) {
   return renderOffline(length, (ctx) => {
     const monitor = createStudioInputMonitor(ctx, sourceOf(ctx, input, START), {
+      master: createStudioMonitorMaster(masterSpec),
       schedule: renderClock(ctx),
       settled: true,
     })
@@ -341,11 +399,14 @@ async function untilClock(ctx, time) {
 }
 
 /** The monitor on a running context against its offline render; also what building and following a lane cost the main thread. */
-async function liveRun(input, sound) {
+async function liveRun(input, sound, masterSpec = EMPTY_SPEC) {
   const { ctx, view, chunks } = await liveContext()
   const source = ctx.createBufferSource()
   source.buffer = input
-  const monitor = createStudioInputMonitor(view, source, { settled: true })
+  const monitor = createStudioInputMonitor(view, source, {
+    master: createStudioMonitorMaster(masterSpec),
+    settled: true,
+  })
   let started = performance.now()
   monitor.set(sound)
   const buildMs = performance.now() - started
@@ -372,7 +433,7 @@ async function liveRun(input, sound) {
   await ctx.close()
   const length = START + input.length
   const live = laidOut(chunks, startFrame - START, length)
-  const offline = await monitorRender(input, sound, length)
+  const offline = await monitorRender(input, sound, length, masterSpec)
   const from = START + SKIP
   const count = input.length - SKIP - s(0.1)
   // The lag that lines the live output up best with the render, within 10 ms each way.
@@ -408,6 +469,14 @@ async function liveProbe() {
       withoutKinds(voice, ['reverb']),
     ),
     'no effects': await liveRun(input, { ...voice, spec: EMPTY_SPEC }),
+    // A lane with effects is left out: the master's EQ turns a difference
+    // near -140 dBFS at its input (a reverb's threads, a delay's cycle) into
+    // one near -90, its own rounding. The lanes above show their own.
+    "no effects, through the song's master": await liveRun(
+      input,
+      { ...voice, spec: EMPTY_SPEC },
+      songMaster(0),
+    ),
   }
   const pass = Object.values(out).every(
     (run) =>
@@ -462,9 +531,11 @@ function armedLanesRender(input, channels, lanes) {
   return renderOffline(START + input.length, (ctx) => {
     const inputs = createStudioArmedInputs(() => sourceOf(ctx, input, START))
     const stream = streamOf(channels)
+    const master = createStudioMonitorMaster(EMPTY_SPEC)
     for (const { pick, sound } of lanes) {
       const armed = inputs.open(ctx, { stream, pick, release: () => {} })
       const monitor = createStudioInputMonitor(ctx, armed.node, {
+        master,
         schedule: renderClock(ctx),
         settled: true,
       })
@@ -576,6 +647,252 @@ async function soundProbe() {
   return { pass, ...out }
 }
 
+/** A steady sine of `seconds` peaking at `peakDbfs`, faded in and out over 10 ms. */
+function tone(seconds, peakDbfs, hz = 440) {
+  const length = s(seconds)
+  const buffer = new AudioBuffer({ length, sampleRate: SR })
+  const data = buffer.getChannelData(0)
+  const peak = 10 ** (peakDbfs / 20)
+  const fade = s(0.01)
+  for (let i = 0; i < length; i++) {
+    const edge = Math.min(1, i / fade, (length - 1 - i) / fade)
+    const ramp = 0.5 - 0.5 * Math.cos(Math.PI * edge)
+    data[i] = peak * ramp * Math.sin((2 * Math.PI * hz * i) / SR)
+  }
+  return buffer
+}
+
+const levelDbOf = (data, from, count) =>
+  20 * Math.log10(rmsOf(data, from, count))
+
+/** The steepest step from one sample to the next on either side, over `count` frames from `from`. */
+function steepestStep(data, from, count) {
+  let steepest = 0
+  for (const side of data)
+    for (let i = Math.max(1, from); i < from + count; i++)
+      steepest = Math.max(steepest, Math.abs(side[i] - side[i - 1]))
+  return steepest
+}
+
+/** The lag, within 10 ms each way, at which `b` lines up best with `a`: the largest correlation. */
+function bestLag(a, b, from, count) {
+  let best = { lag: 0, score: -Infinity }
+  for (let lag = -480; lag <= 480; lag++) {
+    let score = 0
+    for (let i = from; i < from + count; i += 2)
+      score += a[0][i] * b[0][i + lag] + a[1][i] * b[1][i + lag]
+    if (score > best.score) best = { lag, score }
+  }
+  return best.lag
+}
+
+/** Frames from an impulse at the monitor's input to the first thing heard, above -60 dBFS, through `masterSpec`. */
+async function monitorFirstHeard(sound, masterSpec) {
+  const impulse = new AudioBuffer({ length: 1, sampleRate: SR })
+  impulse.getChannelData(0)[0] = 0.5
+  const out = await monitorRender(impulse, sound, START + s(0.25), masterSpec)
+  for (let i = START; i < out[0].length; i++)
+    if (Math.abs(out[0][i]) > 1e-3 || Math.abs(out[1][i]) > 1e-3)
+      return i - START
+  return null
+}
+
+/** A tone through the voice lane at each measured gain, and on each of Compare's sides: its level against the lane alone. */
+async function masterLevels() {
+  const input = tone(2, -20)
+  const voice = laneSound('voice')
+  const from = START + SKIP
+  const count = input.length - SKIP - s(0.1)
+  const alone = levelDbOf(await monitorRender(input, voice), from, count)
+  const out = { laneAloneDbfs: round(alone, 2) }
+  for (const gainDb of [0, 6, -4]) {
+    const heard = levelDbOf(
+      await monitorRender(input, voice, undefined, songMaster(gainDb)),
+      from,
+      count,
+    )
+    out[`${gainDb > 0 ? '+' : ''}${gainDb} dB`] = {
+      levelDbfs: round(heard, 2),
+      againstLaneDb: round(heard - alone, 3),
+      offByDb: round(heard - alone - gainDb, 3),
+    }
+  }
+  // Compare's sides move the song by their gains; the voice moves with it.
+  for (const side of ['before', 'after']) {
+    const { gainDb, spec } = comparedMaster(side)
+    const heard = levelDbOf(
+      await monitorRender(input, voice, undefined, spec),
+      from,
+      count,
+    )
+    out[`Compare ${side}, ${gainDb > 0 ? '+' : ''}${gainDb} dB`] = {
+      levelDbfs: round(heard, 2),
+      againstLaneDb: round(heard - alone, 3),
+      offByDb: round(heard - alone - gainDb, 3),
+    }
+  }
+  return out
+}
+
+/** The frames the master adds: an impulse's first sound, and the lag that lines a voice up best, against the lane alone. */
+async function masterLatency() {
+  await Promise.all([measureCompressorLatency(SR), measureShaperDelays(SR)])
+  const voice = laneSound('voice')
+  // What the same master would add at full quality, its lookahead and oversampling in.
+  const out = {
+    atFullQualityMs: ms(await firstHeard(songMaster(0), FULL_FX_PROFILE)),
+  }
+  for (const [name, sound] of Object.entries({
+    'voice lane': voice,
+    'no effects': PLAIN_LANE,
+  })) {
+    const alone = await monitorFirstHeard(sound, EMPTY_SPEC)
+    const through = await monitorFirstHeard(sound, songMaster(0))
+    out[name] = {
+      laneAloneFrames: alone,
+      throughMasterFrames: through,
+      addedFrames: through - alone,
+    }
+  }
+  const input = voiceInput(3)
+  const alone = await monitorRender(input, voice)
+  const through = await monitorRender(input, voice, undefined, songMaster(0))
+  out.voiceBestLagFrames = bestLag(alone, through, START + SKIP, SR)
+  return out
+}
+
+/** A tone heard live while the master's gain moves and Compare takes the master out and back: at each change, the steepest step against the tone's own on either side of it. Last, for scale, a +6 dB step with no glide, ahead of the monitor. */
+async function masterChangesLive() {
+  const { ctx, view, chunks } = await liveContext()
+  const input = tone(6.5, -20)
+  const source = ctx.createBufferSource()
+  source.buffer = input
+  const step = ctx.createGain()
+  source.connect(step)
+  const master = createStudioMonitorMaster(songMaster(0))
+  const monitor = createStudioInputMonitor(view, step, {
+    master,
+    settled: true,
+  })
+  monitor.set(PLAIN_LANE)
+  const startFrame = Math.ceil((ctx.currentTime + 0.75) * SR)
+  source.start(frameTime(startFrame, SR))
+  const changes = [
+    { name: '0 to +6 dB', make: () => master.follow(songMaster(6)) },
+    { name: '+6 to -4 dB', make: () => master.follow(songMaster(-4)) },
+    {
+      name: "Compare's Before side",
+      make: () => master.follow(comparedMaster('before').spec),
+    },
+    {
+      name: "Compare's After side",
+      make: () => master.follow(comparedMaster('after').spec),
+    },
+    {
+      name: 'a +6 dB step with no glide, for scale',
+      make: () => step.gain.setValueAtTime(2, ctx.currentTime),
+    },
+  ]
+  const changedAt = []
+  for (const [index, change] of changes.entries()) {
+    await untilClock(ctx, startFrame / SR + index + 1)
+    changedAt.push(Math.round(ctx.currentTime * SR) - startFrame)
+    change.make()
+  }
+  await untilClock(ctx, (startFrame + input.length) / SR + 0.2)
+  // The recorder's last quanta are still on their way to this thread.
+  await new Promise((resolve) => setTimeout(resolve, 200))
+  monitor.dispose()
+  await ctx.close()
+  const live = laidOut(chunks, startFrame, input.length)
+  const out = {}
+  changes.forEach(({ name }, index) => {
+    const at = changedAt[index]
+    const before = { from: at - s(0.45), count: s(0.4) }
+    const after = { from: at + s(0.3), count: s(0.4) }
+    const own = Math.max(
+      steepestStep(live, before.from, before.count),
+      steepestStep(live, after.from, after.count),
+    )
+    const during = steepestStep(live, at - s(0.05), s(0.35))
+    out[name] = {
+      levelStepDb: round(
+        levelDbOf(live, after.from, after.count) -
+          levelDbOf(live, before.from, before.count),
+        2,
+      ),
+      steepestAgainstToneOwn: round(during / own, 3),
+    }
+  })
+  return out
+}
+
+/** The ceiling with +8 dB: a tone driven past it, and tones 3 dB and more under it against the same master with its limiter out. */
+async function masterCeiling() {
+  const spec = songMaster(8)
+  const ceilingDb = spec.effects.find((effect) => effect.kind === 'limiter')
+    .params.ceilingDb
+  const unlimited = {
+    ...spec,
+    effects: spec.effects.map((effect) =>
+      effect.kind === 'limiter' ? { ...effect, enabled: false } : effect,
+    ),
+  }
+  const out = { ceilingDbfs: ceilingDb }
+  for (const peakDbfs of [-3, -12.5, -16, -22]) {
+    const input = tone(1.5, peakDbfs)
+    const from = START + SKIP
+    const count = input.length - SKIP - s(0.1)
+    const limited = await monitorRender(input, PLAIN_LANE, undefined, spec)
+    const plain = await monitorRender(input, PLAIN_LANE, undefined, unlimited)
+    const intoDbfs = 20 * Math.log10(peakOf(plain, START, input.length))
+    out[`tone at ${peakDbfs} dBFS`] = {
+      intoCeilingDbfs: round(intoDbfs, 2),
+      outPeakDbfs: round(
+        20 * Math.log10(peakOf(limited, START, input.length)),
+        3,
+      ),
+      overCeilingDb: round(
+        20 * Math.log10(peakOf(limited, START, input.length)) - ceilingDb,
+        4,
+      ),
+      levelAgainstUnlimitedDb: round(
+        levelDbOf(limited, from, count) - levelDbOf(plain, from, count),
+        4,
+      ),
+    }
+  }
+  return out
+}
+
+async function masterProbe() {
+  const levels = await masterLevels()
+  const latency = await masterLatency()
+  const live = await masterChangesLive()
+  const ceiling = await masterCeiling()
+  const { ceilingDbfs, ...tones } = ceiling
+  const pass =
+    Object.values(levels).every(
+      (entry) => typeof entry === 'number' || Math.abs(entry.offByDb) <= 0.1,
+    ) &&
+    latency.voiceBestLagFrames === 0 &&
+    ['voice lane', 'no effects'].every(
+      (name) => latency[name].addedFrames === 0,
+    ) &&
+    Object.entries(live).every(([name, change]) =>
+      name.endsWith('for scale')
+        ? change.steepestAgainstToneOwn > 1.1
+        : change.steepestAgainstToneOwn <= 1.1,
+    ) &&
+    Object.values(tones).every(
+      (entry) =>
+        entry.overCeilingDb <= 0.0001 &&
+        (ceilingDbfs - entry.intoCeilingDbfs < 3 ||
+          Math.abs(entry.levelAgainstUnlimitedDb) <= 0.1),
+    )
+  return { pass, levels, latency, live, ceiling }
+}
+
 async function timed(render) {
   const times = []
   for (let run = 0; run < 3; run++) {
@@ -599,9 +916,13 @@ async function costProbe() {
     'every effect': { ...voice, spec: EVERY_EFFECT },
   }
   const out = {}
+  const master = songMaster(0)
   for (const [name, sound] of Object.entries(cases))
     out[name] = {
       monitoredMicrosPerQuantum: perQuantum(
+        await timed(() => monitorRender(input, sound, undefined, master)),
+      ),
+      laneAloneMicrosPerQuantum: perQuantum(
         await timed(() => monitorRender(input, sound)),
       ),
       fullMicrosPerQuantum: perQuantum(
@@ -622,6 +943,7 @@ export async function runStudioMonitorProbes() {
     live: await liveProbe(),
     lanes: await lanesProbe(),
     sound: await soundProbe(),
+    master: await masterProbe(),
     cost: await costProbe(),
   }
 }
