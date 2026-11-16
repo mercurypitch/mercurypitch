@@ -11,6 +11,7 @@
 import { batch, createEffect, createMemo, createSignal } from 'solid-js'
 import type { StudioNoteClipboard } from '@/lib/studio/midi/notes'
 import type { StudioClip, StudioProject } from '@/lib/studio/model/types'
+import type { NoteEditTool } from './edit-types'
 
 export const STUDIO_NOTE_EDITOR_HEIGHT_KEY =
   'mercurypitch.studio.note-editor-height.v1'
@@ -50,6 +51,7 @@ export function createStudioNoteEditorState(
   const [opened, setOpened] = createSignal<{
     clipId: string
     projectId: string
+    tool: NoteEditTool
   } | null>(null)
   const [expanded, setExpanded] = createSignal(false)
   // Notes copied in one clip's editor paste in the next one opened.
@@ -78,12 +80,12 @@ export function createStudioNoteEditorState(
     if (opened() !== null && clip() === null) close()
   })
 
-  /** Open clip `clipId`'s notes; false for a clip the song does not hold or that plays no MIDI. */
-  function open(clipId: string): boolean {
+  /** Open clip `clipId`'s notes, in `tool`: Draw for a clip just made, Select by default. False for a clip the song does not hold or that plays no MIDI. */
+  function open(clipId: string, tool: NoteEditTool = 'select'): boolean {
     const project = options.project()
     const target = project?.clips.find((each) => each.id === clipId)
     if (project === null || target?.midi === undefined) return false
-    setOpened({ clipId, projectId: project.id })
+    setOpened({ clipId, projectId: project.id, tool })
     return true
   }
 
@@ -98,6 +100,8 @@ export function createStudioNoteEditorState(
     clipId: () => clip()?.id ?? null,
     clip,
     open,
+    /** The tool the open clip's editor started in. */
+    tool: (): NoteEditTool => opened()?.tool ?? 'select',
     close,
     expanded,
     setExpanded,

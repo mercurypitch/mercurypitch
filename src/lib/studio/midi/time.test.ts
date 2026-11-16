@@ -1,6 +1,6 @@
-// Studio MIDI time tests — frames become ticks to the nearest and ticks frames exactly, at the sequence's tempo; a tick turned to frames comes back the same tick; a sequence's length covers its audio; a clip's window takes the ticks from its first source frame up to its last; a tick of a clip's sequence finds its song frame and back; and the song's beats fall on the sequence's ticks.
+// Studio MIDI time tests — frames become ticks to the nearest and ticks frames exactly, at the sequence's tempo; a tick turned to frames comes back the same tick; a sequence's length covers its audio; a clip's window takes the ticks from its first source frame up to its last; a tick of a clip's sequence finds its song frame and back; a window ends on the frame that ends it on a tick exactly; and the song's beats fall on the sequence's ticks.
 import { describe, expect, it } from 'vitest'
-import { studioClipTickWindow, studioFramesToTicks, studioSongBeats, studioSongFrameToTick, studioTicksCovering, studioTicksToFrames, studioTickToSongFrame, } from './time'
+import { studioClipTickWindow, studioFramesToTicks, studioSongBeats, studioSongFrameToTick, studioTickAtOrBefore, studioTicksCovering, studioTicksToFrames, studioTickToSongFrame, studioWindowEndFrame, } from './time'
 
 describe('studioFramesToTicks and studioTicksToFrames', () => {
   it('counts 960 ticks a beat at the tempo given', () => {
@@ -71,6 +71,30 @@ describe('studioClipTickWindow', () => {
 
     // Assert
     expect(window.startTick).toBe(1000)
+  })
+})
+
+describe('a window ending on a tick', () => {
+  it('ends on the frame whose window ends on that tick exactly, at tempos whose ticks fall on frames and between them', () => {
+    // Act, Assert: every tick of a bar, at 120 bpm and at 97.3 and 300 bpm.
+    for (const tempoBpm of [120, 97.3, 300])
+      for (let tick = 1; tick <= 3840; tick += 7) {
+        const frame = studioWindowEndFrame(tick, tempoBpm)
+        expect(Number.isInteger(frame)).toBe(true)
+        expect(
+          studioClipTickWindow(
+            { sourceInFrame: 0, sourceOutFrame: frame },
+            { tempoBpm },
+          ).endTick,
+        ).toBe(tick)
+      }
+  })
+
+  it('reaches the last whole tick at or before a frame', () => {
+    // Act, Assert: at 120 bpm a tick is 25 frames.
+    expect(studioTickAtOrBefore(96_000, 120)).toBe(3840)
+    expect(studioTickAtOrBefore(96_024, 120)).toBe(3840)
+    expect(studioTickAtOrBefore(96_025, 120)).toBe(3841)
   })
 })
 

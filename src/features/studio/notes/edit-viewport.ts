@@ -26,7 +26,14 @@ import { panStudioRoll, zoomStudioRoll } from '@/lib/studio/midi/roll'
 import type { StudioRollRowLimits } from '@/lib/studio/midi/roll-rows'
 import { panStudioRollRows, zoomStudioRollRows, } from '@/lib/studio/midi/roll-rows'
 import type { StudioTickWindow } from '@/lib/studio/midi/time'
-import type { NoteEditWheel } from './edit-types'
+import type { NoteEditContext, NoteEditWheel } from './edit-types'
+
+/** The ticks a pan or a zoom keeps the roll to: the view's range, past the clip's end, or else its window. */
+export function noteViewRange(
+  ctx: Pick<NoteEditContext, 'window' | 'view'>,
+): StudioTickWindow {
+  return ctx.view ?? ctx.window
+}
 
 /** How tall a pinch may make a row. */
 export const NOTE_ROW_LIMITS: StudioRollRowLimits = {

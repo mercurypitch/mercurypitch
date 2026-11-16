@@ -21,7 +21,12 @@
 // while still moving starts no fling, whose end would swallow the next tap
 // elsewhere. The editor's buttons and keys reach the view through
 // `controls`.
-import { createEffect, createMemo, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
+//
+// The view keeps to the clip's window and two bars past its end, dimmed,
+// where the clip's End handle stands on the ruler (StudioNoteEnd.tsx,
+// roll-end.ts). A drag of it draws the window to the drafted end and the
+// view follows the handle; the editor keeps the end as one trim.
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { RollViewport } from '@/lib/roll-geometry'
 import { timeToX } from '@/lib/roll-geometry'
 import { studioDrumRows } from '@/lib/studio/midi/drum-rows'
@@ -31,18 +36,23 @@ import type { StudioRollRows } from '@/lib/studio/midi/roll-keyboard'
 import { STUDIO_ROLL_ROWS_FINE, STUDIO_ROLL_ROWS_TOUCH, studioRollOpening, studioRollShownRows, studioRollTopRow, studioRollWantedRows, } from '@/lib/studio/midi/roll-keyboard'
 import { resizeStudioRollRows } from '@/lib/studio/midi/roll-rows'
 import type { StudioTickWindow } from '@/lib/studio/midi/time'
-import { studioClipTickWindow, studioSongBeats, studioSongFrameToTick, } from '@/lib/studio/midi/time'
+import { studioClipTickWindow, studioSongBeats, studioSongFrameToTick, studioTickAtOrBefore, } from '@/lib/studio/midi/time'
+import { studioClipSourceBounds } from '@/lib/studio/model/clip-passes'
 import type { StudioClip, StudioSequence } from '@/lib/studio/model/types'
 import type { NoteRollDrawing } from './edit-host'
 import { noteKitOpening, notePianoOpening, noteRollDrafts, noteRollDrawing, } from './edit-host'
+import type { NoteSnap } from './edit-snap'
+import { noteSnapGrid } from './edit-snap'
 import { studioRollWords } from './note-editor-words'
 import type { StudioRollDraft, StudioRollInput, StudioRollLayout, StudioRollMeter, StudioRollTheme, } from './note-roll-draw'
 import { drawStudioRollBase, drawStudioRollOverlay, studioRollRegions, } from './note-roll-draw'
 import { createNoteRollPointers } from './note-roll-pointers'
 import { readStudioRollTheme } from './note-roll-theme'
+import { studioRollRange } from './roll-end'
 import type { StudioRollMove } from './roll-navigation'
 import { createStudioRollTouch, moveStudioRoll, studioRollWheelMove, } from './roll-navigation'
 import styles from './StudioNoteEditor.module.css'
+import { StudioNoteEnd } from './StudioNoteEnd'
 import type { StudioNoteRollEditing } from './useStudioNoteEditing'
 
 /** What the roll reads from the transport. */
@@ -50,6 +60,14 @@ export interface StudioNoteRollTransport {
   playing(): boolean
   playheadFrame(): number
   frameNow(): number
+}
+
+/** The clip's End handle (StudioNoteEnd.tsx): the editor's grid, and the trim that keeps a new end. */
+export interface StudioNoteRollEnd {
+  snap(): NoteSnap
+  writable(): boolean
+  /** Keep the clip's end at tick `endTick`: one trim of the clip. */
+  commit(endTick: number): void
 }
 
 /** The roll's view, for the editor's buttons and keys. */
@@ -74,6 +92,8 @@ interface StudioNoteRollProps {
   transport: StudioNoteRollTransport
   /** The editing engine: a piano's roll edits with it; without it, it only shows. */
   editing?: StudioNoteRollEditing
+  /** The clip's End handle on the ruler; absent, the end is only drawn. */
+  end?: StudioNoteRollEnd
   controls?(controls: StudioNoteRollControls): void
 }
 
@@ -153,6 +173,27 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
         a.beatTicks === b.beatTicks && a.originTick === b.originTick,
     },
   )
+  // The end a drag of the End handle shows, before it is kept.
+  const [endDraft, setEndDraft] = createSignal<number | null>(null)
+  /** The window as the roll draws it: to the drafted end while End is dragged. */
+  const shownWindow = createMemo(
+    () => {
+      const drafted = endDraft()
+      return drafted === null
+        ? clipWindow()
+        : { ...clipWindow(), endTick: drafted }
+    },
+    undefined,
+    { equals: sameWindow },
+  )
+  /** The ticks the view keeps to: the window and two bars past its end (roll-end.ts). */
+  const range = createMemo(
+    () => studioRollRange(shownWindow(), meter()),
+    undefined,
+    {
+      equals: sameWindow,
+    },
+  )
   const rows = createMemo<StudioRollRows, undefined>(
     () =>
       props.sound === 'drums'
@@ -182,13 +223,19 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
   )
   const limits = () =>
     props.touch ? STUDIO_ROLL_ROWS_TOUCH : STUDIO_ROLL_ROWS_FINE
+  /** The furthest the clip's end goes, in ticks: five minutes in, or a loop take's pass's end (clip-passes.ts). */
+  const mostTick = () =>
+    studioTickAtOrBefore(
+      studioClipSourceBounds(props.clip, props.clip.sourceOutFrame).end,
+      props.sequence.tempoBpm,
+    )
   const tickOf = (frame: number) =>
     studioSongFrameToTick(props.clip, props.sequence, frame)
   const editing = () => props.editing ?? null
   /** The kit's rows' first, the highest row's number. */
   const topRow = () => studioRollTopRow(rows())
 
-  /** The view as it opens: the first bars that fit, the playhead a tenth in when it is in the clip past them. */
+  /** The view as it opens: the first bars that fit, the room past the end with them, the playhead a tenth in when it is in the clip past them. */
   function opening(box: { width: number; height: number }): RollViewport {
     const barTicks = meter().beatTicks * BEATS_PER_BAR
     const bars = Math.max(2, Math.round(box.width / 160))
@@ -201,16 +248,23 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       limits: limits(),
       span: bars * barTicks,
     })
+    const roomy = {
+      ...fitted,
+      end: Math.max(
+        fitted.end,
+        Math.min(range().endTick, fitted.start + bars * barTicks),
+      ),
+    }
     const opened =
       rows().kind === 'piano'
-        ? notePianoOpening(fitted, props.touch)
-        : noteKitOpening(fitted, props.touch, topRow())
+        ? notePianoOpening(roomy, props.touch)
+        : noteKitOpening(roomy, props.touch, topRow())
     const tick = tickOf(props.transport.playheadFrame())
     const span = opened.end - opened.start
     const shown = tick >= opened.start && tick <= opened.end
     if (shown || tick < clipWindow().startTick || tick >= clipWindow().endTick)
       return opened
-    return panStudioRoll(opened, tick - span * 0.1 - opened.start, clipWindow())
+    return panStudioRoll(opened, tick - span * 0.1 - opened.start, range())
   }
 
   /** The view at a new size, window or kit: its ticks kept inside the window; a piano's rows as tall as they were, a kit's fitted again. */
@@ -219,11 +273,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     box: { width: number; height: number },
   ): RollViewport {
     const sized = { ...current, width: box.width, height: box.height }
-    const kept = panStudioRoll(
-      zoomStudioRoll(sized, 1, 0, clipWindow()),
-      0,
-      clipWindow(),
-    )
+    const kept = panStudioRoll(zoomStudioRoll(sized, 1, 0, range()), 0, range())
     if (rows().kind === 'piano')
       return resizeStudioRollRows(
         { ...kept, height: current.height },
@@ -256,7 +306,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     const next = moveStudioRoll(
       current,
       move,
-      clipWindow(),
+      range(),
       studioRollTopRow(rows()),
       carryRows,
     )
@@ -313,7 +363,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       layout: layout(),
       theme: colours,
       viewport,
-      window: clipWindow(),
+      window: shownWindow(),
       rows: rows(),
       meter: meter(),
       notes: props.sequence.notes,
@@ -384,9 +434,19 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     if (touch.active() || pointers.active()) return
     if (before > current.end || tick <= current.end) return
     const span = current.end - current.start
-    setView(
-      panStudioRoll(current, tick - span * 0.1 - current.start, clipWindow()),
-    )
+    setView(panStudioRoll(current, tick - span * 0.1 - current.start, range()))
+  }
+
+  /** Bring tick `tick` into view, a little in from the edge it passed: the End handle, as it is dragged. */
+  function reveal(tick: number): void {
+    const current = view()
+    if (current === null) return
+    const margin = (current.end - current.start) * 0.06
+    let delta = 0
+    if (tick > current.end - margin) delta = tick - (current.end - margin)
+    else if (tick < current.start + margin)
+      delta = tick - (current.start + margin)
+    if (delta !== 0) setView(panStudioRoll(current, delta, range()))
   }
 
   createEffect(() => {
@@ -439,6 +499,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     const detach = props.editing?.attach({
       viewport: view,
       setViewport: (viewport) => setView(viewport),
+      range,
       rows,
       velocityHeight: () => layout().velocityHeight,
     })
@@ -539,6 +600,27 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
         onLostPointerCapture={(event) => lift(event, 'cancel')}
         onPointerLeave={(event) => pointers.leave(event)}
       />
+      <Show when={props.end}>
+        {(end) => (
+          <Show when={view()}>
+            {(shown) => (
+              <StudioNoteEnd
+                viewport={shown()}
+                left={layout().keysWidth}
+                width={size().width}
+                window={clipWindow()}
+                meter={meter()}
+                grid={noteSnapGrid(end().snap(), meter().originTick)}
+                mostTick={mostTick()}
+                writable={end().writable()}
+                onDraft={setEndDraft}
+                onCommit={(tick) => end().commit(tick)}
+                onReveal={reveal}
+              />
+            )}
+          </Show>
+        )}
+      </Show>
     </div>
   )
 }

@@ -36,6 +36,23 @@ export function studioTicksCovering(frames: number, tempoBpm: number): number {
   return Math.max(1, firstTickFrom(frames, tempoBpm))
 }
 
+/** The last whole tick at or before frame `frames`: the furthest a window ending by then reaches. */
+export function studioTickAtOrBefore(frames: number, tempoBpm: number): number {
+  return Math.floor(exactTicks(frames, tempoBpm) + EPSILON)
+}
+
+/**
+ * The source frame a clip's window ends on to end at tick `endTick`: the
+ * window's end tick (studioClipTickWindow) is then `endTick` exactly, a
+ * note starting on it outside, one a tick before inside.
+ */
+export function studioWindowEndFrame(
+  endTick: number,
+  tempoBpm: number,
+): number {
+  return Math.floor(studioTicksToFrames(endTick, tempoBpm) + EPSILON)
+}
+
 /** The ticks of a sequence a clip plays: a note starting from `startTick` up to, not including, `endTick` is heard. */
 export interface StudioTickWindow {
   readonly startTick: number

@@ -25,7 +25,7 @@ import { NOTE_POINTER_PROFILES } from './edit-pick'
 import { panNoteGesture, pressNoteGesture } from './edit-press'
 import type { NoteEditContext, NoteEditEffect, NoteEditHover, NoteEditPointer, NoteEditState, NoteEditStep, NoteGesture, NotePinchGesture, NoteSingleGesture, NoteTouch, } from './edit-types'
 import { pickLollipop } from './edit-velocity'
-import { dragNoteRoll, noteEdgeScroll, pinchNoteRoll, sameRollViewport, } from './edit-viewport'
+import { dragNoteRoll, noteEdgeScroll, noteViewRange, pinchNoteRoll, sameRollViewport, } from './edit-viewport'
 
 /** The least time between two sounds of a dragged note, in milliseconds. */
 export const NOTE_AUDITION_GAP_MS = 100
@@ -256,7 +256,7 @@ function panTo(
   const rows = gesture.anchor.surface === 'roll'
   const viewport = dragNoteRoll(
     ctx.viewport,
-    ctx.window,
+    noteViewRange(ctx),
     at.x - gesture.last.x,
     rows ? at.y - gesture.last.y : 0,
     editTopRow(ctx),
@@ -304,7 +304,7 @@ function pinchTo(
   if (from === null || to === null) return quietStep(after)
   const viewport = pinchNoteRoll(
     ctx.viewport,
-    ctx.window,
+    noteViewRange(ctx),
     from,
     to,
     from.rows,
@@ -550,7 +550,7 @@ export function noteFrame(
   )
   const viewport = dragNoteRoll(
     ctx.viewport,
-    ctx.window,
+    noteViewRange(ctx),
     -scroll.x,
     -scroll.y,
     editTopRow(ctx),
