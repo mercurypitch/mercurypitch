@@ -284,7 +284,7 @@ import { clearChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
 import { exerciseTitle } from '@/features/exercises/ExerciseMenu'
-import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
+import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, slugLaunchConfig, } from '@/features/exercises/slug-map'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { GUITAR_NIGHT_PATH } from '@/features/guitar-night/route'
@@ -818,24 +818,7 @@ const AppShell: Component<AppProps> = (props) => {
       : undefined
     setActiveTab(TAB_EXERCISES)
     mountExercise(launch.exercise)
-    setLaunchOverride(launch.exercise, {
-      type: launch.exercise,
-      ...(notes && notes.length > 0
-        ? { targetNote: notes[0], targetNotes: notes }
-        : {}),
-      ...(launch.difficulty !== undefined
-        ? { difficulty: launch.difficulty }
-        : {}),
-      ...(launch.intervals !== undefined
-        ? { intervals: launch.intervals }
-        : {}),
-      ...(launch.scale !== undefined ? { scale: launch.scale } : {}),
-      ...(launch.chords !== undefined ? { chords: launch.chords } : {}),
-      ...(launch.inversions !== undefined
-        ? { inversions: launch.inversions }
-        : {}),
-      ...(launch.tuning !== undefined ? { tuning: launch.tuning } : {}),
-    })
+    setLaunchOverride(launch.exercise, slugLaunchConfig(launch, notes))
     // Intentionally do NOT auto-start. Starting acquires the mic, which
     // browsers only grant from a user gesture; a fresh deep-link load has none,
     // so an auto-start would stall on a blank count-in screen waiting for a

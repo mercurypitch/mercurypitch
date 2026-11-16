@@ -13,7 +13,8 @@ import { droneIntervalLabel } from '@/features/exercises/drone-intonation/use-dr
 import { isWebRoom } from '@/features/exercises/rooms/web-room-ids'
 import { SCALE_RUNNER_SCALES } from '@/features/exercises/scale-runner/scale-runner-scales'
 import { hintLine } from '@/features/exercises/sing-in-time/in-time-words'
-import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
+import type { ExerciseLaunch } from '@/features/exercises/slug-map'
+import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, slugLaunchConfig, } from '@/features/exercises/slug-map'
 import { EXERCISE_CADENCE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
 import { difficultyLabel } from '@/features/practice-intelligence/adaptive-difficulty'
 import { clearLaunchOverride, launchIntervals, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
@@ -437,5 +438,74 @@ describe('EXERCISE_SLUGS', () => {
     expect(EXERCISE_SLUGS['does-not-exist']).toBeUndefined()
     // Prototype keys must not leak through as launch intents.
     expect(Object.hasOwn(EXERCISE_SLUGS, 'constructor')).toBe(false)
+  })
+})
+
+describe("a slug launch's override", () => {
+  it('names the drill and only what the launch names', () => {
+    expect(
+      slugLaunchConfig(
+        {
+          kind: 'exercise',
+          exercise: EXERCISE_CHORD_STACKER,
+          chords: ['major', 'minor'],
+          inversions: false,
+        },
+        undefined,
+      ),
+    ).toEqual({
+      type: EXERCISE_CHORD_STACKER,
+      chords: ['major', 'minor'],
+      inversions: false,
+    })
+    expect(
+      slugLaunchConfig(
+        { kind: 'exercise', exercise: EXERCISE_SING_IN_TIME, difficulty: 5 },
+        undefined,
+      ),
+    ).toEqual({ type: EXERCISE_SING_IN_TIME, difficulty: 5 })
+  })
+
+  it('starts on the first of the notes it is handed, and keeps them all', () => {
+    const launch: ExerciseLaunch = {
+      kind: 'exercise',
+      exercise: EXERCISE_INTERVAL_TRAINER,
+      notes: ['C4', 'C5'],
+    }
+
+    expect(slugLaunchConfig(launch, ['A3', 'A4'])).toEqual({
+      type: EXERCISE_INTERVAL_TRAINER,
+      targetNote: 'A3',
+      targetNotes: ['A3', 'A4'],
+    })
+    // No notes, or none that fit: the drill keeps its own start note.
+    expect(slugLaunchConfig(launch, [])).toEqual({
+      type: EXERCISE_INTERVAL_TRAINER,
+    })
+    expect(slugLaunchConfig(launch, undefined)).toEqual({
+      type: EXERCISE_INTERVAL_TRAINER,
+    })
+  })
+
+  it('carries every field a registry launch names, for every exercise slug', () => {
+    const FIELDS = [
+      'difficulty',
+      'intervals',
+      'scale',
+      'chords',
+      'inversions',
+      'tuning',
+    ] as const
+    for (const [slug, launch] of Object.entries(EXERCISE_SLUGS)) {
+      if (launch.kind !== 'exercise') continue
+      const config = slugLaunchConfig(launch, undefined)
+      expect(config.type, slug).toBe(launch.exercise)
+      for (const field of FIELDS) {
+        expect(config[field], `${slug}: ${field}`).toEqual(launch[field])
+        expect(field in config, `${slug}: ${field}`).toBe(
+          launch[field] !== undefined,
+        )
+      }
+    }
   })
 })

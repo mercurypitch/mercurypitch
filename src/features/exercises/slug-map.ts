@@ -22,7 +22,7 @@
 import type { ChordStackerChord } from '@/features/exercises/chord-stacker/chord-stacker-chords'
 import type { DroneTuning } from '@/features/exercises/drone-intonation/drone-tuning'
 import type { ScaleRunnerScale } from '@/features/exercises/scale-runner/scale-runner-scales'
-import type { ExerciseType } from '@/features/exercises/types'
+import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { EXERCISE_CADENCE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
@@ -257,6 +257,35 @@ export const EXERCISE_SLUGS: Record<string, Launch> = {
   'karaoke-duel': { kind: 'tab', tab: TAB_KARAOKE },
   // Open the Jam view.
   'jam-relay': { kind: 'tab', tab: TAB_JAM },
+}
+
+/**
+ * What an exercise slug's launch asks of its drill, as the one-visit launch
+ * override takes it (practice-intelligence/launch-override.ts): the fields
+ * the launch names and no others, so the drill keeps the singer's own
+ * choice for everything else. `notes` are the launch's notes already fitted
+ * to the singer's range; with none the drill keeps its own start note.
+ */
+export function slugLaunchConfig(
+  launch: ExerciseLaunch,
+  notes: string[] | undefined,
+): ExerciseConfig {
+  return {
+    type: launch.exercise,
+    ...(notes && notes.length > 0
+      ? { targetNote: notes[0], targetNotes: notes }
+      : {}),
+    ...(launch.difficulty !== undefined
+      ? { difficulty: launch.difficulty }
+      : {}),
+    ...(launch.intervals !== undefined ? { intervals: launch.intervals } : {}),
+    ...(launch.scale !== undefined ? { scale: launch.scale } : {}),
+    ...(launch.chords !== undefined ? { chords: launch.chords } : {}),
+    ...(launch.inversions !== undefined
+      ? { inversions: launch.inversions }
+      : {}),
+    ...(launch.tuning !== undefined ? { tuning: launch.tuning } : {}),
+  }
 }
 
 /** Matches `/exercises/<slug>` with an optional trailing slash. */
