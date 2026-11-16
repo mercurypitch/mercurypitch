@@ -1,4 +1,4 @@
-/* Studio export — a format card, the targets, three measured tiles and one full-width action. */
+/* Studio export — a format card, the targets, three measured tiles and one full-width action; then the MIDI file's own card, details and action. */
 .panel {
   display: flex;
   flex-direction: column;
@@ -182,6 +182,18 @@
 .error {
   margin: 0;
   color: var(--studio-danger);
+}
+/* The MIDI file, after the WAV's action: a line apart, laid out as the WAV is. */
+.section {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding-top: 18px;
+  border-top: 1px solid var(--studio-line);
+}
+.section > button {
+  width: 100%;
+  min-height: 44px;
 }
 @media (max-width: 360px) {
   .measurements {
