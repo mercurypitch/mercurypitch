@@ -1,25 +1,47 @@
 // ============================================================
-// SightSingingExercise — Read notes from a staff, sing them
+// SightSingingExercise — Read a line from the staff, sing it
 // ============================================================
+//
+// Lessons 16, 18, 21 and 25's drill (SEASON-2 § 5.2 item 10): a short line
+// on the singer's staff, sung note by note. The next note lights once the
+// voice has been within 60 cents of the lit one, in any octave, for 450 ms
+// all told, or after 8 s.
+//
+// The line is the setup, read before Start: on the singer's clef (the bass
+// clef for a bass or a baritone, `clefForRange`; the setup offers the
+// other), in the key, with its signature and each note spelled by it
+// (sight-key.ts, sight-line.ts), and named under the head by its letter or
+// its syllable, or not at all. The key is the Singing tab's, or a launch's
+// (`key` and `scale`); a launch's phrase replaces the six notes the drill
+// otherwise picks itself. Hear it first gives the key and never the line:
+// do, held, then do's triad up and down, as a sight-singing exam gives the
+// key chord (Lesson 16 FACTS 42).
 
 import type { Component } from 'solid-js'
-import { createEffect, createMemo, createSignal, For, onCleanup, onMount, Show, untrack, } from 'solid-js'
+import { createEffect, createMemo, createSignal, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { IconMusic } from '@/components/exercise-icons'
-import { launchTargetNotes } from '@/features/practice-intelligence/launch-override'
+import { launchKey, launchScale, launchTargetNotes, } from '@/features/practice-intelligence/launch-override'
 import type { AudioEngine } from '@/lib/audio-engine'
 import { activeWeeklyAttempt } from '@/lib/domain/weekly-attempt-context'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
+import { createPersistedSignal } from '@/lib/storage'
 import { getComfortableMidiRange } from '@/lib/vocal-range'
 import { keyName, scaleType } from '@/stores/app-store'
 import { flushExerciseHistoryWrites, recordExerciseResult, } from '@/stores/exercise-history-store'
-import { currentScale } from '@/stores/melody-store'
 import { vocalRangePreset } from '@/stores/settings-store'
 import { ExerciseShell } from '../ExerciseShell'
+import { Choice, clefForRange } from '../note-reading/NoteReadingExercise'
+import type { Clef } from '../note-reading/staff-kit'
+import { createNoteDemo } from '../stage/note-demo'
 import { EXERCISE_SIGHT_SINGING, runStoppedEarly } from '../types'
 import { useBaseExercise } from '../use-base-exercise'
-import type { SightSingingNote } from './use-sight-singing-controller'
-import { useSightSingingController } from './use-sight-singing-controller'
+import { keyForPhrase, keyLabel, sightKey } from './sight-key'
+import type { SightLine, SightNames } from './sight-line'
+import { isSightNames, nameUnder, startNotes, startWords, writeLine, } from './sight-line'
+import styles from './SightSinging.module.css'
+import { SightStaff } from './SightStaff'
+import { planWalk, useSightSingingController, } from './use-sight-singing-controller'
 
 interface Props {
   audioEngine: AudioEngine
@@ -28,118 +50,42 @@ interface Props {
   autoStart?: boolean
 }
 
-// ── Staff geometry (treble clef) ─────────────────────────────
-// The 5 lines are, bottom→top, E4 G4 B4 D5 F5; the spaces are F4 A4 C5 E5.
-// Notes are placed by diatonic step (letter), not by semitone, so sharps sit
-// on their natural's line/space with a ♯ to the left — like real notation.
+const CLEF_KEY = 'pitchperfect_sight_singing_clef'
+const NAMES_KEY = 'pitchperfect_sight_singing_names'
 
-const STAFF_TOP = 56
-const LINE_SPACING = 14
-const HALF = LINE_SPACING / 2
-const STAFF_LINES = [0, 1, 2, 3, 4]
-const NOTE_RX = 8
-const NOTE_RY = 6
-const NOTE_SPACING = 60
-const STAFF_LEFT = 70
-const E4_STEP = 30 // diatonic step number of E4 (the bottom line)
-const STAFF_BOTTOM_Y = STAFF_TOP + 4 * LINE_SPACING
+const isClef = (value: unknown): value is Clef =>
+  value === 'treble' || value === 'bass'
 
-// pitch-class → diatonic step within an octave (C=0,D=1,…,B=6); sharps share.
-const PC_DIATONIC = [0, 0, 1, 1, 2, 3, 3, 4, 4, 5, 5, 6]
-const PC_SHARP = [
-  false,
-  true,
-  false,
-  true,
-  false,
-  false,
-  true,
-  false,
-  true,
-  false,
-  true,
-  false,
+const CLEF_OPTIONS: readonly { value: Clef; label: string }[] = [
+  { value: 'treble', label: 'Treble' },
+  { value: 'bass', label: 'Bass' },
 ]
 
-const staffStepOf = (midi: number): number => {
-  const pc = ((midi % 12) + 12) % 12
-  const octave = Math.floor(midi / 12) - 1
-  return octave * 7 + PC_DIATONIC[pc]!
-}
-const stepToY = (step: number): number =>
-  STAFF_BOTTOM_Y - (step - E4_STEP) * HALF
+const NAMES_OPTIONS: readonly { value: SightNames; label: string }[] = [
+  { value: 'letters', label: 'Letters' },
+  { value: 'solfege', label: 'Do re mi' },
+  { value: 'off', label: 'Off' },
+]
 
-/** Line positions (even steps) needed to connect a note outside the staff. */
-const ledgerStepsFor = (step: number): number[] => {
-  const out: number[] = []
-  if (step < E4_STEP) for (let e = E4_STEP - 2; e >= step; e -= 2) out.push(e)
-  else if (step > E4_STEP + 8)
-    for (let e = E4_STEP + 10; e <= step; e += 2) out.push(e)
-  return out
-}
+/** Hear it first: do held a second, a breath, then the triad at 0.6 s a note (Lesson 16 FACTS 42). */
+const DO_MS = 1000
+const DO_GAP_MS = 400
+const TRIAD_MS = 560
+const TRIAD_GAP_MS = 40
 
-function StaffNote(p: {
-  note: SightSingingNote
-  isActive: boolean
-  x: number
-}) {
-  /* eslint-disable solid/reactivity */
-  const step = staffStepOf(p.note.midi)
-  const y = stepToY(step)
-  const ledgers = ledgerStepsFor(step)
-  const isSharp = PC_SHARP[((p.note.midi % 12) + 12) % 12]
-  /* eslint-enable solid/reactivity */
+const BRIEF =
+  'Read the line, then sing it note by note: hold each note to light the next. Any octave counts.'
 
-  return (
-    <>
-      <For each={ledgers}>
-        {(e) => (
-          <line
-            x1={p.x - 13}
-            y1={stepToY(e)}
-            x2={p.x + 13}
-            y2={stepToY(e)}
-            stroke="var(--text-secondary)"
-            stroke-width="1"
-            opacity="0.5"
-          />
-        )}
-      </For>
-      <Show when={isSharp}>
-        <text
-          x={p.x - 16}
-          y={y + 4}
-          text-anchor="middle"
-          font-size="15"
-          fill={p.isActive ? 'var(--accent)' : 'var(--text-primary)'}
-        >
-          ♯
-        </text>
-      </Show>
-      <ellipse
-        cx={p.x}
-        cy={y}
-        rx={NOTE_RX}
-        ry={NOTE_RY}
-        fill={
-          p.isActive ? 'var(--accent, #6366f1)' : 'var(--text-primary, #fff)'
-        }
-        opacity={p.isActive ? 1 : 0.7}
-        transform={`rotate(-12, ${p.x}, ${y})`}
-      />
-      <text
-        x={p.x}
-        y={STAFF_BOTTOM_Y + 34}
-        text-anchor="middle"
-        font-size="10"
-        fill={p.isActive ? 'var(--accent)' : 'var(--text-secondary)'}
-        opacity={p.isActive ? 0.95 : 0.55}
-      >
-        {p.note.name}
-        {p.note.octave}
-      </text>
-    </>
-  )
+/** A launch's note names as MIDI notes, the unreadable left out. */
+function midisOf(names: readonly string[] | undefined): number[] {
+  return (names ?? []).flatMap((name) => {
+    try {
+      const midi = noteToMidi(name)
+      return Number.isFinite(midi) ? [midi] : []
+    } catch {
+      return []
+    }
+  })
 }
 
 const SightSingingExercise: Component<Props> = (props) => {
@@ -148,30 +94,80 @@ const SightSingingExercise: Component<Props> = (props) => {
   const weeklyAttemptAtLaunch = untrack(activeWeeklyAttempt)
   const weeklyVoiceHandoff =
     weeklyAttemptAtLaunch?.exercise === EXERCISE_SIGHT_SINGING
-  const launchedTargetNotes =
-    untrack(() => launchTargetNotes(EXERCISE_SIGHT_SINGING))?.slice() ?? []
-  const launchedMidiSequence = launchedTargetNotes.flatMap((name) => {
-    try {
-      const midi = noteToMidi(name)
-      return Number.isFinite(midi) ? [midi] : []
-    } catch {
-      return []
-    }
+  const launchedMidiSequence = midisOf(
+    untrack(() => launchTargetNotes(EXERCISE_SIGHT_SINGING)),
+  )
+
+  const [clef, setClef] = createPersistedSignal<Clef>(
+    CLEF_KEY,
+    untrack(() => clefForRange(vocalRangePreset())),
+    { validator: isClef },
+  )
+  const [names, setNames] = createPersistedSignal<SightNames>(
+    NAMES_KEY,
+    'letters',
+    { validator: isSightNames },
+  )
+
+  /** The phrase a launch armed: a routine's, a lesson's, a Legend's. */
+  const phrase = createMemo(() =>
+    weeklyVoiceHandoff
+      ? launchedMidiSequence
+      : midisOf(launchTargetNotes(EXERCISE_SIGHT_SINGING)),
+  )
+  /** The scale's name as the launch or the app gives it: a launch that
+   *  names a key and no scale means its major. */
+  const scaleId = () =>
+    launchScale(EXERCISE_SIGHT_SINGING) ??
+    (launchKey(EXERCISE_SIGHT_SINGING) !== undefined ? 'major' : scaleType())
+  /**
+   * The key: a launch's, else the Singing tab's; and for a phrase no launch
+   * keyed, a key that holds its notes.
+   */
+  const key = createMemo(() => {
+    const launched = launchKey(EXERCISE_SIGHT_SINGING)
+    if (launched !== undefined) return sightKey(launched, scaleId())
+    const app = sightKey(keyName(), scaleId())
+    const notes = phrase()
+    return notes.length >= 2 ? keyForPhrase(notes, app) : app
   })
+
+  // A new line after each run, when the drill picks its own.
+  const [round, setRound] = createSignal(0)
+  /** The notes to sing: the launch's phrase, or six the drill picks in the key and the singer's range. */
+  const sung = createMemo(() => {
+    round()
+    const notes = phrase()
+    if (notes.length >= 2) return notes
+    const k = key()
+    const { min, max } = getComfortableMidiRange(vocalRangePreset())
+    return planWalk(
+      k.steps.map((step) => k.pc + step),
+      min,
+      max,
+    )
+  })
+  /** The line on the setup's staff: the one the next run sings. */
+  const line = createMemo(() =>
+    writeLine(sung(), key(), clef(), vocalRangePreset(), {
+      fixed: phrase().length >= 2,
+    }),
+  )
+  /** The line a run is singing, kept as it started. */
+  const [runLine, setRunLine] = createSignal<SightLine | null>(null)
+  const shown = () => runLine() ?? line()
 
   const base = useBaseExercise({
     audioEngine,
     practiceEngine,
+    foldsOctaves: true,
     config: () => ({
       type: 'sight-singing',
-      targetNotes:
-        launchedTargetNotes.length > 0
-          ? [...launchedTargetNotes]
-          : currentScale().map((note) => `${note.name}${note.octave}`),
+      targetNotes: shown().notes.map((n) => midiToNoteName(n.midi)),
       pattern:
         weeklyAttemptAtLaunch?.exercise === EXERCISE_SIGHT_SINGING
           ? `legend:${weeklyAttemptAtLaunch.challengeId}`
-          : `${keyName()}:${scaleType()}`,
+          : `${key().name}:${scaleId()}`,
     }),
   })
 
@@ -191,26 +187,39 @@ const SightSingingExercise: Component<Props> = (props) => {
   const [legendRun, setLegendRun] = createSignal(legendAttemptLive())
   const controller = useSightSingingController(base, {
     marksStoppedRuns: () => !legendRun(),
+    names,
   })
 
+  // Hear it first: do, then do's triad up and down, in the singer's octave.
+  const demo = createNoteDemo(audioEngine)
+  onCleanup(() => demo.stop())
+  const playStart = (): Promise<void> => {
+    const [home, ...triad] = startNotes(line(), vocalRangePreset())
+    if (home === undefined) return Promise.resolve()
+    return demo.play(
+      [
+        { midi: home, ms: DO_MS, gapMs: DO_GAP_MS },
+        ...triad.map((midi) => ({ midi })),
+      ],
+      { noteMs: TRIAD_MS, gapMs: TRIAD_GAP_MS },
+    )
+  }
+
   const handleStart = async () => {
-    // A routine's apply slot arms the phrase it names on the session card;
-    // the notes arrive already fitted to the singer's range (App's launch
-    // choke point). Without an armed phrase the drill quizzes on the
-    // current scale, as it always has.
-    const authored = weeklyVoiceHandoff
-      ? launchedMidiSequence
-      : (launchTargetNotes(EXERCISE_SIGHT_SINGING)?.map(noteToMidi) ?? [])
+    // The notes arrive already fitted to the singer's range (App's launch
+    // choke point), or in the singer's own octave for a lesson's line
+    // (`ownOctave`); the drill's own six are picked in it. The line is
+    // written where the singer's staff reads it and sung where it is
+    // written, unless that leaves the range (sight-line.ts).
+    const toSing = line()
     setLegendRun(legendAttemptLive())
-    if (authored.length >= 2) {
-      controller.setNotes(authored)
-    } else {
-      const scale = currentScale()
-      if (scale.length < 3) return
-      const range = getComfortableMidiRange(vocalRangePreset())
-      controller.setScale(scale, range.min, range.max)
+    if (toSing.notes.length === 0) return
+    setRunLine(toSing)
+    controller.setNotes(toSing.notes.map((n) => n.midi))
+    if (!(await base.start())) {
+      setRunLine(null)
+      return
     }
-    if (!(await base.start())) return
     controller.startRounds()
   }
 
@@ -244,6 +253,8 @@ const SightSingingExercise: Component<Props> = (props) => {
         completedAt: r.completedAt,
       }
       untrack(() => {
+        // The next run's line, read on the setup's staff meanwhile.
+        setRound((n) => n + 1)
         if (!weeklyVoiceHandoff) {
           recordExerciseResult(entry)
           return
@@ -261,12 +272,25 @@ const SightSingingExercise: Component<Props> = (props) => {
     }
   })
 
+  const status = () => base.state().status
+  const isActive = () => status() === 'active'
+  const complete = () => status() === 'complete'
+  // The staff shows the line being sung for as long as a run is up.
+  createEffect(() => {
+    if (status() === 'idle' || complete()) setRunLine(null)
+  })
+
   const metrics = () => base.state().metrics
-  const currentIdx = () => metrics().noteIndex ?? 0
+  const currentIdx = createMemo(() => metrics().noteIndex ?? 0)
   const holdPct = () => metrics().holdPct ?? 0
   const detectedMidi = () => metrics().detectedMidi ?? 0
   const centsOff = () => metrics().centsOff ?? 0
   const sequence = () => controller.getSequence()
+  const notesDone = createMemo(() => metrics().notesCompleted ?? 0)
+  const marks = createMemo(() => {
+    notesDone()
+    return controller.getMarks()
+  })
 
   const targetMidi = createMemo(() => {
     const seq = sequence()
@@ -275,9 +299,26 @@ const SightSingingExercise: Component<Props> = (props) => {
     return seq[idx]!.midi
   })
 
-  const svgWidth = () =>
-    Math.max(320, (sequence().length || 6) * NOTE_SPACING + 60)
-  const svgHeight = 180
+  const litNote = () => shown().notes[currentIdx()]
+  /** The hold bar's words: the lit note by its name, or with the names off by none. */
+  const holdLabel = (): string => {
+    const note = litNote()
+    const name = note === undefined ? null : nameUnder(note, names())
+    return name === null
+      ? 'Hold the lit note to continue'
+      : `Hold ${name} to continue`
+  }
+  const voiceHz = () => {
+    const p = base.currentPitch()
+    return p !== null && p.freq > 0 ? p.freq : null
+  }
+  /** Merc's line during a run: where the singer is, and what to do. */
+  const say = (): string => {
+    const n = shown().notes.length
+    const at = `Note ${Math.min(currentIdx() + 1, n)} of ${n}`
+    return holdPct() > 0 ? `${at}: hold it.` : `${at}: read it, then sing.`
+  }
+  const hint = () => `${line().notes.length} notes · ${keyLabel(key())}`
 
   return (
     <ExerciseShell
@@ -291,19 +332,46 @@ const SightSingingExercise: Component<Props> = (props) => {
       error={() => base.error()}
       onBack={() => props.onBack?.()}
       icon={<IconMusic size={20} />}
+      demo={{
+        play: playStart,
+        stop: demo.stop,
+        line: () =>
+          `Listen: do, then ${startWords(line())}, in ${keyLabel(key())}.`,
+      }}
       idlePlaceholder={
         <div class="exercise-idle-placeholder">
-          <p>
-            Read each note on the staff and sing it — the cursor advances once
-            you hold the right pitch. No audio preview.
-          </p>
-          <p class="exercise-idle-target-note">
-            Key:{' '}
-            <strong>
-              {keyName()} {scaleType()}
-            </strong>{' '}
-            · in your range
-          </p>
+          <p>{BRIEF}</p>
+          <span class="idle-hint">{hint()}</span>
+        </div>
+      }
+      idleSettings={
+        // Space on a chip presses the chip: the shell's own Space starts
+        // the run from anywhere else on the page.
+        <div class={styles.setup} data-exercise-native-space="true">
+          <div class={styles.sheetCard}>
+            <div class={styles.label}>
+              <span>
+                {complete() && phrase().length < 2 ? 'Next line' : 'The line'} ·
+                in {keyLabel(key())}
+              </span>
+              <span>{line().notes.length} notes</span>
+            </div>
+            <SightStaff line={line()} names={names()} />
+          </div>
+          <div class={styles.choices}>
+            <Choice
+              label="Clef"
+              options={CLEF_OPTIONS}
+              value={clef()}
+              onChange={setClef}
+            />
+            <Choice
+              label="Names"
+              options={NAMES_OPTIONS}
+              value={names()}
+              onChange={setNames}
+            />
+          </div>
         </div>
       }
       onStart={() => void handleStart()}
@@ -317,89 +385,46 @@ const SightSingingExercise: Component<Props> = (props) => {
             .slice(currentIdx() + 1)
             .map((n) => n.midi),
       }}
+      activePhase={
+        <div class={styles.say} role="status" aria-live="polite">
+          {say()}
+        </div>
+      }
       activeContent={
-        <>
-          <div class="sight-singing-staff-container">
-            <svg
-              width={svgWidth()}
-              height={svgHeight}
-              viewBox={`0 0 ${svgWidth()} ${svgHeight}`}
-              class="sight-singing-staff"
-            >
-              <For each={STAFF_LINES}>
-                {(line) => (
-                  <line
-                    x1={10}
-                    y1={STAFF_TOP + line * LINE_SPACING}
-                    x2={svgWidth() - 10}
-                    y2={STAFF_TOP + line * LINE_SPACING}
-                    stroke="var(--text-secondary, #888)"
-                    stroke-width="1"
-                    opacity="0.35"
-                  />
-                )}
-              </For>
-              {/* Treble clef */}
-              <text
-                x={18}
-                y={STAFF_BOTTOM_Y + 6}
-                font-size="62"
-                fill="var(--text-secondary, #888)"
-                opacity="0.55"
-                font-family="serif"
-              >
-                𝄞
-              </text>
-              <For each={sequence()}>
-                {(note, i) => (
-                  <StaffNote
-                    note={note}
-                    isActive={i() === currentIdx()}
-                    x={STAFF_LEFT + i() * NOTE_SPACING}
-                  />
-                )}
-              </For>
-            </svg>
+        <div class={styles.run}>
+          <div class={styles.sheetCard} data-live={isActive()}>
+            <div class={styles.label}>
+              <span>in {keyLabel(shown().key)}</span>
+              <span class={styles.where}>Any octave</span>
+            </div>
+            <SightStaff
+              line={shown()}
+              names={names()}
+              current={currentIdx()}
+              marks={marks()}
+              voiceHz={voiceHz()}
+            />
           </div>
 
           {/* Hold-to-pass progress for the current note */}
-          <div class="sight-singing-hold">
-            <div class="sight-singing-hold-bar">
-              <div
-                class="sight-singing-hold-fill"
-                style={{ width: `${holdPct()}%` }}
-              />
+          <div class={`sight-singing-hold ${styles.hold}`}>
+            <div class={styles.holdBar}>
+              <div class={styles.holdFill} style={{ width: `${holdPct()}%` }} />
             </div>
-            <span class="sight-singing-hold-label">
-              Hold {midiToNoteName(targetMidi() ?? 0)} to continue
-            </span>
+            <span class={styles.holdLabel}>{holdLabel()}</span>
           </div>
 
           {/* DEV-only pitch debug readout for testing recognition. */}
           <Show when={import.meta.env.DEV}>
-            <div class="sight-singing-debug">
+            <div class={styles.debug}>
               detected:{' '}
               {detectedMidi() > 0
-                ? `${midiToNoteName(Math.round(detectedMidi()))} (${centsOff() >= 0 ? '+' : ''}${centsOff()}¢)`
+                ? `${midiToNoteName(Math.round(detectedMidi()))} (${centsOff() >= 0 ? '+' : ''}${centsOff()}¢ folded)`
                 : '—'}{' '}
               · target: {midiToNoteName(targetMidi() ?? 0)} · hold {holdPct()}%
             </div>
           </Show>
-
-          <div class="sight-singing-progress">
-            <div class="sight-singing-progress-bar">
-              <div
-                class="sight-singing-progress-fill"
-                style={{
-                  width: `${((currentIdx() + 1) / (sequence().length || 1)) * 100}%`,
-                }}
-              />
-            </div>
-            <span class="sight-singing-progress-label">
-              Note {currentIdx() + 1} of {sequence().length}
-            </span>
-          </div>
-        </>
+        </div>
       }
       resultSummary={
         // The score spans ALL notes (unsung ones count zero), so say the

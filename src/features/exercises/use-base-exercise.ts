@@ -24,6 +24,9 @@ interface BaseExerciseDeps {
   audioEngine: AudioEngine
   practiceEngine: PracticeEngine
   config: ExerciseConfig | (() => ExerciseConfig)
+  /** The drill hears a target in any octave: the run's trace says so
+   *  (`RunTrace.folded`), so the result card measures in the voice's. */
+  foldsOctaves?: boolean
 }
 
 export interface BaseExerciseStartOptions {
@@ -464,6 +467,7 @@ export function useBaseExercise(deps: BaseExerciseDeps) {
         getPitchHistory().map((p) => ({ t: p.time, f: p.freq })),
       ),
       targets: targetTimeline,
+      ...(deps.foldsOctaves === true ? { folded: true } : {}),
     })
     batch(() => {
       setResult(exerciseResult)

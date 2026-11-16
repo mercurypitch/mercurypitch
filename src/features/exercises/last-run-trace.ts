@@ -30,6 +30,9 @@ export interface RunTrace {
   samples: TracePoint[]
   /** Target-pitch timeline: one point per reference-tone change. */
   targets: TracePoint[]
+  /** The drill hears a target in any octave (Sight-Singing), so a voice an
+   *  octave from it is on it: "furthest off" folds the octave too. */
+  folded?: boolean
 }
 
 /** Keeps stored traces small (~600 points ≈ 10s at 60fps after downsample). */

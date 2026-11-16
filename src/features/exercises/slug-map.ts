@@ -23,7 +23,7 @@ import type { ChordStackerChord } from '@/features/exercises/chord-stacker/chord
 import type { DroneTuning } from '@/features/exercises/drone-intonation/drone-tuning'
 import type { ScaleRunnerScale } from '@/features/exercises/scale-runner/scale-runner-scales'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
-import { EXERCISE_CADENCE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
+import { EXERCISE_CADENCE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
 
@@ -45,6 +45,16 @@ export interface ExerciseLaunch {
    *  1 to 12, each once. Interval Trainer reads it, and Drone Intonation
    *  the ones its own pool names. */
   intervals?: number[]
+  /** The key Sight-Singing reads in, by its do's name (`G`, `Bb`, `F#`), in
+   *  place of the Singing tab's key; `scale` names its scale, Scale Runner's
+   *  names (`harmonic-minor`), major when it names none. */
+  key?: string
+  /** Each voice reads `notes` in its own octave, as the lesson pages write
+   *  a line for two voices: as given for a higher voice, an octave down for
+   *  a lower one (`phraseInOwnOctave`, src/lib/vocal-range.ts), in place of
+   *  the fit into the saved range by whole octaves that every other link's
+   *  notes get. */
+  ownOctave?: boolean
   /** The scale Scale Runner opens on, by its own name for it, in place of
    *  the first on its list. The singer can still pick another. */
   scale?: ScaleRunnerScale
@@ -207,6 +217,26 @@ export const EXERCISE_SLUGS: Record<string, Launch> = {
     exercise: EXERCISE_SING_IN_TIME,
     difficulty: 5,
   },
+  // Sight-Singing on Lesson 16's two phrases (Sing what you see), written as
+  // one line: do re mi re do, then do so mi re do, in G. Each voice reads
+  // them in its own octave, G3 to D4 for a lower voice and G4 to D5 for a
+  // higher one, as the page writes them (Lesson 16 FACTS 59).
+  'sing-what-you-see': {
+    kind: 'exercise',
+    exercise: EXERCISE_SIGHT_SINGING,
+    notes: ['G4', 'A4', 'B4', 'A4', 'G4', 'G4', 'D5', 'B4', 'A4', 'G4'],
+    key: 'G',
+    ownOctave: true,
+  },
+  // Sight-Singing in A harmonic minor, Lesson 25's (Minor, properly), in
+  // place of the route through the Singing tab: six notes it picks itself,
+  // G sharp signed on the staff.
+  'sight-sing-harmonic-minor': {
+    kind: 'exercise',
+    exercise: EXERCISE_SIGHT_SINGING,
+    key: 'A',
+    scale: 'harmonic-minor',
+  },
   // The Ear Lab's drills on Season 2's sets, one address each, named by
   // what they ask. The Chart on Lesson 17's quarters, halves and eighths:
   // the eight patterns its page writes, with no triplet and no sixteenth.
@@ -279,6 +309,7 @@ export function slugLaunchConfig(
       ? { difficulty: launch.difficulty }
       : {}),
     ...(launch.intervals !== undefined ? { intervals: launch.intervals } : {}),
+    ...(launch.key !== undefined ? { key: launch.key } : {}),
     ...(launch.scale !== undefined ? { scale: launch.scale } : {}),
     ...(launch.chords !== undefined ? { chords: launch.chords } : {}),
     ...(launch.inversions !== undefined

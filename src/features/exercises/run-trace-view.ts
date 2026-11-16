@@ -8,6 +8,7 @@
 // window that frames both. Pure, so the drawing code stays a renderer and the
 // judgement below stays testable.
 
+import { foldCents } from '@/lib/pitch-measurements'
 import type { RunTrace, TracePoint } from './last-run-trace'
 
 /** Never frame a run tighter than this, or a steady note fills the canvas. */
@@ -76,7 +77,9 @@ export function centsBetween(f: number, target: number): number {
  * rather than by how much overall — a score of 71 tells a singer nothing they
  * can practice, and "you were 90 cents flat four seconds in" does. The voice
  * on its way to a new note, for `ARRIVAL_SEC` after the target moved there,
- * is not counted: it names the moment between two notes, not a miss.
+ * is not counted: it names the moment between two notes, not a miss. A
+ * drill that hears any octave (`folded`) measures the distance in the
+ * octave the voice is in.
  */
 export function worstMoment(trace: RunTrace): WorstMoment | null {
   if (trace.targets.length === 0) return null
@@ -88,7 +91,8 @@ export function worstMoment(trace: RunTrace): WorstMoment | null {
     const target = targetAt(trace.targets, sample.t)
     if (target === null || target <= 0) continue
     if (arriving(arrivals, sample.t)) continue
-    const cents = centsBetween(sample.f, target)
+    const off = centsBetween(sample.f, target)
+    const cents = trace.folded === true ? foldCents(off) : off
     if (worst === null || Math.abs(cents) > Math.abs(worst.cents)) {
       worst = { t: sample.t, f: sample.f, target, cents }
     }

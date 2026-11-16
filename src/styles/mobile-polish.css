@@ -479,38 +479,3 @@
     line-height: 1;
   }
 }
-
-/* ============================================================
-   Sight-Singing: the staff has to fit the phone, not scroll it
-   ============================================================
-   The SVG carries width/height attributes equal to its viewBox, so it
-   renders at a permanent 1:1 — 180px tall on top of a 148px pitch tracker,
-   a hold bar and a progress bar, inside a card that also reserves room for
-   the Stop button. The column overflowed, `justify-content: safe center`
-   degraded to flex-start, and the notes — the one thing the drill is about
-   — sat below the fold behind a vertical scroll.
-
-   Giving the element a CSS height with `width: auto` lets the viewBox's
-   own aspect ratio scale the whole drawing down uniformly (author CSS beats
-   the presentation attributes, and preserveAspectRatio defaults to meet).
-   Same idea as `.warmup-canvas`'s clamp — CSS owns the layout size.
-
-   `min-width: 0` is load-bearing: the 300px floor in exercises.css would
-   letterbox the shrunken drawing instead of tightening around it.
-
-   The viewBox is NOT cropped to gain more zoom. Drawn content reaches
-   y≈167 of the 180 box — a note a seventh below the staff (E3) plus its
-   ledger lines — so the apparent dead space at the bottom is where low
-   notes live. Cropping it would clip the very notes being complained about.
-   ============================================================ */
-@media (max-width: 768px) {
-  .sight-singing-staff {
-    height: clamp(88px, 16vh, 132px);
-    width: auto;
-    min-width: 0;
-  }
-  .sight-singing-staff-container {
-    padding: 6px;
-    margin-bottom: 8px;
-  }
-}

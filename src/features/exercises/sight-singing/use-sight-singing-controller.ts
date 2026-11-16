@@ -2,14 +2,23 @@
 // Sight-Singing Controller — generate notes, advance on a correct
 // sung pitch (with a timeout fallback), and score per note.
 // ============================================================
+//
+// A note is right in any octave: a frame counts within 60 cents of the
+// written note's pitch class, folded into the singer's octave, so a voice
+// that reads the treble staff an octave under it (a tenor's) or sings the
+// line an octave from the page is singing it (SEASON-2 § 5.2 item 10f;
+// Lesson 16 FACTS 45). Until November 2026 it scored the written octave
+// only, and an octave away read as a miss.
 
 import { midiToFrequency } from '@/lib/frequency-to-note'
+import { foldCents } from '@/lib/pitch-measurements'
 import type { ScaleDegree } from '@/types'
 import { tallyFromDeviations } from '../exercise-note-tally'
 import { freqToExactMidi } from '../exercise-scoring-utils'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_SIGHT_SINGING, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
+import type { SightNames } from './sight-line'
 
 export interface SightSingingNote {
   midi: number
@@ -18,6 +27,16 @@ export interface SightSingingNote {
   freq: number
   /** Index in the sequence, 0-based */
   index: number
+}
+
+/** How a note the run has passed went: held in tune, or moved on from at the limit. */
+export interface SightSingingMark {
+  /** Held within the band for the hold, rather than moved on from at the limit. */
+  readonly held: boolean
+  /** Some voice was heard on it. */
+  readonly heard: boolean
+  /** Its score, 0 to 100. */
+  readonly score: number
 }
 
 const NOTES_PER_ROUND = 6
@@ -54,6 +73,39 @@ function noteFromMidi(midi: number, index: number): SightSingingNote {
 }
 
 /**
+ * A walk of `count` notes on `pitchClasses` (0 C to 11 B) inside the
+ * singer's range: each next note within 7 semitones of the last and never
+ * the same note twice running. Random only through `random`.
+ */
+export function planWalk(
+  pitchClasses: readonly number[],
+  rangeMin: number,
+  rangeMax: number,
+  random: () => number = Math.random,
+  count = NOTES_PER_ROUND,
+): number[] {
+  const pcs = [...new Set(pitchClasses.map((pc) => ((pc % 12) + 12) % 12))]
+  if (pcs.length === 0) return []
+  const pool: number[] = []
+  for (let m = Math.ceil(rangeMin); m <= Math.floor(rangeMax); m++) {
+    if (pcs.includes(((m % 12) + 12) % 12)) pool.push(m)
+  }
+  if (pool.length === 0) return []
+
+  const pick = (list: readonly number[]): number =>
+    list[Math.min(list.length - 1, Math.floor(random() * list.length))]!
+  const notes: number[] = []
+  let prev = pick(pool)
+  for (let i = 0; i < count; i++) {
+    const near = pool.filter((m) => m !== prev && Math.abs(m - prev) <= 7)
+    const m = pick(near.length > 0 ? near : pool)
+    notes.push(m)
+    prev = m
+  }
+  return notes
+}
+
+/**
  * Final scoring, pure. The SCORE spans the whole sequence — notes never
  * sung count zero. Averaging only the attempted notes let a one-note
  * run post 70% to the weekly Legend board and outrank honest full
@@ -84,6 +136,19 @@ export interface SightSingingOptions {
    * end itself, with unsung notes as 0, and that is the attempt.
    */
   marksStoppedRuns?: () => boolean
+  /**
+   * What the setup printed under the notes for this run, read as it ends
+   * and written to the result as `names` (`NAMES_METRIC`): reading the
+   * staff with no names is not the task of reading the names.
+   */
+  names?: () => SightNames
+}
+
+/** A run's names as a metric: 0 letters (and every run before there was a choice), 1 syllables, 2 none. */
+export const NAMES_METRIC: Readonly<Record<SightNames, number>> = {
+  letters: 0,
+  solfege: 1,
+  off: 2,
 }
 
 export function useSightSingingController(
@@ -91,6 +156,7 @@ export function useSightSingingController(
   options: SightSingingOptions = {},
 ) {
   const marksStoppedRuns = options.marksStoppedRuns ?? (() => true)
+  const names = options.names ?? (() => 'letters' as const)
   let sequence: SightSingingNote[] = []
   let currentIndex = 0
   let noteStartTime = 0
@@ -102,6 +168,8 @@ export function useSightSingingController(
   // scoop -- so the tally reuses that measure rather than inventing another.
   // Notes never reached stay holes, and read as misses at tally time.
   const noteDeviations: (number | null)[] = []
+  // How each passed note went, for the staff to mark.
+  const noteMarks: SightSingingMark[] = []
   let holdMs = 0
   let lastPollTs = 0
   let pollTimer: ReturnType<typeof setInterval> | undefined
@@ -121,24 +189,13 @@ export function useSightSingingController(
     rangeMax: number,
     count = NOTES_PER_ROUND,
   ): SightSingingNote[] {
-    const pcs = [...new Set(scale.map((d) => ((d.midi % 12) + 12) % 12))]
-    if (pcs.length === 0) return []
-    const pool: number[] = []
-    for (let m = Math.ceil(rangeMin); m <= Math.floor(rangeMax); m++) {
-      if (pcs.includes(((m % 12) + 12) % 12)) pool.push(m)
-    }
-    if (pool.length === 0) return []
-
-    const notes: SightSingingNote[] = []
-    let prev = pool[Math.floor(Math.random() * pool.length)]!
-    for (let i = 0; i < count; i++) {
-      const near = pool.filter((m) => m !== prev && Math.abs(m - prev) <= 7)
-      const choices = near.length > 0 ? near : pool
-      const m = choices[Math.floor(Math.random() * choices.length)]!
-      notes.push(noteFromMidi(m, i))
-      prev = m
-    }
-    return notes
+    return planWalk(
+      scale.map((d) => d.midi),
+      rangeMin,
+      rangeMax,
+      Math.random,
+      count,
+    ).map((m, i) => noteFromMidi(m, i))
   }
 
   function setScale(
@@ -150,6 +207,7 @@ export function useSightSingingController(
     currentIndex = 0
     noteScores.length = 0
     noteDeviations.length = 0
+    noteMarks.length = 0
     noteStartMs = []
   }
 
@@ -165,6 +223,7 @@ export function useSightSingingController(
     currentIndex = 0
     noteScores.length = 0
     noteDeviations.length = 0
+    noteMarks.length = 0
     noteStartMs = []
   }
 
@@ -210,7 +269,7 @@ export function useSightSingingController(
     let centsOff = 0
     if (p && p.freq > 0) {
       detectedMidi = freqToExactMidi(p.freq)
-      centsOff = (detectedMidi - target) * 100
+      centsOff = foldCents((detectedMidi - target) * 100)
       if (Math.abs(centsOff) <= TOLERANCE_CENTS) holdMs += dt
       else holdMs = Math.max(0, holdMs - dt * 0.5)
     } else {
@@ -246,7 +305,9 @@ export function useSightSingingController(
     let noteScore = 0
     if (samples.length >= 2) {
       const deviations = samples
-        .map((p) => Math.abs((freqToExactMidi(p.freq) - note.midi) * 100))
+        .map((p) =>
+          Math.abs(foldCents((freqToExactMidi(p.freq) - note.midi) * 100)),
+        )
         .sort((a, b) => a - b)
       // Best 30% of the attempt — rewards finding the note even after a scoop.
       const best = deviations.slice(
@@ -259,6 +320,11 @@ export function useSightSingingController(
     }
     if (matched) noteScore = Math.max(noteScore, 70)
     noteScores[idx] = noteScore
+    noteMarks[idx] = {
+      held: matched,
+      heard: samples.length >= 2,
+      score: noteScore,
+    }
 
     const done = noteScores.filter((s) => typeof s === 'number')
     const avg =
@@ -301,6 +367,7 @@ export function useSightSingingController(
         notesScored: scored.length,
         avgAccuracy: final.avgAccuracy,
         bestNote: final.bestNote,
+        names: NAMES_METRIC[names()],
         // The score already counts an unsung note as 0, so a Stop cannot
         // pass a bar. Unmarked, it still pulled the trends, the best and
         // the weak list down, and spent an armed challenge's attempt.
@@ -329,5 +396,7 @@ export function useSightSingingController(
     generateSequence,
     getSequence: () => sequence,
     getCurrentIndex: () => currentIndex,
+    /** How each note passed so far went, by its place in the line. */
+    getMarks: (): readonly (SightSingingMark | undefined)[] => [...noteMarks],
   }
 }

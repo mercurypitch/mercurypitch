@@ -1,0 +1,294 @@
+/* ============================================================
+   Sight-Singing: the line's sheet, its setup and the run
+   ============================================================
+
+   The drill sits on the shell's dark stage, so these read the stage's
+   tokens: light ink on a dark sheet in either app theme. Its inks are Sing
+   It in Time's, since the two write their lines on one staff: cyan for a
+   note held in tune, amber for one moved on from at the limit, the stage's
+   muted ink for one with no voice heard, and white with a glow for the
+   note to sing. */
+
+/* ── The sheet ────────────────────────────────────────────── */
+
+.sheetCard {
+  --sight-on: #5ee7ff;
+  --sight-off: #f6b24a;
+  --sight-now: #fff;
+  --sight-dim: rgb(238 243 248 / 34%);
+
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+  min-width: 0;
+  padding: 12px 12px 8px;
+  border: 1px solid var(--stage-edge, rgb(255 255 255 / 13%));
+  border-radius: 18px;
+  background: rgb(8 12 20 / 62%);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s;
+}
+
+/* While the line is sung the sheet takes the cyan of a note heard. */
+.sheetCard[data-live='true'] {
+  border-color: rgb(94 231 255 / 38%);
+  box-shadow: 0 0 0 1px rgb(94 231 255 / 8%);
+}
+
+.label {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  color: var(--text-secondary);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 0.66rem;
+  font-weight: 500;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.where {
+  color: var(--sight-on);
+  white-space: nowrap;
+}
+
+/* ── The staff ────────────────────────────────────────────── */
+
+/* A line wider than the sheet scrolls sideways (the owner asked for that
+   over notes too small to read); a short one is drawn no larger than 1.4
+   times its own size, and a long one no smaller than 0.8. */
+.scroller {
+  overflow-x: auto;
+  overflow-y: hidden;
+  width: 100%;
+  min-width: 0;
+  scrollbar-width: thin;
+}
+
+.staff {
+  display: block;
+  width: 100%;
+  min-width: calc(var(--staff-w) * 0.8);
+  max-width: calc(var(--staff-w) * 1.4);
+  height: auto;
+  margin: 0 auto;
+  overflow: visible;
+  color: var(--text-primary);
+}
+
+/* On a phone the run's column holds the pitch tracker, this staff and the
+   hold bar over Stop, so the staff is no taller than a sixth of the screen
+   (88 to 132 px), its width following from its own proportions
+   (`--staff-ratio`, width over height). A long line keeps its 0.8 floor
+   and scrolls. */
+@media (max-width: 768px) {
+  .staff {
+    max-width: min(
+      calc(var(--staff-w) * 1.4),
+      calc(var(--staff-ratio) * clamp(88px, 16vh, 132px))
+    );
+  }
+}
+
+.lit {
+  fill: rgb(94 231 255 / 12%);
+  stroke: rgb(94 231 255 / 40%);
+  stroke-width: 1;
+}
+
+.line,
+.ledger {
+  stroke: currentcolor;
+  stroke-width: 1;
+  opacity: 0.55;
+}
+
+.ledger {
+  opacity: 0.85;
+}
+
+.glyph {
+  fill: currentcolor;
+}
+
+.note {
+  color: var(--text-primary);
+  transition: opacity 0.2s;
+}
+
+.head {
+  fill: currentcolor;
+  transition: fill 0.15s;
+}
+
+.name {
+  fill: var(--text-secondary);
+  font-family: 'JetBrains Mono', ui-monospace, monospace;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+.note[data-tone='next'] {
+  opacity: 0.62;
+}
+
+.note[data-tone='now'] {
+  color: var(--sight-now);
+  filter: drop-shadow(0 0 5px rgb(94 231 255 / 95%));
+}
+
+.note[data-tone='now'] .name {
+  fill: var(--sight-now);
+}
+
+.note[data-tone='held'] {
+  color: var(--sight-on);
+}
+
+.note[data-tone='held'] .name {
+  fill: var(--sight-on);
+}
+
+.note[data-tone='moved'] {
+  color: var(--sight-off);
+}
+
+.note[data-tone='moved'] .name {
+  fill: var(--sight-off);
+}
+
+.note[data-tone='not-heard'] {
+  color: var(--sight-dim);
+}
+
+.voice {
+  fill: var(--sight-off);
+  stroke: rgb(8 12 20 / 85%);
+  stroke-width: 1.2;
+  filter: drop-shadow(0 0 4px rgb(246 178 74 / 85%));
+}
+
+.voiceOn {
+  fill: var(--sight-on);
+  filter: drop-shadow(0 0 5px rgb(94 231 255 / 95%));
+}
+
+/* ── The setup ────────────────────────────────────────────── */
+
+.setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  width: min(100%, 560px);
+  min-width: 0;
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px 22px;
+  width: 100%;
+}
+
+/* The line is the setup here, and the thing to read before Start: on a
+   tall enough screen it takes the sheet's width over Start and Hear it
+   first, as Sing It in Time's tune does, where the shell would put a setup
+   beside them. */
+@media (min-width: 769px) and (min-height: 860px) {
+  :global(.exercise-idle-body):has(.setup) {
+    flex-direction: column;
+    gap: 16px;
+    width: 100%;
+  }
+
+  :global(.exercise-idle-setup):has(> .setup) {
+    width: 100%;
+  }
+}
+
+/* A shorter screen (a tablet on its side, a laptop's half window) keeps
+   the shell's row, the line beside Start, and sizes the staff by the height
+   there is: the pickers and the sheet's chrome take about 450 px. */
+@media (min-width: 769px) and (max-height: 859.98px) {
+  .staff {
+    min-width: 0;
+    max-width: min(
+      calc(var(--staff-w) * 1.4),
+      calc(var(--staff-ratio) * clamp(88px, 100dvh - 450px, 160px))
+    );
+  }
+}
+
+/* The shell lifts Start above the setup on a phone, so it is never a scroll
+   away. Here the line is the thing to read before Start is pressed, so the
+   setup goes first, as Sing It in Time's tune does, and Start follows it.
+   After a run the result keeps the top: it shares this order and comes
+   first in the sheet. */
+@media (max-width: 768px) {
+  :global(.exercise-idle-setup):has(> .setup) {
+    order: -4;
+  }
+
+  .sheetCard {
+    padding: 10px 8px 6px;
+  }
+}
+
+/* ── The run ──────────────────────────────────────────────── */
+
+.run {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: min(100%, 640px);
+  min-width: 0;
+  margin: 0 auto;
+}
+
+.say {
+  font-size: 1rem;
+  font-weight: 650;
+}
+
+/* The hold: how long the voice has been on the lit note, of the half
+   second that passes it. */
+.hold {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  width: 100%;
+  max-width: 320px;
+  margin-top: 10px;
+}
+
+.holdBar {
+  width: 100%;
+  height: 8px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgb(255 255 255 / 12%);
+}
+
+.holdFill {
+  height: 100%;
+  background: #5ee7ff;
+  transition: width 0.08s linear;
+}
+
+.holdLabel {
+  color: var(--text-secondary);
+  font-size: 0.74rem;
+}
+
+.debug {
+  margin-top: 6px;
+  color: var(--text-secondary);
+  font-family: monospace;
+  font-size: 0.72rem;
+  opacity: 0.8;
+}

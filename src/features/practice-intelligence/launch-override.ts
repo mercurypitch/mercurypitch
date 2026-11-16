@@ -10,7 +10,7 @@
 // when the exercise is exited so it never leaks into the next session.
 
 import type { ExerciseConfig, ExerciseType, GuidedPracticeLaunchConfig, } from '@/features/exercises/types'
-import { clearExerciseLaunchOverride, exerciseLaunchChords, exerciseLaunchDifficulty, exerciseLaunchGuidedPractice, exerciseLaunchIntervals, exerciseLaunchInversions, exerciseLaunchPattern, exerciseLaunchScale, exerciseLaunchTargetNote, exerciseLaunchTargetNotes, exerciseLaunchTuning, setExerciseLaunchOverride, } from '@/lib/domain/exercise-launch'
+import { clearExerciseLaunchOverride, exerciseLaunchChords, exerciseLaunchDifficulty, exerciseLaunchGuidedPractice, exerciseLaunchIntervals, exerciseLaunchInversions, exerciseLaunchKey, exerciseLaunchPattern, exerciseLaunchScale, exerciseLaunchTargetNote, exerciseLaunchTargetNotes, exerciseLaunchTuning, setExerciseLaunchOverride, } from '@/lib/domain/exercise-launch'
 import { clampDifficulty } from './adaptive-difficulty'
 import { getDifficulty } from './difficulty-store'
 
@@ -73,6 +73,15 @@ export function launchIntervals(type: ExerciseType): number[] | undefined {
     ),
   ]
   return usable.length > 0 ? usable : undefined
+}
+
+/**
+ * The key a launch asked `type` to read in, by its do's name (`G`, `Bb`),
+ * if any. The name is whatever the launch wrote: the exercise reads it as a
+ * key name and falls back to C where it cannot.
+ */
+export function launchKey(type: ExerciseType): string | undefined {
+  return exerciseLaunchKey(type)
 }
 
 /**

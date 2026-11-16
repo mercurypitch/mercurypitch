@@ -2,8 +2,8 @@
 // The drills' one door to the lessons' staff
 // ============================================================
 //
-// Read the Note and Sing It in Time read the staff as Lesson 15 teaches it,
-// so they borrow the lessons' own arithmetic and outlines rather than
+// Read the Note, Sing It in Time and Sight-Singing read the staff as Lesson
+// 15 teaches it, so they borrow the lessons' own arithmetic and outlines rather than
 // keeping a second copy: where a note sits and what a reader calls the
 // place, and the syllable a note takes in its key (kit/staff-places.ts),
 // how a note is spelled (kit/notes.ts), where a key signature's signs sit
@@ -18,6 +18,14 @@
 export { G_CLEF_PATH } from '@/features/lessons/kit/glyphs'
 export type { Letter, Spelled } from '@/features/lessons/kit/notes'
 export {
+  flatOf,
+  sharpOf,
+  signName,
+  spellOn,
+  spellScale,
+  wordName,
+} from '@/features/lessons/kit/notes'
+export {
   F_CLEF_PATH,
   FLAT_PATH,
   NOTEHEAD_PATH,
@@ -25,7 +33,12 @@ export {
   SHARP_PATH,
 } from '@/features/lessons/kit/staff-glyphs'
 export type { KeySig } from '@/features/lessons/kit/staff-key'
-export { keyAlter, keyPlaces, keyWords } from '@/features/lessons/kit/staff-key'
+export {
+  keyAlter,
+  keyOfScale,
+  keyPlaces,
+  keyWords,
+} from '@/features/lessons/kit/staff-key'
 export type { Clef } from '@/features/lessons/kit/staff-places'
 export {
   diatonicOf,
@@ -35,6 +48,7 @@ export {
   noteAt,
   placeOf,
   placeWords,
+  SOLFA,
   spelledAt,
   syllableOf,
 } from '@/features/lessons/kit/staff-places'

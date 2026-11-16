@@ -237,11 +237,12 @@ export const EXERCISE_HELP: Record<ExerciseType, ExerciseHelp> = {
     ],
   },
   [EXERCISE_SIGHT_SINGING]: {
-    summary: 'Read notes from a staff and sing them at sight.',
+    summary: 'Read a short line from the staff and sing it at sight.',
     body: [
       '"Sight-singing" means singing music you are reading for the first time, straight from the notation.',
-      'Find your starting note, then read ahead one note at a time, singing the pitches shown on the staff.',
-      'You are scored on how accurately you sing the written notes.',
+      "The line is written on your clef, in the Singing tab's key, with its key signature. Under each note is its letter, its do-re-mi syllable, or nothing: choose under Names.",
+      'Hear it first plays do, then do, mi, so, mi, do, so you have the key. It never plays the line.',
+      'Hold each note for about half a second to light the next. Any octave counts: you are scored on how close you sing each note, in whichever octave you sing it.',
     ],
   },
   [EXERCISE_NOTE_READING]: {

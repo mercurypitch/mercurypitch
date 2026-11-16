@@ -371,7 +371,7 @@ import { provideTourDetour, provideTourLeave } from '@/lib/tour-screen'
 import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
 import { useFileDropZone } from '@/lib/use-file-drop-zone'
 import { useMidiSongPicker } from '@/lib/use-midi-song-picker'
-import { fitPhraseToRange, octaveShiftIntoRange, pickVocalRangeMelody, } from '@/lib/vocal-range'
+import { fitPhraseToRange, octaveShiftIntoRange, phraseInOwnOctave, pickVocalRangeMelody, } from '@/lib/vocal-range'
 import { AnalysisPage } from '@/pages/AnalysisPage'
 import { ChallengesPage } from '@/pages/ChallengesPage'
 import { CommunityPage } from '@/pages/CommunityPage'
@@ -812,9 +812,13 @@ const AppShell: Component<AppProps> = (props) => {
               ?.items.map((it) => `${it.note.name}${it.note.octave}`)
           : undefined
     // A link's notes are authored for nobody in particular; the singer's
-    // range is set on this device, so fit them the same as a drill's.
+    // range is set on this device, so fit them the same as a drill's. A
+    // lesson's line for two voices is read in each voice's own octave
+    // instead (`ownOctave`), as its page writes it.
     const notes = authored
-      ? fitPhraseToRange(authored, vocalRangePreset())
+      ? launch.ownOctave === true
+        ? phraseInOwnOctave(authored, vocalRangePreset())
+        : fitPhraseToRange(authored, vocalRangePreset())
       : undefined
     setActiveTab(TAB_EXERCISES)
     mountExercise(launch.exercise)

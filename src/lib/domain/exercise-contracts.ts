@@ -196,6 +196,10 @@ export interface ExerciseConfig {
    *  (e.g. `[5, 7]`, a fourth and a fifth): this launch's own set in place
    *  of the exercise's pool. Read it through `launchIntervals`. */
   intervals?: number[]
+  /** The key a key-driven exercise reads in, by its do's name (`G`, `Bb`,
+   *  `F#`): Sight-Singing's, in place of the Singing tab's key. Read it
+   *  through `launchKey`; `scale` names its scale. */
+  key?: string
   /** Scale to open a scale-driven exercise on, by that exercise's own name
    *  for it (Scale Runner's `harmonic-minor`). Read it through
    *  `launchScale`; the exercise checks the name against its own list. */

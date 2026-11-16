@@ -36,7 +36,7 @@
 
 import { chordsOfMask, chordStackerRecord, } from './chord-stacker/chord-stacker-chords'
 import type { ExerciseType } from './types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, EXERCISE_SIREN, runStoppedEarly, } from './types'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SIREN, runStoppedEarly, } from './types'
 
 /** Bump when a drill's SCORING changes meaning — never for UI changes. */
 const SCORING_VERSION: Partial<Record<ExerciseType, number>> = {
@@ -56,6 +56,10 @@ const SCORING_VERSION: Partial<Record<ExerciseType, number>> = {
   // 2026-10-25 without a reweighting and could not pass 80.
   [EXERCISE_SCALE_RUNNER]: 2,
   [EXERCISE_DRONE_INTONATION]: 2,
+  // Rescored 2026-11-16: a note counts in any octave (octave-folded), where
+  // version 1 heard only the written one and scored a line sung an octave
+  // from the page as nothing.
+  [EXERCISE_SIGHT_SINGING]: 2,
 }
 
 /**

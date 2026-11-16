@@ -24,7 +24,8 @@
 import type { JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { foldCents } from '@/lib/mirror/metrics'
-import { F_CLEF_PATH, FLAT_PATH, G_CLEF_PATH, keyPlaces, keyWords, ledgersOf, NOTO_GLYPHS, SHARP_PATH, } from '../note-reading/staff-kit'
+import { keyWords, ledgersOf } from '../note-reading/staff-kit'
+import { StaffFrame, staffMeasures } from '../note-reading/StaffFrame'
 import { metrics, stemEnd, stemX } from './in-time-kit'
 import styles from './SingInTime.module.css'
 import type { NoteVerdict } from './take-judge'
@@ -55,14 +56,10 @@ const HEAD_IN = 0.36
 /** An open head's rim (the stylesheet's `.open` stroke): drawn inside the solid head's outline. */
 const OPEN_RIM = 1.9
 
-const K = SPACE / NOTO_GLYPHS.space
 const M = metrics(SPACE)
-
-/** The y of a place: half a space up for each letter above the bottom line. */
-const yOf = (place: number): number => BOTTOM_Y - (place * SPACE) / 2
-
-const at = (x: number, y: number): string =>
-  `translate(${x.toFixed(2)} ${y.toFixed(2)}) scale(${K.toFixed(5)})`
+/** The staff's heights and its key signature's spacing (StaffFrame.tsx). */
+const STAFF = staffMeasures(SPACE, BOTTOM_Y)
+const { yOf } = STAFF
 
 /** How a note is drawn: waiting, under the cursor, or judged. */
 export type NoteTone = 'ink' | 'next' | 'now' | 'in-tune' | 'off' | 'not-heard'
@@ -83,8 +80,7 @@ export interface TuneStaffProps {
 
 /** The x of the left edge of each beat's cell, the bars' gap counted. */
 function layout(signs: number) {
-  const signW =
-    ((NOTO_GLYPHS.sharp - 50) * K + SPACE * 0.12) * (signs > 0 ? 1 : 0)
+  const signW = STAFF.signW * (signs > 0 ? 1 : 0)
   const metreX = KEY_X + signs * signW + (signs > 0 ? 7 : 6)
   const from = metreX + 22
   const bw = (RIGHT - 6 - from - BAR_GAP) / TUNE_BEATS
@@ -273,17 +269,19 @@ export function TuneStaff(props: TuneStaffProps): JSX.Element {
       </Show>
 
       {/* the staff, its clef, its key and its metre */}
-      <For each={[0, 2, 4, 6, 8]}>
-        {(place) => (
-          <line
-            class={styles.line}
-            x1={LEFT}
-            x2={RIGHT}
-            y1={yOf(place)}
-            y2={yOf(place)}
-          />
-        )}
-      </For>
+      <StaffFrame
+        clef={props.tune.clef}
+        sig={props.tune.key.sig}
+        space={SPACE}
+        bottomY={BOTTOM_Y}
+        left={LEFT}
+        right={RIGHT}
+        clefX={CLEF_X}
+        keyX={KEY_X}
+        lineClass={styles.line}
+        glyphClass={styles.glyph}
+        signTestId="tune-key-sign"
+      />
       <line
         class={styles.barLine}
         x1={box().cell(BAR_BEATS) - BAR_GAP / 2}
@@ -305,31 +303,6 @@ export function TuneStaff(props: TuneStaffProps): JSX.Element {
         y1={TOP_Y}
         y2={BOTTOM_Y}
       />
-      <path
-        class={styles.glyph}
-        d={props.tune.clef === 'treble' ? G_CLEF_PATH : F_CLEF_PATH}
-        transform={at(
-          CLEF_X,
-          BOTTOM_Y +
-            (props.tune.clef === 'treble'
-              ? NOTO_GLYPHS.base.g
-              : NOTO_GLYPHS.base.f) *
-              K,
-        )}
-      />
-      <For each={keyPlaces(props.tune.key.sig, props.tune.clef)}>
-        {(place, i) => (
-          <path
-            class={styles.glyph}
-            data-testid="tune-key-sign"
-            d={props.tune.key.sig.sign === 'sharp' ? SHARP_PATH : FLAT_PATH}
-            transform={at(
-              KEY_X + i() * box().signW - 50 * K,
-              yOf(place) + NOTO_GLYPHS.head.cy * K,
-            )}
-          />
-        )}
-      </For>
       <text
         class={styles.metre}
         x={box().metreX + 7}

@@ -59,6 +59,11 @@ export function exerciseLaunchIntervals(
   return current?.type === type ? current.config.intervals : undefined
 }
 
+export function exerciseLaunchKey(type: ExerciseType): string | undefined {
+  const current = launchOverride()
+  return current?.type === type ? current.config.key : undefined
+}
+
 export function exerciseLaunchScale(type: ExerciseType): string | undefined {
   const current = launchOverride()
   return current?.type === type ? current.config.scale : undefined

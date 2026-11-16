@@ -80,15 +80,18 @@ const CLEF_HINT: Readonly<Record<ClefChoice, string>> = {
 /** The white keys with a black key at their right shoulder. */
 const SHARP_AFTER: ReadonlySet<Letter> = new Set(['C', 'D', 'F', 'G', 'A'])
 
-interface ChoiceProps<T extends string> {
+export interface ChoiceProps<T extends string> {
   label: string
   options: readonly { value: T; label: string }[]
   value: T
   onChange: (value: T) => void
 }
 
-/** One of the setup screen's pickers: a label over a row of chips. */
-function Choice<T extends string>(props: ChoiceProps<T>): JSX.Element {
+/**
+ * One of the setup screen's pickers: a label over a row of chips.
+ * Sight-Singing's setup uses it too, so the two read alike.
+ */
+export function Choice<T extends string>(props: ChoiceProps<T>): JSX.Element {
   return (
     <div class={styles.choice} role="group" aria-label={props.label}>
       <span class={styles.choiceLabel}>{props.label}</span>

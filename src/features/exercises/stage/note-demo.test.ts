@@ -72,6 +72,30 @@ describe("a drill's example as a row of notes", () => {
     expect(tones).toHaveLength(1)
   })
 
+  it('gives a note its own length and silence where the example says so', async () => {
+    const { player, tones } = demo()
+    let done = false
+    void player
+      .play([{ midi: 60, ms: 1000, gapMs: 400 }, 64, { midi: 67, ms: 600 }], {
+        noteMs: 560,
+        gapMs: 40,
+      })
+      .then(() => {
+        done = true
+      })
+    expect(tones).toEqual([[midiToFrequency(60), 1000]])
+    vi.advanceTimersByTime(1399)
+    expect(tones).toHaveLength(1)
+    vi.advanceTimersByTime(1)
+    expect(tones[1]).toEqual([midiToFrequency(64), 560])
+    vi.advanceTimersByTime(600)
+    expect(tones[2]).toEqual([midiToFrequency(67), 600])
+    await vi.advanceTimersByTimeAsync(599)
+    expect(done).toBe(false)
+    await vi.advanceTimersByTimeAsync(1)
+    expect(done).toBe(true)
+  })
+
   it('asked again while it plays, starts over from its first note', () => {
     const { player, tones } = demo()
     void player.play([60, 67])
