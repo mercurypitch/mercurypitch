@@ -48,8 +48,9 @@ export interface StudioFxProfile {
    * No effect delays the signal: shapers run without oversampling and make
    * up nothing, the transient shaper looks no way ahead, and the lookahead
    * dynamics (LOOKAHEAD_DYNAMICS) pass the signal through untouched, since
-   * a DynamicsCompressorNode cannot run without its lookahead. Only the
-   * monitor's profile sets it.
+   * a DynamicsCompressorNode cannot run without its lookahead. A limiter
+   * keeps its input gain and its ceiling, as a soft clip with nothing
+   * ahead of it (effects/limiter.ts). Only the monitor's profile sets it.
    */
   readonly zeroLatency?: true
 }
@@ -78,9 +79,11 @@ export const LOOKAHEAD_DYNAMICS = [
  * The armed lane's chain while its input is monitored: every effect that
  * adds no delay sounds as it does on the lane (EQ, tilt, gain, stereo,
  * delay, reverb), saturation and the exciter without their oversampling,
- * the transient shaper without its 3 ms lookahead, and the lookahead
- * dynamics not at all. Measured in Chromium 148 at 48 kHz, they would add
- * 6 ms each (the limiter 10), and a voice lane's chain 22 ms in all.
+ * the transient shaper without its 3 ms lookahead, a limiter as its input
+ * gain and ceiling alone, and the compressor, de-esser and dynamic EQ not
+ * at all. Measured
+ * in Chromium 148 at 48 kHz, the lookahead dynamics would add 6 ms each
+ * (the limiter 10), and a voice lane's chain 22 ms in all.
  */
 export const MONITOR_FX_PROFILE: StudioFxProfile = {
   id: 'monitor',
@@ -125,13 +128,18 @@ export function keepsOnlyLatency(
   return profile?.lite.some((lite) => lite === kind) === true
 }
 
-/** Whether `profile` passes the signal straight through an effect of `kind`: a lookahead dynamics effect while monitoring. */
+/**
+ * Whether `profile` passes the signal straight through an effect of `kind`:
+ * a lookahead dynamics effect while monitoring, all but the limiter, whose
+ * ceiling plays without its lookahead (effects/limiter.ts).
+ */
 export function passesStraightThrough(
   profile: StudioFxProfile | undefined,
   kind: string,
 ): boolean {
   return (
     profile?.zeroLatency === true &&
+    kind !== 'limiter' &&
     LOOKAHEAD_DYNAMICS.some((dynamics) => dynamics === kind)
   )
 }

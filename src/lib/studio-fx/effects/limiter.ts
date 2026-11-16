@@ -15,6 +15,14 @@
 //
 // A safety limiter for a master bus, not a true-peak mastering limiter: the
 // samples are bounded, the waveform between them is not.
+//
+// While its input is monitored (fx-profile.ts `zeroLatency`) the compressor
+// sits out: its lookahead would make the singer hear themselves late. The
+// input gain and the ceiling still play, the soft clip and the hard clamp
+// both run without oversampling, so the limiter adds no latency and its
+// output still never passes the ceiling. Below 90 % of the ceiling the
+// soft clip is a straight line; above it, it rounds off what the
+// compressor would have pulled down.
 
 import type { EffectSpecOf } from '@/lib/studio-fx/chain-spec'
 import { compressorAutoMakeupGain } from '@/lib/studio-fx/compressor-curve'
@@ -22,7 +30,7 @@ import { createCompressorTwin, settleCompressorTwins, } from '@/lib/studio-fx/co
 import type { ShaperCurve } from '@/lib/studio-fx/dsp'
 import { createHardClampCurve, createSoftClipCurve, dbToGain, HARD_CLAMP_DOMAIN, SOFT_CLIP_DOMAIN, WET_ONLY, } from '@/lib/studio-fx/dsp'
 import type { EffectParams } from '@/lib/studio-fx/effect-definitions'
-import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
+import type { EffectEnv, EffectUnit, ShaperPath, } from '@/lib/studio-fx/effect-shell'
 import { assembleUnit, connectSeries, createEffectShell, createIdentityShaperPath, createShaperPath, settleRelease, writeParam, } from '@/lib/studio-fx/effect-shell'
 import { shaperOversample } from '@/lib/studio-fx/fx-profile'
 
@@ -37,11 +45,59 @@ function limiterCurves(): { soft: ShaperCurve; hard: ShaperCurve } {
   return curves
 }
 
+/** Place the soft clip and the hard clamp at the ceiling: each curve's domain scaled to it. */
+function placeCeiling(
+  soft: ShaperPath,
+  hard: ShaperPath,
+  ceilingDb: number,
+  write: (param: AudioParam, value: number) => void,
+): void {
+  const ceiling = dbToGain(ceilingDb)
+  write(soft.input.gain, 1 / (ceiling * SOFT_CLIP_DOMAIN))
+  write(soft.output.gain, ceiling * SOFT_CLIP_DOMAIN)
+  write(hard.input.gain, 1 / (ceiling * HARD_CLAMP_DOMAIN))
+  write(hard.output.gain, ceiling * HARD_CLAMP_DOMAIN)
+}
+
+/** The limiter on a monitored input: its input gain, then its ceiling as a soft clip and a hard clamp, none of it oversampled or looking ahead. */
+function createCeilingUnit(
+  ctx: BaseAudioContext,
+  spec: EffectSpecOf<'limiter'>,
+  env: EffectEnv,
+): EffectUnit {
+  const shell = createEffectShell(ctx, spec.enabled, WET_ONLY)
+  const drive = ctx.createGain()
+  const soft = createShaperPath(ctx, limiterCurves().soft, null)
+  const hard = createShaperPath(ctx, limiterCurves().hard, null)
+  connectSeries([shell.input, drive, soft.input])
+  connectSeries([soft.output, hard.input])
+  hard.output.connect(shell.wet)
+  shell.input.connect(shell.dry)
+
+  const apply = (p: EffectParams<'limiter'>, glide: boolean): void => {
+    const write = (param: AudioParam, value: number): void =>
+      writeParam(param, value, ctx, glide)
+    write(drive.gain, dbToGain(p.driveDb))
+    placeCeiling(soft, hard, p.ceilingDb, write)
+  }
+  apply(spec.params, false)
+
+  return assembleUnit({
+    kind: 'limiter',
+    env,
+    shell,
+    nodes: [drive, ...soft.nodes, ...hard.nodes],
+    apply: (params, glide) => apply(params as EffectParams<'limiter'>, glide),
+  })
+}
+
 export function createLimiterUnit(
   ctx: BaseAudioContext,
   spec: EffectSpecOf<'limiter'>,
   env: EffectEnv,
 ): EffectUnit {
+  if (env.profile?.zeroLatency === true)
+    return createCeilingUnit(ctx, spec, env)
   const shell = createEffectShell(ctx, spec.enabled, WET_ONLY)
   const drive = ctx.createGain()
   const compressor = ctx.createDynamicsCompressor()
@@ -66,7 +122,6 @@ export function createLimiterUnit(
     const write = (param: AudioParam, value: number): void =>
       writeParam(param, value, ctx, glide)
     const threshold = p.ceilingDb - LIMITER_HEADROOM_DB
-    const ceiling = dbToGain(p.ceilingDb)
     write(drive.gain, dbToGain(p.driveDb))
     write(compressor.threshold, threshold)
     write(compressor.release, p.releaseMs / 1000)
@@ -74,10 +129,7 @@ export function createLimiterUnit(
       cancelAutoMakeup.gain,
       1 / compressorAutoMakeupGain(threshold, 0, LIMITER_RATIO),
     )
-    write(soft.input.gain, 1 / (ceiling * SOFT_CLIP_DOMAIN))
-    write(soft.output.gain, ceiling * SOFT_CLIP_DOMAIN)
-    write(hard.input.gain, 1 / (ceiling * HARD_CLAMP_DOMAIN))
-    write(hard.output.gain, ceiling * HARD_CLAMP_DOMAIN)
+    placeCeiling(soft, hard, p.ceilingDb, write)
   }
   apply(spec.params, false)
 
