@@ -48,7 +48,6 @@ vi.mock('@/lib/studio/record/studio-recorder', () => ({
       record: vi.fn(),
       stop: vi.fn(),
       disarm: vi.fn(),
-      retarget: vi.fn(),
       updateMonitor: vi.fn(),
       micLost: vi.fn(),
       clockStopped: vi.fn(),
@@ -368,7 +367,8 @@ describe('useStudioRecorder', () => {
     hook.arming.toggle('keys')
     expect(recorder.arm).toHaveBeenLastCalledWith('keys')
     expect(recorder.disarm).not.toHaveBeenCalled()
-    expect(recorder.retarget).not.toHaveBeenCalled()
+    // Beside bass: keys alone is armed, and bass is not armed again.
+    expect(recorder.arm.mock.calls).toEqual([['bass'], ['keys']])
     expect(recorder.record).not.toHaveBeenCalled()
 
     mocks.onChange!(
@@ -396,7 +396,8 @@ describe('useStudioRecorder', () => {
       hook.arming.toggle('keys')
     }
     expect(mocks.recorder!.disarm).not.toHaveBeenCalled()
-    expect(mocks.recorder!.retarget).not.toHaveBeenCalled()
+    // Nor is a lane armed beside the take: keys stays out of it.
+    expect(mocks.recorder!.arm).not.toHaveBeenCalled()
     dispose()
   })
 
@@ -435,7 +436,9 @@ describe('useStudioRecorder', () => {
 
     setSelected('lane-2')
 
-    expect(mocks.recorder!.retarget).not.toHaveBeenCalled()
+    // The arm stays: lane-1 is not disarmed, and lane-2 is not armed.
+    expect(mocks.recorder!.disarm).not.toHaveBeenCalled()
+    expect(mocks.recorder!.arm).not.toHaveBeenCalled()
     expect(hook.arming.laneState('lane-1')).toBe('armed')
     dispose()
   })
