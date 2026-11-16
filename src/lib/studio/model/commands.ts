@@ -11,6 +11,7 @@ import { studioClipOnPass } from './clip-passes'
 import { createStudioTrack } from './defaults'
 import type { StudioMidiRenderEdit } from './midi-render-commands'
 import { applyStudioMidiRenderEdit, isStudioMidiRenderEdit, } from './midi-render-commands'
+import { coverStudioMidiWindow } from './midi-window'
 import type { StudioPasteEdit } from './placement-commands'
 import { moveStudioClipToNewTrack, pasteStudioClip } from './placement-commands'
 import type { StudioPunchEdit } from './punch-commands'
@@ -84,6 +85,12 @@ export type StudioEdit =
       readonly type: 'trim-tail'
       readonly clipId: string
       readonly sourceOutFrame: number
+      /**
+       * A MIDI clip's end past its sequence's end grows the sequence
+       * (midi-window.ts): the id of the clip's own copy, used only when
+       * other clips share its sequence.
+       */
+      readonly forkSequenceId?: string
     }
   | {
       readonly type: 'split-clip'
@@ -236,11 +243,19 @@ function editClip(project: StudioProject, edit: StudioClipEdit): StudioProject {
         sourceInFrame: edit.sourceInFrame,
         startFrame: clip.startFrame + edit.sourceInFrame - clip.sourceInFrame,
       })
-    case 'trim-tail':
-      return replaceClip(project, {
-        ...clip,
+    case 'trim-tail': {
+      // A MIDI clip's sequence first grows to cover the new end, if short.
+      const covered = coverStudioMidiWindow(
+        project,
+        clip.id,
+        edit.sourceOutFrame,
+        edit.forkSequenceId,
+      )
+      return replaceClip(covered, {
+        ...getClip(covered, clip.id),
         sourceOutFrame: edit.sourceOutFrame,
       })
+    }
     case 'set-fades':
       return replaceClip(project, { ...clip, fades: edit.fades })
     case 'set-clip-gain':

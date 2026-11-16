@@ -82,25 +82,55 @@ function setSequenceNotes(
     JSON.stringify(edit.notes) === JSON.stringify(sequence.notes)
   )
     return project
-  const edited = { ...sequence, notes: edit.notes, nextNoteId: edit.nextNoteId }
+  return withOwnSequence(
+    project,
+    { clip, midi },
+    { ...sequence, notes: edit.notes, nextNoteId: edit.nextNoteId },
+    edit.forkSequenceId,
+  )
+}
+
+/**
+ * The song with the clip's sequence replaced by `edited`, which keeps the
+ * sequence's id: in place when the clip alone plays it, else as the clip's
+ * own copy under `forkSequenceId`, which the clip then plays, inside the
+ * same command. A note edit and a lengthening (midi-window.ts) both edit
+ * this way, so the other clips on the sequence never change.
+ */
+export function withOwnSequence(
+  project: StudioProject,
+  played: { readonly clip: StudioClip; readonly midi: StudioClipMidi },
+  edited: StudioSequence,
+  forkSequenceId: string | undefined,
+): StudioProject {
   const sequences = project.sequences ?? []
-  if (studioClipsOnSequence(project, sequence.id).length === 1)
+  if (studioClipsOnSequence(project, edited.id).length === 1)
     return {
       ...project,
       sequences: sequences.map((each) =>
-        each.id === sequence.id ? edited : each,
+        each.id === edited.id ? edited : each,
       ),
     }
   requireValue(
-    studioSequence(project, edit.forkSequenceId) === undefined,
-    `sequence.${edit.forkSequenceId}`,
+    forkSequenceId !== undefined,
+    `clip.${played.clip.id}.midi`,
+    'A shared sequence needs an id for the clip’s own copy',
+  )
+  requireValue(
+    studioSequence(project, forkSequenceId) === undefined,
+    `sequence.${forkSequenceId}`,
     'Sequence already exists',
   )
-  const own = { ...clip, midi: { ...midi, sequenceId: edit.forkSequenceId } }
+  const own = {
+    ...played.clip,
+    midi: { ...played.midi, sequenceId: forkSequenceId },
+  }
   return {
     ...project,
-    sequences: [...sequences, { ...edited, id: edit.forkSequenceId }],
-    clips: project.clips.map((item) => (item.id === clip.id ? own : item)),
+    sequences: [...sequences, { ...edited, id: forkSequenceId }],
+    clips: project.clips.map((item) =>
+      item.id === played.clip.id ? own : item,
+    ),
   }
 }
 

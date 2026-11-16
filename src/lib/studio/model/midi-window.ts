@@ -15,11 +15,22 @@
 // reached further could never be heard, so a MIDI clip's window ends five
 // minutes into its sequence at the most.
 //
+// A trim of a MIDI clip's end past its sequence's end grows the sequence to
+// cover it, as one undo step ('trim-tail', commands.ts): a sequence other
+// clips share becomes the clip's own copy first, as a note edit makes one
+// (sequence-commands.ts). Shortening leaves the sequence as long as it was,
+// its notes past the window kept and not heard (docs/plans/studio-midi.md,
+// decision 9). Lengthening changes `lengthTicks`, which is in the render
+// key, so the clip's audio is then due a render.
+//
 // An audio clip's window stays inside its audio (validation-clips.ts), and
 // a loop take's inside its pass (clip-passes.ts), MIDI or not.
 import { studioTicksCovering } from '../midi/time'
-import type { StudioSequence } from './types'
+import { withOwnSequence } from './sequence-commands'
+import { studioSequence } from './sequences'
+import type { StudioProject, StudioSequence } from './types'
 import { STUDIO_SAMPLE_RATE } from './types'
+import { requireValue } from './validation-values'
 
 /** The furthest a MIDI clip's window reaches into its sequence: the longest audio the Studio keeps (import-limits.ts), so a render can cover all of it. */
 export const STUDIO_MIDI_WINDOW_MOST_FRAMES = STUDIO_SAMPLE_RATE * 300
@@ -33,4 +44,38 @@ export function studioSequenceCovers(
   frame: number,
 ): boolean {
   return studioTicksCovering(frame, sequence.tempoBpm) <= sequence.lengthTicks
+}
+
+/**
+ * The song with clip `clipId`'s sequence long enough for its window to end
+ * at source frame `sourceOutFrame`: grown to the fewest ticks that cover it,
+ * on the clip's own copy, under `forkSequenceId`, when other clips share it.
+ * The song as it was for an audio clip, and for a window its sequence
+ * covers already.
+ */
+export function coverStudioMidiWindow(
+  project: StudioProject,
+  clipId: string,
+  sourceOutFrame: number,
+  forkSequenceId: string | undefined,
+): StudioProject {
+  const clip = project.clips.find((each) => each.id === clipId)
+  const midi = clip?.midi
+  const sequence = midi && studioSequence(project, midi.sequenceId)
+  if (!clip || !midi || !sequence) return project
+  if (studioSequenceCovers(sequence, sourceOutFrame)) return project
+  requireValue(
+    sourceOutFrame <= STUDIO_MIDI_WINDOW_MOST_FRAMES,
+    `clip.${clip.id}.sourceOutFrame`,
+    STUDIO_MIDI_WINDOW_LIMIT,
+  )
+  return withOwnSequence(
+    project,
+    { clip, midi },
+    {
+      ...sequence,
+      lengthTicks: studioTicksCovering(sourceOutFrame, sequence.tempoBpm),
+    },
+    forkSequenceId,
+  )
 }

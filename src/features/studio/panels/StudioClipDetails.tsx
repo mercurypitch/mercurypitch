@@ -5,6 +5,7 @@ import { studioClipSourceBounds } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import { NoteBars } from '../studio-icons'
+import { studioTrimTail } from '../timeline/gesture-draft'
 import { StudioClipPasses } from './StudioClipPasses'
 import { StudioNumberField } from './StudioNumberField'
 
@@ -23,7 +24,8 @@ const frames = (value: number) => Math.round(value * 48_000)
 
 export function StudioClipDetails(props: StudioClipDetailsProps) {
   const duration = () => props.clip.sourceOutFrame - props.clip.sourceInFrame
-  // A loop take's clip trims inside its pass (clip-passes.ts).
+  // A loop take's clip trims inside its pass, and a MIDI clip's end past its
+  // audio, growing its sequence (clip-passes.ts).
   const bounds = () =>
     studioClipSourceBounds(props.clip, props.asset.normalizedFrameCount)
   const fadeIn = () =>
@@ -150,11 +152,7 @@ export function StudioClipDetails(props: StudioClipDetailsProps) {
         max={seconds(bounds().end)}
         disabled={!props.writable}
         onCommit={(value) =>
-          props.onCommand({
-            type: 'trim-tail',
-            clipId: props.clip.id,
-            sourceOutFrame: frames(value),
-          })
+          props.onCommand(studioTrimTail(props.clip, frames(value)))
         }
       />
       <div class={styles.fieldDivider} />

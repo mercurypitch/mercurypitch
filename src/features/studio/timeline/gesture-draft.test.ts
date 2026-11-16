@@ -1,6 +1,6 @@
-// Studio gesture geometry tests — frame bounds, deterministic snap and immutable fade anchors.
+// Studio gesture geometry tests — frame bounds, a MIDI clip's end past its audio, deterministic snap and immutable fade anchors.
 import { describe, expect, it } from 'vitest'
-import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
+import { studioFixture, studioMidiFixture, } from '@/lib/studio/model/model.test-fixtures'
 import type { StudioGestureInput } from './gesture-draft'
 import { draftStudioGesture, STUDIO_NEW_LANE, studioGestureCommand, } from './gesture-draft'
 import { snapStudioPosition, studioGridFrame, studioGridInterval, } from './timeline-snap'
@@ -124,6 +124,63 @@ describe('Studio gesture drafts', () => {
     expect(bounded.clip.fades.in?.toSourceFrame).toBe(
       input.clip.fades.out?.fromSourceFrame,
     )
+  })
+
+  it('drags a MIDI clip’s end past its audio, snapping as the timeline snaps, five minutes into its sequence at the most', () => {
+    // Arrange: the keys clip ends where its audio does, 2.5 s into the
+    // song; bars of two seconds at 120 bpm.
+    const { project, assets, clip } = studioMidiFixture()
+    const input: StudioGestureInput = {
+      ...fixture(),
+      project: { ...project, ruler: 'bars' },
+      asset: assets[1],
+      clip,
+      kind: 'trim-tail',
+      snap: true,
+    }
+
+    // Act: dragged to 3.96 s, near bar 3's line at 4 s; then far past
+    // five minutes.
+    const near = draftStudioGesture({ ...input, deltaFrames: 70_000 })
+    const far = draftStudioGesture({ ...input, deltaFrames: 48_000 * 600 })
+
+    // Assert
+    expect(near.clip.sourceOutFrame).toBe(24_000 + 192_000 - 48_000)
+    expect(near.snapFrame).toBe(192_000)
+    expect(far.clip.sourceOutFrame).toBe(48_000 * 300)
+  })
+
+  it('names a copy of its own in a MIDI clip’s trim of its end, for a sequence it shares', () => {
+    // Arrange
+    const { project, assets, clip } = studioMidiFixture()
+    const input: StudioGestureInput = {
+      ...fixture(),
+      project,
+      asset: assets[1],
+      clip,
+      kind: 'trim-tail',
+      deltaFrames: 48_000,
+    }
+
+    // Act
+    const command = studioGestureCommand(draftStudioGesture(input), clip)
+    const audio = studioGestureCommand(
+      draftStudioGesture({ ...fixture(), kind: 'trim-tail', deltaFrames: -10 }),
+      fixture().clip,
+    )
+
+    // Assert
+    expect(command).toEqual({
+      type: 'trim-tail',
+      clipId: clip.id,
+      sourceOutFrame: 144_000,
+      forkSequenceId: expect.any(String),
+    })
+    expect(audio).toEqual({
+      type: 'trim-tail',
+      clipId: 'clip-1',
+      sourceOutFrame: 990,
+    })
   })
 
   it('keeps a zero-distance draft a no-op', () => {
