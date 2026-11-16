@@ -454,7 +454,13 @@ function heardAgreement(
 }
 
 test.describe('Studio comping', () => {
-  test('a swipe along a pass plays it there, one undo a swipe, live and in the export', async ({
+  // In the @smoke tier, alone of the comp tests. Pull requests run only
+  // that tier, so these tests first ran on main after comping merged, and
+  // this one failed there 3 runs of 3 (705f8a0ef). It is the one that
+  // swipes a comp, hears it Play and reads its Export, the whole way a comp
+  // is made and heard, so a pull request now has to pass it to merge. The
+  // others stay out: every test in the tier costs every pull request.
+  test('a swipe along a pass plays it there, one undo a swipe, live and in the export @smoke', async ({
     page,
   }) => {
     test.setTimeout(240_000)
