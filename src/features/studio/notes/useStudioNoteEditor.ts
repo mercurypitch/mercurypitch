@@ -12,6 +12,7 @@
 import { onCleanup, onMount } from 'solid-js'
 import type { StudioProject } from '@/lib/studio/model/types'
 import type { StudioPanelName } from '../panels/studio-panels'
+import type { NoteEditTool } from './edit-types'
 import { installStudioNotesKey } from './note-editor-keys'
 import { createStudioNoteEditorState } from './note-editor-state'
 
@@ -31,15 +32,15 @@ export interface StudioNoteEditorOptions {
 export function useStudioNoteEditor(options: StudioNoteEditorOptions) {
   const state = createStudioNoteEditorState({ project: options.project })
 
-  /** Open clip `clipId`'s notes; false for a clip that plays no MIDI. */
-  function open(clipId: string): boolean {
+  /** Open clip `clipId`'s notes, in `tool` (Draw for a clip just made); false for a clip that plays no MIDI. */
+  function open(clipId: string, tool?: NoteEditTool): boolean {
     const clip = options.project()?.clips.find((each) => each.id === clipId)
     if (clip?.midi === undefined) return false
     const panel = options.panel()
     if (panel === 'mix' || (panel !== null && options.panelCovers()))
       options.closePanel()
     options.selectClip(clipId)
-    return state.open(clipId)
+    return state.open(clipId, tool)
   }
 
   onMount(() =>

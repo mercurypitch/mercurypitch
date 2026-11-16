@@ -231,14 +231,15 @@ test.describe('Studio note editor on a computer', () => {
     const clip = await openMidiSong(page)
     await clip.dblclick()
     const roll = noteEditor(page).locator('[data-studio-note-roll]')
-    await expect(roll).toHaveAttribute('data-studio-note-roll', /^0:7680:/)
+    // The clip's two bars, and the two dimmed bars past its end.
+    await expect(roll).toHaveAttribute('data-studio-note-roll', /^0:15360:/)
     const box = (await roll.boundingBox())!
 
     await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2)
     await page.keyboard.down('Control')
     await page.mouse.wheel(0, -200)
     await page.keyboard.up('Control')
-    await expect(roll).not.toHaveAttribute('data-studio-note-roll', /^0:7680:/)
+    await expect(roll).not.toHaveAttribute('data-studio-note-roll', /^0:15360:/)
 
     const rows = async () =>
       Number((await roll.getAttribute('data-studio-note-roll'))!.split(':')[2])

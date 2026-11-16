@@ -16,11 +16,11 @@
 // goes to the render service (midi/midi-render-editor.ts), so the clip
 // plays as the gesture would leave it, and the header says while the
 // clip's render runs and when it failed.
-import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, } from 'solid-js'
+import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { Maximize2, Minimize2, RotateCcw } from '@/components/icons'
 import { isTypingTarget } from '@/lib/space-playback'
 import { studioLaneInstrument } from '@/lib/studio/instruments/resolve'
-import { studioClipTickWindow, studioSongBeats } from '@/lib/studio/midi/time'
+import { studioClipTickWindow, studioSongBeats, studioWindowEndFrame, } from '@/lib/studio/midi/time'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import { studioSequence } from '@/lib/studio/model/sequences'
 import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model/types'
@@ -29,12 +29,14 @@ import { useStudioMidiEditor } from '../midi/midi-render-editor'
 import { studioMidiSound, studioMidiSoundWords, } from '../record/midi/studio-midi-sound'
 import { FitWidth, RotateCw, ZoomIn, ZoomOut } from '../studio-icons'
 import common from '../StudioPage.module.css'
+import { studioTrimTail } from '../timeline/gesture-draft'
 import { studioClipTakeName } from '../timeline/StudioTimelineClip'
 import { studioTrackColor, studioTrackHue } from '../timeline/track-hues'
 import type { StudioNoteAuditionClock } from './note-audition'
 import { createStudioNoteAudition } from './note-audition'
 import type { StudioNoteEditorState } from './note-editor-state'
 import { studioNoteStatusWords } from './note-editor-words'
+import { rollEndWords } from './roll-end'
 import styles from './StudioNoteEditor.module.css'
 import type { StudioNoteRollControls, StudioNoteRollTransport, } from './StudioNoteRoll'
 import { StudioNoteRoll } from './StudioNoteRoll'
@@ -196,7 +198,27 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
     audition,
     preview: (draft) => renders?.preview(props.clip.id, draft),
     announce,
+    // Read once: the editor mounts again for each clip it opens on.
+    tool: untrack(() => props.state.tool()),
   })
+
+  /** The clip's end moved to tick `endTick` by its End handle: one trim, which grows the sequence past its end (midi-window.ts). */
+  function moveEnd(endTick: number): void {
+    const notes = sequence()
+    if (notes === undefined) return
+    const kept = props.dispatch(
+      studioTrimTail(props.clip, studioWindowEndFrame(endTick, notes.tempoBpm)),
+    )
+    const meter = {
+      ...studioSongBeats(props.clip, notes, props.project.tempoBpm),
+      beatsPerBar: 4,
+    }
+    announce(
+      kept
+        ? `The clip ends at ${rollEndWords(endTick, meter)}.`
+        : "The clip's end could not be moved.",
+    )
+  }
   // A phone's selection edits sit in a bar over the status line.
   const thumbNotes = () => (props.phone ? sequence() : undefined)
   const kit = () => sound() === 'drums'
@@ -442,6 +464,11 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
             color={color()}
             transport={props.transport}
             editing={editor.editing}
+            end={{
+              snap: () => editor.snap(),
+              writable: () => props.writable,
+              commit: moveEnd,
+            }}
             controls={(value) => (controls = value)}
           />
         )}

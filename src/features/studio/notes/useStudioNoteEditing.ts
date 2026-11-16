@@ -37,10 +37,12 @@ import type { NoteEditView } from './edit-view'
 import { noteEditDraft, noteEditView } from './edit-view'
 import type { StudioNoteAudition } from './note-audition'
 
-/** What the roll lends the engine: its view, its rows (a piano's or a kit's), and the velocity lane's height. */
+/** What the roll lends the engine: its view and the ticks it keeps to, its rows (a piano's or a kit's), and the velocity lane's height. */
 export interface StudioNoteRollView {
   viewport(): RollViewport | null
   setViewport(viewport: RollViewport): void
+  /** The ticks the view keeps to: the window and two bars past its end (roll-end.ts). */
+  range?(): StudioTickWindow
   rows(): StudioRollRows
   velocityHeight(): number
 }
@@ -75,6 +77,8 @@ export interface StudioNoteEditingOptions {
   /** Words for the editor's live region. */
   announce(words: string): void
   createId?(): string
+  /** The tool the editor opens in: Draw for a clip just made; Select by default. */
+  tool?: NoteEditTool
 }
 
 const sameWindow = (a: StudioTickWindow, b: StudioTickWindow) =>
@@ -82,7 +86,10 @@ const sameWindow = (a: StudioTickWindow, b: StudioTickWindow) =>
 
 export function useStudioNoteEditing(options: StudioNoteEditingOptions) {
   const [state, setState] = createSignal<NoteEditState>(
-    createNoteEditState({ clipboard: untrack(options.clipboard) }),
+    createNoteEditState({
+      clipboard: untrack(options.clipboard),
+      tool: options.tool,
+    }),
   )
   const [roll, setRoll] = createSignal<StudioNoteRollView | null>(null)
   const createId = options.createId ?? (() => globalThis.crypto.randomUUID())
@@ -117,6 +124,7 @@ export function useStudioNoteEditing(options: StudioNoteEditingOptions) {
     return {
       sequence,
       window: clipWindow(),
+      view: lent.range?.(),
       viewport,
       velocityHeight: lent.velocityHeight(),
       rows: lent.rows(),

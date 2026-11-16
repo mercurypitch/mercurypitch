@@ -6,6 +6,8 @@
 // region, so a long name or a note at the edge never runs into the next
 // part. The grid's lines come from the song's bars over the sequence
 // (rollGridLines): bars always, beats and sixteenths where they have room.
+// Past the clip's window the grid and the velocity lane are dimmed, and the
+// window's end is a line in the lane's colour under the End handle.
 import { rowHeight } from '@/lib/roll-geometry'
 import type { StudioNote } from '@/lib/studio/model/types'
 import { studioNoteName } from './note-names'
@@ -46,7 +48,26 @@ export function drawRollGrid(
   for (const x of lines.bars)
     vertical(context, x, grid.y, bottom, theme.gridBar)
   dimOutsideWindow(context, input, grid)
+  drawEndLine(context, input, grid)
   context.restore()
+}
+
+/** The clip's end, a line in the lane's colour down `area`, under the End handle on the ruler (StudioNoteEnd.tsx). */
+function drawEndLine(
+  context: RollContext,
+  input: StudioRollInput,
+  area: StudioRollRect,
+): void {
+  const x = Math.round(tickX(input, input.window.endTick))
+  if (x < area.x || x > area.x + area.width) return
+  context.globalAlpha = 0.8
+  fillBox(context, input.theme.note, {
+    x: x - 1,
+    y: area.y,
+    width: 2,
+    height: area.height,
+  })
+  context.globalAlpha = 1
 }
 
 /** Shade the parts of `area` outside the clip's window. */
@@ -122,6 +143,8 @@ export function drawRollVelocities(
   clipTo(context, lane)
   for (const x of rollGridLines(input).bars)
     vertical(context, x, lane.y, lane.y + lane.height, theme.gridBeat)
+  dimOutsideWindow(context, input, lane)
+  drawEndLine(context, input, lane)
   for (const note of notes)
     drawRollStick(
       context,

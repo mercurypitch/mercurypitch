@@ -31,6 +31,8 @@ export interface NoteEditContext {
   readonly sequence: StudioNoteSet
   /** The ticks the clip plays: only a note starting inside is picked or edited. */
   readonly window: StudioTickWindow
+  /** The ticks the roll may show, which a pan or a zoom keeps to: the window and two bars past its end (roll-end.ts); the window when absent. */
+  readonly view?: StudioTickWindow
   /** What the roll shows. */
   readonly viewport: RollViewport
   /** The velocity lane's height. */

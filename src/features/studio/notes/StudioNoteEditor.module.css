@@ -272,6 +272,77 @@
   -webkit-touch-callout: none;
 }
 
+/* The clip's End handle (StudioNoteEnd.tsx): a flag in the lane's colour
+   on the ruler, centred on the clip's end, whose line the canvas draws down
+   the roll. It takes a press 44 px across, as tall as the ruler; on a touch
+   screen as tall again under the ruler on its dimmed side, past the end,
+   where a press draws nothing. */
+.end {
+  position: absolute;
+  z-index: 3;
+  top: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 26px;
+  margin-left: -22px;
+  cursor: ew-resize;
+  touch-action: none;
+  outline: none;
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-touch-callout: none;
+}
+.touch .end::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  width: 22px;
+  height: 18px;
+}
+.end[aria-disabled='true'] {
+  cursor: default;
+}
+.endFlag {
+  display: flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 7px;
+  border-radius: 9px;
+  background: var(--studio-track);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--studio-bg) 55%, transparent),
+    0 2px 8px color-mix(in srgb, var(--studio-track) 35%, transparent);
+  color: var(--roll-note-text);
+  font-size: 9.5px;
+  font-weight: 750;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  pointer-events: none;
+  transition:
+    transform 0.12s ease-out,
+    box-shadow 0.12s ease-out;
+}
+@media (hover: hover) {
+  .end:hover .endFlag {
+    transform: scale(1.08);
+  }
+}
+.endDragging .endFlag {
+  transform: scale(1.08);
+}
+.end:focus-visible .endFlag {
+  box-shadow:
+    0 0 0 2px var(--studio-panel),
+    0 0 0 4px var(--studio-accent);
+}
+.end[aria-disabled='true'] .endFlag {
+  opacity: 0.5;
+}
+
 /* The status: the count and the bars, then the zoom. */
 .status {
   display: flex;
@@ -350,7 +421,8 @@
   .rendering {
     animation: studio-note-rendering 0s linear 0.4s both;
   }
-  .resize::before {
+  .resize::before,
+  .endFlag {
     transition: none;
   }
 }

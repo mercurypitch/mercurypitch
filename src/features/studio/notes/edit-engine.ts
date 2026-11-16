@@ -32,7 +32,7 @@ import { noteFrame, notePointerCancel, notePointerDown, notePointerMove, notePoi
 import type { NoteSnap } from './edit-snap'
 import { DEFAULT_NOTE_SNAP } from './edit-snap'
 import type { NoteEditCommand, NoteEditContext, NoteEditEffect, NoteEditInput, NoteEditKey, NoteEditPointer, NoteEditState, NoteEditStep, NoteEditTool, NoteEditWheel, } from './edit-types'
-import { sameRollViewport, wheelNoteRoll } from './edit-viewport'
+import { noteViewRange, sameRollViewport, wheelNoteRoll } from './edit-viewport'
 
 export { noteEditWantsFrames } from './edit-pointer'
 
@@ -196,7 +196,7 @@ function wheelStep(
 ): NoteEditStep {
   const viewport = wheelNoteRoll(
     ctx.viewport,
-    ctx.window,
+    noteViewRange(ctx),
     wheel,
     editTopRow(ctx),
   )

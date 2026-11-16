@@ -1,4 +1,4 @@
-// Studio note editor state tests — the editor opens on a MIDI clip and never on an audio one; it closes by itself when its clip is deleted, stops playing MIDI or another song opens, and expanded goes with it; and a drawer height is kept on this device until it is set back to automatic.
+// Studio note editor state tests — the editor opens on a MIDI clip and never on an audio one, in Select or in Draw; it closes by itself when its clip is deleted, stops playing MIDI or another song opens, and expanded goes with it; and a drawer height is kept on this device until it is set back to automatic.
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, describe, expect, it } from 'vitest'
 import { studioMidiFixture } from '@/lib/studio/model/model.test-fixtures'
@@ -34,6 +34,21 @@ describe('opening', () => {
     expect(opened).toBe(true)
     expect(state.clipId()).toBe('clip-midi')
     expect(state.clip()).toBe(clip)
+  })
+
+  it('opens in Select, and in Draw when asked, as a clip just made is', () => {
+    // Arrange
+    const { project, clip } = studioMidiFixture()
+    const { state } = stateOver(project)
+
+    // Act
+    state.open(clip.id)
+    const plain = state.tool()
+    state.open(clip.id, 'draw')
+
+    // Assert
+    expect(plain).toBe('select')
+    expect(state.tool()).toBe('draw')
   })
 
   it('refuses an audio clip, and a clip the song does not hold', () => {
