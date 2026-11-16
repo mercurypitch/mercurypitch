@@ -431,7 +431,9 @@ export const PitchOverTimeCanvas: Component<PitchOverTimeCanvasProps> = (
         'A#',
         'B',
       ]
-      const octave = Math.floor((targetMidi - 12) / 12)
+      // The octave of the nearest note, as the name is: a pure target a few
+      // cents under a C (Drone Intonation's pure third over G#3) is that C.
+      const octave = Math.floor((Math.round(targetMidi) - 12) / 12)
       return `${names[((Math.round(targetMidi) % 12) + 12) % 12]}${octave}`
     })()
 

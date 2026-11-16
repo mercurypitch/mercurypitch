@@ -161,7 +161,7 @@ piano's note; so does the pure fifth, 1.96 above.
 equal-tempered note.**
 
 - Pool: unison, minor third, major third, fourth, fifth, octave
-  (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:18-25`); a launch's
+  (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:31-38`); a launch's
   intervals are kept to that pool (:33-46).
 - Target: `const targetMidi = droneMidi + interval.semitones` (:152, :183), so equal-tempered; the
   drone sounds during the match window,
@@ -169,11 +169,11 @@ equal-tempered note.**
 - Score: `(100 - avgDeviation * SCORE_K)`, `SCORE_K = 1.5` (:14-16, :198), divided by a difficulty
   factor (:127). At the default, a pure major third 13.69 cents under the target scores 100 − 20.5,
   about 79; a pure fifth about 97.
-- The drone's timbre follows the app's instrument setting (`src/lib/audio-engine.ts:1147-1150`:
+- The drone's timbre follows the app's instrument setting (`src/lib/audio-engine.ts:1134-1137`:
   "sine/piano/organ/strings/synth"), so whether it has harmonics to beat with depends on that
   setting.
 - `/exercises/thirds-on-a-drone` opens it on the minor and major thirds
-  (`src/features/exercises/slug-map.ts:80-86`). No slug asked for the fifth, third and octave when
+  (`src/features/exercises/slug-map.ts:93-102`). No slug asked for the fifth, third and octave when
   this was read (SEASON-2 § 5 item 15); `harmony-on-a-drone` does since 15 November 2026.
 - Read: code.
 

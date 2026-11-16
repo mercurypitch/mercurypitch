@@ -19,8 +19,8 @@ sing flow with a take read in time (`docs/plans/find-your-pitch/lessons/18-read-
 its woodblock count-in (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:685-686`) and
 its planning-text test codes (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:739-742`),
 the lead's answer 2; and Lesson 24's headphones check and quiet check
-(`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:749-757`) and its one kept source
-under a take (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:744-748`). This spec
+(`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:751-759`) and its one kept source
+under a take (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:746-750`). This spec
 adds only what a part sung against a played part needs: that kept source widened from a drone to a
 sung line, one line for the reader, the tune line's two-part states, and a lab test. The scored runs
 ship only after that lab test, in which silence with Merc's part from the speakers reads as no
@@ -41,7 +41,7 @@ module in `src/features/lessons/lesson-26/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season builds Lessons 24, 26 and 28
 last, with one coach batch for all three (SEASON-2 § 8.2 item 7,
-`docs/plans/find-your-pitch/SEASON-2.md:1325-1326`). Lesson 28 sings one part of a two-part song with
+`docs/plans/find-your-pitch/SEASON-2.md:1362-1363`). Lesson 28 sings one part of a two-part song with
 the other part played, so it reuses this page's part under a take, the reader's new line and the
 headphones and quiet checks as they are specified here.
 
@@ -587,9 +587,9 @@ stills when WebGL fails.
   fifth a third singer takes, which runs a semitone past the bass preset's top, and it does not say
   which friend gets which part, since that follows the room's order, which the room shows. It is the
   season plan's link for this lesson (SEASON-2 § 5.1, row 26,
-  `docs/plans/find-your-pitch/SEASON-2.md:873`).
+  `docs/plans/find-your-pitch/SEASON-2.md:877`).
 - **The second drill, alone, Drone Intonation's thirds**: `/exercises/thirds-on-a-drone?lesson=26`,
-  printed mercurypitch.com/exercises/thirds-on-a-drone (`src/features/exercises/slug-map.ts:80-86`),
+  printed mercurypitch.com/exercises/thirds-on-a-drone (`src/features/exercises/slug-map.ts:93-102`),
   with Lesson 24's card lines cut to this page: what it does, now "names a third to sing above it",
   since it prints the interval and the note's name; the headphones line, "Headphones help: its
   drone plays while it listens."; and the range line, "It too wants each note in the octave your
@@ -603,7 +603,7 @@ stills when WebGL fails.
 - **The first visit and the marker.** Nothing reads `?lesson=26` until SEASON-2 § 5.2 item 21
   widens the marker, and until then the quiz's answers are refused whole; the page is not built
   before that, so First Light steps aside and the card has no first-visit line (FACTS 67).
-- **Needed: the harmony-line drill** (SEASON-2 § 5.2 item 17, `docs/plans/find-your-pitch/SEASON-2.md:970-972`),
+- **Needed: the harmony-line drill** (SEASON-2 § 5.2 item 17, `docs/plans/find-your-pitch/SEASON-2.md:989-991`),
   the app's work: a melody played and a third above or below it sung, scored per note, octave-folded,
   with a headphones prompt. When it ships it takes the card's first place, as the drill a learner can
   do alone, with its own care lines and the coach's look, and Harmony Stack moves to second (FACTS
@@ -635,7 +635,7 @@ Lesson 10's is (`src/features/lessons/kit/season.ts:345-364`):
   the learner sing over moving chords. It is true of Lesson 24 and answers nothing of the predict;
   the lead's line, the opening in miniature, is the default." (FACTS 5). The tease on this page's
   card is Lesson 27's, set on Lesson 27 by Lesson 27's package
-  (`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:386-389`): the lead's "G,
+  (`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/WEB-SPEC.md:389-392`): the lead's "G,
   B and D going home to C, E and G. Now add one note on top." as the default, and the lead's
   alternative, `teaseAlts` id `three-notes`, "Three notes make a chord. Add one more to V, and hear
   where it goes." (FACTS 5b). Each is at most `TEASE_MAX`, 70 characters
@@ -670,12 +670,12 @@ items 15 and 16 and Lesson 18's item 16 (item 4 below), which have shipped.
    flow allows three takes a visit; this page's options give three a set, and a model before each
    run.
 5. **Lesson 24's checks**, its item 6, `kit/headphones.ts` and `kit/quiet-check.ts`
-   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:749-757`), with two options
+   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:751-759`), with two options
    for this page: the check's line names what plays, "Merc's part" or "Tavi's part", where Lesson
    24's names the drone; and the quiet check plays the first 2.0 s of the set's other part, where
    Lesson 24's plays the drone.
 6. **A part under a take**, code with tests, widening Lesson 24's item 5
-   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:744-748`): the hush's one kept
+   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:746-750`): the hush's one kept
    source is any one voice built before the hush, a drone or a contour voice, not a drone alone; a
    contour voice can be booked to start later through `at` (`src/features/lessons/kit/sound.ts:80-84`),
    so the other part is built when the take is set up and starts on bar 1's first beat; and a

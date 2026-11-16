@@ -112,11 +112,11 @@ takes ti, not te** (Lesson 25 RESEARCH R4). Read: the packages.
 ### The app (read at `b803c7d43`)
 
 **R8. Chord Stacker plays five four-note chords, shuffled, note by note, and has the singer sing each
-note back.** `src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:11-19` (types
-maj7, min7, dom7, dim7, maj6; degrees `dom7: [0, 4, 7, 10]`, `maj7: [0, 4, 7, 11]`); `:89`
-(`chordTypes = shuffleArray(...)`); `:145-191` (each chord's notes played one at a time with
+note back.** `src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:11-19` at `9df7c03b8` (types
+maj7, min7, dom7, dim7, maj6; degrees `dom7: [0, 4, 7, 10]`, `maj7: [0, 4, 7, 11]`); `:89` at `9df7c03b8`
+(`chordTypes = shuffleArray(...)`); `:145-191` at `9df7c03b8` (each chord's notes played one at a time with
 `audioEngine.playTone`, then matched). No launch picks a chord type, and there are no triads or
-inversions (SEASON-2 § 5 item 18). Read: code.
+inversions (SEASON-2 § 5 item 18, which shipped them on 15 November 2026). Read: code.
 
 **R9. Ear Lab's Stack names six chord qualities, the dominant seventh among them.**
 `src/lib/ear/banks.ts:115-157`: Major, Minor, Diminished, Augmented, Suspended 4th, and
@@ -126,7 +126,7 @@ code.
 **R10. `?lesson=27` is not read** (`src/lib/lesson-marker.ts:11-19`). The voice presets
 (`src/stores/settings-store.ts:92-150`) for the sing-along's range. Read: code.
 
-**R11. The app's chord labels**: Chord Stacker's "Major 7th" (`use-chord-stacker-controller.ts:21-24`,
+**R11. The app's chord labels**: Chord Stacker's "Major 7th" (`use-chord-stacker-controller.ts:21-24` at `9df7c03b8`,
 `CHORD_LABELS`) and Stack's "Dominant 7th" (R9). Read: code.
 
 ## Interesting findings

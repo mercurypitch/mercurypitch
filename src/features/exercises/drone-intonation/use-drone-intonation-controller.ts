@@ -1,3 +1,14 @@
+// ============================================================
+// Drone Intonation's run: intervals sung and held over a drone
+// ============================================================
+//
+// Each round holds a drone and names an interval above it, without playing
+// that note. The round scores the sung note's cents from the target, which
+// is the piano's note in Piano tuning or the pure interval over the drone
+// in Pure (drone-tuning.ts). The drone carries its own harmonics where the
+// engine offers them (`playDrone`, src/lib/drone-voice.ts), so a fifth or a
+// third a few cents off beats against it, whatever the app's instrument.
+
 import { batch } from 'solid-js'
 import { difficultyFactor } from '@/features/practice-intelligence/difficulty-scaling'
 import { launchDifficulty, launchIntervals, } from '@/features/practice-intelligence/launch-override'
@@ -8,6 +19,8 @@ import { drawIntervalRounds } from '../interval-rounds'
 import type { ExerciseResult } from '../types'
 import { EXERCISE_DRONE_INTONATION, stoppedEarlyMark } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
+import type { DroneTuning } from './drone-tuning'
+import { droneTargetMidi, pureOffsetCents } from './drone-tuning'
 
 const ROUNDS = 6
 const MATCH_WINDOW_MS = 4000
@@ -93,10 +106,13 @@ export function useDroneIntonationController(
   base: BaseExerciseController,
   audioEngine: {
     playTone: (freq: number, duration?: number) => Promise<void>
+    /** The drone with its harmonics; a bare tone where it is missing. */
+    playDrone?: (freq: number, duration: number) => Promise<void>
     stopTone?: (fadeMs?: number) => void
   },
 ) {
   let droneMidi = 60
+  let tuning: DroneTuning = 'piano'
   let rounds: Array<{ semitones: number; label: string }> = []
   let roundIndex = 0
   let roundScores: number[] = []
@@ -121,9 +137,12 @@ export function useDroneIntonationController(
     _cancelled = true
   })
 
-  function setBase(baseMidi: number): void {
+  /** Deal a run over `baseMidi`, scored in the piano's tuning unless the
+   *  setup or a launch chose pure intervals. */
+  function setBase(baseMidi: number, chosen: DroneTuning = 'piano'): void {
     _cancelled = false
     droneMidi = baseMidi
+    tuning = chosen
     const difficulty = launchDifficulty(EXERCISE_DRONE_INTONATION)
     const factor = difficultyFactor(difficulty)
     // Harder = tighter cents tolerance: penalty grows as 1/factor.
@@ -153,10 +172,17 @@ export function useDroneIntonationController(
     }
 
     const interval = rounds[roundIndex]
-    const targetMidi = droneMidi + interval.semitones
+    // A fraction of a semitone off the piano's note in Pure tuning.
+    const targetMidi = droneTargetMidi(droneMidi, interval.semitones, tuning)
 
     // Start drone
-    void audioEngine.playTone(midiToFreq(droneMidi), matchWindowMs + 2000)
+    const droneHz = midiToFreq(droneMidi)
+    const droneMs = matchWindowMs + 2000
+    if (audioEngine.playDrone !== undefined) {
+      void audioEngine.playDrone(droneHz, droneMs)
+    } else {
+      void audioEngine.playTone(droneHz, droneMs)
+    }
 
     // Displayed acceptance window (cents) where the round score stays > 0:
     // 100 - cents * scoreK > 0  ->  |cents| < 100 / scoreK.
@@ -171,6 +197,11 @@ export function useDroneIntonationController(
         droneMidi,
         phase: 2, // matching (drone is already playing)
         intervalSemitones: interval.semitones,
+        // The run's tuning, and where a pure target sits from the piano's
+        // note (0 in Piano tuning), for the round's words.
+        pureTuning: tuning === 'pure' ? 1 : 0,
+        targetCents:
+          tuning === 'pure' ? pureOffsetCents(interval.semitones) : 0,
         acceptanceCents,
       })
     })
@@ -184,7 +215,7 @@ export function useDroneIntonationController(
 
   function evaluateRound(): void {
     const interval = rounds[roundIndex]
-    const targetMidi = droneMidi + interval.semitones
+    const targetMidi = droneTargetMidi(droneMidi, interval.semitones, tuning)
     const history = base.pitchHistory()
     const recentSamples = trailingSamplesByTime(history, matchWindowMs)
 
@@ -238,6 +269,12 @@ export function useDroneIntonationController(
     base._completeWithResult(result)
   }
 
+  /** The tuning that scored the run, as a number a result's metrics can
+   *  carry: which record it belongs to (exercise-comparability.ts). */
+  function tuningMark(): Record<string, number> {
+    return { pureTuning: tuning === 'pure' ? 1 : 0 }
+  }
+
   function computeResult(): ExerciseResult {
     if (roundScores.length === 0) {
       return {
@@ -249,6 +286,7 @@ export function useDroneIntonationController(
           bestRound: 0,
           stabilityCents: 0,
           richnessScore: 0,
+          ...tuningMark(),
           ...stoppedEarlyMark(stoppedEarly),
         },
         completedAt: Date.now(),
@@ -304,6 +342,7 @@ export function useDroneIntonationController(
         bestRound,
         stabilityCents,
         richnessScore: Math.round(richness),
+        ...tuningMark(),
         ...stoppedEarlyMark(stoppedEarly),
       },
       completedAt: Date.now(),

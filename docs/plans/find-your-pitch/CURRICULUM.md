@@ -482,32 +482,39 @@ lesson is marked done.
 The app can open these today: `/mirror`, `/vocal-range-test`, `/voice-type-test`,
 `/which-singer-has-my-vocal-range`, `/free-sing`, `/pitch-training`, `/ear-lab`, `/drum-night`,
 `/piano-night`, `/karaoke-night`, tab hashes (`#/exercises`, `#/path`, `#/singing`,
-`#/learn/<chapterId>`), and fifteen exercise slugs (`/exercises/speed-scales`,
-`/exercises/leap-ladder`, `/exercises/thirds-on-a-drone`, ten for Season 2's lessons (SEASON-2
-§ 5.2 items 9, 11, 13, 15 to 17 and 19) and two that open tabs). `/exercises/perfect-octave` also opens, but it only sets Interval Trainer's
+`#/learn/<chapterId>`), and sixteen exercise slugs (`/exercises/speed-scales`,
+`/exercises/leap-ladder`, `/exercises/thirds-on-a-drone`, eleven for Season 2's lessons (SEASON-2
+§ 5.2 items 9, 11, 13 and 15 to 19) and two that open tabs). `/exercises/perfect-octave` also opens, but it only sets Interval Trainer's
 start note, so it does not drill an octave yet (item 3).
 
 Data alone is not enough. A slug launch carries `exercise`, `notes`, `scaleId`, `difficulty`,
-`intervals` and `scale` (`ExerciseLaunch` in `src/features/exercises/slug-map.ts`), and most drills
-read only the first note and the difficulty. Interval Trainer shuffles a fixed pool (M2, M3, P4, P5,
-M6, P8, no minor third) unless a launch names its own intervals, as `/exercises/leap-ladder` does;
-Drone Intonation shuffles its own six unless a launch names some of them, as
-`/exercises/thirds-on-a-drone` does, and Long Note's length is the viewer's saved timer preference.
-Everything else therefore needs one of these changes (detail in MASTER-PLAN § 7: the Phase 1 App and
-App content tracks, and the Phase 2 engineering track for item 4 and for the Lesson 9 and 10
-interval sets in item 2); items 2 to 7 are code with tests, estimated as such:
+`intervals`, `scale`, `chords`, `inversions` and `tuning` (`ExerciseLaunch` in
+`src/features/exercises/slug-map.ts`), and most drills read only the first note and the difficulty.
+Interval Trainer shuffles a fixed pool (M2, M3, P4, P5, M6, P8, no minor third) unless a launch
+names its own intervals, as `/exercises/leap-ladder` does; Drone Intonation shuffles its own six
+unless a launch names some of them, as `/exercises/thirds-on-a-drone` does; Chord Stacker deals the
+chords its setup chose unless a launch names its own, as `/exercises/triads` does; and Long Note's
+length is the viewer's saved timer preference. Everything else therefore needs one of these changes
+(detail in MASTER-PLAN § 7: the Phase 1 App and App content tracks, and the Phase 2 engineering
+track for item 4 and for the Lesson 9 and 10 interval sets in item 2); items 2 to 7 are code with
+tests, estimated as such:
 
 1. Data-only slugs for drills that need only a start note, a scale or a difficulty (Scale Runner
    at a beginner tempo, Pitch Hold's start note, Siren and Slide).
 2. New launch fields: `intervals` is in for Interval Trainer (whole semitones 1 to 12, each upward),
    which gives Lesson 9 its minor third and leaves Lesson 6 a registry line, and for Drone
    Intonation, which drills those its own pool names and so gives Lesson 10 its two thirds; `scale`
-   is in for Scale Runner, which opens on any of its seven; no launch carries a direction. Still
-   needed: `durationSec` for Long Note and Pitch Hold (Lessons 3 and 5), and a `pattern` field on
-   slug launches for warm-up patterns such as lip trill and sirens (`launch-override.ts` already
-   exposes `launchPattern`, which the warm-up reads; `ExerciseLaunch` lacks it).
+   is in for Scale Runner, which opens on any of its seven; `chords` and `inversions` are in for
+   Chord Stacker (item 4), and `tuning` for Drone Intonation, which `/exercises/harmony-on-a-drone`
+   opens on pure intervals; no launch carries a direction. Still needed: `durationSec` for Long Note
+   and Pitch Hold (Lessons 3 and 5), and a `pattern` field on slug launches for warm-up patterns
+   such as lip trill and sirens (`launch-override.ts` already exposes `launchPattern`, which the
+   warm-up reads; `ExerciseLaunch` lacks it).
 3. Fix `perfect-octave` so Interval Trainer drills the octave: one registry line, `intervals: [12]`.
-4. Chord Stacker triad chord types (major and minor) for Lesson 12.
+4. Chord Stacker triad chord types (major and minor) for Lesson 12: shipped on 15 November 2026
+   (SEASON-2 § 5.2 item 18), with the diminished and the augmented triads and inversions. The
+   `chords` launch field names a run's chords, and `/exercises/triads` opens the four triads in
+   root position; Lesson 12's major and minor alone would be one more registry line.
 5. New launch kinds: `ear-drill` (accepting a bank subset, such as `leap:m2` and `leap:M2` for
    Lesson 2), `zen`, `learn`.
 6. A lesson marker (`?lesson=`) that skips First Light for visitors arriving from a lesson and
@@ -527,7 +534,7 @@ exit includes every Lesson 8 to 14 link opening its drill (MASTER-PLAN § 7).
 
 Gaps with no drill today (candidates for new content): straw phonation, register work, vowels,
 keyboard and note-naming drills, sharps and enharmonics, the circle of fifths, sung minor and
-descending intervals, sung triads, rhythm scored while singing, a harmony line on a tune a lesson
+descending intervals, rhythm scored while singing, a harmony line on a tune a lesson
 chooses (the Harmony room draws its own lines), major-versus-minor scale by ear.
 
 ## 5. Seasons 2 and 3

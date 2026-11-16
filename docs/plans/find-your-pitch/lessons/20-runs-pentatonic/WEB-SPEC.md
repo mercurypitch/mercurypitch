@@ -513,8 +513,8 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form (Lesson 9's,
 
 - `n: 20`, `lane: 'voice'`, `title: 'Runs and the pentatonic scale'`, `short: 'Runs'`, `topics:
 ['S18', 'T16']`, with their names as SEASON-2 § 4.1 gives them: S18, "Agility: staccato, runs,
-  pentatonic patterns" (`docs/plans/find-your-pitch/SEASON-2.md:783`), and T16, "Pentatonic and
-  blues scales" (`docs/plans/find-your-pitch/SEASON-2.md:770`); the hook word for word (FACTS 1).
+  pentatonic patterns" (`docs/plans/find-your-pitch/SEASON-2.md:787`), and T16, "Pentatonic and
+  blues scales" (`docs/plans/find-your-pitch/SEASON-2.md:774`); the hook word for word (FACTS 1).
   `minutes: 15` and `page: '/learn/20'` once the page is built, under the drafts' comment in Lesson
   9's form: `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` The entry decides nothing
   about being live: the draft list and the console do.
@@ -611,7 +611,7 @@ are listed so this page's needs are in one place.
     app's work, Scale Runner's scale types and launch field (SEASON-2 § 5.2 item 13), shipped on 15
     November 2026. The two app notes found on the way have shipped:
     Staccato Precision's help says what it scores, pitch and not timing
-    (`src/features/exercises/exercise-help.ts:226`); and Scale Runner's grade reaches 100, so its
+    (`src/features/exercises/exercise-help.ts:228`); and Scale Runner's grade reaches 100, so its
     level can rise as well as ease, and the card says its window shortens as the level rises (FACTS
     64, 67).
 

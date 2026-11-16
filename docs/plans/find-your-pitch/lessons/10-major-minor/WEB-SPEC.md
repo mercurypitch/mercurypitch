@@ -741,11 +741,11 @@ still images when WebGL fails or would run on the CPU.
   link (FACTS 67).
 - **In the app, not yet linked: `/exercises/thirds-on-a-drone`** (CURRICULUM § 4 item 2, the
   `intervals` launch field; FACTS 52, 53): Drone Intonation on the minor and major thirds, 3 and 4
-  semitones up, registered in `EXERCISE_SLUGS` (`src/features/exercises/slug-map.ts:59-171`) with a
+  semitones up, registered in `EXERCISE_SLUGS` (`src/features/exercises/slug-map.ts:72-199`) with a
   line in `src/tests/slug-map.test.ts`. A run is as long as the difficulty asks, six rounds at the
   default level and up to eight, not capped at the two thirds, and deals them as Interval Trainer
   deals a launched list, never the same one twice running, so they take turns
-  (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:47-63`, `:76-90`);
+  (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:60-76`, `:89-103`);
   its setup screen names both beside the round count (FACTS 53). The card keeps
   `/pitch-training?lesson=10` until this page is live. The pairing with Lesson 6's proposed
   `fourths-and-fifths` is the App track's to keep (FACTS 53).

@@ -6,12 +6,14 @@
 
 import { describe, expect, it } from 'vitest'
 import { typesFor } from '@/features/exercises/cadence/cadence-rounds'
+import { CHORD_SETS, isChordStackerChord, } from '@/features/exercises/chord-stacker/chord-stacker-chords'
+import { isDroneTuning } from '@/features/exercises/drone-intonation/drone-tuning'
 import { droneIntervalLabel } from '@/features/exercises/drone-intonation/use-drone-intonation-controller'
 import { isWebRoom } from '@/features/exercises/rooms/web-room-ids'
 import { SCALE_RUNNER_SCALES } from '@/features/exercises/scale-runner/scale-runner-scales'
 import { hintLine } from '@/features/exercises/sing-in-time/in-time-words'
 import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
-import { EXERCISE_CADENCE, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
+import { EXERCISE_CADENCE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
 import { difficultyLabel } from '@/features/practice-intelligence/adaptive-difficulty'
 import { clearLaunchOverride, launchIntervals, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
@@ -75,11 +77,14 @@ describe('EXERCISE_SLUGS', () => {
     })
   })
 
-  it("opens Drone Intonation on Lesson 10's two thirds for thirds-on-a-drone", () => {
+  it("opens Drone Intonation on Lesson 10's two thirds for thirds-on-a-drone, on the piano's notes", () => {
+    // Lessons 10 and 24's cards say the link scores to the piano's notes,
+    // so it does not take the singer's saved tuning.
     expect(EXERCISE_SLUGS['thirds-on-a-drone']).toEqual({
       kind: 'exercise',
       exercise: EXERCISE_DRONE_INTONATION,
       intervals: [3, 4],
+      tuning: 'piano',
     })
   })
 
@@ -122,11 +127,21 @@ describe('EXERCISE_SLUGS', () => {
     })
   })
 
-  it("opens Drone Intonation on Lesson 24's fifth, major third and octave for harmony-on-a-drone", () => {
+  it("opens Drone Intonation on Lesson 24's fifth, major third and octave, tuned pure, for harmony-on-a-drone", () => {
     expect(EXERCISE_SLUGS['harmony-on-a-drone']).toEqual({
       kind: 'exercise',
       exercise: EXERCISE_DRONE_INTONATION,
       intervals: [7, 4, 12],
+      tuning: 'pure',
+    })
+  })
+
+  it('opens Chord Stacker on the four triads in root position for triads', () => {
+    expect(EXERCISE_SLUGS.triads).toEqual({
+      kind: 'exercise',
+      exercise: EXERCISE_CHORD_STACKER,
+      chords: [...CHORD_SETS.triads],
+      inversions: false,
     })
   })
 
@@ -305,6 +320,45 @@ describe('EXERCISE_SLUGS', () => {
     )
 
     expect(withScale.length).toBeGreaterThan(0)
+    expect(misplaced).toEqual([])
+  })
+
+  it('names chords only for Chord Stacker, and only ones it plays', () => {
+    // Chord Stacker keeps a launch's chords that are on its own list and
+    // deals from its setup's set when none is, so a slug that wrote one for
+    // another drill, or misspelt it, would lose it silently.
+    const withChords = Object.values(EXERCISE_SLUGS).flatMap((launch) =>
+      launch.kind === 'exercise' &&
+      (launch.chords !== undefined || launch.inversions !== undefined)
+        ? [launch]
+        : [],
+    )
+
+    const misplaced = withChords.filter(
+      (launch) =>
+        launch.exercise !== EXERCISE_CHORD_STACKER ||
+        !(launch.chords ?? []).every(isChordStackerChord),
+    )
+
+    expect(withChords.length).toBeGreaterThan(0)
+    expect(misplaced).toEqual([])
+  })
+
+  it('names a tuning only for Drone Intonation, and only one of its two', () => {
+    // Drone keeps a launch's tuning only when it is `piano` or `pure`, so
+    // a slug that wrote one for another drill, or misspelt it, would lose
+    // it silently.
+    const withTuning = Object.values(EXERCISE_SLUGS).flatMap((launch) =>
+      launch.kind === 'exercise' && launch.tuning !== undefined ? [launch] : [],
+    )
+
+    const misplaced = withTuning.filter(
+      (launch) =>
+        launch.exercise !== EXERCISE_DRONE_INTONATION ||
+        !isDroneTuning(launch.tuning),
+    )
+
+    expect(withTuning.length).toBeGreaterThan(0)
     expect(misplaced).toEqual([])
   })
 

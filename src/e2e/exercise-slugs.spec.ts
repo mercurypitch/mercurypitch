@@ -73,7 +73,7 @@ test("/exercises/thirds-on-a-drone opens Drone Intonation on Lesson 10's two thi
   // A fresh profile's level asks for six rounds, the hint names the slug's
   // two thirds, and the drone starts on the default tenor preset's anchor.
   await expect(page.locator('.idle-hint')).toHaveText(
-    '6 rounds · Minor 3rd and Major 3rd · Drone: E3',
+    '6 rounds · Minor 3rd and Major 3rd · Piano tuning · Drone: E3',
   )
 })
 
@@ -82,7 +82,7 @@ test("leaving thirds-on-a-drone's drill leaves the menu's Drone Intonation on it
 }) => {
   await openSlug(page, 'thirds-on-a-drone', '10')
   await expect(page.locator('.idle-hint')).toHaveText(
-    '6 rounds · Minor 3rd and Major 3rd · Drone: E3',
+    '6 rounds · Minor 3rd and Major 3rd · Piano tuning · Drone: E3',
   )
 
   // Back clears the launch (resetExerciseLaunchState in App.tsx); without
@@ -94,7 +94,9 @@ test("leaving thirds-on-a-drone's drill leaves the menu's Drone Intonation on it
     .click()
 
   await expect(page.locator('h2.exercise-title')).toHaveText('Drone Intonation')
-  await expect(page.locator('.idle-hint')).toHaveText('6 rounds · Drone: E3')
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '6 rounds · Piano tuning · Drone: E3',
+  )
 })
 
 test("/exercises/perfect-intervals opens Interval Trainer on Lesson 23's three perfect intervals", async ({
@@ -116,8 +118,34 @@ test("/exercises/harmony-on-a-drone opens Drone Intonation on Lesson 24's fifth,
   await openSlug(page, 'harmony-on-a-drone', '24')
 
   await expect(page.locator('h2.exercise-title')).toHaveText('Drone Intonation')
+  // Scored as pure intervals, the ones the lesson listens for.
   await expect(page.locator('.idle-hint')).toHaveText(
-    '6 rounds · Major 3rd, Perfect 5th and Octave · Drone: E3',
+    '6 rounds · Major 3rd, Perfect 5th and Octave · Pure tuning · Drone: E3',
+  )
+  const tuning = page.getByRole('group', { name: 'Tuning' })
+  await expect(tuning.getByRole('button', { name: 'Pure' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+})
+
+test("leaving harmony-on-a-drone's drill leaves the menu's Drone Intonation on the singer's own tuning", async ({
+  page,
+}) => {
+  await openSlug(page, 'harmony-on-a-drone', '24')
+  await expect(page.locator('.idle-hint')).toContainText('Pure tuning')
+
+  // Back clears the launch, and the launch never wrote over the singer's
+  // saved tuning: the piano's.
+  await page.locator('.back-btn').click()
+  await page
+    .locator('.exercise-card', { hasText: 'Drone Intonation' })
+    .first()
+    .click()
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Drone Intonation')
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '6 rounds · Piano tuning · Drone: E3',
   )
 })
 
@@ -201,5 +229,49 @@ test("/exercises/sing-it-in-time opens Sing It in Time on Lesson 18's two bars",
   // reached: a raised one would ask for eighths at 72 or more.
   await expect(page.locator('.idle-hint')).toHaveText(
     '3 tunes · 60 BPM · quarters and halves, steps and thirds',
+  )
+})
+
+test('/exercises/triads opens Chord Stacker on the four triads in root position', async ({
+  page,
+}) => {
+  await openSlug(page, 'triads', '27')
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Chord Stacker')
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '5 chords · Triads · Root position',
+  )
+  // The pickers say the same: the launch chose for this visit.
+  const chords = page.getByRole('group', { name: 'Chords' })
+  await expect(chords.getByRole('button', { name: 'Triads' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+  const inversions = page.getByRole('group', { name: 'Inversions' })
+  await expect(inversions.getByRole('button', { name: 'Off' })).toHaveAttribute(
+    'aria-pressed',
+    'true',
+  )
+})
+
+test("leaving triads' drill leaves the menu's Chord Stacker on the singer's own chords", async ({
+  page,
+}) => {
+  await openSlug(page, 'triads', '27')
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '5 chords · Triads · Root position',
+  )
+
+  // Back clears the launch (resetExerciseLaunchState in App.tsx), and the
+  // launch never wrote over the singer's saved choice: the sevenths.
+  await page.locator('.back-btn').click()
+  await page
+    .locator('.exercise-card', { hasText: 'Chord Stacker' })
+    .first()
+    .click()
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Chord Stacker')
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '5 chords · Seventh chords · Root position',
   )
 })

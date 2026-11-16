@@ -19,7 +19,7 @@ import { creditPracticeTime, saveSessionRecord, } from '@/db/services/session-se
 import { getUserId } from '@/db/services/user-service'
 import { recordChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { recordWeeklyAttempt } from '@/features/challenges/weekly-attempt'
-import { exerciseComparabilityKey, exerciseScoringVersion, isComparableRun, } from '@/features/exercises/exercise-comparability'
+import { exerciseComparabilityKey, exerciseRunRecord, exerciseScoringVersion, isComparableRun, } from '@/features/exercises/exercise-comparability'
 import { noteTallyFromMetrics } from '@/features/exercises/exercise-note-tally'
 import { lastRunTrace } from '@/features/exercises/last-run-trace'
 import type { ExerciseType } from '@/features/exercises/types'
@@ -95,8 +95,12 @@ export function exerciseSessionPayload(
   entry: ExerciseHistoryEntry,
   durationMs: number | undefined,
 ): Parameters<typeof saveSessionRecord>[0] {
+  // A drill sung in more than one form names the run's, and keys it apart:
+  // a triad run and a seventh-chord run are two records, not one.
+  const record = exerciseRunRecord(entry.type, entry.metrics)
+  const name = `Exercise: ${exerciseLabel(entry.type)}`
   return {
-    melodyName: `Exercise: ${exerciseLabel(entry.type)}`,
+    melodyName: record.words === '' ? name : `${name} · ${record.words}`,
     score: entry.score,
     accuracy: entry.score,
     // Drills that run a discrete sequence publish their own tally (see
@@ -113,7 +117,7 @@ export function exerciseSessionPayload(
     // the Progress page and every plain row reads "cannot be compared
     // like for like" (CLAUDE-JOURNEY-007) — only an explicit persisted
     // key marks two records as scored on the same ruler.
-    comparabilityKey: exerciseComparabilityKey(entry.type),
+    comparabilityKey: exerciseComparabilityKey(entry.type, record.key),
     // The server's evidence rule refuses a comparabilityKey without the
     // scoring version as its own column; omitting it turned every plain
     // drill save into a silent 400 and uncredited the run entirely.
@@ -248,10 +252,20 @@ export function recordExerciseResult(
 /**
  * A drill's stats from local history. The stats cover the runs that
  * compare, so a rescored drill starts again from its next run, and a
- * stopped run sets no best.
+ * stopped run sets no best. Given a form (`exerciseRunRecord`'s key), they
+ * cover that form's runs alone, as a result card's best does; without
+ * one, every form's, as the drill's card in the menu does.
  */
-export function getExerciseStats(type: ExerciseType): ExerciseStats {
-  const entries = comparableExerciseHistory().filter((e) => e.type === type)
+export function getExerciseStats(
+  type: ExerciseType,
+  record?: string,
+): ExerciseStats {
+  const entries = comparableExerciseHistory().filter(
+    (e) =>
+      e.type === type &&
+      (record === undefined ||
+        exerciseRunRecord(e.type, e.metrics).key === record),
+  )
   if (entries.length === 0) {
     return {
       bestScore: 0,

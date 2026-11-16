@@ -6,6 +6,7 @@ import { showNotification } from '@/stores/notifications-store'
 import type { CharacterName } from '@/stores/settings-store'
 import type { EffectType, MelodyItem, MelodyNote } from '@/types'
 import { CHORD_INTERVALS } from '@/types'
+import { droneLevel, droneWaveTerms } from './drone-voice'
 import { drumVoiceForMidi } from './drum-lanes'
 import type { DrumVoiceId } from './drum-voices'
 import { triggerDrumVoice } from './drum-voices'
@@ -1128,21 +1129,7 @@ export class AudioEngine {
       return
     }
 
-    // A new note must replace the previous note immediately at the note boundary.
-    // Lingering release tails here make the previous pitch sound over the next note.
-    // Use 80ms release so sustained instruments (guitar, piano) fade smoothly;
-    // the quick attack on the new voice prevents audible overlap.
-    if (this.toneOscillator !== null) {
-      this.releaseCurrentTone(80)
-    }
-    this.releaseChordVoices(80)
-
-    if (this.toneCleanupTimer !== null) {
-      clearTimeout(this.toneCleanupTimer)
-      this.toneCleanupTimer = null
-    }
-
-    const startTime = this.audioCtx.currentTime
+    this._replaceTone()
 
     // Use the instrument-aware voice builder so the note timbre matches
     // the currentInstrument selection (sine/piano/organ/strings/synth).
@@ -1170,6 +1157,99 @@ export class AudioEngine {
       staccatoRatio,
       chordIntervals,
     )
+    // Plucked voices release via their gain envelope — stop the source
+    // late enough that the ring-out isn't audibly truncated. Everything
+    // else still needs the release-tail slack: the envelope only
+    // approaches zero, and stopping exactly at note end cuts it audibly.
+    const tailSeconds = this._isPluckedInstrument()
+      ? 1.2
+      : AudioEngine.RELEASE_STOP_SLACK_SECONDS
+    this._startToneVoice(voice, duration, tailSeconds)
+  }
+
+  /**
+   * Drone Intonation's drone: a held note with the harmonics a sung
+   * interval beats against, whatever the instrument (drone-voice.ts). One
+   * oscillator on a wave of eight harmonics, at the loudness of the
+   * engine's own tone, held level between a pop-free attack and release.
+   * It takes the tone's place as playTone does, so the next tone and
+   * stopTone() release it, and like playTone it resolves once scheduled.
+   */
+  async playDrone(frequency: number, durationMs: number): Promise<void> {
+    const generation = this.playToneGeneration
+    await this.init()
+    if (generation !== this.playToneGeneration) return
+    await this.resume()
+    if (
+      generation !== this.playToneGeneration ||
+      !this.audioCtx ||
+      !this.mainGain
+    ) {
+      return
+    }
+    this._replaceTone()
+    const ctx = this.audioCtx
+    const { real, imag } = droneWaveTerms()
+    const oscillator = ctx.createOscillator()
+    oscillator.setPeriodicWave(ctx.createPeriodicWave(real, imag))
+    oscillator.frequency.value = frequency
+    const gain = ctx.createGain()
+    oscillator.connect(gain)
+    this._scheduleSustainEnvelope(
+      gain.gain,
+      ctx.currentTime,
+      durationMs / 1000,
+      {
+        frequency,
+        // The default sine's peak: the drone is as loud as it was.
+        peak: Math.min(1, droneLevel(0.7)),
+        attack: 0.08,
+        release: 0.12,
+      },
+    )
+    this._startToneVoice(
+      { allOscillators: [oscillator], lfos: [], gain },
+      durationMs,
+      AudioEngine.RELEASE_STOP_SLACK_SECONDS,
+    )
+  }
+
+  /**
+   * Make way for a new tone. A new note must replace the previous note
+   * immediately at the note boundary: lingering release tails here make
+   * the previous pitch sound over the next note. 80ms lets sustained
+   * instruments (guitar, piano) fade smoothly; the quick attack on the new
+   * voice prevents audible overlap.
+   */
+  private _replaceTone(): void {
+    if (this.toneOscillator !== null) {
+      this.releaseCurrentTone(80)
+    }
+    this.releaseChordVoices(80)
+
+    if (this.toneCleanupTimer !== null) {
+      clearTimeout(this.toneCleanupTimer)
+      this.toneCleanupTimer = null
+    }
+  }
+
+  /**
+   * Sound a built voice as the tone: through the user's volume and the
+   * UVR chain to the note bus, its sources started now and, for a timed
+   * tone, stopped `tailSeconds` after its end, and tracked so the next
+   * tone and stopTone() can release it.
+   */
+  private _startToneVoice(
+    voice: {
+      allOscillators: (OscillatorNode | AudioBufferSourceNode)[]
+      lfos: OscillatorNode[]
+      gain: GainNode
+    },
+    duration: number | undefined,
+    tailSeconds: number,
+  ): void {
+    if (!this.audioCtx || !this.mainGain) return
+    const startTime = this.audioCtx.currentTime
     const masterGain = voice.gain
 
     let activeVolumeMultiplier = 1.0
@@ -1258,13 +1338,6 @@ export class AudioEngine {
 
     if (duration !== undefined) {
       const durationSeconds = Math.max(0.001, duration / 1000)
-      // Plucked voices release via their gain envelope — stop the source
-      // late enough that the ring-out isn't audibly truncated. Everything
-      // else still needs the release-tail slack: the envelope only
-      // approaches zero, and stopping exactly at note end cuts it audibly.
-      const tailSeconds = this._isPluckedInstrument()
-        ? 1.2
-        : AudioEngine.RELEASE_STOP_SLACK_SECONDS
       const stopTime = startTime + durationSeconds + tailSeconds
       for (const osc of voice.allOscillators) {
         try {

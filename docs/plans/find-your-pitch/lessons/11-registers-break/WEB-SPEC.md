@@ -658,7 +658,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   lowest note at the default level (FACTS 40, 62; REQ-GVC-011): a question on the coach's list.
 - **App content, small** (MASTER-PLAN § 7's App content track), for the Siren exercise (FACTS 41,
   42), its help done with the page and the rest proposed:
-  - its help (`src/features/exercises/exercise-help.ts:186-193` at `12b3d7304`; done, `:186-194`): ":150" "Glide your full range up
+  - its help (`src/features/exercises/exercise-help.ts:186-193` at `12b3d7304`; done, `:187-195`): ":150" "Glide your full range up
     and down like a smooth siren." becomes "Glide up and down like a smooth siren, within an easy
     part of your range."; ":152" drops "through your range"; ":153" becomes LESSON.md's "Stay
     relaxed and let the pitch flow. If your voice flips between your low and high voice, let it:
@@ -680,7 +680,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
     (`use-siren-controller.ts:106-117`).
 - **Needed, proposed: `/exercises/siren`** (CURRICULUM § 4 item 1), a data-only slug that opens the
   Siren exercise on its setup screen with its defaults, registered in `EXERCISE_SLUGS`
-  (`src/features/exercises/slug-map.ts:59-171`) with a line in `src/tests/slug-map.test.ts`, its
+  (`src/features/exercises/slug-map.ts:72-199`) with a line in `src/tests/slug-map.test.ts`, its
   notes, if any, fitted to the singer's range as every slug's are, and `?lesson=11` on the link,
   because a slug boots the main app, where First Light opens on a first visit unless the marker
   steps it aside (FACTS 46). When it ships, LESSON.md's editorial note gives the copy: the card's

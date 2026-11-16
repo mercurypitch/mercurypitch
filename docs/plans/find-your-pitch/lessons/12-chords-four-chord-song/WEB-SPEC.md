@@ -777,26 +777,24 @@ still images when WebGL fails or would run on the CPU.
   numerals from four pads; I–V–vi–IV is one of its eight. On the public host `/ear-lab?lesson=12`,
   the marker before the hash the entry document adds (`src/seo/entry-pages.ts:453-458`). Cadence
   needs no voice, so it stays on the rest card (FACTS 63).
-- **The CURRICULUM's two, not linked.** Chord Stacker drills four-note chords only, Major 7th,
-  Minor 7th, Dominant 7th, Diminished 7th and Major 6th
-  (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:11-27`), none of this
-  lesson's triads, so the page names it nowhere a learner reads (FACTS 48). Play Along is a menu,
+- **The CURRICULUM's two, not linked.** Chord Stacker drilled four-note chords only, Major 7th,
+  Minor 7th, Dominant 7th, Diminished 7th and Major 6th, until 15 November 2026
+  (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:11-27` at `9df7c03b8`),
+  none of this lesson's triads, so the page names it nowhere a learner reads (FACTS 48). Play Along is a menu,
   "Play along…", that appears only on a song the viewer has had separated into its parts, in the
   vocal remover's results and the stem mixer's playlist, and server separation needs a signed-in
   account and credits; no address opens it, and it plays the viewer's own song, not a chord
   progression (FACTS 49). On the web it does not open from a lesson link today, and the page does
   not link it.
-- **Needed, proposed: Chord Stacker's major and minor triads** (CURRICULUM § 4 item 4): two chord
-  types beside its five, `maj` and `min`, at 0, 4, 7 and 0, 3, 7 semitones. Its setup has no chord
-  type to choose today: it shuffles every type into each run
-  (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:92`), and its setup only
-  lists the five (`ChordStackerExercise.tsx:128`), so the triads need a chord-type setting and a
-  launch field as well as their two rows. When they ship, LESSON.md's editorial note says the card
-  may name Chord Stacker on major and minor; until then the card names Arpeggio Jumper. A
-  data-only slug that opens Chord Stacker on a triad (`EXERCISE_SLUGS`,
-  `src/features/exercises/slug-map.ts:59-171`) would need the chord type in the launch, which a slug
-  cannot carry today (FACTS 51): proposed
-  with it, not before.
+- **Shipped: Chord Stacker's triads** (CURRICULUM § 4 item 4), on 15 November 2026: the major and
+  minor triads, at 0, 4, 7 and 0, 3, 7 semitones, with the diminished and the augmented, chosen on
+  its setup screen (Triads, Sevenths or Both) or by a launch's `chords` field
+  (`src/features/exercises/chord-stacker/chord-stacker-chords.ts:41-71`;
+  `src/features/exercises/slug-map.ts:50-53`). `/exercises/triads` opens it on all four
+  (`EXERCISE_SLUGS`, `src/features/exercises/slug-map.ts:72-199`); a slug on this lesson's major
+  and minor alone is one registry line, `chords: ['major', 'minor']`, proposed with the card's
+  change. LESSON.md's editorial note says the card may then name Chord Stacker on major and minor;
+  until it changes, the card names Arpeggio Jumper.
 - **Needed, proposed: an `ear-drill` launch for Cadence** (CURRICULUM § 4 item 5, the planned
   `ear-drill` launch kind): Cadence opened on its own, with the page's "then tap Cadence" dropped
   when it ships, as Lesson 10's spec proposes for Stack.

@@ -152,15 +152,15 @@ the season plan's list.
 
 **R16-15. During a run it draws the live pitch tracker above the staff, with the target band and the
 upcoming notes, the next two named.** `SightSingingExercise.tsx:287-294` (`tracker` with
-`targetNoteMidi` and `upcomingTargets`); `src/features/exercises/ExerciseShell.tsx:1182-1194` (the
-shell draws `ExercisePitchTracker` with both); `src/components/PitchOverTimeCanvas.tsx:540-559` (the
+`targetNoteMidi` and `upcomingTargets`); `src/features/exercises/ExerciseShell.tsx:1188-1200` (the
+shell draws `ExercisePitchTracker` with both); `src/components/PitchOverTimeCanvas.tsx:542-561` (the
 upcoming rungs; "Only the next two carry a name", :552-553, `noteNameFromFreq`, :558). Code read.
 Strong. **New**: the season plan's list does not name it.
 
 **R16-16. A launch with two or more notes replaces the random round.** `SightSingingExercise.tsx:180-195`
 (`authored.length >= 2` then `controller.setNotes(authored)`); `use-sight-singing-controller.ts:141-154`
 (`setNotes`, "Sing exactly these notes, in order"). The slug registry's `notes` field is the data route
-(`src/features/exercises/slug-map.ts:27-48`, `notes?: string[]`, :33). Whether a slug's notes are
+(`src/features/exercises/slug-map.ts:29-61`, `notes?: string[]`, :35). Whether a slug's notes are
 fitted to the singer's octave, as a routine's are ("the notes arrive already fitted to the singer's
 range (App's launch choke point)", :181-184), was **not verified** for slug launches. Code read.
 

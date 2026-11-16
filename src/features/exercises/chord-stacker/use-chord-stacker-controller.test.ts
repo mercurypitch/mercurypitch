@@ -15,8 +15,12 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { typicalRunSec } from '@/features/routines/segment-reps'
+import { midiToFrequency } from '@/lib/frequency-to-note'
+import type { ExerciseResult } from '../types'
 import { EXERCISE_CHORD_STACKER } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
+import type { ChordStackerChord } from './chord-stacker-chords'
+import { CHORD_SETS, CHORD_STACKER_CHORDS, chordMask, chordNotes, } from './chord-stacker-chords'
 import { useChordStackerController } from './use-chord-stacker-controller'
 
 /** The demo's lengths at difficulty 5, where every one is its baseline. */
@@ -129,6 +133,97 @@ describe('Chord Stacker plays its chord one whole note at a time', () => {
     await vi.advanceTimersByTimeAsync(10_000)
     expect(tones).toHaveLength(1)
     expect(singing).toEqual([])
+  })
+})
+
+describe('a run on the chords the setup chose', () => {
+  beforeEach(() => {
+    vi.useFakeTimers()
+  })
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  /** Run a whole run on C4 with every note sung on its target, and log
+   *  each round as announced and the notes it asked for. */
+  async function singRun(choice: {
+    chords: readonly ChordStackerChord[]
+    inversions: boolean
+  }) {
+    const announced: Array<Record<string, number>> = []
+    const asked: number[][] = []
+    let target = 0
+    let result: ExerciseResult | null = null
+    const base = createMockBase({
+      _updateMetrics: (m) => {
+        if (m.chordIndex !== undefined) {
+          announced.push({ ...m })
+          asked.push([])
+        }
+      },
+      _setTargetPitch: ((hz: number | null) => {
+        if (typeof hz === 'number' && hz > 0) {
+          target = Math.round(12 * Math.log2(hz / 440) + 69)
+          asked[asked.length - 1].push(target)
+        }
+      }) as BaseExerciseController['_setTargetPitch'],
+      pitchHistory: () =>
+        Array.from({ length: 60 }, (_, i) => ({
+          freq: midiToFrequency(target),
+          time: 100 + i * 0.05,
+          cents: 0,
+        })),
+      _completeWithResult: (r) => {
+        result = r
+      },
+    })
+    const ctrl = useChordStackerController(base, { playTone: async () => {} })
+    ctrl.setBase(60, choice)
+    ctrl.startRounds()
+    await vi.advanceTimersByTimeAsync(200_000)
+    return { announced, asked, result: result as ExerciseResult | null }
+  }
+
+  it('asks for each round its chord turned over as announced, bottom note first', async () => {
+    // Act
+    const { announced, asked } = await singRun({
+      chords: CHORD_SETS.triads,
+      inversions: true,
+    })
+
+    // Assert
+    expect(announced).toHaveLength(5)
+    announced.forEach((round, i) => {
+      const chord = CHORD_STACKER_CHORDS[round.chordIndex]
+      expect(CHORD_SETS.triads).toContain(chord)
+      expect(round.rootMidi).toBe(60)
+      expect(round.chordLength).toBe(3)
+      expect(asked[i]).toEqual(chordNotes(60, chord, round.chordPosition))
+    })
+  })
+
+  it('names no position while the run plays root position only', async () => {
+    const { announced, asked } = await singRun({
+      chords: CHORD_SETS.triads,
+      inversions: false,
+    })
+
+    expect(announced.map((r) => r.chordPosition)).toEqual([-1, -1, -1, -1, -1])
+    announced.forEach((round, i) => {
+      expect(asked[i]).toEqual(
+        chordNotes(60, CHORD_STACKER_CHORDS[round.chordIndex]),
+      )
+    })
+  })
+
+  it('writes what it dealt into the result, and each chord its own average', async () => {
+    const { result } = await singRun({ chords: ['dom7'], inversions: true })
+
+    expect(result?.score).toBe(100)
+    expect(result?.metrics.chordMask).toBe(chordMask(['dom7']))
+    expect(result?.metrics.inversions).toBe(1)
+    expect(result?.metrics.dom7Avg).toBe(100)
+    expect(result?.metrics.majorAvg).toBe(0)
   })
 })
 

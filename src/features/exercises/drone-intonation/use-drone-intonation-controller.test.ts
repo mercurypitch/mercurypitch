@@ -16,9 +16,11 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resetAllDifficulties, setDifficulty, } from '@/features/practice-intelligence/difficulty-store'
 import { clearLaunchOverride, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
+import { midiToFrequency } from '@/lib/frequency-to-note'
 import { seededRandom } from '@/lib/sequence/phrase-bank'
 import { EXERCISE_DRONE_INTONATION } from '../types'
 import type { BaseExerciseController } from '../use-base-exercise'
+import type { DroneTuning } from './drone-tuning'
 import { droneIntervalLabel, droneIntervalNames, plannedRounds, useDroneIntonationController, } from './use-drone-intonation-controller'
 
 /** Lesson 10's two thirds, minor and major, each upward. */
@@ -287,5 +289,107 @@ describe('Drone Intonation without a launch', () => {
     // A four-round run leaves two of the six out, so some runs lack it.
     expect(withUnison).toBeGreaterThan(0)
     expect(withUnison).toBeLessThan(SEEDS.length)
+  })
+})
+
+describe('Drone Intonation in Pure tuning', () => {
+  afterEach(() => {
+    clearLaunchOverride()
+    resetAllDifficulties()
+    vi.useRealTimers()
+    vi.restoreAllMocks()
+  })
+
+  const C4_HZ = midiToFrequency(60)
+  /** A just major third over C4: 5:4, 13.69 cents under the piano's E4. */
+  const PURE_THIRD_HZ = C4_HZ * (5 / 4)
+
+  /**
+   * Run a whole run of major thirds over a C4 drone, in `tuning`, the
+   * singer holding `sung` hertz dead steady, and log what the drill aimed
+   * at and how it sounded the drone.
+   */
+  async function thirdsRun(tuning: DroneTuning, sung: number) {
+    vi.useFakeTimers()
+    setLaunchOverride(EXERCISE_DRONE_INTONATION, {
+      type: EXERCISE_DRONE_INTONATION,
+      intervals: [4],
+    })
+    const aimed: number[] = []
+    const announced: Array<Record<string, number>> = []
+    const drones: Array<[number, number]> = []
+    const playTone = vi.fn(async () => {})
+    const { base } = recordingBase()
+    base._setTargetPitch = ((hz: number | null) => {
+      if (typeof hz === 'number') aimed.push(hz)
+    }) as BaseExerciseController['_setTargetPitch']
+    base._updateMetrics = (m) => {
+      if (typeof m.round === 'number') announced.push({ ...m })
+    }
+    base.pitchHistory = () =>
+      Array.from({ length: 80 }, (_, i) => ({
+        freq: sung,
+        time: 100 + i * 0.05,
+        cents: 0,
+        clarity: 0.9,
+      }))
+    const ctrl = useDroneIntonationController(base, {
+      playTone,
+      playDrone: async (hz: number, ms: number) => {
+        drones.push([hz, ms])
+      },
+      stopTone: () => {},
+    })
+    ctrl.setBase(60, tuning)
+    await ctrl.startRounds()
+    await vi.runAllTimersAsync()
+    return { result: ctrl.computeResult(), aimed, announced, drones, playTone }
+  }
+
+  it('aims each round at the just interval over the drone, a 5:4 third', async () => {
+    const { aimed, announced } = await thirdsRun('pure', PURE_THIRD_HZ)
+
+    expect(aimed).toHaveLength(6)
+    for (const hz of aimed) expect(hz / C4_HZ).toBeCloseTo(5 / 4, 9)
+    for (const round of announced) {
+      expect(round.targetCents).toBeCloseTo(-13.6863, 3)
+    }
+  })
+
+  it('scores a pure third held true at 100, which the piano scores 79', async () => {
+    // 100 less 1.5 x 13.69 cents is 79.47 a round at the default level.
+    const pure = await thirdsRun('pure', PURE_THIRD_HZ)
+    vi.restoreAllMocks()
+    clearLaunchOverride()
+    const piano = await thirdsRun('piano', PURE_THIRD_HZ)
+
+    expect(pure.result.metrics.avgAccuracy).toBe(100)
+    expect(pure.result.score).toBe(100)
+    expect(piano.result.metrics.avgAccuracy).toBe(79)
+  })
+
+  it("scores the piano's E4 at 79 in Pure tuning, by the same 13.69 cents", async () => {
+    const { result } = await thirdsRun('pure', midiToFrequency(64))
+
+    expect(result.metrics.avgAccuracy).toBe(79)
+  })
+
+  it('writes the tuning that scored the run into its result', async () => {
+    const pure = await thirdsRun('pure', PURE_THIRD_HZ)
+    vi.restoreAllMocks()
+    clearLaunchOverride()
+    const piano = await thirdsRun('piano', PURE_THIRD_HZ)
+
+    expect(pure.result.metrics.pureTuning).toBe(1)
+    expect(piano.result.metrics.pureTuning).toBe(0)
+    expect(piano.announced.every((r) => r.targetCents === 0)).toBe(true)
+  })
+
+  it('sounds its drone with harmonics where the engine has them, for the round and 2 s more', async () => {
+    const { drones, playTone } = await thirdsRun('piano', PURE_THIRD_HZ)
+
+    // Six rounds of the 4-second window at the default level.
+    expect(drones).toEqual(Array.from({ length: 6 }, () => [C4_HZ, 6000]))
+    expect(playTone).not.toHaveBeenCalled()
   })
 })

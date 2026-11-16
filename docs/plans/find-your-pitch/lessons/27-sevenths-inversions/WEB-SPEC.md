@@ -345,14 +345,17 @@ Lesson 25. Neither says "right" or "wrong"; the reveal's line says what the lear
 ## Practice links: what exists and what needs engineering
 
 1. **Chord Stacker**, `/pitch-training?lesson=27`, printed mercurypitch.com/pitch-training, then tap
-   Chord Stacker. Today a run is five rounds, one four-note chord each, in a shuffled order; each
-   chord plays root first, a note at a time, each note in full with 0.3 s between, then the learner
-   sings each note back with nothing sounding; it scores each note against its own octave, names no
-   chord, prints each note's name with every black piano key as a sharp, shows a tuning dot and no
-   staff, and starts its root on the preset's starting note; its level changes every note's length
-   and the time to sing (FACTS 62 to 65). Needs engineering, not blocking this page: a chord-type
-   launch field, triads and inversions (SEASON-2 § 5.2 item 18), so the card could open it on the
-   dominant seventh and its inversions. The two fixes this package found have shipped: each note is
+   Chord Stacker. By default a run is five rounds, one four-note chord each, in a shuffled order;
+   each chord plays from its bottom note, a note at a time, each note in full with 0.3 s between,
+   then the learner sings each note back with nothing sounding; it scores each note against its
+   own octave, prints each note's name with every black piano key as a sharp, shows a tuning dot
+   and no staff, and starts its root on the preset's starting note; its level changes every note's
+   length and the time to sing (FACTS 62 to 65). Shipped on 15 November 2026, after the card was
+   written: triads, inversions and a chord-type launch field (SEASON-2 § 5.2 item 18), chosen on
+   the setup screen and remembered, and each round's chord named as it plays; `/exercises/triads`
+   opens the four triads in root position, and the dominant seventh and its inversions, which the
+   card could open on, are one registry line more. The card's lines on naming no chord and on no
+   triads or inversions wait for its next edit (FACTS 68). The two fixes this package found have shipped: each note is
    waited out before the next, as Arpeggio Jumper's are
    (`src/features/exercises/arpeggio-jumper/use-arpeggio-jumper-controller.ts:326-329`), so the
    first three notes sound their full length (FACTS 62); and its help text and its summary say what
@@ -379,7 +382,7 @@ app still need, item 3), in the form of Lesson 12's entry
 - `pr.link`: `href: '/pitch-training?lesson=27'`, `addr: 'mercurypitch.com/pitch-training'`,
   `label: 'Exercises'`, `note: 'then tap Chord Stacker'`.
 - `pr.needs` (admin only), as the hand-back writes it: "Chord Stacker opening on the dominant
-  seventh, with triads and inversions (today it shuffles maj7, min7, dom7, dim7 and maj6); Stack
+  seventh and its inversions (one registry line since triads and inversions shipped); Stack
   with major against dominant seventh alone (the ear-drill launch kind)".
 - Two edges: `[12, 27]` and `[23, 27]`, so the explorer lights Lessons 12 and 23 as this lesson's
   path and `PREREQ` reads them (`src/features/lessons/kit/season.ts:456-483`).
@@ -444,12 +447,13 @@ checkpoint and the sung drill"`. Releasing it is deleting that line, then listin
     the summary and the first sentence proposed here, "Hear a chord one note at a time, then sing
     each note back in tune." and "You hear a chord one note at a time, from the root up, then sing
     each note back on its own.", and adds the octave and the run's five rounds, one chord each
-    (`src/features/exercises/exercise-help.ts:212-220`). The play loop waited only a fixed 300 ms
+    (`src/features/exercises/exercise-help.ts:213-222`). The play loop waited only a fixed 300 ms
     after each note, so notes 1 to 3 were cut off 0.3 s in at every level; it now waits each note
     out before the gap, as Arpeggio Jumper does
-    (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:144-168`; FACTS 62). The
+    (`src/features/exercises/chord-stacker/use-chord-stacker-controller.ts:157-181`; FACTS 62). The
     card no longer gives "about a third of a second apart", and the coach's list has the new
-    lengths.
+    lengths. Since 15 November 2026 its first sentence says "from its bottom note up", since a chord
+    turned over starts on another of its notes (FACTS 66).
 
 ## Decisions for the owner
 
