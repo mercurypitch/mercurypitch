@@ -24,6 +24,11 @@
   height: 48px;
   border-top: 1px solid color-mix(in srgb, var(--studio-line) 60%, transparent);
 }
+/* Under the bar, the line a lane ends with: at 60 % it measured 1.07 to
+   1.13:1 there, light and dark, and the bar ran into the newest pass. */
+.bar + .row {
+  border-top-color: var(--studio-line);
+}
 
 .head {
   position: sticky;
@@ -40,13 +45,16 @@
   font-size: 12px;
   font-weight: 600;
 }
+/* The lane's hue down the rows' edge, over the line above each row too, so
+   it runs unbroken from the lane's header to the last pass. Mixed with the
+   heads' own fill rather than laid over it, so it keeps one colour where it
+   crosses a line. */
 .head::before {
   content: '';
   position: absolute;
-  inset: 0 auto 0 0;
+  inset: -1px auto 0 0;
   width: 3px;
-  background: var(--studio-track);
-  opacity: 0.6;
+  background: color-mix(in srgb, var(--studio-track) 60%, var(--studio-bar));
 }
 .bar .head {
   justify-content: space-between;
