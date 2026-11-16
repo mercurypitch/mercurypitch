@@ -319,8 +319,9 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
   advances on a held note, not on the beat (use-sight-singing-controller.ts:26); The Chart for the
   rhythm (`/ear-lab?lesson=18`, then tap The Chart). The Singing tab's sheet view plays a melody
   with a cursor (`src/App.tsx:4052-4100`), but no address opens it (`singingSheetView`,
-  `src/stores/ui-store.ts:146`), and whether it scores in that view was **not verified**. Needs
-  building: sight-singing in time (§ 5 item 11).
+  `src/stores/ui-store.ts:146`), and whether it scores in that view was **not verified**.
+  Sight-singing in time has shipped as Sing It in Time (§ 5 item 11, `/exercises/sing-it-in-time`);
+  the lesson's card does not link it yet.
 - Facts to check: Henry (2004) and Mishra (2014), past their abstracts, before a script quotes a
   number; the dynamics and articulation marks (ABRSM Grade 1 terms, as the benchmark cites them for
   T32); Lesson 14's breath mark; the app's behaviour (above).
@@ -861,7 +862,7 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 | 15     | Compose, Sheet Music view (`/?lesson=15#/compose`), a sandbox         | Its card's link to `/exercises/read-the-note` (item 9 and its slug shipped on 15 November 2026)                     |
 | 16     | Sight-Singing, with its limits said                                   | Fixed phrases (item 10a, data); hear do, bass clef, key signature, names off, octave-folded (item 10b to 10f, code) |
 | 17     | Ear Lab: The Chart, Pulse                                             | `ear-drill` and its subset (item 12, code then data)                                                                |
-| 18     | Sight-Singing (pitch only), The Chart                                 | Sight-singing in time (item 11, code); a sheet-view address (item 20, code)                                         |
+| 18     | Sight-Singing (pitch only), The Chart, `/exercises/sing-it-in-time`   | Its card's link to Sing It in Time (item 11 shipped on 15 November 2026); a sheet-view address (item 20, code)      |
 | 19     | Ear Lab: Subdivide, Pulse                                             | `ear-drill` subset, 3/4 against 6/8 (item 12)                                                                       |
 | 20     | Scale Runner, Pentatonic; Staccato Precision                          | Its card's link to `/exercises/pentatonic-run` (item 13 shipped on 15 November 2026)                                |
 | 21     | Compose, in Sheet Music, with its key picker; Ear Lab: Home           | Twelve keys (item 20, code); key-aware Sight-Singing (item 10, code); circle toy (kit, § 6.2)                       |
@@ -871,7 +872,7 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 | 25     | Ear Lab: Gravity; Singing tab's harmonic and melodic minor            | A Scale Runner card for `/exercises/harmonic-minor-run` and `melodic-minor-run` (item 13 shipped)                   |
 | 26     | Jam's Harmony Stack (two or more people); Drone Intonation's thirds   | Harmony-line drill (item 17, code)                                                                                  |
 | 27     | Chord Stacker; Ear Lab: Stack                                         | Chord-type field and inversions (item 18, code); `ear-drill` subset (item 12)                                       |
-| 28     | Karaoke Night; Ear Lab: Cadence                                       | Its card's link to `/exercises/name-the-cadence` (item 19 shipped); harmony-line drill (item 17)                    |
+| 28     | Karaoke Night; Ear Lab: Cadence; `/exercises/sing-it-in-time`         | Card links to `/exercises/name-the-cadence` (item 19 shipped), Sing It in Time (item 11); harmony line (item 17)    |
 
 Every Season 2 link waits for one thing first: the lesson marker. `?lesson=` is read only for 01 to
 14 (`SEASON_1_LESSON`, `src/lib/lesson-marker.ts:11-19`), so `?lesson=15` is today an ordinary visit,
@@ -907,14 +908,22 @@ and First Light does not step aside. Item 21 fixes it.
     lower line: Lesson 16 FACTS 59, 63); and (e) hides two displays, the letter and octave under
     each note and the hold bar's name, since the pitch tracker's names have their own hide (Lesson
     16 FACTS 58, 63).
-11. **Sight-singing in time** (code with tests, the largest item): a count-in and a click, notes that
-    advance on the beat rather than on a 450 ms hold (use-sight-singing-controller.ts:26), pitch
-    scored per note, timing shown. Each note's beats are counted from the singer's first note, as
-    The Chart anchors a tapped bar on its first tap (`src/features/ear-lab/anchored-take.ts:10-11`),
-    so a steady delay or a late entry is never read as a wrong pitch, and a note not heard is read
-    as not heard, never as a gap from another note (Lesson 18 FACTS 52, 54). Whether the click
-    sounds under the singing, where a raw-signal microphone hears it, is a question for Lesson 18's
-    lab (its WEB-SPEC, What the kit and the app still need, item 15). Lesson 18, then 28.
+11. **Sight-singing in time: shipped on 15 November 2026.** Sing It in Time
+    (`src/features/exercises/sing-in-time/`): a count-in and a click, notes that advance on the beat
+    rather than on a 450 ms hold (use-sight-singing-controller.ts:26), pitch scored per note, timing
+    shown. Merc gives do, the click counts one bar in, and the singer reads two bars of 4/4 on their
+    own clef, in a major key, three tunes a run, on the lessons' beat clock
+    (`src/features/lessons/kit/beat-clock-core.ts`, through `tune-clock.ts`). Pitch is read by pitch
+    class; timing is shown, early, on time or late, and never scored (`run-result.ts`). Each note's
+    beats are counted from the singer's first note, with Lesson 18's in-time reader's anchor and
+    windows (`take-judge.ts`, on `src/features/lessons/kit/read-in-time.ts`), as The Chart anchors a
+    tapped bar on its first tap (`src/features/ear-lab/anchored-take.ts:10-11`), so a late entry is
+    never read as a wrong pitch, and a note not heard is not heard, never a gap from another note
+    (Lesson 18 FACTS 52, 54). The count-in clicks aloud and the beat is always drawn; "Click while I
+    sing" sounds it under the singing too, off at first, since a raw microphone hears it. The level
+    sets the tempo, the note values and the leaps, from quarters by step at 50 BPM to eighth pairs
+    and wide leaps at 96 (`IN_TIME_LEVELS`, `tune-plan.ts`); level 5 is Lesson 18's checkpoint. Its
+    address is `/exercises/sing-it-in-time`, at level 5. Lessons 18 and 28; their cards do not link it.
 12. **The `ear-drill` launch kind** (CURRICULUM § 4 item 5; code with tests): Ear Lab has no launch
     of its own today (`pendingEarDrill` is set only from inside the app, `src/stores/ui-store.ts:578`).
     Once it exists, Season 2's subsets are data: quarters, halves and eighths (Lesson 17); the 3/4 and

@@ -874,8 +874,8 @@ and the four-words strip in the kit.
    unnecessary.
 4. First-paint ceilings for `learn/13.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
    JavaScript table and one in its stylesheet table, beside Lessons 5 and 6's (`:246`, `:355`;
-   `:597`, `:607`). Every build emits every lesson page, and the check fails a document with no
-   ceiling (`:995`, `:1028`), so without them the Browser jobs fail before any spec runs. Each is the
+   `:601`, `:611`). Every build emits every lesson page, and the check fails a document with no
+   ceiling (`:999`, `:1032`), so without them the Browser jobs fail before any spec runs. Each is the
    page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:467-477`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter (`assert-first-paint-budgets.mjs:273-275`). The vowel model
@@ -930,7 +930,7 @@ and the four-words strip in the kit.
     length, through CURRICULUM § 4 item 2's `durationSec` launch field; its help's "as long as you
     can" and "how long you hold it", and its setup screen's "The longer and steadier, the better.",
     rewritten so that length is never rewarded (REQ-GVC-070); and a data-only slug that opens it
-    with the cue on, registered in `EXERCISE_SLUGS` (`src/features/exercises/slug-map.ts:59-162`)
+    with the cue on, registered in `EXERCISE_SLUGS` (`src/features/exercises/slug-map.ts:59-171`)
     with a line in `src/tests/slug-map.test.ts`, linked with `?lesson=13`, because a slug boots the
     main app, where First Light opens on a first visit unless the marker steps it aside.
 13. `src/e2e/helpers/tone-wav.ts`: `writeVowelWav(hz, seconds)`, beside `writeToneWav` (`:76`), the

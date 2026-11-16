@@ -828,7 +828,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   launch kind, which the CURRICULUM's Lesson 8 card names: "a run of only its 3/4 and 4/4 bars needs
   the `ear-drill` launch kind"; FACTS 55, 56): Subdivide with its 3/4 and 4/4 patterns only
   (`metre:3-4:a`, `metre:3-4:b`, `metre:4-4:a`, `metre:4-4:b`), registered in `EXERCISE_SLUGS`
-  (`src/features/exercises/slug-map.ts:59-162`) with a line in `src/tests/slug-map.test.ts`. As
+  (`src/features/exercises/slug-map.ts:59-171`) with a line in `src/tests/slug-map.test.ts`. As
   Lesson 2 decided for its two-answer Leap run, it rates on a track of its own (`RunTrack`), never
   the shared Subdivide rating; its guess floor matches the two pads it shows, a half
   (`src/lib/ear/drills.ts:58-60`, `:233-237`); and it passes `updateItem: false`. Subdivide has no
@@ -998,7 +998,7 @@ was built on.
     line to each static file (`public/llms.txt`'s Lessons list, `:66-80`), as `kit/drafts.ts:18-21`
     asks and `lesson-pages.test.ts:284-292` checks. The first-paint budget comes with the page,
     beside the other drafts' (`scripts/assert-first-paint-budgets.mjs:151-304`, Lessons 3 and 5),
-    at `:374-380`, and its CSS ceiling at `:612-615`, since every build carries every lesson page.
+    at `:374-380`, and its CSS ceiling at `:616-619`, since every build carries every lesson page.
 17. The App content items under Practice links: the App and App content tracks' to weigh, and not
     built with the page.
 18. From #1149's fix pass, both needed before this page's predicts and plays are built:

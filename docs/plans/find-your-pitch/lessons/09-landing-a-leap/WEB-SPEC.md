@@ -582,7 +582,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   lesson's leaps, registered in `EXERCISE_SLUGS` as
   `{ kind: 'exercise', exercise: EXERCISE_INTERVAL_TRAINER, intervals: [3, 4, 7, 5, 12] }`, each
   upward (`src/features/exercises/slug-map.ts:75-79`), with its line in
-  `src/tests/slug-map.test.ts:68-74`. The `intervals` field on `ExerciseLaunch`
+  `src/tests/slug-map.test.ts:69-75`. The `intervals` field on `ExerciseLaunch`
   (`src/features/exercises/slug-map.ts:28-48`) is passed by `applyExerciseSlug` into the launch
   override beside the notes and the difficulty (`src/App.tsx:764-766`), and the trainer reads it in
   place of its fixed pool, which still has no minor third (FACTS 51, 59); a launched list runs as
@@ -707,8 +707,8 @@ table):
    between Merc and Tavi. It shows no middle note, so it does not answer the cold open's
    predict.
 4. First-paint ceilings for `learn/09.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:151-244`, `:586-589`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:954-958`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:151-244`, `:590-593`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:958-962`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
    is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:467-477`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page

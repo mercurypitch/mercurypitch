@@ -794,7 +794,7 @@ still images when WebGL fails or would run on the CPU.
   launch field as well as their two rows. When they ship, LESSON.md's editorial note says the card
   may name Chord Stacker on major and minor; until then the card names Arpeggio Jumper. A
   data-only slug that opens Chord Stacker on a triad (`EXERCISE_SLUGS`,
-  `src/features/exercises/slug-map.ts:59-162`) would need the chord type in the launch, which a slug
+  `src/features/exercises/slug-map.ts:59-171`) would need the chord type in the launch, which a slug
   cannot carry today (FACTS 51): proposed
   with it, not before.
 - **Needed, proposed: an `ear-drill` launch for Cadence** (CURRICULUM § 4 item 5, the planned
@@ -978,10 +978,10 @@ heard play (Toys 3; Edge cases) (`git diff --stat`).
     card does not answer the cold open's predict (FACTS 1a).
 14. The first-paint budget, in the change that adds the page: `learn/12.html` in both of
     `scripts/assert-first-paint-budgets.mjs`'s tables, its JavaScript (`FIRST_PAINT_BUDGETS_KB`,
-    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:569`), measured, with the
+    `:59`) and its render-blocking CSS (`FIRST_PAINT_CSS_BUDGETS_KB`, `:573`), measured, with the
     lessons' headroom, a quarter over. Every build emits every lesson page, a draft's included
     (`scripts/assert-first-paint-budgets.mjs:127-129`), and a document it emits with no budget
-    fails the check (`assert-first-paint-budgets.mjs:1017-1020`, and for CSS `:1050-1053`; FACTS 76),
+    fails the check (`assert-first-paint-budgets.mjs:1021-1024`, and for CSS `:1054-1057`; FACTS 76),
     which `build:e2e` runs (`package.json:20`). The page's WebGL renderer, as on every lesson page,
     arrives after first paint (Merc and Tavi).
 15. On release (SEARCH.md § 12), once its `drafts.ts` line is deleted: `public/sitemap.xml` and

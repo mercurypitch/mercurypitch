@@ -482,9 +482,9 @@ lesson is marked done.
 The app can open these today: `/mirror`, `/vocal-range-test`, `/voice-type-test`,
 `/which-singer-has-my-vocal-range`, `/free-sing`, `/pitch-training`, `/ear-lab`, `/drum-night`,
 `/piano-night`, `/karaoke-night`, tab hashes (`#/exercises`, `#/path`, `#/singing`,
-`#/learn/<chapterId>`), and fourteen exercise slugs (`/exercises/speed-scales`,
-`/exercises/leap-ladder`, `/exercises/thirds-on-a-drone`, nine for Season 2's lessons (SEASON-2
-§ 5.2 items 9, 13, 15 to 17 and 19) and two that open tabs). `/exercises/perfect-octave` also opens, but it only sets Interval Trainer's
+`#/learn/<chapterId>`), and fifteen exercise slugs (`/exercises/speed-scales`,
+`/exercises/leap-ladder`, `/exercises/thirds-on-a-drone`, ten for Season 2's lessons (SEASON-2
+§ 5.2 items 9, 11, 13, 15 to 17 and 19) and two that open tabs). `/exercises/perfect-octave` also opens, but it only sets Interval Trainer's
 start note, so it does not drill an octave yet (item 3).
 
 Data alone is not enough. A slug launch carries `exercise`, `notes`, `scaleId`, `difficulty`,

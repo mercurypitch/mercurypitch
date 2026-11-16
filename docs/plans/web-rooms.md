@@ -89,14 +89,15 @@ had, so each drill's own styles, the tests and the tours find what they looked f
   E3, then B3. That is a Perfect 5th."), and the example gives way to a run the moment one
   starts. The line lies over the brief inside the bubble, which keeps the brief's size, so the
   sheet does not move while an example plays, and it stays up for at least two seconds, since
-  some examples are over sooner than their line can be read. Thirteen drills have one. Twelve play a row of notes (`stage/note-demo.ts`): Interval
+  some examples are over sooner than their line can be read. Fourteen drills have one. Twelve play a row of notes (`stage/note-demo.ts`): Interval
   Trainer, Scale Runner, Long Note, Pitch Hold, Arpeggio Jumper, Chord Stacker, Staccato
   Precision, Drone Intonation, Siren, Slide, Dynamic Swell and Call & Response. An example says
   what it is and what it is not: Slide and Siren play the two notes a voice glides between, and
   Dynamic Swell plays the note alone, since the app's instrument holds one loudness. Name the
   Cadence plays a perfect cadence in C (`cadence/cadence-demo.ts`) on the figure its setup screen
   shows, a round's three tiles: each lights as its chord sounds, and the ending's two say what
-  they are once it has been heard.
+  they are once it has been heard. Sing It in Time plays the tune on its sheet in time with the
+  click, the staff's cursor moving with it.
 - **The answer after a miss.** In Interval Trainer a round with a missed note is answered before
   the next: the pair plays once more under its name ("That was B3, a Perfect 5th above E3.
   Listen."). Read the Note and Name the Cadence do the same in their own way.

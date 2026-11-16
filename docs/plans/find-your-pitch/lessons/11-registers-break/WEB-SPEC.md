@@ -666,7 +666,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
     connected it is, becomes "Most of your score is how close you come to the second note.", as the
     code scores it (70 %, FACTS 41), and stays true with the slide part below fixed (#1192): no
     change. With the help changed, the card's sentence about it went (LESSON.md's editorial note).
-  - its menu card (`src/features/exercises/ExerciseMenu.tsx:190-191`), "Glide smoothly across your
+  - its menu card (`src/features/exercises/ExerciseMenu.tsx:191-192`), "Glide smoothly across your
     range. Develop seamless register transitions and vocal flexibility.", becomes "Glide smoothly
     between two notes and back. Develop vocal flexibility.", which promises nothing about the
     switch.
@@ -680,7 +680,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
     (`use-siren-controller.ts:106-117`).
 - **Needed, proposed: `/exercises/siren`** (CURRICULUM § 4 item 1), a data-only slug that opens the
   Siren exercise on its setup screen with its defaults, registered in `EXERCISE_SLUGS`
-  (`src/features/exercises/slug-map.ts:59-162`) with a line in `src/tests/slug-map.test.ts`, its
+  (`src/features/exercises/slug-map.ts:59-171`) with a line in `src/tests/slug-map.test.ts`, its
   notes, if any, fitted to the singer's range as every slug's are, and `?lesson=11` on the link,
   because a slug boots the main app, where First Light opens on a first visit unless the marker
   steps it aside (FACTS 46). When it ships, LESSON.md's editorial note gives the copy: the card's
@@ -811,8 +811,8 @@ the others take it.
    carries no label on the seam and no word but the title's, so it says nothing of whether a flip is
    a mistake and does not answer the cold open's predict.
 4. First-paint ceilings for `learn/11.html` in `scripts/assert-first-paint-budgets.mjs`, one in its
-   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:151-244`, `:586-589`).
-   Every build emits every lesson page, and the check fails a document with no ceiling (`:953-959`),
+   JavaScript table and one in its stylesheet table, beside Lesson 3's (`:151-244`, `:590-593`).
+   Every build emits every lesson page, and the check fails a document with no ceiling (`:957-963`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
    is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:467-477`),
    measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
