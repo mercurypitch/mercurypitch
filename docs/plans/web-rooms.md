@@ -56,8 +56,9 @@ The native shell gives a room three things, and the web now gives the same three
 The drills that are not rooms share one shell (`src/features/exercises/ExerciseShell.tsx`), so
 one change restaged all eighteen of them (`src/features/exercises/stage/`), and a drill written
 since stands on the same stage: Read the Note, the nineteenth
-(`src/features/exercises/note-reading/`), and Name the Cadence, the twentieth
-(`src/features/exercises/cadence/`). The shell kept every class it
+(`src/features/exercises/note-reading/`), Name the Cadence, the twentieth
+(`src/features/exercises/cadence/`), and Sing It in Time, the twenty-first
+(`src/features/exercises/sing-in-time/`). The shell kept every class it
 had, so each drill's own styles, the tests and the tours find what they looked for.
 
 - **The booth behind, a sheet of dark glass in front.** The shell's root is a dark stage in either
@@ -85,19 +86,21 @@ had, so each drill's own styles, the tests and the tours find what they looked f
   says so in one quiet line at its foot.
 
 - **Hear it first.** Under Start, a drill can offer one example of what it asks for
-  (`ExerciseShell`'s `demo`): Merc takes his singing pose, his bubble says what it is ("Listen:
-  E3, then B3. That is a Perfect 5th."), and the example gives way to a run the moment one
-  starts. The line lies over the brief inside the bubble, which keeps the brief's size, so the
-  sheet does not move while an example plays, and it stays up for at least two seconds, since
-  some examples are over sooner than their line can be read. Fourteen drills have one. Twelve play a row of notes (`stage/note-demo.ts`): Interval
-  Trainer, Scale Runner, Long Note, Pitch Hold, Arpeggio Jumper, Chord Stacker, Staccato
-  Precision, Drone Intonation, Siren, Slide, Dynamic Swell and Call & Response. An example says
-  what it is and what it is not: Slide and Siren play the two notes a voice glides between, and
-  Dynamic Swell plays the note alone, since the app's instrument holds one loudness. Name the
-  Cadence plays a perfect cadence in C (`cadence/cadence-demo.ts`) on the figure its setup screen
-  shows, a round's three tiles: each lights as its chord sounds, and the ending's two say what
-  they are once it has been heard. Sing It in Time plays the tune on its sheet in time with the
-  click, the staff's cursor moving with it.
+  (`ExerciseShell`'s `demo`): Merc takes his singing pose, his bubble says what it is ("Listen: E3,
+  then B3. That is a Perfect 5th."), and the example gives way to a run the moment one starts. The
+  line lies over the brief inside the bubble, which keeps the brief's size, so the sheet does not
+  move while an example plays, and it stays up for at least two seconds, since some examples are
+  over sooner than their line can be read. Fourteen drills have one. Twelve play a row of notes
+  (`stage/note-demo.ts`): Interval Trainer, Scale Runner, Long Note, Pitch Hold, Arpeggio Jumper,
+  Chord Stacker, Staccato Precision, Drone Intonation, Siren, Slide, Dynamic Swell and Call &
+  Response. An example says what it is and what it is not: Slide and Siren play the two notes a
+  voice glides between, and Dynamic Swell plays the note alone, since the app's instrument holds one
+  loudness. Name the Cadence plays a perfect cadence in C (`cadence/cadence-demo.ts`) on the figure
+  its setup screen shows, a round's three tiles: each lights as its chord sounds, and the ending's
+  two say what they are once it has been heard. Sing It in Time plays the tune on its sheet in time
+  with the click, the staff's cursor moving with it. Chord Stacker plays the first chord of the set
+  its setup has chosen, and Drone Intonation, in its Pure tuning, the pure interval over the drone.
+  cursor moving with it.
 - **The answer after a miss.** In Interval Trainer a round with a missed note is answered before
   the next: the pair plays once more under its name ("That was B3, a Perfect 5th above E3.
   Listen."). Read the Note and Name the Cadence do the same in their own way.
@@ -140,12 +143,11 @@ rooms and the kit); their paintings and Merc's lines are not precached.
 ## What follows
 
 1. First note and the Warm-up on the web.
-2. The drill Season 2 still lacks, on the stage (the vocal booth, a glass sheet holding the
-   drill's one figure, Merc beside it): sight-singing in time. Note reading has shipped as Read
-   the Note and cadence types as Name the Cadence
-   (`docs/plans/find-your-pitch/SEASON-2.md` § 5.2 items 9 and 19). The harmony line is the
-   Harmony room, which differs from the lesson plan's drill in three ways (the same plan, § 7
-   item 14).
+2. Season 2's drills are on the stage (the vocal booth, a glass sheet holding the drill's one
+   figure, Merc beside it): note reading as Read the Note, cadence types as Name the Cadence and
+   sight-singing in time as Sing It in Time (`docs/plans/find-your-pitch/SEASON-2.md` § 5.2 items
+   9, 19 and 11). The harmony line is the Harmony room, which differs from the lesson plan's drill
+   in three ways (the same plan, § 7 item 14).
 3. The web's eighteen old drills, now on the stage above. Where a room covers the same skill it
    takes the drill's place on the tab (Long Note, Call and Response, the Warm-up). The others get
    Merc's example, the answer after a miss and a figure of their own, Interval Trainer first.

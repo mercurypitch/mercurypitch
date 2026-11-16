@@ -571,7 +571,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   Guided Warmup on its Lip trills routine, registered in `EXERCISE_SLUGS` as
   `{ kind: 'exercise', exercise: EXERCISE_WARMUP, pattern: 'lip-trill' }` with a line in
   `src/tests/slug-map.test.ts`. Beyond the entry it needs (FACTS 73 to 76a):
-  - the `pattern` field on `ExerciseLaunch` (`src/features/exercises/slug-map.ts:28-48`), passed by
+  - the `pattern` field on `ExerciseLaunch` (`src/features/exercises/slug-map.ts:30-61`), passed by
     `applyExerciseSlug` into the launch override beside the notes and the difficulty
     (`src/App.tsx:756-767`); the override's config already carries `pattern`, and the warm-up
     already reads it (`WarmupExercise.tsx:61`);
@@ -584,7 +584,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
     first-visit line.
   - Met on main since `e37bbba59`: the two app changes the link waited on, because the house rules
     never score a lip trill and make no health claims. The warm-up ends with no grade, score or
-    level (`WarmupExercise.tsx:324-331`, `:362-368`; `ExerciseShell.tsx:123-131`), and its help no
+    level (`WarmupExercise.tsx:324-331`, `:362-368`; `ExerciseShell.tsx:129-137`), and its help no
     longer says that warming up "protects your cords" (`exercise-help.ts:23`; FACTS 75a, 76a).
   - Not a condition, for the director: the warm-up still saves each run, with its coverage score,
     to the exercise history, where it ticks off the first segment of Today's Session and earns

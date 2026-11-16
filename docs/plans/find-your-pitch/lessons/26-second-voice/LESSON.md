@@ -458,7 +458,7 @@ G. Now add one note on top."
 
 _[Editorial: the tease is the lead's line and the default, Lesson 27's opening in miniature; Lesson
 27's package owns it and sets it on Lesson 27, as its FACTS 5b says
-(`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/FACTS.md:47`), and the lead binds it.
+(`docs/plans/find-your-pitch/lessons/27-sevenths-inversions/FACTS.md:49`), and the lead binds it.
 The alternative the console can switch to is the lead's too, `three-notes`, "Three notes make a
 chord. Add one more to V, and hear where it goes." This lesson's planned line, "Stack thirds and you
 get a chord. Stack one more on V, and it pulls.", is dropped: it says the added note pulls, which

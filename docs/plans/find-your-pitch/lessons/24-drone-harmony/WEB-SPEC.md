@@ -38,7 +38,7 @@ module in `src/features/lessons/lesson-24/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season puts Lessons 24, 26 and 28
 last, for their engineering and the headphones work, with one coach batch for all three (SEASON-2 §
-8.2 item 7, `docs/plans/find-your-pitch/SEASON-2.md:1325-1326`); Lesson 26 reuses this page's drone,
+8.2 item 7, `docs/plans/find-your-pitch/SEASON-2.md:1362-1363`); Lesson 26 reuses this page's drone,
 headphones check, quiet check and band.
 
 ## Look
@@ -648,24 +648,26 @@ stills when WebGL fails.
 ## Practice links: what exists and what needs engineering
 
 - **Today, Drone Intonation's thirds.** The link is `/exercises/thirds-on-a-drone?lesson=24`,
-  printed mercurypitch.com/exercises/thirds-on-a-drone (`src/features/exercises/slug-map.ts:80-86`):
+  printed mercurypitch.com/exercises/thirds-on-a-drone (`src/features/exercises/slug-map.ts:93-102`):
   it opens Drone Intonation on the minor and the major third only, so this lesson's do and so are
-  not in it, and it scores against the piano's notes, so a pure major third held through a round
-  scores about 79 a round (FACTS 60), as the lead answered. The card says both, and that headphones
+  not in it, and it scores against the piano's notes, its Piano tuning, whatever the learner last
+  chose, so a pure major third held through a round scores about 79 a round (FACTS 60), as the lead
+  answered. The card says both, and that headphones
   help there too, since the drill plays its drone from the speakers while it listens
-  (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:152-155`) on the same
+  (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:171-174`) on the same
   raw microphone chain as this page (`src/lib/mic-manager.ts:47-56`; FACTS 51). It says nothing of
-  the drill's drone's timbre, a plain sine by default (FACTS 60), nor of its run score, which an app
+  the drill's drone's timbre, a voice with harmonics since 15 November 2026 (FACTS 60), nor of its run score, which an app
   fix let reach 100 (below); its editorial note says "about 79 a round" is a round's score, not the
   run's.
   It is the season plan's link for this lesson (SEASON-2 § 5.1, row 24,
-  `docs/plans/find-your-pitch/SEASON-2.md:871`).
+  `docs/plans/find-your-pitch/SEASON-2.md:875`).
 - **The link to swap.** The slug for the fifth, the major third and the octave shipped on 15
   November 2026, `/exercises/harmony-on-a-drone` (SEASON-2 § 5.2 item 15,
-  `docs/plans/find-your-pitch/SEASON-2.md:948-962`): the card's link becomes that
+  `docs/plans/find-your-pitch/SEASON-2.md:952-981`): the card's link becomes that
   slug with `?lesson=24`, and the text's second sentence becomes "This link opens it on this
-  lesson's fifth, major third and octave; do is the drone itself." When the pure-tuning option ships
-  (the same item), the sentence on 79 goes. Both are lines in LESSON.md's editorial note.
+  lesson's fifth, major third and octave; do is the drone itself." The slug opens on Pure tuning, which
+  shipped with it (the same item), so with the swap the sentence on 79 goes: a pure third scores 100
+  there. Both are lines in LESSON.md's editorial note.
 - **The second drill, Ear Lab's Beat Hunt**: `/ear-lab?lesson=24`, printed mercurypitch.com/ear-lab,
   "then tap Beat Hunt": two pairs of tones, which pair was beating (FACTS 61). It asks for no voice,
   so it stays on the rest card.
@@ -675,16 +677,16 @@ stills when WebGL fails.
 - **The first visit and the marker.** Nothing reads `?lesson=24` until SEASON-2 § 5.2 item 21 widens
   the marker, and until then the quiz's answers are refused whole; the page is not built before
   that, so First Light steps aside and the card has no first-visit line (FACTS 64).
-- **Needed: a drone with harmonics in Drone Intonation**, proposed here, the app's work: a timbre
-  for the drill's drone with harmonics up to at least the sixth, whatever the app's instrument, so
-  its fifths and thirds can beat as this page's do (FACTS 66). The card says nothing of the drone,
-  so none of its lines changes when it ships.
+- **Shipped: a drone with harmonics in Drone Intonation**, proposed here, the app's work, on 15
+  November 2026: its drone has harmonics up to the eighth, Merc's "ooh" partials, whatever the
+  app's instrument, so its fifths and thirds can beat as this page's do (FACTS 60, 66). The card
+  says nothing of the drone, so none of its lines changes.
 - **Shipped: Drone Intonation's run score reweighted**, the app's fix this package asked for. The
   run scored round(accuracy × 0.4 + best round × 0.15 + stability × 0.25), at most 80 once richness
   left the grade on 25 October, and its level rises only at an average of 90
   (`src/features/practice-intelligence/adaptive-difficulty.ts:12-13`), so it could never level up.
   Each weight is now divided by their sum, so a full score reads 100 and the level can rise
-  (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:285-295`; FACTS 60,
+  (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:323-333`; FACTS 60,
   66). The card never named the run score, so none of its lines changes.
 - No premium exercise is linked: Drone Intonation and Ear Lab are free (FACTS 62).
 
@@ -805,10 +807,11 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
     head test already has its word for sixteen (`src/tests/lesson-pages.test.ts:84`).
 13. **Lesson 23's questions as a module** (`lesson-23/quiz-questions.ts`), so this page imports its
     question 3 (Toys 5).
-14. **Drone Intonation, the app's work** (Practice links): the pure-tuning option (SEASON-2 § 5.2
-    item 15), and a drone with harmonics (proposed here). The fifth, third and octave slug shipped
-    on 15 November 2026, and the card's link waits to swap to it. Its run score, reweighted so a
-    full score reads 100 and the drill can level up, has shipped.
+14. **Drone Intonation, the app's work** (Practice links), all shipped: the fifth, third and
+    octave slug, the pure-tuning option it opens on (SEASON-2 § 5.2 item 15) and a drone with
+    harmonics (proposed here), on 15 November 2026, and its run score, reweighted so a full score
+    reads 100 and the drill can level up. The card's link waits to swap to the slug, and its
+    sentence on 79 goes with the swap.
 15. **At release, the room's link back**, optional: SEARCH § 8's rows for the exercises and Ear Lab
     gain 24.
 

@@ -194,7 +194,7 @@ For everyone (S20a needs T14, Lesson 10, and T13, Lesson 23).
 
 ## Practise links (verified at `b803c7d43`)
 
-- **Linked: Drone Intonation's thirds**, `/exercises/thirds-on-a-drone` (`slug-map.ts:80-86`):
+- **Linked: Drone Intonation's thirds**, `/exercises/thirds-on-a-drone` (`slug-map.ts:93-102`):
   the minor and major third above a drone, the drone sounding during each 4 s window, scored
   against the piano's notes, so a pure third scores about 79 (R11). The card says so, and adds
   Lesson 10's lines on its sharps and its octave. **[coach]**
