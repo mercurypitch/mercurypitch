@@ -164,6 +164,7 @@ export function StudioTrackDetails(props: StudioTrackDetailsProps) {
           clips={props.project.clips}
           assets={laneAssets()}
           tempoBpm={props.project.tempoBpm}
+          ruler={props.project.ruler}
           writable={props.writable}
           onCommand={props.onCommand}
         />
