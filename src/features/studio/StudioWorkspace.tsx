@@ -699,6 +699,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
                 project={project()}
                 assets={props.studio.assets()}
                 writable={writable()}
+                phone={phone()}
                 arming={phone() ? recorder.arming : undefined}
                 input={recorder}
                 focusInput={inputFocusFor() === selectedTrack()!.id}

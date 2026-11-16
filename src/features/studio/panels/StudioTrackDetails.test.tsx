@@ -1,7 +1,9 @@
-// Studio track details tests — a lane's details open its lines in the arrangement (an overlaid panel stepping aside), hold them while a take runs, and arm the lane where its header cannot.
+// Studio track details tests — a lane's details open its lines in the arrangement (an overlaid panel stepping aside), hold them while a take runs, arm the lane where its header cannot, and comp its loop takes on a phone only.
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
+import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
+import type { StudioClip } from '@/lib/studio/model/types'
 import type { StudioRecordPhase } from '@/lib/studio/record/studio-recorder'
 import { setStudioTakeRunning } from '../record/take-running'
 import { studioLaneLinesRequest } from '../timeline/lane-lines-request'
@@ -19,14 +21,29 @@ const project = {
   tracks: [track],
 }
 
-function mount(arming?: Parameters<typeof StudioTrackDetails>[0]['arming']) {
+/** A loop take of three passes on the lane, its clip on the newest over bars 2 and 3. */
+const take: StudioClip = {
+  ...studioFixture().clip,
+  trackId: 'gtr',
+  startFrame: 96_000,
+  sourceInFrame: 4 * 96_000,
+  sourceOutFrame: 6 * 96_000,
+  fades: { curve: 'linear-amplitude' },
+  passes: { firstFrame: 0, frames: 2 * 96_000, count: 3 },
+}
+
+function mount(
+  arming?: Parameters<typeof StudioTrackDetails>[0]['arming'],
+  phone?: boolean,
+) {
   const afterLines = vi.fn()
   render(() => (
     <StudioTrackDetails
       track={track}
-      project={project}
-      assets={[]}
+      project={{ ...project, clips: [take] }}
+      assets={[studioFixture().asset]}
       writable
+      phone={phone}
       arming={arming}
       onCommand={() => true}
       afterLines={afterLines}
@@ -73,5 +90,19 @@ describe('Studio track details', () => {
     expect(lines).toBeDisabled()
     expect(lines).toHaveAttribute('title', 'Stop the take to draw lines')
     expect(toggle).toHaveBeenCalledExactlyOnceWith('gtr')
+  })
+
+  it('comps the lane’s loop takes bar by bar on a phone, which has no rows under its lanes', () => {
+    mount(undefined, true)
+
+    expect(screen.getByRole('group', { name: /^Comp of / })).toBeTruthy()
+    expect(screen.getAllByRole('button', { name: /^Bar / })).toHaveLength(6)
+  })
+
+  it('leaves comping to the rows under the lane on a computer or a tablet', () => {
+    mount()
+
+    expect(screen.queryByRole('group', { name: /^Comp of / })).toBeNull()
+    expect(screen.queryByRole('button', { name: /^Bar / })).toBeNull()
   })
 })
