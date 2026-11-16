@@ -86,6 +86,26 @@ describe('keeping a MIDI render', () => {
     expect(ui.service.renderState('clip-midi')).toBe('idle')
   })
 
+  it('keeps the render of a clip whose audio has no name with none, as a clip drawn from scratch, so it goes on showing its lane’s', async () => {
+    // Arrange: the take's audio unnamed, as a new clip's silence is.
+    const ui = mount()
+    ui.setAssets(ui.fixture.assets)
+    keepIntoSong(ui)
+    const edited = editNotes(ui.fixture.project, up)
+    ui.setProject(edited)
+    await vi.advanceTimersByTimeAsync(250)
+    ui.renderer.calls[0].resolve()
+    await vi.advanceTimersByTimeAsync(50)
+
+    // Act
+    await ui.service.editorClosed()
+
+    // Assert
+    expect(ui.kept).toHaveLength(1)
+    expect(ui.kept[0].renderKey).toBe(keyOf(edited))
+    expect(ui.kept[0].title).toBeUndefined()
+  })
+
   it('keeps what the song was left stale with as it opens, without waiting for an edit to rest', async () => {
     // Arrange
     const stale = editNotes(renderServiceFixture().fixture.project, up)

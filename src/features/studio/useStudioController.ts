@@ -7,6 +7,7 @@ import { checkImportCancelled, DEFAULT_STUDIO_IMPORT_LIMITS, } from '@/lib/studi
 import { prepareStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioCommand } from '@/lib/studio/model/commands'
+import type { StudioNewMidiClip } from '@/lib/studio/model/new-midi-clips'
 import type { StudioAsset, StudioProject, StudioProjectSummary, } from '@/lib/studio/model/types'
 import type { StudioBackupTarget } from './backup/backup-target'
 import { restoreStudioBackup, writeStudioBackup } from './backup/studio-backup'
@@ -208,6 +209,13 @@ export function useStudioController(options: StudioControllerOptions = {}) {
   const addRecording = persistence.keeping(importer.addRecording)
   const addTake = persistence.keeping(importer.addTake)
   const addTakes = persistence.keeping(importer.addTakes)
+
+  /** New MIDI clips in one undo step (new-midi-clips.ts): their ids once kept, or null. */
+  async function addMidiClips(clips: readonly StudioNewMidiClip[]) {
+    const made = await importer.addMidiClips(clips)
+    if (made !== null) persistence.afterKeep()
+    return made
+  }
 
   /** Stop editing here: nothing more is written, and what is not saved waits. */
   function suspendEditor(error: unknown): void {
@@ -679,6 +687,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     refreshSources,
     addFile,
     addFiles,
+    addMidiClips,
     addRecording,
     addTake,
     addTakes,

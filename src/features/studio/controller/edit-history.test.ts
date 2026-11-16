@@ -1,7 +1,10 @@
-// Studio edit history tests — Undo and Redo name the lane change a control made, not a generic track edit.
+// Studio edit history tests — Undo and Redo name the lane change a control made, not a generic track edit, and new MIDI clips by the lanes they bring.
 import { describe, expect, it } from 'vitest'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
+import { studioMidiFixture } from '@/lib/studio/model/model.test-fixtures'
+import type { StudioNewMidiClip } from '@/lib/studio/model/new-midi-clips'
+import { studioNewMidiClips } from '@/lib/studio/model/new-midi-clips'
 import { createStudioEditHistory, executeStudioEdit, travelStudioHistory, } from './edit-history'
 
 const options = { assets: [] }
@@ -59,6 +62,46 @@ describe('Studio edit history', () => {
 
     // Assert
     expect(labels).toEqual(['volume line', 'pan line'])
+  })
+
+  it('names new MIDI clips by the lanes they bring, or as clips on lanes the song has', () => {
+    // Arrange: the silence every new clip plays.
+    const silence = {
+      ...studioMidiFixture().assets[1],
+      id: 'silence',
+      projectId: 'song',
+    }
+    let serial = 0
+    const createId = () => `new-${++serial}`
+    const clip = (lane: StudioNewMidiClip['lane'], startFrame: number) => ({
+      lane,
+      startFrame,
+      frames: 384_000,
+    })
+    let history = createStudioEditHistory({
+      ...createStudioProject({ id: 'song', title: 'Label song' }),
+      tracks: [createStudioTrack({ id: 'keys', name: 'Keys', order: 0 })],
+    })
+    const add = (clips: readonly StudioNewMidiClip[]) => {
+      const made = studioNewMidiClips(
+        history.state.present,
+        clips,
+        silence.id,
+        createId,
+      )
+      history = executeStudioEdit(history, made.command, { assets: [silence] })
+    }
+
+    // Act
+    add([clip({ name: 'Piano', role: 'piano' }, 0)])
+    add([
+      clip({ name: 'Drums', role: 'drums' }, 0),
+      clip({ name: 'Bass', role: 'bass' }, 0),
+    ])
+    add([clip({ trackId: 'keys' }, 0), clip({ trackId: 'keys' }, 384_000)])
+
+    // Assert
+    expect(history.pastLabels).toEqual(['add lane', 'add lanes', 'add clips'])
   })
 
   it('keeps the name for Redo after an Undo', () => {

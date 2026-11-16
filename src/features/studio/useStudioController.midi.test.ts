@@ -1,4 +1,4 @@
-// Studio controller MIDI takes — a take recorded on a MIDI lane comes into the song with its sequence, in the edit that adds its clip, its clip keyed by its notes and sound so nothing renders until an edit; one undo takes both away. A render of edited notes is kept as a take is, swapped in without an undo step, skipped when the notes changed meanwhile, and kept when shorter than its clip's window, which is silent past it; undo and redo bring the notes back with the audio that matched them.
+// Studio controller MIDI takes — a take recorded on a MIDI lane comes into the song with its sequence, in the edit that adds its clip, its clip keyed by its notes and sound so nothing renders until an edit; one undo takes both away. A render of edited notes is kept as a take is, swapped in without an undo step, skipped when the notes changed meanwhile, and kept when shorter than its clip's window, which is silent past it; undo and redo bring the notes back with the audio that matched them. New MIDI clips come in one undo step, a new lane with them, all playing one quarter second of silence kept as a recording with no name, and a lane the song does not have is refused as an import is.
 import { createRoot } from 'solid-js'
 import { afterEach, describe, expect, it } from 'vitest'
 import type { StudioAssetInfo } from '@/lib/studio/audio/prepare-studio-asset'
@@ -188,6 +188,36 @@ describe('a MIDI render kept in the Studio', () => {
     expect(controller.assets()).toHaveLength(assets)
   })
 
+  it('is kept with no name when given none, as a clip drawn from scratch asks, so the clip goes on showing its lane’s', async () => {
+    // Arrange: a clip drawn from scratch, a note then drawn in it.
+    const controller = mount()
+    await controller.open('one')
+    const [clipId] = (await controller.addMidiClips([
+      { lane: { name: 'Piano', role: 'piano' }, startFrame: 0, frames: 96_000 },
+    ]))!
+    controller.dispatch({
+      type: 'set-sequence-notes',
+      clipId,
+      notes: NOTES,
+      nextNoteId: 2,
+      forkSequenceId: 'fork-1',
+    })
+    const sequence = controller.project()!.sequences![0]
+
+    // Act
+    const kept = await controller.keepMidiRender({
+      samples: new Float32Array(9600),
+      renderKey: studioMidiRenderKey(sequence, 'piano'),
+    })
+
+    // Assert
+    const clip = controller.project()!.clips.find((each) => each.id === clipId)
+    const asset = controller.assets().find((each) => each.id === clip?.assetId)
+    expect(kept).toBe(true)
+    expect(asset?.normalizedFrameCount).toBe(9600)
+    expect(asset).not.toHaveProperty('originalName')
+  })
+
   it("is kept when shorter than its clip's window, which is silent past it", async () => {
     // Arrange
     const { controller, take, key } = await editedTake()
@@ -206,5 +236,61 @@ describe('a MIDI render kept in the Studio', () => {
     expect(clip.assetId).not.toBe(take.assetId)
     expect(asset?.normalizedFrameCount).toBe(2400)
     expect(clip.sourceOutFrame).toBe(take.sourceOutFrame)
+  })
+})
+
+describe('new MIDI clips in the Studio', () => {
+  it('come in one undo step, a new lane with them, playing a quarter second of silence kept once as a recording with no name', async () => {
+    // Arrange
+    const controller = mount()
+    await controller.open('one')
+
+    // Act
+    const made = await controller.addMidiClips([
+      {
+        lane: { name: 'Piano', role: 'piano' },
+        startFrame: 0,
+        frames: 384_000,
+      },
+    ])
+    const lane = controller.project()!.tracks[0]
+    const more = await controller.addMidiClips([
+      { lane: { trackId: lane.id }, startFrame: 384_000, frames: 384_000 },
+    ])
+    const song = controller.project()!
+    const labels = [controller.undoLabel()]
+    controller.undo()
+    labels.push(controller.undoLabel())
+    controller.undo()
+
+    // Assert
+    const silences = new Set(song.clips.map((clip) => clip.assetId))
+    const silence = controller.assets().find((asset) => silences.has(asset.id))
+    expect(made).toEqual([song.clips[0].id])
+    expect(more).toEqual([song.clips[1].id])
+    expect(silences.size).toBe(1)
+    expect(silence?.normalizedFrameCount).toBe(12_000)
+    expect(silence?.provenance.kind).toBe('recording')
+    expect(silence).not.toHaveProperty('originalName')
+    expect(song.sequences).toHaveLength(2)
+    expect(labels).toEqual(['Undo add clip', 'Undo add lane'])
+    expect(controller.project()?.tracks).toEqual([])
+    expect(controller.project()).not.toHaveProperty('sequences')
+  })
+
+  it('add nothing on a lane the song does not have, and say why as an import does', async () => {
+    // Arrange
+    const controller = mount()
+    await controller.open('one')
+
+    // Act
+    const made = await controller.addMidiClips([
+      { lane: { trackId: 'gone' }, startFrame: 0, frames: 384_000 },
+    ])
+
+    // Assert
+    expect(made).toBeNull()
+    expect(controller.project()?.clips).toEqual([])
+    expect(controller.importRefusal()).toMatch(/Lane does not exist/)
   })
 })
