@@ -1,4 +1,4 @@
-// Studio voice pill — beside a collapsed sidebar the voice pill sits inside the rail, clear of the lanes and their instrument chips, with a mouse and on a touch screen; on a phone it stays in the header.
+// Studio voice pill — beside a collapsed sidebar the voice pill sits inside the rail, and with the sidebar open in the sidebar's empty foot, clear of the lanes and their instrument chips either way, with a mouse and on a touch screen; on a phone it stays in the header.
 import { expect, type Page, test } from '@playwright/test'
 import { importStudioAudio, openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
 
@@ -100,6 +100,51 @@ for (const layout of RAIL_LAYOUTS) {
       expect(lanes.some((lane) => lane.bottom > pill.bottom)).toBe(true)
       for (const lane of lanes)
         expect(gap(pill, lane)).toBeGreaterThanOrEqual(2)
+    })
+
+    test("with the sidebar open, sits in the sidebar's empty foot, clear of every lane", async ({
+      page,
+    }) => {
+      test.setTimeout(90_000)
+      await openArrangement(page)
+      for (const name of LANE_NAMES.slice(0, 10))
+        await importStudioAudio(page, name, 1)
+      await page.getByRole('button', { name: 'Expand sidebar' }).click()
+      await expect(page.locator('.app-sidebar:not(.collapsed)')).toBeVisible()
+      const hud = page.locator('[data-voice-control-hud]')
+      await expect(hud).toBeVisible()
+      // The pill and the sidebar slide as it opens: wait them out.
+      await page.evaluate(() =>
+        Promise.all(
+          document
+            .getAnimations()
+            .filter(
+              (animation) =>
+                animation.effect?.getTiming().iterations !== Infinity,
+            )
+            .map((animation) => animation.finished.catch(() => undefined)),
+        ),
+      )
+      const { pill, rail, lanes } = await corner(page)
+      expect(lanes.some((lane) => lane.bottom > pill.bottom)).toBe(true)
+      expect.soft(pill.left).toBeGreaterThanOrEqual(rail!.left)
+      expect.soft(pill.right).toBeLessThanOrEqual(rail!.right)
+      for (const lane of lanes)
+        expect.soft(gap(pill, lane)).toBeGreaterThanOrEqual(2)
+      // Under it, the sidebar's own ground and none of its links.
+      const under = await hud.evaluate((element) => {
+        const r = element.getBoundingClientRect()
+        ;(element as HTMLElement).style.visibility = 'hidden'
+        const found = [
+          [r.left + 2, r.top + 2],
+          [r.right - 2, r.top + 2],
+          [r.left + 2, r.bottom - 2],
+          [r.right - 2, r.bottom - 2],
+        ].map(([x, y]) => document.elementFromPoint(x, y)?.tagName)
+        ;(element as HTMLElement).style.visibility = ''
+        return found
+      })
+      expect.soft(under).toEqual(['ASIDE', 'ASIDE', 'ASIDE', 'ASIDE'])
     })
   })
 }

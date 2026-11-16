@@ -423,6 +423,18 @@
     left: calc(300px + var(--safe-left, 0px) + 0.75rem);
   }
 
+  /* Past the sidebar in the Studio are the lanes' headers, down to the
+     foot of the window: the pill sat 38 px into a lane's. The Studio's
+     sidebar holds no Strictness and ends far above its foot, so there the
+     pill stays in that empty foot, as it does on the rail. A page that
+     marks itself so asks for this. */
+  body:has(:global(.app-sidebar:not(.collapsed))):has(
+      [data-voice-pill-in-sidebar]
+    )
+    .pill:not(.docked) {
+    left: calc(var(--safe-left, 0px) + 0.75rem);
+  }
+
   /* Collapsed, the sidebar is a rail with nothing under its expand button,
      and the pill sits in that empty foot, centred. From the window's edge
      it reached 51 px: 11 px past a 40 px rail, onto the page beside it (a
