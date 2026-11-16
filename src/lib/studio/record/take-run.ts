@@ -8,7 +8,10 @@
 // (take-plan.ts), and a punch or a loop applies to every lane alike. Each
 // lane keeps a take of its own (lane-take.ts), placed by its own lane's path
 // and journaled under its own id, so the run's takes become one clip on
-// each lane.
+// each lane. Every lane's path is worked out from one reading of the clock's
+// output latency, taken as Record is pressed: Chromium's can move between
+// two reads, and a lane moved by a later one lands that far from the others.
+import type { AudioOutputLatencies } from '@/lib/mic-latency'
 import { STUDIO_SAMPLE_RATE } from '../model/types'
 import { frameTime, wholeFrameAtOrAfter } from '../playback/whole-frame'
 import type { createStudioClickScheduler } from './click-track'
@@ -111,16 +114,21 @@ export function planStudioRun(deps: RunDeps, context: AudioContext) {
     countIn: plan.countInSeconds,
     playing: liveAnchor !== null,
     maxFrames: Math.floor((STUDIO_TAKE_MAX_SECONDS - 0.01) * rate),
+    /** The clock's latencies, read once for every lane of the run. */
+    latencies: {
+      baseLatency: context.baseLatency,
+      outputLatency: context.outputLatency,
+    } satisfies AudioOutputLatencies,
   }
 }
 
-/** Lane `lane`'s take of `run`, placed by the lane's own path, read now so an offset changed while armed is in it. */
+/** Lane `lane`'s take of `run`, placed by the lane's own path on the run's one reading of the clock, worked out now so an offset changed while armed is in it. */
 export function createStudioRunTake(
   deps: RunDeps,
   run: StudioTakeRun,
   lane: StudioLaneArm,
   at: {
-    readonly context: AudioContext
+    readonly latencies: AudioOutputLatencies
     readonly startTime: number
     readonly maxFrames: number
     readonly releaseMemory: () => void
@@ -128,7 +136,7 @@ export function createStudioRunTake(
 ): StudioLaneTake {
   const rate = run.sampleRate
   const id = deps.createId()
-  const roundTrip = deps.roundTrip(at.context, lane.input?.stream ?? null)
+  const roundTrip = deps.roundTrip(at.latencies, lane.input?.stream ?? null)
   return createStudioLaneTake({
     id,
     trackId: lane.trackId,

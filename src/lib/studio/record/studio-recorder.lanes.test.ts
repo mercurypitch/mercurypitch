@@ -1,7 +1,9 @@
-// Studio recorder lanes tests — lanes arm one at a time beside each other and one Record records them all from the same frame: two lanes on one stereo input share its split and each keeps only its own side, an instrument lane records beside a microphone lane, each take is placed by its own path and journaled on its own, a lost input ends only its own lanes' takes, memory is held for every lane or Record is refused, and the shared microphone goes with its last lane.
+// Studio recorder lanes tests — lanes arm one at a time beside each other and one Record records them all from the same frame: two lanes on one stereo input share its split and each keeps only its own side, an instrument lane records beside a microphone lane, each take is placed by its own path, every lane of a press by one reading of the clock's output path, and journaled on its own, a lost input ends only its own lanes' takes, memory is held for every lane or Record is refused, and the shared microphone goes with its last lane.
 import type { Mock } from 'vitest'
 import { describe, expect, it, vi } from 'vitest'
 import type { ChannelPick } from '@/lib/audio-input/input-channels'
+import type { AudioOutputLatencies } from '@/lib/mic-latency'
+import { audioOutputPathSeconds } from '@/lib/mic-latency'
 import type { StudioInputLostWords, StudioInstrumentHold, StudioMicHold, } from './recorder-types'
 import { MIC_LOST_MID_TAKE } from './studio-recorder'
 import type { FakeGraphNode } from './studio-recorder.test-fixtures'
@@ -154,6 +156,56 @@ describe('several lanes armed at once', () => {
       true,
       false,
     ])
+  })
+
+  it("moves every lane of one press by one reading of the clock's output path, though the clock reports another between lanes", async () => {
+    // Arrange: two lanes on one stereo input and an instrument lane, on a
+    // clock whose output latency moves a millisecond each time it is read,
+    // as Chromium's can under load.
+    const input = stereoInput({ vox: single(0), gtr: single(1) })
+    const keys = instrument('keys')
+    // As the hook moves a take: an instrument's by the output path, a
+    // microphone's by the path and its input's 10 ms.
+    const roundTrip = vi.fn(
+      (clock: AudioOutputLatencies, stream: MediaStream | null) =>
+        audioOutputPathSeconds(clock) + (stream === null ? 0 : 0.01),
+    )
+    const h = harness(
+      {
+        acquireMic: input.acquireMic,
+        acquireInstrument: (trackId) =>
+          trackId === 'keys' ? Promise.resolve(keys.hold) : null,
+        roundTrip,
+        createId: nextId,
+      },
+      { countInBars: 0 },
+    )
+    let reads = 0
+    Object.defineProperty(h.ctx, 'outputLatency', {
+      get: () => 0.02 + 0.001 * reads++,
+    })
+    await h.recorder.arm('vox')
+    await h.recorder.arm('gtr')
+    await h.recorder.arm('keys')
+    const worklets = h.worklets.slice(0, 3)
+
+    // Act
+    h.recorder.record()
+    for (const worklet of worklets) {
+      worklet.started(1.1 * RATE)
+      worklet.chunk(0, 4096, chunkOf(4096, 0.25))
+    }
+    h.recorder.stop()
+    for (const worklet of worklets) worklet.stopped(4096, 'stopped')
+    await settle()
+
+    // Assert
+    const heardFirst = Object.fromEntries(
+      h.kept.map((take) => [take.trackId, take.heardFirst]),
+    )
+    expect(Object.keys(heardFirst)).toEqual(['vox', 'gtr', 'keys'])
+    expect(heardFirst.gtr).toBe(heardFirst.vox)
+    expect(heardFirst.keys - heardFirst.vox).toBe(Math.round(0.01 * RATE))
   })
 
   it('records two instrument lanes, each keeping only its own sound', async () => {

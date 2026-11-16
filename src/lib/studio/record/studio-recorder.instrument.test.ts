@@ -78,7 +78,11 @@ describe('the Studio recorder on an instrument', () => {
     await settle()
 
     // Assert
-    expect(roundTrip).toHaveBeenCalledExactlyOnceWith(h.ctx, null)
+    // On the clock's latencies as Record read them.
+    expect(roundTrip).toHaveBeenCalledExactlyOnceWith(
+      { baseLatency: 0.01, outputLatency: 0.02 },
+      null,
+    )
     expect(h.kept).toHaveLength(1)
     expect(h.kept[0].capturedFrom).toBeCloseTo(1.1, 9)
   })

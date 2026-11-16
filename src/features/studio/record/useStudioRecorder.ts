@@ -39,6 +39,7 @@ import { batch, createEffect, createMemo, createSignal, on, onCleanup, untrack, 
 import type { StudioTakeJournalRecord } from '@/db/services/studio-take-journal'
 import { createStudioTakeJournal } from '@/db/services/studio-take-journal'
 import { useLocalSaveNavigationLockWithReason } from '@/lib/local-save-navigation-reason'
+import type { AudioOutputLatencies } from '@/lib/mic-latency'
 import { audioOutputPathSeconds } from '@/lib/mic-latency'
 import type { MicError } from '@/lib/mic-manager'
 import { micManager } from '@/lib/mic-manager'
@@ -231,11 +232,15 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       moving: options.liveMix,
     })
 
-  function measureRoundTrip(context: AudioContext, stream: MediaStream | null) {
+  /** A lane's round trip on `clock`, the latencies its press read once for every lane, so lanes on one input land on one frame. */
+  function measureRoundTrip(
+    clock: AudioOutputLatencies,
+    stream: MediaStream | null,
+  ) {
     // An instrument's take: the output path alone, and the line-up beside
     // the offset keeps speaking of the voice's round trip.
     if (stream === null)
-      return studioInstrumentShift(audioOutputPathSeconds(context))
+      return studioInstrumentShift(audioOutputPathSeconds(clock))
     const reported = stream.getAudioTracks?.()[0]?.getSettings?.() as
       | { latency?: number; deviceId?: string }
       | undefined
@@ -246,7 +251,7 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     const trip = studioRoundTrip({
       measuredMs: micLatencyMsForDevice(device),
       measuredPathMs: micLatencyPathMsForDevice(device),
-      pathSeconds: audioOutputPathSeconds(context),
+      pathSeconds: audioOutputPathSeconds(clock),
       inputSeconds: reported?.latency,
       offsetMs: settings().offsetMs,
     })
