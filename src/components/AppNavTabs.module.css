@@ -57,6 +57,14 @@
   text-decoration: none;
 }
 
+/* The same mix of the light theme's own inks: from the accent and the
+   amber above, the icon (at its 0.75) measured 2.42:1 on the light header
+   and the word (shown from 1680 px) 3.48:1. These measure 3.56:1 and
+   6.22:1. */
+:global([data-theme='light']) .roomLink {
+  color: color-mix(in srgb, var(--accent-text) 58%, var(--yellow));
+}
+
 .roomLink:hover,
 .roomLink:focus-visible {
   color: var(--text-primary);
