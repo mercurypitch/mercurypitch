@@ -500,6 +500,35 @@
   }
 }
 
+/* Floating, the mic draws 1.9rem (30.4 px) too, and on a phone on its side
+   (844x390) it took a press in 31 x 31 px. Under a finger it takes one 44 px
+   each way from an invisible box centred on it, which reaches 7 px past the
+   pill into the page around it. While voice control is on, the cog sits
+   2.4 px to the mic's right, so there the box stops 1 px past the mic and is
+   38 px wide, as the docked one does. */
+@media (pointer: coarse) {
+  .pill:not(.docked) .toggle {
+    position: relative;
+  }
+
+  .pill:not(.docked) .toggle::after {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 44px;
+    height: 44px;
+    content: '';
+    transform: translate(-50%, -50%);
+  }
+
+  .pill:not(.docked) .toggle:not(:last-child)::after {
+    right: -1px;
+    left: auto;
+    width: 38px;
+    transform: translateY(-50%);
+  }
+}
+
 /* Docked in a phone's header, the mic draws 1.9rem (30.4 px) and took a
    press in that much and no more. Under a finger it takes one 44 px each
    way from an invisible box: up and down inside the 50 px row, and 7 px

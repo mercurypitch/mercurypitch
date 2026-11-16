@@ -82,14 +82,18 @@
 }
 
 /* Mobile: drop the version segment to keep the header account area
-   compact (the version + changelog stays reachable in Settings). */
-@media (max-width: 768px) {
+   compact (the version + changelog stays reachable in Settings). A phone on
+   its side is a phone too (isShortTouchLandscape in use-viewport.ts), and
+   its heart then takes the same box as an upright phone's. */
+@media (max-width: 768px),
+  (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
   .version {
     display: none;
   }
 }
 
-/* The heart alone, on a phone, drew 34x25 and took a press in that much.
+/* The heart alone, on a phone, drew 34x25 and took a press in that much
+   (34x26 on a phone on its side, 844x390, beside the version).
    Under a finger it takes one 44 px each way from an invisible box that
    starts at the badge's left edge and reaches 8.4 px past its right, into
    the header's 10 px padding, and up and down inside the 50 px row. It
@@ -97,7 +101,8 @@
    whatever sits beside it: the account glyph, or the voice pill's mic. The
    heart stays unpositioned so the box is placed in `.frame`, outside the
    badge's clip. */
-@media (pointer: coarse) and (max-width: 768px) {
+@media (pointer: coarse) and (max-width: 768px),
+  (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
   .support::after {
     position: absolute;
     top: 50%;
@@ -106,6 +111,16 @@
     height: max(100%, 44px);
     content: '';
     transform: translateY(-50%);
+  }
+}
+
+/* On its side, a phone's header keeps under 8 px right of the heart, so
+   there the box hangs from the heart's right edge, 7 px past it, and its
+   44 px reach left over the room the version left. */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
+  .support::after {
+    right: -7px;
+    left: auto;
   }
 }
 
