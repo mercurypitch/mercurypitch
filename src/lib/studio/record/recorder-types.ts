@@ -202,7 +202,7 @@ export interface StudioRecorderDeps {
   createMonitor(
     context: AudioContext,
     input: AudioNode,
-    options: { readonly settled: boolean },
+    options: { readonly settled: boolean; readonly onSettled?: () => void },
   ): Pick<StudioInputMonitor, 'set' | 'inputArrived' | 'dispose'>
   /** What lane `trackId`'s input sounds like through the lane: null is the new lane a take starts. */
   monitorSound(trackId: string | null): StudioMonitorSound

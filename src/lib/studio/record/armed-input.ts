@@ -12,6 +12,13 @@
 // microphone is still there while its track is live; an instrument while its
 // port is connected. Only a microphone's channels can be metered beside a
 // take: an instrument has none.
+//
+// A new microphone source has first moments to wait out before a monitor
+// rises on it (input-monitor.ts): its samples arrive late and mid-waveform,
+// and its buffer runs dry once or twice. Once a lane's monitor has heard it
+// settle, the source is flowing, and a lane that joins it after (a second
+// lane, a re-arm inside the release, another channel of it) is heard at once
+// (`flowing`). An instrument the page plays flows from its first note.
 import type { StudioInputChannels, StudioInputTap } from './lane-channel'
 import { openStudioInputChannels, studioInputTap } from './lane-channel'
 import type { StudioInputHold, StudioInputOpened, StudioInstrumentHold, StudioMicHold, } from './recorder-types'
@@ -23,6 +30,10 @@ export interface StudioArmedInput {
   readonly stream: MediaStream | null
   /** What a microphone opened, for the armed lane's card; null for an instrument. */
   readonly opened: StudioInputOpened | null
+  /** It plays cleanly from the arm on: an instrument, or a microphone source a lane's monitor heard settle before this lane joined it. */
+  readonly flowing: boolean
+  /** This lane's monitor heard the source settle: lanes that join it from now on are heard at once. */
+  settled(): void
   /** Still there to record from. */
   live(): boolean
   /** Take apart what the lane took, and give its hold back: the microphone goes with the last lane on it. */
@@ -43,6 +54,8 @@ interface SharedMicrophone {
   readonly channels: StudioInputChannels
   tap(): StudioInputTap
   lanes: number
+  /** Past its first moments: a lane's monitor heard it settle. */
+  flowing: boolean
 }
 
 /** A microphone's stream is still there to record from: its track is live, or it names none. */
@@ -81,6 +94,7 @@ export function createStudioArmedInputs(
       channels,
       tap: () => studioInputTap({ context, source, stream, lane: channels }),
       lanes: 0,
+      flowing: false,
     }
     microphones.set(stream, made)
     return made
@@ -103,6 +117,10 @@ export function createStudioArmedInputs(
         channels: shared.channels.channels,
         pick: lane.pick,
         missing: lane.missing,
+      },
+      flowing: shared.flowing,
+      settled: () => {
+        shared.flowing = true
       },
       live: () => studioMicrophoneLive(stream),
       close: () => {
@@ -128,6 +146,8 @@ export function createStudioArmedInputs(
         node: hold.play(context),
         stream: null,
         opened: null,
+        flowing: true,
+        settled: () => undefined,
         live: () => hold.connected(),
         close: () => hold.release(),
       }
