@@ -93,22 +93,46 @@ export function centsBetween(f: number, target: number): number {
 export function worstMoment(trace: RunTrace): WorstMoment | null {
   if (trace.targets.length === 0) return null
 
-  const off = (f: number, target: number): number => {
-    const cents = centsBetween(f, target)
-    return trace.folded === true ? foldCents(cents) : cents
-  }
-  const notes = newNotesOf(trace.targets)
+  const off = distanceAs(trace)
+  const arrived = arrivalsOf(trace, off)
   let worst: WorstMoment | null = null
-  // The note a sample falls in, and whether the voice has left the note
-  // before it. Samples come in the order they were heard; one out of order
-  // starts the walk again.
-  let n = -1
-  let left = false
-  let lastT = Number.NEGATIVE_INFINITY
   for (const sample of trace.samples) {
     if (!Number.isFinite(sample.f) || sample.f <= 0) continue
     const target = targetAt(trace.targets, sample.t)
     if (target === null || target <= 0) continue
+    const cents = off(sample.f, target)
+    if (!arrived(sample, cents)) continue
+    if (worst === null || Math.abs(cents) > Math.abs(worst.cents)) {
+      worst = { t: sample.t, f: sample.f, target, cents }
+    }
+  }
+  return worst
+}
+
+/** Cents from a target to a voice, as the run's drill hears it: in the
+ *  octave the voice is in where it hears any octave. */
+function distanceAs(trace: RunTrace): (f: number, target: number) => number {
+  return trace.folded === true
+    ? (f, target) => foldCents(centsBetween(f, target))
+    : centsBetween
+}
+
+/**
+ * Whether the voice has arrived on the note a sample falls in, asked of a
+ * run's samples in the order they were heard (one out of order starts the
+ * walk again). `cents` is the sample's distance from its target.
+ */
+function arrivalsOf(
+  trace: RunTrace,
+  off: (f: number, target: number) => number,
+): (sample: TracePoint, cents: number) => boolean {
+  const notes = newNotesOf(trace.targets)
+  // The note the last sample fell in, and whether the voice has left the
+  // note before it.
+  let n = -1
+  let left = false
+  let lastT = Number.NEGATIVE_INFINITY
+  return (sample, cents) => {
     if (sample.t < lastT) {
       n = -1
       left = false
@@ -118,23 +142,16 @@ export function worstMoment(trace: RunTrace): WorstMoment | null {
       n += 1
       left = false
     }
-    const cents = off(sample.f, target)
-    const note = n >= 0 ? notes[n] : undefined
-    if (note !== undefined) {
-      if (sample.t - note.t < ARRIVAL_SEC) continue
-      if (trace.selfPaced === true && !left) {
-        const stillOnLast =
-          note.last !== null &&
-          Math.abs(off(sample.f, note.last)) < Math.abs(cents)
-        if (stillOnLast) continue
-        left = true
-      }
-    }
-    if (worst === null || Math.abs(cents) > Math.abs(worst.cents)) {
-      worst = { t: sample.t, f: sample.f, target, cents }
-    }
+    if (n < 0) return true
+    const note = notes[n]
+    if (sample.t - note.t < ARRIVAL_SEC) return false
+    if (trace.selfPaced !== true || left) return true
+    const stillOnLast =
+      note.last !== null && Math.abs(off(sample.f, note.last)) < Math.abs(cents)
+    if (stillOnLast) return false
+    left = true
+    return true
   }
-  return worst
 }
 
 /** A note in the target's timeline: when it began, and the note before it. */

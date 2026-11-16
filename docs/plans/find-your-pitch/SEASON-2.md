@@ -926,7 +926,7 @@ and First Light does not step aside. Item 21 fixes it.
     `:363-374`). A run's choice is written to its result as `names`. (f) A note counts in any
     octave: the hold and the score fold the distance (`foldCents`,
     `use-sight-singing-controller.ts:272`, `:309`), the result's furthest-off moment too
-    (`RunTrace.folded`, `src/features/exercises/run-trace-view.ts:96-99`), and runs scored before are
+    (`RunTrace.folded`, `src/features/exercises/run-trace-view.ts:112-118`), and runs scored before are
     not compared with these (`src/features/exercises/exercise-comparability.ts:59-62`). (g) A `key`
     launch field, which Sight-Singing alone reads, its `scale` naming the scale
     (`slug-map.ts:45-54`; `launchKey`, `src/features/practice-intelligence/launch-override.ts:83`):
