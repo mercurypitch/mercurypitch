@@ -172,7 +172,7 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
     title: 'Export the song',
     targetSelector: '[data-tour="studio.export"]',
     description:
-      'Render a WAV of the whole song and check its loudness and peak measurements before downloading. Keep a Studio backup as well if you want to edit it later.',
+      'Render a WAV of the whole song and check its loudness and peak measurements before downloading, or save the notes of its MIDI clips as a MIDI file. Keep a Studio backup as well if you want to edit it later.',
     placement: 'bottom',
     whenPresent: true,
   },

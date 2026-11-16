@@ -1,4 +1,4 @@
-// Studio WAV panel — measured output is separate from its target and from the download action.
+// Studio export panel — the WAV, its measured output separate from its target and from the download action; then the MIDI file beside it.
 import { Show } from 'solid-js'
 import type { StudioExportStage } from '@/lib/studio/export/render-wav'
 import type { StudioProject } from '@/lib/studio/model/types'
@@ -6,6 +6,7 @@ import { StudioTakeHold } from '../record/StudioTakeHold'
 import common from '../StudioPage.module.css'
 import { runStudioPanelAction } from './action-focus'
 import styles from './StudioExport.module.css'
+import { StudioMidiExport } from './StudioMidiExport'
 import type { StudioExportController } from './useStudioExport'
 
 interface Props {
@@ -175,6 +176,7 @@ export function StudioExportPanel(props: Props) {
       <Show when={!result()}>
         <StudioTakeHold to="export the song" />
       </Show>
+      <StudioMidiExport project={props.project} />
     </div>
   )
 }

@@ -1,6 +1,12 @@
 // Studio WAV download ownership — object URLs retain a rendered result until they are released.
 import type { StudioWavExport } from '@/lib/studio/export/render-wav'
 
+/** A downloaded file's name from `title`: its letters, digits, spaces, dots, underscores and hyphens, at most 100, then `.extension`. */
+export function studioDownloadName(title: string, extension: string): string {
+  const name = title.replace(/[^\p{L}\p{N} ._-]/gu, '').slice(0, 100)
+  return `${name || 'Studio song'}.${extension}`
+}
+
 export function ownStudioExport(
   value: StudioWavExport,
   onRelease?: () => void,
@@ -38,7 +44,7 @@ export function ownStudioExport(
       )
       const anchor = document.createElement('a')
       anchor.href = url
-      anchor.download = `${title.replace(/[^\p{L}\p{N} ._-]/gu, '').slice(0, 100) || 'Studio song'}.wav`
+      anchor.download = studioDownloadName(title, 'wav')
       try {
         document.body.append(anchor)
         anchor.click()
