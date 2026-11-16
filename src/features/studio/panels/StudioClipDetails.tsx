@@ -85,7 +85,8 @@ export function StudioClipDetails(props: StudioClipDetailsProps) {
   return (
     <div class={styles.detailsFields}>
       <p class={styles.detailsName}>
-        {props.asset.originalName ?? 'Audio clip'}
+        {props.asset.originalName ??
+          (props.clip.midi === undefined ? 'Audio clip' : 'MIDI clip')}
       </p>
       <Show when={props.clip.midi !== undefined && props.onEditNotes}>
         {(edit) => (

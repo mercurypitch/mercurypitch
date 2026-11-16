@@ -375,14 +375,18 @@ export function createStudioMidiRenderService(
   /** Whether the song's own notes still want `key`: the notes did not change meanwhile. */
   const stillWanted = (key: string) => wants().byKey.get(key)?.kept === true
 
-  /** The name a render's audio is kept under: its first clip's, so the clip keeps its name. */
-  function titleOf(want: Want): string {
+  /**
+   * The name a render's audio is kept under: its first clip's, so the clip
+   * keeps its name. None when that clip's audio has none, as a clip drawn
+   * from scratch has not (new-midi-clips.ts): it goes on showing its lane's.
+   */
+  function titleOf(want: Want): string | undefined {
     const clip = options
       .project()
       ?.clips.find((each) => each.id === want.clipIds[0])
     const asset = options.assets().find((each) => each.id === clip?.assetId)
     const name = asset?.originalName?.replace(/\.[^.]+$/, '') ?? ''
-    return name === '' ? 'MIDI notes' : name
+    return name === '' ? undefined : name
   }
 
   async function keepOne(want: Want): Promise<void> {

@@ -66,6 +66,17 @@ function commandLabel(command: StudioCommand): string {
   const edits = command.commands.filter((edit) => edit.type !== 'add-sequence')
   if (edits.length === 1 && edits.length < command.commands.length)
     return commandLabel(edits[0])
+  return batchLabel(edits)
+}
+
+/** A batch of adds by what it adds: new MIDI clips on lanes of their own name the lanes (new-midi-clips.ts). */
+function batchLabel(edits: readonly StudioEdit[]): string {
+  const lanes = edits.filter((edit) => edit.type === 'add-track').length
+  const adds = (type: StudioEdit['type']) =>
+    edits.every((edit) => edit.type === type || edit.type === 'add-track')
+  if (lanes > 0 && adds('add-clip'))
+    return lanes === 1 ? 'add lane' : 'add lanes'
+  if (adds('add-clip')) return 'add clips'
   return edits.every((edit) => edit.type === 'add-audio')
     ? 'add takes'
     : 'edit arrangement'

@@ -7,6 +7,8 @@ import { studioMidiRenderKey } from '@/lib/studio/midi/render-key'
 import { studioFitPasses } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand, StudioEdit } from '@/lib/studio/model/commands'
 import { createStudioTrack } from '@/lib/studio/model/defaults'
+import type { StudioNewMidiClip } from '@/lib/studio/model/new-midi-clips'
+import { STUDIO_NEW_CLIP_SILENCE_FRAMES, studioNewMidiClips, } from '@/lib/studio/model/new-midi-clips'
 import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limits'
 import type { StudioAsset, StudioAssetData, StudioClipMidi, StudioClipPasses, StudioNote, StudioProject, } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
@@ -157,8 +159,8 @@ export interface StudioRenderImport {
   readonly samples: Float32Array
   /** What it was rendered from: every stale clip whose notes have this key now takes it. */
   readonly renderKey: string
-  /** The name its audio is kept under, which its clips show. */
-  readonly title: string
+  /** The name its audio is kept under, which its clips show; absent, it has none, and they show their lane's. */
+  readonly title?: string
   readonly signal?: AbortSignal
 }
 
@@ -350,6 +352,28 @@ export function createStudioImporter(options: ImportControllerOptions) {
     )
   }
 
+  /** Mono 48 kHz samples kept as a take recorded here is: a 16-bit WAV, prepared, named `title` when there is one. */
+  function prepareRecording(
+    samples: Float32Array,
+    title: string | undefined,
+    projectId: string,
+    signal: AbortSignal,
+  ): Promise<StudioAssetData> {
+    return (options.prepareFile ?? prepareStudioAsset)(
+      studioTakeWav(samples, STUDIO_SAMPLE_RATE),
+      {
+        id: options.createId(),
+        projectId,
+        ...(title !== undefined && { originalName: studioTakeFileName(title) }),
+        provenance: {
+          kind: 'recording',
+          importedAt: options.now().toISOString(),
+        },
+      },
+      { signal },
+    )
+  }
+
   /**
    * A MIDI render kept as its clips' audio: prepared as a recorded take,
    * checked against the song's room for audio, and swapped in by an
@@ -370,18 +394,11 @@ export function createStudioImporter(options: ImportControllerOptions) {
     active = abort
     try {
       checkImportCancelled(abort.signal)
-      const data = await (options.prepareFile ?? prepareStudioAsset)(
-        studioTakeWav(render.samples, STUDIO_SAMPLE_RATE),
-        {
-          id: options.createId(),
-          projectId: snapshot.id,
-          originalName: studioTakeFileName(render.title),
-          provenance: {
-            kind: 'recording',
-            importedAt: options.now().toISOString(),
-          },
-        },
-        { signal: abort.signal },
+      const data = await prepareRecording(
+        render.samples,
+        render.title,
+        snapshot.id,
+        abort.signal,
       )
       checkImportCancelled(abort.signal)
       if (!options.current(epoch) || !options.canEdit()) return false
@@ -412,6 +429,71 @@ export function createStudioImporter(options: ImportControllerOptions) {
       () => keepRender(render),
       () => epoch === options.epoch() && render.signal?.aborted !== true,
     )
+  }
+
+  /**
+   * New MIDI clips in one edit (new-midi-clips.ts): their audio, a quarter
+   * second of silence, kept as a take is and once for every clip, with no
+   * name, so each clip shows its lane's. Its refusal is said as an
+   * import's. The clips' ids once the song holds them; null when nothing
+   * was added.
+   */
+  async function midiClipsNow(
+    clips: readonly StudioNewMidiClip[],
+  ): Promise<readonly string[] | null> {
+    const snapshot = options.project()
+    if (!options.canEdit() || active !== null || !snapshot || !clips.length)
+      return null
+    const epoch = options.epoch()
+    const abort = new AbortController()
+    const retained = createRetainedStudioAudio()
+    active = abort
+    try {
+      const silence = new Float32Array(STUDIO_NEW_CLIP_SILENCE_FRAMES)
+      const data = await prepareRecording(
+        silence,
+        undefined,
+        snapshot.id,
+        abort.signal,
+      )
+      const project = options.project()
+      if (!project || !options.current(epoch) || !options.canEdit()) return null
+      const inUse = new Set(project.clips.map((clip) => clip.assetId))
+      const asset = retainNewAudio(data, options.assets(), inUse, retained)
+      const made = studioNewMidiClips(
+        project,
+        clips,
+        asset.id,
+        options.createId,
+      )
+      const prepared = retained.values()
+      retained.clear()
+      const committed = options.commit(made.command, prepared, options.report)
+      await options.flush()
+      return committed && options.current(epoch) ? made.clipIds : null
+    } catch (error) {
+      if (options.current(epoch) && !abort.signal.aborted) options.report(error)
+      return null
+    } finally {
+      retained.clear()
+      if (active === abort) active = null
+    }
+  }
+
+  /** New MIDI clips, as one undo step, in the imports' turn (midiClipsNow). */
+  async function addMidiClips(
+    clips: readonly StudioNewMidiClip[],
+  ): Promise<readonly string[] | null> {
+    const epoch = options.epoch()
+    let made: readonly string[] | null = null
+    await inTurn(
+      async () => {
+        made = await midiClipsNow(clips)
+        return made !== null
+      },
+      () => epoch === options.epoch(),
+    )
+    return made
   }
 
   async function importNow(
@@ -622,6 +704,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
   return {
     addFile,
     addFiles,
+    addMidiClips,
     addRecording,
     addRender,
     addTakes,
