@@ -906,7 +906,7 @@ and First Light does not step aside. Item 21 fixes it.
     do": do for a second, then do-mi-so-mi-do in the key, do at or under the line's first note and
     in the singer's range, and Merc says "Listen: do, then do, mi, so, mi, do, in G major." (minor
     keys sing me); the line itself is never played (`startNotes` and `startWords`,
-    `sight-line.ts:202-219`; `SightSingingExercise.tsx:196-206`, `:335-340`). (c) A bass or a
+    `sight-line.ts:202-219`; `SightSingingExercise.tsx:197-207`, `:336-341`). (c) A bass or a
     baritone opens on the bass staff and every other voice on the treble (`clefForRange`), a tenor
     reading it an octave over where he sings, as tenor parts are written; the setup's Clef picker
     changes it, remembered on the device (`SightSingingExercise.tsx:101-105`). A line goes on the
@@ -922,11 +922,11 @@ and First Light does not step aside. Item 21 fixes it.
     none gets a major key that holds its notes (`keyForPhrase`, `sight-key.ts:294-308`). (e) A Names
     picker: Letters, the default; "Do re mi", movable do with do-based minor and the chromatic
     syllables; and Off, which hides both the names under the notes and the hold bar's ("Hold the lit
-    note to continue"), the tracker keeping its own hide (`SightSingingExercise.tsx:304-310`,
-    `:362-373`). A run's choice is written to its result as `names`. (f) A note counts in any
+    note to continue"), the tracker keeping its own hide (`SightSingingExercise.tsx:305-311`,
+    `:363-374`). A run's choice is written to its result as `names`. (f) A note counts in any
     octave: the hold and the score fold the distance (`foldCents`,
     `use-sight-singing-controller.ts:272`, `:309`), the result's furthest-off moment too
-    (`RunTrace.folded`, `src/features/exercises/run-trace-view.ts:95`), and runs scored before are
+    (`RunTrace.folded`, `src/features/exercises/run-trace-view.ts:96-99`), and runs scored before are
     not compared with these (`src/features/exercises/exercise-comparability.ts:59-62`). (g) A `key`
     launch field, which Sight-Singing alone reads, its `scale` naming the scale
     (`slug-map.ts:45-54`; `launchKey`, `src/features/practice-intelligence/launch-override.ts:83`):
