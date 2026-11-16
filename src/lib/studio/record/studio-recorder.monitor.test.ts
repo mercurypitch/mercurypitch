@@ -229,6 +229,75 @@ describe("a lane's monitor rising", () => {
     })
     expect(scheduler.pendingCount).toBe(0)
   })
+
+  it("rises at once for a lane that joins an input another lane's monitor heard settle: it is flowing, with no onset left", async () => {
+    // Arrange
+    const input = oneInput(2, {
+      'lane-1': { channel: 0, pair: false },
+      'lane-2': { channel: 1, pair: false },
+    })
+    const { h, graph, scheduler } = monitored({ acquireMic: input.acquireMic })
+    await h.recorder.arm('lane-1')
+    hear(h, scheduler)
+
+    // Act
+    await h.recorder.arm('lane-2')
+
+    // Assert
+    const [, joined] = levelsOf(graph)
+    expect(joined.gain.lastWrite).toMatchObject({
+      kind: 'target',
+      value: 1,
+      timeConstant: 0.036,
+    })
+    expect(scheduler.pendingCount).toBe(0)
+  })
+
+  it('waits out its own settle when it joins an input still in its first moments', async () => {
+    // Arrange
+    const input = oneInput(2, {
+      'lane-1': { channel: 0, pair: false },
+      'lane-2': { channel: 1, pair: false },
+    })
+    const { h, graph, scheduler } = monitored({ acquireMic: input.acquireMic })
+    await h.recorder.arm('lane-1')
+    h.worklet.level(0.3, 1536)
+    scheduler.advance(100)
+
+    // Act
+    await h.recorder.arm('lane-2')
+    h.worklet.level(0.3, 6336)
+
+    // Assert
+    const [first, joined] = levelsOf(graph)
+    expect(joined.gain.lastWrite).toBeUndefined()
+    scheduler.advance(SETTLE_MS - 100)
+    expect(first.gain.lastWrite).toMatchObject({ kind: 'target', value: 1 })
+    expect(joined.gain.lastWrite).toBeUndefined()
+    scheduler.advance(100)
+    expect(joined.gain.lastWrite).toMatchObject({ kind: 'target', value: 1 })
+  })
+
+  it('waits out the settle again on an input opened afresh, once the lanes on the last one have all gone', async () => {
+    // Arrange
+    const input = oneInput(undefined)
+    const { h, graph, scheduler } = monitored({ acquireMic: input.acquireMic })
+    await h.recorder.arm('lane-1')
+    hear(h, scheduler)
+    h.recorder.disarm()
+    scheduler.advance(RELEASED_MS)
+
+    // Act
+    await h.recorder.arm('lane-1')
+
+    // Assert
+    expect(input.releases[0]).toHaveBeenCalledOnce()
+    const [again] = levelsOf(graph)
+    expect(again.gain.lastWrite).toBeUndefined()
+    h.worklet.level(0.3, 1536)
+    scheduler.advance(SETTLE_MS)
+    expect(again.gain.lastWrite).toMatchObject({ kind: 'target', value: 1 })
+  })
 })
 
 describe('a lane disarmed while its monitor is heard', () => {
@@ -425,7 +494,7 @@ describe('a lane disarmed while its monitor is heard', () => {
     expect(mic.getScopedHold()).not.toBeNull()
   })
 
-  it('rises a re-arm inside the release once its own input has settled, while the lane before it still closes late', async () => {
+  it('rises a re-arm inside the release at once on the input still flowing, while the lane before it glides out and closes late', async () => {
     // Arrange
     const input = oneInput(undefined)
     const { h, graph, scheduler } = monitored({ acquireMic: input.acquireMic })
@@ -438,20 +507,41 @@ describe('a lane disarmed while its monitor is heard', () => {
     // Act
     expect(await h.recorder.arm('lane-1')).toBe(true)
     const [, second] = levelsOf(graph)
-    // The input sounds on: the re-arm's capture meters it at once.
-    h.worklet.level(0.3, 1536)
+    const atArm = second.gain.lastWrite
     scheduler.advance(RELEASED_MS - 100)
-    const atRelease = second.gain.destination
 
     // Assert
+    expect(atArm).toMatchObject({ kind: 'target', value: 1 })
+    expect(first.gain.lastWrite).toMatchObject({ kind: 'target', value: 0 })
     expect(input.releases[0]).toHaveBeenCalledOnce()
     expect(levelsOf(graph)).toEqual([second])
-    expect(atRelease).toBe(0)
-    scheduler.advance(SETTLE_MS - (RELEASED_MS - 100))
-    expect(second.gain.lastWrite).toMatchObject({ kind: 'target', value: 1 })
-    expect(first.gain.lastWrite).toMatchObject({ kind: 'target', value: 0 })
     expect(input.releases[1]).not.toHaveBeenCalled()
     expect(disconnectedWhole(h.source)).toBe(false)
+    expect(scheduler.pendingCount).toBe(0)
+  })
+
+  it('rises a lane re-armed on another channel of its live input at once, its new channel off the same split', async () => {
+    // Arrange: the lane's channel changes while it is heard.
+    const picks: Record<string, ChannelPick> = {
+      'lane-1': { channel: 0, pair: false },
+    }
+    const input = oneInput(2, picks)
+    const { h, graph, scheduler } = monitored({ acquireMic: input.acquireMic })
+    await h.recorder.arm('lane-1')
+    hear(h, scheduler)
+    h.recorder.disarm()
+    picks['lane-1'] = { channel: 1, pair: false }
+
+    // Act
+    expect(await h.recorder.arm('lane-1')).toBe(true)
+
+    // Assert
+    const [splitter] = h.splitters
+    const [, second] = levelsOf(graph)
+    expect(h.splitters).toHaveLength(1)
+    expect(splitter.edges.map(([, output]) => output)).toEqual([0, 1])
+    expect(second.gain.lastWrite).toMatchObject({ kind: 'target', value: 1 })
+    expect(scheduler.pendingCount).toBe(1)
   })
 
   it('still lets its input go once the Studio closes inside the glide', async () => {

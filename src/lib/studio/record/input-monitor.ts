@@ -46,7 +46,11 @@
 // first rise only: once up, the input plays straight through, no later than
 // before. An instrument the page plays has none of a microphone's first
 // moments, and its player expects to hear the first note: its monitor
-// rises at once (`settled`).
+// rises at once (`settled`). Nor has a microphone source another lane's
+// monitor heard settle: a lane that joins it while it flows (a second lane,
+// a re-arm inside the release, another channel of it) rises at once too,
+// and the monitor says when its input has settled (`onSettled`) so the
+// source knows it flows (armed-input.ts).
 import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
@@ -77,8 +81,10 @@ export interface StudioMonitorSound {
 export interface StudioInputMonitorOptions {
   /** Timer for taking a released path apart and for the input's settling; injectable for tests. */
   readonly schedule?: (callback: () => void, delayMs: number) => () => void
-  /** The input plays cleanly from its first sample, as an instrument the page plays does: a heard path rises at once. */
+  /** The input plays cleanly from here on, as an instrument the page plays does, or a source already flowing: a heard path rises at once. */
   readonly settled?: boolean
+  /** Told once the input has settled, so lanes that join its source after this rise at once. */
+  readonly onSettled?: () => void
 }
 
 /** The input through its lane: folded, spread, the chain, the faders, and the level that rises and releases. */
@@ -151,6 +157,7 @@ export function createStudioInputMonitor(
     stopWaiting()
     stopSettling?.()
     stopSettling = null
+    options.onSettled?.()
     if (path !== null && cancelRemoval === null) rise(path)
   }
 

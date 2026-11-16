@@ -1,7 +1,8 @@
-// Studio monitoring, armed and disarmed — the output never steps more steeply than the tone it monitors: an arm with monitoring on rises once the input has settled, a disarm glides the tone out on the house release and the microphone closes after it, and a re-arm inside that release crosses over on its own microphone and monitor.
+// Studio monitoring, armed and disarmed — the output never steps more steeply than the tone it monitors: an arm with monitoring on rises once the input has settled, a second lane armed on the microphone another lane holds is heard at once, a disarm glides the tone out on the house release and the microphone closes after it, and a re-arm inside that release is heard at once beside the arm gliding out, on its own hold of the microphone.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
-import { captureOutput, captureStudioOutput, clearClicks, readClicks, type StudioClickStamp, untilAudioClock, } from './helpers/studio-output-capture'
+import { aroundPress, firstRise, JOINED_WITHIN_SECONDS, peak, periodEnvelope, steepest, steepestStep, } from './helpers/studio-monitor-steps'
+import { captureOutput, captureStudioOutput, clearClicks, importWav, noiseWav, readClicks, untilAudioClock, } from './helpers/studio-output-capture'
 import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
 
 /**
@@ -9,6 +10,14 @@ import { fakeMicArgs, writeToneWav } from './helpers/tone-wav'
  * seconds of it, more than the test hears: Chromium loops the file.
  */
 const MIC_WAV = writeToneWav(110, 10)
+/** One period of the tone, in frames. */
+const PERIOD = Math.round(48_000 / 110)
+/**
+ * How far into the first arm's release the re-arm is pressed: past a render
+ * quantum, so the release has fallen where the re-arm rises, and well inside
+ * the 240 ms the first arm's input stays open.
+ */
+const REARM_AFTER_SECONDS = 0.04
 /**
  * How far under the tone's peak the output must be where the monitor comes
  * apart: 40 dB, which the house release (CONVENTIONS.md 5b, a 36 ms time
@@ -48,35 +57,15 @@ async function monitor(page: Page): Promise<number> {
   return change.contextTime
 }
 
-/** The largest change from one sample to the next, and the sample it lands on. */
-function steepestStep(samples: Float32Array): { step: number; index: number } {
-  let step = 0
-  let index = 0
-  for (let i = 1; i < samples.length; i++) {
-    const change = Math.abs(samples[i] - samples[i - 1])
-    if (change > step) {
-      step = change
-      index = i
-    }
-  }
-  return { step, index }
-}
-
-/** The largest change from one sample to the next. */
-function steepest(samples: Float32Array): number {
-  return steepestStep(samples).step
-}
-
-function peak(samples: Float32Array): number {
-  let most = 0
-  for (const sample of samples) most = Math.max(most, Math.abs(sample))
-  return most
-}
-
-/** Arm Phrase with monitoring on, and wait for its reverb to fill. */
-async function armHeard(page: Page): Promise<void> {
+/** Arm Phrase with monitoring on, and wait for its reverb to fill; `lanes` are imported first, each a lane of Phrase's role. */
+async function armHeard(
+  page: Page,
+  lanes: readonly string[] = [],
+): Promise<void> {
   await captureStudioOutput(page)
   await openArrangement(page)
+  for (const [index, lane] of lanes.entries())
+    await importWav(page, lane, noiseWav(2, 0.1, 5 + index))
   await armButton(page, 'Phrase').click()
   await expect(recordButton(page)).toHaveAttribute('data-phase', 'armed', {
     timeout: 15_000,
@@ -84,24 +73,6 @@ async function armHeard(page: Page): Promise<void> {
   const onAt = await monitor(page)
   await untilAudioClock(page, onAt + 2)
   expect(await holds(page)).toContain('studio-record')
-}
-
-/**
- * The output up to `seconds` past `press`, the tone as it played until 20 ms
- * before the press, and where a time from the press falls in the output.
- */
-async function aroundPress(
-  page: Page,
-  press: StudioClickStamp,
-  seconds: number,
-) {
-  await untilAudioClock(page, press.contextTime + seconds)
-  const { samples, startFrame, sampleRate } = await captureOutput(page)
-  const at = (from: number) =>
-    Math.round((press.contextTime + from) * sampleRate) - startFrame
-  // A capture taken late starts after the press, and measures nothing of it.
-  expect(at(-0.02)).toBeGreaterThan(0)
-  return { samples, heard: samples.subarray(0, at(-0.02)), at }
 }
 
 test.describe('Studio monitoring, disarmed', () => {
@@ -146,30 +117,46 @@ test.describe('Studio monitoring, disarmed', () => {
     await expect.poll(() => holds(page)).not.toContain('studio-record')
   })
 
-  test("a re-arm inside the release keeps its own microphone and monitor through the first arm's late close", async ({
+  test("a re-arm inside the release is heard at once as the first arm glides out, and keeps its own microphone and monitor through the first arm's late close", async ({
     page,
   }) => {
     test.setTimeout(120_000)
     await armHeard(page)
 
     await clearClicks(page)
-    // Disarm and arm again at once: the second press lands in the first's
-    // release, and that arm's input closes after the second has opened.
-    await armButton(page, 'Phrase').dblclick()
+    // Disarm, and arm again once the release is under way: the second press
+    // lands in the first's release, and that arm's input closes after the
+    // second has opened. Pressed together, the two monitors cross in one
+    // render quantum, and the output holds level wherever the re-arm rises.
+    await armButton(page, 'Phrase').click()
+    const [disarmed] = (await readClicks(page)).filter(
+      ({ kind }) => kind === 'up',
+    )
+    await untilAudioClock(page, disarmed.contextTime + REARM_AFTER_SECONDS)
+    await armButton(page, 'Phrase').click()
     await expect(recordButton(page)).toHaveAttribute('data-phase', 'armed', {
       timeout: 15_000,
     })
-    const [disarmed, rearmed] = (await readClicks(page)).filter(
+    const [, rearmed] = (await readClicks(page)).filter(
       ({ kind }) => kind === 'up',
     )
     expect(rearmed.contextTime - disarmed.contextTime).toBeLessThan(0.24)
     // Well past the first arm's close, a quarter of a second after the press.
     const { samples, heard, at } = await aroundPress(page, disarmed, 0.6)
     const steady = steepest(heard)
-    // The first arm's release and the second arm's rise, on its own input.
+    // The first arm's release and the second arm's rise, on the same input.
     const crossing = steepestStep(samples.subarray(at(-0.02)))
     const crossed = crossing.step
     const playing = peak(samples.subarray(at(0.45)))
+    // The output falls on the first arm's release until the second arm's
+    // rise overtakes it: it is lowest where the second arm is first heard.
+    // One that waited for its input to settle left a silence after the first
+    // arm came apart, and rose a quarter of a second on.
+    const lowest = periodEnvelope(samples, at(-0.02), PERIOD).reduce(
+      (low, reading) => (reading.value <= low.value ? reading : low),
+    )
+    const rearmAt = at(rearmed.contextTime - disarmed.contextTime)
+    const heardAfter = (lowest.frame - rearmAt) / 48_000
     console.log(
       `[studio-record-monitor-disarm] ${JSON.stringify({
         rearmedAfter: rearmed.contextTime - disarmed.contextTime,
@@ -177,14 +164,17 @@ test.describe('Studio monitoring, disarmed', () => {
         steady,
         crossed,
         crossedAfter: (at(-0.02) + crossing.index - at(0)) / 48_000,
+        heardAfter,
+        dippedTo: lowest.value / peak(heard),
         playing,
       })}`,
     )
     expect(steady).toBeGreaterThan(1e-3)
-    // The second arm's input starts mid-waveform, and its buffer runs dry
-    // just after: a monitor already rising then steps by up to the tone's
-    // height.
+    // A rise begun before the input's samples flowed would step by up to the
+    // tone's height where they arrive.
     expect(crossed).toBeLessThanOrEqual(steady * 1.1)
+    // The input flows already: the re-arm rises at once, not a settle later.
+    expect(heardAfter).toBeLessThan(JOINED_WITHIN_SECONDS)
     // The second arm's source and microphone outlast the first arm's close:
     // its monitor plays on, and the Studio still holds the microphone.
     expect(playing).toBeGreaterThan(peak(heard) * 0.5)
@@ -248,9 +238,56 @@ test.describe('Studio monitoring, armed', () => {
     // runs dry just after: a monitor already rising then steps by up to the
     // tone's height.
     expect(onset.step).toBeLessThanOrEqual(steady * 1.1)
+    // A cold arm waits for its new input to settle, a quarter of a second
+    // past its first sound.
+    expect((first - at(0)) / 48_000).toBeGreaterThan(0.25)
     // Up a quarter of a second after the input's first sound, long before
     // the one-second wait for it runs out.
     expect(risen).toBeGreaterThan(peak(settled) * 0.5)
+  })
+
+  test("a second lane armed on the microphone another armed lane holds is heard at once, no step steeper than the tone's own", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    await armHeard(page, ['Second'])
+
+    await clearClicks(page)
+    await armButton(page, 'Second').click()
+    await expect(armButton(page, 'Second')).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+    const [joined] = (await readClicks(page)).filter(
+      ({ kind }) => kind === 'up',
+    )
+    // A fifth of a second of Phrase alone before the press, and the join.
+    const { samples, heard, at } = await aroundPress(page, joined, 0.45)
+    const alone = peak(heard)
+    const first = firstRise(samples, at(-0.02), PERIOD, alone)
+    const rise = steepestStep(samples.subarray(at(-0.02)))
+    // Both lanes as they play on once the second lane's reverb has filled.
+    await untilAudioClock(page, joined.contextTime + 2.5)
+    const both = (await captureOutput(page)).samples
+    const steady = steepest(both)
+    const heardAfter = first === null ? null : (first - at(0)) / 48_000
+    console.log(
+      `[studio-record-monitor-join] ${JSON.stringify({
+        alonePeak: alone,
+        bothPeak: peak(both),
+        steady,
+        rise: rise.step,
+        riseAfter: (at(-0.02) + rise.index - at(0)) / 48_000,
+        heardAfter,
+      })}`,
+    )
+    expect(steady).toBeGreaterThan(1e-3)
+    expect(peak(both)).toBeGreaterThan(alone * 1.5)
+    // The input flows already: the second lane rises from silence at once,
+    // smoothly, and adds nothing steeper than the two lanes' own tone.
+    expect(rise.step).toBeLessThanOrEqual(steady * 1.1)
+    expect(heardAfter).not.toBeNull()
+    expect(heardAfter).toBeLessThan(JOINED_WITHIN_SECONDS)
   })
 })
 

@@ -12,14 +12,16 @@
 // own, through its lane's effects and faders (input-monitor.ts): a lane is
 // heard once, and lanes armed on one input are heard together, as a DAW
 // sums its armed tracks. A lane's monitor rises a quarter of a second after
-// its capture first meters a sound, past a new microphone's first moments,
-// and an instrument's at once. Disarming one lane leaves the others armed; a
-// lane disarmed before its input opened lets that input go as it arrives,
-// and one disarmed while its monitor is heard keeps its input until the
-// monitor has glided out on it, a quarter of a second, so the singer hears
-// a release, not a cut; disarmed before its monitor rose, it was not heard,
-// and lets its input go at once. An instrument goes at once, its port free
-// for the next lane. The click track is the clock's, shared by every lane.
+// its capture first meters a sound, past a new microphone's first moments;
+// an instrument's rises at once, and so does that of a lane joining a
+// microphone already flowing (armed-input.ts). Disarming one lane leaves the
+// others armed; a lane disarmed before its input opened lets that input go
+// as it arrives, and one disarmed while its monitor is heard keeps its input
+// until the monitor has glided out on it, a quarter of a second, so the
+// singer hears a release, not a cut; disarmed before its monitor rose, it
+// was not heard, and lets its input go at once. An instrument goes at once,
+// its port free for the next lane. The click track is the clock's, shared by
+// every lane.
 import type { StudioArmedInput } from './armed-input'
 import { createStudioArmedInputs } from './armed-input'
 import type { StudioCaptureEvents, StudioCaptureHandle } from './capture-node'
@@ -142,9 +144,13 @@ export function createStudioLaneArms(options: StudioLaneArmsOptions) {
     lane.arming = false
     lane.level = 0
     listen(lane, clock.context, input)
-    // An instrument the page plays sounds cleanly from its first note.
+    // An instrument the page plays sounds cleanly from its first note, and a
+    // microphone source a lane's monitor heard settle has no onset left: a
+    // lane on either rises at once. Settled here, the source is flowing for
+    // the lanes that join it after.
     lane.monitor = deps.createMonitor(clock.context, input.node, {
-      settled: input.stream === null,
+      settled: input.flowing,
+      onSettled: () => input.settled(),
     })
     lane.monitor.set(deps.monitorSound(lane.trackId))
     if (input.opened !== null)
