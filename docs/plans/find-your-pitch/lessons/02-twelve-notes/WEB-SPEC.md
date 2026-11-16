@@ -483,7 +483,7 @@ the buttons and the reveal carry the moment.
   (the drill's `choices` count sets the floor and "must match what the UI actually renders",
   `src/lib/ear/drills.ts:58-60`, `:233-237`); and it passes `updateItem: false`, so the items'
   calibration stays as it is. The controller already supports this through `RunTrack`
-  (`src/features/ear-lab/use-identification-controller.ts:59-63`), the way Echo's sung answers rate
+  (`src/features/ear-lab/use-identification-controller.ts:65-69`), the way Echo's sung answers rate
   under `echo-sing` (`src/features/ear-lab/EchoDrill.tsx:136-142`; FACTS 34a). The launch should
   also carry `?lesson=02` so First Light steps aside (CURRICULUM § 4 item 6).
 - When it ships, the Wrap, the footer, the explorer card and the YouTube description switch to the

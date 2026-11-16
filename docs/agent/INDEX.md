@@ -77,9 +77,9 @@ These are the rules that break things when ignored.
 | `lessons` | [staff-draw.ts](../../src/features/lessons/kit/staff-draw.ts) | 124.5k | Staff drawing — staves, clefs, notes and the pitch line, engraved as SVG The staff toy's picture (staff.ts; Lesson 15's WEB-SPEC, Toys 1... |
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
 | `studio` | [StudioTimeline.tsx](../../src/features/studio/timeline/StudioTimeline.tsx) | 34.6k | Studio timeline — one aligned scroll surface for real audio clips, track headers and silent seeking. |
+| `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 32.5k | The room's lit instruments, by the name each web instrument exports itself under (instrument-skin.ts). |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
-| `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 32.2k | The room's lit instruments, by the name each web instrument exports itself under (instrument-skin.ts). |
-| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 22.8k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
+| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 22.9k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 19.0k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 15.5k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.3k | Hear Yourself History — local listening desk for kept performance takes |
@@ -154,8 +154,8 @@ These are the rules that break things when ignored.
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.9k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
 | `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 6.1k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
 | `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 5.3k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
+| `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.7k | Ear Lab — identification item banks (Leap, Stack, Contour). |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |
-| `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.5k | Ear Lab — identification item banks (Leap, Stack, Contour). |
 | `tv-stage` | [lane-paint.ts](../../src/lib/tv-stage/lane-paint.ts) | 4.1k | TV stage lane paint — the lane's glass, as sprites What the lane is made of, painted once per screen size (sprites.ts): the glass panel t... |
 | `backgrounds` | [background-catalog.ts](../../src/lib/backgrounds/background-catalog.ts) | 3.3k | Background catalog — one typed registry for every performance environment Supporter sources are opaque protected keys, never public asset... |
 | `mirror` | [metrics.ts](../../src/lib/mirror/metrics.ts) | 2.6k | Voice Mirror — pure metrics over F0 frame streams. |
@@ -234,7 +234,7 @@ These are the rules that break things when ignored.
 | [drive-sync-store.ts](../../src/stores/drive-sync-store.ts) | 850 | ── Drive sync store The user's own Google Drive as the place a library survives. |
 | [settings-store.ts](../../src/stores/settings-store.ts) | 850 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
 | [ear-lab-store.ts](../../src/stores/ear-lab-store.ts) | 700 | Ear Lab store — readings, ratings and calibration history. |
-| [ui-store.ts](../../src/stores/ui-store.ts) | 650 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
+| [ui-store.ts](../../src/stores/ui-store.ts) | 700 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [native-shell-store.ts](../../src/stores/native-shell-store.ts) | 600 | Native shell bridge — how a room and the native chrome reach each other The native shell (`apps/mercurypitch/src/shell/`) draws the botto... |
 | [notifications-store.ts](../../src/stores/notifications-store.ts) | 600 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 550 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
@@ -302,8 +302,8 @@ These are the rules that break things when ignored.
 | [HomePage.tsx](../../src/pages/HomePage.tsx) | 700 | HomePage — the "today" landing surface One obvious next step: your streak (with forgiveness), today's generated 5–15 min session, this we... |
 | [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 400 | Route-neutral facade over the App-owned falling-notes runtime. |
 | [PathPage.tsx](../../src/pages/PathPage.tsx) | 350 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
+| [EarLabPage.tsx](../../src/pages/EarLabPage.tsx) | 300 | EarLabPage — the Ear Lab tab: the Regulator Room around the bench and every drill stage. |
 | [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 300 | The web's frame for an exercise room, in the web build alone. |
-| [EarLabPage.tsx](../../src/pages/EarLabPage.tsx) | 250 | EarLabPage — the Ear Lab tab: the Regulator Room around the bench and every drill stage. |
 | [HomePlanCardMount.tsx](../../src/pages/HomePlanCardMount.tsx) | 150 | HomePlanCardMount — how Home reaches its "Your plan" card, and what Home does for it "Your plan" is the first week's card (src/features/p... |
 | [HomeCheckupCardMount.tsx](../../src/pages/HomeCheckupCardMount.tsx) | 100 | HomeCheckupCardMount — how Home reaches its weekly Check-up card The card (src/features/check-up/HomeCheckupCard) opens the Voice Mirror,... |
 | [LabPage.tsx](../../src/pages/LabPage.tsx) | 100 | Keep the real-mouse Lab specs runnable without putting a supporter token in CI. |

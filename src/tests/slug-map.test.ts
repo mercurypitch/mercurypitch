@@ -5,6 +5,7 @@
 // matcher and the slug → launch-intent registry the about-landing relies on.
 
 import { describe, expect, it } from 'vitest'
+import { VIEW_FOR_DRILL } from '@/features/ear-lab/drill-views'
 import { typesFor } from '@/features/exercises/cadence/cadence-rounds'
 import { CHORD_SETS, isChordStackerChord, } from '@/features/exercises/chord-stacker/chord-stacker-chords'
 import { isDroneTuning } from '@/features/exercises/drone-intonation/drone-tuning'
@@ -12,11 +13,13 @@ import { droneIntervalLabel } from '@/features/exercises/drone-intonation/use-dr
 import { isWebRoom } from '@/features/exercises/rooms/web-room-ids'
 import { SCALE_RUNNER_SCALES } from '@/features/exercises/scale-runner/scale-runner-scales'
 import { hintLine } from '@/features/exercises/sing-in-time/in-time-words'
-import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
+import type { ExerciseLaunch } from '@/features/exercises/slug-map'
+import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, slugLaunchConfig, } from '@/features/exercises/slug-map'
 import { EXERCISE_CADENCE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
 import { difficultyLabel } from '@/features/practice-intelligence/adaptive-difficulty'
 import { clearLaunchOverride, launchIntervals, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
+import { resolveEarSubset } from '@/lib/ear/subsets'
 import { noteToMidi } from '@/lib/frequency-to-note'
 import { fitPhraseToRange, fitScaleBaseNote, getComfortableMidiRange, } from '@/lib/vocal-range'
 import type { VocalRangePreset } from '@/stores/settings-store'
@@ -246,6 +249,73 @@ describe('EXERCISE_SLUGS', () => {
     )
   })
 
+  it("opens the Ear Lab's drills on Season 2's five sets", () => {
+    const sets = [
+      'quarters-halves-and-eighths',
+      'three-four-or-six-eight',
+      'perfect-or-tritone',
+      'te-or-ti',
+      'major-or-dominant-seventh',
+    ].map((slug) => EXERCISE_SLUGS[slug])
+
+    expect(sets).toEqual([
+      {
+        kind: 'ear-drill',
+        drill: 'chart',
+        items: [
+          'c-q3',
+          'c-q4',
+          'c-q-rest',
+          'c-e-and',
+          'c-e-one',
+          'c-e-off',
+          'c-e-run',
+          'c-e-across',
+        ],
+      },
+      {
+        kind: 'ear-drill',
+        drill: 'subdivide',
+        items: ['metre:3-4:a', 'metre:3-4:b', 'metre:6-8:a', 'metre:6-8:b'],
+      },
+      {
+        kind: 'ear-drill',
+        drill: 'leap',
+        items: ['leap:P4', 'leap:TT', 'leap:P5', 'leap:P8'],
+      },
+      {
+        kind: 'ear-drill',
+        drill: 'gravity',
+        items: ['gravity:deg-11', 'gravity:deg-12'],
+      },
+      {
+        kind: 'ear-drill',
+        drill: 'stack',
+        items: ['stack:maj', 'stack:dom7'],
+      },
+    ])
+  })
+
+  it('names for every ear-drill slug a drill the Ear Lab opens, and a set of it whole', () => {
+    // A drill with no view would land on the bench, and an item its bank
+    // lacks would open the drill whole: either would lose the set silently.
+    const ear = Object.entries(EXERCISE_SLUGS).flatMap(([slug, launch]) =>
+      launch.kind === 'ear-drill' ? [{ slug, launch }] : [],
+    )
+
+    const lost = ear.filter(({ launch }) => {
+      const subset = resolveEarSubset(launch.drill, launch.items)
+      return (
+        VIEW_FOR_DRILL[launch.drill] === undefined ||
+        subset === null ||
+        subset.itemIds.length !== launch.items?.length
+      )
+    })
+
+    expect(ear).toHaveLength(5)
+    expect(lost).toEqual([])
+  })
+
   it('keys are lowercase kebab-case', () => {
     for (const slug of Object.keys(EXERCISE_SLUGS)) {
       expect(slug).toMatch(/^[a-z0-9-]+$/)
@@ -261,6 +331,8 @@ describe('EXERCISE_SLUGS', () => {
         if (launch.notes !== undefined) {
           expect(launch.notes.length).toBeGreaterThan(0)
         }
+      } else if (launch.kind === 'ear-drill') {
+        expect(typeof launch.drill).toBe('string')
       } else {
         expect(launch.kind).toBe('tab')
         expect(typeof launch.tab).toBe('string')
@@ -366,5 +438,74 @@ describe('EXERCISE_SLUGS', () => {
     expect(EXERCISE_SLUGS['does-not-exist']).toBeUndefined()
     // Prototype keys must not leak through as launch intents.
     expect(Object.hasOwn(EXERCISE_SLUGS, 'constructor')).toBe(false)
+  })
+})
+
+describe("a slug launch's override", () => {
+  it('names the drill and only what the launch names', () => {
+    expect(
+      slugLaunchConfig(
+        {
+          kind: 'exercise',
+          exercise: EXERCISE_CHORD_STACKER,
+          chords: ['major', 'minor'],
+          inversions: false,
+        },
+        undefined,
+      ),
+    ).toEqual({
+      type: EXERCISE_CHORD_STACKER,
+      chords: ['major', 'minor'],
+      inversions: false,
+    })
+    expect(
+      slugLaunchConfig(
+        { kind: 'exercise', exercise: EXERCISE_SING_IN_TIME, difficulty: 5 },
+        undefined,
+      ),
+    ).toEqual({ type: EXERCISE_SING_IN_TIME, difficulty: 5 })
+  })
+
+  it('starts on the first of the notes it is handed, and keeps them all', () => {
+    const launch: ExerciseLaunch = {
+      kind: 'exercise',
+      exercise: EXERCISE_INTERVAL_TRAINER,
+      notes: ['C4', 'C5'],
+    }
+
+    expect(slugLaunchConfig(launch, ['A3', 'A4'])).toEqual({
+      type: EXERCISE_INTERVAL_TRAINER,
+      targetNote: 'A3',
+      targetNotes: ['A3', 'A4'],
+    })
+    // No notes, or none that fit: the drill keeps its own start note.
+    expect(slugLaunchConfig(launch, [])).toEqual({
+      type: EXERCISE_INTERVAL_TRAINER,
+    })
+    expect(slugLaunchConfig(launch, undefined)).toEqual({
+      type: EXERCISE_INTERVAL_TRAINER,
+    })
+  })
+
+  it('carries every field a registry launch names, for every exercise slug', () => {
+    const FIELDS = [
+      'difficulty',
+      'intervals',
+      'scale',
+      'chords',
+      'inversions',
+      'tuning',
+    ] as const
+    for (const [slug, launch] of Object.entries(EXERCISE_SLUGS)) {
+      if (launch.kind !== 'exercise') continue
+      const config = slugLaunchConfig(launch, undefined)
+      expect(config.type, slug).toBe(launch.exercise)
+      for (const field of FIELDS) {
+        expect(config[field], `${slug}: ${field}`).toEqual(launch[field])
+        expect(field in config, `${slug}: ${field}`).toBe(
+          launch[field] !== undefined,
+        )
+      }
+    }
   })
 })

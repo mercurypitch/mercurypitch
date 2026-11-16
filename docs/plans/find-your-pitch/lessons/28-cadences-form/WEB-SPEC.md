@@ -50,7 +50,7 @@ module in `src/features/lessons/lesson-28/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season builds Lessons 24, 26 and 28
 last, with one coach batch for all three (SEASON-2 § 8.2 item 7,
-`docs/plans/find-your-pitch/SEASON-2.md:1362-1363`).
+`docs/plans/find-your-pitch/SEASON-2.md:1380-1381`).
 
 ## Look
 
@@ -621,7 +621,7 @@ stills when WebGL fails.
   shared entries: it needs two singers in a room, its parts are the room's tune moved up a third or
   a fifth in the key, not a written part, and its card is Lesson 26's, whose two app items have
   shipped (FACTS 74; SEASON-2 § 5.1, row 28,
-  `docs/plans/find-your-pitch/SEASON-2.md:845` at `85ccd03dd`).
+  `docs/plans/find-your-pitch/SEASON-2.md:848` at `85ccd03dd`).
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
   Lesson 14's rest line, headed "Rest today", and is no longer a link, naming Karaoke Night; the
   second drill stays (`mountPractiseCard`, `src/features/lessons/kit/comfort.ts:126-149`).
@@ -629,12 +629,12 @@ stills when WebGL fails.
   widens the marker, and until then the quiz's answers are refused whole; the page is not built
   before that (FACTS 75).
 - **Shipped on 15 November 2026: the cadence-type ear drill** (SEASON-2 § 5.2 item 19,
-  `docs/plans/find-your-pitch/SEASON-2.md:1023-1034`), as Name the Cadence, a drill in the Exercises
+  `docs/plans/find-your-pitch/SEASON-2.md:1041-1052`), as Name the Cadence, a drill in the Exercises
   tab (`src/features/exercises/cadence/`): the key's own chord, then an ending's two chords, and
   the names perfect, imperfect, plagal and interrupted to choose from. Still needed: its slug, and
   this page's card, where it takes the second drill's place and says what it plays and asks.
 - **Needed: the harmony-line drill** (SEASON-2 § 5.2 item 17,
-  `docs/plans/find-your-pitch/SEASON-2.md:989-991`), the app's work, which Lesson 26's card takes
+  `docs/plans/find-your-pitch/SEASON-2.md:1007-1009`), the app's work, which Lesson 26's card takes
   first when it ships; this page's card can add it then, as a drill for singing a part alone. The
   native app's Harmony room is not linked: it sings short lines a third apart, not a written part,
   and no web page can open it (SEASON-2 § 7 item 14; FACTS 74).

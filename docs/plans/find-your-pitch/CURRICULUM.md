@@ -482,9 +482,10 @@ lesson is marked done.
 The app can open these today: `/mirror`, `/vocal-range-test`, `/voice-type-test`,
 `/which-singer-has-my-vocal-range`, `/free-sing`, `/pitch-training`, `/ear-lab`, `/drum-night`,
 `/piano-night`, `/karaoke-night`, tab hashes (`#/exercises`, `#/path`, `#/singing`,
-`#/learn/<chapterId>`), and sixteen exercise slugs (`/exercises/speed-scales`,
-`/exercises/leap-ladder`, `/exercises/thirds-on-a-drone`, eleven for Season 2's lessons (SEASON-2
-§ 5.2 items 9, 11, 13 and 15 to 19) and two that open tabs). `/exercises/perfect-octave` also opens, but it only sets Interval Trainer's
+`#/learn/<chapterId>`), and twenty-one exercise slugs (`/exercises/speed-scales`,
+`/exercises/leap-ladder`, `/exercises/thirds-on-a-drone`, sixteen for Season 2's lessons (SEASON-2
+§ 5.2 items 9, 11 to 13 and 15 to 19), five of them opening an Ear Lab drill on a lesson's set,
+and two that open tabs). `/exercises/perfect-octave` also opens, but it only sets Interval Trainer's
 start note, so it does not drill an octave yet (item 3).
 
 Data alone is not enough. A slug launch carries `exercise`, `notes`, `scaleId`, `difficulty`,
@@ -515,8 +516,8 @@ tests, estimated as such:
    (SEASON-2 § 5.2 item 18), with the diminished and the augmented triads and inversions. The
    `chords` launch field names a run's chords, and `/exercises/triads` opens the four triads in
    root position; Lesson 12's major and minor alone would be one more registry line.
-5. New launch kinds: `ear-drill` (accepting a bank subset, such as `leap:m2` and `leap:M2` for
-   Lesson 2), `zen`, `learn`.
+5. New launch kinds: `zen`, `learn`. `ear-drill`, which accepts a bank subset, such as `leap:m2` and
+   `leap:M2` for Lesson 2, shipped on 16 November 2026 (SEASON-2 § 5.2 item 12).
 6. A lesson marker (`?lesson=`) that skips First Light for visitors arriving from a lesson and
    records attribution.
 7. An octave-folded scoring option for Pitch Hold and the other pitch-matching drills (Pitch Hold

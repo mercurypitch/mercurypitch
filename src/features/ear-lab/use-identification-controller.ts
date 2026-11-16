@@ -38,6 +38,11 @@
 // A slip on the native room's rated plate can start a pair practice
 // (pair-practice.ts): a short run over just the two items it mixed up,
 // which rates nothing and books nothing for Today.
+//
+// A lesson's set (lib/ear/subsets.ts) hands the controller only the
+// set's items. Its runs rate on the set's own track, ask each item as
+// often as the others, and book nothing for Today, which asked for the
+// drill and not for some of its items.
 // ============================================================
 
 import { batch, createSignal, onCleanup } from 'solid-js'
@@ -47,10 +52,11 @@ import { bankItemState, pickBankItem } from '@/lib/ear/banks'
 import type { IdentificationDrill } from '@/lib/ear/drills'
 import { guessRate } from '@/lib/ear/drills'
 import type { Rating } from '@/lib/ear/elo'
+import type { EarSubset } from '@/lib/ear/subsets'
 import { trackFirstValue } from '@/lib/first-value'
 import type { RatedRunMark } from '@/stores/ear-lab-store'
 import { creditEarSession, earItemStates, earPlayerRating, markRatedRun, markSprintSegmentDone, recordIdentificationAnswer, rollBackRatedRun, takeSprintRunLength, } from '@/stores/ear-lab-store'
-import { PAIR_PRACTICE_ROUNDS, pairOrder } from './pair-practice'
+import { balancedOrder, PAIR_PRACTICE_ROUNDS, pairOrder } from './pair-practice'
 import { createRevealPacer } from './reveal-pacing'
 
 export type IdentificationPhase =
@@ -114,6 +120,9 @@ export interface IdentificationOptions {
   /** Read at start(): the track this run rates under, or null for
    *  the drill's own. */
   track?: () => RunTrack | null
+  /** A lesson's set: the bank given is its items, and every run rates
+   *  on its track, never refining the items' difficulties. */
+  subset?: EarSubset | null
 }
 
 export function useIdentificationController(
@@ -126,7 +135,19 @@ export function useIdentificationController(
   const [round, setRound] = createSignal(0)
   const [expectedId, setExpectedId] = createSignal<string | null>(null)
   const [answeredId, setAnsweredId] = createSignal<string | null>(null)
-  const [rating, setRating] = createSignal<Rating>(earPlayerRating(drill.id))
+  const subset = options?.subset ?? null
+  /** A set's runs rate on its own track, from the bench on. */
+  const subsetTrack: RunTrack | null =
+    subset === null
+      ? null
+      : {
+          drillId: subset.trackId,
+          guessRate: subset.guessRate,
+          updateItem: false,
+        }
+  const [rating, setRating] = createSignal<Rating>(
+    earPlayerRating(subsetTrack?.drillId ?? drill.id),
+  )
   let runTrack: RunTrack | null = null
   const trackId = () => runTrack?.drillId ?? drill.id
   const [result, setResult] = createSignal<IdentificationResult | null>(null)
@@ -210,16 +231,14 @@ export function useIdentificationController(
     run += 1
     startedAt = performance.now()
     outcomes = []
-    runTrack = options?.track?.() ?? null
+    runTrack = subsetTrack ?? options?.track?.() ?? null
     ratingAtStart = earPlayerRating(trackId()).rating
     // A practice writes nothing to put back, and leaves a length Today
-    // armed to the run it was armed for.
+    // armed to the run it was armed for; so does a lesson's set.
     mark = pair === null ? markRatedRun(trackId()) : null
-    const armed = pair === null ? takeSprintRunLength(drill.id) : null
-    practiceOrder =
-      pair === null
-        ? []
-        : pairOrder([itemOf(pair[0]), itemOf(pair[1])], PAIR_PRACTICE_ROUNDS)
+    const armed =
+      pair === null && subset === null ? takeSprintRunLength(drill.id) : null
+    practiceOrder = orderFor(pair)
     batch(() => {
       setPractice(pair)
       setShort(armed?.rounds !== undefined)
@@ -237,6 +256,15 @@ export function useIdentificationController(
     })
     heardThrough = false
     void playRound()
+  }
+
+  /** The questions a run asks in a fixed order: a pair practice's, a
+   *  lesson's set's. Empty for a rated run of the drill, which picks. */
+  function orderFor(pair: readonly [string, string] | null): EarBankItem[] {
+    if (pair !== null) {
+      return pairOrder([itemOf(pair[0]), itemOf(pair[1])], PAIR_PRACTICE_ROUNDS)
+    }
+    return subset === null ? [] : balancedOrder(bank, IDENTIFICATION_ROUNDS)
   }
 
   /** An item of the bank, by id; practicePair() has vouched for it. */
@@ -408,10 +436,10 @@ export function useIdentificationController(
     })
     creditEarSession(performance.now() - startedAt)
     // A segment counts when the run reached its end, not when it was
-    // abandoned part-way, and never for a pair practice: Today asked for
-    // the drill, not for two of its items.
+    // abandoned part-way, and never for a pair practice or a lesson's set:
+    // Today asked for the drill, not for some of its items.
     if (complete && practice() === null) {
-      markSprintSegmentDone(drill.id)
+      if (subset === null) markSprintSegmentDone(drill.id)
       trackFirstValue('ear')
     }
     setPhase('done')

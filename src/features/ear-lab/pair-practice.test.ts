@@ -1,8 +1,9 @@
 // A pair practice's questions: each of the two as often as the other, in
-// an order the last question does not give away.
+// an order the last question does not give away. A lesson's set of more
+// than two is asked the same way.
 
 import { describe, expect, it } from 'vitest'
-import { PAIR_PRACTICE_ROUNDS, pairOrder } from './pair-practice'
+import { balancedOrder, PAIR_PRACTICE_ROUNDS, pairOrder } from './pair-practice'
 
 /** A seeded generator, so each order is the same on every run. */
 function seeded(seed: number): () => number {
@@ -43,5 +44,27 @@ describe('a pair practice', () => {
     expect(new Set(orders).size).toBeGreaterThan(4)
     // Either may come first.
     expect(new Set(orders.map((order) => order.split(' ')[0])).size).toBe(2)
+  })
+})
+
+describe("a lesson's set", () => {
+  it('asks each of four equally often in twelve rounds', () => {
+    const order = balancedOrder(['P4', 'TT', 'P5', 'P8'], 12, seeded(3))
+
+    expect(order).toHaveLength(12)
+    expect(['P4', 'TT', 'P5', 'P8'].map((id) => count(order, id))).toEqual([
+      3, 3, 3, 3,
+    ])
+  })
+
+  it('gives the rounds left over to different items', () => {
+    // Twelve rounds over eight charts: each once, and four of them twice.
+    const charts = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h']
+    const order = balancedOrder(charts, 12, seeded(5))
+
+    expect(order).toHaveLength(12)
+    expect(charts.map((id) => count(order, id)).sort()).toEqual([
+      1, 1, 1, 1, 2, 2, 2, 2,
+    ])
   })
 })

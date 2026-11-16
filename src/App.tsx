@@ -284,7 +284,7 @@ import { clearChallengeAttempt } from '@/features/challenges/challenge-attempt'
 import { useEditorController } from '@/features/editor/useEditorController'
 import { usePianoRollEvents } from '@/features/events/usePianoRollEvents'
 import { exerciseTitle } from '@/features/exercises/ExerciseMenu'
-import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, } from '@/features/exercises/slug-map'
+import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, slugLaunchConfig, } from '@/features/exercises/slug-map'
 import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { useFallingNotesController } from '@/features/falling-notes/useFallingNotesController'
 import { GUITAR_NIGHT_PATH } from '@/features/guitar-night/route'
@@ -401,7 +401,7 @@ import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
 import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, swipeNavEnabled, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
-import { authModalMode, challengeStageLaunch, closeChallengeStage, closeSingingZen, openAuthModal, openSettingsSection, openSingingZen, setSingingSheetView, settingsSection, singingSheetView, singingZenLaunch, triggerTargetFocus, } from '@/stores/ui-store'
+import { authModalMode, challengeStageLaunch, closeChallengeStage, closeSingingZen, openAuthModal, openSettingsSection, openSingingZen, setSingingSheetView, settingsSection, singingSheetView, singingZenLaunch, startEarDrill, triggerTargetFocus, } from '@/stores/ui-store'
 import { completionCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
 import { uvrUploadQueue } from '@/stores/uvr-upload-queue-store'
 import type { PlaybackSession } from '@/types'
@@ -779,9 +779,11 @@ const AppShell: Component<AppProps> = (props) => {
   }
 
   // Apply a marketing deep-link slug (`/exercises/<slug>`, see slug-map.ts) to
-  // a launch intent: open a tab, or open a pre-configured exercise on its setup
-  // screen (the user presses Start). Unknown slugs warn and fall through to the
-  // default tab — never throw, so a stale/mistyped link still loads a usable app.
+  // a launch intent: open a tab, open a pre-configured exercise on its setup
+  // screen (the user presses Start), or open an Ear Lab drill on a lesson's
+  // set of its items (the Ear Lab page takes it, EarLabPage.tsx). Unknown
+  // slugs warn and fall through to the default tab — never throw, so a
+  // stale/mistyped link still loads a usable app.
   const applyExerciseSlug = (slug: string) => {
     // `Object.hasOwn` (not `EXERCISE_SLUGS[slug]` truthiness) so an unknown
     // slug that collides with a prototype key (e.g. `constructor`) still
@@ -793,6 +795,10 @@ const AppShell: Component<AppProps> = (props) => {
     const launch = EXERCISE_SLUGS[slug]
     if (launch.kind === 'tab') {
       setActiveTab(launch.tab)
+      return
+    }
+    if (launch.kind === 'ear-drill') {
+      startEarDrill(launch.drill, launch.items)
       return
     }
     // Resolve the target notes: explicit list wins, otherwise derive them from
@@ -812,24 +818,7 @@ const AppShell: Component<AppProps> = (props) => {
       : undefined
     setActiveTab(TAB_EXERCISES)
     mountExercise(launch.exercise)
-    setLaunchOverride(launch.exercise, {
-      type: launch.exercise,
-      ...(notes && notes.length > 0
-        ? { targetNote: notes[0], targetNotes: notes }
-        : {}),
-      ...(launch.difficulty !== undefined
-        ? { difficulty: launch.difficulty }
-        : {}),
-      ...(launch.intervals !== undefined
-        ? { intervals: launch.intervals }
-        : {}),
-      ...(launch.scale !== undefined ? { scale: launch.scale } : {}),
-      ...(launch.chords !== undefined ? { chords: launch.chords } : {}),
-      ...(launch.inversions !== undefined
-        ? { inversions: launch.inversions }
-        : {}),
-      ...(launch.tuning !== undefined ? { tuning: launch.tuning } : {}),
-    })
+    setLaunchOverride(launch.exercise, slugLaunchConfig(launch, notes))
     // Intentionally do NOT auto-start. Starting acquires the mic, which
     // browsers only grant from a user gesture; a fresh deep-link load has none,
     // so an auto-start would stall on a blank count-in screen waiting for a

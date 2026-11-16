@@ -7,6 +7,10 @@
 // each round. The lattice chases the steps and shows no grouping
 // until the reveal lights beat one. A miss plays the bars again,
 // slower.
+//
+// A lesson's link can narrow it to some of the bars (Lesson 19's two
+// 3/4 and two 6/8, lib/ear/subsets.ts): then its pads are the set's
+// metres, all of them every round, and it rates on the set's own track.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -18,6 +22,8 @@ import { drawOptions } from '@/lib/ear/draw-options'
 import { findIdentificationDrill } from '@/lib/ear/drills'
 import type { MetreId, MetrePattern } from '@/lib/ear/metre'
 import { METRE_BANK, metreName, METRES, patternOf, stepMs, } from '@/lib/ear/metre'
+import type { EarSubset } from '@/lib/ear/subsets'
+import { listWords, narrowBank, subsetAnswers, subsetLine, subsetRatingLine, } from '@/lib/ear/subsets'
 import { SUBDIVIDE_TIMING } from '@/lib/ear/timing'
 import { useEarRoom } from './ear-room-context'
 import type { PadState } from './EarStage'
@@ -27,11 +33,23 @@ import { MetreLattice } from './MetreLattice'
 import type { IdentificationTrial } from './use-identification-controller'
 import { useIdentificationController } from './use-identification-controller'
 
-export function SubdivideDrill(props: { onBack: () => void }): JSX.Element {
+export function SubdivideDrill(props: {
+  onBack: () => void
+  /** A lesson's set of some of the bars; the whole drill without. */
+  subset?: EarSubset | null
+}): JSX.Element {
   const { audioEngine } = useEngines()
   const room = useEarRoom()
   const drill = findIdentificationDrill('subdivide')
   if (!drill) throw new Error('subdivide drill missing from catalogue')
+  // A stage is mounted per drill and per set, never re-pointed.
+  // eslint-disable-next-line solid/reactivity
+  const subset = props.subset ?? null
+  const bank = narrowBank(METRE_BANK, subset)
+  /** A set's metres, each a pad every round, in their usual order. */
+  const setMetres: readonly MetreId[] | null = subset
+    ? METRES.filter((metre) => subsetAnswers(subset).includes(metreName(metre)))
+    : null
 
   const [pattern, setPattern] = createSignal<MetrePattern | null>(null)
   const [options, setOptions] = createSignal<MetreId[]>([])
@@ -124,15 +142,20 @@ export function SubdivideDrill(props: { onBack: () => void }): JSX.Element {
       expectedId: metreName(current.metre),
       play: async () => {
         setPattern(current)
-        setOptions(drawOptions(current.metre, METRES, metreName))
+        setOptions(
+          setMetres
+            ? [...setMetres]
+            : drawOptions(current.metre, METRES, metreName),
+        )
         await playBars(current, SUBDIVIDE_TIMING.quarterMs)
       },
       replayOnWrong: () => playBars(current, SUBDIVIDE_TIMING.replayQuarterMs),
     }
   }
 
-  const controller = useIdentificationController(drill, METRE_BANK, makeTrial, {
+  const controller = useIdentificationController(drill, bank, makeTrial, {
     cancelAudio,
+    subset,
   })
   const phase = () => controller.phase()
 
@@ -154,6 +177,14 @@ export function SubdivideDrill(props: { onBack: () => void }): JSX.Element {
       answerHint="What is the metre?"
       choices={[]}
       columns={2}
+      lessonSet={
+        setMetres
+          ? {
+              asks: listWords(setMetres.map(metreName)),
+              note: `${subsetLine(setMetres.map(metreName), METRES.length, 'metres')} ${subsetRatingLine('Subdivide')}`,
+            }
+          : undefined
+      }
       controller={controller}
       revealName={(id) => id}
       answerConsole={() => (

@@ -581,9 +581,9 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   2 engineering track's Lesson 9 interval set, `MASTER-PLAN.md:311-315`): Interval Trainer on this
   lesson's leaps, registered in `EXERCISE_SLUGS` as
   `{ kind: 'exercise', exercise: EXERCISE_INTERVAL_TRAINER, intervals: [3, 4, 7, 5, 12] }`, each
-  upward (`src/features/exercises/slug-map.ts:88-92`), with its line in
-  `src/tests/slug-map.test.ts:71-77`. The `intervals` field on `ExerciseLaunch`
-  (`src/features/exercises/slug-map.ts:30-61`) is passed by `applyExerciseSlug` into the launch
+  upward (`src/features/exercises/slug-map.ts:103-107`), with its line in
+  `src/tests/slug-map.test.ts:74-80`. The `intervals` field on `ExerciseLaunch`
+  (`src/features/exercises/slug-map.ts:31-62`) is passed by `applyExerciseSlug` into the launch
   override beside the notes and the difficulty (`src/App.tsx:764-766`), and the trainer reads it in
   place of its fixed pool, which still has no minor third (FACTS 51, 59); a launched list runs as
   many rounds as the difficulty asks, every leap once before any twice (FACTS 60). The set keeps the

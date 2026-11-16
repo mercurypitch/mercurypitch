@@ -6,9 +6,10 @@
 // buttons to clean deep-link URLs of the form
 // `https://mercurypitch.com/exercises/<slug>`. Each slug maps to a launch
 // intent the app applies on startup (see `applyExerciseSlug` in App.tsx):
-// open a top-level tab, or open an exercise on its setup screen pre-configured
+// open a top-level tab, open an exercise on its setup screen pre-configured
 // with target notes (the user presses Start — see the note there on why we
-// don't auto-start).
+// don't auto-start), or open an Ear Lab drill, narrowed where a lesson asks
+// to some of its items (`ear-drill`).
 //
 // Slugs are lowercase kebab-case (`[a-z0-9-]+`). Add new ones freely — the
 // landing just needs the agreed string and the app maps it to an action here.
@@ -21,7 +22,7 @@
 import type { ChordStackerChord } from '@/features/exercises/chord-stacker/chord-stacker-chords'
 import type { DroneTuning } from '@/features/exercises/drone-intonation/drone-tuning'
 import type { ScaleRunnerScale } from '@/features/exercises/scale-runner/scale-runner-scales'
-import type { ExerciseType } from '@/features/exercises/types'
+import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import { EXERCISE_CADENCE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
@@ -66,7 +67,21 @@ export interface TabLaunch {
   tab: ActiveTab
 }
 
-export type Launch = ExerciseLaunch | TabLaunch
+/** Open an Ear Lab drill on its stage, before a run (the user presses
+ *  Begin), as a lesson's practice card asks. */
+export interface EarDrillLaunch {
+  kind: 'ear-drill'
+  /** The drill, by the id the Ear Lab opens it by (`leap`, `chart`; the
+   *  map in src/features/ear-lab/drill-views.ts). */
+  drill: string
+  /** The items to ask, by the drill's own bank ids (`leap:P4`), in place
+   *  of all of them; a run over them is rated apart from the drill
+   *  (src/lib/ear/subsets.ts). Items that do not make a set of that
+   *  drill open it whole. */
+  items?: readonly string[]
+}
+
+export type Launch = ExerciseLaunch | TabLaunch | EarDrillLaunch
 
 /** Marketing slug → launch intent. */
 export const EXERCISE_SLUGS: Record<string, Launch> = {
@@ -192,10 +207,85 @@ export const EXERCISE_SLUGS: Record<string, Launch> = {
     exercise: EXERCISE_SING_IN_TIME,
     difficulty: 5,
   },
+  // The Ear Lab's drills on Season 2's sets, one address each, named by
+  // what they ask. The Chart on Lesson 17's quarters, halves and eighths:
+  // the eight patterns its page writes, with no triplet and no sixteenth.
+  'quarters-halves-and-eighths': {
+    kind: 'ear-drill',
+    drill: 'chart',
+    items: [
+      'c-q3',
+      'c-q4',
+      'c-q-rest',
+      'c-e-and',
+      'c-e-one',
+      'c-e-off',
+      'c-e-run',
+      'c-e-across',
+    ],
+  },
+  // Subdivide on Lesson 19's two metres (Threes, offbeats and
+  // syncopation): its two 3/4 bars and its two 6/8, with two pads.
+  'three-four-or-six-eight': {
+    kind: 'ear-drill',
+    drill: 'subdivide',
+    items: ['metre:3-4:a', 'metre:3-4:b', 'metre:6-8:a', 'metre:6-8:b'],
+  },
+  // Leap on Lesson 23's perfect intervals and the tritone (Perfect, major,
+  // minor and the tritone): the fourth, the tritone, the fifth and the
+  // octave.
+  'perfect-or-tritone': {
+    kind: 'ear-drill',
+    drill: 'leap',
+    items: ['leap:P4', 'leap:TT', 'leap:P5', 'leap:P8'],
+  },
+  // Gravity on Lesson 25's Te against Ti (Minor, properly): the lowered
+  // seventh and the leading tone.
+  'te-or-ti': {
+    kind: 'ear-drill',
+    drill: 'gravity',
+    items: ['gravity:deg-11', 'gravity:deg-12'],
+  },
+  // Stack on Lesson 27's major chord against the dominant seventh (Seventh
+  // chords and inversions).
+  'major-or-dominant-seventh': {
+    kind: 'ear-drill',
+    drill: 'stack',
+    items: ['stack:maj', 'stack:dom7'],
+  },
   // Open the Karaoke view.
   'karaoke-duel': { kind: 'tab', tab: TAB_KARAOKE },
   // Open the Jam view.
   'jam-relay': { kind: 'tab', tab: TAB_JAM },
+}
+
+/**
+ * What an exercise slug's launch asks of its drill, as the one-visit launch
+ * override takes it (practice-intelligence/launch-override.ts): the fields
+ * the launch names and no others, so the drill keeps the singer's own
+ * choice for everything else. `notes` are the launch's notes already fitted
+ * to the singer's range; with none the drill keeps its own start note.
+ */
+export function slugLaunchConfig(
+  launch: ExerciseLaunch,
+  notes: string[] | undefined,
+): ExerciseConfig {
+  return {
+    type: launch.exercise,
+    ...(notes && notes.length > 0
+      ? { targetNote: notes[0], targetNotes: notes }
+      : {}),
+    ...(launch.difficulty !== undefined
+      ? { difficulty: launch.difficulty }
+      : {}),
+    ...(launch.intervals !== undefined ? { intervals: launch.intervals } : {}),
+    ...(launch.scale !== undefined ? { scale: launch.scale } : {}),
+    ...(launch.chords !== undefined ? { chords: launch.chords } : {}),
+    ...(launch.inversions !== undefined
+      ? { inversions: launch.inversions }
+      : {}),
+    ...(launch.tuning !== undefined ? { tuning: launch.tuning } : {}),
+  }
 }
 
 /** Matches `/exercises/<slug>` with an optional trailing slash. */

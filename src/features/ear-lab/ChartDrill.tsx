@@ -14,6 +14,10 @@
 //
 // Same bank shapes as Pulse under its own ids and rating, so the
 // bench can show where reading and dictation part ways.
+//
+// A lesson's link can narrow it to some of the charts (Lesson 17's
+// quarters, halves and eighths, lib/ear/subsets.ts): it says so at idle
+// and rates on the set's own track.
 // ============================================================
 
 import type { JSX } from 'solid-js'
@@ -25,6 +29,8 @@ import { findIdentificationDrill } from '@/lib/ear/drills'
 import { isProvisional, PROVISIONAL_ATTEMPTS } from '@/lib/ear/elo'
 import type { Subdivision } from '@/lib/ear/rhythm-take'
 import { anchorTaps, barBeats, clearedSubdivision, finestSubdivision, toleranceFor, } from '@/lib/ear/rhythm-take'
+import type { EarSubset } from '@/lib/ear/subsets'
+import { countWord, listWords, narrowBank, subsetRatingLine, } from '@/lib/ear/subsets'
 import { createTapLedger } from '@/lib/ear/tap-input'
 import { PULSE_TIMING } from '@/lib/ear/timing'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
@@ -50,14 +56,56 @@ const PROMPT = 'A written bar over the click. Tap it at sight.'
 
 const MISS = 'miss'
 
+/** The grids a chart sits on, coarsest first. */
+const GRIDS: readonly Subdivision[] = [
+  'quarters',
+  'eighths',
+  'triplets',
+  'sixteenths',
+]
+
+/** The grids some charts sit on, coarsest first. */
+function gridsOf(items: readonly EarBankItem[]): Subdivision[] {
+  const grids = new Set(items.map((item) => finestSubdivision(item.payload)))
+  return GRIDS.filter((grid) => grids.has(grid))
+}
+
+/** What a lesson's set of charts asks: "Only eight of the fifteen charts
+ *  this time, none with triplets or sixteenths." */
+function chartSetLine(items: readonly EarBankItem[]): string {
+  const grids = gridsOf(items)
+  const none = GRIDS.slice(1).filter((grid) => !grids.includes(grid))
+  return `Only ${countWord(items.length)} of the ${countWord(CHART_BANK.length)} charts this time${
+    none.length > 0 ? `, none with ${listWords(none, 'or')}` : ''
+  }.`
+}
+
 const CHART_DESCRIPTION =
   'The pattern is written on the drum. Nothing sounds but the beat. Four clicks count the tempo in, then it waits: nothing plays until your first tap (pad or Space), which is the first written onset, wherever you place it. From there the beat keeps you company and the bar fills left to right. Tap the rest of the chart at the same tempo, every onset in order, nothing extra. Reading, where Pulse is dictation.'
 
-export function ChartDrill(props: { onBack: () => void }): JSX.Element {
+export function ChartDrill(props: {
+  onBack: () => void
+  /** A lesson's set of some of the charts; the whole drill without. */
+  subset?: EarSubset | null
+}): JSX.Element {
   const { audioEngine } = useEngines()
   const room = useEarRoom()
   const drill = findIdentificationDrill('chart')
   if (!drill) throw new Error('chart drill missing from catalogue')
+  // A stage is mounted per drill and per set, never re-pointed.
+  // eslint-disable-next-line solid/reactivity
+  const subset = props.subset ?? null
+  const bank = narrowBank(CHART_BANK, subset)
+  /** What the set asks, said at idle: in a few words on the Begin pad,
+   *  in a sentence where the console has room. Null for the whole drill. */
+  const lessonSet = subset
+    ? {
+        asks: `${listWords(gridsOf(bank))} only`,
+        note: `${chartSetLine(bank)} ${subsetRatingLine('Chart')}`,
+      }
+    : null
+  /** Where the run's rating lives: a lesson's set rates apart. */
+  const ratingSource = subset ? 'Chart rating on this set' : 'Chart rating'
 
   const [bar, setBar] = createSignal<DrumBar>(null)
   const [beat, setBeat] = createSignal(0)
@@ -278,9 +326,10 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
     }
   }
 
-  const controller = useIdentificationController(drill, CHART_BANK, makeTrial, {
+  const controller = useIdentificationController(drill, bank, makeTrial, {
     cancelAudio,
     silenceReplay,
+    subset,
   })
 
   const phase = () => controller.phase()
@@ -395,7 +444,7 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
             kind: 'rating',
             rating: Math.round(result.rating.rating),
             before: Math.round(result.rating.rating - result.ratingDelta),
-            source: 'Chart rating',
+            source: ratingSource,
             settling: isProvisional(result.rating)
               ? PROVISIONAL_ATTEMPTS - result.rating.attempts
               : null,
@@ -483,11 +532,16 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
             <>
               <PlayPad
                 label="Begin"
-                sub={`${controller.totalRounds} charts`}
+                sub={`${controller.totalRounds} charts${
+                  lessonSet === null ? '' : ` · ${lessonSet.asks}`
+                }`}
                 keycap="Space"
                 icon={<IconPlay size={20} />}
                 onClick={() => controller.start()}
               />
+              <Show when={lessonSet}>
+                {(set) => <ConsoleNote>{set().note}</ConsoleNote>}
+              </Show>
               <ConsoleNote>
                 Your first tap anchors the bar, so a steady delay cancels itself
                 out.
@@ -541,7 +595,7 @@ export function ChartDrill(props: { onBack: () => void }): JSX.Element {
             <EndPlate
               kicker="Rating"
               value={String(Math.round(result().rating.rating))}
-              unit="Chart rating"
+              unit={ratingSource}
               note={
                 <PlateDelta delta={result().ratingDelta} label="this run" />
               }

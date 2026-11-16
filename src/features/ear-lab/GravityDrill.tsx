@@ -5,10 +5,16 @@
 // GRAVITY_SET: twelve degrees, twelve pads, rated under 'gravity'
 // (tap) and 'gravity-sing' (mic) with a 1/12 guess floor. Function
 // hearing past the diatonic seven — where does ♭6 sit, where ♯4.
+//
+// A lesson's link can narrow it to some of the twelve (Lesson 25's Te
+// and Ti, lib/ear/subsets.ts): the set's pads only, rated on the set's
+// own tracks.
 // ============================================================
 
 import type { JSX } from 'solid-js'
-import { GRAVITY_SET } from '@/lib/ear/item-bank'
+import { degreeLabel, GRAVITY_SET } from '@/lib/ear/item-bank'
+import type { EarSubset } from '@/lib/ear/subsets'
+import { countWord, listWords, narrowDegreeSet } from '@/lib/ear/subsets'
 import type { HomeDrillCopy } from './HomeDrill'
 import { HomeDrill } from './HomeDrill'
 
@@ -26,8 +32,31 @@ export const GRAVITY_COPY: HomeDrillCopy = {
   keycaps: ['1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '-', '='],
 }
 
-export function GravityDrill(props: { onBack: () => void }): JSX.Element {
+export function GravityDrill(props: {
+  onBack: () => void
+  /** A lesson's set of some of the twelve; the whole drill without. */
+  subset?: EarSubset | null
+}): JSX.Element {
+  // A stage is mounted per drill and per set, never re-pointed.
+  // eslint-disable-next-line solid/reactivity
+  const subset = props.subset
+  if (!subset) {
+    return (
+      <HomeDrill onBack={props.onBack} set={GRAVITY_SET} copy={GRAVITY_COPY} />
+    )
+  }
+  const set = narrowDegreeSet(GRAVITY_SET, subset)
+  // A set's note is one of its own, not any of the twelve.
+  const labels = set.degrees.map(degreeLabel)
   return (
-    <HomeDrill onBack={props.onBack} set={GRAVITY_SET} copy={GRAVITY_COPY} />
+    <HomeDrill
+      onBack={props.onBack}
+      set={set}
+      copy={{
+        ...GRAVITY_COPY,
+        prompt: `A cadence, then one note (${listWords(labels, 'or')}). Which?`,
+        padLabel: `Which of the ${countWord(labels.length)} was that?`,
+      }}
+    />
   )
 }

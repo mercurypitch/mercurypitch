@@ -170,7 +170,7 @@ sound on: nothing plays until you press a play button." 35 words.
 - **Linked: Jam's Harmony Stack**, `/jam?lesson=26`: one voice per chord tone, root, third and
   fifth, for two or more people (`jam-modes.ts:45-51`). Card: "With a friend: one of you takes the
   root, one the third."
-- **Linked, alone: Drone Intonation's thirds**, `/exercises/thirds-on-a-drone` (`slug-map.ts:93-102`),
+- **Linked, alone: Drone Intonation's thirds**, `/exercises/thirds-on-a-drone` (`slug-map.ts:108-117`),
   with Lesson 24's card lines. **[coach]**
 - **Waits:** the harmony-line drill (SEASON-2 § 5 item 17: a melody played, a diatonic third sung
   above or below, scored per note, octave-folded, computed with `diatonicStepUp`,

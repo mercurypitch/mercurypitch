@@ -17,10 +17,15 @@
 // with the Ear rooms as its own row, every drill opens in the native
 // room (EarStage.tsx), and the Ear Report is drawn in the room's light
 // (merc/MercReport.tsx). All are one lazy chunk behind the switch.
+//
+// A drill asked for from elsewhere can come with a lesson's set of its
+// items (`/exercises/<slug>`, lib/ear/subsets.ts). The page hands the set
+// to the drill as it opens it, whichever bench is showing, and opening a
+// drill from the bench opens it whole.
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createSignal, lazy, onCleanup, Show } from 'solid-js'
+import { createEffect, createSignal, lazy, onCleanup, Show, untrack, } from 'solid-js'
 import { BasslineDrill } from '@/features/ear-lab/BasslineDrill'
 import { BeatHuntDrill } from '@/features/ear-lab/BeatHuntDrill'
 import { CadenceDrill } from '@/features/ear-lab/CadenceDrill'
@@ -49,11 +54,13 @@ import { SubdivideDrill } from '@/features/ear-lab/SubdivideDrill'
 import { releaseWildStems } from '@/features/ear-lab/wild-store'
 import { TAB_EAR_LAB } from '@/features/tabs/constants'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
+import type { EarSubset } from '@/lib/ear/subsets'
+import { resolveEarSubset } from '@/lib/ear/subsets'
 import { EAR_LAB_WITH_MERC, PREMIUM_EXERCISES } from '@/lib/native-build'
 import { provideTourDetour } from '@/lib/tour-screen'
 import { disarmSprintSegment } from '@/stores/ear-lab-store'
 import { nativeShellApi } from '@/stores/native-shell-store'
-import { pendingEarDrill, setPendingEarDrill } from '@/stores/ui-store'
+import { pendingEarDrill, pendingEarItems, setPendingEarDrill, setPendingEarItems, } from '@/stores/ui-store'
 
 interface EarMercRowProps {
   onOpen: (id: PremiumExerciseId) => void
@@ -105,6 +112,13 @@ const MercReport: Component<MercReportProps> = EAR_LAB_WITH_MERC
     )
   : () => null
 
+/** How the drill on the stage was opened: on a lesson's set of its items,
+ *  or whole. A new one at every opening, so a request for the drill already
+ *  open mounts it afresh on what was asked. */
+interface DrillOpening {
+  subset: EarSubset | null
+}
+
 /** A view as the tour's question names it: 'the-pull' is "The Pull". */
 const viewName = (view: EarLabView): string =>
   view
@@ -114,6 +128,12 @@ const viewName = (view: EarLabView): string =>
 
 export function EarLabPage(): JSX.Element {
   const [view, setView] = createSignal<EarLabView>('dashboard')
+  const [opening, setOpening] = createSignal<DrillOpening>({ subset: null })
+  /** Open a view from the bench, the room or a report: a drill whole. */
+  const openView = (next: EarLabView) => {
+    setOpening({ subset: null })
+    setView(next)
+  }
   // A build without the premium exercises registers no opener, and the
   // bench draws no way in.
   const mercRooms = (): boolean =>
@@ -130,7 +150,7 @@ export function EarLabPage(): JSX.Element {
   // card armed for it; the arming is only meant for the run that tap opened.
   const back = () => {
     disarmSprintSegment()
-    setView('dashboard')
+    openView('dashboard')
   }
   // A drill or the calibration hides the bench the Ear Lab tour walks, so a
   // tour asks before it goes back there (src/lib/tour-screen.ts).
@@ -144,24 +164,35 @@ export function EarLabPage(): JSX.Element {
     }),
   )
 
-  // A drill asked for from elsewhere (The Ascent's ear week). Cleared
-  // as it is consumed, so coming back to the tab later lands on the
-  // dashboard rather than replaying the same request.
+  // A drill asked for from elsewhere (The Ascent's ear week, a lesson's
+  // link). Cleared as it is consumed, so coming back to the tab later
+  // lands on the dashboard rather than replaying the same request.
   createEffect(() => {
     const requested = pendingEarDrill()
     if (requested === null) return
     const target = VIEW_FOR_DRILL[requested]
-    if (target) setView(target)
+    if (target) {
+      setOpening({
+        subset: resolveEarSubset(requested, untrack(pendingEarItems)),
+      })
+      setView(target)
+    }
+    setPendingEarItems(null)
     setPendingEarDrill(null)
   })
 
+  /** The opening a drill that takes a set mounts with, while it is the
+   *  view: a new one remounts it. */
+  const openedAs = (drill: EarLabView): DrillOpening | false =>
+    view() === drill && opening()
+
   return (
     <div id="ear-lab-page">
-      <EarRoomShell onNavigate={setView} bridge={view() === 'dashboard'}>
+      <EarRoomShell onNavigate={openView} bridge={view() === 'dashboard'}>
         <Show when={view() === 'dashboard'}>
           {EAR_LAB_WITH_MERC ? (
             <MercBench
-              onNavigate={setView}
+              onNavigate={openView}
               rooms={
                 mercRooms() ? (
                   <EarRoomsRow
@@ -172,7 +203,7 @@ export function EarLabPage(): JSX.Element {
             />
           ) : (
             <EarLabDashboard
-              onNavigate={setView}
+              onNavigate={openView}
               withMerc={
                 mercRooms() ? (
                   <EarMercRow
@@ -195,11 +226,11 @@ export function EarLabPage(): JSX.Element {
         <Show when={view() === 'grid'}>
           <GridDrill onBack={back} />
         </Show>
-        <Show when={view() === 'leap'}>
-          <LeapDrill onBack={back} />
+        <Show when={openedAs('leap')} keyed>
+          {(opened) => <LeapDrill onBack={back} subset={opened.subset} />}
         </Show>
-        <Show when={view() === 'stack'}>
-          <StackDrill onBack={back} />
+        <Show when={openedAs('stack')} keyed>
+          {(opened) => <StackDrill onBack={back} subset={opened.subset} />}
         </Show>
         <Show when={view() === 'contour'}>
           <ContourDrill onBack={back} />
@@ -207,8 +238,8 @@ export function EarLabPage(): JSX.Element {
         <Show when={view() === 'pulse'}>
           <PulseDrill onBack={back} />
         </Show>
-        <Show when={view() === 'chart'}>
-          <ChartDrill onBack={back} />
+        <Show when={openedAs('chart')} keyed>
+          {(opened) => <ChartDrill onBack={back} subset={opened.subset} />}
         </Show>
         <Show when={view() === 'echo'}>
           <EchoDrill onBack={back} />
@@ -222,8 +253,8 @@ export function EarLabPage(): JSX.Element {
         <Show when={view() === 'drift'}>
           <DriftDrill onBack={back} />
         </Show>
-        <Show when={view() === 'gravity'}>
-          <GravityDrill onBack={back} />
+        <Show when={openedAs('gravity')} keyed>
+          {(opened) => <GravityDrill onBack={back} subset={opened.subset} />}
         </Show>
         <Show when={view() === 'the-pull'}>
           <PullDrill onBack={back} />
@@ -234,8 +265,8 @@ export function EarLabPage(): JSX.Element {
         <Show when={view() === 'bassline'}>
           <BasslineDrill onBack={back} />
         </Show>
-        <Show when={view() === 'subdivide'}>
-          <SubdivideDrill onBack={back} />
+        <Show when={openedAs('subdivide')} keyed>
+          {(opened) => <SubdivideDrill onBack={back} subset={opened.subset} />}
         </Show>
         <Show when={view() === 'desk'}>
           <DeskView onBack={back} />
@@ -245,7 +276,7 @@ export function EarLabPage(): JSX.Element {
         </Show>
         <Show when={view() === 'report'}>
           {EAR_LAB_WITH_MERC ? (
-            <MercReport onBack={back} onNavigate={setView} />
+            <MercReport onBack={back} onNavigate={openView} />
           ) : (
             <EarReport onBack={back} />
           )}
