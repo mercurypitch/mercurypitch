@@ -1,5 +1,6 @@
 // Studio transport state and options — what the transport publishes on every change, and what it is built from.
 import type { AudioContextLease } from '@/lib/audio-context-lease'
+import type { StudioMasterGain } from '../export/sound-graph'
 import type { createStudioLaneMeter } from '../metering/live-meter'
 import type { StudioMeterSnapshot } from '../metering/stream-meter'
 import type { StudioBufferCache } from './buffer-cache'
@@ -17,6 +18,8 @@ export interface StudioTransportState {
   error: string | null
   meter: StudioMeterSnapshot | null
   masterReady: boolean
+  /** The master gain the listener hears: the playing run's, else the one the next run starts at (master-level.ts `startingGain`). */
+  masterGain: StudioMasterGain
   /** Every built lane's level while the song plays; empty when it does not. */
   lanes: readonly StudioLaneLevel[]
 }

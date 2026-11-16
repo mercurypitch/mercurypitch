@@ -32,6 +32,23 @@ export function createStudioMasterLevel() {
   let fresh: StudioMasterGainToken | null = null
   // The song's newest measurement, stale or not.
   let last: StudioMasterGainToken | null = null
+
+  /**
+   * The gain a new run starts at: a fresh measurement; else the level of
+   * the run it takes over from; else the song's last measurement, the
+   * level heard before an edit or a pause. 0 dB only before any.
+   */
+  function startingGain(
+    project: StudioProject,
+    heard: StudioMasterGain | null,
+  ): StudioMasterGain {
+    const gain =
+      fresh ?? heard ?? (last?.projectId === project.id ? last : null)
+    return gain
+      ? { gainDb: gain.gainDb, safetyGainDb: gain.safetyGainDb }
+      : { ...UNMEASURED }
+  }
+
   return {
     /** The measurement for the revision heard, or null once an edit makes it stale. */
     fresh: () => fresh,
@@ -50,17 +67,15 @@ export function createStudioMasterLevel() {
         fresh = null
       return fresh !== null
     },
-    /**
-     * The gain a new run starts at: a fresh measurement; else the level of
-     * the run it takes over from; else the song's last measurement, the
-     * level heard before an edit or a pause. 0 dB only before any.
-     */
-    startingGain(
-      project: StudioProject,
-      heard: StudioMasterGain | null,
+    startingGain,
+    /** The gain the listener hears: the run they hear, else the one the next run of `project` starts at; with no song, a fresh measurement or 0 dB. */
+    heard(
+      project: StudioProject | null,
+      run: { readonly measured?: StudioMasterGain | null } | null | undefined,
     ): StudioMasterGain {
       const gain =
-        fresh ?? heard ?? (last?.projectId === project.id ? last : null)
+        run?.measured ??
+        (project === null ? fresh : startingGain(project, null))
       return gain
         ? { gainDb: gain.gainDb, safetyGainDb: gain.safetyGainDb }
         : { ...UNMEASURED }

@@ -1,4 +1,4 @@
-// Studio transport level tests — a newly measured master gain and each lane's meter reach the song playing.
+// Studio transport level tests — a newly measured master gain and each lane's meter reach the song playing, and the transport says which master gain the listener hears: the playing run's, else the one the next run starts at.
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { studioReservedMemoryBytes } from '../memory-budget'
@@ -177,6 +177,56 @@ describe('Studio transport levels', () => {
     expect(options.master.spec).toEqual(
       resolveStudioSoundGraph(edited, measured).full,
     )
+    await finish(f)
+  })
+
+  it('says which master gain the listener hears while the song is stopped: the one the next run starts at, through an edit, until another song opens', async () => {
+    vi.useFakeTimers()
+    const f = transportFixture()
+    const unmeasured = { gainDb: 0, safetyGainDb: 0 }
+    expect(f.transport.getState().masterGain).toEqual(unmeasured)
+
+    const measured = { gainDb: 4.5, safetyGainDb: -1.5 }
+    f.transport.setMasterGain({
+      projectId: f.project.id,
+      revision: f.project.revision,
+      ...measured,
+    })
+    expect(f.transport.getState().masterGain).toEqual(measured)
+    // An edit makes the measurement stale; the next run still starts there.
+    await f.transport.setSnapshot({ ...f.project, revision: 1 }, [f.asset])
+    expect(f.transport.getState()).toMatchObject({
+      masterReady: false,
+      masterGain: measured,
+    })
+
+    f.transport.setMasterGain(null)
+    expect(f.transport.getState().masterGain).toEqual(unmeasured)
+    await finish(f)
+  })
+
+  it("says which master gain the listener hears while the song plays: the run's, and a new measurement as the run takes it up", async () => {
+    vi.useFakeTimers()
+    const f = transportFixture()
+    const measured = { gainDb: 4.5, safetyGainDb: -1.5 }
+    f.transport.setMasterGain({
+      projectId: f.project.id,
+      revision: f.project.revision,
+      ...measured,
+    })
+    await f.transport.play(f.project, [f.asset], 0)
+    expect(f.transport.getState()).toMatchObject({
+      playing: true,
+      masterGain: measured,
+    })
+
+    const fresh = { gainDb: -2, safetyGainDb: 0 }
+    f.transport.setMasterGain({
+      projectId: f.project.id,
+      revision: f.project.revision,
+      ...fresh,
+    })
+    expect(f.transport.getState().masterGain).toEqual(fresh)
     await finish(f)
   })
 
