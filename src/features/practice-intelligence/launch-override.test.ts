@@ -4,8 +4,8 @@
 
 import { afterEach, describe, expect, it } from 'vitest'
 import type { GuidedPracticeLaunchConfig } from '@/features/exercises/types'
-import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SCALE_RUNNER, } from '@/features/exercises/types'
-import { clearLaunchOverride, launchChords, launchGuidedPractice, launchIntervals, launchInversions, launchScale, launchTuning, setLaunchOverride, } from './launch-override'
+import { EXERCISE_ARPEGGIO_JUMPER, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_INTERVAL_TRAINER, EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, } from '@/features/exercises/types'
+import { clearLaunchOverride, launchChords, launchGuidedPractice, launchIntervals, launchInversions, launchKey, launchScale, launchTuning, setLaunchOverride, } from './launch-override'
 
 const GUIDED_PRACTICE: GuidedPracticeLaunchConfig = {
   assessmentRunId: 'run-1',
@@ -220,5 +220,30 @@ describe('tuning launch override', () => {
     clearLaunchOverride()
 
     expect(launchTuning(EXERCISE_DRONE_INTONATION)).toBeUndefined()
+  })
+})
+
+describe('key launch override', () => {
+  it('carries the key only to the exercise it was launched for, beside its scale', () => {
+    setLaunchOverride(EXERCISE_SIGHT_SINGING, {
+      type: EXERCISE_SIGHT_SINGING,
+      key: 'A',
+      scale: 'harmonic-minor',
+    })
+
+    expect(launchKey(EXERCISE_SIGHT_SINGING)).toBe('A')
+    expect(launchScale(EXERCISE_SIGHT_SINGING)).toBe('harmonic-minor')
+    expect(launchKey(EXERCISE_SCALE_RUNNER)).toBeUndefined()
+  })
+
+  it('clears the key with the rest of the one-shot launch', () => {
+    setLaunchOverride(EXERCISE_SIGHT_SINGING, {
+      type: EXERCISE_SIGHT_SINGING,
+      key: 'G',
+    })
+
+    clearLaunchOverride()
+
+    expect(launchKey(EXERCISE_SIGHT_SINGING)).toBeUndefined()
   })
 })

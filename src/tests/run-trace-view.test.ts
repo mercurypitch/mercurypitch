@@ -53,6 +53,25 @@ describe('worstMoment', () => {
     expect(Math.round(bad!.cents)).toBe(50)
   })
 
+  it('measures a drill that hears any octave in the octave the voice is in', () => {
+    // Arrange: an octave under the target and 30 cents sharp, then 20 flat
+    // at the written octave
+    const samples = [
+      at(1, (C4 / 2) * 2 ** (30 / 1200)),
+      at(2, C4 * 2 ** (-20 / 1200)),
+    ]
+
+    // Act
+    const folded = worstMoment(
+      trace({ targets: [at(0, C4)], samples, folded: true }),
+    )
+    const written = worstMoment(trace({ targets: [at(0, C4)], samples }))
+
+    // Assert
+    expect(Math.round(folded!.cents)).toBe(30)
+    expect(Math.round(written!.cents)).toBe(-1170)
+  })
+
   it('reports flat as negative cents', () => {
     const bad = worstMoment(
       trace({

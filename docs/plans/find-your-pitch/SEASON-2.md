@@ -201,7 +201,7 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
 - Checkpoint (unscored sing-along, a theory lesson): after the comfort check, sing do re mi fa so in
   C as the notes light on the staff, in your own clef and octave; nothing listens.
 - Practise: `/?lesson=15#/compose`, then choose Sheet Music or the split view (Compose's views,
-  `src/App.tsx:2317-2341`): notes written in the piano roll appear on the staff, in the bass clef
+  `src/App.tsx:2321-2345`): notes written in the piano roll appear on the staff, in the bass clef
   when the melody's middle note sits below middle C (`src/lib/sheet-music-renderer.ts:175-183`). A
   sandbox, not a drill. Needs building: a note-reading drill (§ 5 item 9); the app's only
   note-locating quiz is the guitar's (`src/features/guitar-practice/NoteLocatorQuiz.tsx`).
@@ -241,13 +241,13 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
 - Checkpoint (scored on the page): comfort check first; the page plays do and do-mi-so-mi-do, then
   the learner reads and sings two five-note phrases, do re mi re do and do mi so mi do, in their
   own clef, at their own pace. A note passes when it stays in a generous band for about half a
-  second (the app's Sight-Singing passes at 450 ms, `src/features/exercises/sight-singing/use-sight-singing-controller.ts:26`);
+  second (the app's Sight-Singing passes at 450 ms, `src/features/exercises/sight-singing/use-sight-singing-controller.ts:45`);
   octave-folded; names shown the first time and hidden the second, optionally. The feedback names
   the sound ("that so landed in the band"), and "How did that feel?" follows.
 - Practise: `/pitch-training?lesson=16`, then tap Sight-Singing, with its limits said on the card:
   it draws six random notes from the Singing tab's scale inside the singer's range, each move at
   most 7 semitones (use-sight-singing-controller.ts:23, :103-127); it plays no audio first ("No
-  audio preview", `src/features/exercises/sight-singing/SightSingingExercise.tsx:272-273`), so no
+  audio preview", `src/features/exercises/sight-singing/SightSingingExercise.tsx:272-273` at `bcd86153b`), so no
   do; it draws a treble staff only (:31-45, :317-327), every black key as a sharp
   (use-sight-singing-controller.ts:31-44; SightSingingExercise.tsx:116), and each note's letter and
   octave under it (:130-140); it scores against the written octave (use-sight-singing-controller.ts:192-198).
@@ -307,7 +307,7 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
   (Mishra 2014, Psychology of Music 42(2), 131-156, doi:10.1177/0305735612463770; abstract and
   summary only). How far ahead fluent readers look is **not verified** and not claimed.)
 - Signature: Lesson 16's staff, now with Lesson 17's beat grid under it; a cursor moves at tempo (as
-  the Singing tab's sheet view moves one, `src/App.tsx:4046-4094`); patterns bracket themselves
+  the Singing tab's sheet view moves one, `src/App.tsx:4050-4098`); patterns bracket themselves
   as the cursor reaches them (a run of steps, a repeated note, do-mi-so); the marks of T32 appear
   one by one over the sound they ask for.
 - Checkpoint (scored on the page): comfort check first; the page plays do and one bar of count-in at
@@ -318,7 +318,7 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
 - Practise: Sight-Singing (`/pitch-training?lesson=18`, then tap Sight-Singing), which still
   advances on a held note, not on the beat (use-sight-singing-controller.ts:26); The Chart for the
   rhythm (`/ear-lab?lesson=18`, then tap The Chart). The Singing tab's sheet view plays a melody
-  with a cursor (`src/App.tsx:4046-4094`), but no address opens it (`singingSheetView`,
+  with a cursor (`src/App.tsx:4050-4098`), but no address opens it (`singingSheetView`,
   `src/stores/ui-store.ts:146`), and whether it scores in that view was **not verified**.
   Sight-singing in time has shipped as Sing It in Time (§ 5 item 11, `/exercises/sing-it-in-time`);
   the lesson's card does not link it yet.
@@ -390,10 +390,10 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
   notes from the major scale, each a 200 ms reference and a 1.5 s window
   (`src/features/exercises/staccato-precision/use-staccato-precision-controller.ts:11-21`).
   `/exercises/speed-scales` is not linked: it opens Scale Runner at difficulty 8, fast
-  (`src/features/exercises/slug-map.ts:95-100`). Shipped on 15 November 2026 (§ 5 item 13): Scale
+  (`src/features/exercises/slug-map.ts:105-110`). Shipped on 15 November 2026 (§ 5 item 13): Scale
   Runner's scale launch field and minor pentatonic, and the beginner slugs
   `/exercises/pentatonic-run` and `/exercises/minor-pentatonic-run`, each at level 2
-  (`src/features/exercises/slug-map.ts:118-133`). The card does not link them yet.
+  (`src/features/exercises/slug-map.ts:128-143`). The card does not link them yet.
 - Facts to check: the pentatonic's degrees (Kodály and Bennett, as the benchmark cites them for
   T16); Duke, Simmons & Cash (2009), as above; that no source read supports calling the pentatonic
   universal: Savage et al. (2015, PNAS 112(29), 8987-8992) report statistical, not absolute,
@@ -579,9 +579,9 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
 - Practise: Drone Intonation, which holds a drone and scores a sung interval above it, from its own
   six (unison, minor and major third, fourth, fifth, octave,
   `src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:31-38`):
-  `/exercises/thirds-on-a-drone` opens it on the two thirds (`src/features/exercises/slug-map.ts:112-117`);
+  `/exercises/thirds-on-a-drone` opens it on the two thirds (`src/features/exercises/slug-map.ts:122-127`);
   `/exercises/harmony-on-a-drone` opens it on the fifth, the major third and the octave since 15
-  November 2026 (`src/features/exercises/slug-map.ts:142-150`; § 5 item 15), and the card's link
+  November 2026 (`src/features/exercises/slug-map.ts:152-160`; § 5 item 15), and the card's link
   waits to swap to it. In its Piano tuning, the default and the one the thirds' link opens, it
   scores against equal temperament, 100 less 1.5 times the cents
   (use-drone-intonation-controller.ts:27-29), so a pure third scores about 79, and the card says so;
@@ -629,7 +629,7 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
   is right; C minor's flats are not). Scale Runner's Minor is the natural form
   (`src/lib/scale-data.ts:449-472`), and since 15 November 2026 it runs Harmonic Minor and Melodic
   Minor beside it (§ 5 item 13): `/exercises/harmonic-minor-run` and `/exercises/melodic-minor-run`
-  open them from A (`src/features/exercises/slug-map.ts:151-166`), its melodic minor coming down as
+  open them from A (`src/features/exercises/slug-map.ts:161-176`), its melodic minor coming down as
   the natural minor (`src/features/exercises/scale-runner/scale-runner-scales.ts:53-69`), where the
   Singing tab's is the ascending form only (`src/lib/scale-data.ts:95-99`). A Scale Runner card
   waits for its care lines and the coach's look. Needs building: the Te against Ti subset (§ 5
@@ -864,16 +864,16 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 | Lesson | Opens today                                                           | Waits for                                                                                                           |
 | ------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | 15     | Compose, Sheet Music view (`/?lesson=15#/compose`), a sandbox         | Its card's link to `/exercises/read-the-note` (item 9 and its slug shipped on 15 November 2026)                     |
-| 16     | Sight-Singing, with its limits said                                   | Fixed phrases (item 10a, data); hear do, bass clef, key signature, names off, octave-folded (item 10b to 10f, code) |
+| 16     | Sight-Singing, at `/exercises/sing-what-you-see`, its phrases in G    | Its card's link to `/exercises/sing-what-you-see`, with the drill's new lines (item 10 shipped on 16 November 2026) |
 | 17     | Ear Lab: The Chart, Pulse; `/exercises/quarters-halves-and-eighths`   | Its card's link to The Chart's set (item 12 shipped on 16 November 2026)                                            |
-| 18     | Sight-Singing (pitch only), The Chart, `/exercises/sing-it-in-time`   | Its card's link to Sing It in Time (item 11 shipped on 15 November 2026); a sheet-view address (item 20, code)      |
+| 18     | Sight-Singing (pitch only), The Chart, `/exercises/sing-it-in-time`   | Card links to Sing It in Time and the new Sight-Singing (items 11 and 10 shipped); a sheet-view address (item 20)   |
 | 19     | Ear Lab: Subdivide, Pulse; `/exercises/three-four-or-six-eight`       | Its card's link to Subdivide's 3/4 and 6/8 (item 12 shipped on 16 November 2026)                                    |
 | 20     | Scale Runner, Pentatonic; Staccato Precision                          | Its card's link to `/exercises/pentatonic-run` (item 13 shipped on 15 November 2026)                                |
-| 21     | Compose, in Sheet Music, with its key picker; Ear Lab: Home           | Twelve keys (item 20, code); key-aware Sight-Singing (item 10, code); circle toy (kit, § 6.2)                       |
+| 21     | Compose, in Sheet Music, with its key picker; Ear Lab: Home           | Twelve keys (item 20, code); a card for key-aware Sight-Singing (item 10 shipped); circle toy (kit, § 6.2)          |
 | 22     | Voice Mirror's hold                                                   | Vibrato exercise copy, default and `durationSec` (item 14, copy and code)                                           |
 | 23     | Ear Lab: Leap, and Leap's set `/exercises/perfect-or-tritone`         | A sung card for `/exercises/perfect-intervals` (item 16 shipped); its card's link to Leap's set (item 12 shipped)   |
 | 24     | Drone Intonation (`/exercises/thirds-on-a-drone`); Ear Lab: Beat Hunt | Its card's swap to `/exercises/harmony-on-a-drone`, which opens on pure tuning (item 15 shipped)                    |
-| 25     | Ear Lab: Gravity, `/exercises/te-or-ti`; Singing tab's two minors     | A Scale Runner card for `harmonic-minor-run`, `melodic-minor-run` (item 13 shipped); a link to `te-or-ti` (item 12) |
+| 25     | `/exercises/te-or-ti`; `/exercises/sight-sing-harmonic-minor`         | Cards for `harmonic-minor-run`, `melodic-minor-run`, Sight-Singing's (items 13, 10 shipped), `te-or-ti` (item 12)   |
 | 26     | Jam's Harmony Stack (two or more people); Drone Intonation's thirds   | Harmony-line drill (item 17, code)                                                                                  |
 | 27     | Chord Stacker; Ear Lab: Stack, `/exercises/major-or-dominant-seventh` | Its card's links: `/exercises/triads` or a dominant-seventh slug (item 18 shipped), Stack's set (item 12 shipped)   |
 | 28     | Karaoke Night; Ear Lab: Cadence; `/exercises/sing-it-in-time`         | Card links to `/exercises/name-the-cadence` (item 19 shipped), Sing It in Time (item 11); harmony line (item 17)    |
@@ -895,23 +895,45 @@ and First Light does not step aside. Item 21 fixes it.
    (`src/features/lessons/kit/staff-places.ts`). It opens no microphone. It writes naturals only,
    with no key signature and no accidental, which Lesson 21 would want of it. Its address is
    `/exercises/read-the-note`. Lessons 15 and 21, whose cards do not link it yet.
-10. **Sight-Singing for the lessons.** (a) Fixed phrases by data slug: data, since a launch's `notes`
-    already replace the random round when there are two or more
-    (`src/features/exercises/sight-singing/SightSingingExercise.tsx:151-195`). The rest is code with
-    tests: (b) a "hear do" start that plays do and do-mi-so-mi-do; (c) the bass clef for lower
-    voices (it draws a treble staff only, :31-45, :317-327); (d) a key signature and spelling by key
-    (every black key is a sharp today, `use-sight-singing-controller.ts:31-44`; the app already has
-    the keys, `src/lib/scale-data.ts:29-44`, and the sheet renderer's key-aware spelling,
-    `src/lib/sheet-music-renderer.ts:84-119`); (e) letter names off, and solfège on, as options
-    (letters are drawn under every note, SightSingingExercise.tsx:130-140); (f) octave-folded scoring
-    (it scores against the written octave, use-sight-singing-controller.ts:192-198; CURRICULUM § 4
-    item 7); (g) a `key` launch field (key and scale come from the Singing tab,
-    SightSingingExercise.tsx:276-279). Lessons 16, 18, 21, 25. Two details from Lesson 16: (a)'s
-    link also skips the octave fit, so each voice reads its own octave (today `fitPhraseToRange`,
-    `src/App.tsx:795-799`, moves a bass preset's phrase to G2 to D3, an octave under the page's
-    lower line: Lesson 16 FACTS 59, 63); and (e) hides two displays, the letter and octave under
-    each note and the hold bar's name, since the pitch tracker's names have their own hide (Lesson
-    16 FACTS 58, 63).
+10. **Sight-Singing for the lessons: shipped on 16 November 2026.** Sight-Singing
+    (`src/features/exercises/sight-singing/`) writes its line on the singer's own clef, in a key,
+    and hears it in any octave. (a) Lesson 16's two phrases, written as one line in G, open at
+    `/exercises/sing-what-you-see` (`src/features/exercises/slug-map.ts:177-187`), whose
+    `ownOctave` skips the octave fit: a lower voice reads G3 to D4 and a higher one G4 to D5, as the
+    page writes them (`phraseInOwnOctave`, `src/lib/vocal-range.ts:131-139`; `src/App.tsx:808-816`),
+    and the drill sings a launched phrase where the launch puts it (`fixed`,
+    `src/features/exercises/sight-singing/sight-line.ts:128-172`). (b) Its Hear it first is "hear
+    do": do for a second, then do-mi-so-mi-do in the key, do at or under the line's first note and
+    in the singer's range, and Merc says "Listen: do, then do, mi, so, mi, do, in G major." (minor
+    keys sing me); the line itself is never played (`startNotes` and `startWords`,
+    `sight-line.ts:202-219`; `SightSingingExercise.tsx:196-206`, `:335-340`). (c) A bass or a
+    baritone opens on the bass staff and every other voice on the treble (`clefForRange`), a tenor
+    reading it an octave over where he sings, as tenor parts are written; the setup's Clef picker
+    changes it, remembered on the device (`SightSingingExercise.tsx:101-105`). A line goes on the
+    staff in the octave that keeps it within two ledger lines (`writtenShift`,
+    `sight-line.ts:87-111`) and is sung where it is written unless that leaves the singer's range.
+    The staff is the lessons kit's, its frame shared with Sing It in Time
+    (`src/features/exercises/note-reading/StaffFrame.tsx`; `SightStaff.tsx`). (d) The key
+    signature, and each note spelled by the key: a seven-note scale letter by letter, a note outside
+    it by whichever name needs the smaller sign, the flat in a flat key on a tie (`sightKey` and
+    `spellIn`, `src/features/exercises/sight-singing/sight-key.ts:148-245`); a sign is written where
+    a note's letter differs from the key or from that letter's last sign, so a natural marks the way
+    back (`writeLine`). The key is the Singing tab's, or a launch's; a launched phrase that names
+    none gets a major key that holds its notes (`keyForPhrase`, `sight-key.ts:294-308`). (e) A Names
+    picker: Letters, the default; "Do re mi", movable do with do-based minor and the chromatic
+    syllables; and Off, which hides both the names under the notes and the hold bar's ("Hold the lit
+    note to continue"), the tracker keeping its own hide (`SightSingingExercise.tsx:304-310`,
+    `:362-373`). A run's choice is written to its result as `names`. (f) A note counts in any
+    octave: the hold and the score fold the distance (`foldCents`,
+    `use-sight-singing-controller.ts:272`, `:309`), the result's furthest-off moment too
+    (`RunTrace.folded`, `src/features/exercises/run-trace-view.ts:95`), and runs scored before are
+    not compared with these (`src/features/exercises/exercise-comparability.ts:59-62`). (g) A `key`
+    launch field, which Sight-Singing alone reads, its `scale` naming the scale
+    (`slug-map.ts:45-54`; `launchKey`, `src/features/practice-intelligence/launch-override.ts:83`):
+    `/exercises/sight-sing-harmonic-minor` opens it in A harmonic minor (`slug-map.ts:188-196`), for
+    Lesson 25. Opened from the Exercises tab it writes six notes it picks in the Singing tab's key,
+    letters on, as before. Lessons 16, 18, 21 and 25, whose cards do not link the addresses yet and
+    still describe the drill as it was.
 11. **Sight-singing in time: shipped on 15 November 2026.** Sing It in Time
     (`src/features/exercises/sing-in-time/`): a count-in and a click, notes that advance on the beat
     rather than on a 450 ms hold (use-sight-singing-controller.ts:26), pitch scored per note, timing
@@ -930,7 +952,7 @@ and First Light does not step aside. Item 21 fixes it.
     address is `/exercises/sing-it-in-time`, at level 5. Lessons 18 and 28; their cards do not link it.
 12. **The `ear-drill` launch kind: shipped on 16 November 2026** (CURRICULUM § 4 item 5). A slug can
     name an Ear Lab drill and, by the drill's own bank ids, the set of its items to ask
-    (`EarDrillLaunch`, `src/features/exercises/slug-map.ts:72-82`). `applyExerciseSlug` hands it to
+    (`EarDrillLaunch`, `src/features/exercises/slug-map.ts:82-92`). `applyExerciseSlug` hands it to
     the Ear Lab (`src/App.tsx:800-803`, through `startEarDrill`, `src/stores/ui-store.ts:641-652`),
     which opens the drill on the set whichever bench is showing, the web's or Merc's, and opens a
     drill whole from the bench (`src/pages/EarLabPage.tsx:170-187`). A run over a set rates on a
@@ -948,14 +970,14 @@ and First Light does not step aside. Item 21 fixes it.
     pads, `/exercises/three-four-or-six-eight`; the perfect intervals and the tritone (Lesson 23),
     P4, TT, P5 and P8, `/exercises/perfect-or-tritone`; Te against Ti in Gravity (Lesson 25),
     `/exercises/te-or-ti`; major against dominant seventh in Stack (Lesson 27),
-    `/exercises/major-or-dominant-seventh` (`src/features/exercises/slug-map.ts:210-255`). Their
+    `/exercises/major-or-dominant-seventh` (`src/features/exercises/slug-map.ts:240-285`). Their
     cards do not link them yet. A slug with no items opens its drill whole, so an address for a
     whole drill, or Lesson 2's m2 and M2, is one registry line.
 13. **Scale Runner's scale types: shipped on 15 November 2026.** Harmonic Minor, Melodic Minor and
     Minor Pentatonic run beside the first four
     (`src/features/exercises/scale-runner/scale-runner-scales.ts:15-23`;
     `src/lib/scale-data.ts:449-472`), melodic minor coming down as the natural minor, and a slug can
-    name the scale (`scale`, `src/features/exercises/slug-map.ts:48-50`), the launch field
+    name the scale (`scale`, `src/features/exercises/slug-map.ts:58-60`), the launch field
     CURRICULUM § 4 item 2 asked for. Four slugs are data: `pentatonic-run` and
     `minor-pentatonic-run`, at level 2, for Lesson 20; `harmonic-minor-run` and `melodic-minor-run`,
     from A at the singer's own level, for Lesson 25. The lessons' cards do not link them yet.
@@ -978,11 +1000,11 @@ and First Light does not step aside. Item 21 fixes it.
     so a pure major third held through a round scores 100 in Pure and 79 in Piano. A `tuning`
     launch field carries a lesson's choice for one visit: `harmony-on-a-drone` opens on Pure, and
     `thirds-on-a-drone` on Piano whatever the singer last chose, since the cards of Lessons 10 and
-    24 say it scores to the piano's notes (`src/features/exercises/slug-map.ts:108-117`,
-    `:142-150`). Every line of a run names its tuning: the idle hint, each round's ask, the
+    24 say it scores to the piano's notes (`src/features/exercises/slug-map.ts:118-127`,
+    `:152-160`). Every line of a run names its tuning: the idle hint, each round's ask, the
     target's label, which in Pure says how many cents the pure note sits from the piano's, and the
     result. Pure runs are a record of their own, never compared with Piano's (`exerciseRunRecord`,
-    `src/features/exercises/exercise-comparability.ts:120-135`). The drone has harmonics up to the
+    `src/features/exercises/exercise-comparability.ts:124-139`). The drone has harmonics up to the
     eighth, whatever the app's instrument: one oscillator on the partials of Merc's sung vowel, the
     third harmonic at 0.38 of the first and the fifth at 0.14, held level at the old sine's
     loudness (`src/lib/drone-voice.ts:13-22`; `playDrone`, `src/lib/audio-engine.ts:1178-1215`), so
@@ -1024,9 +1046,9 @@ and First Light does not step aside. Item 21 fixes it.
     inversion" for one (`src/features/exercises/chord-stacker/chord-stacker-chords.ts:132-144`).
     "Hear it first" plays the first chord of the chosen set. Two launch fields carry a lesson's
     choice for one visit, `chords` and `inversions` (CURRICULUM § 4 item 4;
-    `src/features/exercises/slug-map.ts:51-58`), and `/exercises/triads` opens the four triads in
+    `src/features/exercises/slug-map.ts:61-68`), and `/exercises/triads` opens the four triads in
     root position, the address for Lesson 27, whose package names none
-    (`src/features/exercises/slug-map.ts:182-191`); the dominant seventh and its inversions, which
+    (`src/features/exercises/slug-map.ts:192-201`); the dominant seventh and its inversions, which
     that page would open on, are one registry line more. Runs on other chords or with inversions are
     records of their own, never compared with the five sevenths' (`chordStackerRecord`,
     `src/features/exercises/chord-stacker/chord-stacker-chords.ts:285-297`). The two fixes beside it

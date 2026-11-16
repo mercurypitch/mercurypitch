@@ -336,3 +336,89 @@ describe('a run stopped before its last note', () => {
     expect(runStoppedEarly(result.metrics)).toBe(false)
   })
 })
+
+// A note is right in any octave (SEASON-2 § 5.2 item 10f): a voice that
+// reads the treble staff an octave under it, as a tenor does, or sings the
+// line an octave from the page, is singing it. Until November 2026 the
+// drill heard the written octave only, and an octave away was a miss.
+describe('a note sung in another octave', () => {
+  /** Sings every note `octaves` octaves from the written one, `cents` off it, and returns the result. */
+  function sungAway(octaves: number, cents = 0) {
+    vi.useFakeTimers()
+    let completed: ExerciseResult | undefined
+    let getSeq: () => ReturnType<typeof ctrl.getSequence> = () => []
+    let getIdx: () => number = () => 0
+    const sungFreq = () => {
+      const note = getSeq()[getIdx()]
+      if (note === undefined) return 0
+      return midiToFreq(note.midi + 12 * octaves + cents / 100)
+    }
+    const base = createMockBase({
+      _getElapsed: () => performance.now(),
+      currentPitch: () => {
+        const freq = sungFreq()
+        return freq > 0 ? { freq, clarity: 1, noteName: '' } : null
+      },
+      pitchHistory: () => {
+        const freq = sungFreq()
+        if (freq <= 0) return []
+        return [
+          { freq, time: Math.max(0, performance.now() / 1000 - 0.001), cents },
+          { freq, time: performance.now() / 1000, cents },
+        ]
+      },
+      _completeWithResult: (r) => {
+        completed = r
+      },
+    })
+    const ctrl = useSightSingingController(base, { names: () => 'off' })
+    getSeq = ctrl.getSequence
+    getIdx = ctrl.getCurrentIndex
+    ctrl.setNotes([67, 69, 71, 69, 67])
+    ctrl.startRounds()
+    // A note held passes in 450 ms; one never held moves on after 8 s.
+    vi.advanceTimersByTime(5 * 8_000 + 1_000)
+    const marks = ctrl.getMarks()
+    vi.useRealTimers()
+    return { result: completed!, marks }
+  }
+
+  it('passes each note an octave under the page, held, as in tune as the page', () => {
+    const below = sungAway(-1, 10)
+    const atPage = sungAway(0, 10)
+
+    expect(below.marks.map((m) => m?.held)).toEqual([
+      true,
+      true,
+      true,
+      true,
+      true,
+    ])
+    expect(below.result.score).toBe(atPage.result.score)
+    expect(below.result.score).toBeGreaterThanOrEqual(85)
+  })
+
+  it('passes two octaves up as well', () => {
+    expect(sungAway(2).result.metrics.notesScored).toBe(5)
+    expect(sungAway(2).marks.every((m) => m?.held === true)).toBe(true)
+  })
+
+  it('still misses a note sung a semitone off in any octave', () => {
+    const { marks, result } = sungAway(-1, 100)
+
+    // Each note is moved on from at the limit, heard but never held.
+    expect(marks.map((m) => m?.held)).toEqual([
+      false,
+      false,
+      false,
+      false,
+      false,
+    ])
+    expect(marks.every((m) => m?.heard === true)).toBe(true)
+    expect(result.score).toBeLessThan(10)
+  })
+
+  it('writes what the setup printed under the notes to the result', () => {
+    expect(sungAway(0).result.metrics.names).toBe(2)
+  })
+})

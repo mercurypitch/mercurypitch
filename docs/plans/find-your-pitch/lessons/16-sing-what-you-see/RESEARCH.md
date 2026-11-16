@@ -122,43 +122,43 @@ space; on the bass staff C3 in the second space.** R15-5, R15-7, R15-8. Strong.
 
 **R16-10. The app's Sight-Singing draws six random notes from the Singing tab's scale, inside the
 singer's comfortable range, each move at most 7 semitones.**
-`src/features/exercises/sight-singing/use-sight-singing-controller.ts:23` (`NOTES_PER_ROUND = 6`),
+`src/features/exercises/sight-singing/use-sight-singing-controller.ts:42` (`NOTES_PER_ROUND = 6`),
 :99-127 (`generateSequence`: notes of the scale's pitch classes in `rangeMin` to `rangeMax`; each next
 note from those within 7 semitones of the last, `Math.abs(m - prev) <= 7`, :120). The range is the
 voice preset's whole span (`getComfortableMidiRange`, `src/lib/vocal-range.ts:14-25`, returns
-`lowMidi` to `highMidi`). The scale is `currentScale()` (`SightSingingExercise.tsx:191-194`). Code
+`lowMidi` to `highMidi`). The scale is `currentScale()` (`SightSingingExercise.tsx:191-194` at `bcd86153b`). Code
 read. Strong.
 
-**R16-11. It plays no audio first.** `src/features/exercises/sight-singing/SightSingingExercise.tsx:271-274`:
+**R16-11. It plays no audio first.** `src/features/exercises/sight-singing/SightSingingExercise.tsx:271-274` at `bcd86153b`:
 "Read each note on the staff and sing it — the cursor advances once you hold the right pitch. No audio
 preview." Code read. Strong.
 
 **R16-12. It draws a treble staff only, every black key as a sharp, and each note's letter and octave
-under it.** `SightSingingExercise.tsx:31-45` (treble geometry, "The 5 lines are, bottom→top, E4 G4 B4
+under it.** `SightSingingExercise.tsx:31-45` at `bcd86153b` (treble geometry, "The 5 lines are, bottom→top, E4 G4 B4
 D5 F5"), :317-327 (the treble clef glyph, 𝄞), :49-62 and :108-118 (`PC_SHARP`, a ♯ drawn left of the
-note), :130-140 (the name and octave under each note); `use-sight-singing-controller.ts:31-44`
+note), :130-140 (the name and octave under each note); `use-sight-singing-controller.ts:50-63`
 (`NOTE_NAMES`, sharps). Ledger lines are drawn below and above as needed (:72-79, :95-107). Code read.
 Strong.
 
 **R16-13. It passes a note held within 60 cents for 450 ms, gives up after 8 s, and scores against the
-written octave.** `use-sight-singing-controller.ts:26` (`HOLD_TO_PASS_MS = 450`), :27
+written octave.** `use-sight-singing-controller.ts:45` (`HOLD_TO_PASS_MS = 450`), :27
 (`TOLERANCE_CENTS = 60`), :29 (`MAX_NOTE_MS = 8000`), :192-200 (`centsOff = (detectedMidi - target) *
 100`, no folding); per-note score from the best 30 % of samples, at least 70 for a passed note
 (:220-246); the final score counts unsung notes as zero (:56-76). Code read. Strong.
 
-**R16-14. Its hold bar names the target: "Hold C4 to continue".** `SightSingingExercise.tsx:340-351`
+**R16-14. Its hold bar names the target: "Hold C4 to continue".** `SightSingingExercise.tsx:340-351` at `bcd86153b`
 (`Hold {midiToNoteName(targetMidi() ?? 0)} to continue`, :348-350). Code read. Strong. **New**: not in
 the season plan's list.
 
 **R16-15. During a run it draws the live pitch tracker above the staff, with the target band and the
-upcoming notes, the next two named.** `SightSingingExercise.tsx:287-294` (`tracker` with
+upcoming notes, the next two named.** `SightSingingExercise.tsx:287-294` at `bcd86153b` (`tracker` with
 `targetNoteMidi` and `upcomingTargets`); `src/features/exercises/ExerciseShell.tsx:1195-1207` (the
 shell draws `ExercisePitchTracker` with both); `src/components/PitchOverTimeCanvas.tsx:542-561` (the
 upcoming rungs; "Only the next two carry a name", :552-553, `noteNameFromFreq`, :558). Code read.
 Strong. **New**: the season plan's list does not name it.
 
-**R16-16. A launch with two or more notes replaces the random round.** `SightSingingExercise.tsx:180-195`
-(`authored.length >= 2` then `controller.setNotes(authored)`); `use-sight-singing-controller.ts:141-154`
+**R16-16. A launch with two or more notes replaces the random round.** `SightSingingExercise.tsx:180-195` at `bcd86153b`
+(`authored.length >= 2` then `controller.setNotes(authored)`); `use-sight-singing-controller.ts:141-154` at `bcd86153b`
 (`setNotes`, "Sing exactly these notes, in order"). The slug registry's `notes` field is the data route
 (`src/features/exercises/slug-map.ts:30-62`, `notes?: string[]`, :35). Whether a slug's notes are
 fitted to the singer's octave, as a routine's are ("the notes arrive already fitted to the singer's

@@ -126,8 +126,8 @@ diminished** (Lesson 23 RESEARCH R3). Read: the packages.
 (`src/features/sidebar/panels/PlaybackSetupPanel.tsx:145-148`). The app's melodic minor is one
 ascending set, degrees `[0, 2, 3, 5, 7, 9, 11, 12]` (`src/lib/scale-data.ts:95-99`), with no
 descending form. Sight-Singing reads the chosen scale when no phrase is launched
-(`src/features/exercises/sight-singing/SightSingingExercise.tsx:188-195`) and spells every black key
-as a sharp (`use-sight-singing-controller.ts:31-44`), so A harmonic minor's G♯ is right and C
+(`src/features/exercises/sight-singing/SightSingingExercise.tsx:188-195` at `bcd86153b`) and spells every black key
+as a sharp (`use-sight-singing-controller.ts:50-63`), so A harmonic minor's G♯ is right and C
 minor's E♭, A♭ and B♭ read as D♯, G♯ and A♯. Read: code.
 
 **R11. Scale Runner's Minor is natural minor.** Its types were Major, Minor, Pentatonic and

@@ -25,6 +25,15 @@ export interface NoteDemoOptions {
   gapMs?: number
 }
 
+/**
+ * One note of an example: its MIDI number, or that with a length and a
+ * silence after it of its own, for an example whose notes are not all
+ * alike (Sight-Singing's do, held, then a quicker triad).
+ */
+export type DemoNote =
+  | number
+  | { readonly midi: number; readonly ms?: number; readonly gapMs?: number }
+
 const NOTE_MS = 800
 const GAP_MS = 250
 
@@ -47,24 +56,25 @@ export function createNoteDemo(engine: NoteDemoEngine) {
 
   /** Play the notes in order; resolves when the last has finished sounding. */
   function play(
-    midis: readonly number[],
+    notes: readonly DemoNote[],
     options: NoteDemoOptions = {},
   ): Promise<void> {
     stop()
-    const noteMs = options.noteMs ?? NOTE_MS
-    const gapMs = options.gapMs ?? GAP_MS
     return new Promise<void>((resolve) => {
       settle = resolve
       let at = 0
-      midis.forEach((midi, i) => {
+      notes.forEach((note, i) => {
+        const own = typeof note === 'number' ? { midi: note } : note
+        const noteMs = own.ms ?? options.noteMs ?? NOTE_MS
+        const gapMs = own.gapMs ?? options.gapMs ?? GAP_MS
         const strike = (): void => {
-          engine.playTone(midiToFrequency(midi), noteMs).catch(() => {
+          engine.playTone(midiToFrequency(own.midi), noteMs).catch(() => {
             // A note that cannot sound ends nothing: the example runs on.
           })
         }
         if (at === 0) strike()
         else timers.push(setTimeout(strike, at))
-        at += noteMs + (i === midis.length - 1 ? 0 : gapMs)
+        at += noteMs + (i === notes.length - 1 ? 0 : gapMs)
       })
       timers.push(
         setTimeout(() => {

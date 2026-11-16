@@ -101,7 +101,7 @@ describe('Season 2', () => {
       note: 'then tap Sight-Singing',
     })
     // the drill it still needs stays the team's
-    expect(L16?.pr.needs).toMatch(/^Sight-Singing for the lessons/)
+    expect(L16?.pr.needs).toMatch(/^A practice card for Sight-Singing/)
     // Lesson 9 from Season 1, and Lesson 15
     expect(SEASON_2.prereq[16]).toEqual([9, 15])
   })
@@ -294,7 +294,7 @@ describe('Season 2', () => {
     })
     // the drills it still needs stay the team's
     expect(L21?.pr.needs).toBe(
-      'A note-reading drill that reads key signatures, and Sight-Singing that spells by key',
+      'A note-reading drill that reads key signatures, and a practice card for Sight-Singing, which spells by key since 16 November 2026',
     )
     // Lesson 6 from Season 1, and Lesson 15
     expect(SEASON_2.prereq[21]).toEqual([6, 15])

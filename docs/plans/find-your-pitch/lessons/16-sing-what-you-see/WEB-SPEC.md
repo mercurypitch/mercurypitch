@@ -379,7 +379,7 @@ need, item 6):
 - The current note starts at the take's first voiced frame. Each frame's distance from the current
   note is folded into one octave (`foldCents`, `src/lib/pitch-measurements/f0.ts:57-59`). A frame
   within 60 cents adds its time to the note's hold; a frame outside, or with no voice, takes back half
-  its time, never below zero: Sight-Singing's rule (`src/features/exercises/sight-singing/use-sight-singing-controller.ts:199-202`).
+  its time, never below zero: Sight-Singing's rule (`src/features/exercises/sight-singing/use-sight-singing-controller.ts:258-261`).
   At 0.45 s of hold the note passes and the next lights; at 8 s from the note's start the next lights
   anyway (FACTS 45). The take ends when the last note passes or moves on.
 - Each note's reading: a note passed by its hold is read from the frames that counted towards it, as

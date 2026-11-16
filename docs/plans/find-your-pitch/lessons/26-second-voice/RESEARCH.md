@@ -87,7 +87,7 @@ Walking the scale's own pitch classes gives D-F-A, which is the chord that belon
 
 **R9. Jam's Harmony Stack needs two or more people.** `jam-modes.ts:45-51`: "One voice per chord
 tone — root, third, fifth. Build the chord.", roles Root, Third, Fifth, `minPeers: 2`. Drone
-Intonation's thirds slug (`slug-map.ts:108-117`) is a solo practice on thirds above a drone (Lesson 24
+Intonation's thirds slug (`slug-map.ts:118-127`) is a solo practice on thirds above a drone (Lesson 24
 RESEARCH R11). No drill plays a melody and scores a harmony line sung with it (SEASON-2 § 5 item
 17). `?lesson=26` is not read (`lesson-marker.ts:11-19`). Read: code.
 

@@ -243,7 +243,7 @@ const CARDS: ExerciseCardDef[] = [
     type: EXERCISE_SIGHT_SINGING,
     title: 'Sight-Singing',
     description:
-      'Read notes from a musical staff and sing them — no audio preview. Train your sight-reading.',
+      'Read a short line from the staff and sing it at sight. Hear do first; the line itself is never played.',
     icon: () => <IconMusic size={24} />,
     tags: ['Reading', 'Accuracy'],
     available: true,

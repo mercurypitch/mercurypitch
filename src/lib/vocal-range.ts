@@ -100,6 +100,44 @@ export function fitPhraseToRange(
   return best === 0 ? notes : midis.map((midi) => midiToNoteName(midi + best))
 }
 
+/** A3 and A4: the notes the lessons' lower and higher voices sing around. */
+const LOWER_VOICE_A = 57
+const HIGHER_VOICE_A = 69
+
+/**
+ * Which of the lessons' two voices a range is: the lower, singing with Merc
+ * around A3, or the higher, singing with Tavi around A4, by whichever A sits
+ * nearer the middle of its range (kit/voice-choice.ts asks the viewer the
+ * same question). Bass, baritone and tenor are lower; alto, mezzo-soprano
+ * and soprano higher.
+ */
+export function lessonVoiceOf(preset: VocalRangePreset): 'lower' | 'higher' {
+  const { min, max } = getComfortableMidiRange(preset)
+  const middle = (min + max) / 2
+  return Math.abs(middle - LOWER_VOICE_A) <= Math.abs(middle - HIGHER_VOICE_A)
+    ? 'lower'
+    : 'higher'
+}
+
+/**
+ * A phrase in the singer's own octave, as the lesson pages write a line for
+ * two voices: as given for the higher voice, an octave down for the lower.
+ * Unlike `fitPhraseToRange` it moves nothing by the range's middle, so
+ * Lesson 16's G4 to D5 reads G3 to D4 for a bass, in the bass staff's top
+ * space, where the page puts do, not G2 on its bottom line, the octave the
+ * fit picks (Lesson 16 FACTS 59). A phrase with any unparseable note is
+ * returned untouched.
+ */
+export function phraseInOwnOctave(
+  notes: string[],
+  preset: VocalRangePreset,
+): string[] {
+  if (lessonVoiceOf(preset) === 'higher' || notes.length === 0) return notes
+  const midis = notes.map(noteToMidi)
+  if (midis.some(Number.isNaN)) return notes
+  return midis.map((midi) => midiToNoteName(midi - 12))
+}
+
 /**
  * Fit a one-octave-run base note so the run's TOP fits the singer too.
  *

@@ -75,6 +75,11 @@ const EXAMPLES: readonly { title: string; says: RegExp }[] = [
     title: 'Call & Response',
     says: /^Listen: a short phrase\. In a run you sing one back\.$/,
   },
+  {
+    // The line itself is never played: do, and the key's triad from it.
+    title: 'Sight-Singing',
+    says: /^Listen: do, then do, mi, so, mi, do, in C major\.$/,
+  },
 ]
 
 test.describe('Hear it first', () => {

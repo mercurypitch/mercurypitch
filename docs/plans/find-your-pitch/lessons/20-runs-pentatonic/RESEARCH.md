@@ -159,7 +159,7 @@ reference then a 1.5 s window.**
 (`generateNotes`, :18-22: the major scale's eight degrees, shuffled). Code read. Strong. It is echo, not a run.
 
 **R20-13. `/exercises/speed-scales` opens Scale Runner at difficulty 8, fast.**
-`src/features/exercises/slug-map.ts:94-100` (the comment, then the entry, :75-80). Code read. Strong. Not linked (no score may reward speed).
+`src/features/exercises/slug-map.ts:104-110` (the comment, then the entry, :75-80). Code read. Strong. Not linked (no score may reward speed).
 
 **R20-14. `?lesson=20` is not a lesson marker today.** R15-19.
 

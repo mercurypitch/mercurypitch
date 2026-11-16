@@ -12,16 +12,17 @@ import { isDroneTuning } from '@/features/exercises/drone-intonation/drone-tunin
 import { droneIntervalLabel } from '@/features/exercises/drone-intonation/use-drone-intonation-controller'
 import { isWebRoom } from '@/features/exercises/rooms/web-room-ids'
 import { SCALE_RUNNER_SCALES } from '@/features/exercises/scale-runner/scale-runner-scales'
+import { keyLabel, scaleWordsOf, sightKey, } from '@/features/exercises/sight-singing/sight-key'
 import { hintLine } from '@/features/exercises/sing-in-time/in-time-words'
 import type { ExerciseLaunch } from '@/features/exercises/slug-map'
 import { EXERCISE_SLUG_PATH, EXERCISE_SLUGS, slugLaunchConfig, } from '@/features/exercises/slug-map'
-import { EXERCISE_CADENCE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
+import { EXERCISE_CADENCE, EXERCISE_CHORD_STACKER, EXERCISE_DRONE_INTONATION, EXERCISE_HARMONY_LAKE, EXERCISE_INTERVAL_TRAINER, EXERCISE_NOTE_READING, EXERCISE_SCALE_RUNNER, EXERCISE_SIGHT_SINGING, EXERCISE_SING_IN_TIME, } from '@/features/exercises/types'
 import { difficultyLabel } from '@/features/practice-intelligence/adaptive-difficulty'
 import { clearLaunchOverride, launchIntervals, setLaunchOverride, } from '@/features/practice-intelligence/launch-override'
 import { TAB_JAM, TAB_KARAOKE } from '@/features/tabs/constants'
 import { resolveEarSubset } from '@/lib/ear/subsets'
 import { noteToMidi } from '@/lib/frequency-to-note'
-import { fitPhraseToRange, fitScaleBaseNote, getComfortableMidiRange, } from '@/lib/vocal-range'
+import { fitPhraseToRange, fitScaleBaseNote, getComfortableMidiRange, phraseInOwnOctave, } from '@/lib/vocal-range'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import { VOCAL_RANGES } from '@/stores/settings-store'
 
@@ -316,6 +317,58 @@ describe('EXERCISE_SLUGS', () => {
     expect(lost).toEqual([])
   })
 
+  it("opens Sight-Singing on Lesson 16's two phrases in G, each voice in its own octave, for sing-what-you-see", () => {
+    const launch = EXERCISE_SLUGS['sing-what-you-see']
+
+    expect(launch).toEqual({
+      kind: 'exercise',
+      exercise: EXERCISE_SIGHT_SINGING,
+      notes: ['G4', 'A4', 'B4', 'A4', 'G4', 'G4', 'D5', 'B4', 'A4', 'G4'],
+      key: 'G',
+      ownOctave: true,
+    })
+    // do re mi re do, then do so mi re do: G3 to D4 for a lower voice, G4
+    // to D5 for a higher one (Lesson 16 FACTS 43 and 59)
+    const notes = launch.kind === 'exercise' ? (launch.notes ?? []) : []
+    expect(phraseInOwnOctave(notes, 'bass').slice(0, 5)).toEqual([
+      'G3',
+      'A3',
+      'B3',
+      'A3',
+      'G3',
+    ])
+    expect(phraseInOwnOctave(notes, 'soprano')).toEqual(notes)
+  })
+
+  it("opens Sight-Singing in Lesson 25's A harmonic minor for sight-sing-harmonic-minor", () => {
+    expect(EXERCISE_SLUGS['sight-sing-harmonic-minor']).toEqual({
+      kind: 'exercise',
+      exercise: EXERCISE_SIGHT_SINGING,
+      key: 'A',
+      scale: 'harmonic-minor',
+    })
+    expect(keyLabel(sightKey('A', 'harmonic-minor'))).toBe('A harmonic minor')
+  })
+
+  it('names a key only for Sight-Singing, and only one it reads as written', () => {
+    // A key name Sight-Singing cannot read falls back to C, so a slug that
+    // misspelt one would lose it silently.
+    const withKey = Object.values(EXERCISE_SLUGS).flatMap((launch) =>
+      launch.kind === 'exercise' && launch.key !== undefined
+        ? [{ exercise: launch.exercise, key: launch.key }]
+        : [],
+    )
+
+    const misread = withKey.filter(
+      ({ exercise, key }) =>
+        exercise !== EXERCISE_SIGHT_SINGING ||
+        sightKey(key, 'major').name !== key.replace('b', '♭').replace('#', '♯'),
+    )
+
+    expect(withKey.length).toBeGreaterThan(0)
+    expect(misread).toEqual([])
+  })
+
   it('keys are lowercase kebab-case', () => {
     for (const slug of Object.keys(EXERCISE_SLUGS)) {
       expect(slug).toMatch(/^[a-z0-9-]+$/)
@@ -375,10 +428,11 @@ describe('EXERCISE_SLUGS', () => {
     expect(unnamed).toEqual([])
   })
 
-  it('names a scale only for Scale Runner, and only one it runs', () => {
-    // Scale Runner alone reads a launch's scale, and opens on its first
-    // choice for a name off its list, so a slug that wrote one for another
-    // drill, or misspelt it, would lose it silently.
+  it('names a scale only for Scale Runner and Sight-Singing, and only one it reads', () => {
+    // Scale Runner and Sight-Singing alone read a launch's scale. Scale
+    // Runner opens on its first choice for a name off its list, and
+    // Sight-Singing reads one it does not know as major, so a slug that
+    // wrote one for another drill, or misspelt it, would lose it silently.
     const withScale = Object.values(EXERCISE_SLUGS).flatMap((launch) =>
       launch.kind === 'exercise' && launch.scale !== undefined
         ? [{ exercise: launch.exercise, scale: launch.scale }]
@@ -386,9 +440,10 @@ describe('EXERCISE_SLUGS', () => {
     )
     const listed: readonly string[] = SCALE_RUNNER_SCALES.map((s) => s.value)
 
-    const misplaced = withScale.filter(
-      ({ exercise, scale }) =>
-        exercise !== EXERCISE_SCALE_RUNNER || !listed.includes(scale),
+    const misplaced = withScale.filter(({ exercise, scale }) =>
+      exercise === EXERCISE_SIGHT_SINGING
+        ? scale !== 'major' && scaleWordsOf(scale) === 'major'
+        : exercise !== EXERCISE_SCALE_RUNNER || !listed.includes(scale),
     )
 
     expect(withScale.length).toBeGreaterThan(0)
@@ -491,6 +546,7 @@ describe("a slug launch's override", () => {
     const FIELDS = [
       'difficulty',
       'intervals',
+      'key',
       'scale',
       'chords',
       'inversions',

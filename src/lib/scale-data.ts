@@ -270,7 +270,7 @@ export function buildMajorScale(
  * Parse a custom scale type string like "custom:name:C,C#,D,..."
  * Returns an array of semitone degrees (0-11) relative to the root.
  */
-function parseCustomScaleDegrees(scaleType: string): number[] | null {
+export function parseCustomScaleDegrees(scaleType: string): number[] | null {
   if (!scaleType.startsWith('custom:')) return null
   const parts = scaleType.split(':')
   if (parts.length < 3) return null

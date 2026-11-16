@@ -215,9 +215,9 @@ A4 and `const ascending = Math.random() < 0.5`. Read: code.
 **R17. Interval Trainer launches take whole semitones 1 to 12, upward**
 (`src/features/practice-intelligence/launch-override.ts:57`, :60-76). The slug `leap-ladder` already
 asks for 3, 4, 7, 5 and 12, the two thirds, the fifth, the fourth and the octave
-(`src/features/exercises/slug-map.ts:101-107`). A `perfect-intervals` slug with 5, 7 and 12 did not
+(`src/features/exercises/slug-map.ts:111-117`). A `perfect-intervals` slug with 5, 7 and 12 did not
 exist when this was read (SEASON-2 § 5 item 16); it shipped on 15 November 2026
-(`src/features/exercises/slug-map.ts:134-141`). Read: code.
+(`src/features/exercises/slug-map.ts:144-151`). Read: code.
 
 **R18. The voice presets** (`src/stores/settings-store.ts:92-150`): soprano C4-C6, mezzo A3-A5, alto
 F3-F5, tenor C3-C5, baritone G2-G4, bass E2-E4. Read: code. For the sing-along's range check.

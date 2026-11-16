@@ -406,3 +406,57 @@ test("leaving perfect-or-tritone's drill leaves the bench's Leap whole", async (
   await expect(begin(page)).not.toContainText('P4')
   await expect(await runPads(page)).toHaveCount(12)
 })
+
+test("/exercises/sing-what-you-see opens Sight-Singing on Lesson 16's two phrases, in G", async ({
+  page,
+}) => {
+  await openSlug(page, 'sing-what-you-see', '16')
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Sight-Singing')
+  // Both phrases as one line, in the lesson's key, with its one sharp.
+  await expect(page.locator('.idle-hint')).toHaveText('10 notes · G major')
+  const staff = page.getByTestId('sight-staff')
+  await expect(staff).toHaveAttribute('data-key', 'G')
+  await expect(page.getByTestId('sight-key-sign')).toHaveCount(1)
+  await expect(page.getByTestId('sight-note')).toHaveCount(10)
+  // The default tenor preset sings the lower voice's G3, read on the treble
+  // staff an octave up, as a tenor's part is written.
+  await expect(page.getByTestId('sight-note').first()).toHaveAttribute(
+    'data-midi',
+    '55',
+  )
+})
+
+test("leaving sing-what-you-see's drill leaves the menu's Sight-Singing on the Singing tab's key", async ({
+  page,
+}) => {
+  await openSlug(page, 'sing-what-you-see', '16')
+  await expect(page.locator('.idle-hint')).toHaveText('10 notes · G major')
+
+  // Back clears the launch (resetExerciseLaunchState in App.tsx); without
+  // that, the lesson's line and key would follow the singer into the next
+  // open.
+  await page.locator('.back-btn').click()
+  await page
+    .locator('.exercise-card', { hasText: 'Sight-Singing' })
+    .first()
+    .click()
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Sight-Singing')
+  await expect(page.locator('.idle-hint')).toHaveText('6 notes · C major')
+  await expect(page.getByTestId('sight-key-sign')).toHaveCount(0)
+})
+
+test("/exercises/sight-sing-harmonic-minor opens Sight-Singing in Lesson 25's A harmonic minor", async ({
+  page,
+}) => {
+  await openSlug(page, 'sight-sing-harmonic-minor', '25')
+
+  await expect(page.locator('h2.exercise-title')).toHaveText('Sight-Singing')
+  await expect(page.locator('.idle-hint')).toHaveText(
+    '6 notes · A harmonic minor',
+  )
+  await expect(page.getByTestId('sight-staff')).toHaveAttribute('data-key', 'A')
+  // A minor's signature is empty; its G sharps are signed where they fall.
+  await expect(page.getByTestId('sight-key-sign')).toHaveCount(0)
+})

@@ -15,7 +15,7 @@
 import { describe, expect, it } from 'vitest'
 import { APPLY_PHRASES } from '@/data/apply-melodies'
 import { midiToNoteName, noteToMidi } from '@/lib/frequency-to-note'
-import { fitPhraseToRange, fitScaleBaseNote, getComfortableMidiRange, } from '@/lib/vocal-range'
+import { fitPhraseToRange, fitScaleBaseNote, getComfortableMidiRange, lessonVoiceOf, phraseInOwnOctave, } from '@/lib/vocal-range'
 import type { VocalRangePreset } from '@/stores/settings-store'
 import { VOCAL_RANGES } from '@/stores/settings-store'
 
@@ -144,5 +144,41 @@ describe('fitScaleBaseNote', () => {
 
   it('passes an unparseable note through', () => {
     expect(fitScaleBaseNote('nope', 'bass')).toBe('nope')
+  })
+})
+
+// Lesson 16's line for two voices, G4 to D5 for the higher and G3 to D4 for
+// the lower, as its page writes it. The fit would have moved the bass's line
+// to G2, do on the bass staff's bottom line, not in its top space where the
+// page and its quick check put it (Lesson 16 FACTS 59).
+describe('phraseInOwnOctave', () => {
+  const LINE = ['G4', 'A4', 'B4', 'A4', 'G4', 'G4', 'D5', 'B4', 'A4', 'G4']
+
+  it("splits the presets as the lessons' voice choice does: the A nearer the range's middle", () => {
+    expect(PRESETS.map((p) => [p, lessonVoiceOf(p)])).toEqual([
+      ['soprano', 'higher'],
+      ['mezzo-soprano', 'higher'],
+      ['alto', 'higher'],
+      ['tenor', 'lower'],
+      ['baritone', 'lower'],
+      ['bass', 'lower'],
+    ])
+  })
+
+  it('gives a lower voice the line an octave down and a higher voice the line as written', () => {
+    expect(phraseInOwnOctave(LINE, 'bass')[0]).toBe('G3')
+    expect(phraseInOwnOctave(LINE, 'tenor')).toEqual(
+      LINE.map((n) => midiToNoteName(noteToMidi(n) - 12)),
+    )
+    expect(phraseInOwnOctave(LINE, 'alto')).toEqual(LINE)
+    // where the fit would have put the bass
+    expect(fitPhraseToRange(LINE, 'bass')[0]).toBe('G2')
+  })
+
+  it('keeps every interval, and leaves a phrase with a note it cannot read as it was', () => {
+    expect(intervals(phraseInOwnOctave(LINE, 'baritone'))).toEqual(
+      intervals(LINE),
+    )
+    expect(phraseInOwnOctave(['G4', 'nope'], 'bass')).toEqual(['G4', 'nope'])
   })
 })
