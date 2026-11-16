@@ -28,7 +28,9 @@
 // nodes coming apart only after it. The input is the release's source too:
 // disposed, the monitor says when its path has come apart, and a
 // microphone's arm keeps its input open until then (lane-arms.ts `close`),
-// so a disarm while the singer is heard is a release, not a cut.
+// so a disarm while the singer is heard is a release, not a cut. A path
+// that has not begun to rise is silent: it comes apart at once, and a lane
+// disarmed while its monitor waits to rise lets its input go at once.
 //
 // A path rises only once its input has settled. A new microphone source
 // plays silence until the microphone's samples reach it, 10 to 202 ms after
@@ -90,6 +92,8 @@ interface MonitorPath {
   readonly level: GainNode
   /** What the sides were last asked for. */
   gains: readonly [number, number]
+  /** Its level has begun to rise: from then on it leaves on the release. */
+  rose: boolean
 }
 
 function defaultSchedule(callback: () => void, delayMs: number): () => void {
@@ -147,8 +151,13 @@ export function createStudioInputMonitor(
     stopWaiting()
     stopSettling?.()
     stopSettling = null
-    if (path !== null && cancelRemoval === null)
-      glide(context, path.level.gain, 1, LEVEL_TIME_CONSTANT)
+    if (path !== null && cancelRemoval === null) rise(path)
+  }
+
+  /** Raise `heard` from where its level is. */
+  function rise(heard: MonitorPath): void {
+    heard.rose = true
+    glide(context, heard.level.gain, 1, LEVEL_TIME_CONSTANT)
   }
 
   function build(sound: StudioMonitorSound): MonitorPath {
@@ -186,6 +195,7 @@ export function createStudioInputMonitor(
       merge,
       level,
       gains: sound.gains,
+      rose: false,
     }
   }
 
@@ -211,9 +221,13 @@ export function createStudioInputMonitor(
     for (const told of silent.splice(0)) told()
   }
 
-  /** Fade the path out on the release, then take it apart. */
+  /** Fade the path out on the release, then take it apart; one that never rose is silent, and comes apart at once. */
   function release(): void {
     if (path === null || cancelRemoval !== null) return
+    if (!path.rose) {
+      takeApart()
+      return
+    }
     glide(context, path.level.gain, 0, LEVEL_TIME_CONSTANT)
     cancelRemoval = schedule(
       takeApart,
@@ -228,7 +242,7 @@ export function createStudioInputMonitor(
       cancelRemoval()
       cancelRemoval = null
     } else return path
-    if (settled) glide(context, path.level.gain, 1, LEVEL_TIME_CONSTANT)
+    if (settled) rise(path)
     return path
   }
 
@@ -258,8 +272,9 @@ export function createStudioInputMonitor(
     },
     /**
      * Release the path for good. `whenSilent` runs once it has come apart
-     * and the input feeds nothing here, at once when nothing is heard: until
-     * then the input must stay open, or the release is cut.
+     * and the input feeds nothing here, at once when nothing was heard (no
+     * path, or one that had not begun to rise): until then the input must
+     * stay open, or the release is cut.
      */
     dispose(whenSilent?: () => void): void {
       if (!closed) {
