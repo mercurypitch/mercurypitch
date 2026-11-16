@@ -361,6 +361,90 @@ async function showTheme(page: Page, theme: 'dark' | 'light'): Promise<void> {
   }, theme)
 }
 
+/** Screenshots, as their pixels: decoded in the page, which has a PNG decoder. */
+async function pixelsOf(page: Page, shots: Buffer[]): Promise<number[][]> {
+  return page.evaluate(
+    (encoded) =>
+      Promise.all(
+        encoded.map(async (data) => {
+          const image = new Image()
+          image.src = `data:image/png;base64,${data}`
+          await image.decode()
+          const canvas = document.createElement('canvas')
+          canvas.width = image.width
+          canvas.height = image.height
+          const context = canvas.getContext('2d')!
+          context.drawImage(image, 0, 0)
+          return [...context.getImageData(0, 0, image.width, image.height).data]
+        }),
+      ),
+    shots.map((shot) => shot.toString('base64')),
+  )
+}
+
+/**
+ * The playhead put through the hint's thickest column of letters, and how
+ * many of the solid letter pixels there it changes: none when the letters
+ * are drawn over it. A solid pixel is one the text changes at least 85 % as
+ * far as its most changed pixel from the bar behind it; a letter's soft
+ * edges let a line behind them show through, as they should.
+ */
+async function playheadThroughLetters(
+  page: Page,
+  box: { x: number; y: number; width: number; height: number },
+  line: Locator,
+  text: Locator,
+): Promise<{ solid: number; crossed: number; column: number }> {
+  const hide = (target: Locator, hidden: boolean) =>
+    target.evaluate((element, value) => {
+      ;(element as HTMLElement).style.visibility = value ? 'hidden' : ''
+    }, hidden)
+  const apart = (a: number[], b: number[], i: number) =>
+    Math.max(
+      Math.abs(a[i] - b[i]),
+      Math.abs(a[i + 1] - b[i + 1]),
+      Math.abs(a[i + 2] - b[i + 2]),
+    )
+  await hide(line, true)
+  const plainShot = await page.screenshot({ clip: box })
+  await hide(text, true)
+  const bareShot = await page.screenshot({ clip: box })
+  await hide(text, false)
+  const [plain, bare] = await pixelsOf(page, [plainShot, bareShot])
+  let most = 0
+  for (let i = 0; i < plain.length; i += 4)
+    most = Math.max(most, apart(plain, bare, i))
+  const solid = (i: number) => apart(plain, bare, i) >= 0.85 * most
+  const counts = Array.from({ length: box.width }, (_, x) => {
+    let count = 0
+    for (let y = 0; y < box.height; y++)
+      if (solid((y * box.width + x) * 4)) count++
+    return count
+  })
+  // A ruler press snaps the playhead to the grid, rarely onto a letter's
+  // stem: the line itself is moved there, which changes no layer.
+  const thickest = counts.indexOf(Math.max(...counts))
+  const from = (await line.boundingBox())!.x
+  await line.evaluate(
+    (element, by) => {
+      ;(element as HTMLElement).style.translate = `${by}px 0`
+    },
+    box.x + thickest - from,
+  )
+  expect(Math.round((await line.boundingBox())!.x - box.x)).toBe(thickest)
+  await hide(line, false)
+  const [shown] = await pixelsOf(page, [await page.screenshot({ clip: box })])
+  await line.evaluate((element) => {
+    ;(element as HTMLElement).style.translate = ''
+  })
+  let crossed = 0
+  for (let y = 0; y < box.height; y++) {
+    const i = (y * box.width + thickest) * 4
+    if (solid(i) && apart(shown, plain, i) > 12) crossed++
+  }
+  return { solid: counts[thickest], crossed, column: thickest }
+}
+
 /** The take's clip on the timeline, by what its label says it plays. */
 function takeButton(page: Page, plays: RegExp): Locator {
   return studioRegion(page).getByRole('button', { name: plays })
@@ -726,7 +810,9 @@ test.describe('Studio comping', () => {
     )
   })
 
-  test('the comp bar stands clear of the selected clip', async ({ page }) => {
+  test('the comp bar stands clear of the selected clip, and its hint of the playhead', async ({
+    page,
+  }) => {
     test.setTimeout(240_000)
     const recorded = await recordLoop(page)
     const studio = studioRegion(page)
@@ -766,7 +852,30 @@ test.describe('Studio comping', () => {
         `[studio-comp] ${theme} shadow ${JSON.stringify({ reach, gap })}`,
       )
       expect(gap).toBeGreaterThan(0)
-      expect(reach).toBeLessThanOrEqual(gap)
+      expect.soft(reach).toBeLessThanOrEqual(gap)
+    }
+
+    // The playhead put across the bar's hint goes behind its letters.
+    const hint = comp.locator('p').first()
+    const box = await hint.evaluate((element) => {
+      const range = document.createRange()
+      range.selectNodeContents(element)
+      const text = range.getBoundingClientRect()
+      const left = Math.max(text.left, element.getBoundingClientRect().left)
+      return {
+        x: Math.ceil(left),
+        y: Math.floor(text.top),
+        width: Math.min(Math.floor(text.right - left) - 1, 300),
+        height: Math.ceil(text.height),
+      }
+    })
+    const line = studio.locator('[data-studio-playhead="line"]')
+    for (const theme of ['dark', 'light'] as const) {
+      await showTheme(page, theme)
+      const crossed = await playheadThroughLetters(page, box, line, hint)
+      console.log(`[studio-comp] ${theme} hint ${JSON.stringify(crossed)}`)
+      expect(crossed.solid).toBeGreaterThan(5)
+      expect.soft(crossed.crossed).toBe(0)
     }
   })
 
