@@ -2713,3 +2713,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** `usePracticeController` ran its frame loop while any feature held the shared mic (`MicState.active`), though a frame only settles the practice engine against its own audio engine's hold (`PracticeEngine.isMicActive`).
 **Rule:** gate a loop on the consumers it reads: the practice loop wakes for its audio engine's id (`AudioEngine.micConsumerId`) in `MicState.consumers`, never for `studio-record`, the stem mixer or Ear Lab. When reading a mic surface's frame counts, attribute requests by the calling chunk (studio-record.spec.ts counts the `StudioPage-` chunk apart), and know that Playwright's `waitForFunction` polls on every animation frame: a phase that waits on the audio clock asks for 60 frames a second of "other" itself, and keeps the frame pipeline running, so it hides what an idle page saves.
 **See:** `src/features/practice/usePracticeController.ts`, `src/e2e/studio-record.spec.ts`
+
+### Read an inlined asset from its own address; never fetch a data address
+
+**Symptom:** the Ng slides room logged two content-security-policy errors for each of two pictures on every visit to the dev site ("Fetch API cannot load data:image/webp;base64,..."), while every local build and the whole browser suite stayed silent.
+**Cause:** the build inlines an imported asset under 4 KB as a `data:` address, and `decodePicture` fetched whatever address it was handed. The web's policy lets a fetch reach the site, https and blob addresses only (`connect-src`, `public/_headers`), and that header exists only on a deployed site: the dev server, `serve` and the e2e build send none. The `<img>` fallback then loaded the picture, so nothing looked wrong.
+**Rule:** code that fetches an imported asset's address takes a `data:` address apart itself (`inlineBlob`) and never fetches it. After changing what a page loads, read the console of the deployed dev site once, since the policy is only there.
+**See:** `src/components/room-kit/canvas-picture.ts`, `src/tests/csp-headers.test.ts`, `public/_headers`

@@ -16,9 +16,51 @@
 // loader's picture, and the canvas decodes it as before. The room owns
 // every bitmap it asks for and lets each go when it leaves
 // (`releasePicture`).
+//
+// A small picture is not a file at all: under 4 KB the build inlines it
+// into the script as a `data:` address, as it does Ng slides' two
+// reflections (934 and 2,754 bytes). The web's content security policy
+// lets a fetch reach the site itself, https and blob addresses, and no
+// data one (`connect-src`, public/_headers), so fetching such an address
+// was refused on every visit, with two errors in the console for each
+// picture, and the picture came through the <img> after all (seen on the
+// dev site, 16 November 2026). Its bytes are in the address, so they are
+// read from there, and a data address is never fetched.
 
 /** A picture a canvas copies from, decoded. */
 export type CanvasPicture = HTMLImageElement | ImageBitmap
+
+/**
+ * The bytes a `data:` address carries, as a blob of its type; null for an
+ * address that is not one, or that cannot be read as one.
+ */
+export function inlineBlob(url: string): Blob | null {
+  if (!url.startsWith('data:')) return null
+  const comma = url.indexOf(',')
+  if (comma < 0) return null
+  const head = url.slice('data:'.length, comma)
+  const body = url.slice(comma + 1)
+  const base64 = /;base64$/i.test(head)
+  const type = head.replace(/;base64$/i, '').split(';')[0] ?? ''
+  try {
+    if (!base64) return new Blob([decodeURIComponent(body)], { type })
+    const text = atob(body)
+    const bytes = new Uint8Array(text.length)
+    for (let i = 0; i < text.length; i++) bytes[i] = text.charCodeAt(i)
+    return new Blob([bytes], { type })
+  } catch {
+    return null
+  }
+}
+
+/** The file at `url` as a blob, or null where it cannot be had: an inlined
+ *  picture from its own address, any other by a fetch. */
+async function pictureBlob(url: string): Promise<Blob | null> {
+  if (url.startsWith('data:')) return inlineBlob(url)
+  if (typeof fetch !== 'function') return null
+  const response = await fetch(url)
+  return response.ok ? await response.blob() : null
+}
 
 /**
  * The picture at `url`, decoded off the main thread; `fallback` (the
@@ -29,15 +71,10 @@ export async function decodePicture(
   url: string,
   fallback: (url: string) => Promise<HTMLImageElement>,
 ): Promise<CanvasPicture> {
-  if (
-    typeof globalThis.createImageBitmap === 'function' &&
-    typeof fetch === 'function'
-  ) {
+  if (typeof globalThis.createImageBitmap === 'function') {
     try {
-      const response = await fetch(url)
-      if (response.ok) {
-        return await globalThis.createImageBitmap(await response.blob())
-      }
+      const blob = await pictureBlob(url)
+      if (blob !== null) return await globalThis.createImageBitmap(blob)
     } catch {
       // The <img> below: it reports a file that will not load.
     }

@@ -78,6 +78,15 @@ describe('Content-Security-Policy', () => {
     expect(directive('connect-src')).toContain("'self'")
   })
 
+  it('lets no fetch reach a data address, so an inlined picture is read from its own bytes', () => {
+    // The build inlines an asset under 4 KB as a `data:` address. A fetch
+    // of one is refused by this directive, on a deployed site alone (no
+    // local server sends the header), and it logs an error on every visit.
+    // So code that fetches an imported asset's address takes a data
+    // address apart itself: `inlineBlob`, room-kit/canvas-picture.ts.
+    expect(directive('connect-src')).not.toContain('data:')
+  })
+
   it('still refuses to be framed by anybody', () => {
     expect(directive('frame-ancestors')).toEqual(["'none'"])
   })
