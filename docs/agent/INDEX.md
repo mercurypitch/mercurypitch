@@ -554,11 +554,11 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm beside-cue:test` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/glass-game --filter @irchiinnuss/beside-cue-app test:run` |
 | `pnpm beside-cue:android` | `pnpm --filter @irchiinnuss/beside-cue-app cap:run:android` |
 | `pnpm serve` | `pnpm dlx http-server dist -p 4173 -c-1` |
-| `pnpm typecheck` | `tsc --noEmit` |
+| `pnpm typecheck` | `node --max-old-space-size=8192 node_modules/typescript/bin/tsc --noEmit` |
 | `pnpm fmt` | `prettier src --check` |
 | `pnpm fmt:write` | `prettier src --write --log-level warn` |
-| `pnpm lint` | `eslint src` |
-| `pnpm lint:fix` | `eslint src --fix` |
+| `pnpm lint` | `node --max-old-space-size=8192 node_modules/eslint/bin/eslint.js src` |
+| `pnpm lint:fix` | `node --max-old-space-size=8192 node_modules/eslint/bin/eslint.js src --fix` |
 | `pnpm lint:audit` | `eslint -c eslint.audit.config.js src workers` |
 | `pnpm arch` | `depcruise --config .dependency-cruiser.cjs --output-type err-long src` |
 | `pnpm arch:summary` | `depcruise --config .dependency-cruiser.cjs --output-type err src` |
@@ -582,9 +582,9 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm assets:legends` | `node scripts/gen-legend-tiers.mjs` |
 | `pnpm assets:legends:check` | `node scripts/gen-legend-tiers.mjs --check` |
 | `pnpm assets:pwa-images` | `node scripts/optimize-pwa-images.mjs` |
-| `pnpm check:ci` | `run-s typecheck lint fmt docs:index:check` |
+| `pnpm check:ci` | `pnpm run typecheck && pnpm run lint && pnpm run fmt && pnpm run docs:index:check` |
 | `pnpm check:syntax` | `pnpm run check:ci` |
-| `pnpm check` | `run-s typecheck lint:fix fmt:write` |
+| `pnpm check` | `pnpm run typecheck && pnpm run lint:fix && pnpm run fmt:write` |
 | `pnpm beside-cue:typecheck` | `pnpm --filter @irchiinnuss/pitch-engine --filter @irchiinnuss/audio-io --filter @irchiinnuss/beside-cue-core --filter @irchiinnuss/mobile-runtime --filter @irchiinnuss/purchase-kit --filter @irchiinnuss/glass-game --filter @irchiinnuss/beside-cue-app exec tsc --noEmit` |
 | `pnpm mercurypitch:dev` | `pnpm --filter @irchiinnuss/mercury-pitch-app dev` |
 | `pnpm mercurypitch:build` | `pnpm --filter @irchiinnuss/mercury-pitch-app build` |
