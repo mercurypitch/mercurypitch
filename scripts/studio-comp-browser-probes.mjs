@@ -13,12 +13,16 @@
 // gain, plus its level times how far its gain moves in one frame.
 // A lane's volume and pan lines play on a stage after its faders
 // (graph-automation.ts), so they ride over a comp as over any clip: a comp
-// under lines exports as it plays, and the lines are heard on it.
+// under lines exports as it plays, and the lines are heard on it. A comp
+// split at a join, and split halves of the take on two passes, cross where
+// they meet as a comp's stretches do, so each plays as the comp of the
+// same passes does.
 import { EMPTY_CHAIN } from '/src/lib/studio-fx/chain-spec.ts'
 import { measureTrackLatencies } from '/src/lib/studio-fx/mixdown.ts'
 import { encodeCanonicalPcm, sha256Bytes, } from '/src/lib/studio/audio/canonical-pcm.ts'
 import { createStudioLaneMeter } from '/src/lib/studio/metering/live-meter.ts'
 import { compileStudioArrangement } from '/src/lib/studio/model/arrangement-plan.ts'
+import { applyStudioCommand } from '/src/lib/studio/model/commands.ts'
 import { createStudioProject, createStudioTrack, } from '/src/lib/studio/model/defaults.ts'
 import { studioSegmentGain } from '/src/lib/studio/playback/edge-envelope.ts'
 import { buildStudioGraph } from '/src/lib/studio/playback/graph.ts'
@@ -461,6 +465,187 @@ function peakLevel(data, from, to) {
   return peak
 }
 
+/** A segment's last frame on the song's timeline, exclusive. */
+const segmentEnd = (segment) =>
+  segment.startFrame + segment.sourceOutFrame - segment.sourceInFrame
+
+/**
+ * The largest step of `render` across the crossing at song frame `cut`,
+ * against the most the planned `segments` allow there (see joinSteps):
+ * each segment sounding there, its own step at its gain, plus its level
+ * times how far its gain moves in one frame. `lane` is the lane's gain
+ * from a source sample to the render.
+ */
+function stepAcross(render, segments, audio, cut, lane) {
+  const off = Math.round(render.heardFrame)
+  const from = cut - HALF - 2
+  const to = cut + HALF + 2
+  const sides = segments
+    .filter((segment) => segment.startFrame < to && segmentEnd(segment) > from)
+    .map((segment) => {
+      const centre = segment.sourceInFrame + cut - segment.startFrame
+      return {
+        gain: (n) =>
+          n >= segment.startFrame && n < segmentEnd(segment)
+            ? studioSegmentGain(segment, n)
+            : 0,
+        step: peakStep(audio, centre - HALF - 2, centre + HALF + 2),
+        level: peakLevel(audio, centre - HALF - 2, centre + HALF + 2),
+      }
+    })
+  let allowed = 0
+  for (let n = from + 1; n < to; n++)
+    allowed = Math.max(
+      allowed,
+      sides.reduce(
+        (sum, side) =>
+          sum +
+          side.gain(n) * side.step +
+          side.level * Math.abs(side.gain(n) - side.gain(n - 1)),
+        0,
+      ),
+    )
+  const step = peakStep(render.left, off + from, off + to)
+  return {
+    stepDbfs: round(db(step), 2),
+    allowedDbfs: round(db(lane * allowed), 2),
+    pass: step <= lane * allowed * 1.01 + 1e-6,
+  }
+}
+
+/** The lane's gain from a source sample to `render`, read 10000 frames into a clip on pass `pass` at AT. */
+function laneGain(render, audio, pass) {
+  const off = Math.round(render.heardFrame)
+  const middle = AT + 10_000
+  return (
+    peakLevel(render.left, off + middle, off + middle + SR / 10) /
+    peakLevel(
+      audio,
+      LEAD + pass * PASS + 10_000,
+      LEAD + pass * PASS + 10_000 + SR / 10,
+    )
+  )
+}
+
+/** `made` with `commands` applied, as a person's edits would leave it. */
+function edited(made, commands) {
+  const project = commands.reduce(
+    (song, command) =>
+      applyStudioCommand(song, command, { assets: made.assets, now: NOW }),
+    made.project,
+  )
+  return { ...made, project }
+}
+
+/**
+ * Two ways a loop take splits where two passes meet, each against the comp
+ * that plays the same passes unsplit: the probes' comp split at its first
+ * join, which leaves its left half pass 0 played whole; and the take on
+ * pass 1, uncomped, split at the same frame, its right half moved to pass
+ * 2 (against the comp of pass 1, then pass 2). The halves cross where they
+ * meet as the comp's stretches do (comp-plan.ts), so each Plays and
+ * exports as its comp does; at the cut the step stays within what the
+ * planned envelope allows, live and in the export; and the level over the
+ * 5 ms around the cut is the comp's, where a ramp to silence at either
+ * edge would dip it.
+ */
+async function splitJoins() {
+  const cut = AT + JOINS[0]
+  const split = { type: 'split-clip', clipId: 'take-clip', atFrame: cut }
+  const comped = compedSong('other', true)
+  const clip = takeClip('take-clip', 'lane', 1)
+  const at = clip.sourceInFrame + JOINS[0]
+  const cases = {
+    compSplit: {
+      split: edited(comped, [{ ...split, newClipId: 'take-clip-b' }]),
+      comp: comped,
+      pass: 0,
+    },
+    halvesOnTwoPasses: {
+      split: edited(song('other', true, [clip], [['take', takeAudio()]]), [
+        { ...split, newClipId: 'take-clip-b' },
+        { type: 'choose-pass', clipId: 'take-clip-b', pass: 2 },
+      ]),
+      comp: song(
+        'other',
+        true,
+        [
+          {
+            ...clip,
+            comp: [
+              {
+                fromSourceFrame: clip.sourceInFrame,
+                toSourceFrame: at,
+                pass: 1,
+              },
+              {
+                fromSourceFrame: at,
+                toSourceFrame: clip.sourceOutFrame,
+                pass: 2,
+              },
+            ],
+          },
+        ],
+        [['take', takeAudio()]],
+      ),
+      pass: 1,
+    },
+  }
+  const audio = takeAudio()
+  const results = {}
+  for (const [name, { split: made, comp, pass }] of Object.entries(cases)) {
+    const segments = compileStudioArrangement(made.project, made.assets)
+      .lanes[0].segments
+    const renders = {
+      play: await renderPlay(
+        made,
+        await prepare(made, true),
+        2,
+        CALLBACK - 0.5,
+      ),
+      export: await renderExport(made),
+    }
+    const against = {
+      play: await renderPlay(
+        comp,
+        await prepare(comp, true),
+        2,
+        CALLBACK - 0.5,
+      ),
+      export: await renderExport(comp),
+    }
+    const result = { clips: made.project.clips.length }
+    for (const kind of ['play', 'export']) {
+      const render = renders[kind]
+      const near = [cut - HALF / 2, cut + HALF / 2]
+      result[kind] = {
+        ...stepAcross(
+          render,
+          segments,
+          audio,
+          cut,
+          laneGain(render, audio, pass),
+        ),
+        againstCompDbfs: worstBetween(render, against[kind], 0, SONG_FRAMES),
+        dipDb: round(rmsDb(render, ...near) - rmsDb(against[kind], ...near), 3),
+      }
+    }
+    result.pass =
+      result.clips === 2 &&
+      ['play', 'export'].every(
+        (kind) =>
+          result[kind].pass &&
+          result[kind].againstCompDbfs < -140 &&
+          Math.abs(result[kind].dipDb) < 0.01,
+      )
+    results[name] = result
+  }
+  return {
+    ...results,
+    pass: Object.values(results).every((result) => result.pass),
+  }
+}
+
 /**
  * At each join, the export's largest step across the crossfade, against
  * the most the planned envelope allows there and the step a join butted
@@ -555,10 +740,11 @@ async function hashOf(render) {
 
 /**
  * Songs with no comp, Played and exported, hashed: a plain clip with fades
- * and gain, a split that coalesces, the loop take on its middle pass with
- * fades, and split halves of it on two other passes, on a dry lane, on a
- * dry lane under volume and pan lines, and through the bass chain (which
- * renders the same every time).
+ * and gain, a split that coalesces and the loop take on its middle pass
+ * with fades, on a dry lane, on a dry lane under volume and pan lines, and
+ * through the bass chain (which renders the same every time). Split halves
+ * of the take on two passes left these songs when they began to cross
+ * where they meet: splitJoins holds them to the comp of the same passes.
  */
 function uncompedSongs() {
   const plain = noise(1.2 * SR, 0.3, 11)
@@ -580,7 +766,6 @@ function uncompedSongs() {
         toSourceFrame: take.sourceOutFrame,
       },
     }
-    const splitAt = 31_337
     return [
       {
         id: 'plain-a',
@@ -603,16 +788,6 @@ function uncompedSongs() {
         fades,
       },
       { ...take, gainDb: 1.5, fades: takeFades },
-      {
-        ...takeClip('half-a', trackId, 0),
-        startFrame: 4 * SR,
-        sourceOutFrame: LEAD + splitAt,
-      },
-      {
-        ...takeClip('half-b', trackId, 2),
-        startFrame: 4 * SR + splitAt,
-        sourceInFrame: LEAD + 2 * PASS + splitAt,
-      },
     ]
   }
   const sources = [
@@ -662,5 +837,6 @@ export async function runStudioCompProbes({ comp = true } = {}) {
   results.exportCompedLinedLane = await exportCompedLinedLane()
   results.exportCompedVoice = await exportCompedVoice()
   results.joinSteps = await joinSteps()
+  results.splitJoins = await splitJoins()
   return results
 }
