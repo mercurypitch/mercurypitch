@@ -77,7 +77,7 @@ export const OWN_VOICE_SEC = 0.3
 /** Places either side within which another written note's pitch reads as that note sung early or late. */
 export const NEIGHBOURS = 2
 /** The most time one voiced frame stands for, s: a longer gap is a stretch with no voice. */
-const MAX_HOP = 0.05
+export const MAX_HOP = 0.05
 
 /** A written note: its MIDI note, and its first beat and length in beats from bar 1's first beat. */
 export interface WrittenNote {
