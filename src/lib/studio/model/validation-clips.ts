@@ -160,9 +160,16 @@ function validateClipPasses(
   )
 }
 
+/**
+ * A clip against the audio it plays. A MIDI clip's window and fades may run
+ * past its audio, silent there until its render is kept: its sequence
+ * bounds them instead (validation-midi.ts, midi-window.ts). Every clip's
+ * passes are audio it owns.
+ */
 export function validateClipAsset(clip: StudioClip, asset: StudioAsset): void {
+  const midi = clip.midi !== undefined
   requireValue(
-    clip.sourceOutFrame <= asset.normalizedFrameCount,
+    midi || clip.sourceOutFrame <= asset.normalizedFrameCount,
     `clip.${clip.id}`,
     'Source bounds exceed owned audio',
   )
@@ -176,7 +183,7 @@ export function validateClipAsset(clip: StudioClip, asset: StudioAsset): void {
   )
   for (const ramp of [clip.fades.in, clip.fades.out])
     requireValue(
-      !ramp || ramp.toSourceFrame <= asset.normalizedFrameCount,
+      midi || !ramp || ramp.toSourceFrame <= asset.normalizedFrameCount,
       `clip.${clip.id}.fades`,
       'Fade exceeds owned audio',
     )

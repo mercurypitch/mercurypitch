@@ -3,8 +3,10 @@
 // The song keeps every clip on its own audio until a render is kept
 // (midi-render-commands.ts). The transport plays a copy instead, in which a
 // clip with a preview ready plays it through its lane's own chain, and the
-// assets list holds the previews played. A preview too short for a clip's
-// window or passes is passed over, and the clip plays its own audio.
+// assets list holds the previews played. A clip's window may run past its
+// preview, silent there as past any MIDI clip's audio (midi-window.ts); a
+// preview too short for a loop take's passes is passed over, and the clip
+// plays its own audio.
 import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model/types'
 import { validateClipAsset } from '@/lib/studio/model/validation-clips'
 

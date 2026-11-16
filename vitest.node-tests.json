@@ -215,6 +215,7 @@
   "src/lib/studio/model/validation.test.ts",
   "src/lib/studio/playback/buffer-cache.test.ts",
   "src/lib/studio/playback/edge-envelope.test.ts",
+  "src/lib/studio/playback/graph.midi.test.ts",
   "src/lib/studio/playback/graph.test.ts",
   "src/lib/studio/playback/offline-render.test.ts",
   "src/lib/studio/playback/transport.test.ts",
