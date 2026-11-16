@@ -278,13 +278,15 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
                 <span class={midiStyles.name}>
                   {title().replace(AUDIO_EXTENSION, '') + passOf()}
                 </span>
-                <span class={midiStyles.chip}>
-                  {studioMidiChipWords(notes())}
+                <span class={midiStyles.tags} data-studio-clip-tags>
+                  <span class={midiStyles.chip}>
+                    {studioMidiChipWords(notes())}
+                  </span>
+                  <span class={midiStyles.count}>{countWords()}</span>
+                  <Show when={props.editing === true}>
+                    <span class={midiStyles.editing}>Editing</span>
+                  </Show>
                 </span>
-                <span class={midiStyles.count}>{countWords()}</span>
-                <Show when={props.editing === true}>
-                  <span class={midiStyles.editing}>Editing</span>
-                </Show>
               </>
             )}
           </Show>

@@ -96,6 +96,14 @@ describe('a MIDI clip says what it plays', () => {
 
     expect(button).toHaveAttribute('data-editing')
     expect(button).toHaveTextContent('Editing')
+    // The tags share one line, so a short clip drops one whole rather than
+    // cutting it (StudioMidiClip.module.css, .tags): Editing first.
+    const tags = button.querySelector('[data-studio-clip-tags]')!
+    expect([...tags.children].map((tag) => tag.textContent)).toEqual([
+      'MIDI · PIANO',
+      '2 notes',
+      'Editing',
+    ])
   })
 })
 

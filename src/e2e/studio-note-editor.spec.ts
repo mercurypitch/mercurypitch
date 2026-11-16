@@ -1,7 +1,55 @@
-// Studio note editor — a MIDI clip draws its notes in its lane's canvas; a double-click opens its notes in a drawer under the lanes, Escape and Done close it and give the focus back to the clip; Clip details' Edit notes and E open it too; the drawer's top edge resizes it, Expand fills the arrangement and Mix takes turns with it; two taps open it on a tablet, and on a phone it fills the screen until Done.
-import { expect, test } from '@playwright/test'
+// Studio note editor — a MIDI clip draws its notes in its lane's canvas; a double-click opens its notes in a drawer under the lanes, Escape and Done close it and give the focus back to the clip; a clip too short for its Editing tag drops it whole; Clip details' Edit notes and E open it too; the drawer's top edge resizes it, Expand fills the arrangement and Mix takes turns with it; two taps open it on a tablet, and on a phone it fills the screen until Done.
+import { expect, type Locator, test } from '@playwright/test'
 import { center, setStudioZoom, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import { clipCanvasAlpha, DRUM_NOTES, noteEditor, noteEditorArrived, openMidiSong, } from './helpers/studio-notes'
+
+/**
+ * Each tag in a MIDI clip's title, by its words, as the clip shows it: whole,
+ * hidden, or cut by an edge that clips it.
+ */
+function clipTags(clip: Locator): Promise<Record<string, string>> {
+  return clip.evaluate((button) => {
+    const shown: Record<string, string> = {}
+    for (const tag of button.querySelectorAll('span')) {
+      const words = tag.textContent ?? ''
+      if (
+        tag.children.length > 0 ||
+        !/^(MIDI · |Editing$|\d+ notes$)/.test(words)
+      )
+        continue
+      const box = tag.getBoundingClientRect()
+      const seen = {
+        left: -Infinity,
+        right: Infinity,
+        top: -Infinity,
+        bottom: Infinity,
+      }
+      for (let up = tag.parentElement; up !== null; up = up.parentElement) {
+        const style = getComputedStyle(up)
+        if (style.overflowX !== 'visible' || style.overflowY !== 'visible') {
+          const edge = up.getBoundingClientRect()
+          seen.left = Math.max(seen.left, edge.left)
+          seen.right = Math.min(seen.right, edge.right)
+          seen.top = Math.max(seen.top, edge.top)
+          seen.bottom = Math.min(seen.bottom, edge.bottom)
+        }
+        if (up === button) break
+      }
+      const whole =
+        box.left >= seen.left - 0.5 &&
+        box.right <= seen.right + 0.5 &&
+        box.top >= seen.top - 0.5 &&
+        box.bottom <= seen.bottom + 0.5
+      const gone =
+        box.right <= seen.left ||
+        box.left >= seen.right ||
+        box.bottom <= seen.top ||
+        box.top >= seen.bottom
+      shown[words] = whole ? 'whole' : gone ? 'hidden' : 'cut'
+    }
+    return shown
+  })
+}
 
 test.describe('Studio note editor on a computer', () => {
   test.use({ viewport: { width: 1440, height: 900 } })
@@ -76,6 +124,36 @@ test.describe('Studio note editor on a computer', () => {
     await expect(editor).toBeVisible()
     await editor.getByRole('button', { name: 'Done', exact: true }).click()
     await expect(editor).toHaveCount(0)
+  })
+
+  test('a clip too short for its Editing tag drops it whole, and a longer one shows it', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    const clip = await openMidiSong(page)
+    // The take's four seconds at 40 px a second: room for the chip and the
+    // count, and not for Editing as well.
+    await setStudioZoom(page, 40)
+    await clip.dblclick()
+    await expect(noteEditor(page)).toBeVisible()
+    await expect(clip).toHaveAttribute('data-editing', '')
+
+    await expect
+      .poll(() => clipTags(clip))
+      .toEqual({
+        'MIDI · PIANO': 'whole',
+        '8 notes': 'whole',
+        Editing: 'hidden',
+      })
+
+    await setStudioZoom(page, 160)
+    await expect
+      .poll(() => clipTags(clip))
+      .toEqual({
+        'MIDI · PIANO': 'whole',
+        '8 notes': 'whole',
+        Editing: 'whole',
+      })
   })
 
   test('Edit notes in Clip details, and E on the selected clip, open the notes', async ({
