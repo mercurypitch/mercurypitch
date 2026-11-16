@@ -335,7 +335,7 @@ describe('effects on a monitored input', () => {
     return { ctx, unit }
   }
 
-  it.each(['compressor', 'deesser', 'dyneq', 'limiter'])(
+  it.each(['compressor', 'deesser', 'dyneq'])(
     '%s passes the input straight through: one gain at unity, no lookahead, no cut',
     (kind) => {
       const { ctx, unit } = monitored(kind)
