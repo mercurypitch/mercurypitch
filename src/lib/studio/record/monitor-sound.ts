@@ -1,5 +1,5 @@
 // ============================================================
-// Studio monitor sound — what an armed lane does to its monitored input: its effects, volume and pan as playback has them
+// Studio monitor sound — what an armed lane does to its monitored input: its effects, volume and pan, and the master after them, as playback has them
 // ============================================================
 //
 // The input plays through the lane a take on it plays through: the lane's
@@ -21,9 +21,21 @@
 // faders as they stand. The take's own level is not either: playback
 // brings each recording to the same loudness first (preparation-gain.ts),
 // while the monitor hears the input as it arrives.
+//
+// After the lanes, the master (`studioMonitorMasterSpec`): the song's, as
+// playback plays it (sound-graph.ts), its macros still moving included, at
+// the master gain the listener hears. While Compare plays, the voice takes
+// the gain of the side playing, so it keeps playback's balance with the song
+// (`studioMonitorMasterGain`): on Before, which has no master, every effect
+// is off but the loudness gain, which plays the side's match gain.
+import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import { EMPTY_CHAIN } from '@/lib/studio-fx/chain-spec'
+import { MASTER_LOUDNESS_EFFECT_ID } from '@/lib/studio-fx/master'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
 import { MACRO_KEYS } from '@/lib/studio-fx/mix-macros'
+import type { StudioComparison } from '../export/prepare-comparison'
+import type { StudioMasterGain } from '../export/sound-graph'
+import { resolveStudioSoundGraph } from '../export/sound-graph'
 import { studioLaneSpec } from '../model/arrangement-plan'
 import { createStudioTrack } from '../model/defaults'
 import type { StudioProject, StudioTrack } from '../model/types'
@@ -90,5 +102,61 @@ export function studioMonitorSound(
     on: true,
     spec: studioLaneSpec(track, song.mix.macros),
     gains: audibility(song)(track) ? laneGains(track) : [0, 0],
+  }
+}
+
+/** The side Compare plays and the gains it plays at (prepare-comparison.ts). */
+export interface StudioMonitorCompare {
+  readonly side: 'before' | 'after'
+  readonly gains: Pick<
+    StudioComparison,
+    'beforeGainDb' | 'afterGainDb' | 'gainDb' | 'safetyGainDb'
+  >
+}
+
+/**
+ * The master gain the monitor plays at: the one the listener hears; while
+ * Compare plays, its side's, as comparison-preview.ts plays the song. Before
+ * plays the dry mix at the side's match gain, After the master at the
+ * measured gain and then the side's match gain. The safety gain stays, so the
+ * master keeps its shape as the sides change.
+ */
+export function studioMonitorMasterGain(
+  heard: StudioMasterGain,
+  compare: StudioMonitorCompare | null,
+): StudioMasterGain {
+  if (compare === null) return heard
+  const { gains } = compare
+  return {
+    gainDb:
+      compare.side === 'before'
+        ? gains.beforeGainDb
+        : gains.gainDb + gains.afterGainDb,
+    safetyGainDb: gains.safetyGainDb,
+  }
+}
+
+/**
+ * The master every monitored input plays through (monitor-master.ts):
+ * playback's, the song's macros still moving included, at `gain`, the
+ * master gain the monitor plays at. `bypassed` while what they hear has no
+ * master (Compare's Before side): every effect off at the same settings but
+ * the loudness gain, which plays `gain`, so the master glides out and back
+ * in without a jump.
+ */
+export function studioMonitorMasterSpec(
+  project: StudioProject,
+  gain: StudioMasterGain,
+  options: { readonly moving?: StudioMovingMix; readonly bypassed?: boolean },
+): ChainSpec {
+  const song = sounding(project, null, options.moving)
+  const master = resolveStudioSoundGraph(song, gain).full
+  if (options.bypassed !== true) return master
+  return {
+    ...master,
+    effects: master.effects.map((effect) => ({
+      ...effect,
+      enabled: effect.id === MASTER_LOUDNESS_EFFECT_ID,
+    })),
   }
 }

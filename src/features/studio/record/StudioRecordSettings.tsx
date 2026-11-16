@@ -136,10 +136,10 @@ export function StudioRecordSettings(props: {
       </label>
       <Show when={settings().monitor}>
         <p class={common.help} data-studio-monitor-help="">
-          You hear yourself through the lane's effects, a little late. The
-          compressor, de-esser, dynamic EQ and limiter sit out so the effects
-          add no delay, and takes record dry. Use headphones, or the speakers
-          feed back into the microphone.
+          You hear yourself through the lane's effects and the Master, a little
+          late. The compressor, de-esser and dynamic EQ sit out and the limiter
+          keeps only its ceiling, so nothing adds delay. Takes record dry. Use
+          headphones, or the speakers feed back into the microphone.
         </p>
       </Show>
       <label class={styles.offset}>

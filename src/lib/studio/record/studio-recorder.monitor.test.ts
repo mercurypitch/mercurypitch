@@ -4,9 +4,12 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ChannelPick } from '@/lib/audio-input/input-channels'
 import { releaseMicLock } from '@/lib/mic-lock'
 import { MicManager } from '@/lib/mic-manager'
+import { EMPTY_CHAIN } from '@/lib/studio-fx/chain-spec'
+import type { FakeNode } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { createManualScheduler, FakeAudioContext, FakeGain, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import type { StudioMonitorSound } from './input-monitor'
 import { createStudioInputMonitor } from './input-monitor'
+import { createStudioMonitorMaster } from './monitor-master'
 import type { StudioInstrumentHold, StudioMicHold, StudioRecorderDeps, } from './studio-recorder'
 import type { FakeGraphNode } from './studio-recorder.test-fixtures'
 import { fakeGraphNode, harness, laneSound, settle, } from './studio-recorder.test-fixtures'
@@ -23,10 +26,13 @@ function monitored(
 ) {
   const graph = new FakeAudioContext()
   const scheduler = createManualScheduler()
+  // With no effects: what is under test is each lane's own path.
+  const master = createStudioMonitorMaster(EMPTY_CHAIN)
   const h = harness({
     createMonitor: (_context, input, options) =>
       createStudioInputMonitor(graph.asContext, input, {
         ...options,
+        master,
         schedule: scheduler.schedule,
       }),
     monitorSound: () => sound,
@@ -60,11 +66,11 @@ function oneInput(
 const foldsOf = (node: FakeGraphNode) =>
   node.edges.map(([to]) => to as unknown).filter((to) => to instanceof FakeGain)
 
-/** Each heard monitor's level: the gains feeding the speakers. */
+/** Each heard monitor's level: the gain after its faders' merger, on to the master. */
 const levelsOf = (graph: FakeAudioContext) =>
   graph
-    .ofType<FakeGain>('gain')
-    .filter((gain) => gain.targets.includes(graph.destination))
+    .ofType<FakeNode>('merger')
+    .flatMap((merger) => merger.targets as FakeGain[])
 
 /** Whether `node` was taken apart whole, as an input's last lane leaves it. */
 const disconnectedWhole = (node: FakeGraphNode) =>

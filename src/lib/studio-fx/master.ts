@@ -171,6 +171,9 @@ export interface MasteredMix {
 const MAX_GAIN_PASSES = 3
 const LOUDNESS_TOLERANCE_DB = 0.2
 
+/** The master's loudness gain: the measured gain plays here, ahead of the ceiling. */
+export const MASTER_LOUDNESS_EFFECT_ID = 'loudness'
+
 export function masterFinishChain(
   gainDb: number,
   ceilingDb: number,
@@ -178,7 +181,7 @@ export function masterFinishChain(
 ): ChainSpec {
   return normalizeChainSpec({
     effects: [
-      { id: 'loudness', kind: 'gain', params: { gainDb } },
+      { id: MASTER_LOUDNESS_EFFECT_ID, kind: 'gain', params: { gainDb } },
       {
         id: 'ceiling',
         kind: 'limiter',

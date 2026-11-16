@@ -3,7 +3,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { releaseMicLock } from '@/lib/mic-lock'
 import { MicManager } from '@/lib/mic-manager'
 import { createStudioInputMonitor } from '@/lib/studio/record/input-monitor'
+import { createStudioMonitorMaster } from '@/lib/studio/record/monitor-master'
 import { fakeGraphNode, harness, laneSound, settle, } from '@/lib/studio/record/studio-recorder.test-fixtures'
+import { EMPTY_CHAIN } from '@/lib/studio-fx/chain-spec'
 import { createManualScheduler, FakeAudioContext, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { createStudioMicShare } from './studio-mic-share'
 
@@ -41,6 +43,7 @@ function rig() {
   const mic = new MicManager()
   const graph = new FakeAudioContext()
   const scheduler = createManualScheduler()
+  const master = createStudioMonitorMaster(EMPTY_CHAIN)
   /** The stream each source the recorder made listens to. */
   const sourcesOn: MediaStream[] = []
   const share = createStudioMicShare({
@@ -65,6 +68,7 @@ function rig() {
     createMonitor: (_context, input, options) =>
       createStudioInputMonitor(graph.asContext, input, {
         ...options,
+        master,
         schedule: scheduler.schedule,
       }),
     monitorSound: () => laneSound(true),

@@ -45,6 +45,7 @@ import type { MicError } from '@/lib/mic-manager'
 import { micManager } from '@/lib/mic-manager'
 import { registerMicIndicator } from '@/lib/mic-sentinel'
 import { isInsideOverlay, isTypingTarget } from '@/lib/space-playback'
+import type { StudioMasterGain } from '@/lib/studio/export/sound-graph'
 import { isStudioMemoryRefusal, reserveStudioMemory, } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import { openStudioCapture, prepareStudioRecorderWorklet, } from '@/lib/studio/record/capture-node'
@@ -52,8 +53,9 @@ import { createStudioClickTrack } from '@/lib/studio/record/click-track'
 import { createStudioInputMonitor } from '@/lib/studio/record/input-monitor'
 import type { StudioLaneInput } from '@/lib/studio/record/lane-inputs'
 import { isMidiLaneInput } from '@/lib/studio/record/lane-inputs'
+import { createStudioMonitorMaster } from '@/lib/studio/record/monitor-master'
 import type { StudioMovingMix } from '@/lib/studio/record/monitor-sound'
-import { studioMonitorSound } from '@/lib/studio/record/monitor-sound'
+import { studioMonitorMasterSpec, studioMonitorSound, } from '@/lib/studio/record/monitor-sound'
 import type { StudioRecordSettings } from '@/lib/studio/record/record-settings'
 import { readStudioRecordSettings, writeStudioRecordSettings, } from '@/lib/studio/record/record-settings'
 import type { StudioCapturedTake, StudioLiveTake, StudioRecorderView, StudioRecordPhase, StudioTakeJournalWriter, } from '@/lib/studio/record/studio-recorder'
@@ -110,6 +112,10 @@ export interface StudioRecorderOptions {
   readonly audioBusy: Accessor<boolean>
   /** Faders and dials still moving, heard in the monitor as in playback. */
   readonly liveMix?: StudioMovingMix
+  /** The gain every monitored input's master plays at: the one the listener hears (useStudioTransport `masterGain`), or Compare's side's (monitor-sound.ts `studioMonitorMasterGain`); 0 dB when absent. */
+  readonly masterGain?: Accessor<StudioMasterGain>
+  /** What the listener hears has no master (Compare's Before side), so the monitor keeps only its gain. */
+  readonly masterBypassed?: Accessor<boolean>
 }
 
 const MIC_ERRORS: Record<MicError['kind'], string> = {
@@ -232,6 +238,23 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       moving: options.liveMix,
     })
 
+  // Every monitored lane then plays through one master, as the lanes' clips
+  // do, following playback's as it plays now (monitor-master.ts), while a
+  // lane is monitored.
+  const monitorMaster = createStudioMonitorMaster()
+  createEffect(() => {
+    const song = project()
+    const heard = laneRecords.lanes().some(({ trackId }) => monitored(trackId))
+    if (song === null || !heard) return
+    monitorMaster.follow(
+      studioMonitorMasterSpec(
+        song,
+        options.masterGain?.() ?? { gainDb: 0, safetyGainDb: 0 },
+        { moving: options.liveMix, bypassed: options.masterBypassed?.() },
+      ),
+    )
+  })
+
   /** A lane's round trip on `clock`, the latencies its press read once for every lane, so lanes on one input land on one frame. */
   function measureRoundTrip(
     clock: AudioOutputLatencies,
@@ -306,7 +329,11 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     openCapture: openStudioCapture,
     createSource: (context, stream) => context.createMediaStreamSource(stream),
     createClicks: createStudioClickTrack,
-    createMonitor: createStudioInputMonitor,
+    createMonitor: (context, input, settings) =>
+      createStudioInputMonitor(context, input, {
+        ...settings,
+        master: monitorMaster,
+      }),
     monitorSound,
     transport: {
       playing: () => transport.playing(),
