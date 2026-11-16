@@ -3,7 +3,7 @@
 // ============================================================
 //
 // After a run, the question of keeping its voice take is a notice over
-// Merc's bubble (src/features/exercises/stage/TakeNotice.tsx), no longer a
+// Merc's bubble (src/features/exercises/stage/StageNotice.tsx), no longer a
 // block in the result card. The owner judges it by eye on a phone, so this
 // runs a real drill on a phone's screen with a fake microphone and checks
 // what a look would: the notice comes, the sheet under it does not move, it

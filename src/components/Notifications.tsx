@@ -1,14 +1,19 @@
 // ============================================================
 // Notifications — Toast notification system
 // ============================================================
+//
+// While a drill's stage presents the notices (the store's `stage`
+// presenter), it draws nothing at all: Merc's bubble says them, one at a
+// time (src/features/exercises/stage/StageNotice.tsx).
 
 import type { Component } from 'solid-js'
 import { For, Match, Show, Switch } from 'solid-js'
+import { unlockNames } from '@/lib/unlock-copy'
 // Import straight from the leaf store, not the @/stores barrel — the barrel
 // pulls app-store, which would drag the whole app shell into the standalone
 // karaoke/mirror entries that also mount this toast host.
 import type { Notification } from '@/stores/notifications-store'
-import { notifications, removeNotification } from '@/stores/notifications-store'
+import { notificationPresenter, notifications, removeNotification, } from '@/stores/notifications-store'
 import styles from '@/styles/Notifications.module.css'
 import { AlertTriangle, CheckCircle, XCircle } from './icons'
 
@@ -22,7 +27,10 @@ import { AlertTriangle, CheckCircle, XCircle } from './icons'
 // subject worth naming ("Update", "Microphone"), and it renders as a coloured
 // prefix on the message rather than a heading above it.
 
-const NotificationIcon: Component<{ type: Notification['type'] }> = (props) => (
+/** A notice's type, as a mark: also the stage's (StageNotice.tsx). */
+export const NotificationIcon: Component<{ type: Notification['type'] }> = (
+  props,
+) => (
   <Switch>
     <Match when={props.type === 'success'}>
       <CheckCircle />
@@ -57,7 +65,7 @@ export const Notifications: Component = () => {
       role="region"
       aria-label="Notifications"
     >
-      <For each={notifications()}>
+      <For each={notificationPresenter() === 'stage' ? [] : notifications()}>
         {(notif) => (
           <div
             class={`${styles.notification} ${styles[notif.type]} ${
@@ -76,6 +84,13 @@ export const Notifications: Component = () => {
                 <strong>{notif.title}</strong>
               </Show>
               <span class={styles.notificationText}>{notif.message}</span>
+              {/* A set of unlocks merged on a drill's stage keeps its names
+                  when the drill is left with it still on screen. */}
+              <Show when={(notif.unlocks?.length ?? 0) > 1}>
+                <span class={styles.notificationNames}>
+                  {unlockNames(notif.unlocks ?? [])}
+                </span>
+              </Show>
             </span>
             <Show when={notif.action !== undefined}>
               <span class={styles.notificationActions}>

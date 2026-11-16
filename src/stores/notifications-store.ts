@@ -17,9 +17,19 @@
 //   - under the native shell's pill (`setNotificationPresenter('pill')`),
 //     unlocks from the same moment merge into one notice, and only one
 //     notice is on screen at a time;
-//   - on the web nothing changes: one toast each, worded by the caller.
+//   - on a drill's stage in the web build (`presentNoticesOnStage`), the
+//     same, in Merc's bubble;
+//   - elsewhere on the web nothing changes: one toast each, worded by the
+//     caller.
+//
+// THE STAGE speaks in one place, so it orders what it says. A warning or an
+// error goes before any calmer notice, which waits behind it; and while the
+// stage is quiet (`setStageQuiet`: a run, an example playing) only warnings
+// and errors are shown at all. A notice that waits is not on screen, so its
+// time does not run: its clock starts when it is shown, as a phone's third
+// toast's does, and a notice put back to wait keeps what was left of it.
 
-import { createEffect, createRoot, createSignal, on } from 'solid-js'
+import { createEffect, createRoot, createSignal, on, untrack } from 'solid-js'
 import type { UnlockItem } from '@/lib/unlock-copy'
 import { unlockSummary } from '@/lib/unlock-copy'
 import { isNarrow } from '@/lib/use-viewport'
@@ -125,8 +135,9 @@ export interface NotificationOptions {
   group?: { key: string; summarise: (parts: string[]) => string }
   /**
    * This notice announces a badge or an achievement. The message is still
-   * the caller's, and it is what the web shows; the native shell's pill and
-   * a room's chip word it themselves (unlock-copy.ts). See the header.
+   * the caller's, and it is what the web's toasts show; the native shell's
+   * pill, a drill's stage and a room's chip word it themselves
+   * (unlock-copy.ts). See the header.
    */
   unlock?: UnlockItem
 }
@@ -144,13 +155,23 @@ const MAX_VISIBLE_NARROW = 2
 /**
  * Who draws the notices. `toast` is the web's stack (Notifications.tsx);
  * `pill` is the native shell's one-at-a-time pill under the status bar,
- * which the shell selects while it is mounted.
+ * which the shell selects while it is mounted; `stage` is Merc's bubble on
+ * a drill's stage in the web build (`presentNoticesOnStage`), one at a time
+ * as the pill is.
  */
-export type NotificationPresenter = 'toast' | 'pill'
+export type NotificationPresenter = 'toast' | 'pill' | 'stage'
 
 const [presenter, setPresenter] = createSignal<NotificationPresenter>('toast')
 
 export const notificationPresenter = presenter
+
+/** While true, the stage shows warnings and errors only; see the header. */
+const [stageQuiet, setStageQuietSignal] = createSignal(false)
+
+/** A warning or an error: what the stage says first, and during a run. */
+function isUrgent(notif: Notification): boolean {
+  return notif.type === 'warning' || notif.type === 'error'
+}
 
 /**
  * Unlocks that arrive this close to the first of a set are the same moment,
@@ -162,7 +183,7 @@ export const UNLOCK_MOMENT_MS = 3000
 
 /** How many notices may be on screen at once, where they are drawn now. */
 function visibleCap(): number {
-  if (presenter() === 'pill') return 1
+  if (presenter() !== 'toast') return 1
   return isNarrow() ? MAX_VISIBLE_NARROW : Number.POSITIVE_INFINITY
 }
 
@@ -173,6 +194,46 @@ function visibleCap(): number {
 export function setNotificationPresenter(next: NotificationPresenter): void {
   setPresenter(next)
   evictOverflow()
+  yieldCalm()
+  admitWaiting()
+}
+
+/** How many drill stages are on screen, each holding the presentation. */
+let stageHolds = 0
+
+/**
+ * Present the notices on a drill's stage, in Merc's bubble, until the
+ * returned release is called (ExerciseShell, in the web build alone). One
+ * notice is on screen at a time, as under the pill, and unlocks of one
+ * moment merge into it; the toasts draw nothing meanwhile. Released, every
+ * notice still waiting goes back to the toasts, in order, as a rotation
+ * hands them back. Under the native shell's pill this does nothing: the
+ * pill is the native app's one place for notices, a drill's too.
+ */
+export function presentNoticesOnStage(): () => void {
+  if (presenter() === 'pill') return () => undefined
+  stageHolds += 1
+  if (stageHolds === 1) setNotificationPresenter('stage')
+  let held = true
+  return () => {
+    if (!held) return
+    held = false
+    stageHolds -= 1
+    if (stageHolds > 0) return
+    setStageQuietSignal(false)
+    if (untrack(presenter) === 'stage') setNotificationPresenter('toast')
+  }
+}
+
+/**
+ * Quiet the stage, or let it speak again: while a run is under way or an
+ * example plays, only warnings and errors are shown on it. A calmer notice
+ * on screen goes back to wait with what was left of its time, and comes
+ * back when the stage is no longer quiet.
+ */
+export function setStageQuiet(quiet: boolean): void {
+  setStageQuietSignal(quiet)
+  yieldCalm()
   admitWaiting()
 }
 
@@ -233,9 +294,13 @@ function dropVisible(id: number): void {
  * the clock does not come back only to flash.
  */
 function evictOverflow(): void {
-  const overflow = notifications().slice(visibleCap())
-  if (overflow.length === 0) return
-  const requeued = overflow.map((notif) => {
+  sendBack(notifications().slice(visibleCap()))
+}
+
+/** Put notices on screen back at the front of the queue, in their order. */
+function sendBack(shown: readonly Notification[]): void {
+  if (shown.length === 0) return
+  const requeued = shown.map((notif) => {
     const left = (deadlines.get(notif.id) ?? 0) - Date.now()
     dropVisible(notif.id)
     return { notif, durationMs: Math.max(left, MIN_ON_SCREEN_MS) }
@@ -243,11 +308,36 @@ function evictOverflow(): void {
   waiting.unshift(...requeued)
 }
 
+/**
+ * On the stage, a calmer notice on screen gives way while the stage is
+ * quiet, and to a warning or an error that is waiting.
+ */
+function yieldCalm(): void {
+  if (presenter() !== 'stage') return
+  if (!stageQuiet() && !waiting.some((w) => isUrgent(w.notif))) return
+  sendBack(notifications().filter((notif) => !isUrgent(notif)))
+}
+
+/**
+ * Which waiting notice is shown next, or -1: the first in the queue, except
+ * on the stage, where a warning or an error goes first and nothing calmer
+ * goes while it is quiet.
+ */
+function nextToShow(): number {
+  if (presenter() === 'stage') {
+    const urgent = waiting.findIndex((w) => isUrgent(w.notif))
+    if (urgent !== -1 || stageQuiet()) return urgent
+  }
+  return waiting.length > 0 ? 0 : -1
+}
+
 function admitWaiting(): void {
-  while (waiting.length > 0 && notifications().length < visibleCap()) {
-    const next = waiting.shift()!
-    setNotifications((list) => [...list, next.notif])
-    scheduleRemoval(next.notif.id, next.durationMs)
+  while (notifications().length < visibleCap()) {
+    const at = nextToShow()
+    if (at === -1) return
+    const [next] = waiting.splice(at, 1)
+    setNotifications((list) => [...list, next!.notif])
+    scheduleRemoval(next!.notif.id, next!.durationMs)
   }
 }
 
@@ -258,6 +348,14 @@ function pushNotification(notif: Notification, durationMs: number): void {
     dropWaiting((n) => n.channel === channel)
     for (const stale of notifications().filter((n) => n.channel === channel))
       dropVisible(stale.id)
+  }
+  // The stage chooses what it says next (see the header), so every arrival
+  // there joins the queue and the queue decides.
+  if (presenter() === 'stage') {
+    waiting.push({ notif, durationMs })
+    yieldCalm()
+    admitWaiting()
+    return
   }
   if (notifications().length >= visibleCap()) {
     waiting.push({ notif, durationMs })
@@ -309,7 +407,7 @@ function routedUnlock(
     claim({ message, type, unlock })
     return true
   }
-  return presenter() === 'pill' && mergeUnlock(unlock)
+  return presenter() !== 'toast' && mergeUnlock(unlock)
 }
 
 /** Fold a grouped arrival into a live or waiting toast; true when it did. */
@@ -360,9 +458,10 @@ export function showNotification(
   if (group !== undefined && foldedIntoGroup(message, group)) return
 
   const id = ++_notifId
-  // The pill words an unlock itself, the same way it words a merged set.
+  // The pill and the stage word an unlock themselves, the same way they
+  // word a merged set.
   const text =
-    unlock !== undefined && presenter() === 'pill'
+    unlock !== undefined && presenter() !== 'toast'
       ? unlockSummary([unlock])
       : message
   pushNotification(
@@ -496,6 +595,8 @@ export function resetNotifications(): void {
   deadlines.clear()
   waiting.length = 0
   resetUnlockClaims()
+  stageHolds = 0
+  setStageQuietSignal(false)
   setPresenter('toast')
   setNotifications([])
 }

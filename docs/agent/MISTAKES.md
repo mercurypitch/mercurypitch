@@ -1126,6 +1126,13 @@ import handler, issue #813.
 **Rule:** an accessor option that may name something made after the hook is read in effects and handlers only; give it equality where it is made (the recorder's memo), not in the hook. Test it with an option that throws until setup is over.
 **See:** `src/features/studio/audio/useStudioTransport.ts` (`take`), `src/features/studio/audio/useStudioTransport.take.test.tsx`
 
+### Fit an overlay to the controls under it, not to a height budgeted once
+
+**Symptom:** the first cut of the app's notices in Merc's bubble put a warning's capsule on a row under its words; at 390x844 it was 138 px tall and lay over Start, which heads a phone's drill sheet about 80 px under the top of Merc's row. The unlock notices beside it fitted, so a look at those alone passed.
+**Cause:** the room under the bubble is not a constant: the drill's brief sets the row's height, a result card moves Start down, and a scrolled sheet sticks Start to its top. A notice's height is its words' length, which the stage does not choose.
+**Rule:** an overlay that must cover no control measures the controls under it (a tap at each one's centre, `elementsFromPoint`, as the native pill does) and fits itself to that room, here by keeping the lines of the message that fit. Check it at 360 and 390 wide, idle and after a run, with the browser check that lists the controls under the overlay.
+**See:** `src/features/exercises/stage/StageNotice.tsx` (`roomBelow`), `src/features/exercises/stage/stage-notice.ts` (`linesThatFit`), `src/e2e/exercise-stage-notices.spec.ts`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry

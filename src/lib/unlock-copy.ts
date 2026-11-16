@@ -2,14 +2,16 @@
 // Unlock copy: what the native app says when a badge or goal is earned
 // ============================================================
 //
-// One place for the words, because two surfaces say them: the chip under a
-// room's result (room-kit/UnlockChip.tsx) and the native shell's top pill
-// (apps/mercurypitch/src/shell/NoticePill.tsx). The web's toasts keep their
-// own wording, "Badge unlocked: X", which the grant engine still writes.
+// One place for the words, because three surfaces say them: the chip under a
+// room's result (room-kit/UnlockChip.tsx), the native shell's top pill
+// (apps/mercurypitch/src/shell/NoticePill.tsx) and, on the web, a drill's
+// stage (src/features/exercises/stage/stage-notice.ts). The web's toasts
+// keep their own wording, "Badge unlocked: X", which the grant engine still
+// writes.
 //
 // A single unlock names itself. Two or more say how many, and the names go
-// on a second line (the pill) or in a list behind a tap (the chip), because
-// three names in one sentence do not fit a phone's header.
+// on a second line (the pill, the stage) or in a list behind a tap (the
+// chip), because three names in one sentence do not fit a phone's header.
 
 /** One badge or achievement, as it was granted. */
 export interface UnlockItem {
@@ -48,6 +50,20 @@ export function unlockSummary(items: readonly UnlockItem[]): string {
     'achievement',
     'achievements',
   )}`
+}
+
+/**
+ * The first line of a notice whose second line is the names
+ * (`unlockNames`), as a drill's stage draws one: what was earned, and how
+ * many.
+ *
+ *   one badge                 New badge
+ *   one achievement           New achievement
+ *   two or more               as `unlockSummary`: 2 new achievements
+ */
+export function unlockHeading(items: readonly UnlockItem[]): string {
+  if (items.length !== 1) return unlockSummary(items)
+  return items[0]!.kind === 'badge' ? 'New badge' : 'New achievement'
 }
 
 /** The names of a set, in the order they were earned, for a second line. */

@@ -8,6 +8,15 @@ import { EXERCISE_LONG_NOTE, EXERCISE_PITCH_HOLD, } from '@/features/exercises/t
 
 const tick = () => new Promise((r) => setTimeout(r, 0))
 
+/** The guided result card: a status of its own, beside the polite region
+ *  that Merc's notices speak through for the whole visit. */
+function resultCard(): HTMLElement {
+  const card = document.querySelector<HTMLElement>('.exercise-result-card')
+  expect(card).not.toBeNull()
+  expect(card).toHaveAttribute('role', 'status')
+  return card!
+}
+
 describe('ExerciseShell auto-timer', () => {
   afterEach(() => {
     vi.restoreAllMocks()
@@ -141,7 +150,7 @@ describe('ExerciseShell auto-timer', () => {
       now += 5_000
       intervalCallback?.()
       await tick()
-      const resultStatus = screen.getByRole('status')
+      const resultStatus = resultCard()
       expect(resultStatus).toHaveTextContent('Hold complete')
       expect(resultStatus).toHaveFocus()
       expect(screen.queryByText('80%')).toBeNull()
@@ -225,9 +234,7 @@ describe('ExerciseShell auto-timer', () => {
     intervalCallback?.()
     await tick()
 
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Hold needs another try',
-    )
+    expect(resultCard()).toHaveTextContent('Hold needs another try')
     expect(screen.getByText('Hold 1 of 3 needs another try')).toBeVisible()
     expect(
       screen.getByText(/did not hear enough sustained voice/),

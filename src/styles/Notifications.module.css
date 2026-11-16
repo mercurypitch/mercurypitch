@@ -130,6 +130,14 @@
   overflow-wrap: anywhere;
 }
 
+/* The names of a merged set of unlocks, on a line of their own. */
+.notificationNames {
+  display: block;
+  color: var(--text-secondary, #8b949e);
+  font-size: 0.74rem;
+  overflow-wrap: anywhere;
+}
+
 .notificationActions {
   display: flex;
   flex-shrink: 0;

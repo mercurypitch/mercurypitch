@@ -77,13 +77,30 @@ had, so each drill's own styles, the tests and the tours find what they looked f
 - **The take notice** (15 Nov 2026). Whether to keep a run's voice take is no longer a block in the
   result card, with Keep Take and Discard over Try Again. It is a notice that pops out of Merc's
   bubble, with Merc beside it as an iOS banner has its app's icon beside it
-  (`stage/TakeNotice.tsx`, its words by state in `stage/take-notice.ts`, the keep in
+  (`stage/StageNotice.tsx`, its words by state in `stage/take-notice.ts`, the keep in
   `stage/useTakeNotice.ts`). It lies over the bubble, out of the flow, so the sheet does not move
   when it comes or goes and it covers no control. It asks ("Keep this take?", Keep, a close that
   discards), says it is keeping, then "Take kept", which leaves by itself after 4 s, or offers a
   retry when keeping failed; it says all of that in one place, so a keep raises no toast. "Hear it
   first" has the bubble while it plays. A take that was never recorded is not a notice: the card
   says so in one quiet line at its foot.
+- **The app's notices** (16 Nov 2026). While a drill's stage is on screen in the web build, the
+  app's notices, achievements among them, are said in Merc's bubble too, drawn as the take notice
+  is, and the toasts draw nothing (`stage/useStageNotices.ts`, the store's `presentNoticesOnStage`).
+  On a phone two "Achievement unlocked" toasts used to lie over the sheet's foot, and on a desktop
+  the toasts' corner covered the level chip and the microphone. One notice is up at a time, the
+  rest wait their turn, and the unlocks of one moment are one notice with the first one's
+  medallion and every name, as in the native app's pill. A notice carries its type's mark, its
+  message (its title as a subject at its head), up to two actions as capsules and a close; a tap
+  on its words or an upward swipe dismisses it. The bubble says, first that applies: a warning or
+  an error; the example's line while "Hear it first" plays; any other notice; the take's notice;
+  the run's instruction or the brief (`stage/stage-notice.ts` `bubbleNotice`). During a run only
+  warnings and errors are said, and a notice that waits does not run out its time unseen. The
+  notice ends above the first control under it: on a phone Start heads the sheet, so a notice
+  with a capsule keeps the head of its message there, and a screen reader still reads all of it.
+  When the drill is left, whatever is still waiting goes back to the toasts, in order. The native
+  app keeps its pill for every notice, a drill's too. The rooms (`rooms/WebRoomHost.tsx`) do not
+  take part yet: a notice over a room is still a toast.
 
 - **Hear it first.** Under Start, a drill can offer one example of what it asks for
   (`ExerciseShell`'s `demo`): Merc takes his singing pose, his bubble says what it is ("Listen: E3,
