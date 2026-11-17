@@ -19,7 +19,7 @@
 //
 // A worklet runs on after it is disconnected, for as long as its process()
 // says it has work; `dispose` tells it it has none.
-import workletUrl from './compressor.worklet.ts?worker&url'
+import workletUrl from '@/workers/studio-compressor.worklet.ts?worker&url'
 import { STUDIO_COMPRESSOR_DISPOSE, STUDIO_COMPRESSOR_PROCESSOR, } from './compressor-kernel'
 
 const loading = new WeakMap<BaseAudioContext, Promise<boolean>>()

@@ -1,6 +1,6 @@
-// Studio compressor worklet — a DynamicsCompressorNode's processing with no lookahead, for a monitored input (compressor-kernel.ts).
-import type { CompressorKernelSettings } from './compressor-kernel'
-import { COMPRESSOR_PARAMETERS, createCompressorKernel, STUDIO_COMPRESSOR_DISPOSE, STUDIO_COMPRESSOR_PROCESSOR, } from './compressor-kernel'
+// Studio compressor worklet — a DynamicsCompressorNode's processing with no lookahead, for a monitored input (src/lib/studio-fx/compressor-kernel.ts).
+import type { CompressorKernelSettings } from '@/lib/studio-fx/compressor-kernel'
+import { COMPRESSOR_PARAMETERS, createCompressorKernel, STUDIO_COMPRESSOR_DISPOSE, STUDIO_COMPRESSOR_PROCESSOR, } from '@/lib/studio-fx/compressor-kernel'
 
 declare const sampleRate: number
 declare class AudioWorkletProcessor {

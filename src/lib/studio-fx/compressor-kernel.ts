@@ -47,7 +47,7 @@ export interface CompressorParameter {
   readonly automationRate: 'k-rate'
 }
 
-/** The name the compressor's AudioWorkletProcessor registers under (compressor.worklet.ts). */
+/** The name the compressor's AudioWorkletProcessor registers under (src/workers/studio-compressor.worklet.ts). */
 export const STUDIO_COMPRESSOR_PROCESSOR = 'studio-compressor'
 
 /** What the page posts a compressor's processor when its unit is disposed: process() then says it is done. */
