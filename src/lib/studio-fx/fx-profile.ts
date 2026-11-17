@@ -16,7 +16,9 @@
 // (src/lib/studio/record/input-monitor.ts), and the master after it
 // (src/lib/studio/record/monitor-master.ts). Nothing lines a monitor up
 // with the song, so it gives up the chains' latency instead of keeping it:
-// an input heard through them is heard no later than a dry one.
+// an input heard through them is heard no later than a dry one. The lane's
+// chain takes live playback's `lite` with it, as the lane's clips do; the
+// master, as playback's, never does.
 
 /** The effects whose shapers run oversampled at full quality. */
 export type StudioShaperEffect = 'saturation' | 'exciter' | 'limiter'
@@ -42,7 +44,11 @@ export interface StudioFxProfile {
   readonly reverbBus: boolean
   /**
    * Dynamics effects that keep only their lookahead: they pass the signal
-   * as they do while their band is quiet, and never cut.
+   * as they do while their band is quiet, and never cut. With
+   * `zeroLatency` they keep not even that, and pass it bit for bit
+   * (effects/latency-only.ts): a monitored lane follows live playback's
+   * tier (input-monitor.ts), so on Light its de-esser and dynamic EQ pass
+   * the input uncut, as the lane's clips play them.
    */
   readonly lite: readonly StudioLiteEffect[]
   /**

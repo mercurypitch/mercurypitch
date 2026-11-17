@@ -1,8 +1,11 @@
-// Studio input monitor — off builds nothing; on plays the input folded as the take is, spread, through its lane's chain at the monitor profile and its faders, then the master and only through it, on one path however often it is set, rising a quarter of a second after the input's first sound, after a second without one, at once as its source settles under another lane, or at once on an input that plays cleanly from its first sample; a lane not heard, and dispose, take the graph apart after the release, the master with it, and at once a path that never began to rise; a lane heard again while it releases plays on through the same path; and dispose says when its input may close: at once with nothing heard, once the path has come apart otherwise.
-import { describe, expect, it, vi } from 'vitest'
+// Studio input monitor — off builds nothing; on plays the input folded as the take is, spread, through its lane's chain at the monitor profile and its faders, then the master and only through it, on one path however often it is set, rising a quarter of a second after the input's first sound, after a second without one, at once as its source settles under another lane, or at once on an input that plays cleanly from its first sample; a lane not heard, and dispose, take the graph apart after the release, the master with it, and at once a path that never began to rise; a lane heard again while it releases plays on through the same path; and dispose says when its input may close: at once with nothing heard, once the path has come apart otherwise. On the Light tier a lane's de-esser and dynamic EQ are a wire each with no worklet, and a new tier swaps them in the same path under its chain's duck.
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_CHAIN, normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
-import type { FakeGain } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
-import { createManualScheduler, FakeAudioContext, FakeNode, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import { COMPRESSOR_PARAMETERS, STUDIO_COMPRESSOR_DISPOSE, STUDIO_COMPRESSOR_PROCESSOR, } from '@/lib/studio-fx/compressor-kernel'
+import type { FakeDelay, FakeGain, FakeWorkletNode, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import { createManualScheduler, FakeAudioContext, fakeAudioWorklet, FakeNode, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import type { StudioLiteEffect } from '@/lib/studio-fx/fx-profile'
+import { prepareZeroLatencyCompressor } from '@/lib/studio-fx/zero-latency-compressor'
 import type { StudioMonitorSound } from './input-monitor'
 import { createStudioInputMonitor } from './input-monitor'
 import { createStudioMonitorMaster } from './monitor-master'
@@ -433,5 +436,108 @@ describe("the input monitor before its input's first sound", () => {
     scheduler.advance(1)
     expect(silent).toHaveBeenCalledOnce()
     expect(input.targets).toEqual([])
+  })
+})
+
+describe("the input monitor at live playback's tier", () => {
+  afterEach(() => vi.unstubAllGlobals())
+
+  /** A lane with a de-esser and a dynamic EQ band and nothing else. */
+  const BANDS = normalizeChainSpec({
+    effects: [
+      { kind: 'deesser', params: {}, enabled: true },
+      { kind: 'dyneq', params: {}, enabled: true },
+    ],
+  })
+  /** What Light playback keeps only the lookahead of (playback-quality.ts). */
+  const LIGHT: readonly StudioLiteEffect[] = ['dyneq', 'deesser']
+  /** The chain's duck before a re-patch, in ms (chain.ts). */
+  const DUCK_MS = 40
+
+  /** A heard monitor whose context has the compressor worklet loaded, as an armed lane's has. */
+  async function loaded() {
+    const heard = setup()
+    fakeAudioWorklet(heard.ctx, {
+      [STUDIO_COMPRESSOR_PROCESSOR]: COMPRESSOR_PARAMETERS,
+    })
+    await prepareZeroLatencyCompressor(heard.ctx.asContext)
+    return heard
+  }
+
+  /** The nodes the input passes through on its way to the master. */
+  function onPath(
+    ctx: FakeAudioContext,
+    input: FakeNode,
+    master: FakeNode,
+  ): FakeNode[] {
+    return ctx.created.filter(
+      (node) => reaches(input, node) && reaches(node, master),
+    )
+  }
+
+  /** The band worklets the input passes through. */
+  const heardWorklets = (
+    ctx: FakeAudioContext,
+    input: FakeNode,
+    master: FakeNode,
+  ) => onPath(ctx, input, master).filter((node) => node.nodeType === 'worklet')
+
+  it('builds a lane on Light with no band worklet and no band: its de-esser and dynamic EQ pass the input bit for bit, as Light playback passes them uncut', async () => {
+    const { ctx, input, monitor, master } = await loaded()
+
+    monitor.set(sound({ spec: BANDS, gains: [1, 1], lite: LIGHT }))
+
+    expect(ctx.ofType('worklet')).toEqual([])
+    expect(ctx.ofType('biquad')).toEqual([])
+    const path = onPath(ctx, input, master.inputs[0])
+    expect(path.length).toBeGreaterThan(0)
+    // Gains at exactly 1, a zero delay (the chain's hold), and the split
+    // and merge any lane has: each passes what it is given unchanged.
+    for (const node of path) {
+      if (node.nodeType === 'gain')
+        expect((node as FakeGain).gain.destination).toBe(1)
+      else if (node.nodeType === 'delay')
+        expect((node as FakeDelay).delayTime.value).toBe(0)
+      else expect(['splitter', 'merger']).toContain(node.nodeType)
+    }
+  })
+
+  it('plays the bands again when the tier goes back to Balanced: the same path swaps them in once its chain has ducked, and opens again', async () => {
+    const { ctx, input, scheduler, monitor, master } = await loaded()
+    monitor.set(sound({ spec: BANDS, lite: LIGHT }))
+    const [level] = levels(ctx)
+
+    monitor.set(sound({ spec: BANDS }))
+
+    const ducking = onPath(ctx, input, master.inputs[0]).filter(
+      (node): node is FakeGain =>
+        node.nodeType === 'gain' && (node as FakeGain).gain.destination === 0,
+    )
+    expect(ducking).toHaveLength(1)
+    expect(heardWorklets(ctx, input, master.inputs[0])).toEqual([])
+    scheduler.advance(DUCK_MS)
+    expect(heardWorklets(ctx, input, master.inputs[0])).toHaveLength(2)
+    expect(ducking[0].gain.destination).toBe(1)
+    // Swapped in place: one path, one level, one join of the master.
+    expect(levels(ctx)).toEqual([level])
+    expect(master.inputs).toHaveLength(1)
+  })
+
+  it('takes the bands out when the tier goes to Light while the lane is heard: under the duck, their worklets let go after', async () => {
+    const { ctx, input, scheduler, monitor, master } = await loaded()
+    monitor.set(sound({ spec: BANDS }))
+    const playing = heardWorklets(ctx, input, master.inputs[0])
+    expect(playing).toHaveLength(2)
+
+    monitor.set(sound({ spec: BANDS, lite: LIGHT }))
+    expect(heardWorklets(ctx, input, master.inputs[0])).toEqual(playing)
+    scheduler.advance(DUCK_MS)
+
+    expect(heardWorklets(ctx, input, master.inputs[0])).toEqual([])
+    for (const worklet of playing as FakeWorkletNode[])
+      expect(worklet.posted).toEqual([STUDIO_COMPRESSOR_DISPOSE])
+    // The same tier again changes nothing.
+    monitor.set(sound({ spec: BANDS, lite: LIGHT }))
+    expect(scheduler.pendingCount).toBe(0)
   })
 })

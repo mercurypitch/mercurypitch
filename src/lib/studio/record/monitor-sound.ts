@@ -15,7 +15,9 @@
 // instrument is heard through its lane the same way: its clips play
 // through the lane's chain too.
 // Controls still moving count (the live mix): a fader is heard while it
-// moves, as in playback.
+// moves, as in playback. So does live playback's tier (`lite`,
+// playback-quality.ts): on Light the lane's clips play its de-esser and
+// dynamic EQ uncut, and so does its monitor.
 //
 // Volume and pan lines are not followed: the monitor takes the lane's
 // faders as they stand. The take's own level is not either: playback
@@ -35,6 +37,7 @@
 // moves each sound by its own amount.
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import { EMPTY_CHAIN } from '@/lib/studio-fx/chain-spec'
+import type { StudioLiteEffect } from '@/lib/studio-fx/fx-profile'
 import { MASTER_LOUDNESS_EFFECT_ID } from '@/lib/studio-fx/master'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
 import { MACRO_KEYS } from '@/lib/studio-fx/mix-macros'
@@ -115,6 +118,8 @@ export function studioMonitorSound(
     readonly on: boolean
     readonly moving?: StudioMovingMix
     readonly dry?: boolean
+    /** What live playback's tier keeps only the lookahead of in the song now (playback-quality.ts `livePlaybackProfile`): none when absent. */
+    readonly lite?: readonly StudioLiteEffect[]
   },
 ): StudioMonitorSound {
   if (!options.on || project === null) return SILENT
@@ -129,6 +134,7 @@ export function studioMonitorSound(
     on: true,
     spec: options.dry === true ? effectsOff(spec) : spec,
     gains: audibility(song)(track) ? laneGains(track) : [0, 0],
+    lite: options.lite,
   }
 }
 

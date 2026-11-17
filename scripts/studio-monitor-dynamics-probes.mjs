@@ -36,7 +36,28 @@
 //   output with its gain cut 1 dB and 6 dB at once on a crest is there for
 //   scale. For the de-esser, sibilance too: noise above 5 kHz stepping
 //   between -40 and -16 dBFS RMS, its level over each step after the attack
-//   against playback's (bar: 1 dB).
+//   against playback's (bar: 1 dB);
+// - light: on the Light tier, whose playback leaves the de-esser and the
+//   dynamic EQ uncut (playback-quality.ts TIER_PROFILES), each lane the
+//   voice probe plays, on the sung vowel, monitored at Light's lite list
+//   against the same lane with its de-esser and dynamic EQ taken out: bit
+//   for bit with the echo out of both (bar: exact), and with it in, within
+//   the -120 dBFS bar. An echo sums three signals at each line's delay (its
+//   input, its own feedback and the other line's), and the order a node
+//   adds its inputs in can differ between two builds, so two builds of one
+//   lane with an echo can differ: in Chromium 148 the voice lane at
+//   Balanced or Light, or its echo alone, by -141 to -146.6 dBFS at the
+//   peak, six builds each. And the lane at Balanced against Light, for
+//   scale;
+// - follow: a lane with a dynamic EQ band on a steady 480 Hz tone at -20
+//   dBFS and a de-esser, monitored live on a running context while its tier
+//   goes to Light and back to Balanced (input-monitor.ts, chain.ts
+//   `setLite`): around each change, the largest step from one frame to the
+//   next against the steepest step the tone makes at the louder of its
+//   levels either side (bar: 1.1; a 1 dB jump on a crest for scale), how far
+//   the lane dips while the two change places, and its level after: at Light
+//   against an offline render of the lane without them, back at Balanced
+//   against its level before the first change (bar: 0.01 dB each).
 // What a monitored lane costs is the monitor suite's `cost` probe
 // (studio-monitor-browser-probes.mjs).
 import { normalizeChainSpec } from '/src/lib/studio-fx/chain-spec.ts'
@@ -46,7 +67,11 @@ import { MASTER_CHAIN_PRESET, STUDIO_FX_PRESETS, } from '/src/lib/studio-fx/pres
 import { measureChainLatencyFrames } from '/src/lib/studio-fx/render.ts'
 import { TRACK_ROLES } from '/src/lib/studio-fx/role-chains.ts'
 import { measureShaperDelays } from '/src/lib/studio-fx/shaper-delay.ts'
-import { bestLag, EMPTY_SPEC, firstHeard, lanePathRender, laneSound, levelDbOf, monitorFirstHeard, monitorRender, PLAIN_LANE, rmsOf, round, s, SKIP, SR, START, tone, voiceInput, } from '/scripts/studio-monitor-browser-probes.mjs'
+import { TIER_PROFILES } from '/src/lib/studio/playback/playback-quality.ts'
+import { frameTime } from '/src/lib/studio/playback/whole-frame.ts'
+import { createStudioInputMonitor } from '/src/lib/studio/record/input-monitor.ts'
+import { createStudioMonitorMaster } from '/src/lib/studio/record/monitor-master.ts'
+import { bestLag, compare, EMPTY_SPEC, firstHeard, laidOut, lanePathRender, laneSound, levelDbOf, liveContext, monitorFirstHeard, monitorRender, PLAIN_LANE, rmsOf, round, s, SKIP, SR, START, tone, untilClock, voiceInput, withinBar, } from '/scripts/studio-monitor-browser-probes.mjs'
 import { laneOf, monitoredAndPlayed, peaksAround, STEP_LEVELS_DBFS, STEP_SECONDS, steepestAgainstToneOwn, stepEdges, steppingTone, withGainJump, } from '/scripts/studio-monitor-compressor-probes.mjs'
 
 const DYNAMICS = ['deesser', 'dyneq']
@@ -261,16 +286,21 @@ async function levelAgainstPlayback(input, sound) {
   )
 }
 
-async function voiceProbe() {
-  const input = voiceInput(4)
+/** Each role's new lane that carries a de-esser or a dynamic EQ, and the Clean vocal preset's. */
+function dynamicsLanes() {
   const lanes = {}
   for (const role of TRACK_ROLES) {
     const sound = laneSound(role)
     if (sound.spec.effects.some(isDynamics)) lanes[`${role} lane`] = sound
   }
   lanes['Clean vocal preset'] = presetLane('clean-vocal')
+  return lanes
+}
+
+async function voiceProbe() {
+  const input = voiceInput(4)
   const out = {}
-  for (const [name, sound] of Object.entries(lanes))
+  for (const [name, sound] of Object.entries(dynamicsLanes()))
     out[name] = {
       levelDb: await levelAgainstPlayback(input, sound),
       withoutDynamicsForScaleDb: await levelAgainstPlayback(
@@ -417,6 +447,190 @@ async function stepsProbe(dynamics) {
   return { pass, departureBar: DEPARTURE_BAR, ...out }
 }
 
+/** What Light playback keeps only the lookahead of: a monitored lane passes them uncut. */
+const LIGHT_LITE = TIER_PROFILES.light.lite
+
+/** `sound` without its echo, which differs from one build to the next (see the header). */
+function withoutEcho(sound) {
+  return {
+    ...sound,
+    spec: normalizeChainSpec({
+      ...sound.spec,
+      effects: sound.spec.effects.filter((effect) => effect.kind !== 'delay'),
+    }),
+  }
+}
+
+async function lightProbe() {
+  const input = voiceInput(4)
+  const read = (a, b) => compare(a, b, START, START, input.length)
+  const out = {}
+  for (const [name, sound] of Object.entries(dynamicsLanes())) {
+    const light = { ...sound, lite: LIGHT_LITE }
+    const without = withoutDynamics(sound)
+    out[name] = {
+      againstLaneWithoutThem: read(
+        await monitorRender(input, withoutEcho(light)),
+        await monitorRender(input, withoutEcho(without)),
+      ).peakDifferenceDbfs,
+      withEchoAgainstLaneWithoutThem: read(
+        await monitorRender(input, light),
+        await monitorRender(input, without),
+      ).peakDifferenceDbfs,
+      balancedAgainstLightForScale: read(
+        await monitorRender(input, sound),
+        await monitorRender(input, light),
+      ).rmsDifferenceDbfs,
+    }
+  }
+  const pass = Object.values(out).every(
+    (lane) =>
+      lane.againstLaneWithoutThem === 'exact' &&
+      withinBar(lane.withEchoAgainstLaneWithoutThem),
+  )
+  return { pass, lite: LIGHT_LITE, ...out }
+}
+
+/** The follow probe's tone: low enough for the step measure, in its dynamic EQ's band. */
+const FOLLOW_HZ = 480
+/** A dynamic EQ band that cuts the tone and the voice's de-esser: what Light takes out. */
+const FOLLOW_LANE = {
+  on: true,
+  spec: normalizeChainSpec({
+    effects: [
+      {
+        kind: 'dyneq',
+        enabled: true,
+        params: {
+          frequencyHz: FOLLOW_HZ,
+          q: 1,
+          thresholdDb: -40,
+          ratio: 4,
+          rangeDb: 6,
+          attackMs: 8,
+          releaseMs: 90,
+        },
+      },
+      {
+        kind: 'deesser',
+        enabled: true,
+        params: { frequencyHz: 6500, thresholdDb: -30, ratio: 5 },
+      },
+    ],
+  }),
+  gains: [1, 1],
+}
+/** When the tier changes, seconds into the tone, and the lite list it changes to. */
+const FOLLOW_CHANGES = [
+  { at: 1.5, lite: LIGHT_LITE },
+  { at: 2.75, lite: [] },
+]
+/** Whole cycles of the tone, the frames a level is read over. */
+const wholeCycles = (frames) =>
+  Math.floor(frames / (SR / FOLLOW_HZ)) * (SR / FOLLOW_HZ)
+
+async function followProbe() {
+  const input = tone(4, -20, FOLLOW_HZ)
+  const { ctx, view, chunks } = await liveContext()
+  const source = ctx.createBufferSource()
+  source.buffer = input
+  const monitor = createStudioInputMonitor(view, source, {
+    master: createStudioMonitorMaster(EMPTY_SPEC),
+    settled: true,
+  })
+  monitor.set(FOLLOW_LANE)
+  const startFrame = Math.ceil((ctx.currentTime + 0.75) * SR)
+  source.start(frameTime(startFrame, SR))
+  const changes = []
+  for (const { at, lite } of FOLLOW_CHANGES) {
+    await untilClock(ctx, startFrame / SR + at)
+    changes.push(Math.round(ctx.currentTime * SR) - startFrame)
+    monitor.set({ ...FOLLOW_LANE, lite })
+  }
+  await untilClock(ctx, (startFrame + input.length) / SR + 0.2)
+  // The recorder's last quanta are still on their way to this thread.
+  await new Promise((resolve) => setTimeout(resolve, 200))
+  monitor.dispose()
+  await ctx.close()
+  const out = laidOut(chunks, startFrame, input.length)
+  const without = await monitorRender(input, withoutDynamics(FOLLOW_LANE))
+  const toneSlope = 2 * Math.sin((Math.PI * FOLLOW_HZ) / SR)
+  const peakOf = (from, count) => {
+    let peak = 0
+    for (const side of out)
+      for (let i = from; i < from + count; i++)
+        peak = Math.max(peak, Math.abs(side[i]))
+    return peak
+  }
+  const levelOf = (data, from, to) =>
+    levelDbOf(data, from, wholeCycles(to - from))
+  const around = changes.map((frame) => {
+    const from = frame - s(0.05)
+    const count = s(0.45)
+    const level = Math.max(
+      peakOf(frame - s(0.25), s(0.2)),
+      peakOf(frame + s(0.25), s(0.2)),
+    )
+    let steepest = 0
+    for (const side of out)
+      for (let i = from; i < from + count; i++)
+        steepest = Math.max(steepest, Math.abs(side[i] - side[i - 1]))
+    const peaks = peaksAround(out[0], Math.ceil(SR / FOLLOW_HZ))
+    let lowest = Infinity
+    for (let i = frame; i < frame + s(0.2); i++)
+      lowest = Math.min(lowest, peaks[i])
+    return {
+      frame,
+      steepestAgainstToneOwn: round(steepest / (level * toneSlope), 3),
+      dipsToDb: round(
+        20 * Math.log10(lowest / peakOf(frame - s(0.25), s(0.2))),
+        1,
+      ),
+    }
+  })
+  const [toLight, backToBalanced] = changes
+  const balancedDb = levelOf(out, s(0.6), toLight - s(0.1))
+  const lightDb = levelOf(out, toLight + s(0.4), backToBalanced - s(0.1))
+  const lightWithoutDb = levelOf(
+    without.map((side) => side.subarray(START)),
+    toLight + s(0.4),
+    backToBalanced - s(0.1),
+  )
+  const againDb = levelOf(out, backToBalanced + s(0.4), input.length - s(0.1))
+  // A 1 dB jump on a crest of the steady Balanced tone, for scale.
+  const crest =
+    Math.ceil(s(1) / (SR / FOLLOW_HZ)) * (SR / FOLLOW_HZ) + SR / FOLLOW_HZ / 4
+  const jumped = out.map((side) =>
+    side.map((value, i) => (i >= crest ? value * 10 ** (-1 / 20) : value)),
+  )
+  let jumpStep = 0
+  for (const side of jumped)
+    for (let i = crest - 50; i < crest + 50; i++)
+      jumpStep = Math.max(jumpStep, Math.abs(side[i] - side[i - 1]))
+  const result = {
+    toLight: {
+      ...around[0],
+      bandsTakenOutDb: round(lightDb - balancedDb, 3),
+      levelAgainstLaneWithoutThemDb: round(lightDb - lightWithoutDb, 4),
+    },
+    backToBalanced: {
+      ...around[1],
+      levelAgainstBeforeDb: round(againDb - balancedDb, 4),
+    },
+    forScale: {
+      oneDbJumpSteepest: round(
+        jumpStep / (peakOf(s(0.6), s(0.3)) * toneSlope),
+        3,
+      ),
+    },
+  }
+  const pass =
+    around.every((change) => change.steepestAgainstToneOwn <= 1.1) &&
+    Math.abs(result.toLight.levelAgainstLaneWithoutThemDb) <= 0.01 &&
+    Math.abs(result.backToBalanced.levelAgainstBeforeDb) <= 0.01
+  return { pass, toneHz: FOLLOW_HZ, ...result }
+}
+
 export async function runStudioMonitorDynamicsProbes() {
   await Promise.all([measureCompressorLatency(SR), measureShaperDelays(SR)])
   const dynamics = presetDynamics()
@@ -425,5 +639,7 @@ export async function runStudioMonitorDynamicsProbes() {
     levels: await levelsProbe(dynamics),
     voice: await voiceProbe(),
     steps: await stepsProbe(dynamics),
+    light: await lightProbe(),
+    follow: await followProbe(),
   }
 }

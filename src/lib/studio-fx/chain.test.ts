@@ -3,13 +3,17 @@ import type { StudioFxChainOptions } from './chain'
 import { createStudioFxChain } from './chain'
 import type { EffectSpec } from './chain-spec'
 import { moveEffect, normalizeChainSpec, removeEffect, updateEffect, } from './chain-spec'
-import type { EffectUnit } from './effect-shell'
+import type { EffectEnv, EffectUnit } from './effect-shell'
 import type { FakeDelay, FakeGain } from './fake-audio-graph.test-fixtures'
 import { createManualScheduler, FakeAudioContext, FakeNode, FakeOfflineAudioContext, } from './fake-audio-graph.test-fixtures'
+import type { StudioFxProfile } from './fx-profile'
+import { MONITOR_FX_PROFILE } from './fx-profile'
 
 interface FakeUnit extends EffectUnit {
   readonly id: string
   readonly calls: string[]
+  /** The profile it was built at. */
+  readonly profile: StudioFxProfile | undefined
   disposed: boolean
 }
 
@@ -20,13 +24,18 @@ function harness(options: { offline?: boolean } = {}) {
       : new FakeAudioContext()
   const scheduler = createManualScheduler()
   const units: FakeUnit[] = []
-  const createUnit = (_ctx: BaseAudioContext, spec: EffectSpec): EffectUnit => {
+  const createUnit = (
+    _ctx: BaseAudioContext,
+    spec: EffectSpec,
+    env: EffectEnv,
+  ): EffectUnit => {
     const input = new FakeNode(`${spec.id}:in`)
     const output = new FakeNode(`${spec.id}:out`)
     const unit: FakeUnit = {
       id: spec.id,
       kind: spec.kind,
       calls: [],
+      profile: env.profile,
       disposed: false,
       input: input as unknown as AudioNode,
       output: output as unknown as AudioNode,
@@ -297,5 +306,90 @@ describe('createStudioFxChain', () => {
     expect(units.every((unit) => unit.disposed)).toBe(true)
     chain.setSpec(VOCAL)
     expect(units).toHaveLength(3)
+  })
+
+  describe('a new lite list (fx-profile.ts)', () => {
+    /** A monitored voice lane: a de-esser and a dynamic EQ among other effects. */
+    const LANE = normalizeChainSpec({
+      effects: [
+        { kind: 'eq' },
+        { kind: 'deesser' },
+        { kind: 'compressor' },
+        { kind: 'dyneq' },
+      ],
+    })
+
+    /** The units audio passes through, in order, from the chain's input. */
+    function wired(input: AudioNode, units: readonly FakeUnit[]): FakeUnit[] {
+      const ids = signalOrder(input, units)
+      let node = input as unknown as FakeNode
+      return ids.map(() => {
+        const unit = units.find((each) =>
+          node.targets.includes(each.input as unknown as FakeNode),
+        )!
+        node = unit.output as unknown as FakeNode
+        return unit
+      })
+    }
+
+    it('builds the de-esser and dynamic EQ again at the new list under the duck, and plays every other effect on', () => {
+      const { build, units, scheduler, ctx } = harness()
+      const chain = build(LANE, { profile: MONITOR_FX_PROFILE })
+      const before = wired(chain.input, units)
+
+      chain.setLite(['dyneq', 'deesser'])
+
+      // Built at once, patched in once the output has ducked.
+      expect(units).toHaveLength(6)
+      expect(wired(chain.input, units)).toEqual(before)
+      const duckGain = [...ctx.ofType<FakeGain>('gain')].find((gain) =>
+        gain.targets.includes(chain.output as unknown as FakeNode),
+      )!
+      expect(duckGain.gain.destination).toBe(0)
+      scheduler.advance(40)
+      const after = wired(chain.input, units)
+      expect(after.map((unit) => unit.id)).toEqual(
+        before.map((unit) => unit.id),
+      )
+      expect(after[0]).toBe(before[0])
+      expect(after[2]).toBe(before[2])
+      for (const index of [1, 3]) {
+        expect(after[index]).not.toBe(before[index])
+        expect(after[index].profile).toEqual({
+          ...MONITOR_FX_PROFILE,
+          lite: ['dyneq', 'deesser'],
+        })
+        expect(before[index].disposed).toBe(true)
+      }
+      expect(duckGain.gain.destination).toBe(1)
+    })
+
+    it('builds an effect added after it at the new list, and does nothing for the list it has', () => {
+      const { build, units, scheduler } = harness()
+      const chain = build(LANE, { profile: MONITOR_FX_PROFILE })
+      chain.setLite(['deesser', 'dyneq'])
+      scheduler.advance(40)
+      const built = units.length
+
+      chain.setLite(['dyneq', 'deesser'])
+      expect(scheduler.pendingCount).toBe(0)
+      expect(units).toHaveLength(built)
+      chain.setSpec(
+        normalizeChainSpec({
+          effects: [...LANE.effects, { id: 'air', kind: 'dyneq' }],
+        }),
+      )
+      expect(units.at(-1)!.profile?.lite).toEqual(['deesser', 'dyneq'])
+    })
+
+    it('swaps at once, without a duck, when nothing is playing', () => {
+      const { build, units, scheduler } = harness({ offline: true })
+      const chain = build(LANE, { profile: MONITOR_FX_PROFILE })
+      chain.setLite(['dyneq', 'deesser'])
+      expect(scheduler.pendingCount).toBe(0)
+      expect(
+        wired(chain.input, units).map((unit) => unit.profile?.lite),
+      ).toEqual([[], ['dyneq', 'deesser'], [], ['dyneq', 'deesser']])
+    })
   })
 })

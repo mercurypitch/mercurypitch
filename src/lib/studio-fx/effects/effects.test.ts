@@ -356,6 +356,7 @@ describe('effects on a monitored input', () => {
     const loaded = async (
       kind: string,
       params: Record<string, number> = {},
+      profile: StudioFxProfile = MONITOR_FX_PROFILE,
     ) => {
       const { ctx, env } = setup(false)
       fakeAudioWorklet(ctx, {
@@ -364,11 +365,36 @@ describe('effects on a monitored input', () => {
       await prepareZeroLatencyCompressor(ctx.asContext)
       const unit = createEffectUnit(ctx.asContext, spec(kind, params), {
         ...env,
-        profile: MONITOR_FX_PROFILE,
+        profile,
       })
       const worklets = ctx.ofType<FakeWorkletNode>('worklet')
       return { ctx, unit, worklets }
     }
+
+    /** The monitor's profile while live playback is on Light (playback-quality.ts). */
+    const LIGHT_MONITOR: StudioFxProfile = {
+      ...MONITOR_FX_PROFILE,
+      lite: ['dyneq', 'deesser'],
+    }
+
+    it.each(['deesser', 'dyneq'])(
+      '%s on the Light tier builds no worklet and no band: one gain at unity, passing the input bit for bit as Light playback passes it uncut',
+      async (kind) => {
+        const { ctx, unit } = await loaded(kind, {}, LIGHT_MONITOR)
+
+        expect(unit.input).toBe(unit.output)
+        expect(ctx.created.map((node) => node.nodeType)).toEqual(['gain'])
+        expect((unit.input as unknown as FakeGain).gain.value).toBe(1)
+        expect(unit.follow).toBeUndefined()
+        expect(unit.readReductionDb()).toBe(0)
+      },
+    )
+
+    it('compresses on the worklet on the Light tier all the same: Light leaves only the de-esser and the dynamic EQ uncut', async () => {
+      const { worklets } = await loaded('compressor', {}, LIGHT_MONITOR)
+
+      expect(worklets).toHaveLength(1)
+    })
 
     const VOICE = {
       thresholdDb: -20,

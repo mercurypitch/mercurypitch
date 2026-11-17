@@ -82,6 +82,7 @@ import { createStudioLaneInputState } from './studio-lane-input-state'
 import { createStudioMicShare, StudioInputRefusal } from './studio-mic-share'
 import { studioTakeFrames, studioTakeImport } from './take-import'
 import { setStudioTakeRunning } from './take-running'
+import { usePlaybackLite } from './usePlaybackLite'
 
 /** The microphone hold and the mic icon share this id. */
 export const STUDIO_RECORD_MIC_ID = 'studio-record'
@@ -232,12 +233,16 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
   const monitored = (trackId: string | null) =>
     settings().monitor || isMidiLaneInput(lanes.of(trackId))
 
-  /** A lane's input through the lane, as its clips play: its effects, faders and the controls still moving; dry while what the listener hears is. */
+  /** What live playback's tier leaves uncut in the song now (usePlaybackLite.ts): each monitored lane leaves it uncut too. */
+  const playbackLite = usePlaybackLite(project)
+
+  /** A lane's input through the lane, as its clips play: its effects at live playback's tier, faders and the controls still moving; dry while what the listener hears is. */
   const monitorSound = (trackId: string | null) =>
     studioMonitorSound(project(), trackId, {
       on: monitored(trackId),
       moving: options.liveMix,
       dry: options.dry?.(),
+      lite: playbackLite(),
     })
 
   // Every monitored lane then plays through one master, as the lanes' clips
