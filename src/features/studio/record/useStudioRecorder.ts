@@ -65,6 +65,7 @@ import { studioTakeClip } from '@/lib/studio/record/take-passes'
 import type { StudioTakeCut } from '@/lib/studio/record/take-plan'
 import type { StudioRoundTrip } from '@/lib/studio/record/take-timing'
 import { studioInstrumentShift, studioRoundTrip, } from '@/lib/studio/record/take-timing'
+import { prepareZeroLatencyCompressor } from '@/lib/studio-fx/zero-latency-compressor'
 import { micLatencyPathMsForDevice } from '@/stores/mic-latency-path-store'
 import { micLatencyMsForDevice } from '@/stores/mic-latency-store'
 import type { StudioTakeClock } from '../audio/take-clock'
@@ -326,7 +327,15 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       return { stream: held.stream, pick, release: held.release }
     },
     inputOpened: lanes.opened,
-    prepareWorklet: prepareStudioRecorderWorklet,
+    // The monitor's compressor loads beside the recorder, before any lane's
+    // monitor is built; without it a monitor's compressors pass straight
+    // through (zero-latency-compressor.ts), and recording goes on.
+    prepareWorklet: async (context) => {
+      await Promise.all([
+        prepareStudioRecorderWorklet(context),
+        prepareZeroLatencyCompressor(context),
+      ])
+    },
     openCapture: openStudioCapture,
     createSource: (context, stream) => context.createMediaStreamSource(stream),
     createClicks: createStudioClickTrack,

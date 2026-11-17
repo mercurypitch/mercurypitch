@@ -33,8 +33,7 @@
 // encoding gain and then the side's match gain. A dry voice beside the dry
 // song. Their balance there is the faders', not playback's: each
 // effect moves each sound by its own amount, and the monitor's chain leaves
-// out its lookahead dynamics, compressors among them (fx-profile.ts
-// MONITOR_FX_PROFILE).
+// out the de-esser and the dynamic EQ (fx-profile.ts MONITOR_FX_PROFILE).
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import { EMPTY_CHAIN } from '@/lib/studio-fx/chain-spec'
 import { MASTER_LOUDNESS_EFFECT_ID } from '@/lib/studio-fx/master'

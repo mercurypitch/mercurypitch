@@ -1,19 +1,20 @@
-// Studio recorder master tests — every armed lane's monitor plays through one master: playback's, at the master gain the transport says the listener hears, gliding to a new one, and with its effects off while Compare plays its Before side, which has no master; there each lane plays with every effect off too, gliding out and back in.
+// Studio recorder master tests — every armed lane's monitor plays through one master: playback's, at the master gain the transport says the listener hears, gliding to a new one, and with its effects off while Compare plays its Before side, which has no master; there each lane plays with every effect off too, gliding out and back in. The monitor's compressor loads with the recorder's worklet, so a lane's compressor plays in its monitor.
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioMasterGain } from '@/lib/studio/export/sound-graph'
 import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
 import type { StudioProject } from '@/lib/studio/model/types'
 import type { StudioRecorderDeps, StudioRecorderView, } from '@/lib/studio/record/studio-recorder'
-import { EMPTY_CHAIN } from '@/lib/studio-fx/chain-spec'
+import { EMPTY_CHAIN, normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
+import { COMPRESSOR_PARAMETERS, STUDIO_COMPRESSOR_PROCESSOR, } from '@/lib/studio-fx/compressor-kernel'
 import { dbToGain } from '@/lib/studio-fx/dsp'
-import type { FakeGain } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
-import { FakeAudioContext, FakeNode, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import type { FakeGain, FakeWorkletNode, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import { FakeAudioContext, fakeAudioWorklet, FakeNode, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 
 const mocks = vi.hoisted(() => ({
   deps: null as null | Pick<
     StudioRecorderDeps,
-    'createMonitor' | 'onChange' | 'monitorSound'
+    'createMonitor' | 'onChange' | 'monitorSound' | 'prepareWorklet'
   >,
   updateMonitor: vi.fn(),
 }))
@@ -80,6 +81,7 @@ const disposers: (() => void)[] = []
 afterEach(() => {
   for (const dispose of disposers.splice(0)) dispose()
   mocks.deps = null
+  vi.unstubAllGlobals()
 })
 
 /** The voice lane armed, as the recorder tells the hook. */
@@ -304,5 +306,37 @@ describe("the recorder's monitor master", () => {
     expect(back.length).toBeGreaterThan(0)
     expect(back.every((event) => event.kind === 'target')).toBe(true)
     expect(lane.map((gain) => gain.gain.destination)).toEqual(playing)
+  })
+})
+
+describe("the recorder's worklets", () => {
+  it("loads the monitor's compressor beside the recorder's worklet, so an armed lane's compressor plays in its monitor", async () => {
+    const { ctx } = mount()
+    const { modules } = fakeAudioWorklet(ctx, {
+      [STUDIO_COMPRESSOR_PROCESSOR]: COMPRESSOR_PARAMETERS,
+    })
+
+    await mocks.deps!.prepareWorklet(ctx.asContext as AudioContext)
+    const monitor = mocks.deps!.createMonitor(
+      ctx.asContext as AudioContext,
+      new FakeNode('input') as unknown as AudioNode,
+      { settled: true },
+    )
+    monitor.set({
+      on: true,
+      spec: normalizeChainSpec({
+        effects: [
+          { kind: 'compressor', params: { thresholdDb: -31 }, enabled: true },
+        ],
+      }),
+      gains: [1, 1],
+    })
+
+    expect(new Set(modules).size).toBe(2)
+    expect(ctx.ofType('compressor')).toEqual([])
+    const thresholds = ctx
+      .ofType<FakeWorkletNode>('worklet')
+      .map((node) => node.parameters.get('threshold')?.value)
+    expect(thresholds).toContain(-31)
   })
 })

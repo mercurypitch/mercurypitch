@@ -14,7 +14,11 @@
 // master playback plays (sound-graph.ts) at the monitor's profile
 // (fx-profile.ts MONITOR_FX_PROFILE), so nothing in it delays the signal:
 // the master EQ, the width, the trace saturation, the loudness gain and the
-// safety gain play, and the glue compressor sits out. The ceiling limiter
+// safety gain play, and the glue compressor plays without its lookahead
+// (effects/compressor.ts). It hears only the monitored inputs, where
+// playback's hears the whole song, so it holds a voice down no more than
+// playback's does, and with no makeup of its own it lifts nothing. The
+// ceiling limiter
 // plays its ceiling alone, a soft clip with nothing ahead of it
 // (effects/limiter.ts): a voice the loudness gain lifts past full scale is
 // held under the ceiling, as playback's limiter holds the song, and not

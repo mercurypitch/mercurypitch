@@ -19,8 +19,6 @@ const MIC_WAV = writeStereoToneWav(MIC_HZ, MIC_HZ, 4, [0.05, 0.05])
 const WITHIN_DB = 0.5
 /** How close the voice's place against the song on a side of Compare is held to playback's, in dB. */
 const BALANCE_DB = 0.1
-/** How far the voice rises at least on Compare's Before side, with its lane's effects gone: the lane's cleanup cut alone takes about 1.5 dB at the microphone's tone. */
-const DRY_RISE_DB = 1
 
 test.use({
   launchOptions: { args: fakeMicArgs(MIC_WAV) },
@@ -184,6 +182,8 @@ test("the armed input is heard through the master: it moves with the song's meas
       voiceMovedStopped,
       onBefore,
       onAfter,
+      voiceMovedBefore: onBefore.voiceDb - playing.voiceDb,
+      songMovedBefore: onBefore.songDb - playing.songDb,
       balance: {
         playing: balance(playing),
         measuredPlaying: balance(measuredPlaying),
@@ -203,12 +203,15 @@ test("the armed input is heard through the master: it moves with the song's meas
     BALANCE_DB,
   )
   // Before plays the song with every effect off at its match gain, 0 dB for
-  // this quiet song, and the voice loses its lane's effects too, so it rises
-  // from where it played. Its place against the song is the faders' there,
-  // not playback's: the lane's effects took about 1.5 dB from the voice and
-  // 0.7 dB from the song, since the monitor leaves out the lane's compressor
-  // and its makeup gain, so the voice sits about 0.8 dB higher against the
-  // song than in playback.
-  expect(onBefore.voiceDb - playing.voiceDb).toBeGreaterThan(DRY_RISE_DB)
+  // this quiet song, and the voice loses its lane's effects too, the
+  // compressor's makeup among them, so it moves from where it played as the
+  // song does: the lane's effects took 0.45 dB from the voice and 0.68 dB
+  // from the song. A monitor that left the compressor out took 1.45 dB from
+  // the voice.
+  expect(
+    Math.abs(
+      onBefore.voiceDb - playing.voiceDb - (onBefore.songDb - playing.songDb),
+    ),
+  ).toBeLessThan(WITHIN_DB)
   await expect(record).toHaveAttribute('data-phase', 'armed')
 })
