@@ -3,7 +3,8 @@
 //   timeout 300s node scripts/check-studio-epoch-browser.mjs --origin https://127.0.0.1:5173 [--out report.json] [--suite automation]
 // --suite automation runs the lane line probes (studio-automation-browser-probes.mjs) instead,
 // --suite monitor the input monitor probes (studio-monitor-browser-probes.mjs),
-// --suite monitor-compressor the monitored compressor's (studio-monitor-compressor-probes.mjs).
+// --suite monitor-compressor the monitored compressor's (studio-monitor-compressor-probes.mjs),
+// --suite monitor-dynamics the monitored de-esser's and dynamic EQ's (studio-monitor-dynamics-probes.mjs).
 // Set CHROME_PATH to use a specific Chromium build instead of Playwright's. Nothing plays aloud: the
 // monitor suite runs a live AudioContext, and the browser is muted.
 import { chromium } from '@playwright/test'
@@ -37,6 +38,10 @@ const SUITES = {
   'monitor-compressor': {
     module: '/scripts/studio-monitor-compressor-probes.mjs',
     run: 'runStudioMonitorCompressorProbes',
+  },
+  'monitor-dynamics': {
+    module: '/scripts/studio-monitor-dynamics-probes.mjs',
+    run: 'runStudioMonitorDynamicsProbes',
   },
 }
 const suite = SUITES[values.suite]

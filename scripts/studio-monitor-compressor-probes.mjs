@@ -39,8 +39,8 @@ import { measureShaperDelays } from '/src/lib/studio-fx/shaper-delay.ts'
 import { createZeroLatencyCompressor } from '/src/lib/studio-fx/zero-latency-compressor.ts'
 import { bestLag, EMPTY_SPEC, firstHeard, lanePathRender, laneSound, levelDbOf, monitorFirstHeard, monitorRender, PLAIN_LANE, renderOffline, round, s, SKIP, sourceOf, SR, START, tone, voiceInput, } from '/scripts/studio-monitor-browser-probes.mjs'
 
-const STEP_SECONDS = 0.4
-const STEP_LEVELS_DBFS = [-30, -6, -30, -6, -30]
+export const STEP_SECONDS = 0.4
+export const STEP_LEVELS_DBFS = [-30, -6, -30, -6, -30]
 /** 100 frames a cycle at 48 kHz: every step starts on a zero crossing. */
 const STEP_HZ = 480
 
@@ -59,7 +59,7 @@ function presetCompressors() {
 }
 
 /** A lane with `effect` alone on it, at unity. */
-function laneOf(effect) {
+export function laneOf(effect) {
   return {
     on: true,
     spec: normalizeChainSpec({ effects: [{ ...effect, enabled: true }] }),
@@ -72,8 +72,8 @@ function attackFrames(effect) {
   return Math.round((effect.params.attackMs / 1000) * SR) + 32
 }
 
-/** The tone of `steps`, 0.4 s each, every step starting on a zero crossing. */
-function steppingTone() {
+/** A tone of `hz` at the step levels, 0.4 s each: every step starts on a zero crossing where 0.4 s holds whole cycles of it. */
+export function steppingTone(hz = STEP_HZ) {
   const step = s(STEP_SECONDS)
   const length = step * STEP_LEVELS_DBFS.length
   const buffer = new AudioBuffer({ length, sampleRate: SR })
@@ -81,12 +81,12 @@ function steppingTone() {
   for (let i = 0; i < length; i++)
     data[i] =
       10 ** (STEP_LEVELS_DBFS[Math.floor(i / step)] / 20) *
-      Math.sin((2 * Math.PI * STEP_HZ * i) / SR)
+      Math.sin((2 * Math.PI * hz * i) / SR)
   return buffer
 }
 
 /** `input` monitored through `sound`, and played through it, the playback render moved back by its latency. */
-async function monitoredAndPlayed(input, sound) {
+export async function monitoredAndPlayed(input, sound) {
   const latency = await measureChainLatencyFrames(sound.spec, SR)
   const length = START + input.length
   const monitored = await monitorRender(input, sound, length)
@@ -160,13 +160,13 @@ async function levelsProbe(compressors) {
 }
 
 /** Each step's edge after the first, in render frames. */
-function stepEdges() {
+export function stepEdges() {
   const step = s(STEP_SECONDS)
   return STEP_LEVELS_DBFS.slice(1).map((_, index) => START + (index + 1) * step)
 }
 
-/** The largest magnitude within `radius` frames of each frame of `side`. */
-function peaksAround(side, radius) {
+/** The largest magnitude within `radius` whole frames of each frame of `side`. */
+export function peaksAround(side, radius) {
   const peaks = new Float32Array(side.length)
   // The frames that can still be a peak, loudest first.
   const queue = []
@@ -188,16 +188,16 @@ function peaksAround(side, radius) {
 
 /**
  * The largest step from one frame to the next over `count` frames from
- * `from`, against the steepest step the step tone makes at the level it has
+ * `from`, against the steepest step a tone of `hz` makes at the level it has
  * there: its peak within a cycle either side. A gain that glides keeps this
  * at 1 or under, however fast; one that jumps does not.
  */
-function steepestAgainstToneOwn(data, from, count) {
-  const cycle = SR / STEP_HZ
-  const toneSlope = 2 * Math.sin((Math.PI * STEP_HZ) / SR)
+export function steepestAgainstToneOwn(data, from, count, hz = STEP_HZ) {
+  const cycle = SR / hz
+  const toneSlope = 2 * Math.sin((Math.PI * hz) / SR)
   let worst = 0
   for (const side of data) {
-    const peaks = peaksAround(side, cycle)
+    const peaks = peaksAround(side, Math.ceil(cycle))
     for (let i = from; i < from + count; i++)
       worst = Math.max(
         worst,
@@ -207,10 +207,10 @@ function steepestAgainstToneOwn(data, from, count) {
   return worst
 }
 
-/** `data` with its gain cut by `db` from a crest of the tone `at` frames on: a gain that jumps, for scale. */
-function withGainJump(data, at, db) {
+/** `data` with its gain cut by `db` from a crest of a tone of `hz` `at` frames on: a gain that jumps, for scale. */
+export function withGainJump(data, at, db, hz = STEP_HZ) {
   // A crest: a quarter cycle past a whole cycle, the tone at its peak.
-  const cycle = SR / STEP_HZ
+  const cycle = SR / hz
   const crest = Math.ceil(at / cycle) * cycle + cycle / 4
   const cut = 10 ** (-db / 20)
   return data.map((side) =>
