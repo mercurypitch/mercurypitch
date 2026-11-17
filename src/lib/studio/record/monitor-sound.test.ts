@@ -1,4 +1,4 @@
-// Studio monitor sound — the armed lane's chain and faders as playback has them, silent where playback is silent and for a lane that left the song, a new voice lane for a take with no lane, the controls still moving, and nothing worked out while the lane is not monitored or no song is open; then playback's master at the gain the listener hears, every effect off but its loudness gain while what they hear has none, and while Compare plays, the gain of its side.
+// Studio monitor sound — the armed lane's chain and faders as playback has them, silent where playback is silent and for a lane that left the song, a new voice lane for a take with no lane, the controls still moving, every effect off while what the listener hears has none, and nothing worked out while the lane is not monitored or no song is open; then playback's master at the gain the listener hears, every effect off but its loudness gain while what they hear has none, and while Compare plays, the gain of its side.
 import { describe, expect, it } from 'vitest'
 import { EMPTY_CHAIN } from '@/lib/studio-fx/chain-spec'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
@@ -140,6 +140,28 @@ describe('the monitored sound of a lane', () => {
       studioLaneSpec(voice, { ...project.mix.macros, space: 80 }),
     )
     expect(sound.spec).not.toEqual(studioLaneSpec(voice, project.mix.macros))
+  })
+
+  it("plays the lane with every effect off at the same settings, its faders as they are, while what the listener hears has no effects (Compare's Before side)", () => {
+    const project = song()
+    const heard = studioMonitorSound(project, 'voice', { on: true })
+
+    const dry = studioMonitorSound(project, 'voice', { on: true, dry: true })
+
+    expect(heard.spec.effects.some((effect) => effect.enabled)).toBe(true)
+    expect(dry).toEqual({
+      ...heard,
+      spec: {
+        ...heard.spec,
+        effects: heard.spec.effects.map((effect) => ({
+          ...effect,
+          enabled: false,
+        })),
+      },
+    })
+    expect(
+      studioMonitorSound(project, 'voice', { on: true, dry: false }),
+    ).toEqual(heard)
   })
 
   it('is silent, with no chain worked out, while the lane is not monitored or no song is open', () => {

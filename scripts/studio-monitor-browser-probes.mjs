@@ -27,7 +27,10 @@
 //   and -4 dB, and as on each side of Compare, against the lane alone: the
 //   level it plays a tone at, the frames it adds, the steepest step while a
 //   tone heard live meets a gain change and a switch to each side of
-//   Compare, and its ceiling with +8 dB on a tone peaking at -3 dBFS;
+//   Compare, and its ceiling with +8 dB on a tone peaking at -3 dBFS. On
+//   Before the lane plays with every effect off, as Before plays the song:
+//   that lane against its faders alone, and the steepest step while a voice
+//   lane heard live switches between the sides and back to playback;
 // - cost: render time per 128-frame quantum, dry and through lanes, through
 //   the song's master and through none, and the main thread's time to
 //   build a lane's path and to follow a change.
@@ -87,9 +90,9 @@ function laneProject(role, over = {}) {
   return { ...project, tracks: [lane] }
 }
 
-/** A new lane of `role` as the monitor hears it. */
-function laneSound(role, over) {
-  return studioMonitorSound(laneProject(role, over), 'lane', { on: true })
+/** A new lane of `role` as the monitor hears it; `dry` as on Compare's Before side, every effect off. */
+function laneSound(role, over, dry = false) {
+  return studioMonitorSound(laneProject(role, over), 'lane', { on: true, dry })
 }
 
 /** A new song's master as the monitor plays it, at a measured `gainDb`; `bypassed` as on Compare's Before side. */
@@ -736,21 +739,42 @@ async function masterLevels() {
       offByDb: round(heard - alone - gainDb, 3),
     }
   }
-  // Compare's sides move the song by their gains; the voice moves with it.
+  // Compare's sides move the song by their gains; the voice moves with it,
+  // on Before through its lane with every effect off, as Before plays the
+  // song, so against that lane alone.
+  const dry = laneSound('voice', undefined, true)
+  const dryAlone = levelDbOf(await monitorRender(input, dry), from, count)
+  out.dryLaneAloneDbfs = round(dryAlone, 2)
   for (const side of ['before', 'after']) {
     const { gainDb, spec } = comparedMaster(side)
+    const lane = side === 'before' ? dry : voice
+    const reference = side === 'before' ? dryAlone : alone
     const heard = levelDbOf(
-      await monitorRender(input, voice, undefined, spec),
+      await monitorRender(input, lane, undefined, spec),
       from,
       count,
     )
     out[`Compare ${side}, ${gainDb > 0 ? '+' : ''}${gainDb} dB`] = {
       levelDbfs: round(heard, 2),
-      againstLaneDb: round(heard - alone, 3),
-      offByDb: round(heard - alone - gainDb, 3),
+      againstLaneDb: round(heard - reference, 3),
+      offByDb: round(heard - reference - gainDb, 3),
     }
   }
   return out
+}
+
+/** The voice lane with every effect off, as on Before, against the same lane's faders with no chain at all: the input at the faders, nothing else. */
+async function dryLaneAgainstFaders() {
+  const input = voiceInput(2)
+  const dry = laneSound('voice', { gainDb: -3, pan: -0.3 }, true)
+  const from = START + SKIP
+  return compare(
+    await monitorRender(input, dry),
+    await monitorRender(input, { ...dry, spec: EMPTY_SPEC }),
+    from,
+    from,
+    input.length - SKIP,
+  )
 }
 
 /** The frames the master adds: an impulse's first sound, and the lag that lines a voice up best, against the lane alone. */
@@ -884,10 +908,96 @@ async function masterCeiling() {
   return out
 }
 
+/**
+ * A voice lane heard live as Compare switches sides and stops: on Before the
+ * lane's effects and the master's go out and the gain goes to Before's, on
+ * After they come back at After's gain, and once Compare stops the master
+ * takes the measured gain alone. The steepest step at each switch, against
+ * the tone's own around it.
+ */
+async function compareSidesLive() {
+  const { ctx, view, chunks } = await liveContext()
+  const input = tone(5.5, -20)
+  const source = ctx.createBufferSource()
+  source.buffer = input
+  const step = ctx.createGain()
+  source.connect(step)
+  const voice = laneSound('voice')
+  const dry = laneSound('voice', undefined, true)
+  const before = comparedMaster('before').spec
+  const after = comparedMaster('after').spec
+  const master = createStudioMonitorMaster(after)
+  const monitor = createStudioInputMonitor(view, step, {
+    master,
+    settled: true,
+  })
+  monitor.set(voice)
+  const startFrame = Math.ceil((ctx.currentTime + 0.75) * SR)
+  source.start(frameTime(startFrame, SR))
+  const changes = [
+    {
+      name: 'After to Before',
+      make: () => {
+        monitor.set(dry)
+        master.follow(before)
+      },
+    },
+    {
+      name: 'Before to After',
+      make: () => {
+        monitor.set(voice)
+        master.follow(after)
+      },
+    },
+    {
+      name: 'After to playback, Compare stopped',
+      make: () => master.follow(songMaster(COMPARED.gainDb)),
+    },
+    {
+      name: 'a +6 dB step with no glide, for scale',
+      make: () => step.gain.setValueAtTime(2, ctx.currentTime),
+    },
+  ]
+  const changedAt = []
+  for (const [index, change] of changes.entries()) {
+    await untilClock(ctx, startFrame / SR + index + 1)
+    changedAt.push(Math.round(ctx.currentTime * SR) - startFrame)
+    change.make()
+  }
+  await untilClock(ctx, (startFrame + input.length) / SR + 0.2)
+  // The recorder's last quanta are still on their way to this thread.
+  await new Promise((resolve) => setTimeout(resolve, 200))
+  monitor.dispose()
+  await ctx.close()
+  const live = laidOut(chunks, startFrame, input.length)
+  const out = {}
+  changes.forEach(({ name }, index) => {
+    const at = changedAt[index]
+    const before = { from: at - s(0.45), count: s(0.4) }
+    const after = { from: at + s(0.3), count: s(0.4) }
+    const own = Math.max(
+      steepestStep(live, before.from, before.count),
+      steepestStep(live, after.from, after.count),
+    )
+    const during = steepestStep(live, at - s(0.05), s(0.35))
+    out[name] = {
+      levelStepDb: round(
+        levelDbOf(live, after.from, after.count) -
+          levelDbOf(live, before.from, before.count),
+        2,
+      ),
+      steepestAgainstToneOwn: round(during / own, 3),
+    }
+  })
+  return out
+}
+
 async function masterProbe() {
   const levels = await masterLevels()
+  const dryLane = await dryLaneAgainstFaders()
   const latency = await masterLatency()
   const live = await masterChangesLive()
+  const sides = await compareSidesLive()
   const ceiling = await masterCeiling()
   const { ceilingDbfs, ...tones } = ceiling
   const pass =
@@ -898,10 +1008,13 @@ async function masterProbe() {
     ['voice lane', 'no effects'].every(
       (name) => latency[name].addedFrames === 0,
     ) &&
-    Object.entries(live).every(([name, change]) =>
-      name.endsWith('for scale')
-        ? change.steepestAgainstToneOwn > 1.1
-        : change.steepestAgainstToneOwn <= 1.1,
+    withinBar(dryLane.peakDifferenceDbfs) &&
+    [live, sides].every((changes) =>
+      Object.entries(changes).every(([name, change]) =>
+        name.endsWith('for scale')
+          ? change.steepestAgainstToneOwn > 1.1
+          : change.steepestAgainstToneOwn <= 1.1,
+      ),
     ) &&
     Object.values(tones).every(
       (entry) =>
@@ -909,7 +1022,7 @@ async function masterProbe() {
         (ceilingDbfs - entry.intoCeilingDbfs < 3 ||
           Math.abs(entry.levelAgainstUnlimitedDb) <= 0.1),
     )
-  return { pass, levels, latency, live, ceiling }
+  return { pass, levels, dryLane, latency, live, sides, ceiling }
 }
 
 async function timed(render) {

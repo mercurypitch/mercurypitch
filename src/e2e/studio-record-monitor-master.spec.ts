@@ -1,4 +1,4 @@
-// Studio monitoring through the master — the armed input is heard through the master as the song is: once Compare has measured the song's loudness, the voice heard against the song moves by as much as the song does, playing or stopped, and while Compare plays a side, the voice takes that side's gain, so it keeps its place against the song.
+// Studio monitoring through the master — the armed input is heard through the master as the song is: once Compare has measured the song's loudness, the voice heard against the song moves by as much as the song does, playing or stopped, and while Compare plays a side, the voice takes that side's gain, so on After it keeps its place against the song, and on Before it loses its lane's effects, as the song does.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { studioRegion } from './helpers/dedicatedstudio-fixture'
 import { setMonitoring } from './helpers/studio-arming'
@@ -19,6 +19,8 @@ const MIC_WAV = writeStereoToneWav(MIC_HZ, MIC_HZ, 4, [0.05, 0.05])
 const WITHIN_DB = 0.5
 /** How close the voice's place against the song on a side of Compare is held to playback's, in dB. */
 const BALANCE_DB = 0.1
+/** How far the voice rises at least on Compare's Before side, with its lane's effects gone: the lane's cleanup cut alone takes about 1.5 dB at the microphone's tone. */
+const DRY_RISE_DB = 1
 
 test.use({
   launchOptions: { args: fakeMicArgs(MIC_WAV) },
@@ -153,8 +155,10 @@ test("the armed input is heard through the master: it moves with the song's meas
   const voiceMovedPlaying = measuredPlaying.voiceDb - playing.voiceDb
   const voiceMovedStopped = measured.voiceDb - stopped.voiceDb
 
-  // Compare's Before side has no master, and nor does the voice heard beside
-  // it; its After side has the master back, both at the side's match gain.
+  // Compare's Before side plays the song with every effect off and no
+  // master, and the voice heard beside it loses its lane's effects and the
+  // master's too; its After side has them back, both at the side's match
+  // gain.
   await studio.getByRole('button', { name: 'Sound', exact: true }).click()
   await before.click()
   await expect(before).toHaveAttribute('aria-pressed', 'true')
@@ -194,11 +198,17 @@ test("the armed input is heard through the master: it moves with the song's meas
   expect(Math.abs(voiceMovedStopped - songMoved)).toBeLessThan(WITHIN_DB)
   // After plays the master at the measured gain and then turns the song
   // down to Before's loudness; the voice keeps its place against the song as
-  // in playback. This song's Before is the quieter side, matched at 0 dB, so
-  // the voice there plays as it did before the measurement.
+  // in playback.
   expect(Math.abs(balance(onAfter) - balance(measuredPlaying))).toBeLessThan(
     BALANCE_DB,
   )
-  expect(Math.abs(onBefore.voiceDb - stopped.voiceDb)).toBeLessThan(BALANCE_DB)
+  // Before plays the song with every effect off at its match gain, 0 dB for
+  // this quiet song, and the voice loses its lane's effects too, so it rises
+  // from where it played. Its place against the song is the faders' there,
+  // not playback's: the lane's effects took about 1.5 dB from the voice and
+  // 0.7 dB from the song, since the monitor leaves out the lane's compressor
+  // and its makeup gain, so the voice sits about 0.8 dB higher against the
+  // song than in playback.
+  expect(onBefore.voiceDb - playing.voiceDb).toBeGreaterThan(DRY_RISE_DB)
   await expect(record).toHaveAttribute('data-phase', 'armed')
 })

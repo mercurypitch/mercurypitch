@@ -114,8 +114,8 @@ export interface StudioRecorderOptions {
   readonly liveMix?: StudioMovingMix
   /** The gain every monitored input's master plays at: the one the listener hears (useStudioTransport `masterGain`), or Compare's side's (monitor-sound.ts `studioMonitorMasterGain`); 0 dB when absent. */
   readonly masterGain?: Accessor<StudioMasterGain>
-  /** What the listener hears has no master (Compare's Before side), so the monitor keeps only its gain. */
-  readonly masterBypassed?: Accessor<boolean>
+  /** What the listener hears has no effects (Compare's Before side): each monitored lane plays with every effect off, and the master with only its gain. */
+  readonly dry?: Accessor<boolean>
 }
 
 const MIC_ERRORS: Record<MicError['kind'], string> = {
@@ -231,11 +231,12 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
   const monitored = (trackId: string | null) =>
     settings().monitor || isMidiLaneInput(lanes.of(trackId))
 
-  /** A lane's input through the lane, as its clips play: its effects, faders and the controls still moving. */
+  /** A lane's input through the lane, as its clips play: its effects, faders and the controls still moving; dry while what the listener hears is. */
   const monitorSound = (trackId: string | null) =>
     studioMonitorSound(project(), trackId, {
       on: monitored(trackId),
       moving: options.liveMix,
+      dry: options.dry?.(),
     })
 
   // Every monitored lane then plays through one master, as the lanes' clips
@@ -250,7 +251,7 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
       studioMonitorMasterSpec(
         song,
         options.masterGain?.() ?? { gainDb: 0, safetyGainDb: 0 },
-        { moving: options.liveMix, bypassed: options.masterBypassed?.() },
+        { moving: options.liveMix, bypassed: options.dry?.() },
       ),
     )
   })

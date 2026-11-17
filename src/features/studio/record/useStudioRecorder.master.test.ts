@@ -1,4 +1,4 @@
-// Studio recorder master tests — every armed lane's monitor plays through one master: playback's, at the master gain the transport says the listener hears, gliding to a new one, and with its effects off while Compare plays its Before side, which has no master.
+// Studio recorder master tests — every armed lane's monitor plays through one master: playback's, at the master gain the transport says the listener hears, gliding to a new one, and with its effects off while Compare plays its Before side, which has no master; there each lane plays with every effect off too, gliding out and back in.
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioMasterGain } from '@/lib/studio/export/sound-graph'
@@ -11,7 +11,11 @@ import type { FakeGain } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { FakeAudioContext, FakeNode, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 
 const mocks = vi.hoisted(() => ({
-  deps: null as null | Pick<StudioRecorderDeps, 'createMonitor' | 'onChange'>,
+  deps: null as null | Pick<
+    StudioRecorderDeps,
+    'createMonitor' | 'onChange' | 'monitorSound'
+  >,
+  updateMonitor: vi.fn(),
 }))
 
 vi.mock('@/lib/studio/record/studio-recorder', () => ({
@@ -22,7 +26,7 @@ vi.mock('@/lib/studio/record/studio-recorder', () => ({
       record: vi.fn(),
       stop: vi.fn(),
       disarm: vi.fn(),
-      updateMonitor: vi.fn(),
+      updateMonitor: mocks.updateMonitor,
       micLost: vi.fn(),
       inputLost: vi.fn(),
       clockStopped: vi.fn(),
@@ -128,7 +132,7 @@ function mount() {
         selectedTrackId: () => 'voice',
         audioBusy: () => false,
         masterGain: gain,
-        masterBypassed: before,
+        dry: before,
       })
       return done
     }),
@@ -231,5 +235,74 @@ describe("the recorder's monitor master", () => {
     setBefore(false)
     for (const gain of out)
       expect(gain.gain.lastWrite).toMatchObject({ kind: 'target', value: 1 })
+  })
+
+  it('hands each monitored lane its sound with every effect off while Compare plays Before, and as playback has it on After and once Compare stops', () => {
+    const { setBefore } = mount()
+    const sound = () => mocks.deps!.monitorSound('voice')
+    const playback = sound()
+    const updates = mocks.updateMonitor.mock.calls.length
+
+    setBefore(true)
+
+    // The recorder hears of it and sets each armed lane's monitor again.
+    expect(mocks.updateMonitor.mock.calls.length).toBeGreaterThan(updates)
+    expect(playback.spec.effects.some((effect) => effect.enabled)).toBe(true)
+    expect(sound()).toEqual({
+      ...playback,
+      spec: {
+        ...playback.spec,
+        effects: playback.spec.effects.map((effect) => ({
+          ...effect,
+          enabled: false,
+        })),
+      },
+    })
+    setBefore(false)
+    expect(sound()).toEqual(playback)
+  })
+
+  it("glides the lane's effects out on Before and back in after it, as playback's chains do, with no step", () => {
+    const { ctx, heardLane, setBefore } = mount()
+    heardLane()
+    const stage = new Set(ctx.ofType<FakeGain>('gain'))
+    const monitor = mocks.deps!.createMonitor(
+      ctx.asContext as AudioContext,
+      new FakeNode('input') as unknown as AudioNode,
+      { settled: true },
+    )
+    // What the recorder's updateMonitor hands the lane's monitor.
+    const update = () => monitor.set(mocks.deps!.monitorSound('voice'))
+    update()
+    const lane = ctx.ofType<FakeGain>('gain').filter((gain) => !stage.has(gain))
+    const playing = lane.map((gain) => gain.gain.destination)
+    const written = () => lane.map((gain) => gain.gain.events.length)
+
+    const writes = (since: number[]) =>
+      lane.flatMap((gain, index) =>
+        gain.gain.events
+          .slice(since[index])
+          .filter((event) => event.value !== undefined),
+      )
+    const settled = written()
+    setBefore(true)
+    update()
+
+    const out = writes(settled)
+    const moved = lane.filter(
+      (gain, index) => gain.gain.destination !== playing[index],
+    )
+    expect(moved.length).toBeGreaterThan(0)
+    expect(out.length).toBeGreaterThan(0)
+    expect(out.every((event) => event.kind === 'target')).toBe(true)
+
+    const dry = written()
+    setBefore(false)
+    update()
+
+    const back = writes(dry)
+    expect(back.length).toBeGreaterThan(0)
+    expect(back.every((event) => event.kind === 'target')).toBe(true)
+    expect(lane.map((gain) => gain.gain.destination)).toEqual(playing)
   })
 })

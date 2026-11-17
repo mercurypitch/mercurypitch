@@ -147,7 +147,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     liveMix,
     masterGain: () =>
       studioMonitorMasterGain(transport.masterGain(), comparing()),
-    masterBypassed: () => comparing()?.side === 'before',
+    dry: () => comparing()?.side === 'before',
   })
   /** A seek stops a take first: a take runs straight through the song. */
   const seek = (frame: number) => {
