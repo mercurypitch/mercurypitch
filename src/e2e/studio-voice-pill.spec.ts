@@ -1,4 +1,4 @@
-// Studio voice pill — beside a collapsed sidebar the voice pill sits inside the rail, and with the sidebar open in the sidebar's empty foot, clear of the lanes and their instrument chips either way, with a mouse and on a touch screen; on a phone it stays in the header.
+// Studio voice pill — beside a collapsed sidebar the voice pill sits inside the rail, and with the sidebar open in the sidebar's foot, clear of the lanes, their instrument chips and the sidebar's own controls at any window height, with a mouse and on a touch screen; on a phone it stays in the header.
 import { expect, type Page, test } from '@playwright/test'
 import { importStudioAudio, openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
 
@@ -27,6 +27,49 @@ async function corner(
           : box(rail),
       lanes: [...document.querySelectorAll('[data-studio-track]')].map(box),
     }
+  })
+}
+
+/** Waits out the animations that run to an end: the pill and the sidebar
+ *  slide as it opens. */
+async function settle(page: Page): Promise<void> {
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        .filter(
+          (animation) => animation.effect?.getTiming().iterations !== Infinity,
+        )
+        .map((animation) => animation.finished.catch(() => undefined)),
+    ),
+  )
+}
+
+/** Every sidebar control that shows under the pill, with how many of the
+ *  pill's pixels it takes: each pixel hit-tested with the pill hidden, so a
+ *  control counts only where it is painted and would take the press. */
+async function sidebarUnderPill(page: Page): Promise<Record<string, number>> {
+  return page.evaluate(() => {
+    const hud = document.querySelector<HTMLElement>('[data-voice-control-hud]')!
+    const sidebar = document.querySelector('.app-sidebar')!
+    const r = hud.getBoundingClientRect()
+    const controls =
+      'button, a[href], input, select, textarea, [role="slider"], [role="switch"]'
+    const under: Record<string, number> = {}
+    hud.style.visibility = 'hidden'
+    for (let y = Math.ceil(r.top); y < r.bottom; y++)
+      for (let x = Math.ceil(r.left); x < r.right; x++) {
+        const control = document.elementFromPoint(x, y)?.closest(controls)
+        if (control === null || control === undefined) continue
+        if (!sidebar.contains(control)) continue
+        const name =
+          control.getAttribute('aria-label') ??
+          control.textContent?.trim().slice(0, 40) ??
+          control.tagName
+        under[name] = (under[name] ?? 0) + 1
+      }
+    hud.style.visibility = ''
+    return under
   })
 }
 
@@ -113,18 +156,7 @@ for (const layout of RAIL_LAYOUTS) {
       await expect(page.locator('.app-sidebar:not(.collapsed)')).toBeVisible()
       const hud = page.locator('[data-voice-control-hud]')
       await expect(hud).toBeVisible()
-      // The pill and the sidebar slide as it opens: wait them out.
-      await page.evaluate(() =>
-        Promise.all(
-          document
-            .getAnimations()
-            .filter(
-              (animation) =>
-                animation.effect?.getTiming().iterations !== Infinity,
-            )
-            .map((animation) => animation.finished.catch(() => undefined)),
-        ),
-      )
+      await settle(page)
       const { pill, rail, lanes } = await corner(page)
       expect(lanes.some((lane) => lane.bottom > pill.bottom)).toBe(true)
       expect.soft(pill.left).toBeGreaterThanOrEqual(rail!.left)
@@ -145,6 +177,46 @@ for (const layout of RAIL_LAYOUTS) {
         return found
       })
       expect.soft(under).toEqual(['ASIDE', 'ASIDE', 'ASIDE', 'ASIDE'])
+    })
+  })
+}
+
+// The sidebar's controls reach its foot in a window under about 430 px
+// tall: at 1280x400 the pill sat on Auto-calibrate.
+const WINDOWS = [
+  { width: 1280, height: 400 },
+  { width: 1280, height: 430 },
+  { width: 1280, height: 720 },
+  { width: 1440, height: 900 },
+] as const
+
+for (const viewport of WINDOWS) {
+  test.describe(`Studio voice pill in a ${viewport.width}x${viewport.height} window`, () => {
+    test.use({ viewport })
+
+    test("with the sidebar open, shows none of the sidebar's controls under it, at the sidebar's top or its end", async ({
+      page,
+    }) => {
+      test.setTimeout(90_000)
+      await openArrangement(page)
+      await page.getByRole('button', { name: 'Expand sidebar' }).click()
+      const sidebar = page.locator('.app-sidebar:not(.collapsed)')
+      await expect(sidebar).toBeVisible()
+      await expect(page.locator('[data-voice-control-hud]')).toBeVisible()
+      await settle(page)
+
+      const under: Record<string, Record<string, number>> = {}
+      for (const end of ['top', 'end'] as const) {
+        await sidebar.evaluate((element, end) => {
+          element.scrollTop = end === 'top' ? 0 : element.scrollHeight
+        }, end)
+        under[end] = await sidebarUnderPill(page)
+      }
+
+      console.log(
+        `[voice-pill] ${viewport.width}x${viewport.height} ${JSON.stringify(under)}`,
+      )
+      expect(under).toEqual({ top: {}, end: {} })
     })
   })
 }
