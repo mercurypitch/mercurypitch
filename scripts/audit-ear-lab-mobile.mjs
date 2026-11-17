@@ -33,6 +33,15 @@
 //
 // Exits 0 when every audited screen is clean; exits 1 and prints FAIL
 // lines otherwise — usable as a CI gate.
+//
+// NOT FOR THE WEB BUILD AS IT STANDS. The web's Ear Lab is Merc's bench
+// since November 2026 (EAR_LAB_WITH_MERC, src/lib/native-build.ts), and
+// this audit still looks for the older bench: its session bar, its
+// bridge, its instrument strip and its rack. Against a web build it stops
+// at the first of them. The measurements that still apply (no sideways
+// scroll, the console on the screen, pads a finger tall, the room over
+// the app's bars) are held by src/e2e/ear-lab*.spec.ts until this script
+// is rewritten for Merc's bench.
 // ============================================================
 import { mkdirSync, readFileSync, writeFileSync } from 'node:fs'
 import { chromium, devices } from '@playwright/test'

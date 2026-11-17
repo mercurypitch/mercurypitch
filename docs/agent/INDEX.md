@@ -301,8 +301,8 @@ These are the rules that break things when ignored.
 | [GuitarPage.tsx](../../src/pages/GuitarPage.tsx) | 1.3k | Original tab fingering (Guitar Pro imports) is preserved through load. |
 | [HomePage.tsx](../../src/pages/HomePage.tsx) | 700 | HomePage — the "today" landing surface One obvious next step: your streak (with forgiveness), today's generated 5–15 min session, this we... |
 | [PianoPage.tsx](../../src/pages/PianoPage.tsx) | 400 | Route-neutral facade over the App-owned falling-notes runtime. |
+| [EarLabPage.tsx](../../src/pages/EarLabPage.tsx) | 350 | EarLabPage — the Ear Lab tab: the Regulator Room around the bench and every drill stage. |
 | [PathPage.tsx](../../src/pages/PathPage.tsx) | 350 | PathPage — The Ascent: the guided learning path A serpentine trail of celestial week-orbs climbing a night sky — week 1 at the foot, week... |
-| [EarLabPage.tsx](../../src/pages/EarLabPage.tsx) | 300 | EarLabPage — the Ear Lab tab: the Regulator Room around the bench and every drill stage. |
 | [ExercisesPage.tsx](../../src/pages/ExercisesPage.tsx) | 300 | The web's frame for an exercise room, in the web build alone. |
 | [HomePlanCardMount.tsx](../../src/pages/HomePlanCardMount.tsx) | 150 | HomePlanCardMount — how Home reaches its "Your plan" card, and what Home does for it "Your plan" is the first week's card (src/features/p... |
 | [HomeCheckupCardMount.tsx](../../src/pages/HomeCheckupCardMount.tsx) | 100 | HomeCheckupCardMount — how Home reaches its weekly Check-up card The card (src/features/check-up/HomeCheckupCard) opens the Voice Mirror,... |

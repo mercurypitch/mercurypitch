@@ -251,6 +251,7 @@ export function MercBench(props: MercBenchProps): JSX.Element {
               class={styles.round}
               aria-label="About the bench, and why there is no percent"
               data-testid="merc-bench-help"
+              data-tour="ear.rulers"
               onClick={() => setHelp(true)}
             >
               <IconQuestion size={20} />
@@ -273,7 +274,7 @@ export function MercBench(props: MercBenchProps): JSX.Element {
         </div>
 
         <div class={styles.sections}>
-          <div>
+          <div data-tour="ear.index">
             <div class={styles.indexHead}>
               <p class={styles.kicker}>Mercury Index</p>
               <span class={styles.badge} data-testid="merc-index-badge">
@@ -314,6 +315,7 @@ export function MercBench(props: MercBenchProps): JSX.Element {
                 type="button"
                 class={styles.calibrate}
                 data-testid="merc-calibrate"
+                data-tour="ear.actions"
                 onClick={calibrate}
               >
                 Calibrate
@@ -337,6 +339,7 @@ export function MercBench(props: MercBenchProps): JSX.Element {
             aria-labelledby="merc-today"
             ref={todayCard}
             data-testid="merc-today"
+            data-tour="ear.sprint"
           >
             <div class={styles.cardHead}>
               <h2 id="merc-today" class={styles.h2}>
@@ -439,7 +442,7 @@ export function MercBench(props: MercBenchProps): JSX.Element {
 
           {props.rooms}
 
-          <section aria-labelledby="merc-stations">
+          <section aria-labelledby="merc-stations" data-tour="ear.faculties">
             <div class={styles.sectionHead}>
               <h2 id="merc-stations" class={styles.h2}>
                 Stations
@@ -555,7 +558,11 @@ export function MercBench(props: MercBenchProps): JSX.Element {
             </div>
           </section>
 
-          <section class={styles.card} aria-labelledby="merc-path">
+          <section
+            class={styles.card}
+            aria-labelledby="merc-path"
+            data-tour="ear.path"
+          >
             <div class={styles.cardHead}>
               <h2 id="merc-path" class={styles.h2}>
                 The Ear Path
@@ -576,7 +583,7 @@ export function MercBench(props: MercBenchProps): JSX.Element {
             </p>
           </section>
 
-          <section class={styles.card}>
+          <section class={styles.card} data-tour="ear.report">
             <button
               type="button"
               class={styles.link}

@@ -50,6 +50,11 @@ The native shell gives a room three things, and the web now gives the same three
   rooms.
 - **A lesson's link** can open one: a slug whose exercise is a room. `/exercises/harmony-line`
   opens Harmony, for Lessons 26 and 28.
+- **The Ear Lab** is Merc's bench on the web too, since 16 Nov 2026 (`EAR_LAB_WITH_MERC`, on in the
+  web build): every drill opens in Merc's room, and the bench's Ear rooms row opens Home note, Leap
+  and Harmony in the same frame, over the Ear Lab (`src/pages/EarLabPage.tsx`). What changed for
+  the web, and what a visitor no longer has, is in `docs/plans/ear-lab-native-look.md`, "On the web
+  too".
 
 ## The stage the web's own drills run on
 
@@ -167,8 +172,6 @@ rooms and the kit); their paintings and Merc's lines are not precached.
   `apps/mercurypitch/native-only`.
 - **The Warm-up.** It opens the other rooms as its stops, through a helper that lives in the native
   shell (`apps/mercurypitch/src/shell/warm-up-stop.ts`); the web needs the same, shared.
-- **The Ear Lab with Merc.** The web's Ear Lab keeps its bench for now
-  (`docs/plans/ear-lab-native-look.md`).
 - **The browser's own Back.** It leaves the tab, as it does from a drill. A room is a whole screen,
   so Back should close it; that goes through the app's hash router and is its own change.
 - **A layout for a wide window.** The Ear rooms, Long note and Lip roll fill a desktop window

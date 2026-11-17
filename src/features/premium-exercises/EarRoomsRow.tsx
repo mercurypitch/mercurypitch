@@ -11,6 +11,11 @@
 // room keeps beside the catalogue (home-entry.ts, first-entry.ts,
 // leap-entry.ts, harmony-entry.ts), so the tab and the room cannot
 // disagree.
+//
+// The web's Ear Lab draws the same row (owner, 15 Nov 2026), with the rooms
+// the web opens and no Premium tag: there they are free, and First note,
+// whose songs are the native Karaoke's, is not among them
+// (src/features/exercises/rooms/web-room-ids.ts).
 
 import type { JSX } from 'solid-js'
 import { createUniqueId, For, Show } from 'solid-js'
@@ -25,29 +30,43 @@ import styles from './ear-rooms-row.module.css'
 export interface EarRoomsRowProps {
   /** Open an Ear room. */
   onOpen: (id: PremiumExerciseId) => void
+  /** The rooms this build opens, where that is fewer than the catalogue's
+   *  Ear group: the web's. Every one of them where it is left out. */
+  opens?: ((id: PremiumExerciseId) => boolean) | undefined
+  /** The rooms are free here, so no Premium tag and no taste left: the
+   *  web. */
+  free?: boolean | undefined
 }
 
-function earRooms(): readonly PremiumExercise[] {
-  return catalogueGroups().find((group) => group.id === 'ear')?.exercises ?? []
+function earRooms(
+  opens: ((id: PremiumExerciseId) => boolean) | undefined,
+): readonly PremiumExercise[] {
+  const group =
+    catalogueGroups().find((one) => one.id === 'ear')?.exercises ?? []
+  return opens === undefined ? group : group.filter((one) => opens(one.id))
 }
 
 export function EarRoomsRow(props: EarRoomsRowProps): JSX.Element {
   const headingId = `ear-rooms-${createUniqueId()}`
+  const rooms = () => earRooms(props.opens)
   return (
-    <Show when={earRooms().length > 0}>
+    <Show when={rooms().length > 0}>
       <section
         class={styles.row}
         aria-labelledby={headingId}
         data-testid="ear-rooms-row"
+        data-tour="ear.rooms"
       >
         <div class={styles.head}>
           <h2 id={headingId} class={styles.title}>
             Ear rooms
           </h2>
-          <span class={styles.tag}>Premium</span>
+          <Show when={props.free !== true}>
+            <span class={styles.tag}>Premium</span>
+          </Show>
         </div>
         <ul class={styles.cards}>
-          <For each={earRooms()}>
+          <For each={rooms()}>
             {(exercise) => (
               <li>
                 <button
@@ -70,7 +89,7 @@ export function EarRoomsRow(props: EarRoomsRowProps): JSX.Element {
                         </span>
                       )}
                     </Show>
-                    <Show when={tasteShows()}>
+                    <Show when={props.free !== true && tasteShows()}>
                       <span class={styles.best} data-testid="ear-rooms-taste">
                         {tasteLine(exercise.id, tasteRunsUsed(exercise.id))}
                       </span>

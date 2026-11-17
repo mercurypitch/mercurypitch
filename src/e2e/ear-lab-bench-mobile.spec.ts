@@ -3,61 +3,100 @@
 // ============================================================
 //
 // 375x553 is an iPhone SE inside Safari's chrome — the smallest screen the
-// app still targets, and the one the Ear Lab was worst on. The room fixes
-// its own furniture at both ends of a stage that scrolls between them, so
-// the app header, the session bar, the bridge and the tab bar left the
-// bench a porthole 321px tall, and everything inside it was laid out for a
-// desk.
+// app still targets, and the one the Ear Lab was worst on. The web's older
+// bench fixed its own furniture at both ends of a stage that scrolled
+// between them, and its instrument strip wrapped nineteen instruments into
+// a slab that scrolled both ways. Merc's bench (the web's face of the tab
+// since Nov 2026) lays the instruments out in six stations instead, and
+// opens each drill in a room drawn over the whole window, the app's own
+// bars and all. Its pads still have to fit the one screen a singer taps at
+// without looking.
 //
-// Two measurements, because the two halves fail differently:
+// Three measurements, because the parts fail differently:
 //
-//   * The instrument strip. Its stylesheet calls it "one unbroken line"
-//     and gave it seven fixed columns; the Lab has nineteen instruments.
-//     Seven columns of 132px in a 358px bench wrapped them into three rows
-//     AND overflowed sideways — a two-axis slab 407px tall, taller than the
-//     porthole it lived in, in which you could never see which row you were
-//     on. Asserting one row rather than a height: a strip that got shorter
-//     by shrinking its buttons under the touch target would pass a height
-//     check and still be wrong.
+//   * The stations. Six fixed slots, two to a row: every one a full tap
+//     target, none past the screen's edge, nothing sideways. Asserting the
+//     rows rather than a height: a grid that got shorter by shrinking its
+//     tiles under the touch target would pass a height check and still be
+//     wrong.
 //
-//   * A drill mid-run. The stage is a three-row grid — bar, body, console —
-//     and the instrument between them clamps to the height the chrome
-//     leaves. The reserve that clamp subtracts was measured for a phone on
-//     its side; upright inside Safari it was two dozen pixels short, and
-//     the answer pads went under a scroll in the one screen a singer taps
-//     at without looking.
+//   * A drill mid-run. The room is a grid — header, run line, stage,
+//     console — and the instrument in the stage scales to the height the
+//     console leaves it. The console at its tallest (the verdict in Merc's
+//     bubble, the pads and the pinned row) has to end on the screen, and
+//     not by squeezing the instrument to nothing.
+//
+//   * The room over the app's bars: the web's tab bar and its voice pill
+//     stay on the page while a drill is open, and the room has to cover
+//     them, or they sit over its pads.
+//
+//   * The foot of the window, which the room shares with two things the
+//     web lays over everything: the cookie bar, open until a visitor has
+//     answered it, and the toasts. The console stands on the bar's space,
+//     and says how much of the foot it takes so the toasts stand on it
+//     (src/lib/foot-space.ts).
 
 import { expect, test, type Page } from '@playwright/test'
 import { dismissOverlays, openNavTab } from './helpers/ui'
 
-/**
- * Turn auto-advance off, so a verdict waits for Next instead of the run
- * moving on under the measurement. Call it once a run is under way — the
- * switch is in the drill bar, which only carries it while a run is live. A drill passes through several console
- * heights — a listen pad that is a label one moment and a button the next,
- * a verdict that is one line or three — and with the run advancing on its
- * own, which one got measured was down to the clock.
- */
-async function parkOnTheVerdict(page: Page): Promise<void> {
-  const auto = page.getByTestId('ear-auto-advance')
-  await expect(auto).toBeVisible()
-  if ((await auto.getAttribute('aria-checked')) === 'true') {
-    await auto.click()
-  }
-  await expect(auto).toHaveAttribute('aria-checked', 'false')
+/** Open a station's sheet on the bench and start one of its instruments. */
+async function startFromStation(
+  page: Page,
+  faculty: string,
+  instrument: string,
+): Promise<void> {
+  await page
+    .locator(`[data-testid="merc-station"][data-faculty="${faculty}"]`)
+    .click()
+  await page
+    .getByTestId('merc-station-row')
+    .filter({ hasText: instrument })
+    .first()
+    .click()
+  await expect(page.getByTestId('ear-stage')).toBeVisible()
 }
 
-/** The listen pad once it is a button again: the run has parked. */
-function parkedPad(page: Page) {
-  return page.locator('[class*="playPad"]:not([disabled])')
+/** Answer the question on the pads, and wait for Merc's verdict. */
+async function answerOnce(page: Page): Promise<void> {
+  const pads = page.locator(
+    '[data-testid="ear-stage-pads"] button:not([disabled])',
+  )
+  await expect(pads.first()).toBeVisible({ timeout: 20_000 })
+  await pads.first().click()
+  await expect(page.getByTestId('ear-stage')).toHaveAttribute(
+    'data-beat',
+    'reveal',
+    { timeout: 10_000 },
+  )
+}
+
+/** The console's foot and the instrument, against the window. */
+function measureRoom(page: Page) {
+  return page.evaluate(() => {
+    const room = document.querySelector('[data-testid="ear-stage"]')
+    const pads = document.querySelector('[data-testid="ear-stage-pads"]')
+    const pinned = document.querySelector('[data-testid="merc-pinned"]')
+    const figure = room?.querySelector('figure') ?? null
+    if (room === null || pads === null || figure === null) return null
+    const padBoxes = [...pads.querySelectorAll('button')].map((pad) =>
+      pad.getBoundingClientRect(),
+    )
+    return {
+      viewportHeight: window.innerHeight,
+      roomScroll: room.scrollHeight - room.clientHeight,
+      padsBottom: pads.getBoundingClientRect().bottom,
+      pinnedBottom: pinned?.getBoundingClientRect().bottom ?? null,
+      figureHeight: figure.getBoundingClientRect().height,
+      padCount: padBoxes.length,
+      shortestPad: Math.min(...padBoxes.map((box) => box.height)),
+    }
+  })
 }
 
 /** An iPhone SE with Safari's chrome around it. */
 test.use({ viewport: { width: 375, height: 553 } })
 
-test('keeps the instrument strip to one line on a phone @smoke', async ({
-  page,
-}) => {
+test.beforeEach(async ({ page }) => {
   await page.addInitScript(() => {
     ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
   })
@@ -67,128 +106,72 @@ test('keeps the instrument strip to one line on a phone @smoke', async ({
   await page.goto('/')
   await dismissOverlays(page)
   await openNavTab(page, 'tab-ear-lab')
+})
 
-  const strip = page.locator('[data-tour="ear.drills"]')
-  await expect(strip).toBeVisible()
+test('lays the six stations out on a phone, every one a full tap target @smoke', async ({
+  page,
+}) => {
+  const stations = page.getByTestId('merc-station')
+  await expect(stations.first()).toBeVisible()
 
   const layout = await page.evaluate(() => {
-    const element = document.querySelector('[data-tour="ear.drills"]')
-    if (element === null) return null
-    const buttons = [...element.querySelectorAll(':scope > button')]
-    if (buttons.length === 0) return null
-    const boxes = buttons.map((button) => button.getBoundingClientRect())
+    const tiles = [
+      ...document.querySelectorAll('[data-testid="merc-station"]'),
+    ].map((tile) => tile.getBoundingClientRect())
+    if (tiles.length === 0) return null
     return {
-      count: buttons.length,
-      rows: new Set(boxes.map((box) => Math.round(box.top))).size,
-      stripHeight: element.getBoundingClientRect().height,
-      tallestButton: Math.max(...boxes.map((box) => box.height)),
-      shortestButton: Math.min(...boxes.map((box) => box.height)),
-      // A line you can reach the end of: it has to scroll sideways, since
-      // nineteen instruments do not fit a phone at a readable size.
-      scrollsSideways: element.scrollWidth > element.clientWidth + 1,
+      count: tiles.length,
+      rows: new Set(tiles.map((box) => Math.round(box.top))).size,
+      shortest: Math.min(...tiles.map((box) => box.height)),
+      narrowest: Math.min(...tiles.map((box) => box.width)),
+      rightmost: Math.max(...tiles.map((box) => box.right)),
+      leftmost: Math.min(...tiles.map((box) => box.left)),
+      viewportWidth: document.documentElement.clientWidth,
+      sideways:
+        document.documentElement.scrollWidth -
+        document.documentElement.clientWidth,
     }
   })
 
-  expect(layout, 'could not measure the instrument strip').not.toBe(null)
+  expect(layout, 'could not measure the stations').not.toBe(null)
   if (layout === null) return
 
-  // Guards the walk: an empty strip would satisfy every check below.
-  expect(layout.count, 'the strip listed no instruments').toBeGreaterThan(8)
-
+  expect(layout.count, 'the bench drew a station short').toBe(6)
+  expect(layout.rows, 'the stations are not two to a row').toBe(3)
   expect(
-    layout.rows,
-    'the instrument strip wraps into more than one row on a phone',
-  ).toBe(1)
-  expect(
-    layout.scrollsSideways,
-    'the strip does not scroll, so the instruments past the screen edge cannot be reached',
-  ).toBe(true)
-  // And it is one row because the buttons sit side by side, not because they
-  // were squeezed under the touch target.
-  expect(
-    layout.shortestButton,
-    'the strip fits one row by shrinking its buttons below the touch target',
+    layout.shortest,
+    'a station is under the touch target',
   ).toBeGreaterThanOrEqual(44)
+  expect(layout.narrowest).toBeGreaterThanOrEqual(44)
+  expect(layout.leftmost).toBeGreaterThanOrEqual(0)
   expect(
-    layout.stripHeight,
-    'the strip is taller than the single row of buttons it holds',
-  ).toBeLessThanOrEqual(layout.tallestButton + 2)
+    layout.rightmost,
+    'a station runs past the screen edge',
+  ).toBeLessThanOrEqual(layout.viewportWidth)
+  expect(layout.sideways, 'the bench scrolls sideways').toBe(0)
 })
 
 test('fits a running drill on an upright phone without a scroll @smoke', async ({
   page,
 }) => {
-  await page.addInitScript(() => {
-    ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
-  })
-  // Through the tab bar rather than /ear-lab: the built site has a real
-  // dist/ear-lab/ directory of room art, and the static server answers that
-  // path with its listing instead of the app.
-  await page.goto('/')
-  await dismissOverlays(page)
-  await openNavTab(page, 'tab-ear-lab')
-
-  await page
-    .locator('[data-tour="ear.drills"] button', { hasText: 'Hairline' })
-    .first()
-    .click()
-  await expect(page.getByTestId('ear-stage')).toBeVisible()
-
-  await page.getByText('Practice run').click()
-  const firstPad = page.locator(
-    '[data-testid="ear-stage-pads"] button:not([disabled])',
-    { hasText: 'The first' },
-  )
-  await expect(firstPad).toBeVisible({ timeout: 10_000 })
-  await parkOnTheVerdict(page)
-
-  // Mid-run, with the verdict block under the pads: the console at its
+  await startFromStation(page, 'resolution', 'Hairline')
+  // Mid-run, with Merc's verdict over the pads: the console at its
   // tallest is the state the whole drill is spent in.
-  await firstPad.click()
-  await expect(page.locator('[class*="lastCall"]').first()).toBeVisible({
-    timeout: 10_000,
-  })
-  // Parked, not mid-reveal: this is the console at its tallest — the verdict
-  // showing and the listen pad back as a real button.
-  await expect(parkedPad(page).first()).toBeVisible({ timeout: 20_000 })
+  await answerOnce(page)
 
-  const layout = await page.evaluate(() => {
-    const stage = document.querySelector('[data-testid="ear-stage"]')
-    const pads = document.querySelector('[data-testid="ear-stage-pads"]')
-    const figure = stage?.querySelector('[class*="figure"] > svg') ?? null
-    if (stage === null || pads === null || figure === null) return null
-    // The drill does not scroll itself — it is `min-height: 100%` inside the
-    // room's one scrolling surface, so its own scrollHeight always equals its
-    // height and says nothing. The porthole is the ancestor that scrolls.
-    let porthole: Element | null = stage.parentElement
-    while (
-      porthole !== null &&
-      getComputedStyle(porthole).overflowY !== 'auto'
-    ) {
-      porthole = porthole.parentElement
-    }
-    if (porthole === null) return null
-    return {
-      stageHeight: stage.getBoundingClientRect().height,
-      portholeHeight: porthole.clientHeight,
-      portholeScroll: porthole.scrollHeight,
-      padsBottom: pads.getBoundingClientRect().bottom,
-      portholeBottom: porthole.getBoundingClientRect().bottom,
-      figureHeight: figure.getBoundingClientRect().height,
-    }
-  })
-
-  expect(layout, 'could not measure the stage').not.toBe(null)
+  const layout = await measureRoom(page)
+  expect(layout, 'could not measure the room').not.toBe(null)
   if (layout === null) return
 
-  expect(
-    layout.portholeScroll,
-    'the drill overflows an upright phone, so the answer pads sit under a scroll',
-  ).toBeLessThanOrEqual(layout.portholeHeight + 1)
+  expect(layout.roomScroll, 'the room scrolls').toBeLessThanOrEqual(1)
   expect(
     layout.padsBottom,
-    'the answer pads end below the visible stage',
-  ).toBeLessThanOrEqual(layout.portholeBottom + 1)
+    'the answer pads end below the screen',
+  ).toBeLessThanOrEqual(layout.viewportHeight + 1)
+  expect(
+    layout.pinnedBottom ?? 0,
+    'Hear it again and Next end below the screen',
+  ).toBeLessThanOrEqual(layout.viewportHeight + 1)
   // The fit has to come from somewhere other than the instrument vanishing.
   expect(
     layout.figureHeight,
@@ -196,122 +179,157 @@ test('fits a running drill on an upright phone without a scroll @smoke', async (
   ).toBeGreaterThanOrEqual(80)
 })
 
+test('covers the tab bar and the voice pill while a drill is open @smoke', async ({
+  page,
+}) => {
+  await startFromStation(page, 'resolution', 'Hairline')
+  await expect(
+    page.locator('[data-testid="ear-stage-pads"] button:not([disabled])', {
+      hasText: 'The first',
+    }),
+  ).toBeVisible({ timeout: 20_000 })
+
+  // Whatever is drawn where the app's bars are, it is the room's.
+  const covered = await page.evaluate(() => {
+    const room = document.querySelector('[data-testid="ear-stage"]')
+    const centre = (element: Element | null) => {
+      if (element === null) return null
+      const box = element.getBoundingClientRect()
+      if (box.width === 0 || box.height === 0) return null
+      return { x: box.left + box.width / 2, y: box.top + box.height / 2 }
+    }
+    return [
+      [
+        'the tab bar',
+        centre(document.querySelector('[data-tour="mobile-tabbar"]')),
+      ],
+      [
+        'the voice pill',
+        centre(document.querySelector('[data-testid="voice-control-pill"]')),
+      ],
+      ['the foot of the screen', { x: innerWidth / 2, y: innerHeight - 4 }],
+    ].map(([name, point]) => {
+      if (point === null || typeof point === 'string') return [name, 'absent']
+      const top = document.elementFromPoint(point.x, point.y)
+      return [name, room !== null && room.contains(top) ? 'room' : 'over it']
+    })
+  })
+
+  // Both bars are on a phone's page: one that was not found is a test
+  // that looked in the wrong place, not a room that covers it.
+  for (const [name, verdict] of covered) {
+    expect(verdict, `${name}, under the room`).toBe('room')
+  }
+})
+
+test('stands the console on the cookie bar, and the toasts on the console @smoke', async ({
+  page,
+}) => {
+  await startFromStation(page, 'resolution', 'Hairline')
+  await expect(
+    page.locator('[data-testid="ear-stage-pads"] button:not([disabled])', {
+      hasText: 'The first',
+    }),
+  ).toBeVisible({ timeout: 20_000 })
+
+  const foot = () =>
+    page.evaluate(() => {
+      const consoleEl = document.querySelector(
+        '[data-testid="ear-stage-console"]',
+      )
+      const pinned = document.querySelector('[data-testid="merc-pinned"]')
+      if (consoleEl === null || pinned === null) return null
+      return {
+        viewportHeight: window.innerHeight,
+        consoleTop: consoleEl.getBoundingClientRect().top,
+        pinnedBottom: pinned.getBoundingClientRect().bottom,
+        dock: Number.parseFloat(
+          document.documentElement.style.getPropertyValue('--page-dock-space'),
+        ),
+      }
+    })
+
+  // What the toasts stand on, on a phone: the whole of the console, from
+  // its top to the window's foot (src/styles/Notifications.module.css).
+  const plain = await foot()
+  expect(plain, 'could not measure the console').not.toBe(null)
+  if (plain === null) return
+  expect(
+    Math.abs(plain.dock - (plain.viewportHeight - plain.consoleTop)),
+  ).toBeLessThanOrEqual(1)
+
+  // The e2e build ships no Google tag, so the real bar never mounts. It is
+  // stood in for by what it publishes while open (ConsentBanner.tsx), as
+  // in toast-above-consent-banner.spec.ts.
+  const BAR = 176
+  await page.evaluate((px) => {
+    document.documentElement.style.setProperty(
+      '--consent-banner-space',
+      `${px}px`,
+    )
+  }, BAR)
+
+  await expect
+    .poll(async () => (await foot())?.pinnedBottom ?? Infinity)
+    .toBeLessThanOrEqual(plain.viewportHeight - BAR)
+  // And the toasts still stand on the console, now that it has moved.
+  await expect
+    .poll(async () => {
+      const now = await foot()
+      return now === null
+        ? Infinity
+        : Math.abs(now.dock - (now.viewportHeight - now.consoleTop))
+    })
+    .toBeLessThanOrEqual(1)
+
+  // Leaving the room gives the foot back.
+  await page.getByRole('button', { name: 'End the run' }).first().click()
+  await page
+    .getByTestId('merc-exit')
+    .getByRole('button', { name: 'End the run' })
+    .click()
+  await expect(page.getByTestId('ear-stage')).toHaveCount(0)
+  expect(
+    await page.evaluate(() =>
+      document.documentElement.style.getPropertyValue('--page-dock-space'),
+    ),
+  ).toBe('')
+})
+
 // ============================================================
 // The console on the phone that had the most room and used it worst
 // ============================================================
 //
-// 390x664 is an iPhone 14 inside Safari's chrome. It is 111px taller than
-// the SE above, which is exactly why it was the bad case: it clears the
-// short-viewport rules that rescue the SE, and got the desk's console
-// instead — a keycap for a key it has no keyboard for, the answer and its
-// note stacked, and a three-row verdict block. Measured mid-run: 579px of
-// drill in a 505px porthole.
+// 390x664 is an iPhone 14 inside Safari's chrome. On the old stage it was
+// the bad case: it cleared the short-viewport rules that rescued the SE and
+// got the desk's console instead, 579px of drill in a 505px porthole. Six
+// answers is where a console gets tall, so Stack is the drill to measure.
 test.describe('the taller phone', () => {
   test.use({ viewport: { width: 390, height: 664 } })
 
   test('answers a six-way question without a scroll @smoke', async ({
     page,
   }) => {
-    await page.addInitScript(() => {
-      ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
-    })
-    await page.goto('/')
-    await dismissOverlays(page)
-    await openNavTab(page, 'tab-ear-lab')
+    await startFromStation(page, 'colour', 'Stack')
+    await answerOnce(page)
 
-    // Stack, not Hairline: six answers is where the console gets tall, and a
-    // two-answer drill fits whatever the layout does.
-    await page
-      .locator('[data-tour="ear.drills"] button', { hasText: 'Stack' })
-      .first()
-      .click()
-    await expect(page.getByTestId('ear-stage')).toBeVisible()
-
-    // "Begin", not "Practice run": an identification drill has no calibration
-    // to practice against, it just plays a chord.
-    await page.getByText('Begin').click()
-    // The pads are disabled while the chord sounds; the run reaches the answer
-    // phase when the first one takes a tap.
-    const pads = page.locator(
-      '[data-testid="ear-stage-pads"] button:not([disabled])',
-    )
-    await expect(pads.first()).toBeEnabled({ timeout: 20_000 })
-    await parkOnTheVerdict(page)
-    await pads.first().click()
-    await expect(page.locator('[class*="lastCall"]').first()).toBeVisible({
-      timeout: 10_000,
-    })
-    // Parked, for the same reason as the drill above: this is the console at
-    // its tallest, and the state the singer actually reads the verdict in.
-    await expect(parkedPad(page).first()).toBeVisible({ timeout: 20_000 })
-
-    const layout = await page.evaluate(() => {
-      const stage = document.querySelector('[data-testid="ear-stage"]')
-      const pad = document.querySelector(
-        '[data-testid="ear-stage-pads"] button',
-      )
-      const lastCall = document.querySelector('[class*="lastCall"]')
-      if (stage === null || pad === null || lastCall === null) return null
-      let porthole: Element | null = stage.parentElement
-      while (
-        porthole !== null &&
-        getComputedStyle(porthole).overflowY !== 'auto'
-      ) {
-        porthole = porthole.parentElement
-      }
-      if (porthole === null) return null
-      const label = pad.querySelector('[class*="padLabel"]')
-      const sub = pad.querySelector('[class*="padSub"]')
-      const keycap = pad.querySelector('[class*="padKey"]')
-      return {
-        portholeHeight: porthole.clientHeight,
-        portholeScroll: porthole.scrollHeight,
-        padHeight: pad.getBoundingClientRect().height,
-        keycapShown:
-          keycap !== null && getComputedStyle(keycap).display !== 'none',
-        labelTop: label?.getBoundingClientRect().top ?? null,
-        subTop: sub?.getBoundingClientRect().top ?? null,
-        // The verdict block is a grid, so its own resolved row track list is
-        // the row count — a kicker over a line over a note was three. Read off
-        // the grid rather than off the children's positions: the mark spans
-        // every row and sits 2px low, which reads as a row of its own.
-        lastCallRows: getComputedStyle(lastCall)
-          .gridTemplateRows.trim()
-          .split(/\s+/).length,
-      }
-    })
-
+    const layout = await measureRoom(page)
     expect(layout, 'could not measure the console').not.toBe(null)
     if (layout === null) return
 
+    expect(layout.padCount, 'Stack drew fewer than six pads').toBe(6)
+    expect(layout.roomScroll, 'the room scrolls').toBeLessThanOrEqual(1)
     expect(
-      layout.portholeScroll,
-      'the drill overflows the phone, so the answer pads sit under a scroll',
-    ).toBeLessThanOrEqual(layout.portholeHeight + 1)
-
+      layout.padsBottom,
+      'the answer pads end below the screen',
+    ).toBeLessThanOrEqual(layout.viewportHeight + 1)
     expect(
-      layout.keycapShown,
-      'the answer pads still show a keycap for a keyboard the phone does not have',
-    ).toBe(false)
-
-    // The answer and its note on one line, not stacked. Compared rather than
-    // pinned: what matters is that they share a row, at whatever height the
-    // type lands on.
-    expect(layout.labelTop, 'the pad has no label').not.toBe(null)
-    expect(layout.subTop, 'the pad has no note to place').not.toBe(null)
-    expect(
-      Math.abs((layout.subTop ?? 0) - (layout.labelTop ?? 0)),
-      'the answer and its note are on separate rows',
-    ).toBeLessThan(12)
-
-    expect(
-      layout.lastCallRows,
-      'the verdict block still stacks three rows',
-    ).toBeLessThanOrEqual(2)
-
+      layout.pinnedBottom ?? 0,
+      'Hear it again and Next end below the screen',
+    ).toBeLessThanOrEqual(layout.viewportHeight + 1)
     // The floor, so none of the above was bought below the touch target.
     expect(
-      layout.padHeight,
+      layout.shortestPad,
       'an answer pad is under the 44px touch target',
     ).toBeGreaterThanOrEqual(44)
   })
@@ -319,11 +337,7 @@ test.describe('the taller phone', () => {
   test('keeps the voice pill in the header, off the page @smoke', async ({
     page,
   }) => {
-    await page.addInitScript(() => {
-      ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
-    })
-    await page.goto('/')
-    await dismissOverlays(page)
+    // On the bench, where the pill is the app's and not under a room.
 
     const pill = page.getByTestId('voice-control-pill')
     await expect(pill).toBeVisible()

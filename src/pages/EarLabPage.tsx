@@ -9,14 +9,19 @@
 //
 // On a phone build with the premium exercises, Merc's Ear rooms open from
 // a "With Merc" row over the bench (features/premium-exercises/
-// EarMercRow.tsx), loaded lazily behind PREMIUM_EXERCISES so the web and
-// the store build carry none of it.
+// EarMercRow.tsx), loaded lazily behind PREMIUM_EXERCISES so the store
+// build carries none of it.
 //
-// On a phone build with the Ear Lab with Merc (EAR_LAB_WITH_MERC) the
-// bench is the native tab instead (features/ear-lab/merc/MercBench.tsx),
-// with the Ear rooms as its own row, every drill opens in the native
-// room (EarStage.tsx), and the Ear Report is drawn in the room's light
-// (merc/MercReport.tsx). All are one lazy chunk behind the switch.
+// On the web and on a phone test build, the Ear Lab with Merc
+// (EAR_LAB_WITH_MERC): the bench is Merc's instead (features/ear-lab/merc/
+// MercBench.tsx), with the Ear rooms as its own row, every drill opens in
+// Merc's room (stage-switch.tsx), and the Ear Report is drawn in the room's
+// light (merc/MercReport.tsx). All are one lazy chunk behind the switch.
+// The phone opens the Ear rooms through its shell; the web opens the ones
+// it has in the frame its Exercises tab opens them in (features/exercises/
+// rooms/WebRoomHost.tsx), over the Ear Lab, and Back comes back to it.
+// The room is drawn over the page; on the web the tab bar and the voice
+// pill stay on the page, so the page lifts the room over them.
 //
 // A drill asked for from elsewhere can come with a lesson's set of its
 // items (`/exercises/<slug>`, lib/ear/subsets.ts). The page hands the set
@@ -25,7 +30,8 @@
 // ============================================================
 
 import type { Component, JSX } from 'solid-js'
-import { createEffect, createSignal, lazy, onCleanup, Show, untrack, } from 'solid-js'
+import { createEffect, createSignal, lazy, onCleanup, Show, Suspense, untrack, } from 'solid-js'
+import { Dynamic } from 'solid-js/web'
 import { BasslineDrill } from '@/features/ear-lab/BasslineDrill'
 import { BeatHuntDrill } from '@/features/ear-lab/BeatHuntDrill'
 import { CadenceDrill } from '@/features/ear-lab/CadenceDrill'
@@ -52,11 +58,13 @@ import { SpanDrill } from '@/features/ear-lab/SpanDrill'
 import { StackDrill } from '@/features/ear-lab/StackDrill'
 import { SubdivideDrill } from '@/features/ear-lab/SubdivideDrill'
 import { releaseWildStems } from '@/features/ear-lab/wild-store'
+import type { WebRoomId } from '@/features/exercises/rooms/web-room-ids'
+import { isWebRoom } from '@/features/exercises/rooms/web-room-ids'
 import { TAB_EAR_LAB } from '@/features/tabs/constants'
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import type { EarSubset } from '@/lib/ear/subsets'
 import { resolveEarSubset } from '@/lib/ear/subsets'
-import { EAR_LAB_WITH_MERC, PREMIUM_EXERCISES } from '@/lib/native-build'
+import { EAR_LAB_WITH_MERC, IS_NATIVE_BUILD, PREMIUM_EXERCISES, WEB_ROOMS, } from '@/lib/native-build'
 import { provideTourDetour } from '@/lib/tour-screen'
 import { disarmSprintSegment } from '@/stores/ear-lab-store'
 import { nativeShellApi } from '@/stores/native-shell-store'
@@ -64,6 +72,11 @@ import { pendingEarDrill, pendingEarItems, setPendingEarDrill, setPendingEarItem
 
 interface EarMercRowProps {
   onOpen: (id: PremiumExerciseId) => void
+}
+
+interface EarRoomsRowProps extends EarMercRowProps {
+  opens?: ((id: PremiumExerciseId) => boolean) | undefined
+  free?: boolean | undefined
 }
 
 const EarMercRow: Component<EarMercRowProps> = PREMIUM_EXERCISES
@@ -74,15 +87,32 @@ const EarMercRow: Component<EarMercRowProps> = PREMIUM_EXERCISES
     )
   : () => null
 
-/** The Ear rooms as the native tab draws them: the same switch and the
- *  same lazy island as the row above. */
-const EarRoomsRow: Component<EarMercRowProps> = PREMIUM_EXERCISES
-  ? lazy(async () =>
-      import('@/features/premium-exercises/ear-entry').then((module) => ({
-        default: module.EarRoomsRow,
-      })),
-    )
-  : () => null
+/** The Ear rooms as Merc's bench draws them: the same lazy island as the
+ *  row above, on a phone build with the premium exercises and on the web,
+ *  which opens its own rooms. */
+const EarRoomsRow: Component<EarRoomsRowProps> =
+  PREMIUM_EXERCISES || WEB_ROOMS
+    ? lazy(async () =>
+        import('@/features/premium-exercises/ear-entry').then((module) => ({
+          default: module.EarRoomsRow,
+        })),
+      )
+    : () => null
+
+/** The web's frame for a room, as its Exercises tab opens one: in the web
+ *  build alone, lazy, so a native build carries none of it. */
+const WebRoomHost = WEB_ROOMS
+  ? lazy(() => import('@/features/exercises/rooms/WebRoomHost'))
+  : null
+
+/** Where the room stands on the web: over the tab bar and the voice pill
+ *  (`--z-tabbar`), under the sheets the room and the app raise
+ *  (`--z-sheet`), as a stage does (src/styles/mobile-kit.css). The native
+ *  shell takes its bars away while the room is up, and leaves the room its
+ *  own layer (merc/room.module.css). */
+const ROOM_LAYER: JSX.CSSProperties | undefined = IS_NATIVE_BUILD
+  ? undefined
+  : { '--room-layer': 'var(--z-stage, 450)' }
 
 interface MercBenchProps {
   onNavigate: (view: EarLabView) => void
@@ -134,10 +164,34 @@ export function EarLabPage(): JSX.Element {
     setOpening({ subset: null })
     setView(next)
   }
-  // A build without the premium exercises registers no opener, and the
-  // bench draws no way in.
+  /** The web's room open over the Ear Lab, if one is. */
+  const [webRoom, setWebRoom] = createSignal<WebRoomId | null>(null)
+  /** The card that opened it. The bench stays under the room, so the focus
+   *  goes back to the card as the room closes, as the Exercises tab hands
+   *  it back to its own (rooms/RoomsStrip.tsx). */
+  let roomCard: HTMLElement | null = null
+  // The web opens its own rooms. A phone build without the premium
+  // exercises registers no opener, and the bench draws no way in.
   const mercRooms = (): boolean =>
-    PREMIUM_EXERCISES && nativeShellApi()?.openExercise !== undefined
+    WEB_ROOMS ||
+    (PREMIUM_EXERCISES && nativeShellApi()?.openExercise !== undefined)
+  const openRoom = (id: PremiumExerciseId): void => {
+    if (!WEB_ROOMS) {
+      nativeShellApi()?.openExercise?.(id)
+    } else if (isWebRoom(id)) {
+      roomCard =
+        document.activeElement instanceof HTMLElement
+          ? document.activeElement
+          : null
+      setWebRoom(id)
+    }
+  }
+  const closeRoom = (): void => {
+    setWebRoom(null)
+    const card = roomCard
+    roomCard = null
+    if (card?.isConnected === true) card.focus({ preventScroll: true })
+  }
   // Leaving the lab lets the decoded stems go (tens of megabytes a
   // song) along with the desk's rendered source. The books they were
   // read into stay, so coming back does not read the songs again.
@@ -187,7 +241,7 @@ export function EarLabPage(): JSX.Element {
     view() === drill && opening()
 
   return (
-    <div id="ear-lab-page">
+    <div id="ear-lab-page" style={ROOM_LAYER}>
       <EarRoomShell onNavigate={openView} bridge={view() === 'dashboard'}>
         <Show when={view() === 'dashboard'}>
           {EAR_LAB_WITH_MERC ? (
@@ -196,7 +250,9 @@ export function EarLabPage(): JSX.Element {
               rooms={
                 mercRooms() ? (
                   <EarRoomsRow
-                    onOpen={(id) => nativeShellApi()?.openExercise?.(id)}
+                    onOpen={openRoom}
+                    opens={WEB_ROOMS ? isWebRoom : undefined}
+                    free={WEB_ROOMS}
                   />
                 ) : undefined
               }
@@ -282,6 +338,17 @@ export function EarLabPage(): JSX.Element {
           )}
         </Show>
       </EarRoomShell>
+      <Show when={WebRoomHost}>
+        {(Host) => (
+          <Show when={webRoom()}>
+            {(id) => (
+              <Suspense>
+                <Dynamic component={Host()} id={id()} onBack={closeRoom} />
+              </Suspense>
+            )}
+          </Show>
+        )}
+      </Show>
     </div>
   )
 }

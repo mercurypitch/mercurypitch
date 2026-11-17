@@ -7,7 +7,8 @@
 // asked of the built bundle by assert-bundle.mjs (KARAOKE_STAGE_2) when
 // a store build is made; this file asks the sources on every run.
 //
-//   - The switch is its own constant, folded from KARAOKE_IMPORT.
+//   - The switch is its own constant, folded from KARAOKE_IMPORT and
+//     WEB_ROOMS: on in a phone test build and on the web.
 //   - Nothing outside this folder imports it statically: a static import
 //     runs its module, fonts and all, even under a branch that folds away.
 //   - The stage and the page reach it only through a lazy import behind
@@ -15,8 +16,13 @@
 //     so the parts the room borrows from EarStage.tsx do not import it
 //     back.
 //   - The views hand the room its data only behind the constant, so the
-//     web's stages build none of it.
+//     older stage builds none of it.
 //   - Its font is imported by its entry alone.
+//   - The page opens the web's exercise rooms from the bench's Ear rooms
+//     row. It is in the native bundle too, so it reaches the web's frame
+//     and the row only through lazy imports behind constants that fold to
+//     false in a store build, as the Exercises page does
+//     (src/features/exercises/rooms/web-rooms-fold.test.ts).
 
 import { readdirSync, readFileSync, statSync } from 'node:fs'
 import { join, posix } from 'node:path'
@@ -53,9 +59,10 @@ const inChunk = (path: string): boolean =>
   path === CHUNK || path.startsWith(`${CHUNK}/`)
 
 describe('the Ear Lab with Merc, in the sources', () => {
-  it('has a switch of its own, on exactly where the Karaoke import is', () => {
+  it('has a switch of its own, on where the Karaoke import is and on the web', () => {
+    // Both fold to false in the store build, and so does this one.
     expect(read('src/lib/native-build.ts')).toMatch(
-      /export const EAR_LAB_WITH_MERC: boolean = KARAOKE_IMPORT\n/u,
+      /export const EAR_LAB_WITH_MERC: boolean = KARAOKE_IMPORT \|\| WEB_ROOMS\n/u,
     )
   })
 
@@ -117,6 +124,30 @@ describe('the Ear Lab with Merc, in the sources', () => {
     expect(callers).toEqual([
       'apps/mercurypitch/src/infrastructure/native-reminders.ts',
     ])
+  })
+
+  it("opens the web's rooms from the page only behind constants that fold", () => {
+    const page = read('src/pages/EarLabPage.tsx')
+    // Statically, nothing of the rooms but their ids.
+    expect([
+      ...new Set(
+        staticImports('src/pages/EarLabPage.tsx').filter((path) =>
+          /\/rooms\/|premium-exercises|room-kit/u.test(path),
+        ),
+      ),
+    ]).toEqual(['src/features/exercises/rooms/web-room-ids'])
+    expect(page).toMatch(
+      /const WebRoomHost = WEB_ROOMS\s*\?\s*lazy\(\(\) => import\('@\/features\/exercises\/rooms\/WebRoomHost'\)\)\s*:\s*null/u,
+    )
+    expect(page).toMatch(
+      /const EarRoomsRow: Component<EarRoomsRowProps> =\s*PREMIUM_EXERCISES \|\| WEB_ROOMS\s*\?\s*lazy\(async \(\) =>\s*import\('@\/features\/premium-exercises\/ear-entry'\)/u,
+    )
+    // And no other dynamic import of either.
+    expect(
+      page.match(
+        /import\('@\/features\/(?:exercises\/rooms|premium-exercises)\//gu,
+      ),
+    ).toHaveLength(3)
   })
 
   it('imports its serif in its entry and nowhere else', () => {

@@ -8,7 +8,9 @@
 //
 //   toasts                      stand on all of these (Notifications.module.css)
 //   a page's docked transport   --page-dock-space      (StudioTransport, phone;
-//                                 it sits on the tab bar, so it counts it too)
+//                                 it sits on the tab bar, so it counts it too;
+//                                 and the console of Merc's Ear Lab room, as
+//                                 what lies under its stage)
 //   confirm-email bar           --verify-banner-space  (VerifyEmailBanner)
 //   cookie consent banner       --consent-banner-space (ConsentBanner)
 //   tab bar                     --tabbar-space         (BottomTabBar)
@@ -25,8 +27,15 @@ import { onCleanup } from 'solid-js'
  * `name` on <html> for as long as the calling owner lives, and nothing while
  * it is not displayed. Measured without transforms, so a slide-in does not
  * skew it. Call it from a `ref`.
+ *
+ * With `of` 'below', what is published is what lies under `el`, down to the
+ * window's foot: for a dock that is whatever stands under a stage.
  */
-export function publishFootSpace(el: HTMLElement, name: string): void {
+export function publishFootSpace(
+  el: HTMLElement,
+  name: string,
+  of: 'self' | 'below' = 'self',
+): void {
   const root = document.documentElement
   let last: string | null = null
   const update = (): void => {
@@ -35,13 +44,13 @@ export function publishFootSpace(el: HTMLElement, name: string): void {
     const style = window.getComputedStyle(el)
     let next: string | null = null
     if (style.display !== 'none') {
+      const below = (): number =>
+        Math.max(0, window.innerHeight - el.getBoundingClientRect().bottom)
       // A bar in the page flow has no `bottom`; its gap is what lies below
       // it, such as the tab bar under the Studio's phone dock.
       const bottom = Number.parseFloat(style.bottom)
-      const gap = Number.isFinite(bottom)
-        ? bottom
-        : Math.max(0, window.innerHeight - el.getBoundingClientRect().bottom)
-      const space = el.offsetHeight + gap
+      const gap = Number.isFinite(bottom) ? bottom : below()
+      const space = of === 'below' ? below() : el.offsetHeight + gap
       next = `${Math.ceil(space)}px`
     }
     if (next === last) return

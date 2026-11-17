@@ -10,9 +10,11 @@
 // the launch ends when the singer leaves the drill.
 //
 // An `ear-drill` slug opens an Ear Lab drill on a lesson's set of its
-// items instead (src/lib/ear/subsets.ts, through EarLabPage.tsx): the
-// stage at idle names the set on its Begin pad, and a run's pads are the
-// set's alone.
+// items instead (src/lib/ear/subsets.ts, through EarLabPage.tsx), in
+// Merc's room, the web's face of the Ear Lab since Nov 2026: the room
+// at idle names the set on its Begin pad, and a run's pads are the set's
+// alone. From the bench, a station's sheet starts a drill whole, its run
+// under way at once.
 
 import type { Locator, Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
@@ -281,8 +283,24 @@ test("leaving triads' drill leaves the menu's Chord Stacker on the singer's own 
   )
 })
 
-/** The Ear Lab's stage, on the drill a slug opened. */
+/** Merc's room, on the drill a slug opened. */
 const earStage = (page: Page): Locator => page.getByTestId('ear-stage')
+
+/** Start Leap from Shape's sheet on Merc's bench: whole, its run started. */
+async function leapFromTheBench(page: Page): Promise<void> {
+  await page
+    .locator('[data-testid="merc-station"][data-faculty="shape"]')
+    .click()
+  await page
+    .getByTestId('merc-station-row')
+    .filter({ hasText: 'Leap' })
+    .first()
+    .click()
+}
+
+/** A run's answer pads, armed. */
+const armedPads = (page: Page): Locator =>
+  earStage(page).getByTestId('ear-stage-pads').getByRole('button')
 
 /** The Begin pad, where the stage names a set at idle on every width. */
 const begin = (page: Page): Locator =>
@@ -369,14 +387,11 @@ test('an ear-drill slug opens its set from inside the app, signed in, over the d
       `${part({ alg: 'none' })}.${part({ sub: 'e2e-user', provider: 'password', exp })}.sig`,
     )
   })
-  // Inside the app first, on Leap whole.
+  // Inside the app first, on Leap whole: its run under way, twelve pads.
   await page.goto('/?lesson=23#/ear-lab')
-  await page
-    .getByRole('listitem', { name: /^Leap: / })
-    .first()
-    .click()
+  await leapFromTheBench(page)
   await expect(earStage(page)).toHaveAttribute('data-ear-drill', 'leap')
-  await expect(begin(page)).not.toContainText('P4')
+  await expect(armedPads(page)).toHaveCount(12, { timeout: 20_000 })
 
   await openSlug(page, 'perfect-or-tritone', '23')
 
@@ -394,17 +409,15 @@ test("leaving perfect-or-tritone's drill leaves the bench's Leap whole", async (
   await openSlug(page, 'perfect-or-tritone', '23')
   await expect(begin(page)).toContainText('P4, TT, P5 and P8')
 
-  // Back to the bench forgets the set (EarLabPage.tsx); the bench opens
+  // Closing the room forgets the set (EarLabPage.tsx); the bench opens
   // Leap whole, on all twelve and its own rating.
-  await page.getByRole('button', { name: 'Back to the bench' }).click()
-  await page
-    .getByRole('listitem', { name: /^Leap: / })
-    .first()
-    .click()
+  await earStage(page).getByRole('button', { name: 'Close' }).click()
+  await expect(page.getByTestId('merc-bench')).toBeVisible()
+  await leapFromTheBench(page)
 
   await expect(earStage(page)).toHaveAttribute('data-ear-drill', 'leap')
-  await expect(begin(page)).not.toContainText('P4')
-  await expect(await runPads(page)).toHaveCount(12)
+  await expect(begin(page)).toHaveCount(0)
+  await expect(armedPads(page)).toHaveCount(12, { timeout: 20_000 })
 })
 
 test("/exercises/sing-what-you-see opens Sight-Singing on Lesson 16's two phrases, in G", async ({

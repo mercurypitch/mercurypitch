@@ -103,18 +103,20 @@ export const PREMIUM_GATE: boolean = false
 export const NATIVE_ONBOARDING: boolean = KARAOKE_IMPORT
 
 /**
- * Whether this build carries the Ear Lab with Merc: the phone's own Ear Lab
- * tab (the room, the glass, Today and the six stations) and the drill room
+ * Whether this build carries the Ear Lab with Merc: the Ear Lab tab with
+ * Merc (the room, the glass, Today and the six stations) and the drill room
  * every one of the nineteen instruments runs in, Merc at its console. It is
  * a new face on the same drills: their engines, their honesty rules and
- * their words are the web's, and the web keeps the bench it has. On in a
- * native test build, TestFlight among them, so the owner can play it before
- * it ships, and off in the store build until the owner flips it. Folded like
- * `KARAOKE_IMPORT`, so the store build carries none of it (assert-bundle.mjs
- * STAGE 2): the room and the tab are one lazy chunk behind this constant
- * (EarStage.tsx, EarLabPage.tsx).
+ * their words are the old bench's. On in the web build since the owner's
+ * decision of 15 Nov 2026 (the web's exercises as good as the native app's,
+ * with nothing held back for it; docs/plans/web-rooms.md), and in a native
+ * test build, TestFlight among them, so the owner can play it before it
+ * ships; off in the store build until the owner flips it. Folded like
+ * `KARAOKE_IMPORT` and `WEB_ROOMS`, so the store build carries none of it
+ * (assert-bundle.mjs STAGE 2): the room and the tab are one lazy chunk
+ * behind this constant (stage-switch.tsx, EarLabPage.tsx).
  */
-export const EAR_LAB_WITH_MERC: boolean = KARAOKE_IMPORT
+export const EAR_LAB_WITH_MERC: boolean = KARAOKE_IMPORT || WEB_ROOMS
 
 /**
  * Whether this build carries Leagues and the weekly challenge on the phone
