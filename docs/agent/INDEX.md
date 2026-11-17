@@ -514,6 +514,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm dev:host` | `cross-env VITE_OVERRIDE_ONNX_MODEL= vite --host` |
 | `pnpm dev:portable` | `cross-env VITE_OVERRIDE_ONNX_MODEL= VITE_PORTABLE_CONSOLE=true MP_DEV_LOGS=1 vite --host` |
 | `pnpm dev:jam` | `cd workers/jam-worker && npx wrangler dev --port 8787 --live-reload` |
+| `pnpm dev:jam-lan` | `pnpm run --workspace-concurrency=2 '/^dev:(jam|host)$/'` |
 | `pnpm dev:db` | `cd workers/db-worker && npx wrangler dev --port 8788 --live-reload` |
 | `pnpm dev:db:cron` | `cd workers/db-worker && npx wrangler dev --port 8788 --live-reload --test-scheduled` |
 | `pnpm dev:seed` | `node scripts/seed-dev-league.mjs` |
@@ -596,8 +597,8 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm deploy:prod` | `pnpm exec wrangler deploy --env prod` |
 | `pnpm deploy:jam:dev` | `cd workers/jam-worker && pnpm exec wrangler deploy --env dev` |
 | `pnpm deploy:jam:prod` | `cd workers/jam-worker && pnpm exec wrangler deploy --env prod` |
-| `pnpm deploy:all:dev` | `run-s deploy:dev deploy:jam:dev` |
-| `pnpm deploy:all:prod` | `run-s deploy:prod deploy:jam:prod` |
+| `pnpm deploy:all:dev` | `pnpm run deploy:dev && pnpm run deploy:jam:dev` |
+| `pnpm deploy:all:prod` | `pnpm run deploy:prod && pnpm run deploy:jam:prod` |
 | `pnpm db:init` | `./scripts/init-cloudflare-db.sh all prod` |
 | `pnpm db:init:dev` | `./scripts/init-cloudflare-db.sh all dev` |
 | `pnpm db:init:local` | `./scripts/init-cloudflare-db.sh --local` |
