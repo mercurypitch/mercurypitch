@@ -730,13 +730,13 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
   their own clef; pitch scored per note, octave-folded; the take is played back with the other
   part, and the page names the cadence that ends it. "How did that feel?" closes the season's last
   sung moment.
-- Practise: Karaoke Night (`/karaoke-night?lesson=28`), a whole song with the singer's take played
-  back, as Lesson 14 links it; Ear Lab's Cadence (`/ear-lab?lesson=28`, then tap Cadence), which
-  names progressions, I-IV-V, I-V-vi-IV, ii-V-I and others, not cadence types
-  (`src/lib/ear/progressions.ts:57-59`). Jam's Harmony Stack stays on Lesson 26's card: it needs a
-  friend, and its parts are the room's tune moved up a third or a fifth, not a written part
-  (Lesson 28 FACTS 74). Needs building: a cadence-type ear drill (§ 5 item 19) and the
-  harmony-line drill (§ 5 item 17). The two-part song is written for the lesson (§ 8, risk 11).
+- Practise: Sing It in Time (`/exercises/sing-it-in-time?lesson=28`, since 17 November 2026), two
+  bars read from the staff and sung on the beat, pitch scored and timing shown (§ 5 item 11); Name
+  the Cadence (`/exercises/name-the-cadence?lesson=28`), the four cadences by ear (§ 5 item 19).
+  Karaoke Night, the card's first drill until then, is the season's close. Jam's Harmony Stack
+  stays on Lesson 26's card: it needs a friend, and its parts are the room's tune moved up a third
+  or a fifth, not a written part (Lesson 28 FACTS 74). Needs building: the harmony-line drill (§ 5
+  item 17). The two-part song is written for the lesson (§ 8, risk 11).
 - Facts to check: the four cadences (Wikipedia's Cadence article at the revision Lesson 14's FACTS
   cites; musictheory.net and Coursera M5, as the benchmark cites them for T22; Open Music Theory's
   cadences chapter); that a song usually ends on a perfect cadence, **not found**: no source that
@@ -877,7 +877,7 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 | 25     | `/exercises/te-or-ti`; `/exercises/sight-sing-harmonic-minor`         | Nothing for its two links (items 12, 10 shipped); a Scale Runner card in Sight-Singing's place waits for the coach  |
 | 26     | Merc's Harmony room, `/exercises/harmony-line`; Jam's Harmony Stack   | Nothing for its card, which links the Harmony room; the harmony-line drill itself, scored per note (item 17, code)  |
 | 27     | `/exercises/triads`; Stack's `/exercises/major-or-dominant-seventh`   | An address for the dominant seventh and its inversions, one registry line; its card links the triads meanwhile      |
-| 28     | Karaoke Night; Ear Lab: Cadence; `/exercises/sing-it-in-time`         | Card links to `/exercises/name-the-cadence` (item 19 shipped), Sing It in Time (item 11); harmony line (item 17)    |
+| 28     | `/exercises/sing-it-in-time`; `/exercises/name-the-cadence`           | Nothing for its two links (items 11, 19 shipped); a harmony line sung alone (item 17), which its card will not add  |
 
 Every Season 2 link waits for one thing first: the lesson marker. `?lesson=` is read only for 01 to
 14 (`SEASON_1_LESSON`, `src/lib/lesson-marker.ts:11-19`), so `?lesson=15` is today an ordinary visit,
@@ -950,7 +950,7 @@ and First Light does not step aside. Item 21 fixes it.
     sing" sounds it under the singing too, off at first, since a raw microphone hears it. The level
     sets the tempo, the note values and the leaps, from quarters by step at 50 BPM to eighth pairs
     and wide leaps at 96 (`IN_TIME_LEVELS`, `tune-plan.ts`); level 5 is Lesson 18's checkpoint. Its
-    address is `/exercises/sing-it-in-time`, at level 5. Lessons 18 and 28; their cards do not link it.
+    address is `/exercises/sing-it-in-time`, at level 5. Lessons 18 and 28; Lesson 28's card links it.
 12. **The `ear-drill` launch kind: shipped on 16 November 2026** (CURRICULUM § 4 item 5). A slug can
     name an Ear Lab drill and, by the drill's own bank ids, the set of its items to ask
     (`EarDrillLaunch`, `src/features/exercises/slug-map.ts:82-92`). `applyExerciseSlug` hands it to
@@ -1072,7 +1072,7 @@ and First Light does not step aside. Item 21 fixes it.
     and after a miss Merc names the cadence, says its two chords and it plays once more
     (`use-cadence-controller.ts`). It opens no microphone. Major keys only. Its address is
     `/exercises/name-the-cadence`, which opens it at level 7, so that all four are asked. Lesson
-    28, whose card does not link it yet.
+    28, whose card links it.
 20. **Keys and the sheet view in the Singing tab: shipped on 17 November 2026.** The key picker of
     Playback Setup lists twelve keys where it listed eight: the major keys round the circle of
     fifths, C, G, D, A, E, B and F♯, then F, B♭, E♭, A♭ and D♭, and with a minor scale chosen their

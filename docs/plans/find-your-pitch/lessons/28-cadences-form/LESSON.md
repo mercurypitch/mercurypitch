@@ -57,8 +57,8 @@ parts". The headphones check and the quiet check's two lines are Lesson 26's wit
 with Lesson 14's sentences on a recording, singular. The reading lines and the no-voice line are
 Lesson 26's and Lesson 18's, with this task's cue. Your turn's cues are Lesson 18's. The take's
 lines after Effortful and Uncomfortable, "Your take stays, to play back or delete.", and the
-can't-record line are Lesson 14's, singular. The practice card's Karaoke Night lines and its rest
-card are Lesson 14's, without its "Ten minutes" line; its second drill opens on Lesson 12's line.
+can't-record line are Lesson 14's, singular. The practice card's rest card is Lesson 14's form;
+its lines for Sing It in Time and Name the Cadence are new, since 17 November 2026 (FACTS 70a, 72a).
 The season's close is Lesson 14's card, the kit's, with "End of Season 2" and a line of its own
 (FACTS 5). New lines: the line under the voice choice, the headphones line under Your turn, the
 first turn's button on the alone path, the fail line's second half, the playback's line and the line
@@ -113,8 +113,8 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 - **The quick check**: question 2 asks for the Amen cadence, and all four cadences are asked, where
   the plan's asked again what V to vi is called; question 4 waits for the choice, and its feedback
   no longer says Merc's part "stepped up, not down to the root", which was false (FACTS 77 to 80).
-- **The practice card** names Karaoke Night, in Lesson 14's words, and Ear Lab's Cadence, saying
-  what it plays and how its progressions end; Jam's Harmony Stack is left out (FACTS 70 to 76).
+- **The practice card** names Sing It in Time and Name the Cadence, each saying what it plays and
+  asks; Karaoke Night is the season's close, and Jam's Harmony Stack is left out (FACTS 70 to 76).
 - **The chips** name both prerequisites, with "Microphone optional" and "Headphones optional" as
   Lessons 24 and 26's, and read 19 minutes from the built page's estimate; the promise names four
   cadences, the card's objective, not "four ways a phrase can end", which two of them are not
@@ -483,32 +483,32 @@ ending, then keep going.
 (The practice card, in the version Sing it's ending picks.)
 
 - Eyebrow: Practise in MercuryPitch
-- Title: Karaoke Night
-- Text: Karaoke Night draws every note you sing against the one you were aiming for, and lets you
-  hear your own take back. It scores your singing too. Its example song is free. Put the song in
-  your comfortable middle: its key chip moves a song up or down, and Find my key picks a key from
-  your range. Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and
-  stop immediately if anything feels uncomfortable.
-- Address: Sing a whole song free: **mercurypitch.com/karaoke-night**
-- Second drill: For your ear, Ear Lab's Cadence strums a chord progression for you to name in
-  numerals; five of its eight stop on V. Free: **mercurypitch.com/ear-lab**, then tap Cadence.
-- Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Karaoke Night
-  will be here when your voice feels comfortable: **mercurypitch.com/karaoke-night**" Then the
-  second drill.
+- Title: Sing It in Time
+- Text: Sing It in Time writes two bars on a staff and gives you do; then the click counts one bar
+  in, and you sing them as the beat goes on, three tunes at 60 BPM. Then it shows, note by note,
+  which you sang in tune and which on the beat. Sore, hoarse or unwell today? Just listen along. Sing at
+  about speaking volume, and stop immediately if anything feels uncomfortable.
+- Address: Practise it free: **mercurypitch.com/exercises/sing-it-in-time**
+- Second drill: For your ear, Name the Cadence plays the key's own chord, then an ending's two
+  chords, for you to name: Perfect, Imperfect, Plagal or Interrupted. Nothing listens here. Free:
+  **mercurypitch.com/exercises/name-the-cadence**
+- Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Sing It in Time
+  will be here when your voice feels comfortable: **mercurypitch.com/exercises/sing-it-in-time**"
+  Then the second drill.
 
-_[Editorial: the addresses link `/karaoke-night?lesson=28` and `/ear-lab?lesson=28`, as the season
-entry and the season's close do (FACTS 71). Karaoke Night's lines are Lesson 14's card, read again
-in the app: its take is kept in memory, it scores each note in any octave, its key chip moves a song
-by up to six semitones and Find my key reads the learner's range, so the card's "comfortable middle"
-holds for every preset (FACTS 70). Cadence's line opens on Lesson 12's and says what the drill does
-to a learner: it strums, asks for no voice, names progressions, not cadences, and five of its eight
-progressions end on V, as an imperfect cadence does; it draws no staff and calls no interval hard
-(FACTS 72, 73). Harmony Stack, which the plan linked, is left out: it needs a friend, and its parts
-are the room's tune moved up a third or a fifth, not a written part; its own card, Lesson 26's,
-carries its limits (FACTS 74). Neither room
-reads the lesson marker today, which reads Season 1's numbers only, so the page is not built before
-Season 2's plumbing (FACTS 75). The cadence-type drill shipped on 15 November 2026 as Name the
-Cadence (SEASON-2 § 5.2 item 19); once it has a slug it takes the second drill's place.]_
+_[Editorial: since 17 November 2026 the addresses link `/exercises/sing-it-in-time?lesson=28` and
+`/exercises/name-the-cadence?lesson=28`; before, `/karaoke-night?lesson=28` and `/ear-lab?lesson=28`.
+Sing It in Time carries the page's sung skill, a part read from the staff in time, and its lines say
+what its screen shows at the lesson's level: Merc's do, a bar's count-in, two bars of 4/4 sung as the
+beat goes on, three tunes at 60 BPM, then each note shown in tune or not, early, on time or late;
+pitch is scored in any octave, timing never (FACTS 70a). Name the Cadence takes Cadence's place, as
+this note planned, and its pads name the page's four cadences; it asks for no voice, so it stays
+under the rest card (FACTS 72a). Karaoke Night leaves the card, which keeps to two links, and stays
+the season's close, "Now sing a whole song." (FACTS 70, 71). Harmony Stack, which the plan linked,
+is left out: it needs a friend, and its parts are the room's tune moved up a third or a fifth, not a
+written part; nor does the Harmony room sing a written part (FACTS 74). The card's lines for Sing It
+in Time are new and wait for the coach's look; its care lines are Lesson 10's, word for word. The
+page is not built before Season 2's plumbing (FACTS 75).]_
 
 **End of Season 2** · "You've read a song in two parts. Now sing a whole song."
 [ Karaoke Night ] [ See the season map ]
@@ -536,8 +536,8 @@ holds it again: FACTS 1a, 46.)
 ## Footer
 
 Season 2 · Lesson 28 · Cadences, form and a song in two parts. The practice links, printed
-mercurypitch.com/karaoke-night and mercurypitch.com/ear-lab and linking `/karaoke-night?lesson=28`
-and `/ear-lab?lesson=28`, with "Karaoke Night's example song and Cadence are free." Lesson 1's fonts
+mercurypitch.com/exercises/sing-it-in-time and mercurypitch.com/exercises/name-the-cadence, each
+with `?lesson=28`, with "Sing It in Time and Name the Cadence are free." Lesson 1's fonts
 line, and "Every example on this page is synthesised in your browser. The only recording it plays is
 your own, on this device.", Lesson 14's. No decorative clef or staff: on a Season 2 page a staff is
 always music (SEASON-2 § 1.5 item 7).
@@ -687,11 +687,11 @@ season plans one coach batch for Lessons 24, 26 and 28 (SEASON-2 § 8.2 item 7).
   runs, Lesson 3's gentle line and the rest card; after "Uncomfortable" no more runs, Lesson 3's
   enough line, the doctor lines and the rest card; after either, the take stays to play back or
   delete (FACTS 66).
-- **To confirm: the practice card's Karaoke Night**, Lesson 14's lines: its key chip and Find my
-  key, so the learner can put a song in the comfortable middle; its scoring, in any octave; the care
-  lines, Lesson 10's; and the rest card, "Rest today. Karaoke Night will be here when your voice
-  feels comfortable: mercurypitch.com/karaoke-night", after "Effortful", "Uncomfortable" or "Just
-  listen today" (FACTS 70).
+- **To confirm: the practice card's Sing It in Time**, its new lines since 17 November 2026: two
+  bars read and sung on the beat at 60 BPM, each note shown in tune or not and on the beat or not;
+  the care lines, Lesson 10's; and the rest card, "Rest today. Sing It in Time will be here when your
+  voice feels comfortable: mercurypitch.com/exercises/sing-it-in-time", after "Effortful",
+  "Uncomfortable" or "Just listen today" (FACTS 70a).
 - The season's close after such an ending keeps "You've read a song in two parts." and drops "Now
   sing a whole song." and its Karaoke Night button, as Lesson 14's must (FACTS 5).
 
