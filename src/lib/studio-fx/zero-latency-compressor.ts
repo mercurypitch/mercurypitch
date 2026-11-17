@@ -2,29 +2,34 @@
 // Zero-latency compressor — the monitor's compressor: the browser's own processing on an AudioWorklet, looking nowhere ahead
 // ============================================================
 //
-// A monitored input plays through its lane's compressor as playback plays
-// the lane, at the lane's own settings, and no later than a dry input
-// (fx-profile.ts MONITOR_FX_PROFILE). A DynamicsCompressorNode cannot do
-// that: its 6 ms pre-delay is fixed. This runs the node's processing
-// without it (compressor-kernel.ts) in an AudioWorkletNode, which hands
-// back each render quantum it is given, so it adds no latency. Its
-// parameters are a DynamicsCompressorNode's, by name, range and rate.
+// A monitored input plays through its lane's compressor, de-esser and
+// dynamic EQ as playback plays the lane, at the lane's own settings, and no
+// later than a dry input (fx-profile.ts MONITOR_FX_PROFILE). A
+// DynamicsCompressorNode cannot do that: its 6 ms pre-delay is fixed. This
+// runs the node's processing without it (compressor-kernel.ts) in an
+// AudioWorkletNode, which hands back each render quantum it is given, so it
+// adds no latency. Its parameters are a DynamicsCompressorNode's, by name,
+// range and rate. Each of those effects runs one, on the signal its
+// browser's node compresses: the whole input for the compressor, the
+// sibilant band for the de-esser, the band for a dynamic EQ.
 //
 // Its module must be on the context before a unit asks for a node:
 // `prepareZeroLatencyCompressor` loads it once per context, and the
 // recorder loads it with its own worklet, before any lane's monitor is
 // built (useStudioRecorder.ts). Until it has loaded, or where it cannot,
-// `createZeroLatencyCompressor` gives null, and the compressor passes its
-// input straight through, as the monitor's did before (effects/compressor.ts).
+// `createZeroLatencyCompressor` gives null, and each of those effects passes
+// its input straight through, as the monitor's did before
+// (effects/latency-only.ts).
 //
 // A worklet runs on after it is disconnected, for as long as its process()
 // says it has work; `dispose` tells it it has none.
 //
 // The worklet's URL is imported only when a context loads it. Every browser
 // spec loads in plain Node with what it imports from src/
-// (scripts/playwright-list.test.mjs), and effects/compressor.ts is on that
-// path: a static `?worker&url` import there pulls the worklet itself into
-// Node, which cannot load it, and the whole browser suite fails to list.
+// (scripts/playwright-list.test.mjs), and effects/compressor.ts, deesser.ts
+// and dyneq.ts are on that path: a static `?worker&url` import there pulls
+// the worklet itself into Node, which cannot load it, and the whole browser
+// suite fails to list.
 import { STUDIO_COMPRESSOR_DISPOSE, STUDIO_COMPRESSOR_PROCESSOR, } from './compressor-kernel'
 
 const loading = new WeakMap<BaseAudioContext, Promise<boolean>>()

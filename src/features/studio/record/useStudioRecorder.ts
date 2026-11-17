@@ -328,8 +328,9 @@ export function useStudioRecorder(options: StudioRecorderOptions) {
     },
     inputOpened: lanes.opened,
     // The monitor's compressor loads beside the recorder, before any lane's
-    // monitor is built; without it a monitor's compressors pass straight
-    // through (zero-latency-compressor.ts), and recording goes on.
+    // monitor is built; without it a monitor's compressors, de-essers and
+    // dynamic EQs pass straight through (zero-latency-compressor.ts), and
+    // recording goes on.
     prepareWorklet: async (context) => {
       await Promise.all([
         prepareStudioRecorderWorklet(context),

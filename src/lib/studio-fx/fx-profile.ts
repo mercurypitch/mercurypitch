@@ -51,10 +51,10 @@ export interface StudioFxProfile {
    * DynamicsCompressorNode runs: the compressor, de-esser, dynamic EQ and
    * limiter are built on one, and it runs late by its lookahead (288 frames
    * at 48 kHz in Chromium 148), which no setting of the node takes away.
-   * A compressor runs the node's own processing with no lookahead on a
-   * worklet (zero-latency-compressor.ts); the de-esser and the dynamic EQ
-   * pass the signal through untouched; a limiter keeps its input gain and
-   * its ceiling, as a soft clip with nothing ahead of it
+   * The compressor, the de-esser and the dynamic EQ run the node's own
+   * processing with no lookahead on a worklet (zero-latency-compressor.ts),
+   * at their own settings and with nothing to twin; a limiter keeps its
+   * input gain and its ceiling, as a soft clip with nothing ahead of it
    * (effects/limiter.ts). Only the monitor's profile sets it.
    */
   readonly zeroLatency?: true
@@ -73,10 +73,10 @@ export const FULL_FX_PROFILE: StudioFxProfile = {
  * plays through: every effect that adds no delay sounds as it does in
  * playback (EQ, tilt, gain, stereo, delay, reverb), saturation and the
  * exciter without their oversampling, the transient shaper without its
- * 3 ms lookahead, a compressor without its 6 ms lookahead, a limiter as
- * its input gain and ceiling alone, and the de-esser and dynamic EQ not at
- * all. Measured in Chromium 148 at 48 kHz, the lookahead dynamics would
- * add 6 ms each (the limiter 10), and a voice lane's chain 22 ms in all.
+ * 3 ms lookahead, the compressor, de-esser and dynamic EQ without their
+ * 6 ms lookahead, and a limiter as its input gain and ceiling alone.
+ * Measured in Chromium 148 at 48 kHz, the lookahead dynamics would add
+ * 6 ms each (the limiter 10), and a voice lane's chain 22 ms in all.
  */
 export const MONITOR_FX_PROFILE: StudioFxProfile = {
   id: 'monitor',
@@ -119,21 +119,6 @@ export function keepsOnlyLatency(
   kind: string,
 ): boolean {
   return profile?.lite.some((lite) => lite === kind) === true
-}
-
-/**
- * Whether `profile` passes the signal straight through an effect of `kind`:
- * the de-esser and the dynamic EQ while monitoring. The compressor plays
- * there with no lookahead (effects/compressor.ts), and the limiter its
- * ceiling (effects/limiter.ts).
- */
-export function passesStraightThrough(
-  profile: StudioFxProfile | undefined,
-  kind: string,
-): boolean {
-  return (
-    profile?.zeroLatency === true && (kind === 'deesser' || kind === 'dyneq')
-  )
 }
 
 /**
