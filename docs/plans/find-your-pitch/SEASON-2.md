@@ -664,9 +664,9 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
   five-note tune, do re mi re do, and the learner sings mi fa so fa mi with it, or the third below
   for a voice that sits lower, in any octave; scored per note, octave-folded. Then the roles swap:
   the page plays the harmony and the learner sings the tune.
-- Practise: Jam's Harmony Stack (`/jam?lesson=26`), one voice per chord tone, for two or more
-  people (`src/lib/jam/jam-modes.ts:45-51`); alone, Drone Intonation's thirds
-  (`/exercises/thirds-on-a-drone`). Needs building: a harmony-line drill (§ 5 item 17).
+- Practise: alone, Merc's Harmony room (`/exercises/harmony-line?lesson=26`, since 17 November 2026),
+  which meets a harmony-line drill in part (§ 5 item 17; § 7 items 14, 15); with a friend, Jam's
+  Harmony Stack (`/jam?lesson=26`), one voice per chord tone (`src/lib/jam/jam-modes.ts:45-51`).
 - Facts to check: diatonic thirds (Open Music Theory; Hooktheory); chord tones and passing notes
   (musictheory.net and Hooktheory II ch. 3, as the benchmark cites them for T23); Dai & Dixon (2019),
   as Lesson 24; the app (above).
@@ -875,7 +875,7 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 | 23     | Leap's set `/exercises/perfect-or-tritone`, its card's link           | A sung card for `/exercises/perfect-intervals` (item 16 shipped), its words and the coach's look                    |
 | 24     | Drone Intonation, `/exercises/harmony-on-a-drone`; Ear Lab: Beat Hunt | Nothing: its card links `/exercises/harmony-on-a-drone`, which opens on pure tuning (item 15 shipped)               |
 | 25     | `/exercises/te-or-ti`; `/exercises/sight-sing-harmonic-minor`         | Nothing for its two links (items 12, 10 shipped); a Scale Runner card in Sight-Singing's place waits for the coach  |
-| 26     | Jam's Harmony Stack (two or more people); Drone Intonation's thirds   | Harmony-line drill (item 17, code)                                                                                  |
+| 26     | Merc's Harmony room, `/exercises/harmony-line`; Jam's Harmony Stack   | Nothing for its card, which links the Harmony room; the harmony-line drill itself, scored per note (item 17, code)  |
 | 27     | `/exercises/triads`; Stack's `/exercises/major-or-dominant-seventh`   | An address for the dominant seventh and its inversions, one registry line; its card links the triads meanwhile      |
 | 28     | Karaoke Night; Ear Lab: Cadence; `/exercises/sing-it-in-time`         | Card links to `/exercises/name-the-cadence` (item 19 shipped), Sing It in Time (item 11); harmony line (item 17)    |
 
@@ -1032,7 +1032,7 @@ and First Light does not step aside. Item 21 fixes it.
     `diatonicStepUp` (`src/lib/jam/jam-modes.ts:108`), with a headphones prompt. Lessons 26 and 28.
     Met in part by the Harmony room, which sings a line and has the singer sing a third above it.
     Since 15 November 2026 the web opens that room, and `/exercises/harmony-line` is its address
-    for a lesson (`docs/plans/web-rooms.md`); Lessons 26 and 28's cards do not link it yet. It
+    for a lesson (`docs/plans/web-rooms.md`); Lesson 26's card links it, Lesson 28's does not. It
     still differs from this item in three ways (§ 7 item 14).
 18. **Chord Stacker's chord types and inversions: shipped on 15 November 2026.** Chord Stacker
     deals the four triads, major, minor, diminished and augmented, beside its five four-note

@@ -78,12 +78,12 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 - **The quick check** keeps the plan's questions. Question 2's wrong answers and question 4's play,
   on do re mi re do in C major, are new; question 2, the predict's question asked again, and
   question 4's play wait for the cold open's choice (FACTS 71 to 74).
-- **The practice card** puts Harmony Stack first, with what the room does to a learner, where the
+- **The practice card** put Harmony Stack first, with what the room does to a learner, where the
   plan's card named only the parts: set the range, open the room, pick the mode and share the link;
   one sings the tune, not the plan's root, and one a third above; the room plays nothing; its boxes
   name their notes; and it scores in the octave the host's range sets. The fifth, and any advice on
-  which voices to pair, are left out. Drone Intonation is second, in Lesson 24's words, cut (FACTS
-  63 to 68).
+  which voices to pair, are left out. Since 17 November 2026 Merc's Harmony room is first and
+  Harmony Stack second, and Drone Intonation has left the card (FACTS 63 to 68a).
 - **The chips** name both prerequisites, with "Microphone optional" and "Headphones optional" as
   Lesson 24's, and read 16 minutes, the plan's figure, from the built page's estimate; the sound
   gate is Lesson 5's line with this lesson's subject; and the promise says what the learner does,
@@ -413,44 +413,49 @@ four semitones doesn't give a harmony in its key.
 (The practice card, in the version Sing it's ending picks.)
 
 - Eyebrow: Practise in MercuryPitch
-- Title: Harmony Stack, in Jam
-- Text: With a friend: set your Singing Voice Range in Settings, open a Jam room, pick Harmony Stack
-  under More controls and share the room's link. One of you sings the room's tune, the other a third
-  above it, in the key, each scored on their own part. It plays nothing; its boxes name their notes.
-  It scores each note in the octave your range sets, not an octave away. Sore, hoarse or unwell
-  today? Just listen along. Sing at about speaking volume, and stop immediately if anything feels
-  uncomfortable.
-- Address: Practise it free: **mercurypitch.com/jam**
-- Second drill: Alone, Drone Intonation holds a drone and names a third to sing above it, without
-  playing it. Headphones help: its drone plays while it listens. It too wants each note in the
-  octave your range sets. Free: **mercurypitch.com/exercises/thirds-on-a-drone**
-- Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Harmony Stack will
-  be here when your voice feels comfortable: **mercurypitch.com/jam**"
+- Title: Harmony, with Merc
+- Text: Merc sings a short line, three to five notes of a major key, and you sing it a third above
+  him, each of your notes lighting as you hold it. Take turns on the speaker, or under Turns choose
+  Together to sing with him in headphones. It places your line in the voice range saved in Settings
+  and wants each note there, not an octave away: set your range first, under Singing Voice Range.
+  Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop
+  immediately if anything feels uncomfortable.
+- Address: Practise it free: **mercurypitch.com/exercises/harmony-line**
+- Second drill: With a friend, Jam's Harmony Stack: set your range, open a Jam room, pick Harmony
+  Stack under More controls and share the room's link. One of you sings the room's tune, the other a
+  third above it, in the key, each scored on their own part. It plays nothing; its boxes name their
+  notes. It too scores each note in the octave your range sets. Free: **mercurypitch.com/jam**
+- Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Harmony will be
+  here when your voice feels comfortable: **mercurypitch.com/exercises/harmony-line**"
 
-_[Editorial: the addresses link `/jam?lesson=26` and `/exercises/thirds-on-a-drone?lesson=26`. The
+_[Editorial: the addresses link `/exercises/harmony-line?lesson=26` and `/jam?lesson=26` since 17
+November 2026 (FACTS 68a); before, `/jam?lesson=26` and `/exercises/thirds-on-a-drone?lesson=26`. The
 page is not built before the lesson marker reads Season 2's numbers (SEASON-2 § 5.2 item 21), so
 First Light, the app's intro, steps aside on a first visit and the card has no first-visit line
-(FACTS 67). Harmony Stack's lines say what the room does to a learner: the room's octave is the
-host's range, which reads tenor until it is set; the host picks Harmony Stack before or after the
-friend joins, since a friend who joins late is sent the room's drill and its mode; the
-room plays nothing, not even a first note; its boxes name each part's own notes; and it scores
-every note unfolded, in the host's octave (FACTS 63, 63a, 63b and 64). Until the app's two fixes
-(WEB-SPEC, What the kit and the app still need, items 15 and 16), the card had the host pick the
-mode once the friend was in and said "on the third, its boxes print the tune's letters". This
-page's own reader counts any octave, so the card says "not an octave away". The card names the tune,
-not the plan's root, and leaves out the fifth a third singer takes, which runs a semitone past the
-bass preset's top. It gives no advice on which voices to pair: two lower or two higher voices keep
-every note of the tune and the third inside their presets, but with no room at the tenor's floor or
-the soprano's, under the two semitones the series' range rule asks, so the table stays on the
-coach's list. Drone Intonation's lines are Lesson 24's card's, cut to what this page needs: it names
-its note, as Lesson 24's FACTS reads it, and its sentence on scoring a pure third stays on Lesson
-24's card, since this page teaches no tuning (FACTS 65). The page calls no interval hard, and
-neither drill writes a staff. Both drills ask for the voice, so the rest version keeps neither and
-names Harmony Stack, in Lesson 10's form (FACTS 66). When the harmony-line drill ships on the web
-(SEASON-2 § 5.2 item 17), it takes the card's first place, as the drill a learner can do alone, with
-its own care lines and the coach's look. The native app's Harmony room is that drill there, but it
-is a premium room that no web page can open, so the card does not name it (SEASON-2 § 7 item 14;
-FACTS 68).]_
+(FACTS 67). The web opens Merc's Harmony room since 15 November 2026, free, and
+`/exercises/harmony-line` is its address (SEASON-2 § 7 item 15), so it takes the card's first place,
+as the drill a learner can do alone, and Harmony Stack moves to second, as this note planned; Drone
+Intonation leaves the card, which keeps to two links. The room's lines say what its screen shows: a
+short line of Merc's, three to five notes of a major key, sung a third above him, each note lit as
+it is held; the Turns chip, taking turns on the speaker or Together in headphones; and the line
+placed in the saved range, with no octave folded (FACTS 68a). It differs from the planned
+harmony-line drill in three ways, its lines random, its third below only at Professional and no
+octave folded (SEASON-2 § 7 item 14), and the card claims none of them. Its care line is the
+card's, word for word; its other lines wait for the coach's look. Harmony Stack's lines say what
+the room does to a learner: the room's octave is the host's range, which reads tenor until it is
+set; the host picks Harmony Stack before or after the friend joins, since a friend who joins late
+is sent the room's drill and its mode; the room plays nothing, not even a first note; its boxes
+name each part's own notes; and it scores every note unfolded, in the host's octave (FACTS 63,
+63a, 63b and 64). Until the app's two fixes (WEB-SPEC, What the kit and the app still need, items
+15 and 16), the card had the host pick the mode once the friend was in and said "on the third, its
+boxes print the tune's letters". This page's own reader counts any octave, so the card says "not an
+octave away". The card names the tune, not the plan's root, and leaves out the fifth a third singer
+takes, which runs a semitone past the bass preset's top. It gives no advice on which voices to pair:
+two lower or two higher voices keep every note of the tune and the third inside their presets, but
+with no room at the tenor's floor or the soprano's, under the two semitones the series' range rule
+asks, so the table stays on the coach's list. The page calls no interval hard, and neither drill
+writes a staff. Both drills ask for the voice, so the rest version keeps neither and names Harmony,
+in Lesson 10's form (FACTS 66).]_
 
 **Next lesson:** Lesson 27, Seventh chords and inversions. "Add one note to the V chord and it pulls
 towards home. Which note, and why?" One line above it, the tease: "G, B and D going home to C, E and
@@ -481,9 +486,9 @@ visit holds it again: FACTS 1a, 40.)
 
 ## Footer
 
-Season 2 · Lesson 26 · A second voice. The practice links, printed mercurypitch.com/jam and
-mercurypitch.com/exercises/thirds-on-a-drone and linking `/jam?lesson=26` and
-`/exercises/thirds-on-a-drone?lesson=26`, with "Harmony Stack and Drone Intonation are free."
+Season 2 · Lesson 26 · A second voice. The practice links, printed
+mercurypitch.com/exercises/harmony-line and mercurypitch.com/jam, each with `?lesson=26`, with
+"Harmony and Harmony Stack are free."
 Lesson 1's fonts line, and "Every sound on this page is synthesised in your browser." No decorative
 clef or staff: on a Season 2 page a staff is always music (SEASON-2 § 1.5 item 7).
 
@@ -602,7 +607,7 @@ take and its reader's new line, so a decision here carries there.
   60).
 - The practice card's care lines, Lesson 10's: "Sore, hoarse or unwell today? Just listen along.
   Sing at about speaking volume, and stop immediately if anything feels uncomfortable.", and
-  Drone Intonation's two thirds, Lesson 24's (FACTS 65, 66).
+  the Harmony room's lines above them on the card since 17 November 2026, for the coach (FACTS 68a).
 - **To confirm: Harmony Stack's range.** The room plays nothing, not even a first note, and scores
   each note in the octave the host's voice range sets, not folded; its parts are the room's tune, a
   third above it and, for a third singer, a fifth above it, in the key; no interval the page calls
@@ -625,8 +630,8 @@ take and its reader's new line, so a decision here carries there.
   | Higher (C4), third | E4 to D5 | out    | out      | out    | 11 / 3 | 7 / 7         | 4 / 10  |
   | Higher (C4), fifth | G4 to F5 | out    | out      | out    | 14 / 0 | 10 / 4        | 7 / 7   |
 
-- The rest card, Lesson 10's form: "Rest today. Harmony Stack will be here when your voice feels
-  comfortable: mercurypitch.com/jam", after "Effortful", "Uncomfortable" or "Just listen today"
+- The rest card, Lesson 10's form: "Rest today. Harmony will be here when your voice feels
+  comfortable: mercurypitch.com/exercises/harmony-line", after "Effortful", "Uncomfortable" or "Just listen today"
   (FACTS 66).
 
 ### Proposed, not applied: the four answers to "How did that feel?"
