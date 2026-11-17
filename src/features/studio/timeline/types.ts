@@ -110,6 +110,8 @@ export interface StudioTimelineProps {
   editingClipId?: string | null
   /** Open a MIDI clip's notes: its double-click or double tap, or a phone's Edit notes. */
   onOpenNotes?(clipId: string): void
+  /** The MIDI clips whose notes have no audio yet: each says Rendering… (midi-render-service.ts). */
+  renderingClips?: ReadonlySet<string>
   /** Save a MIDI clip's notes alone as a MIDI file, from a phone's clip note. */
   onExportClipMidi?(clipId: string): void
   /** The note editor fills the arrangement: the lanes under it take no focus. */

@@ -1,4 +1,4 @@
-// Studio MIDI clip tests — a MIDI clip says what it plays (its chip, its note count, E for its notes); a double-click with a mouse opens its notes and an audio clip's still opens its details; two taps with a finger open the notes once, whatever dblclick the browser adds, and a tap after a drag does not count; the selected clip shows how to open its notes; and the clip the editor shows is marked.
+// Studio MIDI clip tests — a MIDI clip says what it plays (its chip, its note count, E for its notes), and Rendering… while its notes have no audio; a double-click with a mouse opens its notes and an audio clip's still opens its details; two taps with a finger open the notes once, whatever dblclick the browser adds, and a tap after a drag does not count; the selected clip shows how to open its notes; and the clip the editor shows is marked.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { studioMidiFixture } from '@/lib/studio/model/model.test-fixtures'
@@ -33,6 +33,7 @@ function renderClip(
     selected?: boolean
     tablet?: boolean
     editing?: boolean
+    rendering?: boolean
     suppress?: boolean
   } = {},
 ) {
@@ -60,6 +61,7 @@ function renderClip(
       pointer={pointer(options.suppress)}
       notes={options.midi === false ? undefined : notes}
       editing={options.editing}
+      rendering={options.rendering}
       onSelect={onSelect}
       onDetails={onDetails}
       onOpenNotes={onOpenNotes}
@@ -104,6 +106,26 @@ describe('a MIDI clip says what it plays', () => {
       '2 notes',
       'Editing',
     ])
+  })
+
+  it('says Rendering… while its notes have no audio, after its count and before Editing, and says it to assistive tech', () => {
+    const { button } = renderClip({ rendering: true, editing: true })
+
+    const tags = button.querySelector('[data-studio-clip-tags]')!
+    expect([...tags.children].map((tag) => tag.textContent)).toEqual([
+      'MIDI · PIANO',
+      '2 notes',
+      'Rendering…',
+      'Editing',
+    ])
+    expect(button).toHaveAccessibleName(/^Keys, .*, MIDI, 2 notes, rendering, /)
+  })
+
+  it('says nothing of rendering once its notes have their audio', () => {
+    const { button } = renderClip({ rendering: false })
+
+    expect(button).not.toHaveTextContent('Rendering')
+    expect(button).not.toHaveAccessibleName(/rendering/)
   })
 })
 

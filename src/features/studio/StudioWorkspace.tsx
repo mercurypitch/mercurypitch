@@ -566,6 +566,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             editingClipId={notes.state.clipId()}
             onOpenNotes={(id) => void notes.open(id)}
             onExportClipMidi={(id) => void exportClipMidi(id)}
+            renderingClips={midi.renderingClips()}
             covered={notes.covering()}
             onAddTakes={
               panel() === 'sources' ? undefined : () => openPanel('sources')

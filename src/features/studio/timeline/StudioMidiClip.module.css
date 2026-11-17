@@ -86,6 +86,20 @@
   font-size: 10.5px;
   font-weight: 500;
 }
+/* Its notes have no audio yet: said once a render takes a moment, as the
+   note editor says it, so a quick one never flashes. */
+.rendering {
+  flex: none;
+  color: var(--studio-text-2);
+  font-size: 10.5px;
+  font-weight: 500;
+  animation: studio-clip-rendering 0.2s ease-out 0.4s both;
+}
+@keyframes studio-clip-rendering {
+  from {
+    opacity: 0;
+  }
+}
 .editing {
   flex: none;
   margin-left: auto;
@@ -154,5 +168,8 @@
 @media (prefers-reduced-motion: reduce) {
   .hint {
     animation: none;
+  }
+  .rendering {
+    animation: studio-clip-rendering 0s linear 0.4s both;
   }
 }
