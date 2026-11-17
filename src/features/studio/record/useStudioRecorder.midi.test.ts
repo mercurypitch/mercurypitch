@@ -6,7 +6,7 @@ import { fakeMediaDevices } from '@/lib/audio-input/fake-devices.fixture'
 import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
 import type { StudioProject } from '@/lib/studio/model/types'
 import type { StudioMonitorSound } from '@/lib/studio/record/input-monitor'
-import type { StudioCapturedTake, StudioInstrumentHold, StudioRecorderView, } from '@/lib/studio/record/studio-recorder'
+import type { StudioCapturedTake, StudioInstrumentHold, StudioRecorder, StudioRecorderView, } from '@/lib/studio/record/studio-recorder'
 import type { StudioRecordingImport } from '../controller/imports'
 import type { FakeMidiInput } from './midi/fake-midi.fixture'
 import { fakeMidiAccess, fakeMidiInput } from './midi/fake-midi.fixture'
@@ -44,7 +44,6 @@ vi.mock('@/lib/studio/record/studio-recorder', () => ({
       record: vi.fn(),
       stop: vi.fn(),
       disarm: vi.fn(),
-      retarget: vi.fn(),
       updateMonitor: vi.fn(),
       micLost: vi.fn(),
       inputLost: vi.fn(),
@@ -52,7 +51,7 @@ vi.mock('@/lib/studio/record/studio-recorder', () => ({
       clearMessages: vi.fn(),
       inputTap: vi.fn(() => null),
       dispose: vi.fn(),
-    }
+    } satisfies Partial<StudioRecorder>
   },
 }))
 vi.mock('@/db/services/studio-take-journal', () => ({
