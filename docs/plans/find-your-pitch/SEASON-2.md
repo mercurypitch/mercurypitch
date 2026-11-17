@@ -279,11 +279,11 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
 - Checkpoint (theory): tap a two-bar rhythm read from the page over the click, and the page shows
   each tap against its note. Optional and unscored: after the comfort check, sing it on one
   comfortable note.
-- Practise: `/ear-lab?lesson=17`, then tap The Chart ("A written bar over the click. Tap it at
-  sight.", `src/features/ear-lab/ChartDrill.tsx:55`), or Pulse, which plays a bar to tap back
-  (`src/features/ear-lab/PulseDrill.tsx:53`); both draw on the same patterns, from quarters to
-  sixteenths and triplets (`src/lib/ear/banks.ts:215-334`). Opening either on its own, or on only
-  quarters, halves and eighths, needs the `ear-drill` launch kind (§ 5 item 12).
+- Practise: The Chart on quarters, halves and eighths (`/exercises/quarters-halves-and-eighths?lesson=17`;
+  § 5 item 12; "A written bar over the click. Tap it at sight.", `src/features/ear-lab/ChartDrill.tsx:55`),
+  and Pulse, which plays a bar to tap back (`src/features/ear-lab/PulseDrill.tsx:53`), on the Ear
+  Lab's Time station; both draw on the same patterns, from quarters to sixteenths and triplets
+  (`src/lib/ear/banks.ts:215-334`), and the set leaves out the triplets and the sixteenths.
 - Facts to check: note values, rests, dots and ties (OMT and ABRSM Grade 1, as the benchmark cites
   them for T07: OMT 1.8 to 1.11); the American and British names (§ 7 item 4; ABRSM's use of the
   British names **not verified**); the app writes only these values (`src/lib/ear/rhythm-notation.ts:57-70`)
@@ -866,7 +866,7 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 | ------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | 15     | Read the Note, `/exercises/read-the-note`, its card's link            | Nothing: its card links Read the Note (item 9 shipped on 15 November 2026)                                          |
 | 16     | Sight-Singing, at `/exercises/sing-what-you-see`, its phrases in G    | Nothing: its card links `/exercises/sing-what-you-see` and says what the drill does (item 10 shipped 16 November)   |
-| 17     | Ear Lab: The Chart, Pulse; `/exercises/quarters-halves-and-eighths`   | Its card's link to The Chart's set (item 12 shipped on 16 November 2026)                                            |
+| 17     | The Chart's set, `/exercises/quarters-halves-and-eighths`; Pulse      | Nothing: its card links The Chart's set (item 12 shipped on 16 November 2026)                                       |
 | 18     | Sight-Singing (pitch only), The Chart, `/exercises/sing-it-in-time`   | Card links to Sing It in Time, the new Sight-Singing (items 11 and 10 shipped), the sheet view (item 20 shipped)    |
 | 19     | Ear Lab: Subdivide, Pulse; `/exercises/three-four-or-six-eight`       | Its card's link to Subdivide's 3/4 and 6/8 (item 12 shipped on 16 November 2026)                                    |
 | 20     | Scale Runner, Pentatonic; Staccato Precision                          | Its card's link to `/exercises/pentatonic-run` (item 13 shipped on 15 November 2026)                                |

@@ -189,7 +189,8 @@ this page is synthesised in your browser."
   `?lesson=17` is not a lesson marker yet (R17-17).
 - **Missing:** the `ear-drill` launch kind (SEASON-2 § 5 item 12), to open The Chart on its own with
   only quarters, halves and eighths (R17-16); ties anywhere in the app (R17-13): Step 5's ties are
-  practised on the page only.
+  practised on the page only. Since 17 November 2026 the card links The Chart on that set,
+  `mercurypitch.com/exercises/quarters-halves-and-eighths` (FACTS 46a).
 
 ## Go deeper
 

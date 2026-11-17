@@ -337,19 +337,19 @@ of a second.
 - Title: The Chart
 - Text: Ear Lab's The Chart writes a bar on one line, as Steps 1 to 4 do, and you tap it at sight.
   Four clicks count you in at 100 BPM, where a quarter note lasts 0.6 seconds. Then it waits for
-  your first tap, and the click keeps time from there. Some bars hold triplets, three notes in a
-  beat, which come later; you've met every other note it writes.
-- Address: Practise it free: **mercurypitch.com/ear-lab**, then tap The Chart.
+  your first tap, and the click keeps time from there. This link opens it on quarters and eighths
+  only, as its Begin pad says: you've met every note it writes.
+- Address: Practise it free: **mercurypitch.com/exercises/quarters-halves-and-eighths**
 - Second drill: For your ear, Ear Lab's Pulse plays a bar as clicks, one on each note's start, and
-  you tap it back. Free: **mercurypitch.com/ear-lab**, then tap Pulse.
+  you tap it back. Free: **mercurypitch.com/ear-lab**, then tap Time, then Pulse.
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. This page's sung
   bars will be here when your voice feels comfortable." Then both drills, as above, since neither
   asks for your voice.
 
-_[Editorial: when the `ear-drill` launch kind ships (SEASON-2 § 5.2 item 12; WEB-SPEC, Practice
-links), the card can open The Chart on its own with only the values this page writes, quarters,
-halves, eighths and dotted quarters, with quarter and eighth rests, and "Some bars hold triplets,
-three notes in a beat, which come later; you've met every other note it writes." goes. Every link
+_[Editorial: since 17 November 2026 the card opens The Chart on the values this page writes, the
+set SEASON-2 § 5.2 item 12 gave this lesson, and "Some bars hold triplets, three notes in a beat,
+which come later; you've met every other note it writes." went, the Begin pad's "quarters and
+eighths only" said in its place (FACTS 46a). Pulse keeps the Ear Lab's address, by Time. Every link
 carries `?lesson=17` before any hash, so First Light, the app's intro, steps aside on a first visit
 once the lesson marker reads Season 2's numbers (FACTS 47); the page is not built before that, so
 the card has no first-visit line.]_
@@ -368,8 +368,9 @@ FACTS 5.)
 
 ## Footer
 
-Season 2 · Lesson 17 · How long is a note? The practice link, printed mercurypitch.com/ear-lab and
-linking `/ear-lab?lesson=17`, with "The Chart and Pulse are free." Lesson 1's fonts line, and "Every
+Season 2 · Lesson 17 · How long is a note? The practice links, printed
+mercurypitch.com/exercises/quarters-halves-and-eighths and mercurypitch.com/ear-lab, with "The Chart
+and Pulse are free." Lesson 1's fonts line, and "Every
 sound on this page is synthesised in your browser."
 
 ## Section headings
