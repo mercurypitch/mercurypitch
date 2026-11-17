@@ -56,8 +56,7 @@ import type { NoteSnap } from './edit-snap'
 import { noteSnapGrid } from './edit-snap'
 import { dragNoteRoll, sameRollViewport } from './edit-viewport'
 import { studioRollWords } from './note-editor-words'
-import { noteRollBandAt } from './note-roll-bands'
-import type { NoteRollOver } from './note-roll-cursor'
+import { createNoteRollBands } from './note-roll-bands'
 import { noteRollCursor } from './note-roll-cursor'
 import type { StudioRollDraft, StudioRollInput, StudioRollLayout, StudioRollMeter, StudioRollTheme, } from './note-roll-draw'
 import { drawStudioRollBase, drawStudioRollOverlay, studioRollRegions, } from './note-roll-draw'
@@ -628,43 +627,6 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     apply(move)
   }
 
-  // The pointers the ruler and the keys own, from their press to their release.
-  const owners = new Map<number, 'ruler' | 'keys'>()
-  // The band under a mouse or a pen that is not pressed, for its cursor.
-  const [over, setOver] = createSignal<NoteRollOver | null>(null)
-
-  /** Where a pointer is: the band of the canvas it is over, its x across the grid and its y down the rows. */
-  function placeOf(event: { clientX: number; clientY: number }) {
-    const box = overlay?.getBoundingClientRect()
-    const x = event.clientX - (box?.left ?? 0)
-    const y = event.clientY - (box?.top ?? 0)
-    const at = regions()
-    return {
-      band: noteRollBandAt(at, x, y),
-      x: x - at.grid.x,
-      y: y - at.grid.y,
-    }
-  }
-
-  /** A pointer the ruler or the keys take, captured until it is let go. */
-  function own(event: PointerEvent, band: 'ruler' | 'keys'): void {
-    event.preventDefault()
-    owners.set(event.pointerId, band)
-    overlay?.setPointerCapture(event.pointerId)
-  }
-
-  /** A press on the keys' column: the key or drum under it sounds. */
-  function keysPress(event: PointerEvent, y: number): boolean {
-    if (event.button !== 0) return false
-    const pressed = keys.down({
-      pointerId: event.pointerId,
-      pointerType: event.pointerType === 'touch' ? 'touch' : 'mouse',
-      y,
-    })
-    if (pressed) own(event, 'keys')
-    return pressed
-  }
-
   /** What a press `x` px across the ruler takes: the End handle's target, the playhead's head, or a seek. */
   function rulerTarget(x: number, touch: boolean): RollRulerTarget {
     const current = view()
@@ -681,59 +643,29 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     })
   }
 
-  /** A press on the ruler: the End handle's stays its own, the playhead's head scrubs, and any other seeks. */
-  function rulerPress(event: PointerEvent, x: number): boolean {
-    if (props.seek === undefined || event.button !== 0) return false
-    const target = rulerTarget(x, event.pointerType === 'touch')
-    if (target === 'end') return false
-    ruler.press(event, target)
-    own(event, 'ruler')
-    return true
-  }
-
-  function press(event: PointerEvent): void {
-    // A second finger lets the ruler go, as over the lanes.
-    if (event.pointerType === 'touch' && ruler.active()) ruler.cancel()
-    const at = placeOf(event)
-    if (at.band === 'ruler' && rulerPress(event, at.x)) return
-    if (at.band === 'keys' && keysPress(event, at.y)) return
-    if (pointers.down(event)) return
-    if (!touch.down(event)) return
-    event.preventDefault()
-    overlay?.setPointerCapture(event.pointerId)
-  }
-
-  /** A move of a pointer the ruler or the keys own, while the roll holds it. */
-  function ownedMove(event: PointerEvent, band: 'ruler' | 'keys'): void {
-    if (overlay?.hasPointerCapture(event.pointerId) !== true) return
-    if (band === 'ruler') ruler.move(event)
-    else keys.move({ pointerId: event.pointerId, y: placeOf(event).y })
-  }
-
-  function moveOver(event: PointerEvent): void {
-    const owner = owners.get(event.pointerId)
-    if (owner !== undefined) {
-      ownedMove(event, owner)
-      return
-    }
-    if (event.pointerType !== 'touch' && event.buttons === 0) {
-      const at = placeOf(event)
-      setOver({
-        band: at.band,
-        head: at.band === 'ruler' && rulerTarget(at.x, false) === 'playhead',
-      })
-    }
-    if (!pointers.move(event)) touch.move(event)
-  }
-
-  function lift(event: PointerEvent, kind: 'up' | 'cancel'): void {
-    const owner = owners.get(event.pointerId)
-    owners.delete(event.pointerId)
-    if (owner === 'keys') keys.end(event.pointerId)
-    else if (owner === 'ruler' && kind === 'up') ruler.release(event)
-    else if (owner === 'ruler') ruler.cancel()
-    else if (!pointers.end(event, kind)) touch.up(event)
-  }
+  // Each press goes to the band it lands in: the ruler, the keys, or the
+  // grid and the velocity lane, the engine's or else the roll's own.
+  const bands = createNoteRollBands({
+    canvas: () => overlay ?? null,
+    regions,
+    ruler,
+    keys,
+    seeks: () => props.seek !== undefined,
+    rulerTarget,
+    rest: {
+      down(event) {
+        if (pointers.down(event) || !touch.down(event)) return
+        event.preventDefault()
+        overlay?.setPointerCapture(event.pointerId)
+      },
+      move(event) {
+        if (!pointers.move(event)) touch.move(event)
+      },
+      end(event, kind) {
+        if (!pointers.end(event, kind)) touch.up(event)
+      },
+    },
+  })
 
   const words = createMemo(() =>
     studioRollWords({
@@ -764,17 +696,17 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       <canvas
         ref={overlay}
         class={styles.rollCanvas}
-        style={{ cursor: noteRollCursor(over(), editView()?.cursor) }}
+        style={{ cursor: noteRollCursor(bands.over(), editView()?.cursor) }}
         role="img"
         aria-label={words()}
         onWheel={wheel}
-        onPointerDown={press}
-        onPointerMove={moveOver}
-        onPointerUp={(event) => lift(event, 'up')}
-        onPointerCancel={(event) => lift(event, 'cancel')}
-        onLostPointerCapture={(event) => lift(event, 'cancel')}
+        onPointerDown={(event) => bands.press(event)}
+        onPointerMove={(event) => bands.move(event)}
+        onPointerUp={(event) => bands.lift(event, 'up')}
+        onPointerCancel={(event) => bands.lift(event, 'cancel')}
+        onLostPointerCapture={(event) => bands.lift(event, 'cancel')}
         onPointerLeave={(event) => {
-          setOver(null)
+          bands.leave()
           pointers.leave(event)
         }}
       />
