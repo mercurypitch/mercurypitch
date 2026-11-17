@@ -307,7 +307,7 @@ describe('a draft lesson (drafts.ts)', () => {
         undefined,
       ])
       expect(L10.pr.link?.href, drafts).toBe('/ear-lab?lesson=10')
-      expect(L10.pr.link?.note, drafts).toBe('then tap Stack')
+      expect(L10.pr.link?.note, drafts).toBe('then tap Color, then Stack')
       expect(L10.pr.link?.note, drafts).not.toMatch(
         /needs|slug|deep link|launch|durationSec|placeholder|for now|first visit/i,
       )
@@ -357,7 +357,7 @@ describe('a draft lesson (drafts.ts)', () => {
         href: '/ear-lab?lesson=12',
         addr: 'mercurypitch.com/ear-lab',
         label: 'Ear Lab',
-        note: 'then tap Cadence',
+        note: 'then tap Color, then Cadence',
       })
       expect(L12.pr.link?.note, drafts).not.toMatch(
         /needs|slug|deep link|launch|durationSec|placeholder|for now|first visit/i,

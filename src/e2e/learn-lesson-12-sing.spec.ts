@@ -88,7 +88,7 @@ async function expectRested(page: Page): Promise<void> {
     page.locator('#practiseCard .second-drill a.addr'),
   ).toHaveAttribute('href', '/ear-lab?lesson=12')
   await expect(page.locator('#practiseCard .second-drill')).toContainText(
-    'then tap Cadence.',
+    'then tap Color, then Cadence.',
   )
 }
 
