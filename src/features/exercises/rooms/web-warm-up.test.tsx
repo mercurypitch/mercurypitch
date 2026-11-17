@@ -8,7 +8,7 @@
 // and coming back to it by its result, its Skip stop or Back. The rooms are
 // stood in for, each saying which stop it was handed; they have their own
 // tests, and the browser spec opens the real ones. "Sing a song" is handed
-// to the page, which knows the tabs (tabs/song-tab.ts).
+// to the page, which leaves for Karaoke Night (src/pages/ExercisesPage.tsx).
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'

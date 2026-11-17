@@ -28,10 +28,8 @@ import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import VibratoExercise from '@/features/exercises/vibrato/VibratoExercise'
 import WarmupExercise from '@/features/exercises/warmup/WarmupExercise'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
-import { songTab } from '@/features/tabs/song-tab'
+import { openKaraokeNight } from '@/lib/karaoke-night-link'
 import { WEB_ROOMS } from '@/lib/native-build'
-import { practiceScope, uiMode } from '@/stores/settings-store'
-import { setActiveTab } from '@/stores/ui-store'
 import styles from './ExercisesPage.module.css'
 
 /**
@@ -67,11 +65,14 @@ export function ExercisesPage(props: ExercisesPageProps) {
     const selected = props.selectedExercise()
     return isWebRoom(selected) ? selected : null
   }
-  /** "Sing a song", at the Warm-up's end: its room closes, and the singer
-   *  goes to the tab their songs are in (tabs/song-tab.ts). */
+  /** "Sing a song", at the Warm-up's end: the singer leaves for Karaoke
+   *  Night, the web's stage for singing a song. It opens on a song ready to
+   *  sing; the Karaoke tab is the studio, and met a singer with no songs
+   *  yet with its upload form (docs/plans/web-rooms.md). The path's end
+   *  stays up until that page has loaded, where closing the room first
+   *  showed the Exercises tab for as long as the page took to come. */
   const singASong = (): void => {
-    props.onBack()
-    setActiveTab(songTab(practiceScope(), uiMode()))
+    openKaraokeNight()
   }
 
   return (

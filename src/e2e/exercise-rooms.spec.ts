@@ -185,7 +185,7 @@ test.describe('on a desktop', () => {
     await expect(page.getByTestId('exercise-rooms')).toBeVisible()
   })
 
-  test("Sing a song, at the Warm-up's end, leaves for the Karaoke tab", async ({
+  test("Sing a song, at the Warm-up's end, leaves for Karaoke Night", async ({
     page,
   }) => {
     // Today's run with its four stops sung, as this device would keep it:
@@ -232,8 +232,8 @@ test.describe('on a desktop', () => {
 
     await host.getByTestId('warm-up-sing').click()
 
-    await expect(page.getByTestId('web-room')).toHaveCount(0)
-    await expect(page).toHaveURL(/#\/karaoke/)
+    // Karaoke Night is a page of its own: the app is left for it.
+    await expect(page).toHaveURL(/\/karaoke-night$/)
   })
 
   test("/exercises/harmony-line opens the Harmony room from a lesson's link", async ({

@@ -7,6 +7,15 @@ import { parseSyncLinkHash } from '@/lib/room-code'
 
 export const KARAOKE_NIGHT_PATH = '/karaoke-night'
 
+/**
+ * Leave the app for Karaoke Night, the stage for singing a song. It is a
+ * page of its own, so this is a navigation, as its links are: the web's
+ * Warm-up ends on it ("Sing a song", src/pages/ExercisesPage.tsx).
+ */
+export function openKaraokeNight(): void {
+  window.location.assign(KARAOKE_NIGHT_PATH)
+}
+
 /** Deep-link that opens Karaoke Night with this playlist armed (the page
  *  consumes the param at boot and starts the playlist's ready overlay). */
 export function karaokeNightPlaylistUrl(playlistId: string): string {
