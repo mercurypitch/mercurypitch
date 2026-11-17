@@ -413,7 +413,7 @@ export const FileDown: Component<{ size?: number }> = (p) => (
 // Eraser — a rubber with its tip banded off, on the line it rubs out: the note editor's Erase tool, apart from Trash's deleting of a selection.
 export const Eraser: Component<{ size?: number }> = (p) => (
   <svg {...outline(p.size)}>
-    <g transform="rotate(-45 13 11)">
+    <g transform="translate(0 1) rotate(-45 13 11)">
       <rect x="5.5" y="7.5" width="15" height="7" rx="1.6" />
       <path d="M10.5 7.5v7" />
     </g>

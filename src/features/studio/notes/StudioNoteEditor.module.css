@@ -164,9 +164,11 @@
   padding: 6px 10px 6px 16px;
   border-bottom: 1px solid var(--studio-line);
 }
+/* Its basis is small so the header holds Select, Draw and Erase on one row
+   at 1440 px; it grows into whatever room the row leaves. */
 .identity {
   display: flex;
-  flex: 1 1 240px;
+  flex: 1 1 140px;
   align-items: center;
   gap: 10px;
   min-width: 0;

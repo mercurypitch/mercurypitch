@@ -8,8 +8,10 @@
 // selected (MISTAKES.md, "A control that refuses silently looks broken").
 // On a phone the tools stay at the top and the selection's edits sit in a
 // bar over the status line, where a thumb reaches; every target is 44 px.
-// On a tablet the tools are 44 px tall too. Erase is an eraser, never the
-// trash, which deletes the selection (Delete in the selection's edits).
+// On a tablet the tools are 44 px tall too, and the grid's magnet goes
+// without its word, so the tools, the edits and Done keep to one row.
+// Erase is an eraser, never the trash, which deletes the selection
+// (Delete in the selection's edits).
 // Each button is one command to the engine (useStudioNoteEditing.ts), so
 // one commit and one undo step.
 import type { JSX } from 'solid-js'
@@ -132,7 +134,8 @@ export function StudioNoteTools(props: StudioNoteToolsProps) {
       </div>
       <label class={styles.snap} title="Where notes snap in time">
         <Magnet size={16} />
-        <Show when={!props.compact}>
+        {/* The magnet says it on a touch screen: the room goes to the tools' names. */}
+        <Show when={!props.compact && props.touch !== true}>
           <span>Snap</span>
         </Show>
         <select
