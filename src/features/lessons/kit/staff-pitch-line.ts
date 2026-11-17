@@ -22,9 +22,12 @@ export const PitchLine = {
     lanesOn = on
     listeners.forEach((fn) => fn(on))
   },
-  /** Calls `fn` now and after every change. */
-  subscribe(fn: (on: boolean) => void): void {
+  /** Calls `fn` now and after every change, until the returned call stops it. */
+  subscribe(fn: (on: boolean) => void): () => void {
     listeners.add(fn)
     fn(lanesOn)
+    return () => {
+      listeners.delete(fn)
+    }
   },
 }
