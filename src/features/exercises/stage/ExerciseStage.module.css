@@ -307,8 +307,9 @@
   padding-top: 12px;
 }
 
-/* The scrim behind a pinned launch button belongs to a phone's sheet (the
-   narrow block below); everywhere else, and at rest, it is not drawn. */
+/* The scrim behind a pinned launch button belongs to a sheet laid out as a
+   phone's (the narrow block below, and a stacked sheet after it);
+   everywhere else, and at rest, it is not drawn. */
 .stage :global(.exercise-launch-scrim) {
   display: none;
 }
@@ -635,6 +636,152 @@
   .stage :global(.exercise-result-score) {
     font-size: 1.8rem;
   }
+}
+
+/* ── A sheet that cannot show its launch stacks as a phone's ─ */
+
+/* Off a phone the launch stands beside the setup or under it, last in the
+   sheet, and nothing held it in sight: a result taller than what the sheet
+   had left pushed it below the fold. At 1440 x 900 Try Again was a scroll
+   away after every run of Sing It in Time, and on a laptop's shorter window
+   further still (seen on the dev site, 17 November 2026). A style sheet
+   cannot ask whether a box is out of sight, so the sheet asks its layout
+   (launch-pin.ts) and is marked `data-stacked` where its launch would be:
+   it is then laid out as a phone's sheet is (above), the result first, the
+   button next and held to the sheet's edge over its scrim, the setup after
+   it. A sheet that shows its launch is never marked, so every setup and
+   result that fits its window is as it was. */
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-idle-body),
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-idle-launch) {
+  display: contents;
+}
+
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-idle-setup) {
+  max-width: 100%;
+}
+
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-result-card) {
+  order: -4;
+}
+
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-idle-start),
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-guided-stop-question) {
+  order: -3;
+}
+
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-demo-btn) {
+  order: -2;
+}
+
+.stage :global(.exercise-canvas-area[data-stacked]) :global(.exercise-error),
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-capture-note) {
+  order: -1;
+}
+
+/* The launch column gave the button its width; the whole sheet would give
+   it the sheet's. */
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-idle-start) {
+  position: sticky;
+  top: 10px;
+  bottom: 10px;
+  z-index: 5;
+  flex: none;
+  width: min(330px, 100%);
+  box-shadow:
+    0 12px 30px rgb(0 0 0 / 55%),
+    0 0 0 6px rgb(13 17 23 / 72%),
+    inset 0 1px 0 rgb(255 255 255 / 45%);
+}
+
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-idle-center) {
+  position: relative;
+}
+
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-launch-scrim[data-pinned]) {
+  position: absolute;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  inset: 0;
+  pointer-events: none;
+}
+
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-launch-scrim)::before,
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-launch-scrim)::after {
+  position: sticky;
+  flex: none;
+  content: '';
+  opacity: 0;
+}
+
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-launch-scrim)::before {
+  top: 0;
+  height: 108px;
+  background: linear-gradient(
+    to top,
+    rgb(13 17 23 / 0%),
+    rgb(13 17 23 / 98%) 36px
+  );
+}
+
+/* This sheet has no padding of its own under its foot, as a phone's has. */
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-launch-scrim)::after {
+  bottom: 0;
+  height: 108px;
+  background: linear-gradient(
+    to bottom,
+    rgb(13 17 23 / 0%),
+    rgb(13 17 23 / 98%) 36px
+  );
+}
+
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-launch-scrim[data-pinned='top'])::before,
+.stage
+  :global(.exercise-canvas-area[data-stacked])
+  :global(.exercise-launch-scrim[data-pinned='bottom'])::after {
+  opacity: 1;
+}
+
+/* While the sheet is asked which layout it needs, it is put in each for a
+   moment within one frame, and nothing in it may animate the difference. */
+.stage :global(.exercise-canvas-area[data-measuring]),
+.stage :global(.exercise-canvas-area[data-measuring]) *,
+.stage :global(.exercise-canvas-area[data-measuring]) *::before,
+.stage :global(.exercise-canvas-area[data-measuring]) *::after {
+  transition: none !important;
 }
 
 /* A narrow phone: the drill's name is worth more than its mark, which the

@@ -77,6 +77,13 @@ had, so each drill's own styles, the tests and the tours find what they looked f
   Sight-Singing's Clef chips. So while the button is held the sheet draws a scrim behind it, a band
   the sheet's width into which what scrolls under it fades, and none at rest (`stage/launch-pin.ts`
   marks the sheet's scrim; a style sheet cannot ask in every browser whether a sticky box is stuck).
+  Off a phone the launch stands beside the setup or under it, last in the sheet, and nothing held
+  it in sight: after a run of Sing It in Time, Try Again was under the fold at 1440 x 900 and
+  further under it in a laptop's window (seen on the dev site, 17 Nov 2026). A style sheet cannot
+  ask whether a box is out of sight either, so the sheet asks its layout, and one whose own layout
+  would hide its launch is laid out as a phone's: the result, then the button, held to the sheet's
+  edge over its scrim, then the setup (`launch-pin.ts` marks it `data-stacked`). A sheet that shows
+  its launch is never marked, so every setup and result that fits its window is as it was.
 - **The result.** The grade in a ring of its own ink and the score as one large number, over the
   drill's own summary line. Under the run's trace, "furthest off" names the one moment a singer can
   act on, and never the moment between two notes: for a quarter of a second after the target moves
