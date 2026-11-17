@@ -1,8 +1,9 @@
-// Studio playback quality tests — Auto's pick per song, the session step down and the device's stored choice.
+// Studio playback quality tests — Auto's pick per song and the lanes monitored on top of it, the session step down and the device's stored choice.
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { FULL_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
 import { AUTO_LOAD_CEILING, autoPlaybackTier, createUnderrunWatch, livePlaybackProfile, livePlaybackTier, needsPlaybackBenchmark, notePlayout, pickAutoTier, PLAYBACK_TIERS, playbackQualityState, readStoredChoice, recordPlaybackBenchmark, resetPlaybackQualityForTests, setPlaybackChoice, stepDown, subscribePlaybackQuality, TIER_PROFILES, } from './playback-quality'
-import { LARGE_SONG, MEDIUM_SONG, roleSong, SMALL_SONG, THIS_DESKTOP_US, } from './song.test-fixtures'
+import { LARGE_SONG, MEDIUM_SONG, MONITOR_EDGE_US, roleSong, SMALL_SONG, THIS_DESKTOP_US, } from './song.test-fixtures'
+import { studioSongChains } from './song-load'
 
 /** A context whose playout statistics count `events` fallbacks so far. */
 function playing(events: () => number) {
@@ -27,6 +28,8 @@ const DESKTOP = { cores: 24, memoryGb: 8, voiceChainUs: THIS_DESKTOP_US }
 const small = roleSong(SMALL_SONG)
 const medium = roleSong(MEDIUM_SONG)
 const large = roleSong(LARGE_SONG)
+/** A new lead vocal's chain, as its lane and its monitor play it. */
+const [voice] = studioSongChains(roleSong(['voice']))
 
 beforeEach(() => {
   localStorage.clear()
@@ -93,6 +96,21 @@ describe('Auto playback quality', () => {
     expect(
       pickAutoTier({ cores: 4, memoryGb: 4, voiceChainUs: 90 }, small),
     ).toBe('best')
+  })
+
+  it('moves down a tier when a lead vocal monitored on top of the song would overload the one it picked', () => {
+    // Heard through its monitor, the vocal runs its chain a second time
+    // on the same audio thread, and the monitor's master once.
+    const hints = { ...DESKTOP, voiceChainUs: MONITOR_EDGE_US }
+    expect(pickAutoTier(hints, medium)).toBe('best')
+    expect(pickAutoTier(hints, medium, [voice])).toBe('balanced')
+  })
+
+  it('stays where it is when the monitored lane fits beside the song', () => {
+    // On this desktop the 4-lane song leaves room for its singer's
+    // monitor, and the 12-lane one plays at Light either way.
+    expect(pickAutoTier(DESKTOP, small, [voice])).toBe('best')
+    expect(pickAutoTier(DESKTOP, medium, [voice])).toBe('light')
   })
 
   it('sizes songs with the benchmark from the next Play, and keeps it on the device', () => {

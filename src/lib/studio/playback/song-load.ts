@@ -11,7 +11,11 @@
 // leaves the mix once its tails ring out (lane-idle.ts). At Balanced and
 // Light a reverb that is not ducked sends to one of three shared spaces
 // instead of convolving on its lane (graph-reverb-bus.ts), so a song pays
-// for each space it uses once.
+// for each space it uses once. A lane heard through its input monitor
+// (input-monitor.ts) runs its chain a second time, at the monitor's
+// profile, and the monitor's master stage runs once for all of them, on
+// the same audio thread: those count too, as the monitor plays them at the
+// tier weighed (`lite`).
 //
 // The costs were measured offline in headless Chromium 148 on a Ryzen 9
 // 5900X, 30 Oct 2026: each effect kind on twelve lanes against the same
@@ -23,6 +27,7 @@
 // average, which REALTIME_COST carries.
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { EffectKind } from '@/lib/studio-fx/effect-definitions'
+import type { StudioLiteEffect } from '@/lib/studio-fx/fx-profile'
 import { reverbSpace } from '@/lib/studio-fx/fx-profile'
 import { studioLaneSpec } from '../model/arrangement-plan'
 import type { StudioClip, StudioProject, StudioTrack } from '../model/types'
@@ -54,6 +59,14 @@ export function studioSongChains(song: StudioSongShape): ChainSpec[] {
         : studioLaneSpec(track, song.mix.macros),
     )
 }
+
+/** Lanes an input monitor plays (input-monitor.ts), as a tier's monitor plays them: their chains, and the kinds that tier passes uncut. */
+export interface StudioMonitoredLanes {
+  readonly chains: readonly ChainSpec[]
+  readonly lite: readonly StudioLiteEffect[]
+}
+
+const NOTHING_MONITORED: StudioMonitoredLanes = { chains: [], lite: [] }
 
 /** A cost at Best, Balanced and Light, in voice chains. */
 type TierCosts = Readonly<Record<StudioPlaybackTier, number>>
@@ -143,17 +156,89 @@ export function songCostInVoiceChains(
   return cost + spaces.size * SPACE_COST
 }
 
+/**
+ * Each effect kind on a monitored lane (input-monitor.ts), at the monitor's
+ * profile (MONITOR_FX_PROFILE): no shaper oversampled, the compressor,
+ * de-esser and dynamic EQ on the zero-latency worklet, the limiter a soft
+ * clip and the transient shaper with no lookahead. A reverb convolves on
+ * the lane, as at Best: reverbCost, which reads 3 to 9 % over the
+ * monitor's own at 0.8, 1.6 and 2.8 s. A kind in the lite list live
+ * playback's tier hands the monitor is a wire (MONITOR_WIRE_COST): Light's
+ * de-esser and dynamic EQ.
+ *
+ * Measured offline in headless Chromium 148 on the desktop the table above
+ * came from, 17 Nov 2026 (studio-monitor-browser-probes.mjs `cost`, its
+ * `voiceChains`): twelve lanes monitored on one input, each kind alone at
+ * its defaults against a gain alone, plus that gain, in voice chains of
+ * each run's own benchmark (163.5 to 173.3 us), the median of five runs.
+ * They add up to each role's whole lane monitored, measured alongside,
+ * within -3.4 to +5.5 % (song-load.test.ts).
+ */
+const MONITOR_EFFECT_COSTS: Readonly<
+  Record<Exclude<EffectKind, 'reverb'>, number>
+> = {
+  gain: 0.008,
+  eq: 0.054,
+  tilt: 0.011,
+  dyneq: 0.076,
+  deesser: 0.091,
+  compressor: 0.061,
+  transient: 0.186,
+  saturation: 0.032,
+  exciter: 0.046,
+  stereo: 0.039,
+  delay: 0.082,
+  limiter: 0.028,
+}
+/** A kind the monitor passes uncut (`lite`): a wire in the effect's place. */
+const MONITOR_WIRE_COST = 0.005
+/** A monitor's own nodes: its fold, spread, faders and level. */
+const MONITOR_LANE_COST = 0.014
+/** A monitored chain's stereo hold: its zero delay, on the two channels the monitor spreads the input to. */
+const MONITOR_HOLD_COST = 0.005
+/** The monitor's master stage (monitor-master.ts): a new song's master at the monitor's profile, once however many lanes play through it. */
+const MONITOR_MASTER_COST = 0.217
+
+/**
+ * What monitored lanes cost while their monitors play, in voice chains:
+ * each lane's path and its chain at the monitor's profile, the kinds in
+ * `lite` passed uncut, and the master stage they share.
+ */
+export function monitorCostInVoiceChains(
+  chains: readonly ChainSpec[],
+  lite: readonly StudioLiteEffect[],
+): number {
+  if (chains.length === 0) return 0
+  let cost = MONITOR_MASTER_COST
+  for (const chain of chains) {
+    cost +=
+      MONITOR_LANE_COST + (chain.effects.length > 0 ? MONITOR_HOLD_COST : 0)
+    for (const effect of chain.effects) {
+      if (effect.kind === 'reverb') cost += reverbCost(effect.params.decayS)
+      else if ((lite as readonly EffectKind[]).includes(effect.kind))
+        cost += MONITOR_WIRE_COST
+      else cost += MONITOR_EFFECT_COSTS[effect.kind]
+    }
+  }
+  return cost
+}
+
 /** A 128-frame quantum at 48 kHz, in microseconds: the audio thread's budget for one. */
 const QUANTUM_US = (128 / 48000) * 1e6
 
 /**
  * The share of the audio thread a song's heard lanes need at `tier` on a
- * device whose voice chain renders in `voiceChainUs` per 128 frames.
+ * device whose voice chain renders in `voiceChainUs` per 128 frames, and
+ * the monitored lanes on top as that tier's monitor plays them (its `lite`).
  */
 export function songLoad(
   chains: readonly ChainSpec[],
   tier: StudioPlaybackTier,
   voiceChainUs: number,
+  monitored: StudioMonitoredLanes = NOTHING_MONITORED,
 ): number {
-  return (songCostInVoiceChains(chains, tier) * voiceChainUs) / QUANTUM_US
+  const cost =
+    songCostInVoiceChains(chains, tier) +
+    monitorCostInVoiceChains(monitored.chains, monitored.lite)
+  return (cost * voiceChainUs) / QUANTUM_US
 }

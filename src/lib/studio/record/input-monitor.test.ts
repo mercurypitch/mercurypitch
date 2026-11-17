@@ -1,4 +1,4 @@
-// Studio input monitor — off builds nothing; on plays the input folded as the take is, spread, through its lane's chain at the monitor profile and its faders, then the master and only through it, on one path however often it is set, rising a quarter of a second after the input's first sound, after a second without one, at once as its source settles under another lane, or at once on an input that plays cleanly from its first sample; a lane not heard, and dispose, take the graph apart after the release, the master with it, and at once a path that never began to rise; a lane heard again while it releases plays on through the same path; and dispose says when its input may close: at once with nothing heard, once the path has come apart otherwise. On the Light tier a lane's de-esser and dynamic EQ are a wire each with no worklet, and a new tier swaps them in the same path under its chain's duck.
+// Studio input monitor — off builds nothing; on plays the input folded as the take is, spread, through its lane's chain at the monitor profile and its faders, then the master and only through it, on one path however often it is set, rising a quarter of a second after the input's first sound, after a second without one, at once as its source settles under another lane, or at once on an input that plays cleanly from its first sample; a lane not heard, and dispose, take the graph apart after the release, the master with it, and at once a path that never began to rise; a lane heard again while it releases plays on through the same path; and dispose says when its input may close: at once with nothing heard, once the path has come apart otherwise. On the Light tier a lane's de-esser and dynamic EQ are a wire each with no worklet, and a new tier swaps them in the same path under its chain's duck. While its path exists the lane counts in Auto's pick of playback's tier, as each tier's monitor would play it, and Auto's listeners hear of it once the monitor's change is done.
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EMPTY_CHAIN, normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import { COMPRESSOR_PARAMETERS, STUDIO_COMPRESSOR_DISPOSE, STUDIO_COMPRESSOR_PROCESSOR, } from '@/lib/studio-fx/compressor-kernel'
@@ -6,6 +6,9 @@ import type { FakeDelay, FakeGain, FakeWorkletNode, } from '@/lib/studio-fx/fake
 import { createManualScheduler, FakeAudioContext, fakeAudioWorklet, FakeNode, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import type { StudioLiteEffect } from '@/lib/studio-fx/fx-profile'
 import { prepareZeroLatencyCompressor } from '@/lib/studio-fx/zero-latency-compressor'
+import { autoPlaybackTier, resetPlaybackQualityForTests, subscribePlaybackQuality, TIER_PROFILES, } from '../playback/playback-quality'
+import { MEDIUM_SONG, MONITOR_EDGE_US, MONITOR_LOOP_US, roleSong, SMALL_SONG, } from '../playback/song.test-fixtures'
+import { studioSongChains } from '../playback/song-load'
 import type { StudioMonitorSound } from './input-monitor'
 import { createStudioInputMonitor } from './input-monitor'
 import { createStudioMonitorMaster } from './monitor-master'
@@ -539,5 +542,93 @@ describe("the input monitor at live playback's tier", () => {
     // The same tier again changes nothing.
     monitor.set(sound({ spec: BANDS, lite: LIGHT }))
     expect(scheduler.pendingCount).toBe(0)
+  })
+})
+
+describe("the input monitor in Auto's pick of live playback's tier", () => {
+  /** The 12-lane song, and the lead vocal a singer records over it. */
+  const SONG = roleSong(MEDIUM_SONG)
+  const VOICE = studioSongChains(roleSong(['voice']))[0]
+
+  /** On a device where the song alone fits Best and with the vocal monitored only Balanced. */
+  function onTheEdge() {
+    resetPlaybackQualityForTests({
+      cores: 24,
+      memoryGb: 8,
+      voiceChainUs: MONITOR_EDGE_US,
+    })
+    return setup()
+  }
+
+  afterEach(() => resetPlaybackQualityForTests())
+
+  it('counts its lane from when its path is built, as its chain changes, until the path has come apart', () => {
+    const { monitor, scheduler } = onTheEdge()
+    expect(autoPlaybackTier(SONG)).toBe('best')
+
+    monitor.set(sound({ spec: VOICE }))
+    expect(autoPlaybackTier(SONG)).toBe('balanced')
+    // The lane's chain lightened: it fits beside the song.
+    monitor.set(sound({ spec: LANE_CHAIN }))
+    expect(autoPlaybackTier(SONG)).toBe('best')
+    monitor.set(sound({ spec: VOICE }))
+    // Released, the path plays on until it comes apart.
+    monitor.set(sound({ on: false, spec: VOICE }))
+    scheduler.advance(RELEASED_MS - 1)
+    expect(autoPlaybackTier(SONG)).toBe('balanced')
+    scheduler.advance(1)
+    expect(autoPlaybackTier(SONG)).toBe('best')
+  })
+
+  it('counts nothing for a lane not heard, and stops counting at once a path that never rose', () => {
+    const { monitor } = onTheEdge()
+    monitor.set(sound({ spec: VOICE, gains: [0, 0] }))
+    expect(autoPlaybackTier(SONG)).toBe('best')
+
+    const waiting = setup({ arrived: false })
+    waiting.monitor.set(sound({ spec: VOICE }))
+    expect(autoPlaybackTier(SONG)).toBe('balanced')
+    waiting.monitor.dispose()
+    expect(autoPlaybackTier(SONG)).toBe('best')
+  })
+
+  it("tells Auto's listeners once its own change is done, and only when what Auto weighs has changed", async () => {
+    const { monitor, scheduler } = onTheEdge()
+    const told = vi.fn()
+    subscribePlaybackQuality(told)
+
+    monitor.set(sound({ spec: VOICE }))
+    // Not inside the monitor's own set: a listener may set it again.
+    expect(told).not.toHaveBeenCalled()
+    await Promise.resolve()
+    expect(told).toHaveBeenCalledOnce()
+    // A new volume or a new tier's lite list leaves Auto as it was.
+    monitor.set(sound({ spec: VOICE, gains: [1, 1] }))
+    monitor.set(sound({ spec: VOICE, lite: TIER_PROFILES.light.lite }))
+    await Promise.resolve()
+    expect(told).toHaveBeenCalledOnce()
+    monitor.dispose()
+    scheduler.advance(RELEASED_MS)
+    await Promise.resolve()
+    expect(told).toHaveBeenCalledTimes(2)
+  })
+
+  it("counts its lane as each tier's monitor would play it, so following the tier Auto picks does not move Auto again", () => {
+    // Two vocals over the 4-lane song, on a device where they fit Balanced
+    // only with their dynamic EQ bands passed uncut, as on Light.
+    resetPlaybackQualityForTests({
+      cores: 24,
+      memoryGb: 8,
+      voiceChainUs: MONITOR_LOOP_US,
+    })
+    const song = roleSong(SMALL_SONG)
+    const monitors = [setup().monitor, setup().monitor]
+    for (const monitor of monitors) monitor.set(sound({ spec: VOICE }))
+    expect(autoPlaybackTier(song)).toBe('light')
+
+    // The monitors follow the tier picked: their bands become wires.
+    for (const monitor of monitors)
+      monitor.set(sound({ spec: VOICE, lite: TIER_PROFILES.light.lite }))
+    expect(autoPlaybackTier(song)).toBe('light')
   })
 })
