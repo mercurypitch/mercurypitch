@@ -3,7 +3,7 @@ import { createRoot, createSignal } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import type { StudioMovingMix } from '@/lib/studio/record/monitor-sound'
-import type { StudioRecorderView } from '@/lib/studio/record/studio-recorder'
+import type { StudioRecorder, StudioRecorderView, } from '@/lib/studio/record/studio-recorder'
 
 const mocks = vi.hoisted(() => ({
   recorder: null as null | Record<string, ReturnType<typeof vi.fn>>,
@@ -53,7 +53,7 @@ vi.mock('@/lib/studio/record/studio-recorder', () => ({
       clockStopped: vi.fn(),
       clearMessages: vi.fn(),
       dispose: vi.fn(),
-    }
+    } satisfies Partial<StudioRecorder>
     return mocks.recorder
   },
 }))

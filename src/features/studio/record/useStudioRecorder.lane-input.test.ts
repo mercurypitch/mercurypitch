@@ -7,7 +7,7 @@ import { audioInput, fakeMediaDevices, } from '@/lib/audio-input/fake-devices.fi
 import type { ChannelPick } from '@/lib/audio-input/input-channels'
 import type { StudioProject } from '@/lib/studio/model/types'
 import { FOLLOW_STUDIO_INPUT } from '@/lib/studio/record/lane-inputs'
-import type { StudioInputOpened, StudioRecorderView, } from '@/lib/studio/record/studio-recorder'
+import type { StudioInputOpened, StudioRecorder, StudioRecorderView, } from '@/lib/studio/record/studio-recorder'
 
 const mocks = vi.hoisted(() => ({
   recorder: null as null | Record<string, ReturnType<typeof vi.fn>>,
@@ -55,13 +55,12 @@ vi.mock('@/lib/studio/record/studio-recorder', () => ({
       record: vi.fn(),
       stop: vi.fn(),
       disarm: vi.fn(() => mocks.onChange!(view({ phase: 'idle' }))),
-      retarget: vi.fn(),
       updateMonitor: vi.fn(),
       micLost: vi.fn(),
       clockStopped: vi.fn(),
       clearMessages: vi.fn(),
       dispose: vi.fn(),
-    }
+    } satisfies Partial<StudioRecorder>
     return mocks.recorder
   },
 }))
