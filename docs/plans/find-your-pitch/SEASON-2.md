@@ -244,15 +244,15 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
   second (the app's Sight-Singing passes at 450 ms, `src/features/exercises/sight-singing/use-sight-singing-controller.ts:45`);
   octave-folded; names shown the first time and hidden the second, optionally. The feedback names
   the sound ("that so landed in the band"), and "How did that feel?" follows.
-- Practise: `/pitch-training?lesson=16`, then tap Sight-Singing, with its limits said on the card:
-  it draws six random notes from the Singing tab's scale inside the singer's range, each move at
-  most 7 semitones (use-sight-singing-controller.ts:23, :103-127); it plays no audio first ("No
-  audio preview", `src/features/exercises/sight-singing/SightSingingExercise.tsx:272-273` at `bcd86153b`), so no
-  do; it draws a treble staff only (:31-45, :317-327), every black key as a sharp
-  (use-sight-singing-controller.ts:31-44; SightSingingExercise.tsx:116), and each note's letter and
-  octave under it (:130-140); it scores against the written octave (use-sight-singing-controller.ts:192-198).
-  Needs building: fixed phrases by data slug, and in code a "hear do" start, a bass clef by range, a
-  key signature with spelling by key, a names-off option and octave-folded scoring (§ 5 item 10).
+- Practise: Sight-Singing on the lesson's two phrases (`/exercises/sing-what-you-see?lesson=16`;
+  § 5 item 10), written as one line in G, each voice in its own octave and on its own clef: Hear it
+  first plays do, then do, mi, so, mi, do, and never the line; a note counts in any octave; the
+  Names picker's Off hides the letters. Until 17 November 2026 the card linked
+  `/pitch-training?lesson=16`, then Sight-Singing, with its limits said: six random notes from the
+  Singing tab's scale inside the singer's range, no audio first, so no do, a treble staff only,
+  every black key as a sharp, each note's letter and octave under it, and scoring against the
+  written octave. Those limits went with § 5 item 10, which shipped on 16 November 2026, and the
+  card's sentences on them with its link.
 - Facts to check: Takeuchi & Hulse (1993) and Demorest & May (1995), as above; whether choirs'
   practice of taking a note is worth a source (practitioner); the app's behaviour (above); do-based
   minor does not arise here (major only).
@@ -865,7 +865,7 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 | Lesson | Opens today                                                           | Waits for                                                                                                           |
 | ------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
 | 15     | Read the Note, `/exercises/read-the-note`, its card's link            | Nothing: its card links Read the Note (item 9 shipped on 15 November 2026)                                          |
-| 16     | Sight-Singing, at `/exercises/sing-what-you-see`, its phrases in G    | Its card's link to `/exercises/sing-what-you-see`, with the drill's new lines (item 10 shipped on 16 November 2026) |
+| 16     | Sight-Singing, at `/exercises/sing-what-you-see`, its phrases in G    | Nothing: its card links `/exercises/sing-what-you-see` and says what the drill does (item 10 shipped 16 November)   |
 | 17     | Ear Lab: The Chart, Pulse; `/exercises/quarters-halves-and-eighths`   | Its card's link to The Chart's set (item 12 shipped on 16 November 2026)                                            |
 | 18     | Sight-Singing (pitch only), The Chart, `/exercises/sing-it-in-time`   | Card links to Sing It in Time, the new Sight-Singing (items 11 and 10 shipped), the sheet view (item 20 shipped)    |
 | 19     | Ear Lab: Subdivide, Pulse; `/exercises/three-four-or-six-eight`       | Its card's link to Subdivide's 3/4 and 6/8 (item 12 shipped on 16 November 2026)                                    |
@@ -933,8 +933,8 @@ and First Light does not step aside. Item 21 fixes it.
     (`slug-map.ts:45-54`; `launchKey`, `src/features/practice-intelligence/launch-override.ts:83`):
     `/exercises/sight-sing-harmonic-minor` opens it in A harmonic minor (`slug-map.ts:188-196`), for
     Lesson 25. Opened from the Exercises tab it writes six notes it picks in the Singing tab's key,
-    letters on, as before. Lessons 16, 18, 21 and 25, whose cards do not link the addresses yet and
-    still describe the drill as it was.
+    letters on, as before. Lesson 16's card links its address; those of Lessons 18, 21 and 25 do not
+    link theirs yet and still describe the drill as it was.
 11. **Sight-singing in time: shipped on 15 November 2026.** Sing It in Time
     (`src/features/exercises/sing-in-time/`): a count-in and a click, notes that advance on the beat
     rather than on a 450 ms hold (use-sight-singing-controller.ts:26), pitch scored per note, timing

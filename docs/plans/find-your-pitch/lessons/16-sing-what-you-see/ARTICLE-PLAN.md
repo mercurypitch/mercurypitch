@@ -222,7 +222,8 @@ random round, R16-16) with this lesson's two phrases, then the card's address be
 yourself"; (c) the bass clef by range; (d) key signatures and spelling by key (Lesson 21); (e) names
 off, which must also cover the hold bar (R16-14) and the tracker's rung labels (R16-15), a requirement
 § 5 item 10e does not list, so add it; (f) octave folding, so lower voices read their own octave. The
-card's text shrinks to two sentences once (a), (b), (c) and (f) are in.
+card's text shrinks to two sentences once (a), (b), (c) and (f) are in. Since 17 November 2026 the
+card links `mercurypitch.com/exercises/sing-what-you-see` (FACTS 60a).
 
 ## Go deeper
 
