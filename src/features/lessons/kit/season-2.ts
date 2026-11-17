@@ -85,13 +85,11 @@ const ENTRIES_2: readonly Lesson[] = [
     page: '/learn/16',
     hook: "Can you sing a tune you've never heard, just by reading it?",
     pr: {
-      needs:
-        'A practice card for Sight-Singing on the two phrases, which shipped on 16 November 2026 (mercurypitch.com/exercises/sing-what-you-see)',
       link: {
-        href: '/pitch-training?lesson=16',
-        addr: 'mercurypitch.com/pitch-training',
-        label: 'Exercises',
-        note: 'then tap Sight-Singing',
+        href: '/exercises/sing-what-you-see?lesson=16',
+        addr: 'mercurypitch.com/exercises/sing-what-you-see',
+        label: 'Sight-Singing',
+        note: "the lesson's two phrases",
       },
     },
   },
