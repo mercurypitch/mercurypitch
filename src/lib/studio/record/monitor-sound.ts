@@ -25,9 +25,15 @@
 // After the lanes, the master (`studioMonitorMasterSpec`): the song's, as
 // playback plays it (sound-graph.ts), its macros still moving included, at
 // the master gain the listener hears. While Compare plays, the voice takes
-// the gain of the side playing, so it keeps playback's balance with the song
-// (`studioMonitorMasterGain`): on Before, which has no master, every effect
-// is off but the loudness gain, which plays the side's match gain.
+// the gain of the side playing, as the song does (`studioMonitorMasterGain`),
+// so on After it keeps playback's balance with the song. Before plays the
+// song with every effect off and no master (prepare-comparison.ts), so there
+// the lane plays with every effect off too (`dry`), and the master with only
+// its loudness gain, which plays the side's match gain: a dry voice beside
+// the dry song. Their balance there is the faders', not playback's: each
+// effect moves each sound by its own amount, and the monitor's chain leaves
+// out its lookahead dynamics, compressors among them (fx-profile.ts
+// MONITOR_FX_PROFILE).
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import { EMPTY_CHAIN } from '@/lib/studio-fx/chain-spec'
 import { MASTER_LOUDNESS_EFFECT_ID } from '@/lib/studio-fx/master'
@@ -85,11 +91,32 @@ function newTakeLane(): StudioTrack {
   })
 }
 
-/** Lane `trackId`'s sound for its monitored input; silent, with nothing worked out, while it is not monitored or no song is open. */
+/** `spec` with every effect off at the same settings, `kept` aside: the chain glides each one out and back in (chain.ts `setSpec`). */
+function effectsOff(spec: ChainSpec, kept?: string): ChainSpec {
+  return {
+    ...spec,
+    effects: spec.effects.map((effect) => ({
+      ...effect,
+      enabled: effect.id === kept,
+    })),
+  }
+}
+
+/**
+ * Lane `trackId`'s sound for its monitored input; silent, with nothing
+ * worked out, while it is not monitored or no song is open. `dry` while what
+ * the listener hears has no effects (Compare's Before side): every effect of
+ * the lane off at the same settings, as Before renders the song, its faders
+ * as they are.
+ */
 export function studioMonitorSound(
   project: StudioProject | null,
   trackId: string | null,
-  options: { readonly on: boolean; readonly moving?: StudioMovingMix },
+  options: {
+    readonly on: boolean
+    readonly moving?: StudioMovingMix
+    readonly dry?: boolean
+  },
 ): StudioMonitorSound {
   if (!options.on || project === null) return SILENT
   const song = sounding(project, trackId, options.moving)
@@ -98,9 +125,10 @@ export function studioMonitorSound(
       ? newTakeLane()
       : song.tracks.find((item) => item.id === trackId)
   if (track === undefined) return SILENT
+  const spec = studioLaneSpec(track, song.mix.macros)
   return {
     on: true,
-    spec: studioLaneSpec(track, song.mix.macros),
+    spec: options.dry === true ? effectsOff(spec) : spec,
     gains: audibility(song)(track) ? laneGains(track) : [0, 0],
   }
 }
@@ -151,12 +179,7 @@ export function studioMonitorMasterSpec(
 ): ChainSpec {
   const song = sounding(project, null, options.moving)
   const master = resolveStudioSoundGraph(song, gain).full
-  if (options.bypassed !== true) return master
-  return {
-    ...master,
-    effects: master.effects.map((effect) => ({
-      ...effect,
-      enabled: effect.id === MASTER_LOUDNESS_EFFECT_ID,
-    })),
-  }
+  return options.bypassed === true
+    ? effectsOff(master, MASTER_LOUDNESS_EFFECT_ID)
+    : master
 }
