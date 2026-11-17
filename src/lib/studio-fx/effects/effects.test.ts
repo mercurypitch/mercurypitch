@@ -431,26 +431,176 @@ describe('effects on a monitored input', () => {
       )
     })
 
-    it('tells its processor it is done when the unit is disposed, and takes the node out', async () => {
-      const { unit, worklets } = await loaded('compressor')
+    it.each(['compressor', 'deesser', 'dyneq'])(
+      '%s tells its processor it is done when the unit is disposed, and takes the node out',
+      async (kind) => {
+        const { unit, worklets } = await loaded(kind)
 
-      unit.dispose()
+        unit.dispose()
 
+        const [worklet] = worklets
+        expect(worklet.posted).toEqual([STUDIO_COMPRESSOR_DISPOSE])
+        expect(worklet.connections).toEqual([])
+      },
+    )
+
+    it.each(EFFECT_KINDS)(
+      '%s passes audio from input to output and disconnects every node on dispose',
+      async (kind) => {
+        const { ctx, unit } = await loaded(kind)
+
+        expect(
+          reaches(
+            unit.input as unknown as FakeNode,
+            unit.output as unknown as FakeNode,
+          ),
+        ).toBe(true)
+        unit.dispose()
+        expect(
+          ctx.created.filter((node) => node.connections.length > 0),
+        ).toEqual([])
+      },
+    )
+
+    /** The clean-vocal preset's de-esser (presets.ts). */
+    const DEESSER = { frequencyHz: 6500, thresholdDb: -30, ratio: 5 }
+
+    it("de-esser: compresses its sibilant band on the worklet at its own threshold and ratio, and the de-esser's knee, attack and release, split as in playback, with nothing that delays", async () => {
+      const { ctx, unit, worklets } = await loaded('deesser', DEESSER)
+
+      expect(worklets.map((worklet) => worklet.processor)).toEqual([
+        STUDIO_COMPRESSOR_PROCESSOR,
+      ])
       const [worklet] = worklets
-      expect(worklet.posted).toEqual([STUDIO_COMPRESSOR_DISPOSE])
-      expect(worklet.connections).toEqual([])
+      expect(settings(worklet)).toEqual([-30, 3, 5, 0.001, 0.06])
+      const filters = ctx.ofType<FakeBiquad>('biquad')
+      expect(filters.map((filter) => filter.frequency.destination)).toEqual([
+        6500, 6500, 6500, 6500,
+      ])
+      const highs = filters.filter((filter) => filter.type === 'highpass')
+      const lows = filters.filter((filter) => filter.type === 'lowpass')
+      expect([highs.length, lows.length]).toEqual([2, 2])
+      // The sibilant band alone goes through the worklet, and comes out
+      // with no makeup to divide out, into the sum the low band joins.
+      expect(highs.every((filter) => reaches(filter, worklet))).toBe(true)
+      expect(lows.some((filter) => reaches(filter, worklet))).toBe(false)
+      const [sum] = worklet.targets as FakeGain[]
+      expect(sum.gain.value).toBe(1)
+      expect(lows.some((filter) => filter.targets.includes(sum))).toBe(true)
+      expect(reaches(sum, unit.output as unknown as FakeNode)).toBe(true)
+      expect(ctx.ofType<FakeCompressor>('compressor')).toEqual([])
+      expect(ctx.ofType<FakeDelay>('delay')).toEqual([])
     })
 
     it.each(['deesser', 'dyneq'])(
-      '%s still passes the input straight through',
+      '%s bypasses to its input straight, with no twin in the way',
       async (kind) => {
         const { ctx, unit, worklets } = await loaded(kind)
 
-        expect(unit.input).toBe(unit.output)
-        expect(worklets).toEqual([])
-        expect(ctx.ofType<FakeCompressor>('compressor')).toEqual([])
+        const gains = shellGains(ctx, unit.output as unknown as FakeNode)
+        const [dry] = gains.filter((gain) => !reaches(worklets[0], gain))
+        expect((unit.input as unknown as FakeNode).targets).toContain(dry)
       },
     )
+
+    /** The voice role's harsh band (role-chains.ts). */
+    const HARSH = {
+      frequencyHz: 7500,
+      q: 0.8,
+      thresholdDb: -40,
+      ratio: 2,
+      rangeDb: 4,
+      attackMs: 8,
+      releaseMs: 90,
+    }
+
+    it('dynamic EQ: cuts its band on the worklet at its own settings, by the share its range allows, with nothing that delays', async () => {
+      const { ctx, unit, worklets } = await loaded('dyneq', HARSH)
+
+      expect(worklets.map((worklet) => worklet.processor)).toEqual([
+        STUDIO_COMPRESSOR_PROCESSOR,
+      ])
+      const [worklet] = worklets
+      expect(settings(worklet)).toEqual([-40, 4, 2, 0.008, 0.09])
+      const [band] = ctx.ofType<FakeBiquad>('biquad')
+      expect([
+        band.type,
+        band.frequency.destination,
+        band.Q.destination,
+      ]).toEqual(['bandpass', 7500, 0.8])
+      expect(band.targets).toContain(worklet)
+      // out = x + m (K(bp(x)) - bp(x)): the input whole, and the share the
+      // range allows of what the worklet takes from the band.
+      const [taken] = worklet.targets as FakeGain[]
+      const negated = band.targets.filter(
+        (node) => node !== worklet,
+      ) as FakeGain[]
+      expect(negated).toHaveLength(1)
+      expect(negated[0].gain.destination).toBe(-1)
+      expect(negated[0].targets).toEqual([taken])
+      expect(taken.gain.destination).toBe(1)
+      const [share] = taken.targets as FakeGain[]
+      expect(share.gain.destination).toBeCloseTo(1 - 10 ** (-4 / 20), 12)
+      const [sum] = share.targets
+      expect((unit.input as unknown as FakeNode).targets).toContain(sum)
+      expect(reaches(sum, unit.output as unknown as FakeNode)).toBe(true)
+      expect(ctx.ofType<FakeCompressor>('compressor')).toEqual([])
+      expect(ctx.ofType<FakeDelay>('delay')).toEqual([])
+    })
+
+    // A sum of three can round differently in another order, and the order
+    // a node adds its inputs in can differ between two builds of one chain.
+    it.each(['deesser', 'dyneq'])(
+      '%s adds no more than two signals at any node, so no order of adding them changes what it plays',
+      async (kind) => {
+        const { ctx, worklets } = await loaded(kind)
+
+        expect(worklets).toHaveLength(1)
+        const fedBy = (target: FakeNode): number =>
+          ctx.created.filter((node) => node.targets.includes(target)).length
+        for (const node of ctx.created) expect(fedBy(node)).toBeLessThan(3)
+      },
+    )
+
+    it('dynamic EQ: runs beside the band before it, detecting the run input and passing its own input on undelayed', async () => {
+      const { ctx, unit } = await loaded('dyneq', HARSH)
+      const input = unit.input as unknown as FakeNode
+      const [band] = ctx.ofType<FakeBiquad>('biquad')
+      const runInput = ctx.createGain()
+
+      unit.follow!(runInput as unknown as AudioNode)
+
+      expect(runInput.targets).toEqual([band])
+      expect(input.targets).not.toContain(band)
+      // The chain cut the run input's outputs before patching again.
+      runInput.disconnect()
+      unit.follow!(runInput as unknown as AudioNode)
+      expect(runInput.targets).toEqual([band])
+      unit.follow!(null)
+      expect(input.targets).toContain(band)
+    })
+
+    it('glides the worklet and the bands to new settings while they play', async () => {
+      const deesser = await loaded('deesser', DEESSER)
+      const dyneq = await loaded('dyneq', HARSH)
+      deesser.ctx.state = 'running'
+      dyneq.ctx.state = 'running'
+
+      deesser.unit.setParams({ ...DEESSER, thresholdDb: -24, ratio: 8 })
+      dyneq.unit.setParams({ ...HARSH, thresholdDb: -30, rangeDb: 6 })
+
+      expect(settings(deesser.worklets[0])).toEqual([-24, 3, 8, 0.001, 0.06])
+      expect(settings(dyneq.worklets[0])).toEqual([-30, 4, 2, 0.008, 0.09])
+      const [taken] = dyneq.worklets[0].targets as FakeGain[]
+      const [share] = taken.targets as FakeGain[]
+      expect(share.gain.destination).toBeCloseTo(1 - 10 ** (-6 / 20), 12)
+      for (const param of [
+        deesser.worklets[0].parameters.get('threshold'),
+        dyneq.worklets[0].parameters.get('threshold'),
+        share.gain,
+      ])
+        expect(param?.lastWrite?.kind).toBe('target')
+    })
   })
 
   it('runs saturation and air without oversampling or a make-up delay, once 4x is measured late', async () => {

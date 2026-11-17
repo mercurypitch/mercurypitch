@@ -12,8 +12,9 @@
 // lookahead of its own, so a following one is a plain wire.
 //
 // A monitored input (fx-profile.ts `zeroLatency`) keeps not even the
-// lookahead: a de-esser or a dynamic EQ is a plain wire there, and so is a
-// compressor until its worklet has loaded (effects/compressor.ts).
+// lookahead: a compressor, a de-esser and a dynamic EQ play there on the
+// compressor worklet with no lookahead (zero-latency-compressor.ts), and
+// each is a plain wire until that worklet has loaded.
 import type { EffectSpec } from '@/lib/studio-fx/chain-spec'
 import { createCompressorTwin, settleCompressorTwins, } from '@/lib/studio-fx/compressor-twin'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'
@@ -64,7 +65,7 @@ export function createLatencyOnlyUnit(
   }
 }
 
-/** A lookahead dynamics effect while its input is monitored: one gain at unity, no delay and no cut. */
+/** A lookahead dynamics effect while its input is monitored and the compressor worklet has not loaded: one gain at unity, no delay and no cut. */
 export function createStraightThroughUnit(
   ctx: BaseAudioContext,
   spec: EffectSpec,

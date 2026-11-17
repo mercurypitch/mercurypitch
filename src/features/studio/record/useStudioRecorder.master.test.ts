@@ -1,4 +1,4 @@
-// Studio recorder master tests — every armed lane's monitor plays through one master: playback's, at the master gain the transport says the listener hears, gliding to a new one, and with its effects off while Compare plays its Before side, which has no master; there each lane plays with every effect off too, gliding out and back in. The monitor's compressor loads with the recorder's worklet, so a lane's compressor plays in its monitor.
+// Studio recorder master tests — every armed lane's monitor plays through one master: playback's, at the master gain the transport says the listener hears, gliding to a new one, and with its effects off while Compare plays its Before side, which has no master; there each lane plays with every effect off too, gliding out and back in. The monitor's compressor loads with the recorder's worklet, so a lane's compressor, de-esser and dynamic EQ play in its monitor.
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioMasterGain } from '@/lib/studio/export/sound-graph'
@@ -310,7 +310,7 @@ describe("the recorder's monitor master", () => {
 })
 
 describe("the recorder's worklets", () => {
-  it("loads the monitor's compressor beside the recorder's worklet, so an armed lane's compressor plays in its monitor", async () => {
+  it("loads the monitor's compressor beside the recorder's worklet, so an armed lane's compressor, de-esser and dynamic EQ play in its monitor", async () => {
     const { ctx } = mount()
     const { modules } = fakeAudioWorklet(ctx, {
       [STUDIO_COMPRESSOR_PROCESSOR]: COMPRESSOR_PARAMETERS,
@@ -326,7 +326,9 @@ describe("the recorder's worklets", () => {
       on: true,
       spec: normalizeChainSpec({
         effects: [
+          { kind: 'dyneq', params: { thresholdDb: -35 }, enabled: true },
           { kind: 'compressor', params: { thresholdDb: -31 }, enabled: true },
+          { kind: 'deesser', params: { thresholdDb: -33 }, enabled: true },
         ],
       }),
       gains: [1, 1],
@@ -337,6 +339,8 @@ describe("the recorder's worklets", () => {
     const thresholds = ctx
       .ofType<FakeWorkletNode>('worklet')
       .map((node) => node.parameters.get('threshold')?.value)
-    expect(thresholds).toContain(-31)
+    // The lane's three, in its order, then the master's glue.
+    expect(thresholds.slice(0, 3)).toEqual([-35, -31, -33])
+    expect(thresholds).toHaveLength(4)
   })
 })
