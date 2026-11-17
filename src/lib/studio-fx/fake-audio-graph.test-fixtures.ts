@@ -5,6 +5,7 @@
 // Just enough of BaseAudioContext for the Studio FX graphs to build: nodes
 // remember where they are connected, params remember every automation call.
 // It does not process audio; the DSP itself is checked in a real browser.
+import { vi } from 'vitest'
 
 export interface ParamEvent {
   readonly kind: 'set' | 'target' | 'cancel' | 'hold'
@@ -127,6 +128,46 @@ export class FakeCompressor extends FakeNode {
   }
 }
 
+/** What a worklet processor declares of its parameters: each one's name and default. */
+export type FakeProcessorParameters = readonly {
+  readonly name: string
+  readonly defaultValue: number
+}[]
+
+/**
+ * An AudioWorkletNode stand-in, made as `new AudioWorkletNode(context,
+ * processor, options)` makes one on a context `fakeAudioWorklet` has given a
+ * worklet: its parameters at the defaults its processor declares, and every
+ * message posted to its processor.
+ */
+export class FakeWorkletNode extends FakeNode {
+  readonly parameters: ReadonlyMap<string, FakeParam>
+  readonly posted: unknown[] = []
+  readonly port = {
+    postMessage: (message: unknown): void => {
+      this.posted.push(message)
+    },
+  }
+
+  constructor(
+    context: FakeAudioContext,
+    readonly processor: string,
+    readonly options: AudioWorkletNodeOptions = {},
+  ) {
+    super('worklet')
+    const declared = context.processors.get(processor)
+    if (declared === undefined)
+      throw new Error(`No processor named ${processor}`)
+    this.parameters = new Map(
+      declared.map(({ name, defaultValue }) => [
+        name,
+        new FakeParam(defaultValue),
+      ]),
+    )
+    context.created.push(this)
+  }
+}
+
 export class FakeShaper extends FakeNode {
   curve: Float32Array | null = null
   oversample: OverSampleType = 'none'
@@ -201,6 +242,8 @@ export class FakeAudioContext {
   state: AudioContextState = 'running'
   readonly destination = new FakeNode('destination')
   readonly created: FakeNode[] = []
+  /** The worklet processors loaded here, by name (`fakeAudioWorklet`). */
+  readonly processors = new Map<string, FakeProcessorParameters>()
 
   constructor(readonly sampleRate = 48000) {}
 
@@ -261,6 +304,31 @@ export class FakeAudioContext {
   ofType<T extends FakeNode>(nodeType: string): T[] {
     return this.created.filter((node) => node.nodeType === nodeType) as T[]
   }
+}
+
+/**
+ * Give `ctx` an audio worklet that loads any module, as a browser's context
+ * does, with `processors` on it, and stub the global AudioWorkletNode with
+ * FakeWorkletNode. `modules` lists every module loaded; vi.unstubAllGlobals()
+ * takes the stub away.
+ */
+export function fakeAudioWorklet(
+  ctx: FakeAudioContext,
+  processors: Readonly<Record<string, FakeProcessorParameters>>,
+): { readonly modules: string[] } {
+  const modules: string[] = []
+  for (const [name, declared] of Object.entries(processors))
+    ctx.processors.set(name, declared)
+  Object.assign(ctx, {
+    audioWorklet: {
+      addModule: (url: string): Promise<void> => {
+        modules.push(url)
+        return Promise.resolve()
+      },
+    },
+  })
+  vi.stubGlobal('AudioWorkletNode', FakeWorkletNode)
+  return { modules }
 }
 
 /** An OfflineAudioContext stand-in: the code tells them apart by this method. */

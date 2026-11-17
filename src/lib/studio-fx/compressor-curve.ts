@@ -14,11 +14,14 @@
 // fixed by the spec; the knee's shape is left to the browser, and Blink,
 // Gecko and WebKit all run WebKit's DynamicsCompressorKernel, whose
 // exponential knee is reproduced here step for step (including its 15-step
-// geometric search for the knee constant).
+// geometric search for the knee constant). The monitor's compressor, which
+// runs that kernel with no lookahead (compressor-kernel.ts), compresses by
+// this curve too.
 
 import { dbToGain, gainToDb } from './dsp'
 
-type StaticCurve = (x: number) => number
+/** A level in to the level out, both linear, before any makeup. */
+export type StaticCurve = (x: number) => number
 
 function createKneeCurve(linearThreshold: number) {
   return (x: number, k: number): number =>
@@ -83,19 +86,25 @@ function clampCompressorSettings(
   ]
 }
 
+/** The static curve a DynamicsCompressorNode runs for these settings, clamped as the browser clamps them. */
+export function createCompressorCurve(
+  thresholdDb: number,
+  kneeDb: number,
+  ratio: number,
+): StaticCurve {
+  return createStaticCurve(
+    ...clampCompressorSettings(thresholdDb, kneeDb, ratio),
+  )
+}
+
 /** The linear makeup gain a DynamicsCompressorNode applies on its own. */
 export function compressorAutoMakeupGain(
   thresholdDb: number,
   kneeDb: number,
   ratio: number,
 ): number {
-  const [threshold, knee, clampedRatio] = clampCompressorSettings(
-    thresholdDb,
-    kneeDb,
-    ratio,
-  )
-  if (clampedRatio === 1) return 1
-  const fullRangeGain = createStaticCurve(threshold, knee, clampedRatio)(1)
+  if (clampCompressorSettings(thresholdDb, kneeDb, ratio)[2] === 1) return 1
+  const fullRangeGain = createCompressorCurve(thresholdDb, kneeDb, ratio)(1)
   return Math.pow(1 / fullRangeGain, 0.6)
 }
 
@@ -106,12 +115,7 @@ export function compressorStaticOutputDb(
   kneeDb: number,
   ratio: number,
 ): number {
-  const [threshold, knee, clampedRatio] = clampCompressorSettings(
-    thresholdDb,
-    kneeDb,
-    ratio,
-  )
   return gainToDb(
-    createStaticCurve(threshold, knee, clampedRatio)(dbToGain(inputDb)),
+    createCompressorCurve(thresholdDb, kneeDb, ratio)(dbToGain(inputDb)),
   )
 }
