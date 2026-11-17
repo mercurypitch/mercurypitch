@@ -12,7 +12,7 @@ import { createDynamicEqUnit } from './dyneq'
 import { createEqUnit } from './eq'
 import { createExciterUnit } from './exciter'
 import { createGainUnit } from './gain'
-import { createLatencyOnlyUnit } from './latency-only'
+import { createLatencyOnlyUnit, createStraightThroughUnit, } from './latency-only'
 import { createLimiterUnit } from './limiter'
 import { createReverbUnit } from './reverb'
 import { createSaturationUnit } from './saturation'
@@ -26,7 +26,9 @@ export function createEffectUnit(
   env: EffectEnv,
 ): EffectUnit {
   if (keepsOnlyLatency(env.profile, spec.kind))
-    return createLatencyOnlyUnit(ctx, spec, env)
+    return env.profile?.zeroLatency === true
+      ? createStraightThroughUnit(ctx, spec)
+      : createLatencyOnlyUnit(ctx, spec, env)
   switch (spec.kind) {
     case 'gain':
       return createGainUnit(ctx, spec, env)

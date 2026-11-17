@@ -152,7 +152,7 @@ These are the rules that break things when ignored.
 | `studio` | [studio-recorder.ts](../../src/lib/studio/record/studio-recorder.ts) | 25.9k | Studio recorder — arm lanes, count in, record every armed lane's take on the song's clock, and hand each take over to be kept Arming a la... |
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.9k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
-| `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 6.8k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
+| `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 6.9k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
 | `merc` | [renderer.ts](../../src/lib/merc/renderer.ts) | 5.3k | Merc renderer — one canvas, one WebGL2 context, one simulated Merc mount() draws Merc into a container. |
 | `ear` | [banks.ts](../../src/lib/ear/banks.ts) | 4.7k | Ear Lab — identification item banks (Leap, Stack, Contour). |
 | `guided-voice` | [index.ts](../../src/lib/guided-voice/index.ts) | 4.7k | Guided Voice — local assessment science and safety foundation |

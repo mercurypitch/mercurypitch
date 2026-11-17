@@ -20,7 +20,16 @@
 // no later through them than without them. The compressor, the de-esser
 // and the dynamic EQ play at their own settings without their lookahead
 // (zero-latency-compressor.ts), a limiter plays its ceiling without its
-// lookahead, and everything else plays.
+// lookahead, and everything else plays. The lane's chain follows live
+// playback's tier as the lane's clips do (`lite`, playback-quality.ts): on
+// Light its de-esser and dynamic EQ pass the input uncut, a plain wire with
+// no worklet. A new tier swaps those two in the running chain under its
+// re-patch duck (chain.ts `setLite`): the lane goes out on a setTargetAtTime
+// release, the two change places on the chain's 40 ms timer, and the lane
+// comes back in (CONVENTIONS.md 5b). In four live changes in Chromium 148
+// the lane was 40 to 57 dB down at the swap, and no step was steeper than
+// the tone's own (studio-monitor-dynamics-probes.mjs `follow`). Every
+// other effect keeps its running graph, a reverb its tail.
 //
 // Each armed lane has a monitor of its own on its own input (lane-arms.ts),
 // so a lane is heard once, and lanes armed on one input are heard together,
@@ -66,6 +75,7 @@
 import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
+import type { StudioLiteEffect } from '@/lib/studio-fx/fx-profile'
 import { MONITOR_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
 import { STUDIO_CAPTURE_INPUT } from './capture-input'
 import type { StudioMonitorMaster, StudioMonitorMasterInput, } from './monitor-master'
@@ -81,6 +91,7 @@ const MOVE_SECONDS = 0.05
 const SETTLE_MS = 250
 /** How long a path waits for the input's first sound before it rises anyway: five times the slowest arrival measured. */
 const ARRIVAL_WAIT_MS = 1000
+const NO_LITE: readonly StudioLiteEffect[] = []
 
 export interface StudioMonitorSound {
   /** The lane is monitored: monitoring is on, or the lane plays an instrument. */
@@ -89,12 +100,14 @@ export interface StudioMonitorSound {
   readonly spec: ChainSpec
   /** Left and right fader gains (graph-lanes.ts `laneGains`); both 0 while the lane is not heard. */
   readonly gains: readonly [number, number]
+  /** The effects live playback's tier keeps only the lookahead of (fx-profile.ts `lite`), which pass the input uncut here; none when absent. */
+  readonly lite?: readonly StudioLiteEffect[]
 }
 
 export interface StudioInputMonitorOptions {
   /** The master every monitored input plays through (monitor-master.ts): the path reaches the speakers only through it. */
   readonly master: Pick<StudioMonitorMaster, 'join'>
-  /** Timer for taking a released path apart and for the input's settling; injectable for tests. */
+  /** Timer for taking a released path apart, for the input's settling and for the chain's re-patch; injectable for tests. */
   readonly schedule?: (callback: () => void, delayMs: number) => () => void
   /** The input plays cleanly from here on, as an instrument the page plays does, or a source already flowing: a heard path rises at once. */
   readonly settled?: boolean
@@ -192,8 +205,9 @@ export function createStudioInputMonitor(
       channelInterpretation: 'speakers',
     })
     const chain = createStudioFxChain(context, sound.spec, {
-      profile: MONITOR_FX_PROFILE,
+      profile: { ...MONITOR_FX_PROFILE, lite: sound.lite ?? NO_LITE },
       stereoHold: true,
+      schedule,
     })
     const split = context.createChannelSplitter(2)
     const merge = context.createChannelMerger(2)
@@ -281,6 +295,7 @@ export function createStudioInputMonitor(
         return
       }
       const heard = bringIn(sound)
+      heard.chain.setLite(sound.lite ?? NO_LITE)
       heard.chain.setSpec(sound.spec)
       if (heard.gains.every((gain, side) => gain === sound.gains[side])) return
       heard.gains = sound.gains

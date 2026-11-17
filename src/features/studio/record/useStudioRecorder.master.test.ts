@@ -1,9 +1,10 @@
-// Studio recorder master tests — every armed lane's monitor plays through one master: playback's, at the master gain the transport says the listener hears, gliding to a new one, and with its effects off while Compare plays its Before side, which has no master; there each lane plays with every effect off too, gliding out and back in. The monitor's compressor loads with the recorder's worklet, so a lane's compressor, de-esser and dynamic EQ play in its monitor.
+// Studio recorder master tests — every armed lane's monitor plays through one master: playback's, at the master gain the transport says the listener hears, gliding to a new one, and with its effects off while Compare plays its Before side, which has no master; there each lane plays with every effect off too, gliding out and back in. The monitor's compressor loads with the recorder's worklet, so a lane's compressor, de-esser and dynamic EQ play in its monitor, the de-esser and dynamic EQ at live playback's tier: uncut on Light.
 import { createRoot, createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioMasterGain } from '@/lib/studio/export/sound-graph'
 import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
 import type { StudioProject } from '@/lib/studio/model/types'
+import { resetPlaybackQualityForTests, setPlaybackChoice, } from '@/lib/studio/playback/playback-quality'
 import type { StudioRecorderDeps, StudioRecorderView, } from '@/lib/studio/record/studio-recorder'
 import { EMPTY_CHAIN, normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import { COMPRESSOR_PARAMETERS, STUDIO_COMPRESSOR_PROCESSOR, } from '@/lib/studio-fx/compressor-kernel'
@@ -82,6 +83,9 @@ afterEach(() => {
   for (const dispose of disposers.splice(0)) dispose()
   mocks.deps = null
   vi.unstubAllGlobals()
+  vi.useRealTimers()
+  setPlaybackChoice('auto')
+  resetPlaybackQualityForTests()
 })
 
 /** The voice lane armed, as the recorder tells the hook. */
@@ -342,5 +346,44 @@ describe("the recorder's worklets", () => {
     // The lane's three, in its order, then the master's glue.
     expect(thresholds.slice(0, 3)).toEqual([-35, -31, -33])
     expect(thresholds).toHaveLength(4)
+  })
+
+  it("plays an armed lane's de-esser and dynamic EQ at live playback's tier: uncut, with no worklet, on Light, and on their worklets again on Balanced", async () => {
+    const { ctx } = mount()
+    fakeAudioWorklet(ctx, {
+      [STUDIO_COMPRESSOR_PROCESSOR]: COMPRESSOR_PARAMETERS,
+    })
+    await mocks.deps!.prepareWorklet(ctx.asContext as AudioContext)
+    vi.useFakeTimers()
+    setPlaybackChoice('light')
+    const sound = () => mocks.deps!.monitorSound('voice')
+    const monitor = mocks.deps!.createMonitor(
+      ctx.asContext as AudioContext,
+      new FakeNode('input') as unknown as AudioNode,
+      { settled: true },
+    )
+    monitor.set(sound())
+    const kinds = sound()
+      .spec.effects.filter((effect) => effect.enabled)
+      .map((effect) => effect.kind)
+    const bands = kinds.filter(
+      (kind) => kind === 'deesser' || kind === 'dyneq',
+    ).length
+    const compressors = kinds.filter((kind) => kind === 'compressor').length
+    const worklets = () => ctx.ofType<FakeWorkletNode>('worklet').length
+
+    expect(bands).toBeGreaterThan(0)
+    expect(sound().lite).toEqual(['dyneq', 'deesser'])
+    // The lane's compressors, and the master's glue.
+    expect(worklets()).toBe(compressors + 1)
+
+    const updates = mocks.updateMonitor.mock.calls.length
+    setPlaybackChoice('balanced')
+    expect(mocks.updateMonitor.mock.calls.length).toBeGreaterThan(updates)
+    expect(sound().lite).toEqual([])
+    // As each armed lane's monitor is set again (lane-arms.ts updateMonitors).
+    monitor.set(sound())
+    vi.advanceTimersByTime(40)
+    expect(worklets()).toBe(compressors + bands + 1)
   })
 })

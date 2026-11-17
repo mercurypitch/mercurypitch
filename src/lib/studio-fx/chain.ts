@@ -13,7 +13,10 @@
 // ducks the chain's output (about 40 ms to -58 dB), re-patches while it is
 // silent, and opens again; further changes that arrive during the duck are
 // folded into the same re-patch. Offline, or before the context runs, the
-// chain re-patches at once.
+// chain re-patches at once. A new `lite` list (fx-profile.ts, `setLite`)
+// is one more such change: each de-esser or dynamic EQ that enters or
+// leaves it is built again and patched in under the duck, and every other
+// effect plays on.
 //
 // The chain never connects itself to a destination and never starts or stops
 // a source: the caller owns transport envelopes, as with every other audio
@@ -50,7 +53,8 @@ import { CHAIN_SPEC_VERSION, normalizeChainSpec, normalizeEffectParams, } from '
 import type { EffectEnv, EffectUnit, StudioEffectSend } from './effect-shell'
 import { isRealtimeRunning, writeParam } from './effect-shell'
 import { createEffectUnit } from './effects'
-import type { StudioFxProfile } from './fx-profile'
+import type { StudioFxProfile, StudioLiteEffect } from './fx-profile'
+import { FULL_FX_PROFILE, keepsOnlyLatency } from './fx-profile'
 
 const DUCK_MS = 40
 /** How long a held chain stays whole after its sources end: past every delay line and filter ring in it. */
@@ -66,6 +70,8 @@ export interface StudioFxChain {
   getSpec(): ChainSpec
   /** Bring the running chain in line with `spec` (untrusted input is fine). */
   setSpec(spec: unknown): void
+  /** Keep only the lookahead of the effects in `lite` (fx-profile.ts), from now on: those that enter or leave it are built again under the duck. */
+  setLite(lite: readonly StudioLiteEffect[]): void
   setEffectEnabled(id: string, enabled: boolean): void
   setEffectParams(id: string, params: ParamValues): void
   /** Gain reduction of a dynamics effect in dB (negative), else 0. */
@@ -119,6 +125,15 @@ function sameOrder(a: readonly Slot[], b: readonly Slot[]): boolean {
   return a.length === b.length && a.every((slot, i) => slot.unit === b[i].unit)
 }
 
+/** Whether `profile` leaves exactly the effects in `lite` as their lookahead. */
+function sameLite(
+  profile: StudioFxProfile | undefined,
+  lite: readonly StudioLiteEffect[],
+): boolean {
+  const was = profile?.lite ?? []
+  return was.length === lite.length && was.every((kind) => lite.includes(kind))
+}
+
 /** Send a reused effect only what changed between two specs. */
 function syncUnit(unit: EffectUnit, from: EffectSpec, to: EffectSpec): void {
   if (from.enabled !== to.enabled) unit.setEnabled(to.enabled)
@@ -130,7 +145,7 @@ export function createStudioFxChain(
   spec: unknown,
   options: StudioFxChainOptions = {},
 ): StudioFxChain {
-  const env: EffectEnv = {
+  let env: EffectEnv = {
     isLive: () => isRealtimeRunning(ctx),
     schedule: options.schedule ?? defaultSchedule,
     profile: options.profile,
@@ -217,6 +232,23 @@ export function createStudioFxChain(
     if (changedShape) repatch()
   }
 
+  const setLite = (lite: readonly StudioLiteEffect[]): void => {
+    const was = env.profile
+    if (disposed || sameLite(was, lite)) return
+    // Units keep the env they were built with; the ones built from now take this.
+    env = { ...env, profile: { ...(was ?? FULL_FX_PROFILE), lite } }
+    const moved = (kind: string) =>
+      keepsOnlyLatency(was, kind) !== keepsOnlyLatency(env.profile, kind)
+    let changed = false
+    slots = slots.map((slot) => {
+      if (!moved(slot.spec.kind)) return slot
+      changed = true
+      retired.push(slot.unit)
+      return { spec: slot.spec, unit: createUnit(ctx, slot.spec, env) }
+    })
+    if (changed) repatch()
+  }
+
   return {
     input,
     output,
@@ -225,6 +257,7 @@ export function createStudioFxChain(
       effects: slots.map((slot) => slot.spec),
     }),
     setSpec,
+    setLite,
     setEffectEnabled(id, enabled) {
       const slot = findSlot(id)
       if (slot === undefined || disposed || slot.spec.enabled === enabled)
