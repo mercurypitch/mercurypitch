@@ -324,6 +324,7 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
                 resource={props.view.resource()}
                 notes={notes()}
                 editing={props.timeline.editingClipId === clipId}
+                rendering={props.timeline.renderingClips?.has(clipId) === true}
                 onSelect={() => props.timeline.onSelectClip(clipId)}
                 onDetails={() => props.timeline.onClipDetails(clipId)}
                 onOpenNotes={

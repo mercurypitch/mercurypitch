@@ -78,6 +78,7 @@ export function useStudioMidiRenders(
     settle: (signal?: AbortSignal) => service.settle(signal),
     keepsPending: service.keepsPending,
     waitingLanes: service.waitingLanes,
+    renderingClips: service.renderingClips,
     notice,
     editor: studioMidiEditorApi(service),
   }

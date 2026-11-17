@@ -67,6 +67,8 @@ interface StudioTimelineClipProps {
   notes?: StudioClipNotes
   /** The note editor shows this clip's notes. */
   editing?: boolean
+  /** A MIDI clip's notes have no audio yet: their render is under way. */
+  rendering?: boolean
   onSelect(): void
   onDetails(): void
   /** Open a MIDI clip's notes in the editor. */
@@ -212,7 +214,8 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
         ? title()
         : title().replace(STUDIO_AUDIO_EXTENSION, '') + passOf()
     const notes = midi() ? `, MIDI, ${countWords()}` : ''
-    return `${props.trackName}, ${name}${notes}, ${formatStudioTime(clip().startFrame)} to ${formatStudioTime(clipEndFrame(clip()))}`
+    const rendering = props.rendering === true ? ', rendering' : ''
+    return `${props.trackName}, ${name}${notes}${rendering}, ${formatStudioTime(clip().startFrame)} to ${formatStudioTime(clipEndFrame(clip()))}`
   }
   return (
     <div
@@ -274,6 +277,9 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
                     {studioMidiChipWords(notes())}
                   </span>
                   <span class={midiStyles.count}>{countWords()}</span>
+                  <Show when={props.rendering === true}>
+                    <span class={midiStyles.rendering}>Rendering…</span>
+                  </Show>
                   <Show when={props.editing === true}>
                     <span class={midiStyles.editing}>Editing</span>
                   </Show>

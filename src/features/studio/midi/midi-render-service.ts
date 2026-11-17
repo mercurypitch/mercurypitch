@@ -522,6 +522,27 @@ export function createStudioMidiRenderService(
     },
   )
 
+  // The clips whose own notes have no audio to play yet: a render they want
+  // is neither ready nor failed. A draft's render is the editor's to say.
+  const renderingClips = createMemo(
+    () => {
+      const { byKey, byClip } = wants()
+      const clips = new Set<string>()
+      for (const [clipId, key] of byClip)
+        if (
+          byKey.get(key)?.kept === true &&
+          !failed().has(key) &&
+          !previews().has(key)
+        )
+          clips.add(clipId)
+      return clips as ReadonlySet<string>
+    },
+    new Set<string>(),
+    {
+      equals: (a, b) => a.size === b.size && [...a].every((id) => b.has(id)),
+    },
+  )
+
   onCleanup(() => {
     disposed = true
     clearTimeout(quiet)
@@ -583,6 +604,8 @@ export function createStudioMidiRenderService(
       ),
     /** The lanes whose MIDI clips wait for a render to be kept: the lane freezer leaves them alone. */
     waitingLanes,
+    /** The clips whose notes have no audio to play yet, each of them saying Rendering… in its lane. */
+    renderingClips,
     /** Why a lane plays its earlier audio: a fresh object each time it is said. */
     notice,
     /** Keys rendering now or queued, for tests and the lane preview. */
