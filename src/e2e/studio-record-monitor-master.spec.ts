@@ -17,6 +17,13 @@ const CAPTURE_SECONDS = 0.8
 const MIC_WAV = writeStereoToneWav(MIC_HZ, MIC_HZ, 4, [0.05, 0.05])
 /** How close the voice's move is held to the song's, in dB. */
 const WITHIN_DB = 0.5
+/**
+ * How close the voice's move on Compare's Before side is held to the
+ * song's, in dB. Twelve runs read 0.22 to 0.24: the lane's effects take
+ * 0.44 to 0.47 dB from the voice's tone and 0.68 dB from the song's. A
+ * monitor that left the compressor out read 0.77.
+ */
+const BEFORE_DB = 0.35
 /** How close the voice's place against the song on a side of Compare is held to playback's, in dB. */
 const BALANCE_DB = 0.1
 
@@ -212,6 +219,6 @@ test("the armed input is heard through the master: it moves with the song's meas
     Math.abs(
       onBefore.voiceDb - playing.voiceDb - (onBefore.songDb - playing.songDb),
     ),
-  ).toBeLessThan(WITHIN_DB)
+  ).toBeLessThan(BEFORE_DB)
   await expect(record).toHaveAttribute('data-phase', 'armed')
 })
