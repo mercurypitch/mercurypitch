@@ -1,4 +1,4 @@
-// Studio note erasing — scripts of sweeps: in any tool a right-button press on a note takes it away, shown going until the release keeps it gone in one commit, sounding nothing and leaving the selection's other notes; held and moved it takes every note its path crosses between two moves, not only where the moves land, and a mouse takes exactly those; Escape, a cancel or a lost release puts them back; the middle button erases nothing, nor the right one on the velocity lane. In Erase a click or a finger's tap takes a note away, a drag or a swipe every note it crosses as one commit, a second finger undoes the swipe and pinches, and the mouse shows what a press would take. On a kit a tap takes a hit and a swipe the hits along its row. A sweep held at an edge takes the notes the roll scrolls under it, and never a note out of sight.
+// Studio note erasing — scripts of sweeps: in any tool a right-button press on a note takes it away, shown going until the release keeps it gone in one commit, sounding nothing and leaving the selection's other notes; held and moved it takes every note its path crosses between two moves, not only where the moves land, and a mouse takes exactly those; Escape, a cancel or a lost release puts them back; the middle button erases nothing, nor the right one on the velocity lane. In Erase a click or a finger's tap takes a note away, a drag or a swipe every note it crosses as one commit, a second finger undoes the swipe and pinches, and the mouse shows what a press would take; a tool switched under a resting mouse leaves no hover from the tool before. On a kit a tap takes a hit and a swipe the hits along its row. A sweep held at an edge takes the notes the roll scrolls under it, and never a note out of sight.
 import { describe, expect, it } from 'vitest'
 import type { RollViewport } from '@/lib/roll-geometry'
 import { studioDrumRows } from '@/lib/studio/midi/drum-rows'
@@ -231,6 +231,22 @@ describe('Erase with a mouse', () => {
     expect(over.cursor).toBe('erase')
     expect(empty.hover).toBeNull()
     expect(empty.cursor).toBe('erase')
+  })
+})
+
+describe('a tool switched while the mouse rests over a note', () => {
+  it('leaves no hover from the tool before, so the cursor is the new tool’s until the mouse moves', () => {
+    // Arrange: the eraser over C.
+    const host = noteHost({ notes: NOTES, init: { tool: 'erase' } })
+    play(host, mouse('move', ...C))
+
+    // Act
+    play(host, { type: 'command', command: { type: 'tool', tool: 'select' } })
+
+    // Assert
+    const view = noteEditView(host.state, host.ctx)
+    expect(view.hover).toBeNull()
+    expect(view.cursor).toBe('default')
   })
 })
 
