@@ -560,5 +560,6 @@
   "src/lib/studio/midi/drum-rows.test.ts",
   "src/lib/studio/midi/roll-keyboard.test.ts",
   "src/lib/studio/midi/midi-file.test.ts",
-  "src/lib/studio/midi/song-midi-file.test.ts"
+  "src/lib/studio/midi/song-midi-file.test.ts",
+  "src/lib/studio/midi/midi-file-clips.test.ts"
 ]
