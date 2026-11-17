@@ -136,9 +136,10 @@ function commandStep(
 ): NoteEditStep {
   const held = afterHold(revertPointerGesture(state), ctx)
   const idle = held.state
+  // A new tool reads what is under the mouse afresh, at its next move.
   if (command.type === 'tool')
     return {
-      state: { ...idle, tool: command.tool },
+      state: { ...idle, tool: command.tool, hover: null },
       effects: held.effects,
       handled: true,
     }

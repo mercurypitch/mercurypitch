@@ -628,7 +628,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
   }
 
   /** What a press `x` px across the ruler takes: the End handle's target, the playhead's head, or a seek. */
-  function rulerTarget(x: number, touch: boolean): RollRulerTarget {
+  function rulerTarget(x: number, finger: boolean): RollRulerTarget {
     const current = view()
     if (current === null) return 'end'
     const tick = playheadTick()
@@ -639,7 +639,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
           ? null
           : timeToX(shownWindow().endTick, current),
       playheadX: shown ? timeToX(tick, current) : null,
-      touch,
+      touch: finger,
     })
   }
 
