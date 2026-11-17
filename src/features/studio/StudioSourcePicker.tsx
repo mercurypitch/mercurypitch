@@ -224,7 +224,7 @@ export function StudioSourcePicker(props: StudioSourcePickerProps) {
       >
         <FileUpload />
         <span>
-          Choose file<small>WAV, MP3 and other supported audio</small>
+          Choose file<small>WAV, MP3 and other audio, or a MIDI file</small>
         </span>
       </button>
       <Show when={props.studio.sourceError() ?? previewError()}>
