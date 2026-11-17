@@ -10,8 +10,9 @@
 //   anything is heard, monitored and at full quality;
 // - plumbing: the monitor rendered offline against the lane's path built as
 //   playback builds one (graph-lanes.ts), at the monitor profile;
-// - live: the monitor on a running AudioContext against that render, and
-//   the lag that lines them up best;
+// - live: the monitor on a running AudioContext against that render, the
+//   lag that lines them up best, and the main thread's time to build a
+//   lane's path and to follow a change;
 // - lanes: lanes armed on one input through the recorder's own split and
 //   a monitor each (armed-input.ts), against each lane's path built by
 //   hand on the channel or pair it picks, summed: two lanes on two sides,
@@ -31,8 +32,7 @@
 //   that lane against its faders alone, and the steepest step while a voice
 //   lane heard live switches between the sides and back to playback;
 // - cost: render time per 128-frame quantum, dry and through lanes, through
-//   the song's master and through none, and the main thread's time to
-//   build a lane's path and to follow a change; and, in voice chains
+//   the song's master and through none; and, in voice chains
 //   (`voiceChains`), what a monitored lane costs effect by effect, its own
 //   nodes and the master's stage: the figures Auto's estimate counts
 //   (song-load.ts), with each role's whole lane to check their sum against.
