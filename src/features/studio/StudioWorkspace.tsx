@@ -628,6 +628,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             phone={phone()}
             tablet={tablet()}
             transport={transport}
+            seek={seek}
             dispatch={props.studio.dispatch}
             writable={writable()}
             history={{

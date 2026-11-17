@@ -53,6 +53,7 @@ export function StudioNoteEditorHost(props: StudioNoteEditorHostProps) {
                 phone={props.phone}
                 tablet={props.tablet}
                 transport={props.transport}
+                seek={props.seek}
                 dispatch={props.dispatch}
                 writable={props.writable}
                 history={props.history}

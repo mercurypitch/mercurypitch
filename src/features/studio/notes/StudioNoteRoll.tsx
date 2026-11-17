@@ -28,6 +28,12 @@
 // where the clip's End handle stands on the ruler (StudioNoteEnd.tsx,
 // roll-end.ts). A drag of it draws the window to the drafted end and the
 // view follows the handle; the editor keeps the end as one trim.
+//
+// The ruler moves the song's position as the lanes' does
+// (note-roll-ruler.ts): a click or a tap seeks, the playhead's head
+// scrubs, and so does a drag elsewhere along it. Each press goes to the
+// band it lands in (note-roll-bands.ts) and stays with it until let go;
+// the End handle keeps its own target over the ruler.
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { RollViewport } from '@/lib/roll-geometry'
 import { timeToX } from '@/lib/roll-geometry'
@@ -46,10 +52,14 @@ import { noteKitOpening, notePianoOpening, noteRollDrafts, noteRollDrawing, } fr
 import type { NoteSnap } from './edit-snap'
 import { noteSnapGrid } from './edit-snap'
 import { studioRollWords } from './note-editor-words'
+import { noteRollBandAt } from './note-roll-bands'
+import type { NoteRollOver } from './note-roll-cursor'
 import { noteRollCursor } from './note-roll-cursor'
 import type { StudioRollDraft, StudioRollInput, StudioRollLayout, StudioRollMeter, StudioRollTheme, } from './note-roll-draw'
 import { drawStudioRollBase, drawStudioRollOverlay, studioRollRegions, } from './note-roll-draw'
 import { createNoteRollPointers } from './note-roll-pointers'
+import type { RollRulerTarget } from './note-roll-ruler'
+import { createNoteRollRuler, rollRulerFrame, rollRulerTarget, } from './note-roll-ruler'
 import { readStudioRollTheme } from './note-roll-theme'
 import { studioRollRange } from './roll-end'
 import type { StudioRollMove } from './roll-navigation'
@@ -97,6 +107,8 @@ interface StudioNoteRollProps {
   editing?: StudioNoteRollEditing
   /** The clip's End handle on the ruler; absent, the end is only drawn. */
   end?: StudioNoteRollEnd
+  /** Move the song's position to frame `frame`, from the ruler (note-roll-ruler.ts); absent, the ruler only shows. */
+  seek?(frame: number): void
   controls?(controls: StudioNoteRollControls): void
 }
 
@@ -396,6 +408,31 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
   const restingTick = createMemo(() => tickOf(props.transport.playheadFrame()))
   // While the song plays: the tick heard this display frame.
   let liveTick: number | null = null
+  // The ruler moves the song's position, as the lanes' does.
+  const ruler = createNoteRollRuler({
+    playing: () => props.transport.playing(),
+    playheadFrame: () =>
+      props.transport.playing()
+        ? props.transport.frameNow()
+        : props.transport.playheadFrame(),
+    seek: (frame) => props.seek?.(frame),
+    frameAt: (event) => {
+      const current = view()
+      if (current === null || !overlay) return 0
+      const left = overlay.getBoundingClientRect().left + layout().keysWidth
+      return rollRulerFrame(
+        event.clientX - left,
+        current,
+        props.clip,
+        props.sequence,
+      )
+    },
+  })
+  /** The playhead as the roll draws it: where a scrub holds it, else as heard or as it rests. */
+  const playheadTick = () => {
+    const scrubbed = ruler.scrubFrame()
+    return scrubbed === null ? (liveTick ?? restingTick()) : tickOf(scrubbed)
+  }
 
   function drawBase(): void {
     const input = baseInput()
@@ -414,7 +451,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       ...(shown === null
         ? NO_MARKS
         : noteRollDrawing(shown, props.sequence.notes, regions().grid)),
-      playheadTick: liveTick ?? restingTick(),
+      playheadTick: playheadTick(),
     })
   }
 
@@ -440,6 +477,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     void baseInput()
     void editView()
     void restingTick()
+    void ruler.scrubFrame()
     queue('overlay')
   })
 
@@ -447,7 +485,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
   function follow(tick: number, before: number | null): void {
     const current = view()
     if (current === null || before === null) return
-    if (touch.active() || pointers.active()) return
+    if (touch.active() || pointers.active() || ruler.active()) return
     if (before > current.end || tick <= current.end) return
     const span = current.end - current.start
     setView(panStudioRoll(current, tick - span * 0.1 - current.start, range()))
@@ -566,14 +604,81 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     apply(move)
   }
 
+  // The pointers the ruler owns, from their press to their release.
+  const owners = new Set<number>()
+  // The band under a mouse or a pen that is not pressed, for its cursor.
+  const [over, setOver] = createSignal<NoteRollOver | null>(null)
+
+  /** Where a pointer is: the band of the canvas it is over, and its x across the grid. */
+  function placeOf(event: { clientX: number; clientY: number }) {
+    const box = overlay?.getBoundingClientRect()
+    const x = event.clientX - (box?.left ?? 0)
+    const y = event.clientY - (box?.top ?? 0)
+    const at = regions()
+    return { band: noteRollBandAt(at, x, y), x: x - at.grid.x }
+  }
+
+  /** What a press `x` px across the ruler takes: the End handle's target, the playhead's head, or a seek. */
+  function rulerTarget(x: number, touch: boolean): RollRulerTarget {
+    const current = view()
+    if (current === null) return 'end'
+    const tick = playheadTick()
+    const shown = tick >= current.start && tick <= current.end
+    return rollRulerTarget(x, {
+      endX:
+        props.end === undefined
+          ? null
+          : timeToX(shownWindow().endTick, current),
+      playheadX: shown ? timeToX(tick, current) : null,
+      touch,
+    })
+  }
+
+  /** A press on the ruler: the End handle's stays its own, the playhead's head scrubs, and any other seeks. */
+  function rulerPress(event: PointerEvent, x: number): boolean {
+    if (props.seek === undefined || event.button !== 0) return false
+    const target = rulerTarget(x, event.pointerType === 'touch')
+    if (target === 'end') return false
+    event.preventDefault()
+    ruler.press(event, target)
+    owners.add(event.pointerId)
+    overlay?.setPointerCapture(event.pointerId)
+    return true
+  }
+
   function press(event: PointerEvent): void {
+    // A second finger lets the ruler go, as over the lanes.
+    if (event.pointerType === 'touch' && ruler.active()) ruler.cancel()
+    const at = placeOf(event)
+    if (at.band === 'ruler' && rulerPress(event, at.x)) return
     if (pointers.down(event)) return
     if (!touch.down(event)) return
     event.preventDefault()
     overlay?.setPointerCapture(event.pointerId)
   }
 
+  function moveOver(event: PointerEvent): void {
+    if (owners.has(event.pointerId)) {
+      if (overlay?.hasPointerCapture(event.pointerId) === true)
+        ruler.move(event)
+      return
+    }
+    if (event.pointerType !== 'touch' && event.buttons === 0) {
+      const at = placeOf(event)
+      setOver({
+        band: at.band,
+        head: at.band === 'ruler' && rulerTarget(at.x, false) === 'playhead',
+      })
+    }
+    if (!pointers.move(event)) touch.move(event)
+  }
+
   function lift(event: PointerEvent, kind: 'up' | 'cancel'): void {
+    if (owners.delete(event.pointerId)) {
+      if (kind === 'up') ruler.release(event)
+      else ruler.cancel()
+      return
+    }
     if (!pointers.end(event, kind)) touch.up(event)
   }
 
@@ -605,18 +710,19 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       <canvas
         ref={overlay}
         class={styles.rollCanvas}
-        style={{ cursor: noteRollCursor(editView()?.cursor) }}
+        style={{ cursor: noteRollCursor(over(), editView()?.cursor) }}
         role="img"
         aria-label={words()}
         onWheel={wheel}
         onPointerDown={press}
-        onPointerMove={(event) => {
-          if (!pointers.move(event)) touch.move(event)
-        }}
+        onPointerMove={moveOver}
         onPointerUp={(event) => lift(event, 'up')}
         onPointerCancel={(event) => lift(event, 'cancel')}
         onLostPointerCapture={(event) => lift(event, 'cancel')}
-        onPointerLeave={(event) => pointers.leave(event)}
+        onPointerLeave={(event) => {
+          setOver(null)
+          pointers.leave(event)
+        }}
       />
       <Show when={props.end}>
         {(end) => (
