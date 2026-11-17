@@ -12,7 +12,7 @@
 // step long, and a drag paints a hit in every empty cell it crosses, all in
 // one commit. Up and Down move a hit to the next row; an octave means
 // nothing on a kit.
-import type { RollRect } from '@/lib/roll-geometry'
+import type { RollRect, RollViewport } from '@/lib/roll-geometry'
 import { noteRect, rowHeight, timeToX, xToTime } from '@/lib/roll-geometry'
 import type { StudioNoteDraft, StudioNoteEdit, StudioNoteSet, } from '@/lib/studio/midi/notes'
 import { addStudioNote, moveStudioNotes, studioNotesInRange, transposeStudioNotes, } from '@/lib/studio/midi/notes'
@@ -118,25 +118,31 @@ function distanceTo(rect: RollRect, x: number, y: number): number {
   return Math.hypot(dx, dy)
 }
 
+/** A hit's square and where a press takes it, short of the next hit on its row (kit-hit.ts). */
+function kitShapes(
+  note: StudioRollNote,
+  viewport: RollViewport,
+  starts: ReadonlyMap<number, readonly number[]>,
+): { readonly square: RollRect; readonly target: RollRect } {
+  const row = noteRect(note, viewport)
+  const next = kitNextStart(starts, note.midi, note.start)
+  const square = kitHitSquare(
+    row.x,
+    row.y,
+    row.height,
+    next === Infinity ? Infinity : timeToX(next, viewport),
+  )
+  return { square, target: kitHitTarget(square, row.y, row.height) }
+}
+
 /** How a hit ranks for a press, lower first: inside its target by how near its square's middle is, then within reach by how far out; past reach, never. */
 function hitRank(
   note: StudioRollNote,
   input: NotePickInput,
   starts: ReadonlyMap<number, readonly number[]>,
 ): number {
-  const row = noteRect(note, input.viewport)
-  const next = kitNextStart(starts, note.midi, note.start)
-  const square = kitHitSquare(
-    row.x,
-    row.y,
-    row.height,
-    next === Infinity ? Infinity : timeToX(next, input.viewport),
-  )
-  const outside = distanceTo(
-    kitHitTarget(square, row.y, row.height),
-    input.x,
-    input.y,
-  )
+  const { square, target } = kitShapes(note, input.viewport, starts)
+  const outside = distanceTo(target, input.x, input.y)
   if (outside > NOTE_POINTER_PROFILES[input.pointerType].reach) return Infinity
   if (outside > 0) return 1e6 + outside
   return Math.hypot(
@@ -159,6 +165,29 @@ export function pickKitHit(
     found = { id: note.id, zone: 'body' }
   }
   return found
+}
+
+/** A note the clip plays and where a press takes it on the roll, in the grid's pixels. */
+export interface NoteTarget {
+  readonly id: number
+  readonly rect: RollRect
+}
+
+/** Where a press takes each note the clip plays: a piano's note's row-tall box (noteRect), a kit's hit's target about its square. */
+export function editNoteTargets(
+  ctx: Pick<NoteEditContext, 'sequence' | 'window' | 'rows' | 'viewport'>,
+): NoteTarget[] {
+  const kit = kitRows(ctx)
+  if (kit === null)
+    return editRollNotes(ctx).map((note) => ({
+      id: note.id,
+      rect: noteRect(note, ctx.viewport),
+    }))
+  const { notes, starts } = kitNotes(ctx, kit)
+  return notes.map((note) => ({
+    id: note.id,
+    rect: kitShapes(note, ctx.viewport, starts).target,
+  }))
 }
 
 /** What a press takes on the roll: a note, its end or a grip on a piano, a hit on a kit. */

@@ -6,16 +6,17 @@
 // it before then. It opens on the clip the editor state names
 // (note-editor-state.ts), takes the focus, and gives it back to the clip
 // when it closes. Done closes it; Escape clears the selection, then closes
-// it; =, - and Z zoom the roll as they zoom the lanes, and B switches
-// between Select and Draw. The drawer's top edge drags to another height,
-// kept on this device, and Expand fills the arrangement. The header names
-// the lane and the clip and holds the editing tools (StudioNoteTools.tsx);
-// the roll (StudioNoteRoll.tsx) draws the notes, and edits a piano's
-// through the engine (useStudioNoteEditing.ts). A note the editor touches
-// sounds through the lane's instrument (note-audition.ts); a gesture's draft
-// goes to the render service (midi/midi-render-editor.ts), so the clip
-// plays as the gesture would leave it, and the header says while the
-// clip's render runs and when it failed.
+// it; =, - and Z zoom the roll as they zoom the lanes, B switches between
+// Select and Draw, and D between Select and Erase. The drawer's top edge
+// drags to another height, kept on this device, and Expand fills the
+// arrangement. The header names the lane and the clip and holds the
+// editing tools (StudioNoteTools.tsx); the roll (StudioNoteRoll.tsx)
+// draws the notes, and edits a piano's through the engine
+// (useStudioNoteEditing.ts). A note the editor touches sounds through the
+// lane's instrument (note-audition.ts); a gesture's draft goes to the
+// render service (midi/midi-render-editor.ts), so the clip plays as the
+// gesture would leave it, and the header says while the clip's render
+// runs and when it failed.
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import { Maximize2, Minimize2, RotateCcw } from '@/components/icons'
 import { isTypingTarget } from '@/lib/space-playback'
@@ -32,6 +33,7 @@ import common from '../StudioPage.module.css'
 import { studioClipTakeName } from '../timeline/clip-take-name'
 import { studioTrimTail } from '../timeline/gesture-draft'
 import { studioTrackColor, studioTrackHue } from '../timeline/track-hues'
+import type { NoteEditTool } from './edit-types'
 import type { StudioNoteAuditionClock } from './note-audition'
 import { createStudioNoteAudition } from './note-audition'
 import type { StudioNoteEditorState } from './note-editor-state'
@@ -78,6 +80,11 @@ const LANES_LEFT = 36 + 64
 const RESIZE_STEP = 16
 /** How long a word from the editor stays in its status line. */
 const NOTICE_MS = 5000
+/** The keys that switch a tool on and back to Select: B for Draw, as before, and D for Erase, as FL Studio's piano roll pairs them. */
+const TOOL_KEYS: ReadonlyMap<string, NoteEditTool> = new Map([
+  ['b', 'draw'],
+  ['d', 'erase'],
+])
 /** Said when the clip's render fails: it plays its earlier audio. */
 export const NOTE_RENDER_FAILED =
   "Studio couldn't render the new notes. The clip plays its earlier audio."
@@ -223,11 +230,12 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
   const thumbNotes = () => (props.phone ? sequence() : undefined)
   const kit = () => sound() === 'drums'
 
-  /** B switches between Select and Draw. */
+  /** B switches between Select and Draw, D between Select and Erase. */
   function toolKey(event: KeyboardEvent): boolean {
-    if (event.key.toLowerCase() !== 'b' || event.repeat) return false
+    const tool = TOOL_KEYS.get(event.key.toLowerCase())
+    if (tool === undefined || event.repeat) return false
     if (event.ctrlKey || event.metaKey || event.altKey) return false
-    editor.setTool(editor.tool() === 'draw' ? 'select' : 'draw')
+    editor.setTool(editor.tool() === tool ? 'select' : tool)
     return true
   }
 
@@ -402,6 +410,7 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
                   notes={shown().notes}
                   writable={props.writable}
                   compact={props.phone}
+                  touch={props.phone || props.tablet}
                 />
                 <Show when={!props.phone}>
                   <StudioNoteSelectionTools

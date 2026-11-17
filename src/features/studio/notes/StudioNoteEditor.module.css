@@ -50,6 +50,7 @@
   --roll-playhead-glow: var(--studio-accent-soft);
   --roll-velocity: var(--studio-bar);
   --roll-muted: var(--studio-muted);
+  --roll-erase: var(--studio-danger);
   position: relative;
   z-index: 9;
   display: flex;

@@ -40,6 +40,7 @@ const TOKENS: Readonly<Record<Exclude<keyof StudioRollTheme, 'font'>, string>> =
     playheadGlow: '--roll-playhead-glow',
     velocity: '--roll-velocity',
     muted: '--roll-muted',
+    erase: '--roll-erase',
   }
 
 /** The roll's theme as the element `host` sees it, through a probe placed inside it for the read. */

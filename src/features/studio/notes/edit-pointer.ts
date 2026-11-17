@@ -15,11 +15,16 @@
 // another pitch sounds there, no sooner than NOTE_AUDITION_GAP_MS after the
 // last sound, and the pitch it lands on sounds when it is let go if the
 // last sound was another. A velocity dragged sounds its note when let go.
+// A sweep that erases sounds nothing (edit-erase.ts).
+//
+// A mouse's or a pen's secondary button erases in any tool: it owns its
+// gesture as the primary does, and its release keeps the sweep.
 import type { RollViewport } from '@/lib/roll-geometry'
 import { deleteStudioNotes } from '@/lib/studio/midi/notes'
 import { noteById, noteEditCommit, playedNotes } from './edit-changes'
 import type { NoteDragPoint } from './edit-drag'
 import { draftNoteDrag } from './edit-drag'
+import { eraseHover, secondaryPress } from './edit-erase'
 import { editTopRow, pickEditNote } from './edit-kit'
 import { NOTE_POINTER_PROFILES } from './edit-pick'
 import { panNoteGesture, pressNoteGesture } from './edit-press'
@@ -167,12 +172,14 @@ function lostRelease(owner: NoteGesture, pointer: NoteEditPointer): boolean {
   )
 }
 
+/** A press of the primary button, or of a mouse's or a pen's secondary, which erases; no other button starts anything. */
 function primaryPress(
   state: NoteEditState,
   ctx: NoteEditContext,
   pointer: NoteEditPointer,
 ): NoteEditStep {
-  if ((pointer.button ?? 0) !== 0) return quietStep(state)
+  if ((pointer.button ?? 0) !== 0 && !secondaryPress(pointer))
+    return quietStep(state)
   const owner = state.gesture
   if (owner !== null && !lostRelease(owner, pointer)) return quietStep(state)
   return press(revertNoteGesture(state), ctx, pointer)
@@ -330,7 +337,10 @@ function hoverAt(
     y: pointer.y,
     pointerType: pointer.pointerType,
   }
-  if (pointer.surface === 'roll') return pickEditNote(ctx, input)
+  if (pointer.surface === 'roll')
+    return state.tool === 'erase'
+      ? eraseHover(ctx, pointer)
+      : pickEditNote(ctx, input)
   const id = pickLollipop({
     ...input,
     notes: playedNotes(ctx.sequence, ctx.window),
@@ -518,7 +528,14 @@ export function notePointerCancel(
 }
 
 /** The drags a frame scrolls at an edge; a resize or a drawn note runs along time alone. */
-const EDGE_DRAGS = new Set(['move', 'resize', 'draw', 'paint', 'marquee'])
+const EDGE_DRAGS = new Set([
+  'move',
+  'resize',
+  'draw',
+  'paint',
+  'marquee',
+  'erase',
+])
 const ALONG_TIME = new Set(['resize', 'draw'])
 
 /** Whether a drag is under way that a frame scrolls at an edge: the host sends frames while this holds. */

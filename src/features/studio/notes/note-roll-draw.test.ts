@@ -1,4 +1,4 @@
-// Studio note roll drawing tests — each note in view is drawn where it sounds, as strong as it was played, named where it fits, and dimmed when it starts outside the clip's window; notes out of view cost nothing; a selected note gets a ring, and the editor's grips a bar each; a draft is drawn over the stored note it stands in for, which fades to a ghost; the marquee, the hover, a velocity's readout and the playhead are drawn on the overlay only; each note's velocity stands in its lane; rows sitting on fractions of a semitone draw every row they show part of; the keys name each C, a kit's rows their General MIDI names cut to fit, and its hits squares at their starts; the ruler names the song's bars; and the grid leaves out lines too close to read.
+// Studio note roll drawing tests — each note in view is drawn where it sounds, as strong as it was played, named where it fits, and dimmed when it starts outside the clip's window; notes out of view cost nothing; a selected note gets a ring, and the editor's grips a bar each; a draft is drawn over the stored note it stands in for, which fades to a ghost; a note a sweep is taking away is a ghost ringed and struck in the erase colour, its lollipop faded, and the note under the eraser ringed in it; the marquee, the hover, a velocity's readout and the playhead are drawn on the overlay only; each note's velocity stands in its lane; rows sitting on fractions of a semitone draw every row they show part of; the keys name each C, a kit's rows their General MIDI names cut to fit, and its hits squares at their starts; the ruler names the song's bars; and the grid leaves out lines too close to read.
 import { describe, expect, it } from 'vitest'
 import type { StudioRollRows } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioNote } from '@/lib/studio/model/types'
@@ -38,6 +38,7 @@ const THEME = Object.fromEntries(
     'playheadGlow',
     'velocity',
     'muted',
+    'erase',
     'font',
   ].map((key) => [key, key]),
 ) as unknown as StudioRollTheme
@@ -253,6 +254,78 @@ describe('a gesture’s drafts', () => {
           paint.shapes[0].x === 360 + 3,
       ),
     ).toBe(true)
+  })
+})
+
+describe('a sweep’s notes', () => {
+  it('draws a note being taken away as a ghost of its glass, ringed and struck through in the erase colour, never selected or glowing', () => {
+    // Arrange
+    const { context, paints } = recordingRollContext()
+
+    // Act: note 1, at x 264.5, selected and swept.
+    drawStudioRollBase(
+      context,
+      input({ erasing: new Set([1]), selected: new Set([1]) }),
+    )
+
+    // Assert: no glass, but a ghost of it.
+    const body = paints.find(
+      (paint) =>
+        paint.op === 'fill' &&
+        paint.style === 'note' &&
+        paint.shapes.some((shape) => Math.abs(shape.x - 264.5) < 0.01),
+    )!
+    expect(body.alpha).toBeCloseTo(0.2, 6)
+    expect(bodyAt(paints, 264.5)).toBeUndefined()
+    expect(
+      paints.some(
+        (paint) =>
+          paint.op === 'stroke' &&
+          paint.style === 'erase' &&
+          paint.lineWidth === 1.5,
+      ),
+    ).toBe(true)
+    const strike = paints.find(
+      (paint) =>
+        paint.op === 'fillRect' &&
+        paint.style === 'erase' &&
+        paint.shapes[0].height === 1.5,
+    )!
+    expect(strike.shapes[0].x).toBeCloseTo(264.5 + 3, 6)
+    expect(
+      paints.some(
+        (paint) => paint.op === 'stroke' && paint.style === 'selection',
+      ),
+    ).toBe(false)
+    const glow = paints.find((paint) => paint.style === 'noteGlow')!
+    expect(glow.shapes.some((shape) => Math.abs(shape.x - 264.5) < 0.01)).toBe(
+      false,
+    )
+  })
+
+  it('fades a swept note’s lollipop in the erase colour', () => {
+    const { context, paints } = recordingRollContext()
+
+    drawStudioRollBase(context, input({ erasing: new Set([1]) }))
+
+    // Note 1's stick stands at x 267.
+    const stick = paints.find(
+      (paint) =>
+        paint.op === 'fillRect' &&
+        paint.style === 'erase' &&
+        paint.shapes[0].x === 267,
+    )!
+    expect(stick.alpha).toBeCloseTo(0.45, 6)
+  })
+
+  it('rings the note under the eraser in the erase colour, with no grip', () => {
+    const { context, paints } = recordingRollContext()
+
+    drawStudioRollOverlay(context, input({ hover: { id: 2, zone: 'erase' } }))
+
+    const outline = paints.find((paint) => paint.op === 'stroke')!
+    expect(outline).toMatchObject({ style: 'erase', lineWidth: 2 })
+    expect(paints.some((paint) => paint.op === 'fillRect')).toBe(false)
   })
 })
 

@@ -13,7 +13,8 @@
 //   its canvas's, the keys' column to the left and the ruler above, so its
 //   marquee and grips move by those bands here. A draft is a note the
 //   gesture changes or adds; the roll draws it over a ghost of its stored
-//   note.
+//   note. A note a sweep is taking away is no draft: the roll draws its
+//   stored note going (`erasing`).
 // - A commit becomes one `set-sequence-notes`, with an id for the clip's
 //   own copy of a shared sequence: one undo step.
 // - A draft goes to the render service as it changes (sameNoteDraft), so
@@ -172,7 +173,7 @@ export function noteRollDrafts(
 /** What the engine's view adds to a roll's draw, in the canvas's pixels. */
 export type NoteRollDrawing = Pick<
   StudioRollInput,
-  'selected' | 'drafts' | 'marquee' | 'grips' | 'hover' | 'readout'
+  'selected' | 'erasing' | 'drafts' | 'marquee' | 'grips' | 'hover' | 'readout'
 >
 
 export function noteRollDrawing(
@@ -182,6 +183,7 @@ export function noteRollDrawing(
 ): NoteRollDrawing {
   return {
     selected: new Set(view.selection),
+    erasing: new Set(view.erasing),
     drafts: noteRollDrafts(view, stored),
     marquee: view.marquee === null ? null : onCanvas(view.marquee, grid),
     grips: view.grips.map((grip) => onCanvas(grip, grid)),

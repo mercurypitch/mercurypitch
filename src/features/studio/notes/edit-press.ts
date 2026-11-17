@@ -13,12 +13,17 @@
 // grid step long appears under it at once, and a drag sets its length.
 // Elsewhere a mouse draws a marquee and a finger pans, and a tap clears the
 // selection. A press in the velocity lane takes a lollipop or nothing.
+//
+// A press on the grid in Erase, or with a mouse's or a pen's secondary
+// button in any tool, starts a sweep instead (edit-erase.ts); the
+// secondary button in the velocity lane starts nothing.
 import type { RollViewport } from '@/lib/roll-geometry'
 import { xToTime } from '@/lib/roll-geometry'
 import type { StudioNoteDraft } from '@/lib/studio/midi/notes'
 import { addStudioNote } from '@/lib/studio/midi/notes'
 import { studioRollPitchAt } from '@/lib/studio/midi/roll-rows'
 import { inNoteWindow, noteById, playedNotes } from './edit-changes'
+import { eraseFirstDraft, pressErases, secondaryPress } from './edit-erase'
 import { editKeyAt, onKit, pickEditNote } from './edit-kit'
 import { noteSnapGrid, noteStepGrid, snapFloor } from './edit-snap'
 import type { NoteAnchor, NoteDraft, NoteDragIntent, NoteEditContext, NoteEditPointer, NoteEditState, NoteSingleGesture, NoteTapIntent, NoteTouch, } from './edit-types'
@@ -266,13 +271,38 @@ function drawPress(
   }
 }
 
-/** What a primary press starts. */
+/** A sweep from a press on the grid: the note under it gone at once, the rest of its path's as it travels (edit-erase.ts). */
+function erasePress(
+  state: NotePressState,
+  ctx: NoteEditContext,
+  anchor: NoteAnchor,
+  pointer: NoteEditPointer,
+): NoteSingleGesture {
+  return pressed(state, ctx, anchor, pointer, {
+    intent: { kind: 'erase' },
+    tap: { kind: 'erase' },
+    draft: eraseFirstDraft(ctx, state.selection, anchor),
+  })
+}
+
+/** What a press starts: a sweep with the secondary button or in Erase, else what the tool does with the primary. */
 export function pressNoteGesture(
   state: NotePressState,
   ctx: NoteEditContext,
   pointer: NoteEditPointer,
 ): NotePress {
   const anchor = noteAnchor(pointer, ctx.viewport)
+  if (pressErases(state.tool, pointer))
+    return {
+      gesture: erasePress(state, ctx, anchor, pointer),
+      notice: null,
+    }
+  // The secondary button erases notes, and takes no lollipop.
+  if (secondaryPress(pointer))
+    return {
+      gesture: emptyPress(state, ctx, anchor, pointer, 'none'),
+      notice: null,
+    }
   const target =
     pointer.surface === 'velocity'
       ? laneTarget(state, ctx, pointer)

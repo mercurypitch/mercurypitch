@@ -63,7 +63,7 @@
   }
 }
 
-/* Select and Draw: one control, the chosen tool raised. */
+/* Select, Draw and Erase: one control, the chosen tool raised. */
 .segment {
   display: inline-flex;
   gap: 2px;
@@ -147,6 +147,12 @@
   font-weight: 650;
   font-variant-numeric: tabular-nums;
   text-align: center;
+}
+
+/* A touch screen: the tools a finger's 44 px tall, a tablet's too. */
+.touch .segment .button {
+  min-width: 44px;
+  min-height: 44px;
 }
 
 /* A phone: icons alone, and every target a finger's 44 px. */

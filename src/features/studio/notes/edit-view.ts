@@ -8,7 +8,9 @@
 // noteGripRect): a 3 px bar inside the right end of a note at least 24 px
 // wide, else just beside it, half the note's height and 6 px at the least,
 // drawn over the note in the note text colour. The readout is the pressed
-// note's velocity, 1 to 127, for the lane to show beside its lollipop.
+// note's velocity, 1 to 127, for the lane to show beside its lollipop. A
+// sweep's notes are left out of `notes` and named in `erasing`, so the roll
+// can draw them going while the sweep lasts.
 import type { RollRect, RollViewport } from '@/lib/roll-geometry'
 import { noteRect, timeToX } from '@/lib/roll-geometry'
 import type { StudioNoteSet } from '@/lib/studio/midi/notes'
@@ -20,6 +22,7 @@ import { noteGripRect } from './edit-pick'
 import { singleGesture } from './edit-pointer'
 import type { NoteDragIntent, NoteEditContext, NoteEditHover, NoteEditState, NoteMarquee, NoteSingleGesture, NoteVelocityReadout, } from './edit-types'
 
+/** A CSS cursor, or the eraser, which the roll draws as a cursor of its own (note-roll-cursor.ts). */
 export type NoteEditCursor =
   | 'default'
   | 'grab'
@@ -27,12 +30,15 @@ export type NoteEditCursor =
   | 'ew-resize'
   | 'ns-resize'
   | 'crosshair'
+  | 'erase'
 
 export interface NoteEditView {
   /** The notes to draw: a gesture's draft while it changes any, else the sequence's. */
   readonly notes: readonly StudioNote[]
   /** Whether `notes` is a gesture's draft. */
   readonly drafting: boolean
+  /** The stored notes a sweep is taking away, which the roll draws going (edit-erase.ts). */
+  readonly erasing: readonly number[]
   readonly selection: readonly number[]
   /** A grip for each selected note the clip plays, in the roll's pixels. */
   readonly grips: readonly RollRect[]
@@ -42,6 +48,8 @@ export interface NoteEditView {
   readonly cursor: NoteEditCursor
 }
 
+const NO_IDS: readonly number[] = []
+
 const DRAG_CURSORS: Readonly<Record<NoteDragIntent['kind'], NoteEditCursor>> = {
   move: 'grabbing',
   resize: 'ew-resize',
@@ -49,6 +57,7 @@ const DRAG_CURSORS: Readonly<Record<NoteDragIntent['kind'], NoteEditCursor>> = {
   draw: 'crosshair',
   paint: 'crosshair',
   marquee: 'crosshair',
+  erase: 'erase',
   pan: 'grabbing',
   none: 'default',
 }
@@ -57,6 +66,14 @@ const HOVER_CURSORS: Readonly<Record<NoteEditHover['zone'], NoteEditCursor>> = {
   body: 'grab',
   end: 'ew-resize',
   velocity: 'ns-resize',
+  erase: 'erase',
+}
+
+/** The cursor over empty grid, by tool. */
+const TOOL_CURSORS: Readonly<Record<NoteEditState['tool'], NoteEditCursor>> = {
+  select: 'default',
+  draw: 'crosshair',
+  erase: 'erase',
 }
 
 function marqueeRect(marquee: NoteMarquee, viewport: RollViewport): RollRect {
@@ -93,7 +110,7 @@ function cursorOf(
 ): NoteEditCursor {
   if (gesture !== null) return DRAG_CURSORS[gesture.intent.kind]
   if (state.hover !== null) return HOVER_CURSORS[state.hover.zone]
-  return state.tool === 'draw' ? 'crosshair' : 'default'
+  return TOOL_CURSORS[state.tool]
 }
 
 /** The notes a gesture drafts, as its release would keep them; null while none is drafted. */
@@ -114,6 +131,7 @@ export function noteEditView(
   return {
     notes,
     drafting: draft?.sequence != null,
+    erasing: draft?.erasure?.ids ?? NO_IDS,
     selection,
     grips: grips(notes, selection, ctx),
     marquee:
