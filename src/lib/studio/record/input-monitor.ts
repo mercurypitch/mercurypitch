@@ -57,7 +57,11 @@
 // monitor heard settle: a lane that joins it while it flows (a second lane,
 // a re-arm inside the release, another channel of it) rises at once too,
 // and the monitor says when its input has settled (`onSettled`) so the
-// source knows it flows (armed-input.ts).
+// source knows it flows (armed-input.ts). A lane that joined the source in
+// its first moments waits no settle of its own either: the moment any
+// monitor on the source hears it settle, every lane still waiting on it
+// rises (`inputSettled`), from silence on the house envelope. A source
+// opened afresh keeps its settle.
 import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
@@ -160,15 +164,16 @@ export function createStudioInputMonitor(
   let stopSettling: (() => void) | null = null
   const stopWaiting = settled
     ? () => undefined
-    : schedule(settle, ARRIVAL_WAIT_MS)
+    : schedule(() => settle(true), ARRIVAL_WAIT_MS)
 
-  function settle(): void {
+  /** The input has settled: a heard path rises now. `tell` says so to the source, when this monitor heard it settle. */
+  function settle(tell: boolean): void {
     if (settled) return
     settled = true
     stopWaiting()
     stopSettling?.()
     stopSettling = null
-    options.onSettled?.()
+    if (tell) options.onSettled?.()
     if (path !== null && cancelRemoval === null) rise(path)
   }
 
@@ -289,7 +294,15 @@ export function createStudioInputMonitor(
     inputArrived(): void {
       if (closed || settled || stopSettling !== null) return
       stopWaiting()
-      stopSettling = schedule(settle, SETTLE_MS)
+      stopSettling = schedule(() => settle(true), SETTLE_MS)
+    },
+    /**
+     * The input's source settled under another lane's monitor while this
+     * one still waited: a heard path rises now, from silence on the house
+     * envelope, and the wait and the settle are over.
+     */
+    inputSettled(): void {
+      if (!closed) settle(false)
     },
     /**
      * Release the path for good. `whenSilent` runs once it has come apart

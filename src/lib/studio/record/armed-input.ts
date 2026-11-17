@@ -24,7 +24,9 @@
 // and its buffer runs dry once or twice. Once a lane's monitor has heard it
 // settle, the source is flowing, and a lane that joins it after (a second
 // lane, a re-arm inside the release, another channel of it) is heard at once
-// (`flowing`). An instrument the page plays flows from its first note.
+// (`flowing`). A lane that joined it before then is raised the moment it
+// settles (`whenFlowing`), not a settle of its own later. An instrument the
+// page plays flows from its first note.
 import type { StudioInputChannels, StudioInputTap } from './lane-channel'
 import { openStudioInputChannels, studioInputTap } from './lane-channel'
 import type { StudioInputHold, StudioInputOpened, StudioInstrumentHold, StudioMicHold, } from './recorder-types'
@@ -38,8 +40,10 @@ export interface StudioArmedInput {
   readonly opened: StudioInputOpened | null
   /** It plays cleanly from the arm on: an instrument, or a microphone source a lane's monitor heard settle before this lane joined it. */
   readonly flowing: boolean
-  /** This lane's monitor heard the source settle: lanes that join it from now on are heard at once. */
+  /** This lane's monitor heard the source settle: lanes that join it from now on are heard at once, and those waiting on it rise now. */
   settled(): void
+  /** Call `raise` once a lane's monitor hears the source settle, when this lane joined it before then; never for an instrument, or a source already flowing. */
+  whenFlowing(raise: () => void): void
   /** Still there to record from. */
   live(): boolean
   /** Let what plays it go at once, its sound left to ring out: an instrument's port, free for the next lane; nothing for a microphone. */
@@ -65,6 +69,8 @@ interface SharedMicrophone {
   lanes: number
   /** Past its first moments: a lane's monitor heard it settle. */
   flowing: boolean
+  /** The lanes on it still waiting for it to settle, each raised once it does. */
+  readonly waiting: Set<() => void>
 }
 
 /** A microphone's stream is still there to record from: its track is live, or it names none. */
@@ -105,6 +111,7 @@ export function createStudioArmedInputs(
       tap: () => studioInputTap({ context, source, stream, lane: channels }),
       lanes: 0,
       flowing: false,
+      waiting: new Set(),
     }
     microphones.set(stream, made)
     return made
@@ -132,6 +139,7 @@ export function createStudioArmedInputs(
     shared.lanes += 1
     const lane = shared.channels.take(mic.pick ?? null)
     let closed = false
+    let raise: (() => void) | null = null
     return {
       node: lane.input,
       stream,
@@ -143,13 +151,24 @@ export function createStudioArmedInputs(
       },
       flowing: shared.flowing,
       settled: () => {
+        if (shared.flowing) return
         shared.flowing = true
+        const waiting = [...shared.waiting]
+        shared.waiting.clear()
+        for (const raised of waiting) raised()
+      },
+      whenFlowing: (callback) => {
+        if (closed || shared.flowing) return
+        if (raise !== null) shared.waiting.delete(raise)
+        raise = callback
+        shared.waiting.add(callback)
       },
       live: () => studioMicrophoneLive(stream),
       letGo: () => undefined,
       close: () => {
         if (closed) return
         closed = true
+        if (raise !== null) shared.waiting.delete(raise)
         shared.lanes -= 1
         if (shared.lanes > 0) shared.channels.drop(lane.input)
         else {
@@ -172,6 +191,7 @@ export function createStudioArmedInputs(
         opened: null,
         flowing: true,
         settled: () => undefined,
+        whenFlowing: () => undefined,
         live: () => hold.connected(),
         letGo: () => hold.letGo(),
         close: () => hold.release(),

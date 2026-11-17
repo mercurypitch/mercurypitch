@@ -1,4 +1,4 @@
-// Studio recorder, each lane's monitor — every armed lane hears its own input through a monitor of its own, through the lane's chain: one channel of an input alone and never the whole input beside it, lanes armed on one input each once, a lane on a whole input once, and a MIDI lane its instrument's node alone; a lane's monitor rises a quarter of a second after its own capture first meters a sound, an instrument's at once; a lane disarmed while it is heard keeps its input until its monitor has glided out, and that late close ends only its own pick and hold, while one disarmed before its monitor rose lets its input go at once; an instrument's port goes at once, and its sound after the glide.
+// Studio recorder, each lane's monitor — every armed lane hears its own input through a monitor of its own, through the lane's chain: one channel of an input alone and never the whole input beside it, lanes armed on one input each once, a lane on a whole input once, and a MIDI lane its instrument's node alone; a lane's monitor rises a quarter of a second after its own capture first meters a sound, or the moment another lane's monitor on its input hears that input settle, and an instrument's at once; a lane disarmed while it is heard keeps its input until its monitor has glided out, and that late close ends only its own pick and hold, while one disarmed before its monitor rose lets its input go at once; an instrument's port goes at once, and its sound after the glide.
 import type { Mock } from 'vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ChannelPick } from '@/lib/audio-input/input-channels'
@@ -71,6 +71,10 @@ const levelsOf = (graph: FakeAudioContext) =>
   graph
     .ofType<FakeNode>('merger')
     .flatMap((merger) => merger.targets as FakeGain[])
+
+/** How many times `level` was sent toward a level: each rise or release is one. */
+const rises = (level: FakeGain) =>
+  level.gain.events.filter(({ kind }) => kind === 'target').length
 
 /** Whether `node` was taken apart whole, as an input's last lane leaves it. */
 const disconnectedWhole = (node: FakeGraphNode) =>
@@ -261,7 +265,7 @@ describe("a lane's monitor rising", () => {
     expect(scheduler.pendingCount).toBe(0)
   })
 
-  it('waits out its own settle when it joins an input still in its first moments', async () => {
+  it('rises a lane that joined an input in its first moments as the input settles, not a settle of its own later', async () => {
     // Arrange
     const input = oneInput(2, {
       'lane-1': { channel: 0, pair: false },
@@ -275,12 +279,71 @@ describe("a lane's monitor rising", () => {
     // Act
     await h.recorder.arm('lane-2')
     h.worklet.level(0.3, 6336)
+    const [first, joined] = levelsOf(graph)
+    const beforeTheSettle = joined.gain.lastWrite
+    scheduler.advance(SETTLE_MS - 100)
 
     // Assert
-    const [first, joined] = levelsOf(graph)
-    expect(joined.gain.lastWrite).toBeUndefined()
-    scheduler.advance(SETTLE_MS - 100)
+    expect(beforeTheSettle).toBeUndefined()
     expect(first.gain.lastWrite).toMatchObject({ kind: 'target', value: 1 })
+    expect(joined.gain.lastWrite).toMatchObject({
+      kind: 'target',
+      value: 1,
+      timeConstant: 0.036,
+    })
+    expect(rises(joined)).toBe(1)
+    expect(scheduler.pendingCount).toBe(0)
+  })
+
+  it('raises every lane waiting on the input at once as it settles, each once', async () => {
+    // Arrange
+    const input = oneInput(2, {
+      'lane-1': { channel: 0, pair: false },
+      'lane-2': { channel: 1, pair: false },
+      'lane-3': { channel: 1, pair: false },
+    })
+    const { h, graph, scheduler } = monitored({ acquireMic: input.acquireMic })
+    await h.recorder.arm('lane-1')
+    h.worklet.level(0.3, 1536)
+    scheduler.advance(50)
+    await h.recorder.arm('lane-2')
+    h.worklet.level(0.3, 3936)
+    scheduler.advance(50)
+    await h.recorder.arm('lane-3')
+    h.worklet.level(0.3, 6336)
+
+    // Act
+    scheduler.advance(SETTLE_MS - 100)
+
+    // Assert
+    const levels = levelsOf(graph)
+    expect(levels).toHaveLength(3)
+    for (const level of levels) {
+      expect(level.gain.lastWrite).toMatchObject({ kind: 'target', value: 1 })
+      expect(rises(level)).toBe(1)
+    }
+    expect(scheduler.pendingCount).toBe(0)
+  })
+
+  it('waits out its own settle when the lane it joined leaves before the input settled', async () => {
+    // Arrange
+    const input = oneInput(2, {
+      'lane-1': { channel: 0, pair: false },
+      'lane-2': { channel: 1, pair: false },
+    })
+    const { h, graph, scheduler } = monitored({ acquireMic: input.acquireMic })
+    await h.recorder.arm('lane-1')
+    h.worklet.level(0.3, 1536)
+    scheduler.advance(100)
+    await h.recorder.arm('lane-2')
+    h.worklet.level(0.3, 6336)
+
+    // Act
+    h.recorder.disarm('lane-1')
+    scheduler.advance(SETTLE_MS - 100)
+
+    // Assert
+    const [joined] = levelsOf(graph)
     expect(joined.gain.lastWrite).toBeUndefined()
     scheduler.advance(100)
     expect(joined.gain.lastWrite).toMatchObject({ kind: 'target', value: 1 })

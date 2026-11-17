@@ -1,4 +1,4 @@
-// Studio input monitor — off builds nothing; on plays the input folded as the take is, spread, through its lane's chain at the monitor profile and its faders, then the master and only through it, on one path however often it is set, rising a quarter of a second after the input's first sound, after a second without one, or at once on an input that plays cleanly from its first sample; a lane not heard, and dispose, take the graph apart after the release, the master with it, and at once a path that never began to rise; a lane heard again while it releases plays on through the same path; and dispose says when its input may close: at once with nothing heard, once the path has come apart otherwise.
+// Studio input monitor — off builds nothing; on plays the input folded as the take is, spread, through its lane's chain at the monitor profile and its faders, then the master and only through it, on one path however often it is set, rising a quarter of a second after the input's first sound, after a second without one, at once as its source settles under another lane, or at once on an input that plays cleanly from its first sample; a lane not heard, and dispose, take the graph apart after the release, the master with it, and at once a path that never began to rise; a lane heard again while it releases plays on through the same path; and dispose says when its input may close: at once with nothing heard, once the path has come apart otherwise.
 import { describe, expect, it, vi } from 'vitest'
 import { EMPTY_CHAIN, normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { FakeGain } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
@@ -66,6 +66,10 @@ function levels(ctx: FakeAudioContext): FakeGain[] {
     .ofType<FakeNode>('merger')
     .flatMap((merger) => merger.targets as FakeGain[])
 }
+
+/** How many times `level` was sent toward a level: each rise or release is one. */
+const rises = (level: FakeGain) =>
+  level.gain.events.filter(({ kind }) => kind === 'target').length
 
 /** What feeds the speakers. */
 function feedingDestination(ctx: FakeAudioContext): FakeNode[] {
@@ -333,6 +337,39 @@ describe("the input monitor before its input's first sound", () => {
       kind: 'target',
       value: 1,
     })
+  })
+
+  it('rises at once from silence on the house time constant when its source settles under another lane, its own settle over', () => {
+    const { ctx, scheduler, monitor } = setup({ arrived: false })
+    monitor.set(sound())
+    const [level] = levels(ctx)
+    monitor.inputArrived()
+    scheduler.advance(100)
+
+    monitor.inputSettled()
+
+    expect(rises(level)).toBe(1)
+    expect(level.gain.lastWrite).toMatchObject({
+      kind: 'target',
+      value: 1,
+      timeConstant: 0.036,
+    })
+    expect(scheduler.pendingCount).toBe(0)
+    scheduler.advance(ARRIVAL_WAIT_MS)
+    expect(rises(level)).toBe(1)
+  })
+
+  it('stays silent when its source settles after it was disposed', () => {
+    const { ctx, scheduler, monitor } = setup({ arrived: false })
+    monitor.set(sound())
+    const [level] = levels(ctx)
+    monitor.inputArrived()
+    monitor.dispose()
+
+    monitor.inputSettled()
+    scheduler.advance(ARRIVAL_WAIT_MS)
+
+    expect(level.gain.events).toEqual([])
   })
 
   it('rises at once on an input that plays cleanly from its first sample, an instrument, and waits for nothing', () => {
