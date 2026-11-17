@@ -8,17 +8,19 @@
 // catalogue's, and they load with the web's way in (web-room-list.ts),
 // which a native build folds away (`WEB_ROOMS`, src/lib/native-build.ts).
 //
-// Not on the web yet: First note, whose songs are the native Karaoke's, and
-// the Warm-up, which opens the other rooms as its stops.
+// The Warm-up is one of them: a path whose stops are four of the others,
+// each opened over it in the same frame (WebRoomHost.tsx). Not on the web
+// yet: First note, whose songs are the native Karaoke's.
 
 import type { ExerciseType, PremiumExerciseId, } from '@/lib/domain/exercise-contracts'
-import { EXERCISE_ECHO_STARS, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
 
-/** The rooms the web opens, in the order its tab lists them. Each is an
- *  exercise the tab can hold as its selected one. */
+/** The rooms the web opens, in the order its tab lists them, which is the
+ *  catalogue's. Each is an exercise the tab can hold as its selected one. */
 export const WEB_ROOM_IDS = [
   EXERCISE_LONG_NOTE_LANTERN,
   EXERCISE_ECHO_STARS,
+  EXERCISE_WARM_UP_PATH,
   EXERCISE_LIP_ROLL_BAY,
   EXERCISE_NG_SLIDES_BRIDGE,
   EXERCISE_HOME_NOTE_LIGHTHOUSE,

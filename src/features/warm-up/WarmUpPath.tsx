@@ -55,7 +55,7 @@ import { createPathMotion } from './path-motion'
 import type { PathSource } from './path-source'
 import { storeSource } from './path-source'
 import type { PathView } from './path-view'
-import { countdownSaid, PATH_WORDS, pathView, WARM_UP_LEVEL_LINES, } from './path-view'
+import { countdownSaid, PATH_WORDS, pathView, warmUpLevelLines, } from './path-view'
 import { PathActions } from './PathActions'
 import { PathColumn } from './PathColumn'
 import type { WarmUpRoomId } from './warm-up-plan'
@@ -405,7 +405,10 @@ export function WarmUpPath(props: WarmUpPathProps): JSX.Element {
           {/* A tap on the level stops the countdown: its sheet must not
               open over a room. */}
           <span class={styles.level} onClick={() => motion.stay()}>
-            <LevelControl lines={WARM_UP_LEVEL_LINES} testId="warm-up-level" />
+            <LevelControl
+              lines={warmUpLevelLines(source.day().plan)}
+              testId="warm-up-level"
+            />
           </span>
         </RoomBarEnd>
       </Show>

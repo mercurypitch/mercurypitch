@@ -360,11 +360,15 @@ const KARAOKE_STAGE_2 = [
   // its record of being seen.
   ['lip-demo-take', "Lip roll's demo"],
   ['mp_lip_demo_seen', "Lip roll's demo record"],
-  // The Warm-up, the fifth: its path (the screen's test id, which is also
-  // its id), its card in the picker, its level lines and its run of the
-  // day, built and folded exactly as the rooms are. Its night and orbs are
-  // the warm- files above.
-  ['warm-up-path', 'the premium Warm-up and its path'],
+  // The Warm-up, the fifth: its path (a test id of the screen's own), its
+  // card in the picker, its level lines and its run of the day, built and
+  // folded exactly as the rooms are. Its night and orbs are the warm- files
+  // above. Not the screen's first test id, which is also the Warm-up's id:
+  // since the web opens the Warm-up (16 Nov 2026) the id is an exercise
+  // type, and every build names those (the Exercises page asks whether one
+  // is a room of the web's, and the drills' tables are keyed by them), as
+  // every build names the other rooms' ids.
+  ['warm-up-top', 'the premium Warm-up and its path'],
   [
     'Five stops, about four minutes, then a song',
     "the exercise picker's Warm-up card",

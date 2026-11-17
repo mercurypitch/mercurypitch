@@ -9,11 +9,11 @@
 import { describe, expect, it } from 'vitest'
 import { EXERCISE_ECHO_STARS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
 import type { PathInput } from './path-view'
-import { countdownSaid, nextLabel, pathView } from './path-view'
+import { countdownSaid, nextLabel, pathView, WARM_UP_LEVEL_LINES, warmUpLevelLines, } from './path-view'
 import type { StopMark, WarmUpDay } from './routine'
 import { finishStop, freshDay, skipStop } from './routine'
 import type { WarmUpPlan } from './warm-up-plan'
-import { OWNER_ROUTINE } from './warm-up-plan'
+import { OWNER_ROUTINE, WEB_ROUTINE } from './warm-up-plan'
 
 const DATE = '2026-10-19'
 const fresh = (): WarmUpDay => freshDay(OWNER_ROUTINE, DATE, 0)
@@ -256,5 +256,19 @@ describe('the countdown, said once', () => {
     expect(countdownSaid('Ng slides', 5)).toBe(
       'Next: Ng slides in 5 seconds. Choose Stay here to wait.',
     )
+  })
+})
+
+describe("the level pill's lines", () => {
+  it("speak of First note in the owner's routine, which has it", () => {
+    expect(warmUpLevelLines(OWNER_ROUTINE)).toBe(WARM_UP_LEVEL_LINES)
+  })
+
+  it("speak of no stop the web's routine does not have", () => {
+    const lines = Object.values(warmUpLevelLines(WEB_ROUTINE))
+
+    expect(lines).toHaveLength(3)
+    expect(lines.filter((line) => /first note/iu.test(line))).toEqual([])
+    expect(lines.every((line) => line.includes('Echo'))).toBe(true)
   })
 })

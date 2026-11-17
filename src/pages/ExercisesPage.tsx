@@ -28,7 +28,10 @@ import type { ExerciseConfig, ExerciseType } from '@/features/exercises/types'
 import VibratoExercise from '@/features/exercises/vibrato/VibratoExercise'
 import WarmupExercise from '@/features/exercises/warmup/WarmupExercise'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
+import { songTab } from '@/features/tabs/song-tab'
 import { WEB_ROOMS } from '@/lib/native-build'
+import { practiceScope, uiMode } from '@/stores/settings-store'
+import { setActiveTab } from '@/stores/ui-store'
 import styles from './ExercisesPage.module.css'
 
 /**
@@ -63,6 +66,12 @@ export function ExercisesPage(props: ExercisesPageProps) {
   const room = () => {
     const selected = props.selectedExercise()
     return isWebRoom(selected) ? selected : null
+  }
+  /** "Sing a song", at the Warm-up's end: its room closes, and the singer
+   *  goes to the tab their songs are in (tabs/song-tab.ts). */
+  const singASong = (): void => {
+    props.onBack()
+    setActiveTab(songTab(practiceScope(), uiMode()))
   }
 
   return (
@@ -106,7 +115,12 @@ export function ExercisesPage(props: ExercisesPageProps) {
                     </p>
                   }
                 >
-                  <Dynamic component={Host()} id={id()} onBack={props.onBack} />
+                  <Dynamic
+                    component={Host()}
+                    id={id()}
+                    onBack={props.onBack}
+                    onSong={singASong}
+                  />
                 </Suspense>
               )}
             </Show>

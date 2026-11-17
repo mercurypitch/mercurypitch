@@ -12,7 +12,7 @@ import { For, onMount, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { Volume2 } from '@/components/icons'
 import { bestLine } from '@/features/premium-exercises/catalogue'
-import { EXERCISE_ECHO_STARS, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { EXERCISE_ECHO_STARS, EXERCISE_HARMONY_LAKE, EXERCISE_HOME_NOTE_LIGHTHOUSE, EXERCISE_LEAP_CLIFFS, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
 import echoArt from './art/echo.webp'
 import harmonyArt from './art/harmony.webp'
 import homeNoteArt from './art/home-note.webp'
@@ -20,6 +20,7 @@ import leapArt from './art/leap.webp'
 import lipRollArt from './art/lip-roll.webp'
 import longNoteArt from './art/long-note.webp'
 import ngSlidesArt from './art/ng-slides.webp'
+import warmUpArt from './art/warm-up.webp'
 import styles from './RoomsStrip.module.css'
 import type { WebRoomId } from './web-room-ids'
 import type { WebRoom } from './web-room-list'
@@ -29,6 +30,7 @@ import { webRooms } from './web-room-list'
 const ART: Readonly<Record<WebRoomId, string>> = {
   [EXERCISE_LONG_NOTE_LANTERN]: longNoteArt,
   [EXERCISE_ECHO_STARS]: echoArt,
+  [EXERCISE_WARM_UP_PATH]: warmUpArt,
   [EXERCISE_LIP_ROLL_BAY]: lipRollArt,
   [EXERCISE_NG_SLIDES_BRIDGE]: ngSlidesArt,
   [EXERCISE_HOME_NOTE_LIGHTHOUSE]: homeNoteArt,

@@ -21,9 +21,9 @@ import type { JSX } from 'solid-js'
 import { onMount } from 'solid-js'
 import { LipRollRoom } from '@/features/lip-roll/LipRollRoom'
 import { rememberLastExercise } from '@/features/premium-exercises/last-exercise'
+import { warmUpStop } from '@/features/warm-up/warm-up-stop'
 import { EXERCISE_LIP_ROLL_BAY } from '@/lib/domain/exercise-contracts'
 import { popScreen } from './run-shell-store'
-import { warmUpStop } from './warm-up-stop'
 
 export function LipRollScreen(): JSX.Element {
   // A stop of the Warm-up, or the room on its own (warm-up-stop.ts).
