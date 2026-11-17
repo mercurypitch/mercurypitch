@@ -13,7 +13,7 @@ import { downloadStudioClipMidi } from './export/midi-download'
 import { StudioExportPanel } from './export/StudioExportPanel'
 import { useStudioExport } from './export/useStudioExport'
 import { StudioInputsPanel } from './inputs/StudioInputsPanel'
-import { isStudioAudioDrop, studioDropFrame, studioDroppedTake, } from './integration/drop-audio'
+import { isStudioAudioDrop, isStudioMidiFile, STUDIO_FILE_ACCEPT, studioDropFrame, studioDroppedTake, } from './integration/drop-audio'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import { StudioMidiEditorContext } from './midi/midi-render-editor'
 import { useStudioMidiRenders } from './midi/useStudioMidiRenders'
@@ -268,15 +268,19 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     try {
       await releaseFinishingAudio()
       if (props.studio.project()?.id !== projectId || !writable()) return
-      const added = files.length
-        ? await props.studio.addFiles(files, frame, lane)
-        : source
-          ? await props.studio.addTake(source, frame, lane)
-          : false
-      if (added) {
-        afterAdd()
-        setAnnouncement('Audio added.')
+      // MIDI files make lanes of their own; audio goes where it was dropped.
+      const midiFiles = files.filter(isStudioMidiFile)
+      const audio = files.filter((file) => !isStudioMidiFile(file))
+      let added = false
+      for (const file of midiFiles) added = (await addMidiFile(file)) || added
+      if (audio.length > 0 || files.length === 0) {
+        const audioAdded = audio.length
+          ? await props.studio.addFiles(audio, frame, lane)
+          : source !== null && (await props.studio.addTake(source, frame, lane))
+        if (audioAdded) setAnnouncement('Audio added.')
+        added ||= audioAdded
       }
+      if (added) afterAdd()
     } finally {
       dropping = false
     }
@@ -320,6 +324,16 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     }
   }
 
+  /** A MIDI file's tracks as new lanes; their renders are then kept as their audio, as a song's are when it opens. */
+  async function addMidiFile(file: File): Promise<boolean> {
+    if (!(await props.studio.addMidiFile(file))) return false
+    setAnnouncement(
+      `${file.name} added as MIDI lanes. Their sound is rendering.`,
+    )
+    void midi.settle()
+    return true
+  }
+
   // New lane's choices, and a clip made in a lane, each opened to draw in.
   const newClips = useStudioNewClips({
     studio: () => props.studio,
@@ -336,6 +350,21 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     importFrame = transport.frameNow()
     importTrack = selectedTrackId()
     audioInput.click()
+  }
+
+  /** A picked file: audio where the playhead stood when the picker opened, a MIDI file as lanes of its own. */
+  async function addPicked(
+    file: File,
+    frame: number,
+    lane: string | null,
+  ): Promise<void> {
+    const projectId = project().id
+    await releaseFinishingAudio()
+    if (props.studio.project()?.id !== projectId) return
+    const added = isStudioMidiFile(file)
+      ? await addMidiFile(file)
+      : await props.studio.addFile(file, frame, lane)
+    if (added) afterAdd()
   }
 
   async function addTakes(
@@ -488,23 +517,11 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
         hidden
         type="file"
         aria-label="Upload audio"
-        accept="audio/*,.wav,.mp3,.m4a,.ogg,.flac"
+        accept={STUDIO_FILE_ACCEPT}
         onChange={(event) => {
           const file = event.currentTarget.files?.[0]
           event.currentTarget.value = ''
-          if (!file) return
-          const frame = importFrame
-          const lane = importTrack
-          const projectId = project().id
-          const currentProject = props.studio.project
-          const addFile = props.studio.addFile
-          void releaseFinishingAudio().then(async () => {
-            if (
-              currentProject()?.id === projectId &&
-              (await addFile(file, frame, lane))
-            )
-              afterAdd()
-          })
+          if (file) void addPicked(file, importFrame, importTrack)
         }}
       />
       <p class={styles.srOnly} role="status">

@@ -1,5 +1,18 @@
-// Studio audio drops — resolve local source identities and place new lanes at the visible timeline position.
+// Studio audio drops — resolve local source identities and place new lanes at the visible timeline position; tell a MIDI file from audio.
 import type { StudioSourceEntry } from './source-catalog'
+
+/** What the Studio's file picker takes: audio, and MIDI files beside it. */
+export const STUDIO_FILE_ACCEPT =
+  'audio/*,.wav,.mp3,.m4a,.ogg,.flac,.mid,.midi,audio/midi,audio/x-midi'
+
+/** Whether a picked or dropped file is a MIDI file: by its name, or its type where the name says nothing. */
+export function isStudioMidiFile(file: Pick<File, 'name' | 'type'>): boolean {
+  return (
+    /\.midi?$/i.test(file.name) ||
+    file.type === 'audio/midi' ||
+    file.type === 'audio/x-midi'
+  )
+}
 
 export const STUDIO_TAKE_DRAG_TYPE = 'application/x-mercurypitch-studio-take'
 export function isStudioAudioDrop(transfer: DataTransfer | null): boolean {
