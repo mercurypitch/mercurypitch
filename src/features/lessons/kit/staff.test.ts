@@ -47,10 +47,19 @@ const PLACE: StaffState = { staff: 'single', clef: 'treble', tap: 'place' }
 
 let owner = createSoundOwner()
 
+// Every toy a test mounts, disposed after it: a play left running keeps its
+// timers, which fire after the file's document has gone.
+const mounted: StaffToy[] = []
+
+function keep(toy: StaffToy): StaffToy {
+  mounted.push(toy)
+  return toy
+}
+
 function mount(state: StaffState = PLACE, id = 't'): StaffToy {
   const root = document.getElementById(id)
   if (root === null) throw new Error(`no #${id}`)
-  return mountStaff(root, { state, owner })
+  return keep(mountStaff(root, { state, owner }))
 }
 
 const root = (): HTMLElement => document.getElementById('t') as HTMLElement
@@ -74,6 +83,7 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  for (const toy of mounted.splice(0)) toy.dispose()
   vi.restoreAllMocks()
 })
 
@@ -294,6 +304,34 @@ describe('a play', () => {
     expect(two).toEqual(['st-head is-lit', 'st-head is-lit'])
     expect(gold).toBe(1)
     expect(await heard).toBe(true)
+  })
+
+  it('leaves no timer pending once disposed in the middle of a play', () => {
+    // Arrange: a note sounding, with its timer to put it back at rest, and
+    // another to light ahead
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout'] })
+    try {
+      const toy = mount()
+      void toy.play({
+        show: 'run',
+        notes: [
+          { t: 0, dur: 0.5, note: E4 },
+          { t: 2, dur: 0.5, note: G4, ahead: 1 },
+        ],
+      })
+      last().note(0)
+      const pending = vi.getTimerCount()
+
+      // Act
+      toy.dispose()
+
+      // Assert
+      expect(pending).toBe(2)
+      expect(vi.getTimerCount()).toBe(0)
+      expect(last().stopped).toBe(true)
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('stops, goes back to rest and resolves false when a newer sound claims the owner', async () => {
@@ -657,11 +695,13 @@ describe('a key signature', () => {
     // Arrange: the top line is F5
     const picks: [string, number][] = []
     const r = document.getElementById('t') as HTMLElement
-    const toy = mountStaff(r, {
-      state: ONE_SHARP,
-      owner,
-      onPick: (n, place) => picks.push([`${n.letter}${n.alter}`, place]),
-    })
+    const toy = keep(
+      mountStaff(r, {
+        state: ONE_SHARP,
+        owner,
+        onPick: (n, place) => picks.push([`${n.letter}${n.alter}`, place]),
+      }),
+    )
 
     // Act
     toy.tapPlace(8)
@@ -794,11 +834,13 @@ describe('a key signature', () => {
     // Arrange
     const clefs: string[] = []
     const r = document.getElementById('t') as HTMLElement
-    const toy = mountStaff(r, {
-      state: ONE_SHARP,
-      owner,
-      onClef: (c) => clefs.push(c),
-    })
+    const toy = keep(
+      mountStaff(r, {
+        state: ONE_SHARP,
+        owner,
+        onClef: (c) => clefs.push(c),
+      }),
+    )
     toy.tapPlace(2)
     const before = runs.length
 

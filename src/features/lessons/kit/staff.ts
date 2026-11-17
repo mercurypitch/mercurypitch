@@ -132,6 +132,8 @@ export interface StaffToy {
   /** Says `text` in the live region. */
   say(text: string): void
   stop(): void
+  /** Stops what plays and lets go of its timers and listeners, so nothing it started fires once its figure has gone. */
+  dispose(): void
 }
 
 export interface StaffOptions {
@@ -718,15 +720,25 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
       b.addEventListener('click', () => setNames(b.dataset.names === 'on'))
   for (const b of qa<HTMLButtonElement>('[data-staff-lanes]', root))
     b.addEventListener('click', () => PitchLine.set(!PitchLine.on))
-  PitchLine.subscribe((on) => {
+  const unfollow = PitchLine.subscribe((on) => {
     for (const b of qa<HTMLButtonElement>('[data-staff-lanes]', root))
       b.setAttribute('aria-pressed', String(on))
     if (layout !== null) draw()
   })
-  if (typeof ResizeObserver === 'function')
-    new ResizeObserver(() => {
-      if (layout !== null) draw()
-    }).observe(el)
+  const sized =
+    typeof ResizeObserver === 'function'
+      ? new ResizeObserver(() => {
+          if (layout !== null) draw()
+        })
+      : null
+  sized?.observe(el)
+
+  function dispose(): void {
+    stop()
+    rest()
+    unfollow()
+    sized?.disconnect()
+  }
 
   const toy: StaffToy = {
     get state() {
@@ -777,6 +789,7 @@ export function mountStaff(root: HTMLElement, o: StaffOptions): StaffToy {
     },
     say,
     stop,
+    dispose,
   }
   setState(state)
   return toy
