@@ -1,8 +1,8 @@
 // Studio compressor worklet tests — the processor declares a DynamicsCompressorNode's parameters, compresses each render quantum at the values they have for it, and runs on until its unit is disposed.
 import { afterEach, describe, expect, it, vi } from 'vitest'
-import { compressorStaticOutputDb } from './compressor-curve'
-import { COMPRESSOR_PARAMETERS, STUDIO_COMPRESSOR_DISPOSE, STUDIO_COMPRESSOR_PROCESSOR, } from './compressor-kernel'
-import { dbToGain, gainToDb } from './dsp'
+import { compressorStaticOutputDb } from '@/lib/studio-fx/compressor-curve'
+import { COMPRESSOR_PARAMETERS, STUDIO_COMPRESSOR_DISPOSE, STUDIO_COMPRESSOR_PROCESSOR, } from '@/lib/studio-fx/compressor-kernel'
+import { dbToGain, gainToDb } from '@/lib/studio-fx/dsp'
 
 type Parameters = Record<string, Float32Array>
 
@@ -38,7 +38,7 @@ async function loadWorklet() {
       void registered.set(name, processor),
   )
   vi.resetModules()
-  await import('./compressor.worklet')
+  await import('./studio-compressor.worklet')
   const send = (data: unknown) => port.onmessage?.({ data })
   return { registered, send }
 }
