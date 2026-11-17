@@ -1702,7 +1702,10 @@
 /* A tablet, held either way: the room's lower half, Merc's line, the
    console and the pinned row, keeps a phone's width in the middle of the
    room, as the instrument above it does; the sheets stand over it, as
-   wide. Stretched across 1280 px, two answer pads were 600 px each. */
+   wide. Stretched across 1280 px, two answer pads were 600 px each. The
+   question on the way out is as wide as a sheet's words: across a desk's
+   1440 px it was one bar from edge to edge, its two buttons 690 px each
+   (seen on the web, 17 November 2026). */
 @media (min-width: 640px) {
   .console {
     width: min(100%, 600px);
@@ -1712,6 +1715,11 @@
 
   .sheet {
     max-width: 600px;
+    margin-inline: auto;
+  }
+
+  .confirm {
+    max-width: 568px;
     margin-inline: auto;
   }
 }
