@@ -376,35 +376,37 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
 
 - Eyebrow: Practise in MercuryPitch
 - Title: Chord Stacker
-- Text: Chord Stacker plays a chord of four notes one at a time, from the bottom up, then you sing
-  each note back in turn, with nothing sounding under you. Its five chords are the major seventh,
-  minor seventh, dominant seventh, diminished seventh and major sixth chords, in a shuffled order,
-  each on the root note you pick, and it doesn't say which one is playing. Every chord starts on its
-  root: it has no triads or inversions yet. It shows each note's name as you sing it, every black
-  piano key as a sharp, and a dot that sits on a line when you're in tune, but no staff. It wants
-  each note in the octave it plays, not an octave away. Its root starts low in the voice range saved
-  in Settings, and a chord climbs up to 11 semitones above it: set your range there first, under
-  Singing Voice Range. A higher level plays each note shorter and gives you less time to sing it;
-  the five chords stay the same at every level.
+- Text: Chord Stacker plays a chord one note at a time, from the bottom up, then you sing each note
+  back in turn, with nothing sounding under you. This link opens it on the four triads, major,
+  minor, diminished and augmented, in root position, and it names each chord as it plays it. Under
+  Chords, choose Sevenths for its five four-note chords, the dominant seventh among them, or Both;
+  under Inversions, choose On to turn each chord over. It shows each note's name as you sing it,
+  every black piano key as a sharp, and a dot that sits on a line when you're in tune, but no staff.
+  It wants each note in the octave it plays, not an octave away. Its root starts low in the voice
+  range saved in Settings, and a chord climbs up to 11 semitones above it, or 19 with inversions:
+  set your range there first, under Singing Voice Range. A higher level plays each note shorter and
+  gives you less time to sing it; the chords stay the same at every level.
   Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop
   immediately if anything feels uncomfortable.
-- Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Chord Stacker.
-- Second drill: For your ear, Ear Lab's Stack plays one chord, its notes together, and you tap its
-  quality from six. The dominant seventh is one, on the pad marked 7, and a major chord another;
-  there's no major seventh chord among them. A drill on those two alone isn't in the app yet. Free:
-  **mercurypitch.com/ear-lab**, then tap Stack.
+- Address: Practise it free: **mercurypitch.com/exercises/triads**
+- Second drill: For your ear, Ear Lab's Stack plays one chord, its notes together, and you tap which
+  of two it is: a major chord, or the dominant seventh, on the pad marked 7. Free:
+  **mercurypitch.com/exercises/major-or-dominant-seventh**
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Chord Stacker will
-  be here when your voice feels comfortable: **mercurypitch.com/pitch-training**, then tap Chord
-  Stacker." Then the second drill.
+  be here when your voice feels comfortable: **mercurypitch.com/exercises/triads**" Then the second
+  drill.
 
-_[Editorial: the links are `/pitch-training?lesson=27` and `/ear-lab?lesson=27`, printed without
-the marker, as every card prints the public address. The page is not built before the lesson marker
+_[Editorial: the links are `/exercises/triads?lesson=27` and
+`/exercises/major-or-dominant-seventh?lesson=27` since 17 November 2026, printed without the marker,
+as every card prints the public address (FACTS 68a). The page is not built before the lesson marker
 reads Season 2's numbers (SEASON-2 § 5.2 item 21), so First Light, the app's intro, steps aside on a
-first visit and the card has no first-visit line (FACTS 69). When Chord Stacker's chord-type launch
-field, triads and inversions ship (§ 5.2 item 18), the card can open it on the dominant seventh and
-its inversions, and "it has no triads or inversions yet" and "it doesn't say which one is playing"
-are looked at again; when the `ear-drill` launch kind ships (item 12), Stack's link can open the
-major chord against the dominant seventh alone, and its last sentence goes (FACTS 68). Since the
+first visit and the card has no first-visit line (FACTS 69). Chord Stacker's chord-type launch
+field, triads and inversions shipped (§ 5.2 item 18), so "it has no triads or inversions yet" and
+"it doesn't say which one is playing" went; its address for this lesson opens the triads in root
+position, and the card names the setup's Chords and Inversions pickers for the sevenths and the
+inversions this page teaches, until an address opens the dominant seventh and its inversions,
+one registry line more. The `ear-drill` launch kind shipped (item 12), so Stack's link opens the
+major chord against the dominant seventh alone, and its last sentence went (FACTS 68). Since the
 app's two Chord Stacker fixes, each note sounds its full length before the next, and the top note
 ends before the singing starts, so the card no longer gives a pace or the top note's tail; and the
 drill's own help says what it does, a chord heard a note at a time and each note sung back on its
@@ -435,8 +437,8 @@ choice, under "Choose an answer in Step 4 to unlock this." A return visit holds 
 ## Footer
 
 Season 2 · Lesson 27 · Seventh chords and inversions. The practice links, printed
-mercurypitch.com/pitch-training and mercurypitch.com/ear-lab and linking `/pitch-training?lesson=27`
-and `/ear-lab?lesson=27`, with "Chord Stacker and Stack are free." Lesson 1's fonts line, and "Every
+mercurypitch.com/exercises/triads and mercurypitch.com/exercises/major-or-dominant-seventh, each
+with `?lesson=27`, with "Chord Stacker and Stack are free." Lesson 1's fonts line, and "Every
 sound on this page is synthesised in your browser." No decorative clef or staff: on a Season 2 page
 a staff is always music (SEASON-2 § 1.5 item 7).
 
@@ -538,7 +540,7 @@ as Lesson 25 asks for two three-note ones, and its practice card names a sung dr
   with the singer's scores.
 - The rest version, Lesson 12's form naming Chord Stacker: after "Effortful", "Uncomfortable" or
   "Just listen today" the card shows "Rest today. Chord Stacker will be here when your voice feels
-  comfortable: mercurypitch.com/pitch-training, then tap Chord Stacker." in place of the sung drill,
+  comfortable: mercurypitch.com/exercises/triads" in place of the sung drill,
   then Stack, which asks for no voice (FACTS 70). The coach confirms its wording.
 
 ### Proposed, not applied: the four answers to "How did that feel?"

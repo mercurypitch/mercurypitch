@@ -455,39 +455,39 @@ other, paused off screen, and the still images when WebGL fails.
 
 ## Practice links: what exists and what needs engineering
 
-- **Today, Ear Lab's Gravity.** The link is `/ear-lab?lesson=25`, printed "mercurypitch.com/ear-lab",
-  with "then tap Gravity" (FACTS 50). Gravity plays I, IV, V and I in a major key, then one note of
-  the twelve inside the octave above do, and the learner taps which: the scale's seven by number and
-  the other five by their leaning, the app's phrase, which the card puts as "a number with ♭ or ♯",
-  each pad with its syllable. Each round picks a new key, its do from C3 to B3; answers are by tap by
-  default (FACTS 48). The card names Te, "♭7", and Ti, "7", and says that a drill on those two alone
-  is not in the app yet (FACTS 49). Ear Lab is free.
+- **Today, Gravity on Te and Ti.** The link is `/exercises/te-or-ti?lesson=25` since 17 November
+  2026, printed "mercurypitch.com/exercises/te-or-ti" (FACTS 50a). Gravity plays I, IV, V and I in a
+  major key, then one note, and with the set the learner taps which of two it is, Te, "♭7", a tone
+  under do, or Ti, "7", a semitone under it, each pad with its syllable; each round picks a new key,
+  its do from C3 to B3; answers are by tap by default (FACTS 48, 49). Ear Lab is free. Until then
+  the link was `/ear-lab?lesson=25`, "then tap Gravity", the card described all twelve answers and
+  said that a drill on those two alone was not in the app yet (FACTS 49, 50).
 - **Today, second: Sight-Singing in A harmonic minor**, the card's one sung drill. The link is
-  `/?lesson=25#/singing`, printed "mercurypitch.com/#/singing": the learner sets the key to A and the
-  scale to Harmonic Minor, on a phone from the chip that shows the key, on a wider screen in
-  Playback Setup in the sidebar, then goes straight to Exercises and taps Sight-Singing. It writes
-  six notes of A harmonic minor in the saved range, G♯ with its sharp, in the treble clef only, with
-  nothing played first; it wants each note in the octave written and prints each one's name under it
-  (FACTS 52, 53). The card says all of that, the octave and the names in Lesson 16's words, with
-  Lesson 16's care lines. Its notes can fall on the preset's floor or top, and in A harmonic minor it
-  can ask for F to G♯, so the coach's list names both (FACTS 53). The Singing tab's picker plays
-  nothing itself and its Melodic Minor is the going-up form both ways, so neither is named as
-  practice (FACTS 52). No screen either link opens shows the app's scale descriptions (FACTS 54).
+  `/exercises/sight-sing-harmonic-minor?lesson=25` since 17 November 2026, printed
+  "mercurypitch.com/exercises/sight-sing-harmonic-minor" (FACTS 50a). It writes six notes it picks in
+  A harmonic minor in the saved range, on that voice's clef, G♯ with its sharp; Hear it first plays
+  do, then do, me, so, me, do, and never the line; it hears each note in any octave, holding each to
+  light the next, and its Names picker's Off hides the letters (FACTS 53). The card says all of
+  that in Lesson 16's words, with Lesson 16's care lines. Its notes can fall on the preset's floor
+  or top, and in A harmonic minor it can ask for F to G♯, so the coach's list names both (FACTS
+  53). Until then the link was `/?lesson=25#/singing`: the learner set the key to A and the scale
+  to Harmonic Minor in the Singing tab, then went to Exercises, and the card said what the drill
+  lacked then. No screen either link opens shows the app's scale descriptions (FACTS 54).
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card keeps
   Gravity and shows Lesson 12's rest line naming Sight-Singing in place of the second drill (Toys 5;
   FACTS 47).
 - **The first visit.** `?lesson=25` is not a lesson marker today, so a first visit would meet First
   Light, the app's intro, before Ear Lab or the Singing tab. The page is not built before SEASON-2 §
   5.2 item 21 widens the marker, so the card and the footer carry no first-visit line (FACTS 50).
-- **Needed: the `ear-drill` launch kind** (SEASON-2 § 5.2 item 12), which would open Gravity on Te
-  and Ti alone. When it ships, the card's last sentence goes and the link opens the subset (FACTS
-  49).
+- **Shipped on 16 November 2026: the `ear-drill` launch kind** (SEASON-2 § 5.2 item 12), which
+  opens Gravity on Te and Ti alone. The card's last sentence went and the link opens the subset
+  (FACTS 49, 50a).
 - **Shipped on 15 November 2026: Scale Runner's harmonic and melodic minor** (SEASON-2 § 5.2 item
   13), with `/exercises/harmonic-minor-run` and `/exercises/melodic-minor-run`, from A. A Scale
   Runner card can replace Sight-Singing as the second drill, with its own care lines and the
   coach's look (FACTS 51).
-- **Needed: Sight-Singing for the lessons** (SEASON-2 § 5.2 item 10), whose parts each remove a
-  sentence of the second drill, as Lesson 16's card shrinks: (g) a `key` launch field lets the link
+- **Shipped on 16 November 2026: Sight-Singing for the lessons** (SEASON-2 § 5.2 item 10), whose
+  parts each removed a sentence of the second drill, as Lesson 16's card shrank: (g) a `key` launch field lets the link
   open Sight-Singing in A harmonic minor directly, in Lesson 16's way, and replaces the route through
   the Singing tab and its edge cases; (b) a "hear do" start replaces "It plays nothing first"; (c)
   the bass clef for lower voices and (f) octave-folded scoring replace the clef and octave sentence;
@@ -508,12 +508,12 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form, as Lesson 10's
   built, under the drafts' comment in Lesson 10's form (`src/features/lessons/kit/season.ts:351`),
   naming Lessons 10's, 21's and 23's pages and the vocal coach's look. The entry decides nothing
   about being live: the draft list and the console do.
-- `pr.link`: `href` `/ear-lab?lesson=25`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear Lab" and
-  `note` "then tap Gravity", which the explorer's card prints after the address as "Ear Lab, then tap
-  Gravity" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:191-195`). `pr.needs`, "Gravity
-  with only Te and Ti (the ear-drill launch kind); Scale Runner's harmonic and melodic minor;
-  Sight-Singing with a key launch, a hear-do start, the bass clef, letter names off and
-  octave-folded scoring", stays until they ship; it is admin only, never drawn on a lesson page
+- `pr.link`: `href` `/exercises/te-or-ti?lesson=25`, `addr` `mercurypitch.com/exercises/te-or-ti`,
+  `label` "Gravity" and `note` "Te and Ti" since 17 November 2026, which the explorer's card prints
+  after the address as "Gravity, Te and Ti" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:192-196`).
+  `pr.needs` says that Scale Runner's harmonic and melodic minor runs are not linked and a card for
+  them could take Sight-Singing's place with the coach's look; what it named before has shipped.
+  It is admin only, never drawn on a lesson page
   (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [10, 25], [21, 25] and [23, 25], the first a cross-season edge, as SEASON-2 § 4.3
   gives them (FACTS 2). Lesson 25's prerequisite list is then [10, 21, 23] (`PREREQ`,

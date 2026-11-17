@@ -344,8 +344,8 @@ Lesson 25. Neither says "right" or "wrong"; the reveal's line says what the lear
 
 ## Practice links: what exists and what needs engineering
 
-1. **Chord Stacker**, `/pitch-training?lesson=27`, printed mercurypitch.com/pitch-training, then tap
-   Chord Stacker. By default a run is five rounds, one four-note chord each, in a shuffled order;
+1. **Chord Stacker**, `/exercises/triads?lesson=27` since 17 November 2026, the triads in root
+   position (FACTS 68a); before, `/pitch-training?lesson=27`, then tap Chord Stacker. By default a run is five rounds, one four-note chord each, in a shuffled order;
    each chord plays from its bottom note, a note at a time, each note in full with 0.3 s between,
    then the learner sings each note back with nothing sounding; it scores each note against its
    own octave, prints each note's name with every black piano key as a sharp, shows a tuning dot
@@ -355,15 +355,15 @@ Lesson 25. Neither says "right" or "wrong"; the reveal's line says what the lear
    the setup screen and remembered, and each round's chord named as it plays; `/exercises/triads`
    opens the four triads in root position, and the dominant seventh and its inversions, which the
    card could open on, are one registry line more. The card's lines on naming no chord and on no
-   triads or inversions wait for its next edit (FACTS 68). The two fixes this package found have shipped: each note is
+   triads or inversions went on 17 November 2026; it names the Chords and Inversions pickers (68a). The two fixes this package found have shipped: each note is
    waited out before the next, as Arpeggio Jumper's are
    (`src/features/exercises/arpeggio-jumper/use-arpeggio-jumper-controller.ts:326-329`), so the
    first three notes sound their full length (FACTS 62); and its help text and its summary say what
    the drill does (FACTS 66).
-2. **Ear Lab's Stack**, `/ear-lab?lesson=27`, printed mercurypitch.com/ear-lab, then tap Stack. Today
-   it plays one block chord on a roved root and asks for its quality from six, the dominant seventh's
-   pad marked 7; no major seventh chord (FACTS 67). Needs engineering: the `ear-drill` launch kind
-   with major against dominant seventh as a subset (SEASON-2 § 5.2 item 12).
+2. **Ear Lab's Stack**, `/exercises/major-or-dominant-seventh?lesson=27` since 17 November 2026: one
+   block chord on a roved root, and the learner says which of two it is, major or the dominant
+   seventh, its pad marked 7 (FACTS 67, 68a); the `ear-drill` launch kind with that subset shipped on
+   16 November 2026 (SEASON-2 § 5.2 item 12). Before, `/ear-lab?lesson=27`, then tap Stack, six.
 3. **The lesson marker** reads Season 1's numbers only (`src/lib/lesson-marker.ts:18-19`); `?lesson=27`
    waits on SEASON-2 § 5.2 item 21, before which this page is not built (FACTS 69).
 
@@ -379,11 +379,11 @@ app still need, item 3), in the form of Lesson 12's entry
 
 - `n: 27`, `lane: 'theory'`, `title: 'Seventh chords and inversions'`, `short: 'Sevenths'`,
   `topics: ['T24', 'T25']`, `minutes: 15`, `page: '/learn/27'`, `hook`: the title (FACTS 1).
-- `pr.link`: `href: '/pitch-training?lesson=27'`, `addr: 'mercurypitch.com/pitch-training'`,
-  `label: 'Exercises'`, `note: 'then tap Chord Stacker'`.
-- `pr.needs` (admin only), as the hand-back writes it: "Chord Stacker opening on the dominant
-  seventh and its inversions (one registry line since triads and inversions shipped); Stack
-  with major against dominant seventh alone (the ear-drill launch kind)".
+- `pr.link`: `href: '/exercises/triads?lesson=27'`, `addr: 'mercurypitch.com/exercises/triads'`,
+  `label: 'Chord Stacker'`, `note: 'the four triads'`, since 17 November 2026 (FACTS 68a).
+- `pr.needs` (admin only): an address that opens Chord Stacker on the dominant seventh and its
+  inversions, one registry line, the card linking the triads in root position meanwhile; Stack's
+  set shipped and is linked.
 - Two edges: `[12, 27]` and `[23, 27]`, so the explorer lights Lessons 12 and 23 as this lesson's
   path and `PREREQ` reads them (`src/features/lessons/kit/season.ts:456-483`).
 - In `kit/lesson-copy.ts` (`LESSON_COPY`, `src/features/lessons/kit/lesson-copy.ts:79`): the hook
