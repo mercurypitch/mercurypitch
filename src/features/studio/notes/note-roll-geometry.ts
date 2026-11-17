@@ -108,6 +108,8 @@ export interface StudioRollInput {
   readonly readout: { readonly id: number; readonly value: number } | null
   /** The transport's playhead in the sequence's ticks; null keeps it out. */
   readonly playheadTick: number | null
+  /** The key a press on the keys' column sounds, lit while it sounds: a piano's pitch, a kit row's key; none when absent (note-roll-keys.ts). */
+  readonly litKey?: number | null
   /** The corner's word over the keys: Notes, or Kit. */
   readonly corner: string
 }

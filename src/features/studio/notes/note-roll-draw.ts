@@ -25,7 +25,7 @@ import { studioRollRow } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioNote } from '@/lib/studio/model/types'
 import { kitHitSquare, kitNextStart, kitRowStarts } from './kit-hit'
 import { studioNoteName } from './note-names'
-import { drawRollDividers, drawRollGrid, drawRollKeys, drawRollRuler, drawRollStick, drawRollVelocities, rollStickHead, } from './note-roll-frame'
+import { drawRollDividers, drawRollGrid, drawRollKeys, drawRollLitKey, drawRollRuler, drawRollStick, drawRollVelocities, rollStickHead, } from './note-roll-frame'
 import type { RollContext, StudioRollDraft, StudioRollInput, StudioRollRect, } from './note-roll-geometry'
 import { beginRollLayer, clipTo, fillBox, roundBox, rowSpan, rowTop, startsInWindow, studioRollRegions, tickX, } from './note-roll-geometry'
 import { VELOCITY_CAP_RADIUS } from './velocity-lane'
@@ -433,6 +433,7 @@ function drawLaneOverlay(context: RollContext, input: StudioRollInput): void {
 
 function drawOverlay(context: RollContext, input: StudioRollInput): void {
   const regions = studioRollRegions(input)
+  drawRollLitKey(context, input)
   context.save()
   clipTo(context, regions.grid)
   drawHover(context, input)
@@ -445,7 +446,7 @@ function drawOverlay(context: RollContext, input: StudioRollInput): void {
   drawPlayhead(context, input)
 }
 
-/** The overlay layer, on a canvas of its own over the base: the hovered note, a gesture's drafts and marquee, and the playhead. */
+/** The overlay layer, on a canvas of its own over the base: a key lit while it sounds, the hovered note, a gesture's drafts and marquee, and the playhead. */
 export function drawStudioRollOverlay(
   context: RollContext,
   input: StudioRollInput,

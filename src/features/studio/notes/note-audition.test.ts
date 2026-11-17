@@ -1,4 +1,4 @@
-// Studio note audition tests — a press makes or resumes the Studio's clock and loads the instruments once; a note sounds at once through the lane's own instrument on that clock, for a moment, and the note before it stops as it starts; a lane that changes its sound gets its new instrument; and with no clock, or once disposed, nothing sounds.
+// Studio note audition tests — a press makes or resumes the Studio's clock and loads the instruments once; a note sounds at once through the lane's own instrument on that clock, for a moment, and the note before it stops as it starts; a note says whether it sounded; a stop quiets the note sounding and keeps one still loading from starting; a lane that changes its sound gets its new instrument; and with no clock, or once disposed, nothing sounds.
 import { describe, expect, it, vi } from 'vitest'
 import type { StudioMidiSound } from '../record/midi/studio-midi-sound'
 import type { StudioMidiSounds } from '../record/midi/studio-midi-sounds'
@@ -118,6 +118,36 @@ describe('a note', () => {
     ])
     expect(instruments.calls).toContain('piano let go')
     expect(instruments.calls.at(-2)).toBe('drums start audition-2 36 1 at 2')
+  })
+
+  it('says it sounded once it starts on the clock, and not when it cannot', async () => {
+    const sounding = audition()
+    const silent = audition({ context: null })
+    const gone = audition()
+    gone.audition.dispose()
+
+    expect(await sounding.audition.play(60, 1)).toBe(true)
+    expect(await silent.audition.play(60, 1)).toBe(false)
+    expect(await gone.audition.play(60, 1)).toBe(false)
+  })
+
+  it('stops at once when asked, and a note still loading when the stop came never starts', async () => {
+    // Arrange
+    const { audition: notes, instruments } = audition()
+    await notes.play(64, 0.7)
+
+    // Act
+    notes.stop()
+    const late = notes.play(67, 0.7)
+    notes.stop()
+
+    // Assert: E4 stopped now, at 2 s; G4 never started.
+    expect(await late).toBe(false)
+    expect(instruments.calls).toEqual([
+      'piano start audition-1 64 0.7 at 2',
+      `piano stop audition-1 at ${2 + NOTE_AUDITION_SECONDS}`,
+      'piano stop audition-1 at 2',
+    ])
   })
 
   it('sounds nothing without a clock, or once the editor has gone', async () => {
