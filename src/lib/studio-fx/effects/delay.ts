@@ -17,6 +17,14 @@
 // loop cannot run away. Every cycle passes through a DelayNode of at least
 // 10 ms, more than the one render quantum Web Audio needs to close a cycle.
 //
+// No node adds more than two signals. A line's own repeat and the other
+// line's crossing over meet in a sum of their own (`feedback`), which then
+// meets the input at the line's delay: a sum of three can round
+// differently in another order, and the order a node adds its inputs in
+// can differ between two builds of one chain. With three, two builds of
+// the voice lane came out -141.7 to -142.6 dBFS apart (Chromium 148); with
+// two, they match to the bit.
+//
 // `duck` keys the echoes from the dry signal, as the reverb does: they sit
 // back under a sung line and come forward in the gaps between phrases — the
 // standard way a vocal delay stays audible without blurring the words.
@@ -39,6 +47,8 @@ const MAX_DELAY_SECONDS = 2.5
 const TIME_GLIDE_SECONDS = 0.05
 
 interface DelayLine {
+  /** The line's own repeat and the other line's crossing over, summed before they meet the input at `delay`. */
+  readonly feedback: GainNode
   readonly delay: DelayNode
   readonly lowCut: BiquadFilterNode
   readonly highCut: BiquadFilterNode
@@ -49,6 +59,7 @@ interface DelayLine {
 
 function createDelayLine(ctx: BaseAudioContext): DelayLine {
   const line: DelayLine = {
+    feedback: ctx.createGain(),
     delay: ctx.createDelay(MAX_DELAY_SECONDS),
     lowCut: createButterworth(ctx, 'highpass'),
     highCut: createButterworth(ctx, 'lowpass'),
@@ -57,13 +68,14 @@ function createDelayLine(ctx: BaseAudioContext): DelayLine {
     cross: ctx.createGain(),
   }
   connectSeries([line.delay, line.lowCut, line.highCut, line.out])
-  connectSeries([line.out, line.self, line.delay])
+  connectSeries([line.out, line.self, line.feedback, line.delay])
   line.out.connect(line.cross)
   return line
 }
 
 function lineNodes(line: DelayLine): AudioNode[] {
   return [
+    line.feedback,
     line.delay,
     line.lowCut,
     line.highCut,
@@ -101,8 +113,8 @@ export function createDelayUnit(
   shell.input.connect(mono)
   mono.connect(left.delay)
   connectSeries([mono, feedRight, right.delay])
-  left.cross.connect(right.delay)
-  right.cross.connect(left.delay)
+  left.cross.connect(right.feedback)
+  right.cross.connect(left.feedback)
   left.out.connect(merger, 0, 0)
   right.out.connect(merger, 0, 1)
   connectSeries([merger, ducker.ducked, shell.wet])

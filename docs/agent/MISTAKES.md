@@ -556,6 +556,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** compare a live note with its recorded sound to within one callback plus the instrument's own delay, and never expect the sound before the note. Exact alignment needs every live note started a fixed time ahead, which the player hears as latency.
 **See:** `src/features/studio/record/midi/studio-midi-arm.ts`, `src/e2e/studio-midi-lanes.spec.ts`
 
+### Add at most two signals at a node, or two builds of one graph render apart
+
+**Symptom:** two builds of the Studio voice lane rendered -141.7 to -142.6 dBFS apart in 7 of 7 tries (Chromium 148, 17 Nov 2026), the lane without its echo to the bit. The monitor probes left the echo out, blaming which node of its feedback cycle takes the extra render quantum.
+**Cause:** each echo line's delay added three signals: the input, its own repeat and the other line's. Float addition rounds differently in another order, and two builds of one graph can add a node's inputs in different orders. Two signals add the same either way.
+**Rule:** give a third signal a sum of its own first, so no node input adds more than two and no param more than one besides its own value, and pin it with a fan-in test on the fake graph. Before blaming a cycle, render the same graph several times: a rounding-sized difference is an order, not a timing.
+**See:** `src/lib/studio-fx/effects/delay.ts`, `src/lib/studio-fx/effects/delay.test.ts`, `src/lib/studio-fx/effects/dyneq.ts`
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
