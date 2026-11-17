@@ -300,12 +300,12 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Can you make a harmony by singing the tune a third higher?',
     pr: {
       needs:
-        'A practice card for the Harmony room (mercurypitch.com/exercises/harmony-line), which differs from the planned harmony-line drill in three ways (SEASON-2 § 7 item 14)',
+        "The planned harmony-line drill, which the Harmony room meets in part: its lines are random, its third below comes only at Professional, and it folds no octave (SEASON-2 § 7 item 14); the vocal coach's look at the room's card",
       link: {
-        href: '/jam?lesson=26',
-        addr: 'mercurypitch.com/jam',
-        label: 'Harmony Stack',
-        note: 'with a friend: the host picks Harmony Stack',
+        href: '/exercises/harmony-line?lesson=26',
+        addr: 'mercurypitch.com/exercises/harmony-line',
+        label: 'Harmony',
+        note: 'a third above Merc',
       },
     },
   },

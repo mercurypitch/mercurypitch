@@ -354,7 +354,7 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[25]).toEqual([10, 21, 23])
   })
 
-  it('gives Lesson 26 its page and its reading time, a draft with no film, and the Jam link to Harmony Stack', () => {
+  it("gives Lesson 26 its page and its reading time, a draft with no film, and the Harmony room's link", () => {
     // Act
     const L26 = LESSONS_2.find((L) => L.n === 26)
 
@@ -373,13 +373,13 @@ describe('Season 2', () => {
       "Lessons 12 and 24's pages at /learn/12 and /learn/24, the lab test (its WEB-SPEC, What the kit and the app still need, item 8), and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
     )
     expect(L26?.pr.link).toEqual({
-      href: '/jam?lesson=26',
-      addr: 'mercurypitch.com/jam',
-      label: 'Harmony Stack',
-      note: 'with a friend: the host picks Harmony Stack',
+      href: '/exercises/harmony-line?lesson=26',
+      addr: 'mercurypitch.com/exercises/harmony-line',
+      label: 'Harmony',
+      note: 'a third above Merc',
     })
-    // the drill it still needs stays the team's
-    expect(L26?.pr.needs).toMatch(/^A practice card for the Harmony room/)
+    // the drill the room meets in part stays the team's
+    expect(L26?.pr.needs).toMatch(/^The planned harmony-line drill/)
     // Lesson 12 from Season 1, and Lesson 24
     expect(SEASON_2.prereq[26]).toEqual([12, 24])
   })
@@ -412,7 +412,9 @@ describe('Season 2', () => {
     expect(L27?.pr.needs).toMatch(
       /^An address that opens Chord Stacker on the dominant seventh and its inversions/,
     )
-    expect(L27?.pr.needs).not.toMatch(/today it shuffles|a practice card for Stack/)
+    expect(L27?.pr.needs).not.toMatch(
+      /today it shuffles|a practice card for Stack/,
+    )
     // Lesson 12 from Season 1, and Lesson 23
     expect(SEASON_2.prereq[27]).toEqual([12, 23])
   })

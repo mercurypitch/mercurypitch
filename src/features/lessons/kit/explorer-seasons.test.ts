@@ -556,7 +556,9 @@ describe('the explorer, a tab per season', () => {
         a.getAttribute('href'),
       ),
     ).toEqual(['#top'])
-    expect(card?.querySelector('a.addr[href="/jam?lesson=26"]')).not.toBeNull()
+    expect(
+      card?.querySelector('a.addr[href="/exercises/harmony-line?lesson=26"]'),
+    ).not.toBeNull()
   })
 
   it("opens Lesson 27's page on its own card, Ready, with the Exercises link", async () => {

@@ -479,13 +479,13 @@ describe("Lesson 26's page", () => {
       doc().querySelectorAll<HTMLAnchorElement>('a[href*="lesson="]'),
     )
 
-    // Assert: Harmony Stack and Drone Intonation, on the card and in the
-    // footer (WEB-SPEC, Practice links)
+    // Assert: Merc's Harmony room and Harmony Stack, on the card and in the
+    // footer (WEB-SPEC, Practice links; FACTS 68a)
     expect(links.map((a) => a.getAttribute('href'))).toEqual([
+      '/exercises/harmony-line?lesson=26',
       '/jam?lesson=26',
-      '/exercises/thirds-on-a-drone?lesson=26',
+      '/exercises/harmony-line?lesson=26',
       '/jam?lesson=26',
-      '/exercises/thirds-on-a-drone?lesson=26',
     ])
     for (const a of links) {
       expect([a.target, a.rel]).toEqual(['_blank', 'noopener'])
@@ -501,11 +501,11 @@ describe("Lesson 26's page", () => {
     const rest = card?.querySelector('[data-ending="rest"]')
     const drills = card?.querySelector('[data-ending="practise"]')
 
-    // Assert: Lesson 10's rest form, naming Harmony Stack (FACTS 66)
-    expect(words(card?.querySelector('h3'))).toBe('Harmony Stack, in Jam')
+    // Assert: Lesson 10's rest form, naming Harmony (FACTS 66, 68a)
+    expect(words(card?.querySelector('h3'))).toBe('Harmony, with Merc')
     expect(rest?.hasAttribute('hidden')).toBe(true)
     expect(words(rest)).toBe(
-      'Rest today. Harmony Stack will be here when your voice feels comfortable: mercurypitch.com/jam',
+      'Rest today. Harmony will be here when your voice feels comfortable: mercurypitch.com/exercises/harmony-line',
     )
     expect(rest?.querySelector('a')).toBeNull()
     expect(drills?.hasAttribute('hidden')).toBe(false)
