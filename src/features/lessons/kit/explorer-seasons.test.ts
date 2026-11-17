@@ -277,7 +277,9 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/pitch-training?lesson=18"]'),
+      card?.querySelector(
+        'a.addr[href="/exercises/sing-it-in-time?lesson=18"]',
+      ),
     ).not.toBeNull()
   })
 

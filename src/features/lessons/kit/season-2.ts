@@ -126,13 +126,12 @@ const ENTRIES_2: readonly Lesson[] = [
     page: '/learn/18',
     hook: "How do singers read a tune they've never heard without stopping on every note?",
     pr: {
-      needs:
-        'A practice card for Sing It in Time, which shipped on 15 November 2026 (mercurypitch.com/exercises/sing-it-in-time), with Sight-Singing as it is since 16 November 2026',
+      needs: "The vocal coach's look at the card's lines for Sing It in Time",
       link: {
-        href: '/pitch-training?lesson=18',
-        addr: 'mercurypitch.com/pitch-training',
-        label: 'Exercises',
-        note: 'then tap Sight-Singing',
+        href: '/exercises/sing-it-in-time?lesson=18',
+        addr: 'mercurypitch.com/exercises/sing-it-in-time',
+        label: 'Sing It in Time',
+        note: 'three tunes at 60 BPM',
       },
     },
   },
@@ -193,7 +192,7 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'G major needs one sharp and D major two. Why does each key a fifth up keep its sharps and add one?',
     pr: {
       needs:
-        'A note-reading drill that reads key signatures, and a practice card for Sight-Singing, which spells by key since 16 November 2026',
+        "A note-reading drill that reads key signatures (Read the Note writes naturals only), and an address for Sight-Singing in the lesson's keys: it spells by key since 16 November 2026, but from the Exercises tab it takes the Singing tab's key",
       link: {
         href: '/?lesson=21#/compose',
         addr: 'mercurypitch.com/#/compose',

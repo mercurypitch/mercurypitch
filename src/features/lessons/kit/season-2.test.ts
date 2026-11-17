@@ -148,13 +148,13 @@ describe('Season 2', () => {
       "Lessons 16 and 17's pages at /learn/16 and /learn/17, and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
     )
     expect(L18?.pr.link).toEqual({
-      href: '/pitch-training?lesson=18',
-      addr: 'mercurypitch.com/pitch-training',
-      label: 'Exercises',
-      note: 'then tap Sight-Singing',
+      href: '/exercises/sing-it-in-time?lesson=18',
+      addr: 'mercurypitch.com/exercises/sing-it-in-time',
+      label: 'Sing It in Time',
+      note: 'three tunes at 60 BPM',
     })
-    // the drill it still needs stays the team's
-    expect(L18?.pr.needs).toMatch(/^A practice card for Sing It in Time/)
+    // what it still waits for stays the team's: no card waits for a drill
+    expect(L18?.pr.needs).not.toMatch(/practice card for Sing It in Time/)
     // Lesson 16's staff, and Lesson 17's beat grid
     expect(SEASON_2.prereq[18]).toEqual([16, 17])
   })
@@ -289,7 +289,7 @@ describe('Season 2', () => {
     })
     // the drills it still needs stay the team's
     expect(L21?.pr.needs).toBe(
-      'A note-reading drill that reads key signatures, and a practice card for Sight-Singing, which spells by key since 16 November 2026',
+      "A note-reading drill that reads key signatures (Read the Note writes naturals only), and an address for Sight-Singing in the lesson's keys: it spells by key since 16 November 2026, but from the Exercises tab it takes the Singing tab's key",
     )
     // Lesson 6 from Season 1, and Lesson 15
     expect(SEASON_2.prereq[21]).toEqual([6, 15])

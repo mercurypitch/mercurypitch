@@ -67,19 +67,19 @@ const links = () =>
     .map((a) => [a.getAttribute('href'), a.getAttribute('target')])
 
 describe('the practice card', () => {
-  it('links Sight-Singing and The Chart, each in a new tab', () => {
+  it('links Sing It in Time and The Chart, each in a new tab', () => {
     // Act
     initWrap()
 
     // Assert (WEB-SPEC, Practice links)
     expect(links()).toEqual([
-      ['/pitch-training?lesson=18', '_blank'],
-      ['/ear-lab?lesson=18', '_blank'],
+      ['/exercises/sing-it-in-time?lesson=18', '_blank'],
+      ['/exercises/quarters-halves-and-eighths?lesson=18', '_blank'],
     ])
     expect(shown(el('#practiseCard [data-ending="rest"]'))).toBe(false)
   })
 
-  it('takes the rest form after Effortful, Uncomfortable or Just listen today: Sight-Singing no longer a link, The Chart kept', () => {
+  it('takes the rest form after Effortful, Uncomfortable or Just listen today: Sing It in Time no longer a link, The Chart kept', () => {
     // Arrange
     initWrap()
 
@@ -87,9 +87,11 @@ describe('the practice card', () => {
     VisitEnding.set('rest')
 
     // Assert (FACTS 60)
-    expect(links()).toEqual([['/ear-lab?lesson=18', '_blank']])
+    expect(links()).toEqual([
+      ['/exercises/quarters-halves-and-eighths?lesson=18', '_blank'],
+    ])
     expect(words(el('#practiseCard [data-ending="rest"]'))).toBe(
-      'Rest today. Sight-Singing will be here when your voice feels comfortable: mercurypitch.com/pitch-training, then tap Sight-Singing.',
+      'Rest today. Sing It in Time will be here when your voice feels comfortable: mercurypitch.com/exercises/sing-it-in-time',
     )
     expect(shown(el('#practiseCard [data-ending="rest"]'))).toBe(true)
     expect(words(card().querySelector('.eyebrow'))).toBe('Rest today')
