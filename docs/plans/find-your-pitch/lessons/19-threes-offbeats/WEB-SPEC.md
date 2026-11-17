@@ -345,15 +345,20 @@ button.
 
 ## Practice links: what exists and what needs engineering
 
-- **Today**: Ear Lab, printed `mercurypitch.com/ear-lab` and linked `/ear-lab?lesson=19`, "then tap
-  Subdivide", with Pulse as the second drill (FACTS 46, 48, 49). The card says what Subdivide plays
-  at `c60f0fdcb`: two bars on a drum kit, the kick on beat 1, four pads out of five metres, its 6/8
-  six hits in two groups of three, its 3/4 three hits, each bar 1.5 s, a miss replayed slower. Pulse
-  plays a bar as clicks and is tapped back, and some of its bars hold a triplet or a note on an "and".
-- **Needs engineering: the `ear-drill` launch kind** (SEASON-2 § 5.2 item 12; code with tests), then
-  a subset as data: Subdivide on its two 3/4 and two 6/8 patterns only, `metre:3-4:a`, `metre:3-4:b`,
-  `metre:6-8:a` and `metre:6-8:b`, with two pads, 3/4 and 6/8 (FACTS 50). The card's text then
-  changes as LESSON.md's editorial note says.
+- **Today**: Subdivide on this lesson's set, printed
+  `mercurypitch.com/exercises/three-four-or-six-eight` and linked
+  `/exercises/three-four-or-six-eight?lesson=19`, since 17 November 2026, with Pulse as the second
+  drill on the Ear Lab's address, "then tap Time, then Pulse", since Merc's bench puts Pulse on
+  Time's sheet (FACTS 46, 48, 49, 50a). The card says what Subdivide plays: two bars on a drum kit,
+  the kick on beat 1, and the learner says whether they are 3/4 or 6/8, on the set's two pads; its
+  6/8 six hits in two groups of three, its 3/4 three hits, each bar 1.5 s, a miss replayed slower.
+  Pulse plays a bar as clicks and is tapped back, and some of its bars hold a triplet or a note on
+  an "and". Until then the link was the Ear Lab's, "then tap Subdivide", with four pads out of five
+  metres.
+- **Shipped on 16 November 2026: the `ear-drill` launch kind** (SEASON-2 § 5.2 item 12), and the
+  subset as data: Subdivide on its two 3/4 and two 6/8 patterns only, `metre:3-4:a`, `metre:3-4:b`,
+  `metre:6-8:a` and `metre:6-8:b`, with two pads, 3/4 and 6/8 (FACTS 50). The card's text changed
+  as LESSON.md's editorial note says.
 - **Needs engineering: the lesson marker** for 15 to 28 (SEASON-2 § 5.2 item 21), without which
   `?lesson=19` is an ordinary visit and First Light opens (FACTS 47). It is part of the kit PR this
   page waits on.
@@ -368,10 +373,10 @@ The lead writes these entries; this spec gives them:
   `lane: 'theory'`, `title: 'Threes, offbeats and syncopation'`, `short: 'Threes and offbeats'`,
   `topics: ['T08']`, `minutes: 12`, `page: '/learn/19'`, `hook: 'Six notes in a bar, grouped two
 ways: why does one feel like two beats and the other like three?'`, `pr.link` with `href:
-'/ear-lab?lesson=19'`, `addr: 'mercurypitch.com/ear-lab'`, `label: 'Ear Lab'` and `note: 'then tap
-Subdivide'`, since the explorer prints the label, a comma and the note (`practiseMarkup`,
-  `src/features/lessons/kit/explorer.ts:191-195`), and `pr.needs: 'Subdivide with only 3/4 and 6/8
-(an ear-drill link)'`, which no page draws (`src/features/lessons/kit/season.ts:90-106`). The edge
+'/exercises/three-four-or-six-eight?lesson=19'`, `label: 'Subdivide'` and `note: '3/4 and 6/8'`
+  since 17 November 2026, the explorer printing the label, a comma and the note (`practiseMarkup`,
+  `src/features/lessons/kit/explorer.ts:192-196`), and no `pr.needs`, which no page draws, since the
+  set it waited for shipped (FACTS 50a; `src/features/lessons/kit/season.ts:90-106`). The edge
   `[17, 19]` (SEASON-2 § 4.3). The topic T08, "Simple and compound metre; triplets; syncopation"
   (SEASON-2 § 4.1).
 - **The figure** beside its explorer card: six pads in a row, ungrouped, with nothing written, a

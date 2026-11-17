@@ -300,18 +300,18 @@ six.
 
 - Eyebrow: Practise in MercuryPitch
 - Title: Subdivide
-- Text: Ear Lab's Subdivide plays two bars on a drum kit, the kick on beat 1, and you name the metre
-  from four pads. Its 6/8 is six hits in two groups of three: the cold open's drums, or a second
+- Text: Ear Lab's Subdivide plays two bars on a drum kit, the kick on beat 1, and you say whether
+  the bars are 3/4 or 6/8. Its 6/8 is six hits in two groups of three: the cold open's drums, or a second
   kick on the fourth hit. Its 3/4 is three hits, one on each beat. Each bar lasts 1.5 seconds, a little
   quicker than this page's. Listen for the groups. A miss plays the bars again, slower.
-- Address: Practise it free: **mercurypitch.com/ear-lab**, then tap Subdivide.
+- Address: Practise it free: **mercurypitch.com/exercises/three-four-or-six-eight**
 - Second drill: For triplets and offbeats, Ear Lab's Pulse plays a bar as clicks, one on each note's
   start, and you tap it back. Some of its bars hold a triplet or a note on an "and". Free:
-  **mercurypitch.com/ear-lab**, then tap Pulse.
+  **mercurypitch.com/ear-lab**, then tap Time, then Pulse.
 
-_[Editorial: when the `ear-drill` launch kind ships (SEASON-2 § 5.2 item 12; WEB-SPEC, Practice
-links), the card can open Subdivide with only its 3/4 and 6/8 bars, and "you name the metre from four
-pads" becomes "you say whether the bars are 3/4 or 6/8". Every link carries `?lesson=19` before any
+_[Editorial: since 17 November 2026 the card opens Subdivide with only its 3/4 and 6/8 bars, the set
+SEASON-2 § 5.2 item 12 gave this lesson, and "you name the metre from four pads" became "you say
+whether the bars are 3/4 or 6/8" (FACTS 50a). Pulse keeps the Ear Lab's address, by Time. Every link carries `?lesson=19` before any
 hash, so First Light, the app's intro, steps aside on a first visit once the lesson marker reads
 Season 2's numbers (FACTS 47); the page is not built before that, so the card has no first-visit
 line. Nothing on the page is sung, so the card has no rest version.]_
@@ -328,8 +328,9 @@ live, the card says "Coming later" and "See it on the map": FACTS 5.)
 
 ## Footer
 
-Season 2 · Lesson 19 · Threes, offbeats and syncopation. The practice link, printed
-mercurypitch.com/ear-lab and linking `/ear-lab?lesson=19`, with "Subdivide and Pulse are free."
+Season 2 · Lesson 19 · Threes, offbeats and syncopation. The practice links, printed
+mercurypitch.com/exercises/three-four-or-six-eight and mercurypitch.com/ear-lab, with "Subdivide and
+Pulse are free."
 Lesson 1's fonts line, and "Every sound on this page is synthesised in your browser."
 
 ## Section headings

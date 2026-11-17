@@ -195,8 +195,8 @@ Lesson 6, Step N again". Lesson 10 asked the same two; spacing them again is del
 - **Shipped on 15 November 2026:** the `perfect-intervals` slug, 5, 7 and 12 (SEASON-2 § 5 item 16;
   data, one line, as launches take whole semitones 1 to 12 upward, `launch-override.ts:57`,
   :65-76). The card does not link it yet.
-- **Waits:** the `ear-drill` subset of perfect intervals and the tritone (§ 5 item 12);
-  `?lesson=23` (§ 5 item 21).
+- **Linked since 17 November 2026, in Leap's place:** the `ear-drill` subset of perfect intervals and
+  the tritone, `mercurypitch.com/exercises/perfect-or-tritone` (§ 5 item 12; FACTS 63a).
 - Not planned: sung tritones (SEASON-2 § 5.3).
 
 ## Closing tease and next card

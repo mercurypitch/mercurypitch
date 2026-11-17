@@ -348,11 +348,11 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
 - Checkpoint (theory, unscored): tap the beat under a 6/8 tune and then a 3/4 tune, two taps a bar
   against three; optionally, say the count aloud. A traditional 6/8 song would make the point, if
   one can be set in a new arrangement (§ 8, risk 11).
-- Practise: `/ear-lab?lesson=19`, then tap Subdivide, which plays two bars of 3/4, 4/4, 5/4, 6/8 or
-  7/8 and asks which (`src/features/ear-lab/SubdivideDrill.tsx:1-10`; `src/lib/ear/metre.ts:41-47`),
-  with 6/8 played in two groups of three (metre.ts:77, :79) and 3/4 on a quarter-note grid (:74,
-  :76); Pulse for the triplet and off-beat items (`src/lib/ear/banks.ts:232-275`). A run of only
-  3/4 against 6/8 needs the `ear-drill` launch kind (§ 5 item 12).
+- Practise: Subdivide on 3/4 and 6/8 (`/exercises/three-four-or-six-eight?lesson=19`; § 5 item 12),
+  where it otherwise plays two bars of 3/4, 4/4, 5/4, 6/8 or 7/8 and asks which
+  (`src/features/ear-lab/SubdivideDrill.tsx:1-10`; `src/lib/ear/metre.ts:41-47`), with 6/8 played in
+  two groups of three (metre.ts:77, :79) and 3/4 on a quarter-note grid (:74, :76); Pulse, on the
+  Ear Lab's Time station, for the triplet and off-beat items (`src/lib/ear/banks.ts:232-275`).
 - Facts to check: compound metre, triplets and syncopation (OMT's simple and compound metre
   chapters, musictheory.net; chapter numbers to check); the AP reports (as cited); the app (above);
   the 6/8 song's metre and rights, if one is used.
@@ -532,12 +532,12 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
 - Checkpoint (theory, unscored sing-along): after the comfort check, sing do to so, then so up to do
   (a fifth, then its inversion, a fourth); listen to fa and ti together, the tritone, without
   singing it.
-- Practise: Ear Lab's Leap (`/ear-lab?lesson=23`, then tap Leap): twelve choices from the minor
-  second to the octave, the tritone among them (`src/lib/ear/banks.ts:36-109`, :72), up or down at
-  random (`src/features/ear-lab/LeapDrill.tsx:126`). Needs building: an Interval Trainer slug
-  `perfect-intervals` with intervals 5, 7 and 12 (data, one registry line; launch intervals are
-  whole semitones 1 to 12, upward, `src/features/practice-intelligence/launch-override.ts:65-76`),
-  and the `ear-drill` subset of perfect intervals and the tritone (§ 5 item 12).
+- Practise: Leap on the perfect intervals and the tritone (`/exercises/perfect-or-tritone?lesson=23`;
+  § 5 item 12), four of Leap's twelve choices from the minor second to the octave
+  (`src/lib/ear/banks.ts:36-109`, :72), up or down at random (`src/features/ear-lab/LeapDrill.tsx:126`).
+  Shipped and not linked: an Interval Trainer slug `perfect-intervals` with intervals 5, 7 and 12
+  (data; launch intervals are whole semitones 1 to 12, upward, `src/features/practice-intelligence/launch-override.ts:65-76`),
+  whose sung card waits for its words and the coach's look (§ 5 item 16).
 - Facts to check: interval names, qualities and inversion (musictheory.net and ABRSM Grades 3 to 5,
   as the benchmark cites them for T13; Open Music Theory's intervals chapter); 6 of 12 semitones
   (arithmetic); the fourth and fifth as 4:3 and 3:2 (Lesson 13's harmonics; pedagogy-research.md:675);
@@ -868,11 +868,11 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 | 16     | Sight-Singing, at `/exercises/sing-what-you-see`, its phrases in G    | Nothing: its card links `/exercises/sing-what-you-see` and says what the drill does (item 10 shipped 16 November)   |
 | 17     | The Chart's set, `/exercises/quarters-halves-and-eighths`; Pulse      | Nothing: its card links The Chart's set (item 12 shipped on 16 November 2026)                                       |
 | 18     | Sight-Singing (pitch only), The Chart, `/exercises/sing-it-in-time`   | Card links to Sing It in Time, the new Sight-Singing (items 11 and 10 shipped), the sheet view (item 20 shipped)    |
-| 19     | Ear Lab: Subdivide, Pulse; `/exercises/three-four-or-six-eight`       | Its card's link to Subdivide's 3/4 and 6/8 (item 12 shipped on 16 November 2026)                                    |
+| 19     | Subdivide's set, `/exercises/three-four-or-six-eight`; Pulse          | Nothing: its card links Subdivide's 3/4 and 6/8 (item 12 shipped on 16 November 2026)                               |
 | 20     | Scale Runner, Pentatonic; Staccato Precision                          | Its card's link to `/exercises/pentatonic-run` (item 13 shipped on 15 November 2026)                                |
 | 21     | Compose's key picker; `/?lesson=21#/singing/sheet?key=G`; Ear Lab     | A card for the sheet in a key (item 20 shipped), key-aware Sight-Singing (item 10 shipped); circle toy (kit, § 6.2) |
 | 22     | Voice Mirror's hold                                                   | Vibrato exercise copy, default and `durationSec` (item 14, copy and code)                                           |
-| 23     | Ear Lab: Leap, and Leap's set `/exercises/perfect-or-tritone`         | A sung card for `/exercises/perfect-intervals` (item 16 shipped); its card's link to Leap's set (item 12 shipped)   |
+| 23     | Leap's set `/exercises/perfect-or-tritone`, its card's link           | A sung card for `/exercises/perfect-intervals` (item 16 shipped), its words and the coach's look                    |
 | 24     | Drone Intonation (`/exercises/thirds-on-a-drone`); Ear Lab: Beat Hunt | Its card's swap to `/exercises/harmony-on-a-drone`, which opens on pure tuning (item 15 shipped)                    |
 | 25     | `/exercises/te-or-ti`; `/exercises/sight-sing-harmonic-minor`         | Cards for `harmonic-minor-run`, `melodic-minor-run`, Sight-Singing's (items 13, 10 shipped), `te-or-ti` (item 12)   |
 | 26     | Jam's Harmony Stack (two or more people); Drone Intonation's thirds   | Harmony-line drill (item 17, code)                                                                                  |

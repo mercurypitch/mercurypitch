@@ -171,7 +171,8 @@ feelings apply.
   groups. And **Pulse** for the triplet and the "and" patterns (R19-13). `?lesson=19` is not a marker
   yet (R19-15).
 - **Missing:** the `ear-drill` subset of 3/4 against 6/8 only (SEASON-2 § 5 item 12); any compound
-  metre written in the app (R19-12; § 5.3 lists the reading gap).
+  metre written in the app (R19-12; § 5.3 lists the reading gap). Since 17 November 2026 the card
+  links Subdivide on that subset, `mercurypitch.com/exercises/three-four-or-six-eight` (FACTS 50a).
 
 ## Go deeper
 

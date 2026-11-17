@@ -487,22 +487,22 @@ other, paused off screen, and the still images when WebGL fails.
 
 ## Practice links: what exists and what needs engineering
 
-- **Today, Ear Lab's Leap.** The link is `/ear-lab?lesson=23`, printed "mercurypitch.com/ear-lab",
-  with "then tap Leap" (FACTS 62). Leap plays two notes, one after the other, going up or down at a
-  coin flip from a lower note roved between C3 and A4, and the learner names the distance from
-  twelve answers, the minor second to the octave, labelled m2 to P8 with TT for the tritone; a round
-  has 12 pairs, and a miss replays the pair more slowly (FACTS 60). The card points at the four this
-  lesson names, by Leap's own labels (FACTS 61). Ear Lab is free (FACTS 59). Leap asks for no voice,
-  so nothing about it needs the voice-safety lines.
+- **Today, Leap on this lesson's four.** The link is `/exercises/perfect-or-tritone?lesson=23`,
+  printed "mercurypitch.com/exercises/perfect-or-tritone", since 17 November 2026 (FACTS 63a). Leap
+  plays two notes, one after the other, going up or down at a coin flip from a lower note roved
+  between C3 and A4, and with the set the learner names which of four it is, P4, TT, P5 or P8, on
+  Leap's own labels; a run has 12 pairs, and a miss replays the pair more slowly (FACTS 60, 61, 63a).
+  Ear Lab is free (FACTS 59). Leap asks for no voice, so nothing about it needs the voice-safety
+  lines. Until then the link was `/ear-lab?lesson=23`, "then tap Leap", with all twelve answers.
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
   Lesson 8's rest line above its text and keeps the link (Toys 5; FACTS 56).
 - **The first visit.** `?lesson=23` is not a lesson marker today, so a first visit would meet First
   Light, the app's intro, before Ear Lab. The page is not built before SEASON-2 § 5.2 item 21 widens
   the marker, so the card and the footer carry no first-visit line, as Lesson 19's carry none
   (FACTS 62).
-- **Needed: the `ear-drill` launch kind** (SEASON-2 § 5.2 item 12), which would open Leap with only
-  P4, TT, P5 and P8. When it ships, the card's text changes as LESSON.md's editorial note says, and
-  the link opens the subset (FACTS 63).
+- **Shipped on 16 November 2026: the `ear-drill` launch kind** (SEASON-2 § 5.2 item 12), which
+  opens Leap with only P4, TT, P5 and P8. The card's text changed as LESSON.md's editorial note
+  says, and the link opens the subset (FACTS 63, 63a).
 - **Not linked yet: Interval Trainer's `perfect-intervals`** (item 16), intervals 5, 7 and 12 upward,
   which shipped on 15 November 2026, and Lesson 9's `leap-ladder`. Either is a sung drill, so its
   card brings the comfort lines, a rest version without it and the coach's look; the plan made the
@@ -522,11 +522,12 @@ quality'`, `topics: ['T13']`, with T13's name, "Interval quality: major, minor, 
   comment in Lesson 6's form (`src/features/lessons/kit/season.ts:270`), naming Lesson 6's page and
   the vocal coach's look. The entry decides nothing about being live: the draft list and the console
   do.
-- `pr.link`: `href` `/ear-lab?lesson=23`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear Lab" and
-  `note` "then tap Leap", which the explorer's card prints after the address as "Ear Lab, then tap
-  Leap" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:191-195`). `pr.needs`, "Leap with
-  only the perfect intervals and the tritone (the ear-drill launch kind)", stays until it ships; it
-  is admin only, never drawn on a lesson page (`src/features/lessons/kit/season.ts:102-103`).
+- `pr.link`: `href` `/exercises/perfect-or-tritone?lesson=23`, `addr`
+  `mercurypitch.com/exercises/perfect-or-tritone`, `label` "Leap" and `note` "P4, TT, P5 and P8"
+  since 17 November 2026, which the explorer's card prints after the address as "Leap, P4, TT, P5
+  and P8" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:192-196`). `pr.needs` names the
+  sung card for `perfect-intervals` that still waits; it is admin only, never drawn on a lesson page
+  (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [6, 23], a cross-season edge, as SEASON-2 § 4.3 gives it (FACTS 2). Lesson 23's
   prerequisite list is then [6] (`PREREQ`, `src/features/lessons/kit/season.ts:474-480` at `ad0a099f7`).
 - The tease on Lesson 22's card is this lesson's, set on Lesson 23 in the lesson copy (`LESSON_COPY`,

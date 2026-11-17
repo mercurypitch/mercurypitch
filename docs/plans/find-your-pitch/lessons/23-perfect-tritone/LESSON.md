@@ -364,20 +364,20 @@ major fifth.
 
 - Eyebrow: Practise in MercuryPitch
 - Title: Ear Lab's Leap
-- Text: Leap plays two notes, one after the other, going up or down, and you name the distance from
-  twelve answers, a semitone to an octave. Listen for this lesson's perfect fourth (P4), fifth (P5)
-  and octave (P8), and the tritone (TT) between them.
-- Address: Practise it free: **mercurypitch.com/ear-lab**, then tap Leap.
+- Text: Leap plays two notes, one after the other, going up or down, and you name which of four it
+  is: this lesson's perfect fourth (P4), fifth (P5) and octave (P8), and the tritone (TT) between
+  them.
+- Address: Practise it free: **mercurypitch.com/exercises/perfect-or-tritone**
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. This page's sung
   line will be here when your voice feels comfortable." Then Leap, as above, since it asks for no
   voice.
 
-_[Editorial: the link is `/ear-lab?lesson=23`. The page is not built before the lesson marker reads
-Season 2's numbers (SEASON-2 § 5.2 item 21), so First Light, the app's intro, steps aside on a first
-visit and the card has no first-visit line (FACTS 62). When the `ear-drill` launch kind ships
-(SEASON-2 § 5.2 item 12), the card can open Leap with only its P4, TT, P5 and P8, and "you name the
-distance from twelve answers, a semitone to an octave. Listen for" becomes "you name which of four
-it is:"; the `perfect-intervals` slug shipped on 15 November 2026 (item 16), so a sung card can
+_[Editorial: the link is `/exercises/perfect-or-tritone?lesson=23` since 17 November 2026, Leap
+with only its P4, TT, P5 and P8, the set SEASON-2 § 5.2 item 12 gave this lesson, and "you name the
+distance from twelve answers, a semitone to an octave. Listen for" became "you name which of four
+it is:" (FACTS 63a). Before, it was `/ear-lab?lesson=23`. The page is not built before the lesson
+marker reads Season 2's numbers (SEASON-2 § 5.2 item 21), so First Light, the app's intro, steps
+aside on a first visit and the card has no first-visit line (FACTS 62). The `perfect-intervals` slug shipped on 15 November 2026 (item 16), so a sung card can
 follow, with the care lines and the coach's look (FACTS 63). The rest version is Lesson 8's: Leap asks for no voice, so it
 stays, and only the sung line is put off (FACTS 56).]_
 
@@ -398,7 +398,7 @@ and "See it on the map": FACTS 5.)
 ## Footer
 
 Season 2 · Lesson 23 · Perfect, major, minor and the tritone. The practice link, printed
-mercurypitch.com/ear-lab and linking `/ear-lab?lesson=23`, with "Leap is free." Lesson 1's fonts
+mercurypitch.com/exercises/perfect-or-tritone, with "Leap is free." Lesson 1's fonts
 line, and "Every sound on this page is synthesised in your browser." No decorative clef or staff: on
 a Season 2 page a staff is always music (SEASON-2 § 1.5 item 7).
 
