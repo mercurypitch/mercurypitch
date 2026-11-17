@@ -972,7 +972,7 @@ and First Light does not step aside. Item 21 fixes it.
     P4, TT, P5 and P8, `/exercises/perfect-or-tritone`; Te against Ti in Gravity (Lesson 25),
     `/exercises/te-or-ti`; major against dominant seventh in Stack (Lesson 27),
     `/exercises/major-or-dominant-seventh` (`src/features/exercises/slug-map.ts:240-285`). Their
-    cards link all but Lesson 27's. A slug with no items opens its drill whole, so an address for a
+    cards link them all. A slug with no items opens its drill whole, so an address for a
     whole drill, or Lesson 2's m2 and M2, is one registry line.
 13. **Scale Runner's scale types: shipped on 15 November 2026.** Harmonic Minor, Melodic Minor and
     Minor Pentatonic run beside the first four
