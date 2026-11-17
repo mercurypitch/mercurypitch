@@ -11,7 +11,13 @@
 // each lane taking its own pick, and both go with the last lane on it. A
 // microphone is still there while its track is live; an instrument while its
 // port is connected. Only a microphone's channels can be metered beside a
-// take: an instrument has none.
+// take: an instrument has none. The lanes record from one microphone at a
+// time (studio-mic-share.ts), but a re-arm onto a new stream (the browser
+// took the old one, or the lane moved to another device) opens it while a
+// lane on the old one still glides out, up to a quarter of a second
+// (lane-arms.ts `close`). The meters and the opening the Inputs view reads
+// (`tap`, `capture`) are the newest live microphone's from the re-arm on,
+// never the old, ended one's.
 //
 // A new microphone source has first moments to wait out before a monitor
 // rises on it (input-monitor.ts): its samples arrive late and mid-waveform,
@@ -52,6 +58,7 @@ export function isStudioInstrumentHold(
 interface SharedMicrophone {
   /** Which opening of a microphone this is: a new number each time one opens. */
   readonly capture: number
+  readonly stream: MediaStream
   readonly source: AudioNode
   readonly channels: StudioInputChannels
   tap(): StudioInputTap
@@ -92,6 +99,7 @@ export function createStudioArmedInputs(
     const channels = openStudioInputChannels(context, source, stream)
     const made: SharedMicrophone = {
       capture: ++opened,
+      stream,
       source,
       channels,
       tap: () => studioInputTap({ context, source, stream, lane: channels }),
@@ -100,6 +108,19 @@ export function createStudioArmedInputs(
     }
     microphones.set(stream, made)
     return made
+  }
+
+  /**
+   * The microphone the armed lanes record from now: the newest still live.
+   * One opened before it stays here only while a lane on it glides out
+   * (lane-arms.ts `close`), its stream ended or about to be.
+   */
+  function current(): SharedMicrophone | undefined {
+    const open = [...microphones.values()].reverse()
+    return (
+      open.find((microphone) => studioMicrophoneLive(microphone.stream)) ??
+      open[0]
+    )
   }
 
   function openMicrophone(
@@ -158,13 +179,11 @@ export function createStudioArmedInputs(
     },
     /** The armed microphone's channels, for meters beside a take on its own split; null while no lane holds one. */
     tap(): StudioInputTap | null {
-      const [first] = microphones.values()
-      return first?.tap() ?? null
+      return current()?.tap() ?? null
     },
     /** Which opening of the microphone the lanes share; null while none holds one. */
     capture(): number | null {
-      const [first] = microphones.values()
-      return first?.capture ?? null
+      return current()?.capture ?? null
     },
   }
 }

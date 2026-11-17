@@ -460,6 +460,45 @@ describe('a lane disarmed while its monitor is heard', () => {
     expect(h.view()).toMatchObject({ phase: 'armed', error: null })
   })
 
+  it("meters a re-arm's new input from its press, not the input before it while that one closes late", async () => {
+    // Arrange: the browser took the microphone, or the lane moved to another
+    // device, and the lane re-arms on a new stream inside the release.
+    const before = oneInput(undefined)
+    const after = oneInput(undefined)
+    const sources: FakeGraphNode[] = []
+    let acquireMic = before.acquireMic
+    const { h, scheduler } = monitored({
+      acquireMic: (trackId) => acquireMic(trackId),
+      createSource: () => {
+        sources.push(fakeGraphNode('source'))
+        return sources.at(-1) as unknown as AudioNode
+      },
+    })
+    await h.recorder.arm('lane-1')
+    hear(h, scheduler)
+    const first = h.view().capture
+    h.recorder.disarm()
+    scheduler.advance(100)
+
+    // Act
+    acquireMic = after.acquireMic
+    await h.recorder.arm('lane-1')
+    const rearmed = h.view().capture
+    const tap = h.recorder.inputTap()
+    const meter = fakeGraphNode('meter')
+    tap?.send(0, meter as unknown as AudioNode)
+    scheduler.advance(RELEASED_MS - 100)
+
+    // Assert
+    expect(rearmed).not.toBeNull()
+    expect(rearmed).not.toBe(first)
+    expect(tap?.track).toBe(after.stream.getAudioTracks()[0])
+    expect(sources[1].edges.map(([to]) => to)).toContain(meter)
+    expect(sources[0].edges.map(([to]) => to)).not.toContain(meter)
+    // The late close leaves the meter where it is: nothing to read again.
+    expect(h.view().capture).toBe(rearmed)
+  })
+
   it('closes cleanly after every hold is let go inside the glide, as another tab or a hidden page asks, and the next arm opens its input as ever', async () => {
     // Arrange
     const stops: Mock[] = []
