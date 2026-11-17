@@ -37,13 +37,23 @@
 
   position: fixed;
   inset: 0;
-  z-index: 40;
+  /* The native shell takes its rail away while a room is up, so the
+     room's own 40 is enough there. The web's tab bar and voice pill stay
+     on the page (380): its Ear Lab sets this above them and under the
+     sheets, and the bench's shell takes it too (EarLabPage.tsx,
+     EarRoomShell.module.css). */
+  z-index: var(--room-layer, 40);
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr) auto;
   /* Clip, not hidden: a hidden box is still a scroll container, and a
      focus move scrolled the room sideways. */
   overflow: clip;
   padding-top: env(safe-area-inset-top, 0px);
+  /* The web's cookie bar lies over the window's foot until a visitor has
+     answered it, and says how much of it it takes (lib/foot-space.ts). The
+     console stands on that, and so do the sheets; the room's ground still
+     runs under the bar. Nothing sets it in the native app. */
+  padding-bottom: var(--consent-banner-space, 0px);
   background:
     radial-gradient(90% 46% at 50% 36%, var(--room-glow-a), transparent 70%),
     radial-gradient(70% 34% at 82% 62%, var(--room-glow-b), transparent 70%),
@@ -1443,9 +1453,9 @@
   position: absolute;
   left: 0;
   right: 0;
-  bottom: 0;
+  bottom: var(--consent-banner-space, 0px);
   z-index: 11;
-  max-height: calc(100% - 48px);
+  max-height: calc(100% - 48px - var(--consent-banner-space, 0px));
   overflow: auto;
   overscroll-behavior: contain;
   padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px));
@@ -1563,7 +1573,8 @@
   position: absolute;
   left: 16px;
   right: 16px;
-  top: 50%;
+  /* The middle of what the cookie bar leaves, as the console stands on it. */
+  top: calc(50% - var(--consent-banner-space, 0px) / 2);
   z-index: 11;
   transform: translateY(-50%);
   padding: 20px;
@@ -1702,6 +1713,36 @@
   .sheet {
     max-width: 600px;
     margin-inline: auto;
+  }
+}
+
+/* A phone on its side, as a web visitor may hold one: the stage over the
+   console left the instrument a sliver (the console alone took 254 px of
+   390), so the console stands beside the stage instead, the instrument on
+   the left and Merc's line, the pads and the pinned row on the right. */
+@media (orientation: landscape) and (max-height: 500px) {
+  .room {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-rows: auto auto minmax(0, 1fr);
+  }
+
+  .header,
+  .runLine {
+    grid-column: 1 / -1;
+  }
+
+  .world {
+    grid-row: 3;
+    grid-column: 1;
+  }
+
+  .console {
+    grid-row: 3;
+    grid-column: 2;
+    align-self: end;
+    max-height: 100%;
+    overflow-y: auto;
+    overscroll-behavior: contain;
   }
 }
 

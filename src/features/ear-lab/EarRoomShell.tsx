@@ -9,8 +9,9 @@
 // nothing here creates an AudioContext or asks for the microphone —
 // the wizard does that only once its panel is opened and used.
 //
-// The Ear Lab with Merc (EAR_LAB_WITH_MERC, a phone build) draws its own
-// tab and drill room, so there the session bar and the bridge fold away:
+// The Ear Lab with Merc (EAR_LAB_WITH_MERC: the web, and a phone test
+// build) draws its own tab and drill room, so there the session bar and
+// the bridge fold away:
 // the shell keeps the room's picture (the alley's door ends on it), the
 // sound, the rack and the context the drills read.
 // ============================================================

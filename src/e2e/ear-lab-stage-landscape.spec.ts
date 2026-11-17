@@ -2,17 +2,17 @@
 // A drill is still a drill with the phone turned sideways
 // ============================================================
 //
-// The stage sizes itself by WIDTH, through a container query. A phone in
-// landscape is wide and short, so none of that fires and the console is
-// laid out for a screen twice as tall as the one it is on. Measured at
-// 844x390 mid-run: the console took 274px of 390 and, being sticky to the
-// bottom, covered the exercise body completely. The drill was not cramped,
-// it was invisible.
+// A phone in landscape is wide and short. The old stage sized itself by
+// width, so at 844x390 its console was laid out for a screen twice as tall
+// and covered the exercise body completely: 274px of 390. Merc's room (the
+// web's face of the Ear Lab since Nov 2026) stacked its console under
+// the stage the same way and took 254px of 390, so on a short screen held
+// sideways it stands the console beside the stage (merc/room.module.css).
 //
 // The assertion is the relationship, not the numbers: the console may not
 // take more of the screen than it leaves, and the instrument has to be on
-// screen above it. Pinning "console <= 161px" would fail the first time a
-// drill adds a row, and would still pass if the body went to zero.
+// screen and clear of it. Pinning "console <= 161px" would fail the first
+// time a drill adds a row, and would still pass if the stage went to zero.
 
 import { expect, test } from '@playwright/test'
 import { dismissOverlays, openNavTab } from './helpers/ui'
@@ -32,79 +32,84 @@ test('leaves the instrument on screen in landscape @smoke', async ({
 
   await openNavTab(page, 'tab-ear-lab')
   await page
-    .locator('[data-tour="ear.drills"] button', { hasText: 'Hairline' })
+    .locator('[data-testid="merc-station"][data-faculty="resolution"]')
+    .click()
+  await page
+    .getByTestId('merc-station-row')
+    .filter({ hasText: 'Hairline' })
     .first()
     .click()
   await expect(page.getByTestId('ear-stage')).toBeVisible()
 
-  await page.getByText('Practice run').click()
   const firstPad = page.locator(
     '[data-testid="ear-stage-pads"] button:not([disabled])',
     { hasText: 'The first' },
   )
-  await expect(firstPad).toBeVisible({ timeout: 10_000 })
+  await expect(firstPad).toBeVisible({ timeout: 20_000 })
 
-  // Answer one, because the last call is half the problem: the console is at
-  // its tallest once the verdict block is under the pads, and that is the
-  // state a singer spends the whole drill in. Measuring the first question
-  // measures the one console layout that never actually persists.
+  // Answer one, because the verdict is half the problem: Merc's bubble
+  // grows to say it, and that is the console at its tallest. Measuring the
+  // first question measures the one console that never persists.
   await firstPad.click()
-  // The block, not its "Last call" kicker: the kicker is pure chrome and the
-  // compaction under test is what hides it, so waiting on that text would
-  // only ever find the layout this test exists to replace.
-  await expect(page.locator('[class*="lastCall"]').first()).toBeVisible({
-    timeout: 10_000,
-  })
+  await expect(page.getByTestId('ear-stage')).toHaveAttribute(
+    'data-beat',
+    'reveal',
+    { timeout: 10_000 },
+  )
 
   const layout = await page.evaluate(() => {
-    const stage = document.querySelector('[data-testid="ear-stage"]')
-    if (stage === null) return null
-    const cls = (element: Element): string =>
-      typeof element.className === 'string'
-        ? element.className
-        : (element.getAttribute('class') ?? '')
-    const find = (name: string): Element | undefined =>
-      [...stage.children].find((child) => cls(child).includes(name))
-    const consoleEl = find('console')
-    const bodyEl = find('body')
-    const figure = stage.querySelector('[class*="figure"] > svg')
-    if (consoleEl === undefined || bodyEl === undefined || figure === null) {
-      return null
+    const room = document.querySelector('[data-testid="ear-stage"]')
+    const consoleEl = document.querySelector(
+      '[data-testid="ear-stage-console"]',
+    )
+    const figure = room?.querySelector('figure') ?? null
+    const drawn = figure?.querySelector('svg') ?? figure
+    if (room === null || consoleEl === null || drawn === null) return null
+    const box = (element: Element) => {
+      const rect = element.getBoundingClientRect()
+      return {
+        top: rect.top,
+        right: rect.right,
+        bottom: rect.bottom,
+        left: rect.left,
+        width: rect.width,
+        height: rect.height,
+      }
     }
     return {
-      viewportHeight: window.innerHeight,
-      consoleTop: consoleEl.getBoundingClientRect().top,
-      consoleHeight: consoleEl.getBoundingClientRect().height,
-      bodyTop: bodyEl.getBoundingClientRect().top,
-      figureBottom: figure.getBoundingClientRect().bottom,
-      figureHeight: figure.getBoundingClientRect().height,
+      viewport: { width: window.innerWidth, height: window.innerHeight },
+      console: box(consoleEl),
+      figure: box(drawn),
     }
   })
 
-  expect(layout, 'could not measure the stage').not.toBe(null)
+  expect(layout, 'could not measure the room').not.toBe(null)
   if (layout === null) return
+  const { viewport, console: desk, figure } = layout
 
-  // The console is sticky to the bottom and the body scrolls behind it by
-  // design, so "do they overlap" is not the question — how much of the
-  // screen the console claims is. At 274 of 390 there was nothing left to
-  // see; the drill has to get at least half its own stage back.
+  // How much of the screen the console claims: at 274 of 390 there was
+  // nothing left to see; the drill has to get at least half of it back.
   expect(
-    layout.consoleHeight,
+    desk.width * desk.height,
     'the console takes more of a landscape screen than it leaves for the drill',
-  ).toBeLessThan(layout.viewportHeight / 2)
+  ).toBeLessThan((viewport.width * viewport.height) / 2)
 
   // And the room it gives back reaches the instrument, rather than being
   // absorbed by padding: a figure clamped to nothing would satisfy the
   // check above while leaving the drill just as unreadable.
   expect(
-    layout.figureHeight,
+    figure.height,
     'the instrument has been squeezed to nothing',
   ).toBeGreaterThanOrEqual(80)
 
-  // The console starts below the top of the body, i.e. some of the stage is
-  // in front of it rather than the console owning the whole screen.
-  expect(
-    layout.consoleTop,
-    'the console starts at or above the body, leaving no stage visible',
-  ).toBeGreaterThan(layout.bodyTop)
+  // The instrument is on the screen and clear of the console, above it or
+  // beside it, and the console ends on the screen.
+  const clear =
+    desk.left >= figure.right - 1 ||
+    figure.left >= desk.right - 1 ||
+    desk.top >= figure.bottom - 1
+  expect(clear, 'the console covers the instrument').toBe(true)
+  expect(figure.top).toBeGreaterThanOrEqual(0)
+  expect(figure.bottom).toBeLessThanOrEqual(viewport.height + 1)
+  expect(desk.bottom).toBeLessThanOrEqual(viewport.height + 1)
 })

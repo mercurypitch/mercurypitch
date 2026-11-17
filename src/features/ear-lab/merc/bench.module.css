@@ -799,12 +799,14 @@
   position: fixed;
   left: 0;
   right: 0;
-  bottom: 0;
+  /* On the web's cookie bar while a visitor has not answered it, as the
+     room's console is (room.module.css). */
+  bottom: var(--consent-banner-space, 0px);
   z-index: var(--z-sheet, 600);
   /* A phone's width or a little more, in the middle of a tablet. */
   max-width: 600px;
   margin-inline: auto;
-  max-height: calc(100% - 64px);
+  max-height: calc(100% - 64px - var(--consent-banner-space, 0px));
   overflow: auto;
   overscroll-behavior: contain;
   padding: 0 16px calc(16px + env(safe-area-inset-bottom, 0px));
@@ -1091,7 +1093,9 @@
   /* The day's words in a phone's width, in the middle of a tablet. */
   padding: calc(12px + env(safe-area-inset-top, 0px))
     max(16px, calc((100% - 560px) / 2))
-    calc(24px + env(safe-area-inset-bottom, 0px));
+    calc(
+      24px + env(safe-area-inset-bottom, 0px) + var(--consent-banner-space, 0px)
+    );
   box-sizing: border-box;
   background-color: var(--room-ink);
   background-image:

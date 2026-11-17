@@ -37,6 +37,22 @@ describe('publishFootSpace', () => {
     expect(read()).toBe('')
   })
 
+  it('publishes what lies under a stage, when asked for what is below it', () => {
+    // The stage of Merc's room: its console stands under it, 300px of the
+    // window's foot, whatever the stage's own height and `bottom` say.
+    const el = pinned('0px')
+    el.getBoundingClientRect = () =>
+      ({ bottom: window.innerHeight - 300 }) as DOMRect
+    const dispose = createRoot((done) => {
+      publishFootSpace(el, VAR, 'below')
+      return done
+    })
+    expect(read()).toBe('300px')
+
+    dispose()
+    expect(read()).toBe('')
+  })
+
   it('publishes nothing for an element CSS hides at this width', () => {
     // The confirm bar's desktop pill on a phone: it takes no room, so it
     // must not lift the toasts.

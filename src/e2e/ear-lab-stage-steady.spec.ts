@@ -2,13 +2,14 @@
 // The instrument holds still through a run
 // ============================================================
 //
-// The stage is a three-row grid (bar, body, console), and the body centres
-// the instrument in the height the console leaves it, so every pixel the
-// console gains lifts the instrument by half a pixel. On a phone Hairline
-// rose 12.5px when the question took two lines and about 41px when the
-// first verdict arrived under the pads; on a desk the key hint lifted it
-// 8px each time the pads armed. The console now keeps room for its
-// longest lines from the first question on.
+// On the old stage the body centred the instrument in the height the
+// console left it, so every pixel the console gained lifted the instrument
+// by half a pixel: on a phone Hairline rose 12.5px when the question took
+// two lines and about 41px when the first verdict arrived. Merc's room (the
+// web's face of the Ear Lab since Nov 2026) stands the instrument at the
+// top of its stage, under the run line, so when Merc's bubble grows at the
+// verdict it grows into the room under the instrument, which stays where
+// it was (merc/room.module.css, .figure).
 
 import { expect, test, type Page } from '@playwright/test'
 import { dismissOverlays, openNavTab } from './helpers/ui'
@@ -49,35 +50,34 @@ for (const viewport of [
     await dismissOverlays(page)
     await openNavTab(page, 'tab-ear-lab')
     await page
-      .locator('[data-tour="ear.drills"] button', { hasText: 'Hairline' })
+      .locator('[data-testid="merc-station"][data-faculty="resolution"]')
+      .click()
+    await page
+      .getByTestId('merc-station-row')
+      .filter({ hasText: 'Hairline' })
       .first()
       .click()
-    await expect(page.getByTestId('ear-stage')).toBeVisible()
+    const room = page.getByTestId('ear-stage')
+    await expect(room).toBeVisible()
 
-    await page.getByText('Practice run').click()
     const armed = page.locator(
       '[data-testid="ear-stage-pads"] button:not([disabled])',
       { hasText: 'The first' },
     )
-    await expect(armed).toBeVisible({ timeout: 10000 })
-
-    // Auto-advance off, so each verdict waits for Next and the run cannot
-    // move on under a measurement.
-    const auto = page.getByTestId('ear-auto-advance')
-    if ((await auto.getAttribute('aria-checked')) === 'true') await auto.click()
-    await expect(auto).toHaveAttribute('aria-checked', 'false')
-    // The listen pad is a button again once the run has parked on a verdict.
-    const next = page.locator('[class*="playPad"]:not([disabled])')
 
     const tops: Record<string, number> = {}
     for (const trial of [1, 2]) {
-      await expect(armed).toBeVisible({ timeout: 10000 })
+      await expect(armed).toBeVisible({ timeout: 20_000 })
       tops[`question ${trial}`] = await instrumentTop(page)
       await armed.click()
-      await expect(page.getByTestId('ear-stage-last-call')).toBeVisible()
-      await expect(next).toBeVisible()
+      await expect(room).toHaveAttribute('data-beat', 'reveal')
       tops[`verdict ${trial}`] = await instrumentTop(page)
-      if (trial === 1) await next.click()
+      // A right answer moves on after the hold, by Merc's rule; a wrong
+      // one waits for Next.
+      if (trial === 1) {
+        const next = page.getByTestId('merc-next')
+        if (await next.isVisible()) await next.click()
+      }
     }
 
     const values = Object.values(tops)

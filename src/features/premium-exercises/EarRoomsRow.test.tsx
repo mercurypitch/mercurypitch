@@ -4,6 +4,7 @@
 
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { isWebRoom } from '@/features/exercises/rooms/web-room-ids'
 import { setExerciseLevel } from '@/stores/exercise-level'
 import { recordHarmonyBest, resetHarmonyStoreForTests, } from '@/stores/harmony-store'
 import { recordHomeNoteBest, resetHomeNoteStoreForTests, } from '@/stores/home-note-store'
@@ -47,6 +48,27 @@ describe('the Ear rooms row', () => {
     ])
     fireEvent.click(card('leap-cliffs'))
     expect(onOpen).toHaveBeenCalledWith('leap-cliffs')
+  })
+
+  it('says the rooms are Premium on a build that sells them', () => {
+    render(() => <EarRoomsRow onOpen={() => undefined} />)
+    expect(screen.getByTestId('ear-rooms-row').textContent).toContain('Premium')
+  })
+
+  it("lists only the rooms the web opens, free, on the web's tab", () => {
+    // Arrange: the web opens three of the four (web-room-ids.ts).
+    const onOpen = vi.fn()
+    render(() => <EarRoomsRow onOpen={onOpen} opens={isWebRoom} free />)
+
+    // Assert
+    expect(
+      screen
+        .getAllByTestId('ear-rooms-card')
+        .map((one) => one.dataset.exercise),
+    ).toEqual(['home-note-lighthouse', 'leap-cliffs', 'harmony-lake'])
+    expect(screen.queryByText('Premium')).toBeNull()
+    fireEvent.click(card('harmony-lake'))
+    expect(onOpen).toHaveBeenCalledWith('harmony-lake')
   })
 
   it('shows no best on a room not yet run', () => {

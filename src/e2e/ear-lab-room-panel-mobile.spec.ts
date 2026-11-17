@@ -12,6 +12,11 @@
 // painted on top of the next control in the flow: "Room visibility" printed
 // over the end of the gallery.
 //
+// It was found in the Ear Lab's room panel. The web's Ear Lab is Merc's
+// bench now (owner, 15 Nov 2026), whose room is his and has no picker, so the
+// spec opens the same embedded gallery where the web still shows it over
+// "Room visibility": Piano Night's Room.
+//
 // Geometry, not a screenshot: the bug is two boxes occupying the same
 // pixels. And the clamp is asserted separately from the overlap, because a
 // panel that scrolled its overflow away would clear the overlap check while
@@ -28,10 +33,14 @@ test('keeps the room gallery from painting over the controls under it @smoke', a
   await page.addInitScript(() => {
     ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
   })
-  await page.goto('/ear-lab')
+  await page.goto('/piano-night', { waitUntil: 'domcontentloaded' })
   await dismissOverlays(page)
 
-  await page.getByRole('button', { name: /^Room: .*Choose the room$/ }).click()
+  await page
+    .getByRole('button', { name: 'Choose the Piano Night room' })
+    .filter({ visible: true })
+    .first()
+    .click()
 
   const glassLabel = page.getByText('Room visibility', { exact: true })
   await expect(glassLabel).toBeVisible()

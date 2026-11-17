@@ -47,6 +47,15 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Merc's room is drawn over the whole window from inside the shell, and
+   the shell's isolation would hold it under whatever the page lays over
+   the shell: the web's tab bar and voice pill. While the room is up the
+   shell takes the layer the page gives the room (EarLabPage.tsx); the
+   native shell sets none, and takes its own bars away instead. */
+.shell:has([data-merc-room]) {
+  z-index: var(--room-layer, auto);
+}
+
 .shell :where(button) {
   font: inherit;
   color: inherit;

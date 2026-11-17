@@ -1993,83 +1993,71 @@ const CHALLENGES_TOUR_STEPS: WalkthroughStep[] = [
   },
 ]
 
+/** The Ear Lab's tour walks Merc's bench (features/ear-lab/merc/
+ *  MercBench.tsx), the web's face of the tab since the owner's decision of
+ *  15 Nov 2026. A native build shows no tours (`TOURS_AVAILABLE`), so no
+ *  build walks the older bench. */
 const EAR_LAB_TOUR_STEPS: WalkthroughStep[] = [
-  {
-    title: 'The Regulator',
-    description:
-      'Your ear as one number out of 1000, read off a mercury column. The solid level is what Calibration proved; the fainter level above it is what practice suggests. Every dated mark on the glass is a measurement you actually earned.',
-    targetSelector: '[data-tour="ear.column"]',
-    placement: 'right',
-    requiredTab: TAB_EAR_LAB,
-  },
   {
     title: 'The Mercury Index',
     description:
-      'One score over faculties measured in different units — cents, milliseconds, chord qualities. It only moves when a Calibration marks it, so it cannot drift upward on a good day.',
+      'Your ear as one number, read off the glass. The solid fill is what a sealed Calibration proved; a faint line above it is what practice suggests, and it says so. One score over faculties measured in different units, cents, milliseconds and chord qualities, and it moves only when a Calibration seals it.',
     targetSelector: '[data-tour="ear.index"]',
     placement: 'bottom',
     requiredTab: TAB_EAR_LAB,
   },
   {
-    title: 'Six faculties',
+    title: 'Calibration seals the glass',
     description:
-      'Resolution, Function, Shape, Color, Time and In The Wild. Anything you have never measured says "Unmeasured" rather than pretending to be a zero — missing data is not a bad ear.',
-    targetSelector: '[data-tour="ear.faculties"]',
+      'About three minutes. Three separate measurements run interleaved and are pooled, which is what makes the reading precise enough to seal. Practice runs never mark the glass, and a seal comes due again after fourteen days.',
+    targetSelector: '[data-tour="ear.actions"]',
     placement: 'bottom',
     requiredTab: TAB_EAR_LAB,
   },
   {
-    title: "Today's regulation",
+    title: "Today's three",
     description:
-      'Three drills, about five minutes, chosen from your own readings — and each one says why it was picked. Finish a drill anywhere in the Lab and it is ticked here; the Today button on the bridge opens the same three.',
+      "Three drills, about three minutes, chosen from your own readings. Start opens the next one in Merc's room, and when it is done you come back here with it ticked. Finish all three and Merc shows you the day.",
     targetSelector: '[data-tour="ear.sprint"]',
-    placement: 'left',
-    requiredTab: TAB_EAR_LAB,
-  },
-  {
-    title: 'Calibration marks the glass',
-    description:
-      'About three minutes. Three separate measurements run interleaved and are pooled — that pooling is what makes the reading precise enough to etch. Practice runs never mark the glass, and a mark comes due again after fourteen days.',
-    targetSelector: '[data-tour="ear.actions"]',
     placement: 'top',
     requiredTab: TAB_EAR_LAB,
   },
   {
-    title: 'The instruments',
+    title: 'The Ear rooms',
     description:
-      'Each drill is a bench instrument. Hairline splits two tones in cents, Home names scale degrees by tap or by voice, The Grid catches a click off the lattice, and Leap, Stack and Contour cover intervals, chords and direction.',
-    targetSelector: '[data-tour="ear.drills"]',
+      'Home note, Leap and Harmony: the rooms where you sing with Merc, the same ones the Exercises tab opens. Back brings you here.',
+    targetSelector: '[data-tour="ear.rooms"]',
+    placement: 'top',
+    requiredTab: TAB_EAR_LAB,
+  },
+  {
+    title: 'Six stations',
+    description:
+      'Resolution, Function, Shape, Color, Time and the Wild, each with its number, where it comes from and which way is better. Tap one for its instruments and start any of them. Anything never measured says Unmeasured rather than pretending to be a zero: missing data is not a bad ear.',
+    targetSelector: '[data-tour="ear.faculties"]',
     placement: 'top',
     requiredTab: TAB_EAR_LAB,
   },
   {
     title: 'The Ear Path',
     description:
-      'A going train of milestones: the first reading, the first seal, each faculty sealed, the first rhythm take, the Field Book, the desk, thirty days of regulation. The next dark orb points at its instrument — nothing here is locked.',
+      'A train of milestones: the first reading, the first seal, each faculty sealed, the first rhythm take, the Field Book, the desk, thirty days of regulation. The line under the orbs names the next one. Nothing here is locked.',
     targetSelector: '[data-tour="ear.path"]',
     placement: 'top',
     requiredTab: TAB_EAR_LAB,
   },
   {
-    title: 'The Field Book',
+    title: 'The Ear Report',
     description:
-      'Your own separated songs, read once for the degrees the voice lands on, the phrases it sings and the roots that move under it. Drills on real music, rated on their own tracks — the Column never moves for them.',
-    targetSelector: '[data-tour="ear.fieldBook"]',
+      'Which sounds your ear mixes up, and how each faculty has moved, from the runs you have done.',
+    targetSelector: '[data-tour="ear.report"]',
     placement: 'top',
-    requiredTab: TAB_EAR_LAB,
-  },
-  {
-    title: 'Round trip',
-    description:
-      'The one latency number for the whole app: the round trip from your speakers back to your microphone. Tap drills subtract it, so a millisecond reading is your ear and not your hardware.',
-    targetSelector: '[data-tour="ear.latency"]',
-    placement: 'bottom',
     requiredTab: TAB_EAR_LAB,
   },
   {
     title: 'Why there is no percent',
     description:
-      'Every other trainer holds you near 75% correct forever, so the score can never show growth. Here the units are real and the item difficulties are frozen — the number moves only when your ear does.',
+      'Every other trainer holds you near 75% correct forever, so the score can never show growth. Here the units are real and the item difficulties are frozen: the number moves only when your ear does. The "?" says more, and sets how loud the bench plays.',
     targetSelector: '[data-tour="ear.rulers"]',
     placement: 'bottom',
     requiredTab: TAB_EAR_LAB,

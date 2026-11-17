@@ -53,6 +53,7 @@ import { registerRoomBack, setExerciseFocus } from '@/stores/native-shell-store'
 import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from '@/stores/notifications-store'
 import { setPendingEarDrill } from '@/stores/ui-store'
 import { useWakeAudio } from './audio-wake'
+import { dock } from './foot-dock'
 import { practiceEstimate } from './Glass'
 import { LIT_INSTRUMENTS } from './lit'
 import { IconQuestion } from './merc-icons'
@@ -536,7 +537,7 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
             onPointerDown={onPointerDown}
             onPointerUp={onPointerUp}
           >
-            <div class={styles.world}>
+            <div class={styles.world} ref={dock}>
               <Show
                 when={!done()}
                 fallback={
