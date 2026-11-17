@@ -2,6 +2,10 @@
 // Gated by the user's showPlaybackSetupInfo() setting, as before the
 // registry existed. The key dropdown transposes the melody only on the
 // Compose tab; everywhere else it is a view-only change.
+//
+// The dropdown lists the twelve keys of the chosen scale type, the major
+// keys round the circle of fifths or their relative minors, each by its do
+// (lib/key-names.ts): with a minor scale chosen the first is A, not C.
 
 import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
@@ -11,6 +15,7 @@ import { IconDiamond } from '@/components/exercise-icons'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { useSidebarHost } from '@/features/sidebar/sidebar-host'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
+import { keyDisplayName, keysFor } from '@/lib/key-names'
 import { KEY_OFFSETS, midiToFreq, midiToNote } from '@/lib/scale-data'
 import { activeTab } from '@/stores'
 import { keyName, scaleType, setKeyName, setScaleType, showPlaybackSetupInfo, } from '@/stores'
@@ -84,14 +89,9 @@ export const PlaybackSetupPanel: Component = () => {
               )
             }}
           >
-            <option value="C">C</option>
-            <option value="G">G</option>
-            <option value="D">D</option>
-            <option value="A">A</option>
-            <option value="E">E</option>
-            <option value="B">B</option>
-            <option value="F">F</option>
-            <option value="Bb">Bb</option>
+            <For each={keysFor(scaleType())}>
+              {(key) => <option value={key}>{keyDisplayName(key)}</option>}
+            </For>
           </SafeSelect>
 
           <div class={styles.octaveCtrl} data-testid="octave-ctrl">

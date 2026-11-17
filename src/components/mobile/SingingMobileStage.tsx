@@ -27,8 +27,8 @@ import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
 import { roomName } from '@/features/rooms/room-names'
 import { PLAYBACK_MODE_ONCE, PLAYBACK_MODE_REPEAT, PLAYBACK_MODE_SESSION, TAB_SINGING, } from '@/features/tabs/constants'
 import { haptics } from '@/lib/haptics'
+import { keyDisplayName, keysFor } from '@/lib/key-names'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
-import { KEY_OFFSETS } from '@/lib/scale-data'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { bpm, getCurrentSessionItem, keyName, practiceSession, scaleType, sessionActive, setBpm, setKeyName, setScaleType, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
@@ -182,8 +182,8 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
           onClick={() => setOptionsOpen(true)}
           aria-label="Key, scale and playback options"
         >
-          {keyName()} {scaleType() === 'major' ? 'Major' : 'Minor'} · {bpm()}{' '}
-          BPM
+          {keyDisplayName(keyName())}{' '}
+          {scaleType() === 'major' ? 'Major' : 'Minor'} · {bpm()} BPM
         </button>
         <button
           classList={{ [styles.chip]: true, [styles.chipAccent]: true }}
@@ -386,8 +386,8 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
               value={keyName()}
               onChange={(e) => changeKey(e.currentTarget.value)}
             >
-              <For each={Object.keys(KEY_OFFSETS)}>
-                {(k) => <option value={k}>{k}</option>}
+              <For each={keysFor(scaleType())}>
+                {(k) => <option value={k}>{keyDisplayName(k)}</option>}
               </For>
             </select>
           </OptionRow>

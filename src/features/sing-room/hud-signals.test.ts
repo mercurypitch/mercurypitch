@@ -57,6 +57,8 @@ describe('the key and state chips', () => {
   it('says the key the way the mock does', () => {
     expect(keyChipLabel('C', 'major')).toBe('C major')
     expect(keyChipLabel('A', 'natural-minor')).toBe('A natural minor')
+    expect(keyChipLabel('Bb', 'major')).toBe('B♭ major')
+    expect(keyChipLabel('F#', 'natural-minor')).toBe('F♯ natural minor')
   })
 
   it('has one word for each state, and no percentage anywhere', () => {

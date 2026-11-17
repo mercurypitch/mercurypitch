@@ -15,6 +15,7 @@ import { LoopSeekRail } from '@/components/shared/LoopSeekRail'
 import { MidiSongSelectModal } from '@/components/shared/MidiSongSelectModal'
 import { MidiTrackPickerModal } from '@/components/shared/MidiTrackPickerModal'
 import barStyles from '@/components/shared/status-bar/SongStatusBar.module.css'
+import { keyDisplayName } from '@/lib/key-names'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
 import { getCurrentSessionItem, practiceSession, sessionActive, sessionItemIndex, sessionMode, } from '@/stores'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
@@ -78,7 +79,8 @@ const ClockIcon = () => (
 )
 
 export const SingingStatusBar: Component<SingingStatusBarProps> = (props) => {
-  const scaleLabel = () => `${props.keyName()} ${titleCase(props.scaleType())}`
+  const scaleLabel = () =>
+    `${keyDisplayName(props.keyName())} ${titleCase(props.scaleType())}`
   const session = () => practiceSession()
   const isSequence = () => sessionMode()
   const currentItem = () => getCurrentSessionItem()

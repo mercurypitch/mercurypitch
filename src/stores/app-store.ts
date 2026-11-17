@@ -28,6 +28,7 @@ import { IS_DEV } from '@/lib/defaults'
 import { GLASSWORKS_LISTED } from '@/lib/glassworks-listing'
 import { trackTour } from '@/lib/guide-funnel'
 import { jamRoomIsOpen } from '@/lib/jam/jam-room-presence'
+import { keyNameFor } from '@/lib/key-names'
 import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD } from '@/lib/native-build'
 import { STUDIO_LIBRARY_TOUR_STEPS, studioTourSteps } from '@/lib/studio-tour'
 import type { TourKey } from '@/lib/tour-ids'
@@ -40,8 +41,15 @@ import { activeTab } from './ui-store'
 
 // ── Key / Scale / Presets ──────────────────────────────────
 
-export const [keyName, setKeyName] = createSignal<string>('C')
+// The key is stored as its do's name was last written (a picker's choice, a
+// melody's own, a share link's), and read as the twelve keys of the scale
+// type name that pitch (lib/key-names.ts): an old melody's "A#" reads "Bb",
+// and a do picked under a major scale reads from the minor list once the
+// scale is minor, "Ab" as "G#". So every reader gets one of twelve names.
+const [storedKeyName, setKeyName] = createSignal<string>('C')
+export { setKeyName }
 export const [scaleType, setScaleType] = createSignal<string>('major')
+export const keyName = (): string => keyNameFor(storedKeyName(), scaleType())
 export const [instrument, setInstrument] = createSignal<InstrumentType>('sine')
 
 export type { InstrumentType } from '@/lib/audio-engine'

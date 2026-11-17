@@ -1,4 +1,5 @@
 import { afterAll, afterEach, beforeAll, describe, expect, it, vi, } from 'vitest'
+import { MAJOR_KEYS, MINOR_KEYS } from '@/lib/key-names'
 import { midiToFreq, midiToNote } from '@/lib/scale-data'
 import type { SheetSystemBox } from '@/lib/sheet-music-renderer'
 import { beatToCursor, midiToStaffY, notationDurationBeats, notationKeySignature, quantizeNotationDuration, renderSheetMusic, staffYToMidi, xToBeat, } from '@/lib/sheet-music-renderer'
@@ -68,6 +69,19 @@ describe('sheet music theory conversion', () => {
     expect(notationKeySignature('F#', 'melodic-minor')).toBe('A')
   })
 
+  it('gives every one of the twenty-four keys a signature of six signs or fewer', () => {
+    expect(MAJOR_KEYS.map((key) => notationKeySignature(key, 'major'))).toEqual(
+      MAJOR_KEYS,
+    )
+    expect(
+      MINOR_KEYS.map((key) => notationKeySignature(key, 'harmonic-minor')),
+    ).toEqual(MAJOR_KEYS)
+    // D sharp minor is six sharps; it fell through to E flat major's flats.
+    expect(notationKeySignature('D#', 'natural-minor')).toBe('F#')
+    expect(notationKeySignature('Ab', 'natural-minor')).toBe('B')
+    expect(notationKeySignature('nonsense', 'major')).toBe('C')
+  })
+
   it('assigns consistent values to dotted durations', () => {
     expect(notationDurationBeats('q', 1)).toBe(1.5)
     expect(notationDurationBeats('q', 2)).toBe(1.75)
@@ -133,6 +147,24 @@ describe('sheet music rendering', () => {
 
     expect(container.querySelector('svg')).not.toBeNull()
     expect(layout.notes.filter((item) => !item.isRest)).toHaveLength(3)
+  })
+
+  it('engraves all twelve notes in each of the twenty-four keys', () => {
+    // Every spelling a key can ask for has to be one VexFlow reads: E sharp
+    // in F sharp major, F double sharp in G sharp harmonic minor.
+    const chromatic = Array.from({ length: 12 }, (_, i) =>
+      note(i + 1, 60 + i, i, 1),
+    )
+    for (const [keys, scaleType] of [
+      [MAJOR_KEYS, 'major'],
+      [MINOR_KEYS, 'harmonic-minor'],
+    ] as const) {
+      for (const key of keys) {
+        const { layout } = render(chromatic, key, scaleType)
+        expect(layout.notes, `${key} ${scaleType}`).toHaveLength(12)
+        document.body.replaceChildren()
+      }
+    }
   })
 
   it('splits a sustained note at a barline without losing its beat range', () => {

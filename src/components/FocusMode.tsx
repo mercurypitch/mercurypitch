@@ -7,6 +7,7 @@ import { createMemo, Show } from 'solid-js'
 import { PitchCanvas } from '@/components/PitchCanvas'
 import { PrecCountButton } from '@/components/PrecCountButton'
 import { Tooltip } from '@/components/Tooltip'
+import { keyDisplayName } from '@/lib/key-names'
 import { melodyTotalBeats } from '@/lib/scale-data'
 import { countIn, currentSessionItemRepeat, exitFocusMode, keyName, playbackSpeed, scaleType, sessionActive, sessionItemIndex, setPlaybackSpeed, settings, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
@@ -37,7 +38,9 @@ interface FocusModeProps {
 const SPEED_STEPS = [0.25, 0.5, 0.75, 1.0, 1.5, 2.0]
 
 export const FocusMode: Component<FocusModeProps> = (props) => {
-  const keyDisplay = createMemo(() => `${keyName()} ${scaleType()}`)
+  const keyDisplay = createMemo(
+    () => `${keyDisplayName(keyName())} ${scaleType()}`,
+  )
 
   const totalBeats = createMemo(() => melodyTotalBeats(props.melody()))
   const totalBars = createMemo(() => Math.ceil(totalBeats() / 4))

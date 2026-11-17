@@ -27,6 +27,12 @@ function safeDecode(value: string): string {
 
 export type HashRoute =
   | { type: 'tab'; tab: ActiveTab }
+  /** The Singing tab on its sheet view (#/singing/sheet), read in the key
+   *  the address names (#/singing/sheet?key=A&scale=harmonic-minor). `key`
+   *  and `scale` are the address's own words, null where it has none; what
+   *  they name is read where the route is applied (lib/sheet-address.ts),
+   *  so this module carries no table of keys or scales. */
+  | { type: 'singing-sheet'; key: string | null; scale: string | null }
   | { type: 'jam-room'; roomId: string }
   /** A sync room scanned off another device's screen. */
   | { type: 'sync-room'; code: string }
@@ -168,11 +174,37 @@ const BARE_ROUTES: ReadonlyMap<string, HashRoute> = new Map<string, HashRoute>([
 ])
 
 /**
+ * The Singing tab's sheet address (#/singing/sheet), with the key and the
+ * scale it names in its own words, read beside the table above so parseHash
+ * grows no branch for it.
+ */
+function sheetRoute(hash: string): HashRoute | undefined {
+  const match = /^\/singing\/sheet(?:\?(.*))?$/.exec(hash)
+  if (match === null) return undefined
+  const params = new URLSearchParams(match[1] ?? '')
+  return {
+    type: 'singing-sheet',
+    key: params.get('key'),
+    scale: params.get('scale'),
+  }
+}
+
+/** A sheet route's address, naming the key and the scale it has. */
+function sheetHash(key: string | null, scale: string | null): string {
+  const params = new URLSearchParams()
+  if (key !== null) params.set('key', key)
+  if (scale !== null) params.set('scale', scale)
+  const query = params.toString()
+  return query === '' ? '/singing/sheet' : `/singing/sheet?${query}`
+}
+
+/**
  * Parse the current window.location.hash into a HashRoute.
  * Leading `#` is stripped before parsing.
  *
  * Examples:
  *   #/singing               → { type: 'tab', tab: 'singing' }
+ *   #/singing/sheet?key=Bb  → { type: 'singing-sheet', key: 'Bb', scale: null }
  *   #/uvr/session/abc123    → { type: 'uvr-session', sessionId: 'abc123' }
  *   #/share?type=melody&id=xyz → { type: 'share-fallback', shareType: 'melody', shareId: 'xyz' }
  *   '' / #/unknown          → { type: 'unknown' }
@@ -317,7 +349,7 @@ export function parseHash(rawHash: string): HashRoute {
   }
 
   // Match: /map (replay the First Light Map) and /plan (the plan layer)
-  const bare = BARE_ROUTES.get(hash)
+  const bare = BARE_ROUTES.get(hash) ?? sheetRoute(hash)
   if (bare !== undefined) return { ...bare }
 
   // Stripe checkout return URLs (see workers/db-worker/src/billing.ts):
@@ -394,6 +426,8 @@ export function buildHash(route: HashRoute): string {
   switch (route.type) {
     case 'tab':
       return `/${route.tab}`
+    case 'singing-sheet':
+      return sheetHash(route.key, route.scale)
     case 'jam-room':
       return `/jam:${route.roomId}`
     case 'sync-room':

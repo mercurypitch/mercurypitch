@@ -10,6 +10,7 @@ import { MelodyLibraryList } from '@/components/shared'
 import { SafeSelect } from '@/components/shared/SafeSelect'
 import { usePlayback } from '@/contexts/PlaybackContext'
 import { TAB_COMPOSE } from '@/features/tabs/constants'
+import { keyDisplayName, keyNameFor, keysFor } from '@/lib/key-names'
 import { useConfirm } from '@/lib/use-confirm'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { setEditorView } from '@/stores'
@@ -17,7 +18,7 @@ import { setEditorView } from '@/stores'
 // with the local LibraryModal-internal tab signal (Tab = 'melodies' | 'playlists').
 import { setActiveTab as setAppActiveTab, setActiveUserSession, setBpm, setKeyName, setScaleType, showActionNotification, showNotification, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
-import type { MelodyData, NoteName } from '@/types'
+import type { MelodyData } from '@/types'
 import { ConfirmDialog } from './ConfirmDialog'
 import styles from './LibraryModal.module.css'
 import modalStyles from './Modal.module.css'
@@ -118,21 +119,6 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
   const debouncedEditBpm = createDebouncedSetter(editBpm, 300)
 
   const library = createMemo(() => melodyStore.getMelodyLibrary())
-
-  const keyNames: NoteName[] = [
-    'C',
-    'C#',
-    'D',
-    'D#',
-    'E',
-    'F',
-    'F#',
-    'G',
-    'G#',
-    'A',
-    'A#',
-    'B',
-  ]
 
   const scaleTypes = [
     { value: 'major', label: 'Major' },
@@ -331,7 +317,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
       melodyStore.updateMelody(editingKey, {
         name: editName(),
         bpm: editBpm(),
-        key: editKey(),
+        key: keyNameFor(editKey(), editScale()),
         scaleType: editScale(),
         tags: tagsArray.length > 0 ? tagsArray : undefined,
         notes: editNotes().trim().length > 0 ? editNotes().trim() : undefined,
@@ -372,7 +358,7 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
     const updatedMelody =
       melodyStore.updateMelody(newMelody.id, {
         bpm: createBpm(),
-        key: createKey(),
+        key: keyNameFor(createKey(), createScale()),
         scaleType: createScale(),
         tags: tagsArray.length > 0 ? tagsArray : undefined,
         notes:
@@ -717,13 +703,13 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       <div class={modalStyles.formGroup}>
                         <label>Key</label>
                         <SafeSelect
-                          value={createKey()}
-                          onChange={(e) =>
-                            setCreateKey(e.currentTarget.value as NoteName)
-                          }
+                          value={keyNameFor(createKey(), createScale())}
+                          onChange={(e) => setCreateKey(e.currentTarget.value)}
                         >
-                          <For each={keyNames}>
-                            {(k) => <option value={k}>{k}</option>}
+                          <For each={keysFor(createScale())}>
+                            {(k) => (
+                              <option value={k}>{keyDisplayName(k)}</option>
+                            )}
                           </For>
                         </SafeSelect>
                       </div>
@@ -837,13 +823,13 @@ export const LibraryModal: Component<LibraryModalProps> = (props) => {
                       <div class={modalStyles.formGroup}>
                         <label>Key</label>
                         <SafeSelect
-                          value={editKey()}
-                          onChange={(e) =>
-                            setEditKey(e.currentTarget.value as NoteName)
-                          }
+                          value={keyNameFor(editKey(), editScale())}
+                          onChange={(e) => setEditKey(e.currentTarget.value)}
                         >
-                          <For each={keyNames}>
-                            {(k) => <option value={k}>{k}</option>}
+                          <For each={keysFor(editScale())}>
+                            {(k) => (
+                              <option value={k}>{keyDisplayName(k)}</option>
+                            )}
                           </For>
                         </SafeSelect>
                       </div>

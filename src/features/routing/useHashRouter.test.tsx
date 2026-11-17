@@ -14,12 +14,14 @@ import type { UvrView } from '@/components/UvrPanel'
 import { sharedRunRequest } from '@/features/community/shared-run-link'
 import { useHashRouter } from '@/features/routing/useHashRouter'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_COMMUNITY, TAB_COMPOSE, TAB_HOME, TAB_KARAOKE, TAB_PROGRESS, TAB_SETTINGS, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
+import { TAB_COMMUNITY, TAB_COMPOSE, TAB_HOME, TAB_KARAOKE, TAB_PROGRESS, TAB_SETTINGS, TAB_SINGING, TAB_VOICE_HISTORY, } from '@/features/tabs/constants'
 import { acquireLocalSaveNavigationLock } from '@/lib/local-save-navigation-lock'
 import type * as NativeBuild from '@/lib/native-build'
 import { CommunityPage } from '@/pages/CommunityPage'
+import { keyName, setKeyName, setScaleType } from '@/stores/app-store'
+import { resetAddressedSheetKey } from '@/stores/singing-sheet-store'
 import type { AdminSection } from '@/stores/ui-store'
-import { adminContentSection, creditCostGuideRequested, registerAdminContentCloseGuard, requestAdminContentSection, requestCloseAdminContentStudio, setAdminContentSection, setCreditCostGuideRequested, setShowAdminContentStudio, showAdminContentStudio, } from '@/stores/ui-store'
+import { adminContentSection, creditCostGuideRequested, registerAdminContentCloseGuard, requestAdminContentSection, requestCloseAdminContentStudio, setAdminContentSection, setCreditCostGuideRequested, setShowAdminContentStudio, setSingingSheetView, showAdminContentStudio, singingSheetView, } from '@/stores/ui-store'
 
 // The build flag, per case: the route table is shared, and one route must be
 // inert under the native build.
@@ -334,6 +336,54 @@ describe('the Settings section route', () => {
     )
     expect(creditCostGuideRequested()).toBe(false)
     expect(window.location.hash).toBe('#/progress')
+  })
+})
+
+describe("the Singing tab's sheet route", () => {
+  afterEach(() => {
+    resetAddressedSheetKey()
+    setSingingSheetView(false)
+    setKeyName('C')
+    setScaleType('major')
+  })
+
+  it('opens the Singing tab on its sheet, then leaves the bare tab in the address', async () => {
+    history.replaceState(null, '', '#/singing/sheet?key=Bb')
+
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      activeTab: TAB_PROGRESS,
+      reactiveActiveTab: true,
+    })
+
+    await waitFor(() =>
+      expect(router.setActiveTab).toHaveBeenCalledWith(TAB_SINGING),
+    )
+    expect(singingSheetView()).toBe(true)
+    // One-shot: a reload, or Back to this entry, is a plain visit.
+    expect(window.location.hash).toBe('#/singing')
+    expect(keyName()).toBe('Bb')
+  })
+
+  it('asks the surface that is open before it leaves it', () => {
+    history.replaceState(null, '', '#/progress')
+    const router = mountRouter({
+      closeAdminContent: () => true,
+      showAdminContentStudio: false,
+      activeTab: TAB_PROGRESS,
+      requestActiveTabChange: (_tab, onResolved) => onResolved(false),
+    })
+
+    window.location.hash = '#/singing/sheet?key=G'
+    fireEvent(window, new HashChangeEvent('hashchange'))
+
+    expect(router.requestActiveTabChange).toHaveBeenCalledWith(
+      TAB_SINGING,
+      expect.any(Function),
+    )
+    expect(router.setActiveTab).not.toHaveBeenCalledWith(TAB_SINGING)
+    expect(singingSheetView()).toBe(false)
   })
 })
 

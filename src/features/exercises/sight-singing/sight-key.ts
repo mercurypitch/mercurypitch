@@ -25,8 +25,12 @@
 // so le ti. A note between two of the key's letters takes its letter's
 // raised or lowered syllable: fi, si, ra, te.
 //
+// A key's name is read by the parser the key pickers and the Singing tab's
+// addresses use (`parseKeyName`, src/lib/key-names.ts).
+//
 // Pure: no page, no sound.
 
+import { parseKeyName } from '@/lib/key-names'
 import { parseCustomScaleDegrees, SCALE_DEFINITIONS } from '@/lib/scale-data'
 import type { KeySig, Letter, Spelled } from '../note-reading/staff-kit'
 import { diatonicOf, keyOfScale, midiOf, SOLFA, spellOn, spellScale, } from '../note-reading/staff-kit'
@@ -94,16 +98,6 @@ export interface SightKey {
   readonly letters: readonly number[]
 }
 
-/** A key name's letter and sign: "Bb" and "B♭" are B and -1; null for nonsense. */
-function parseTonic(name: string): { letter: Letter; alter: number } | null {
-  const m = /^\s*([A-Ga-g])\s*(#|♯|b|♭)?\s*$/.exec(name)
-  if (m === null) return null
-  const letter = m[1].toUpperCase() as Letter
-  const sign = m[2]
-  const alter = sign === '#' || sign === '♯' ? 1 : sign === undefined ? 0 : -1
-  return { letter, alter }
-}
-
 /** A scale's notes in semitones above do, from the app's scale type or Scale Runner's name. */
 export function scaleSteps(scaleType: string): number[] {
   const id = SCALE_ALIASES[scaleType] ?? scaleType
@@ -150,7 +144,7 @@ function tonicOf(
   keyName: string,
   minor: boolean,
 ): { letter: Letter; alter: number; home: Spelled[] } {
-  const named = parseTonic(keyName) ?? { letter: 'C' as Letter, alter: 0 }
+  const named = parseKeyName(keyName) ?? { letter: 'C' as Letter, alter: 0 }
   const home = homeOf(named.letter, named.alter, minor)
   if (named.alter === 0 || !home.some((s) => Math.abs(s.alter) > 1)) {
     return { ...named, home }

@@ -17,8 +17,8 @@ import type { Component } from 'solid-js'
 import { For, Show } from 'solid-js'
 import { OptionRow, OptionSection, OptionsSheet, } from '@/components/mobile/OptionsSheet'
 import { PrecCountButton } from '@/components/PrecCountButton'
+import { keyDisplayName, keysFor } from '@/lib/key-names'
 import { PREMIUM_EXERCISES } from '@/lib/native-build'
-import { KEY_OFFSETS } from '@/lib/scale-data'
 import { bpm, getCurrentSessionItem, keyName, practiceSession, scaleType, sessionActive, setBpm, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { nativeShellApi } from '@/stores/native-shell-store'
@@ -90,8 +90,8 @@ export const SingRoomOptions: Component<SingRoomOptionsProps> = (props) => (
           data-testid="sing-options-key"
           onChange={(event) => props.onChangeKey(event.currentTarget.value)}
         >
-          <For each={Object.keys(KEY_OFFSETS)}>
-            {(key) => <option value={key}>{key}</option>}
+          <For each={keysFor(scaleType())}>
+            {(key) => <option value={key}>{keyDisplayName(key)}</option>}
           </For>
         </select>
       </OptionRow>
