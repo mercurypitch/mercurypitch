@@ -817,7 +817,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   `/drum-night?drawer=learn&lesson=08`; Drum Night reads `drawer` and ignores the marker, which only
   the main app reads (FACTS 57). The room shows no grade: "timing evidence rather than a grade"
   (FACTS 47).
-- **Today, Ear Lab's Subdivide.** `mercurypitch.com/ear-lab`, then tap Subdivide (FACTS 52, 53): two
+- **Today, Ear Lab's Subdivide.** `mercurypitch.com/ear-lab`, then tap Time, then Subdivide (FACTS 52, 53): two
   bars on its drum kit, the kick on beat 1, and four pads naming the metre, the answer among three
   others drawn from its five. On the public host `/ear-lab?lesson=08`, the marker before the hash
   the entry document adds (`src/seo/entry-pages.ts:454-458`). The main app reads the marker before

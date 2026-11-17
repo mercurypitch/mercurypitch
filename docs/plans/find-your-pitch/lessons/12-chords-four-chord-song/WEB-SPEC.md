@@ -772,7 +772,7 @@ still images when WebGL fails or would run on the CPU.
   card sends the viewer to Settings, Singing Voice Range, first (CURRICULUM § 4 item 7). The link is
   `/pitch-training?lesson=12`, and the marker lets First Light, the main app's intro, step aside on
   a first visit (FACTS 43), so the card, the rest card and the footer carry no first-visit line.
-- **Today, Ear Lab's Cadence.** `mercurypitch.com/ear-lab`, then tap Cadence (FACTS 44, 47): twelve
+- **Today, Ear Lab's Cadence.** `mercurypitch.com/ear-lab`, then tap Color, then Cadence (FACTS 44, 47): twelve
   rounds, each a progression of three or four chords strummed on a guitar in a roved key, named in
   numerals from four pads; I–V–vi–IV is one of its eight. On the public host `/ear-lab?lesson=12`,
   the marker before the hash the entry document adds (`src/seo/entry-pages.ts:453-458`). Cadence
@@ -796,7 +796,7 @@ still images when WebGL fails or would run on the CPU.
   change. LESSON.md's editorial note says the card may then name Chord Stacker on major and minor;
   until it changes, the card names Arpeggio Jumper.
 - **Needed, proposed: an `ear-drill` launch for Cadence** (CURRICULUM § 4 item 5, the planned
-  `ear-drill` launch kind): Cadence opened on its own, with the page's "then tap Cadence" dropped
+  `ear-drill` launch kind): Cadence opened on its own, with the page's "then tap Color, then Cadence" dropped
   when it ships, as Lesson 10's spec proposes for Stack.
 - **App content, done** (FACTS 46): Arpeggio Jumper's grade no longer folds in a "richness" reading
   of the run's pitch clarity; since its scoring version 2 it is the average of its note scores, as
@@ -828,8 +828,8 @@ built:
   (`src/features/lessons/kit/drafts.test.ts:57-68`), so the entry folds nothing away.
 
 - `pr.link`, proposed: `href` `/ear-lab?lesson=12`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear
-  Lab" and `note` "then tap Cadence", which `practiseMarkup` prints after the address as "Ear Lab,
-  then tap Cadence" (`kit/explorer.ts:177-182`), as Lesson 2's card links Leap
+  Lab" and `note` "then tap Color, then Cadence", which `practiseMarkup` prints after the address as "Ear Lab,
+  then tap Color, then Cadence" (`kit/explorer.ts:177-182`), as Lesson 2's card links Leap
   (`season.ts:193-198`). Cadence is the lesson's ear drill and needs no voice, so the card stays
   right whatever Sing it's ending. For the owner (Decisions for the owner), the other choice:
   Arpeggio Jumper, `href` `/pitch-training?lesson=12`, `label` "Exercises" and `note` "then tap
@@ -1049,7 +1049,7 @@ Each with the package's recommendation and the review's judgement (Lesson 12's r
    publishes. This pass adds one thing to the writer's remedy: if a tune recalls a song, the writer
    rewrites the bars that carry the likeness, the first two for tune 1's six pitches, and recounts
    those bars; the other bars keep their counts (FACTS 35, 36).
-5. **The explorer card's practice link: Cadence**, `/ear-lab?lesson=12` and "then tap Cadence"
+5. **The explorer card's practice link: Cadence**, `/ear-lab?lesson=12` and "then tap Color, then Cadence"
    (Explorer and season data). It needs no microphone, Ear Lab locks nothing, Lesson 2's card links
    Leap the same way, and it is right whatever Sing it's ending. The other choice: Arpeggio Jumper,
    as Lesson 9's card now links it. The review: right, since the card cannot know how Sing it ended,

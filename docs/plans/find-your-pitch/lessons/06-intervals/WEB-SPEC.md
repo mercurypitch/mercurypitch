@@ -507,7 +507,7 @@ other, paused off screen, and the still images when WebGL fails or would run on 
   link is `/pitch-training?lesson=06`, and the `?lesson=` marker lets First Light, the main app's
   intro, step aside on a first visit (FACTS 44a), so the card, the rest card and the footer carry no
   first-visit line (the series' old line, FACTS 44, went when the marker shipped).
-- **Today, Ear Lab's Leap.** `mercurypitch.com/ear-lab`, then tap Leap (FACTS 45, 46); on the public
+- **Today, Ear Lab's Leap.** `mercurypitch.com/ear-lab`, then tap Shape, then Leap (FACTS 45, 46); on the public
   host `/ear-lab?lesson=06`, which keeps the bench's `#/ear-lab` boot. Leap needs no voice, so it
   stays on the rest card (FACTS 59).
 - **Needed, proposed: `/exercises/fourths-and-fifths`** (CURRICULUM § 4 item 2, the Phase 1 App
@@ -549,7 +549,7 @@ and the line references are main's.
   link to their own pages.
 - `kit/season.ts`, Lesson 6's entry (`:264-284`): `minutes: 17` (FACTS 3). The practice link
   stays Ear Lab's (`href` `/ear-lab?lesson=06`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear
-  Lab"), and its `note` stays "then tap Leap to name them", printed "Ear Lab, then tap Leap to name
+  Lab"), and its `note` stays "then tap Shape, then Leap to name them", printed "Ear Lab, then tap Shape, then Leap to name
   them" by `practiseMarkup` (`kit/explorer.ts:191-196`): the `?lesson=` step-aside has shipped
   (FACTS 44a), so the note needs no first-visit form. Its `needs` stays until the slug ships. A
   second proposal only, for the director: link Interval Trainer instead, the Wrap's lead drill
