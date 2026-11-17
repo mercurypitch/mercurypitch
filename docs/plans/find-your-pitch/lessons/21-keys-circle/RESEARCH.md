@@ -128,12 +128,12 @@ fifth equal to 7 semi-tones", explained by continued fractions. log2(3/2) = 0.58
 Moderate (a university page). Go deeper only.
 
 **R21-14. The app's key picker offers eight major keys: C, G, D, A, E, B, F and B♭.**
-`src/features/sidebar/panels/PlaybackSetupPanel.tsx:87-94`. Its key table holds thirteen, C to F♯ and F
+`src/features/sidebar/panels/PlaybackSetupPanel.tsx:92-94`. Its key table holds thirteen, C to F♯ and F
 to G♭ (`src/lib/scale-data.ts:28-44`, `KEY_SIGNATURES`). Code read. Strong.
 
 **R21-15. The Singing tab's sheet view writes the key signature, minor keys under their relative
 major's, and spells the melody all in flats in a flat key, all in sharps otherwise.**
-`src/lib/sheet-music-renderer.ts:572` (`if (keySig !== 'C') stave.addKeySignature(keySig)`);
+`src/lib/sheet-music-renderer.ts:524` (`if (keySig !== 'C') stave.addKeySignature(keySig)`);
 :156-169 (`notationKeySignature`, "Minor scales inherit the signature of their relative major"), with
 `RELATIVE_MAJOR` (:127-140); :494 (`useFlats = (KEY_SIGNATURES[keySig]?.flats ?? 0) > 0`) and
 :115-120 (`midiToVFKey` picks `FLAT_NAMES` or `SHARP_NAMES`). Code read. Strong.

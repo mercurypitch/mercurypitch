@@ -148,12 +148,12 @@ vocalists, guitarists, and bassists", answered 403 and was **not read**; a write
 _Behind Bars_ (2011), before a script says it.
 
 **R15-15. The app writes a melody in the bass clef when its middle note sits below middle C.**
-`src/lib/sheet-music-renderer.ts:175-183`: `chooseClef` takes the median of the sorted MIDI notes
+`src/lib/sheet-music-renderer.ts:127-135`: `chooseClef` takes the median of the sorted MIDI notes
 (`sorted[Math.floor(sorted.length / 2)]`, :180) and returns `mid < 60 ? 'bass' : 'treble'` (:182); the
 comment: "melodies centred below it read better in bass". Code read. Strong.
 
 **R15-16. Compose has four views: Piano Roll, Sheet Music, split piano roll and sheet music, Session
-Editor.** `src/App.tsx:2321-2345` (`COMPOSE_VIEWS`). Code read. Strong.
+Editor.** `src/App.tsx:2322-2346` (`COMPOSE_VIEWS`). Code read. Strong.
 
 **R15-17. The app's voice presets put lower voices below the treble staff.** `VOCAL_RANGES`,
 `src/stores/settings-store.ts:91-149`: Soprano C4 to C6 (:92), Mezzo-Soprano A3 to A5 (:102), Alto F3 to

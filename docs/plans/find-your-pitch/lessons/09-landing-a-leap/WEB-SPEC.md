@@ -584,7 +584,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
   upward (`src/features/exercises/slug-map.ts:113-117`), with its line in
   `src/tests/slug-map.test.ts:75-81`. The `intervals` field on `ExerciseLaunch`
   (`src/features/exercises/slug-map.ts:31-62`) is passed by `applyExerciseSlug` into the launch
-  override beside the notes and the difficulty (`src/App.tsx:764-766`), and the trainer reads it in
+  override beside the notes and the difficulty (`src/App.tsx:765-767`), and the trainer reads it in
   place of its fixed pool, which still has no minor third (FACTS 51, 59); a launched list runs as
   many rounds as the difficulty asks, every leap once before any twice (FACTS 60). The set keeps the
   plan's octave, which this page makes optional, as the rules allow: played from a preset's anchor,
@@ -598,7 +598,7 @@ paused off screen, and the still images when WebGL fails or would run on the CPU
 - **Optional, proposed: `/exercises/arpeggio-jumper`**, a data-only slug (CURRICULUM § 4 item 1)
   that opens Arpeggio Jumper on its setup screen with its defaults, so the card can link the drill
   itself; its notes, if any, are fitted to the singer's range as every slug's are
-  (`src/App.tsx:752`).
+  (`src/App.tsx:753`).
 - **Not linked**, with the reasons in FACTS: the Ascent's "Tuning & Ear" week (FACTS 61), which the
   CURRICULUM card listed and CURRICULUM § 4 item 8's rewrite now takes, beside weeks 2 and 3, so
   that its coach note, its focus line, its first goal and its two videos are checked against the
@@ -711,7 +711,7 @@ table):
    Every build emits every lesson page, and the check fails a document with no ceiling (`:964-968`),
    so without them the Browser jobs fail before any spec runs, as Lesson 6's did on PR #1149. Each
    is the page's measured first paint plus about a quarter, the tables' rule (`:47-58`, `:467-477`),
-   measured in `build:e2e`, where the check runs (`package.json:20`): a build of Lesson 6's page
+   measured in `build:e2e`, where the check runs (`package.json:21`): a build of Lesson 6's page
    alone weighed it about 8 KB lighter. As on Lesson 3, the listener, the pitch detector and Voice
    Mirror's scorer arrive through a dynamic import when Start is pressed
    (`scripts/assert-first-paint-budgets.mjs:156-159`), and the ceiling holds only while that

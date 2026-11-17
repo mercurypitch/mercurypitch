@@ -38,7 +38,7 @@ module in `src/features/lessons/lesson-24/`. It is a voice lesson, so it is a dr
 coach signs off its voice lines and its checkpoint (LESSON.md, For the vocal coach), in the draft
 list's form (`src/features/lessons/kit/drafts.ts:31-42`). The season puts Lessons 24, 26 and 28
 last, for their engineering and the headphones work, with one coach batch for all three (SEASON-2 §
-8.2 item 7, `docs/plans/find-your-pitch/SEASON-2.md:1402-1403`); Lesson 26 reuses this page's drone,
+8.2 item 7, `docs/plans/find-your-pitch/SEASON-2.md:1435-1436`); Lesson 26 reuses this page's drone,
 headphones check, quiet check and band.
 
 ## Look
@@ -660,10 +660,10 @@ stills when WebGL fails.
   fix let reach 100 (below); its editorial note says "about 79 a round" is a round's score, not the
   run's.
   It is the season plan's link for this lesson (SEASON-2 § 5.1, row 24,
-  `docs/plans/find-your-pitch/SEASON-2.md:875`).
+  `docs/plans/find-your-pitch/SEASON-2.md:876`).
 - **The link to swap.** The slug for the fifth, the major third and the octave shipped on 15
   November 2026, `/exercises/harmony-on-a-drone` (SEASON-2 § 5.2 item 15,
-  `docs/plans/find-your-pitch/SEASON-2.md:992-1021`): the card's link becomes that
+  `docs/plans/find-your-pitch/SEASON-2.md:993-1022`): the card's link becomes that
   slug with `?lesson=24`, and the text's second sentence becomes "This link opens it on this
   lesson's fifth, major third and octave; do is the drone itself." The slug opens on Pure tuning, which
   shipped with it (the same item), so with the swap the sentence on 79 goes: a pure third scores 100

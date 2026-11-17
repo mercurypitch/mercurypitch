@@ -201,8 +201,8 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
 - Checkpoint (unscored sing-along, a theory lesson): after the comfort check, sing do re mi fa so in
   C as the notes light on the staff, in your own clef and octave; nothing listens.
 - Practise: `/?lesson=15#/compose`, then choose Sheet Music or the split view (Compose's views,
-  `src/App.tsx:2321-2345`): notes written in the piano roll appear on the staff, in the bass clef
-  when the melody's middle note sits below middle C (`src/lib/sheet-music-renderer.ts:175-183`). A
+  `src/App.tsx:2322-2346`): notes written in the piano roll appear on the staff, in the bass clef
+  when the melody's middle note sits below middle C (`src/lib/sheet-music-renderer.ts:127-135`). A
   sandbox, not a drill. Needs building: a note-reading drill (§ 5 item 9); the app's only
   note-locating quiz is the guitar's (`src/features/guitar-practice/NoteLocatorQuiz.tsx`).
 - Facts to check: the clefs' positions, ledger lines and the grand staff (Open Music Theory and
@@ -307,7 +307,7 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
   (Mishra 2014, Psychology of Music 42(2), 131-156, doi:10.1177/0305735612463770; abstract and
   summary only). How far ahead fluent readers look is **not verified** and not claimed.)
 - Signature: Lesson 16's staff, now with Lesson 17's beat grid under it; a cursor moves at tempo (as
-  the Singing tab's sheet view moves one, `src/App.tsx:4050-4098`); patterns bracket themselves
+  the Singing tab's sheet view moves one, `src/App.tsx:4054-4102`); patterns bracket themselves
   as the cursor reaches them (a run of steps, a repeated note, do-mi-so); the marks of T32 appear
   one by one over the sound they ask for.
 - Checkpoint (scored on the page): comfort check first; the page plays do and one bar of count-in at
@@ -318,8 +318,8 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
 - Practise: Sight-Singing (`/pitch-training?lesson=18`, then tap Sight-Singing), which still
   advances on a held note, not on the beat (use-sight-singing-controller.ts:26); The Chart for the
   rhythm (`/ear-lab?lesson=18`, then tap The Chart). The Singing tab's sheet view plays a melody
-  with a cursor (`src/App.tsx:4050-4098`), but no address opens it (`singingSheetView`,
-  `src/stores/ui-store.ts:146`), and whether it scores in that view was **not verified**.
+  with a cursor (`src/App.tsx:4054-4102`), and since § 5 item 20 an address opens it,
+  `#/singing/sheet`, where a take is scored as in the roll.
   Sight-singing in time has shipped as Sing It in Time (§ 5 item 11, `/exercises/sing-it-in-time`);
   the lesson's card does not link it yet.
 - Facts to check: Henry (2004) and Mishra (2014), past their abstracts, before a script quotes a
@@ -435,8 +435,9 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
 - Checkpoint (theory, unscored sing-along): after the comfort check, sing do re mi fa so in C, then
   in G, from the staff; do moves, the syllables stay (Lesson 6's transposition).
 - Practise: the Singing tab's key and scale pickers, with its sheet view showing the key signature
-  (`src/lib/sheet-music-renderer.ts:571-572`), though the key picker offers only C, G, D, A, E, B, F
-  and B flat (`src/features/sidebar/panels/PlaybackSetupPanel.tsx:87-94`); Ear Lab's Home, scale
+  (`src/lib/sheet-music-renderer.ts:523-524`), though the key picker offered only C, G, D, A, E, B,
+  F and B flat until § 5 item 20 shipped
+  (`src/features/sidebar/panels/PlaybackSetupPanel.tsx:92-94`); Ear Lab's Home, scale
   degrees heard in a key (`/ear-lab?lesson=21`, then tap Home; `src/lib/ear/item-bank.ts:48-56`).
   Sight-Singing is not linked for flat keys: it would write F major's B flat as A sharp
   (use-sight-singing-controller.ts:31-44). Needs building: a circle-of-fifths toy (kit, § 6.2),
@@ -866,10 +867,10 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 | 15     | Compose, Sheet Music view (`/?lesson=15#/compose`), a sandbox         | Its card's link to `/exercises/read-the-note` (item 9 and its slug shipped on 15 November 2026)                     |
 | 16     | Sight-Singing, at `/exercises/sing-what-you-see`, its phrases in G    | Its card's link to `/exercises/sing-what-you-see`, with the drill's new lines (item 10 shipped on 16 November 2026) |
 | 17     | Ear Lab: The Chart, Pulse; `/exercises/quarters-halves-and-eighths`   | Its card's link to The Chart's set (item 12 shipped on 16 November 2026)                                            |
-| 18     | Sight-Singing (pitch only), The Chart, `/exercises/sing-it-in-time`   | Card links to Sing It in Time and the new Sight-Singing (items 11 and 10 shipped); a sheet-view address (item 20)   |
+| 18     | Sight-Singing (pitch only), The Chart, `/exercises/sing-it-in-time`   | Card links to Sing It in Time, the new Sight-Singing (items 11 and 10 shipped), the sheet view (item 20 shipped)    |
 | 19     | Ear Lab: Subdivide, Pulse; `/exercises/three-four-or-six-eight`       | Its card's link to Subdivide's 3/4 and 6/8 (item 12 shipped on 16 November 2026)                                    |
 | 20     | Scale Runner, Pentatonic; Staccato Precision                          | Its card's link to `/exercises/pentatonic-run` (item 13 shipped on 15 November 2026)                                |
-| 21     | Compose, in Sheet Music, with its key picker; Ear Lab: Home           | Twelve keys (item 20, code); a card for key-aware Sight-Singing (item 10 shipped); circle toy (kit, § 6.2)          |
+| 21     | Compose's key picker; `/?lesson=21#/singing/sheet?key=G`; Ear Lab     | A card for the sheet in a key (item 20 shipped), key-aware Sight-Singing (item 10 shipped); circle toy (kit, § 6.2) |
 | 22     | Voice Mirror's hold                                                   | Vibrato exercise copy, default and `durationSec` (item 14, copy and code)                                           |
 | 23     | Ear Lab: Leap, and Leap's set `/exercises/perfect-or-tritone`         | A sung card for `/exercises/perfect-intervals` (item 16 shipped); its card's link to Leap's set (item 12 shipped)   |
 | 24     | Drone Intonation (`/exercises/thirds-on-a-drone`); Ear Lab: Beat Hunt | Its card's swap to `/exercises/harmony-on-a-drone`, which opens on pure tuning (item 15 shipped)                    |
@@ -900,7 +901,7 @@ and First Light does not step aside. Item 21 fixes it.
     and hears it in any octave. (a) Lesson 16's two phrases, written as one line in G, open at
     `/exercises/sing-what-you-see` (`src/features/exercises/slug-map.ts:177-187`), whose
     `ownOctave` skips the octave fit: a lower voice reads G3 to D4 and a higher one G4 to D5, as the
-    page writes them (`phraseInOwnOctave`, `src/lib/vocal-range.ts:131-139`; `src/App.tsx:808-816`),
+    page writes them (`phraseInOwnOctave`, `src/lib/vocal-range.ts:131-139`; `src/App.tsx:809-817`),
     and the drill sings a launched phrase where the launch puts it (`fixed`,
     `src/features/exercises/sight-singing/sight-line.ts:128-172`). (b) Its Hear it first is "hear
     do": do for a second, then do-mi-so-mi-do in the key, do at or under the line's first note and
@@ -916,10 +917,10 @@ and First Light does not step aside. Item 21 fixes it.
     (`src/features/exercises/note-reading/StaffFrame.tsx`; `SightStaff.tsx`). (d) The key
     signature, and each note spelled by the key: a seven-note scale letter by letter, a note outside
     it by whichever name needs the smaller sign, the flat in a flat key on a tie (`sightKey` and
-    `spellIn`, `src/features/exercises/sight-singing/sight-key.ts:148-245`); a sign is written where
+    `spellIn`, `src/features/exercises/sight-singing/sight-key.ts:142-239`); a sign is written where
     a note's letter differs from the key or from that letter's last sign, so a natural marks the way
     back (`writeLine`). The key is the Singing tab's, or a launch's; a launched phrase that names
-    none gets a major key that holds its notes (`keyForPhrase`, `sight-key.ts:294-308`). (e) A Names
+    none gets a major key that holds its notes (`keyForPhrase`, `sight-key.ts:288-302`). (e) A Names
     picker: Letters, the default; "Do re mi", movable do with do-based minor and the chromatic
     syllables; and Off, which hides both the names under the notes and the hold bar's ("Hold the lit
     note to continue"), the tracker keeping its own hide (`SightSingingExercise.tsx:305-311`,
@@ -953,7 +954,7 @@ and First Light does not step aside. Item 21 fixes it.
 12. **The `ear-drill` launch kind: shipped on 16 November 2026** (CURRICULUM § 4 item 5). A slug can
     name an Ear Lab drill and, by the drill's own bank ids, the set of its items to ask
     (`EarDrillLaunch`, `src/features/exercises/slug-map.ts:82-92`). `applyExerciseSlug` hands it to
-    the Ear Lab (`src/App.tsx:800-803`, through `startEarDrill`, `src/stores/ui-store.ts:641-652`),
+    the Ear Lab (`src/App.tsx:801-804`, through `startEarDrill`, `src/stores/ui-store.ts:641-652`),
     which opens the drill on the set whichever bench is showing, the web's or Merc's, and opens a
     drill whole from the bench (`src/pages/EarLabPage.tsx:224-241`). A run over a set rates on a
     track of its own, with the guess floor of the pads it shows, and leaves the drill's rating, the
@@ -1072,10 +1073,42 @@ and First Light does not step aside. Item 21 fixes it.
     (`use-cadence-controller.ts`). It opens no microphone. Major keys only. Its address is
     `/exercises/name-the-cadence`, which opens it at level 7, so that all four are asked. Lesson
     28, whose card does not link it yet.
-20. **Keys and the sheet view in the Singing tab** (code with tests): all twelve major keys and
-    their relative minors in the key picker, with flat names (eight today,
-    `src/features/sidebar/panels/PlaybackSetupPanel.tsx:87-94`); and an address that opens the sheet
-    view (`singingSheetView` has none, `src/stores/ui-store.ts:146`). Lessons 18 and 21.
+20. **Keys and the sheet view in the Singing tab: shipped on 17 November 2026.** The key picker of
+    Playback Setup lists twelve keys where it listed eight: the major keys round the circle of
+    fifths, C, G, D, A, E, B and F♯, then F, B♭, E♭, A♭ and D♭, and with a minor scale chosen their
+    relative minors in the same order, A first (`MAJOR_KEYS` and `MINOR_KEYS`,
+    `src/lib/key-names.ts:45-75`; `src/features/sidebar/panels/PlaybackSetupPanel.tsx:92-94`). The
+    sixth key is F♯, the circle toy's name for it. A key is still its do, so C under a minor scale
+    is C minor; the scale type says which list names the do, A♭ major but G♯ minor (`keyNameFor`,
+    `src/lib/key-names.ts:118-122`). The stored name stays ASCII and is shown with a real sign
+    (`keyDisplayName`, `:125-130`), and a name from before, an old melody's A sharp or a link's C
+    flat, is read as the same pitch's name on the list (`keyName`, `src/stores/app-store.ts:44-52`).
+    The phone stage's picker, the Sing room's and the library's melody form list the same twelve.
+    The sheet view takes its signature from them, six signs at most (`signatureKeyFor`,
+    `src/lib/key-names.ts:132-139`), and spells each note by the key's letters, F♯ major's seventh
+    as E♯ and D minor's leading note as C♯ (`keySpelling`, `:196-235`; `midiToVFKey`,
+    `src/lib/sheet-music-renderer.ts:95-108`); Sight-Singing reads a key's name with the same parser
+    (`parseKeyName`, `src/lib/key-names.ts:77-87`). The pitch line keeps the app's sharp names in
+    every key, as Lesson 2 says of it (Lesson 2 FACTS 28). Choosing a key does what it did: on
+    Compose it moves the tune by the gap between the two keys, and on the Singing tab it changes how
+    the tune is read, the signature and the roll's grid, and the notes stay
+    (`src/features/sidebar/panels/PlaybackSetupPanel.tsx:55-89`), so Lesson 21 FACTS 41 still holds.
+    The address is `#/singing/sheet`, for a lesson `/?lesson=18#/singing/sheet`, and it may name the
+    key, `?key=Bb`, and a scale, `?key=A&scale=harmonic-minor` (`src/lib/hash-router.ts:30-35`;
+    `sheetKeyOf`, `src/lib/sheet-address.ts:32-42`). It opens the Singing tab on its sheet view, the
+    toolbar's own switch, which nothing stores, in the key as the picker would set it there
+    (`openSingingSheet`, `src/stores/singing-sheet-store.ts:45-60`), and is spent on arrival, so a
+    reload is a plain visit to the tab (`src/features/routing/useHashRouter.ts:268-275`). On a cold
+    load the key outlasts the first melody, which brings its own (`takeAddressedSheetKey`,
+    `src/stores/singing-sheet-store.ts:61-71`; `src/App.tsx:2808-2824`). A take is scored in the
+    sheet view as in the roll: the notes' results come from the practice engine, not from the canvas
+    (`src/features/practice/usePracticeController.ts:161-165`), and a steady E3 sung into both views
+    scored one note of seven the same, 13 per cent; the sheet shows the cursor and the Performance
+    panel, not the pitch line. On a phone held upright the tab has no sheet view, the phone stage
+    standing in for the desktop panel (`src/App.tsx:3976-3982`), so there the address opens the roll
+    in the key, and the sheet is there once the screen is wider than 768 px. A browser spec opens it
+    both ways (`src/e2e/singing-sheet-address.spec.ts`). Lessons 18 and 21, whose cards do not link
+    it yet.
 21. **Season 2 in the app's lesson plumbing** (code with tests, small): the lesson marker's range
     (`src/lib/lesson-marker.ts:19`); the lesson-answer bounds, which refuse any page or question
     lesson outside 1 to 14 (`workers/db-worker/src/mirror-metrics.ts:61-62`), so Season 2's answers
@@ -1278,7 +1311,7 @@ with Lessons 26 and 28.
    Lesson 15; the grand staff once; the octave treble clef tenors read named once in Go deeper.
    Reason: a treble-only season would leave lower voices reading below the staff: the app's baritone
    range, G2 to G4 (`src/stores/settings-store.ts:132-136`), starts six ledger lines below the treble
-   staff. The app already writes a low melody in the bass clef (`src/lib/sheet-music-renderer.ts:175-183`),
+   staff. The app already writes a low melody in the bass clef (`src/lib/sheet-music-renderer.ts:127-135`),
    and Merc's demonstrations sit low. The cost: Sight-Singing needs a bass clef (§ 5 item 10c). The
    octave treble convention itself is to check in a theory text before it is said.
 3. **Decided (1 November 2026): count with numbers.** As recommended: "1 and 2 and" for eighths, "1 e and a" for
@@ -1372,7 +1405,7 @@ with Lessons 26 and 28.
 | 6   | The second singing voice: rights and cast unsettled                                                                                                                                                                      | Synthesised examples, the learner as second voice, the cast decided before Arc D (§ 6.3, § 7 item 10)                                                                        |
 | 7   | The coach is the critical path again: seven voice lessons (16, 18, 20, 22, 24, 26, 28)                                                                                                                                   | Theory lessons are written ahead; voice lessons go to the coach in batches (§ 8.2)                                                                                           |
 | 8   | The kit is Season 1's, and every page carries the season's data, so first paint grows (HANDOFF § 5)                                                                                                                      | A season structure and a per-season data module in the first Season 2 PR (§ 6.2 item 1)                                                                                      |
-| 9   | Do-based minor and relative keys confuse: A minor shares C major's signature, but do moves to A                                                                                                                          | Lesson 25 says it in words and shows the house moving; the app's sheet view uses the relative major's signature for minor, which matches (`sheet-music-renderer.ts:159-170`) |
+| 9   | Do-based minor and relative keys confuse: A minor shares C major's signature, but do moves to A                                                                                                                          | Lesson 25 says it in words and shows the house moving; the app's sheet view uses the relative major's signature for minor, which matches (`sheet-music-renderer.ts:114-121`) |
 | 10  | Long lessons: 15, 21 and 28 run longest (the cap is 20 minutes since 1 November 2026)                                                                                                                                    | Each card names what moves to Go deeper                                                                                                                                      |
 | 11  | Repertoire rights: a 6/8 song, a two-part song                                                                                                                                                                           | Traditional tunes only in new arrangements, after a rights check; Lesson 28's song written for the lesson                                                                    |
 | 12  | Citations drift as the app changes                                                                                                                                                                                       | `pnpm plan:cites:check` on every package (HANDOFF § 4.6)                                                                                                                     |

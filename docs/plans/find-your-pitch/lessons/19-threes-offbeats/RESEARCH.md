@@ -123,7 +123,7 @@ metre's step is half a quarter); `src/lib/ear/timing.ts:231-239` (`SUBDIVIDE_TIM
 6 x 250 ms, both 1.5 s (arithmetic). Code read. Strong.
 
 **R19-12. The app writes no compound metre.** `src/lib/ear/rhythm-notation.ts:24` (`WRITTEN_BAR = 4`);
-`src/lib/sheet-music-renderer.ts:573` (`addTimeSignature(\`${beatsPerBar}/4\`)`). Code read. Strong.
+`src/lib/sheet-music-renderer.ts:525` (`addTimeSignature(\`${beatsPerBar}/4\`)`). Code read. Strong.
 
 **R19-13. Pulse holds triplet and off-beat patterns.** `src/lib/ear/banks.ts:237-257` ("and of 2"
 `[0, 1, 1.5, 2]`; "off the beat" `[0.5, 1, 2.5, 3]`), :265-278 ("triplet on 1" `[0, 1/3, 2/3, 1]`;
