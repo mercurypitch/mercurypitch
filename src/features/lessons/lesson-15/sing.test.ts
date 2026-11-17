@@ -246,8 +246,8 @@ describe('Sing it on the page', () => {
     expect(shown('[data-after="gentle"]')).toBe(true)
     expect(shown('[data-guide-start]')).toBe(false)
     expect(shown('#practiseCard [data-ending="rest"]')).toBe(true)
-    // Compose stays on the card after every ending
-    expect(words(el('#practiseCard h3'))).toBe('Compose, in Sheet Music')
+    // Read the Note stays on the card after every ending
+    expect(words(el('#practiseCard h3'))).toBe('Read the Note')
   })
 
   it("plays Merc's notes on a tap for Just listen today, offers no guide, and shows the rest line", () => {

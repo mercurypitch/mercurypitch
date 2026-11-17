@@ -197,7 +197,7 @@ describe('the explorer, a tab per season', () => {
     expect(card?.querySelector('.ex-actions')).toBeNull()
     expect(card?.innerHTML).not.toContain('/learn/15')
     expect(
-      card?.querySelector('a.addr[href="/?lesson=15#/compose"]'),
+      card?.querySelector('a.addr[href="/exercises/read-the-note?lesson=15"]'),
     ).not.toBeNull()
     vi.unstubAllEnvs()
   })

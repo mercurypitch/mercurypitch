@@ -66,13 +66,10 @@ const ENTRIES_2: readonly Lesson[] = [
     page: '/learn/15',
     hook: 'A piano has 88 keys. How can five lines write down every one of them?',
     pr: {
-      needs:
-        'A practice card for Read the Note, which shipped on 15 November 2026 (mercurypitch.com/exercises/read-the-note)',
       link: {
-        href: '/?lesson=15#/compose',
-        addr: 'mercurypitch.com/#/compose',
-        label: 'Compose',
-        note: 'then choose Sheet Music',
+        href: '/exercises/read-the-note?lesson=15',
+        addr: 'mercurypitch.com/exercises/read-the-note',
+        label: 'Read the Note',
       },
     },
   },

@@ -53,7 +53,7 @@ describe('Season 2', () => {
     }
   })
 
-  it("gives Lesson 15 its page and its reading time, a draft with no film, and Compose's link", () => {
+  it("gives Lesson 15 its page and its reading time, a draft with no film, and Read the Note's link", () => {
     // Act
     const L15 = LESSONS_2.find((L) => L.n === 15)
 
@@ -68,13 +68,12 @@ describe('Season 2', () => {
       "the vocal coach's look at Sing it (MASTER-PLAN § 12 item 8)",
     )
     expect(L15?.pr.link).toEqual({
-      href: '/?lesson=15#/compose',
-      addr: 'mercurypitch.com/#/compose',
-      label: 'Compose',
-      note: 'then choose Sheet Music',
+      href: '/exercises/read-the-note?lesson=15',
+      addr: 'mercurypitch.com/exercises/read-the-note',
+      label: 'Read the Note',
     })
-    // the drill it still needs stays the team's
-    expect(L15?.pr.needs).toMatch(/^A practice card for Read the Note/)
+    // the drill it waited for has shipped, and its card links it
+    expect(L15?.pr.needs).toBeUndefined()
     expect(SEASON_2.prereq[15]).toEqual([2])
   })
 
