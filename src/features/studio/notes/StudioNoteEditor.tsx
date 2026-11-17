@@ -382,7 +382,7 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
           onDblClick={() => props.state.setHeight(null)}
         />
       </Show>
-      <div class={styles.header}>
+      <div class={styles.header} classList={{ [styles.kitHeader]: kit() }}>
         <div class={styles.identity}>
           <span class={styles.dot} aria-hidden="true" />
           <div class={styles.names}>
