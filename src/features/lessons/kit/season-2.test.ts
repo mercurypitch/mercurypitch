@@ -105,7 +105,7 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[16]).toEqual([9, 15])
   })
 
-  it("gives Lesson 17 its page and its reading time, a draft with no film, and the Ear Lab's link", () => {
+  it("gives Lesson 17 its page and its reading time, a draft with no film, and The Chart's link", () => {
     // Act
     const L17 = LESSONS_2.find((L) => L.n === 17)
 
@@ -120,15 +120,13 @@ describe('Season 2', () => {
       "Lesson 8's page at /learn/08, and the vocal coach's look at the sung part",
     )
     expect(L17?.pr.link).toEqual({
-      href: '/ear-lab?lesson=17',
-      addr: 'mercurypitch.com/ear-lab',
-      label: 'Ear Lab',
-      note: 'then tap The Chart',
+      href: '/exercises/quarters-halves-and-eighths?lesson=17',
+      addr: 'mercurypitch.com/exercises/quarters-halves-and-eighths',
+      label: 'The Chart',
+      note: 'quarters and eighths only',
     })
-    // the drill it still needs stays the team's
-    expect(L17?.pr.needs).toMatch(
-      /^A practice card for The Chart on quarters, halves and eighths, .*\/exercises\/quarters-halves-and-eighths\)$/,
-    )
+    // the set it waited for has shipped, and its card links it
+    expect(L17?.pr.needs).toBeUndefined()
     // Lesson 15 only helps, so Lesson 8 is its one way in
     expect(SEASON_2.prereq[17]).toEqual([8])
   })

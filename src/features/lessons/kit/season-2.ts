@@ -106,13 +106,11 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Why is a quarter note not a quarter of a second?',
     fig: 'rhythm',
     pr: {
-      needs:
-        'A practice card for The Chart on quarters, halves and eighths, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/quarters-halves-and-eighths)',
       link: {
-        href: '/ear-lab?lesson=17',
-        addr: 'mercurypitch.com/ear-lab',
-        label: 'Ear Lab',
-        note: 'then tap The Chart',
+        href: '/exercises/quarters-halves-and-eighths?lesson=17',
+        addr: 'mercurypitch.com/exercises/quarters-halves-and-eighths',
+        label: 'The Chart',
+        note: 'quarters and eighths only',
       },
     },
   },

@@ -333,7 +333,9 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/ear-lab?lesson=17"]'),
+      card?.querySelector(
+        'a.addr[href="/exercises/quarters-halves-and-eighths?lesson=17"]',
+      ),
     ).not.toBeNull()
     expect(card?.querySelector('.ex-fig svg.ex-rhythm')).not.toBeNull()
     expect(card?.querySelector('.ex-fig figcaption')?.textContent).toBe(

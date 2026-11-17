@@ -282,18 +282,22 @@ describe("Lesson 17's page", () => {
       doc().querySelectorAll<HTMLAnchorElement>('a[href*="lesson="]'),
     )
 
-    // Assert: The Chart and Pulse on the card, and the footer (FACTS 39 to 42)
-    expect(links.map((a) => a.getAttribute('href'))).toEqual([
-      '/ear-lab?lesson=17',
-      '/ear-lab?lesson=17',
-      '/ear-lab?lesson=17',
+    // Assert: The Chart's set and Pulse on the card, and the footer (FACTS
+    // 39 to 42, 46a)
+    expect(links.map((a) => [a.getAttribute('href'), words(a)])).toEqual([
+      [
+        '/exercises/quarters-halves-and-eighths?lesson=17',
+        'mercurypitch.com/exercises/quarters-halves-and-eighths',
+      ],
+      ['/ear-lab?lesson=17', 'mercurypitch.com/ear-lab'],
+      [
+        '/exercises/quarters-halves-and-eighths?lesson=17',
+        'mercurypitch.com/exercises/quarters-halves-and-eighths',
+      ],
+      ['/ear-lab?lesson=17', 'mercurypitch.com/ear-lab'],
     ])
     for (const a of links)
-      expect([a.target, a.rel, words(a)]).toEqual([
-        '_blank',
-        'noopener',
-        'mercurypitch.com/ear-lab',
-      ])
+      expect([a.target, a.rel]).toEqual(['_blank', 'noopener'])
   })
 
   it("holds the practice card's rest line, hidden at first, above a text that keeps both drills after every ending", () => {
