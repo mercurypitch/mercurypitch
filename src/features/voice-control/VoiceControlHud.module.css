@@ -425,14 +425,52 @@
 
   /* Past the sidebar in the Studio are the lanes' headers, down to the
      foot of the window: the pill sat 38 px into a lane's. The Studio's
-     sidebar holds no Strictness and ends far above its foot, so there the
-     pill stays in that empty foot, as it does on the rail. A page that
-     marks itself so asks for this. */
+     sidebar holds no Strictness, so there the pill stays in the sidebar's
+     foot, as it does on the rail. A page that marks itself so asks for
+     this. */
   body:has(:global(.app-sidebar:not(.collapsed))):has(
       [data-voice-pill-in-sidebar]
     )
     .pill:not(.docked) {
     left: calc(var(--safe-left, 0px) + 0.75rem);
+  }
+
+  /* That foot was empty only while the sidebar's controls ended above it:
+     in a window 400 px tall they reach it, and the pill sat on
+     Auto-calibrate. So the sidebar keeps the pill's room free at its foot,
+     a strip of its own ground (its ::after) that stays there while its
+     controls scroll above it and end above it. The room is the pill's lift
+     off the window's foot (as `.pill` and `.raised` set it), its 39 px,
+     and 8 px to spare. The strip stands in for the sidebar's bottom
+     padding, and a control that takes the focus scrolls clear of it. */
+  body:has(.pill:not(.docked)):has([data-voice-pill-in-sidebar])
+    :global(.app-sidebar:not(.collapsed)) {
+    --voice-pill-room: calc(
+      max(
+          var(--safe-bottom, 0px) + 0.75rem,
+          var(--consent-banner-space, 0px) + 0.6rem,
+          var(--verify-banner-space, 0px) + 0.6rem
+        ) +
+        var(--voice-pill-raise, 0px) + 3rem
+    );
+
+    padding-bottom: 0;
+    scroll-padding-bottom: var(--voice-pill-room);
+  }
+
+  body:has(.pill.raised:not(.docked)):has([data-voice-pill-in-sidebar])
+    :global(.app-sidebar:not(.collapsed)) {
+    --voice-pill-raise: 2.4rem;
+  }
+
+  body:has(.pill:not(.docked)):has([data-voice-pill-in-sidebar])
+    :global(.app-sidebar:not(.collapsed))::after {
+    position: sticky;
+    bottom: 0;
+    flex-shrink: 0;
+    height: var(--voice-pill-room);
+    background: inherit;
+    content: '';
   }
 
   /* Collapsed, the sidebar is a rail with nothing under its expand button,
