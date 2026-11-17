@@ -36,6 +36,9 @@
 // as a DAW sums its armed tracks. The monitor's one path is built when its
 // lane starts to sound and taken out of the graph when it stops, and the
 // master with the last path: a silent chain still costs its processing.
+// While the path exists it counts in Auto's pick of live playback's tier
+// (playback-quality.ts `countMonitoredLane`), since it runs on the audio
+// thread playback does.
 //
 // Level changes follow the house envelopes (CONVENTIONS.md 5b): toward the
 // new level with setTargetAtTime, and to silence with the release, the
@@ -77,6 +80,8 @@ import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { StudioLiteEffect } from '@/lib/studio-fx/fx-profile'
 import { MONITOR_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
+import type { StudioMonitorCount } from '../playback/playback-quality'
+import { countMonitoredLane } from '../playback/playback-quality'
 import { STUDIO_CAPTURE_INPUT } from './capture-input'
 import type { StudioMonitorMaster, StudioMonitorMasterInput, } from './monitor-master'
 
@@ -125,6 +130,8 @@ interface MonitorPath {
   readonly merge: ChannelMergerNode
   readonly level: GainNode
   readonly master: StudioMonitorMasterInput
+  /** The path in Auto's pick of live playback's tier, while it exists. */
+  readonly counted: StudioMonitorCount
   /** What the sides were last asked for. */
   gains: readonly [number, number]
   /** Its level has begun to rise: from then on it leaves on the release. */
@@ -234,6 +241,7 @@ export function createStudioInputMonitor(
       merge,
       level,
       master,
+      counted: countMonitoredLane(sound.spec),
       gains: sound.gains,
       rose: false,
     }
@@ -258,6 +266,7 @@ export function createStudioInputMonitor(
       gone.merge.disconnect()
       gone.level.disconnect()
       gone.master.leave()
+      gone.counted.end()
     }
     for (const told of silent.splice(0)) told()
   }
@@ -297,6 +306,7 @@ export function createStudioInputMonitor(
       const heard = bringIn(sound)
       heard.chain.setLite(sound.lite ?? NO_LITE)
       heard.chain.setSpec(sound.spec)
+      heard.counted.set(sound.spec)
       if (heard.gains.every((gain, side) => gain === sound.gains[side])) return
       heard.gains = sound.gains
       for (const [side, gain] of heard.sides.entries())

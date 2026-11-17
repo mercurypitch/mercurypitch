@@ -32,7 +32,10 @@
 //   lane heard live switches between the sides and back to playback;
 // - cost: render time per 128-frame quantum, dry and through lanes, through
 //   the song's master and through none, and the main thread's time to
-//   build a lane's path and to follow a change.
+//   build a lane's path and to follow a change; and, in voice chains
+//   (`voiceChains`), what a monitored lane costs effect by effect, its own
+//   nodes and the master's stage: the figures Auto's estimate counts
+//   (song-load.ts), with each role's whole lane to check their sum against.
 // Each monitor here hears its input from the first sample (`settled`), as
 // it does an instrument: how a microphone's monitor rises on the arm is
 // measured by studio-record-monitor-disarm.spec.ts. Each plays through a
@@ -56,6 +59,8 @@ import { TRACK_ROLES } from '/src/lib/studio-fx/role-chains.ts'
 import { measureShaperDelays } from '/src/lib/studio-fx/shaper-delay.ts'
 import { prepareZeroLatencyCompressor } from '/src/lib/studio-fx/zero-latency-compressor.ts'
 import { createStudioProject, createStudioTrack, } from '/src/lib/studio/model/defaults.ts'
+import { benchmarkVoiceChain } from '/src/lib/studio/playback/playback-benchmark.ts'
+import { TIER_PROFILES } from '/src/lib/studio/playback/playback-quality.ts'
 import { frameTime } from '/src/lib/studio/playback/whole-frame.ts'
 import { createStudioArmedInputs } from '/src/lib/studio/record/armed-input.ts'
 import { createStudioInputMonitor } from '/src/lib/studio/record/input-monitor.ts'
@@ -1068,7 +1073,132 @@ async function costProbe() {
   const pass = Object.values(out).every(
     (entry) => entry.monitoredMicrosPerQuantum < quantumMicros / 10,
   )
-  return { pass, quantumMicros: round(quantumMicros, 1), ...out }
+  return {
+    pass,
+    quantumMicros: round(quantumMicros, 1),
+    ...out,
+    voiceChains: await voiceChainsProbe(),
+  }
+}
+
+/** Lanes per measured case: enough that one lane's share of a render stands well above its noise. */
+const TABLE_LANES = 12
+/** Lanes per role's whole lane, each a voice chain or so. */
+const ROLE_LANES = 6
+
+/**
+ * `count` lanes monitored on one input, each playing `sound`, through one
+ * master playing `masterSpec`, or each through a master of its own. The
+ * input is pulled with or without them, as an armed lane's capture pulls
+ * it, so a case costs what its monitors add.
+ */
+function monitoredLanesRender(input, sound, count, options = {}) {
+  return renderOffline(START + input.length, (ctx) => {
+    const source = sourceOf(ctx, input, START)
+    const pulled = ctx.createGain()
+    pulled.gain.value = 0
+    source.connect(pulled).connect(ctx.destination)
+    const masterSpec = options.masterSpec ?? EMPTY_SPEC
+    const shared = createStudioMonitorMaster(masterSpec)
+    for (let lane = 0; lane < count; lane++) {
+      const monitor = createStudioInputMonitor(ctx, source, {
+        master: options.ownMasters
+          ? createStudioMonitorMaster(masterSpec)
+          : shared,
+        schedule: renderClock(ctx),
+        settled: true,
+      })
+      monitor.set(sound)
+    }
+  })
+}
+
+/** A lane at unity playing `effects`, each a kind at its defaults but for its params. */
+const effectsLane = (...effects) => ({
+  on: true,
+  spec: normalizeChainSpec({
+    effects: effects.map(([kind, params = {}]) => ({
+      kind,
+      params,
+      enabled: true,
+    })),
+  }),
+  gains: [1, 1],
+})
+
+/**
+ * What a monitored lane costs, in voice chains: the unit Auto's estimate
+ * counts in (song-load.ts), this device's voice chain as playback's
+ * benchmark renders it (playback-benchmark.ts), the median of three. Each
+ * case renders TABLE_LANES monitored lanes against the same input with
+ * none, so a lane's own nodes are the lanes with no effects. A gain is the
+ * lanes with two against the lanes with one; the stereo hold a lane with
+ * effects gets is the lanes with one gain against the lanes with none,
+ * less that gain; and each effect kind, at its defaults, is the lanes with
+ * it alone against the lanes with a gain alone, plus that gain. So the
+ * table adds up: a chain costs its hold and each of its effects. Reverbs
+ * are measured at the decays the role chains span. Light's lite list is
+ * measured as a monitored lane plays it there: a plain wire. The master is
+ * a master each against one with nothing in it. Each role's whole lane, at
+ * Best and on Light, is there to check the table's sum against.
+ */
+async function voiceChainsProbe() {
+  const input = voiceInput(5)
+  const quanta = (START + input.length) / 128
+  const benchmarks = []
+  for (let run = 0; run < 3; run++) benchmarks.push(await benchmarkVoiceChain())
+  const voiceChainMicros = median(benchmarks)
+  const micros = async (sound, count = TABLE_LANES, options) =>
+    ((await timed(() => monitoredLanesRender(input, sound, count, options))) *
+      1000) /
+    quanta
+  const perLane = (us, count = TABLE_LANES) =>
+    round(us / count / voiceChainMicros, 3)
+  const none = await micros(PLAIN_LANE, 0)
+  const plain = await micros(PLAIN_LANE)
+  const held = await micros(effectsLane(['gain']))
+  const gain = (await micros(effectsLane(['gain'], ['gain']))) - held
+  const effects = { gain: perLane(gain) }
+  for (const kind of EFFECT_KINDS) {
+    if (kind === 'gain' || kind === 'reverb') continue
+    effects[kind] = perLane((await micros(effectsLane([kind]))) - held + gain)
+  }
+  for (const decayS of [0.8, 1.6, 2.8])
+    effects[`reverb ${decayS} s`] = perLane(
+      (await micros(effectsLane(['reverb', { decayS }]))) - held + gain,
+    )
+  const light = {}
+  for (const kind of TIER_PROFILES.light.lite)
+    light[kind] = perLane(
+      (await micros({
+        ...effectsLane([kind]),
+        lite: TIER_PROFILES.light.lite,
+      })) -
+        held +
+        gain,
+    )
+  const masters = await micros(PLAIN_LANE, TABLE_LANES, {
+    masterSpec: songMaster(0),
+    ownMasters: true,
+  })
+  const roles = {}
+  for (const role of TRACK_ROLES) {
+    const sound = laneSound(role)
+    const lite = { ...sound, lite: TIER_PROFILES.light.lite }
+    roles[role] = {
+      best: perLane((await micros(sound, ROLE_LANES)) - none, ROLE_LANES),
+      light: perLane((await micros(lite, ROLE_LANES)) - none, ROLE_LANES),
+    }
+  }
+  return {
+    voiceChainMicros: round(voiceChainMicros, 1),
+    lane: perLane(plain - none),
+    hold: perLane(held - plain - gain),
+    master: perLane(masters - plain),
+    effects,
+    light,
+    roles,
+  }
 }
 
 export async function runStudioMonitorProbes() {

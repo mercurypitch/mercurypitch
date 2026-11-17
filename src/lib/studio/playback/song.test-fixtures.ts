@@ -11,6 +11,19 @@ import type { StudioSongShape } from './song-load'
  */
 export const THIS_DESKTOP_US = 167.7
 
+/**
+ * Devices, by their voice chain in microseconds per 128 frames, on which
+ * lead vocals monitored over a song (song-load.ts) meet a tier's edge. On
+ * MONITOR_EDGE_US the 12-lane song fits Best (up to 121.1 us), but not with
+ * a vocal monitored (110.8 us), and that fits Balanced (127.2 us). On
+ * MONITOR_LOOP_US the 4-lane song and two monitored vocals fit Balanced only
+ * with the vocals' dynamic EQ bands passed uncut, as Light's monitor plays
+ * them (195.8 us), not as Balanced's does (182.0 us), and never Best
+ * (179.0 us).
+ */
+export const MONITOR_EDGE_US = 116
+export const MONITOR_LOOP_US = 189
+
 /** The profiling fixtures' lanes, by role: 4, 12 and 24 of them. */
 export const SMALL_SONG: readonly TrackRole[] = [
   'voice',

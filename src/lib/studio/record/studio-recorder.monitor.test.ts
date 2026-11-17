@@ -1,4 +1,4 @@
-// Studio recorder, each lane's monitor — every armed lane hears its own input through a monitor of its own, through the lane's chain: one channel of an input alone and never the whole input beside it, lanes armed on one input each once, a lane on a whole input once, and a MIDI lane its instrument's node alone; a lane's monitor rises a quarter of a second after its own capture first meters a sound, or the moment another lane's monitor on its input hears that input settle, and an instrument's at once; a lane disarmed while it is heard keeps its input until its monitor has glided out, and that late close ends only its own pick and hold, while one disarmed before its monitor rose lets its input go at once; an instrument's port goes at once, and its sound after the glide.
+// Studio recorder, each lane's monitor — every armed lane hears its own input through a monitor of its own, through the lane's chain: one channel of an input alone and never the whole input beside it, lanes armed on one input each once, a lane on a whole input once, and a MIDI lane its instrument's node alone; a lane's monitor rises a quarter of a second after its own capture first meters a sound, or the moment another lane's monitor on its input hears that input settle, and an instrument's at once; a lane disarmed while it is heard keeps its input until its monitor has glided out, and that late close ends only its own pick and hold, while one disarmed before its monitor rose lets its input go at once; an instrument's port goes at once, and its sound after the glide. A monitored lane counts in Auto's pick of playback's tier from its arm until its monitor has glided out, after monitoring goes off or the lane is disarmed.
 import type { Mock } from 'vitest'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { ChannelPick } from '@/lib/audio-input/input-channels'
@@ -7,6 +7,9 @@ import { MicManager } from '@/lib/mic-manager'
 import { EMPTY_CHAIN } from '@/lib/studio-fx/chain-spec'
 import type { FakeNode } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { createManualScheduler, FakeAudioContext, FakeGain, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import { autoPlaybackTier, resetPlaybackQualityForTests, } from '../playback/playback-quality'
+import { MEDIUM_SONG, MONITOR_EDGE_US, roleSong, } from '../playback/song.test-fixtures'
+import { studioSongChains } from '../playback/song-load'
 import type { StudioMonitorSound } from './input-monitor'
 import { createStudioInputMonitor } from './input-monitor'
 import { createStudioMonitorMaster } from './monitor-master'
@@ -705,5 +708,50 @@ describe('a lane disarmed while its monitor is heard', () => {
     expect(levelsOf(graph)).toEqual([])
     expect(release).toHaveBeenCalledOnce()
     expect(letGo).toHaveBeenCalledOnce()
+  })
+})
+
+describe("a monitored lane in Auto's pick of playback's tier", () => {
+  afterEach(() => {
+    releaseMicLock()
+    resetPlaybackQualityForTests()
+  })
+
+  it('counts from the arm until its monitor has glided out, after monitoring goes off or the lane is disarmed', async () => {
+    // Arrange: the 12-lane song on a device where it fits Best alone, and
+    // Balanced with a lead vocal monitored on top.
+    resetPlaybackQualityForTests({
+      cores: 24,
+      memoryGb: 8,
+      voiceChainUs: MONITOR_EDGE_US,
+    })
+    const song = roleSong(MEDIUM_SONG)
+    const voice = studioSongChains(roleSong(['voice']))[0]
+    let on = true
+    const { h, scheduler } = monitored({
+      monitorSound: () => ({ on, spec: voice, gains: [1, 1] }),
+    })
+    expect(autoPlaybackTier(song)).toBe('best')
+
+    // Act and assert: armed and heard.
+    await h.recorder.arm('lane-1')
+    hear(h, scheduler)
+    expect(autoPlaybackTier(song)).toBe('balanced')
+
+    // Monitoring off: counted until the monitor has glided out.
+    on = false
+    h.recorder.updateMonitor()
+    expect(autoPlaybackTier(song)).toBe('balanced')
+    scheduler.advance(RELEASED_MS)
+    expect(autoPlaybackTier(song)).toBe('best')
+
+    // On again, then disarmed.
+    on = true
+    h.recorder.updateMonitor()
+    expect(autoPlaybackTier(song)).toBe('balanced')
+    h.recorder.disarm()
+    expect(autoPlaybackTier(song)).toBe('balanced')
+    scheduler.advance(RELEASED_MS)
+    expect(autoPlaybackTier(song)).toBe('best')
   })
 })

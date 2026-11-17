@@ -15,17 +15,20 @@
 // tier. Auto picks per song: the best tier whose estimated load
 // (song-load.ts) stays under AUTO_LOAD_CEILING of the audio thread, from
 // the lanes that sound and a short offline render of a voice chain, measured
-// once on the device and kept. Until that render is in, the browser's hints
+// once on the device and kept. The lanes heard through their input monitors
+// run on that thread too, and count while their monitors play
+// (countMonitoredLane). Until that render is in, the browser's hints
 // (cores, memory) cap the tier. While playing on Auto, a run of underruns
 // (the browser's playout statistics, where it has them) steps down one tier
 // for the session, with a notice; the next session starts from Auto's own
 // pick again.
+import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { StudioFxProfile } from '@/lib/studio-fx/fx-profile'
 import { FULL_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
 import type { StudioPlaybackTier } from './playback-tiers'
 import { PLAYBACK_TIERS } from './playback-tiers'
 import type { StudioSongShape } from './song-load'
-import { songLoad, studioSongChains } from './song-load'
+import { monitorCostInVoiceChains, songLoad, studioSongChains, } from './song-load'
 
 export type { StudioPlaybackTier } from './playback-tiers'
 export { PLAYBACK_TIERS } from './playback-tiers'
@@ -100,13 +103,17 @@ function hintedTier({
 
 /**
  * Auto's pick for a song: the best tier whose estimated load on this device
- * stays under AUTO_LOAD_CEILING, Light when none does. Before the device's
- * benchmark is in, the browser's hints cap it, and Balanced at most: Best
- * needs the device to show it can carry it.
+ * stays under AUTO_LOAD_CEILING, Light when none does, with the chains of
+ * the `monitored` lanes on top. Each tier weighs them as its own monitor
+ * plays them: the monitor follows the tier picked (`lite`), so weighing
+ * them as they play now would pick a tier their new sound then undoes.
+ * Before the device's benchmark is in, the browser's hints cap it, and
+ * Balanced at most: Best needs the device to show it can carry it.
  */
 export function pickAutoTier(
   hints: StudioDeviceHints,
   song: StudioSongShape,
+  monitored: readonly ChainSpec[] = [],
 ): StudioPlaybackTier {
   const { voiceChainUs } = hints
   if (voiceChainUs === undefined || !(voiceChainUs > 0))
@@ -114,7 +121,11 @@ export function pickAutoTier(
   const chains = studioSongChains(song)
   return (
     PLAYBACK_TIERS.find(
-      (tier) => songLoad(chains, tier, voiceChainUs) <= AUTO_LOAD_CEILING,
+      (tier) =>
+        songLoad(chains, tier, voiceChainUs, {
+          chains: monitored,
+          lite: TIER_PROFILES[tier].lite,
+        }) <= AUTO_LOAD_CEILING,
     ) ?? 'light'
   )
 }
@@ -266,6 +277,8 @@ let steppedTo: StudioPlaybackTier | null = null
 let notice: string | null = null
 const listeners = new Set<Listener>()
 const watch = createUnderrunWatch()
+/** The chain of each input monitor's path that exists now (countMonitoredLane). */
+const monitoredLanes = new Set<{ spec: ChainSpec }>()
 
 /** This device's measured voice chain in microseconds per 128 frames, once the benchmark is in. */
 export function playbackVoiceChainUs(): number | undefined {
@@ -274,8 +287,73 @@ export function playbackVoiceChainUs(): number | undefined {
 
 /** The tier Auto plays `song` at: its own pick, under any step down this session. */
 export function autoPlaybackTier(song: StudioSongShape): StudioPlaybackTier {
-  const auto = pickAutoTier(hints, song)
+  const chains = [...monitoredLanes].map((lane) => lane.spec)
+  const auto = pickAutoTier(hints, song, chains)
   return steppedTo === null ? auto : lower(auto, steppedTo)
+}
+
+/** A monitored lane as Auto counts it (countMonitoredLane). */
+export interface StudioMonitorCount {
+  /** The lane's chain now. */
+  set(spec: ChainSpec): void
+  /** Its path has come apart: it costs nothing more. */
+  end(): void
+}
+
+/** What the monitored lanes cost as each tier's monitor plays them: equal when Auto has nothing new to weigh. */
+function monitorCosts(): number[] {
+  const chains = [...monitoredLanes].map((lane) => lane.spec)
+  return PLAYBACK_TIERS.map((tier) =>
+    monitorCostInVoiceChains(chains, TIER_PROFILES[tier].lite),
+  )
+}
+
+let monitorNewsQueued = false
+
+/**
+ * Change what is monitored, and tell the listeners when that changes what
+ * Auto weighs: once the monitor's own change is done, since a listener may
+ * set the monitor again (its new tier's `lite`).
+ */
+function changeMonitored(change: () => void): void {
+  const before = monitorCosts()
+  change()
+  if (
+    monitorNewsQueued ||
+    monitorCosts().every((cost, index) => cost === before[index])
+  )
+    return
+  monitorNewsQueued = true
+  queueMicrotask(() => {
+    monitorNewsQueued = false
+    publish()
+  })
+}
+
+/**
+ * Count an input monitor's path (input-monitor.ts) in Auto's pick from now
+ * until `end`: it plays on the same audio thread as playback, from when it
+ * is built until it comes apart, so it counts while it exists, heard or
+ * releasing. Its chain counts as `set` last gave it, weighed at each tier
+ * as that tier's monitor plays it (pickAutoTier).
+ */
+export function countMonitoredLane(spec: ChainSpec): StudioMonitorCount {
+  const lane = { spec }
+  let ended = false
+  changeMonitored(() => monitoredLanes.add(lane))
+  return {
+    set(next) {
+      if (ended || next === lane.spec) return
+      changeMonitored(() => {
+        lane.spec = next
+      })
+    },
+    end() {
+      if (ended) return
+      ended = true
+      changeMonitored(() => monitoredLanes.delete(lane))
+    },
+  }
 }
 
 /** The tier live playback builds `song` at now. */
@@ -373,5 +451,6 @@ export function resetPlaybackQualityForTests(
   steppedTo = null
   notice = null
   listeners.clear()
+  monitoredLanes.clear()
   watch.restart(-Infinity)
 }
