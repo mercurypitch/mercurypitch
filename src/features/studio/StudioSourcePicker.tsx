@@ -211,7 +211,8 @@ export function StudioSourcePicker(props: StudioSourcePickerProps) {
         </div>
       </Show>
       <p class={styles.help}>
-        Takes start at the playhead. Line them up by ear.
+        Takes start at the playhead, a MIDI file's lanes at the song's start.
+        Line them up by ear.
       </p>
       <button
         type="button"

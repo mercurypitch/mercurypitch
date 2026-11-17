@@ -1,4 +1,4 @@
-// Studio source picker tests — New lane's three choices stand at its head, and stale reads and playback completions cannot restart previews.
+// Studio source picker tests — New lane's three choices stand at its head, stale reads and playback completions cannot restart previews, and Choose file takes a MIDI file beside audio and says where each starts.
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -312,5 +312,24 @@ describe('New lane in Add takes', () => {
 
     // Assert
     expect(screen.queryByRole('group', { name: 'New lane' })).toBeNull()
+  })
+})
+
+describe('Studio Choose file', () => {
+  it('takes a MIDI file beside audio, and says where each starts', () => {
+    // Arrange
+    mount()
+
+    // Act
+    const choose = screen.getByRole('button', { name: /^Choose file/ })
+    const help = screen.getByText(/^Takes start at the playhead/)
+
+    // Assert
+    expect(choose).toHaveTextContent(
+      'Choose fileWAV, MP3 and other audio, or a MIDI file',
+    )
+    expect(help.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      "Takes start at the playhead, a MIDI file's lanes at the song's start. Line them up by ear.",
+    )
   })
 })
