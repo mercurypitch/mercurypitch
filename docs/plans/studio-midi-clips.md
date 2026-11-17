@@ -185,3 +185,102 @@ turn on the session's branch.
 - screenshots at 1440x900 and 390x844.
 
 Each PR adds its own "Where it lives" section below.
+
+### Design decisions made while building PR 1
+
+- **Five minutes, not thirty.** The plan capped a sequence at 30 minutes
+  unless validation already set a limit. The Studio keeps no audio longer
+  than five minutes (`import-limits.ts`), and a render is cut there
+  (`midi-preview-audio.ts`), so a window past five minutes could never be
+  heard. A MIDI clip's window ends five minutes into its sequence at the
+  most: the validator says so, `trim-tail` refuses past it, and the lane's
+  edge and the End handle stop there.
+- **Past its audio, a MIDI clip plays no source.** Rather than leave the
+  silence to Web Audio's clamp, the arrangement plan ends a MIDI clip's
+  segment where its audio ends, edged there (`heardSourceOut`), so Play
+  and the export start nothing past it, and a recorded take that stops
+  mid-note does not click where its audio does. The song still runs to
+  the window's end.
+- **A MIDI clip's fades are bounded by its sequence**, as its window is,
+  not by its audio. **A MIDI loop take's clip keeps its pass's bounds**:
+  its passes are audio it owns, so its end stops at its pass, as an audio
+  loop take's does.
+- **`trim-tail` carries an optional fork id.** A lengthening that must copy
+  a shared sequence without one is refused. Every caller names one for a
+  MIDI clip (`studioTrimTail`): the lane's edge, Clip details and the End
+  handle. A note edit and a lengthening fork through one step,
+  `withOwnSequence`.
+- **The builder is pure, and the importer keeps its audio.**
+  `studioNewMidiClips(project, clips, assetId, createId)` returns
+  `{ command, clipIds }`: one batch, each clip on a lane of the song
+  (`{ trackId }`) or a new one (`{ name, role }`), its notes given ids 1, 2,
+  3... and only their fields away from defaults. The controller's
+  `addMidiClips(clips)` keeps the silence as a take is and commits the
+  batch, resolving with the clips' ids.
+- **A clip's render key is the key of its silence**: an empty sequence of
+  its length on its lane's sound. A clip made empty is then not stale, and
+  one made with notes is, so it renders; keeping that render is the
+  caller's to ask for.
+- **The silence is stored once, with no name.** Identical audio reuses its
+  asset, so every new clip plays the same one; a name on it would show on
+  every clip. Each new clip shows its lane's name instead, its render is
+  kept unnamed too, and Clip details calls it a MIDI clip.
+- **A clip that runs into the bar under the press moves the new clip's
+  start to its own end**, keeping the new clip's end on the bar line four
+  bars on. The plan said nothing of a clip before the press.
+- **New lane is three equal choices**, Audio, Piano and Drums, each with
+  its instrument's glyph, in a group named New lane: "New audio lane",
+  "New piano lane" and "New drums lane". The browser specs that made a
+  plain lane with "New lane" press "New audio lane" now. A new Piano or
+  Drums lane is called Piano or Drums, then Piano 2 and so on.
+- **The same three choices head Add takes, on every device.** A phone
+  adds its lanes there, and an empty song on a computer, which has no New
+  lane row, finds them there too.
+- **The End handle is a slider over the ruler**, so it takes the focus and
+  the arrows (a grid step, Shift a bar, each press one commit). Its target
+  is 44 px across and as tall as the ruler; on a touch screen it reaches a
+  finger's height under the ruler on the dimmed side only, where a press
+  draws nothing, so it takes no press from a note. A drag reads the
+  pointer through the view it pressed in, and the view follows the handle
+  past an edge. The end moves from where the press took the handle, so it
+  never jumps to the finger. The end goes no nearer the start than a grid
+  line past it.
+- **The view keeps to a range, the clip to its window.** The roll's view,
+  a pinch, a pan, the wheel and an edge scroll keep to the window and two
+  bars past its end (the engine's context gains `view`); what a press
+  picks or draws stays the window's. The velocity lane is dimmed past the
+  end as the grid is, and the end is a line in the lane's colour. A clip
+  shorter than the roll opens with the two bars in view, so the handle has
+  its room at once; the note editor's zoom spec opens on them now.
+- **A lane gesture is let go when the song changes under it**, a kept
+  render included. A song opened with stale MIDI keeps its renders as it
+  opens, so a drag begun at once is let go; the browser specs wait for the
+  keep. This was so before PR 1.
+
+## 3. Where PR 1 lives
+
+| File                                                  | What it answers                                                                                                       |
+| ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `src/lib/studio/model/midi-window.ts`                 | 1.1: how far a MIDI clip's window runs, to its sequence's end and five minutes in; a trim past it grows the sequence. |
+| `src/lib/studio/model/validation-midi.ts`             | 1.1: a MIDI clip's window and fades inside its sequence, five minutes at the most.                                    |
+| `src/lib/studio/model/validation-clips.ts`            | 1.1: an audio clip inside its audio; a MIDI clip's window left to its sequence; every clip's passes in its audio.     |
+| `src/lib/studio/model/arrangement-plan.ts`            | 1.1: a MIDI clip's segment ends with its audio, edged there, for Play and the export.                                 |
+| `src/lib/studio/model/clip-passes.ts`                 | 1.2: the source frames a clip's trims reach, five minutes of a MIDI clip's sequence.                                  |
+| `src/lib/studio/model/sequence-commands.ts`           | 1.2: `withOwnSequence`, the copy on write a note edit and a lengthening share.                                        |
+| `src/lib/studio/model/commands.ts`                    | 1.2: `trim-tail` with its fork id, its sequence grown first.                                                          |
+| `src/features/studio/timeline/gesture-draft.ts`       | 1.2: the lane's edge to five minutes, and `studioTrimTail`, which names a copy for a MIDI clip.                       |
+| `src/lib/studio/midi/time.ts`                         | 1.2: the frame a window ends on to end on a tick, and the last tick before a frame.                                   |
+| `src/features/studio/notes/roll-end.ts`               | 1.2: the roll's range two bars past the end, where a drag puts the end, and the end in words.                         |
+| `src/features/studio/notes/StudioNoteEnd.tsx`         | 1.2: the End handle: a drag, Escape, the arrows, one commit each.                                                     |
+| `src/features/studio/notes/StudioNoteRoll.tsx`        | 1.2: the view kept to the range, the window drawn to a drafted end, the view following the handle.                    |
+| `src/features/studio/notes/note-roll-frame.ts`        | 1.2: the clip's end as a line, and the velocity lane dimmed past it.                                                  |
+| `src/features/studio/notes/edit-viewport.ts`          | 1.2: `noteViewRange`, the ticks the engine's pans and zooms keep to.                                                  |
+| `src/lib/studio/model/new-midi-clips.ts`              | 1.3: the builder, where a clip made in a lane goes, and which lanes make one.                                         |
+| `src/features/studio/controller/imports.ts`           | 1.3: `addMidiClips`: the quarter second of silence kept as a take is, and the builder's batch committed.              |
+| `src/features/studio/controller/edit-history.ts`      | 1.3: Undo's words for new clips: add lane, add lanes, add clip, add clips.                                            |
+| `src/features/studio/timeline/StudioNewLane.tsx`      | 1.3: New lane's three choices, and the row under the lanes that holds them.                                           |
+| `src/features/studio/StudioSourcePicker.tsx`          | 1.3: the same choices at the head of Add takes.                                                                       |
+| `src/features/studio/timeline/StudioTimelineLane.tsx` | 1.3: a double-click or two taps on an empty stretch of a MIDI lane.                                                   |
+| `src/features/studio/useStudioNewClips.ts`            | 1.3: a lane or a clip made, selected and opened in the editor in Draw.                                                |
+| `src/features/studio/notes/note-editor-state.ts`      | 1.3: the tool the editor opens in.                                                                                    |
+| `src/e2e/studio-midi-clips.spec.ts`                   | Every gesture by a mouse and by fingers on a phone and a tablet, each read back from the saved song.                  |
