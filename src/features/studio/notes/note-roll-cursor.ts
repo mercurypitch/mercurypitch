@@ -10,7 +10,7 @@
 // Over the ruler and the keys the roll answers a press itself, so a mouse
 // sees a hand there, and a resize over the playhead's head, which scrubs.
 import type { NoteEditCursor } from './edit-view'
-import type { NoteRollBand } from './note-roll-bands'
+import type { NoteRollOver } from './note-roll-bands'
 
 const ERASER = [
   '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">',
@@ -22,12 +22,6 @@ const ERASER = [
 
 /** The eraser as a CSS cursor, its hot spot on the tip's corner. */
 export const NOTE_ERASER_CURSOR = `url("data:image/svg+xml,${encodeURIComponent(ERASER)}") 10 19, crosshair`
-
-/** What a mouse or a pen that is not pressed is over: a band of the roll, and whether it is the playhead's head on the ruler. */
-export interface NoteRollOver {
-  readonly band: NoteRollBand | null
-  readonly head: boolean
-}
 
 /** The CSS cursor over the roll: a hand over the ruler and the keys, which seek and sound, and a resize over the playhead's head; elsewhere what the editor's view asks for. */
 export function noteRollCursor(
