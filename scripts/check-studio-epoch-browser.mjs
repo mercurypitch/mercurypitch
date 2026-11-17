@@ -2,7 +2,8 @@
 // Usage: pnpm dev (or any local Vite server), then
 //   timeout 300s node scripts/check-studio-epoch-browser.mjs --origin https://127.0.0.1:5173 [--out report.json] [--suite automation]
 // --suite automation runs the lane line probes (studio-automation-browser-probes.mjs) instead,
-// --suite monitor the input monitor probes (studio-monitor-browser-probes.mjs).
+// --suite monitor the input monitor probes (studio-monitor-browser-probes.mjs),
+// --suite monitor-compressor the monitored compressor's (studio-monitor-compressor-probes.mjs).
 // Set CHROME_PATH to use a specific Chromium build instead of Playwright's. Nothing plays aloud: the
 // monitor suite runs a live AudioContext, and the browser is muted.
 import { chromium } from '@playwright/test'
@@ -32,6 +33,10 @@ const SUITES = {
   monitor: {
     module: '/scripts/studio-monitor-browser-probes.mjs',
     run: 'runStudioMonitorProbes',
+  },
+  'monitor-compressor': {
+    module: '/scripts/studio-monitor-compressor-probes.mjs',
+    run: 'runStudioMonitorCompressorProbes',
   },
 }
 const suite = SUITES[values.suite]

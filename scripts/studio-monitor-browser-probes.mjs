@@ -55,6 +55,7 @@ import { FULL_FX_PROFILE, MONITOR_FX_PROFILE, } from '/src/lib/studio-fx/fx-prof
 import { measureChainLatencyFrames } from '/src/lib/studio-fx/render.ts'
 import { TRACK_ROLES } from '/src/lib/studio-fx/role-chains.ts'
 import { measureShaperDelays } from '/src/lib/studio-fx/shaper-delay.ts'
+import { prepareZeroLatencyCompressor } from '/src/lib/studio-fx/zero-latency-compressor.ts'
 import { createStudioProject, createStudioTrack, } from '/src/lib/studio/model/defaults.ts'
 import { frameTime } from '/src/lib/studio/playback/whole-frame.ts'
 import { createStudioArmedInputs } from '/src/lib/studio/record/armed-input.ts'
@@ -63,25 +64,25 @@ import { createStudioMonitorMaster } from '/src/lib/studio/record/monitor-master
 import { studioMonitorMasterGain, studioMonitorMasterSpec, studioMonitorSound, } from '/src/lib/studio/record/monitor-sound.ts'
 import { scaleTo, syntheticVoice } from '/scripts/studio-fx-browser-probes.mjs'
 
-const SR = 48000
+export const SR = 48000
 const NOW = '2026-11-05T12:00:00.000Z'
-const s = (seconds) => Math.round(seconds * SR)
-const round = (value, digits = 2) => Number(value.toFixed(digits))
+export const s = (seconds) => Math.round(seconds * SR)
+export const round = (value, digits = 2) => Number(value.toFixed(digits))
 /** A level in dBFS, or 'exact' for a difference of nothing at all. */
-const dbfs = (value) =>
+export const dbfs = (value) =>
   value === 0 ? 'exact' : round(20 * Math.log10(value), 1)
-const ms = (frames) => round((frames / SR) * 1000, 2)
+export const ms = (frames) => round((frames / SR) * 1000, 2)
 /** The bar a render is held to against what it stands for (studio-automation-browser-probes.mjs). */
-const BAR_DBFS = -120
-const withinBar = (level) => level === 'exact' || level <= BAR_DBFS
+export const BAR_DBFS = -120
+export const withinBar = (level) => level === 'exact' || level <= BAR_DBFS
 
 /** Where an input starts: past the monitor's rise from silence. */
-const START = s(0.75)
+export const START = s(0.75)
 /** Compared from this far into the input, past its first syllable. */
-const SKIP = s(0.5)
-const EMPTY_SPEC = normalizeChainSpec({ effects: [] })
+export const SKIP = s(0.5)
+export const EMPTY_SPEC = normalizeChainSpec({ effects: [] })
 
-function laneProject(role, over = {}) {
+export function laneProject(role, over = {}) {
   const project = createStudioProject({ id: 'monitor-probe', now: NOW })
   const lane = {
     ...createStudioTrack({ id: 'lane', name: 'Lane', order: 0, role }),
@@ -91,12 +92,12 @@ function laneProject(role, over = {}) {
 }
 
 /** A new lane of `role` as the monitor hears it; `dry` as on Compare's Before side, every effect off. */
-function laneSound(role, over, dry = false) {
+export function laneSound(role, over, dry = false) {
   return studioMonitorSound(laneProject(role, over), 'lane', { on: true, dry })
 }
 
 /** A new song's master as the monitor plays it, at a measured `gainDb`; `bypassed` as on Compare's Before side. */
-function songMaster(gainDb, bypassed = false) {
+export function songMaster(gainDb, bypassed = false) {
   return studioMonitorMasterSpec(
     laneProject('voice'),
     { gainDb, safetyGainDb: 0 },
@@ -131,7 +132,7 @@ function comparedMaster(side) {
 }
 
 /** A lane with no effects at unity: what reaches the master is the input. */
-const PLAIN_LANE = { on: true, spec: EMPTY_SPEC, gains: [1, 1] }
+export const PLAIN_LANE = { on: true, spec: EMPTY_SPEC, gains: [1, 1] }
 
 function withoutKinds(sound, kinds) {
   const spec = normalizeChainSpec({
@@ -149,7 +150,7 @@ const EVERY_EFFECT = normalizeChainSpec({
 })
 
 /** A sung vowel at the loudness playback prepares a take to (preparation-gain.ts). */
-const voiceInput = (seconds) => scaleTo(syntheticVoice(seconds), -18)
+export const voiceInput = (seconds) => scaleTo(syntheticVoice(seconds), -18)
 
 function spreadGain(ctx) {
   const gain = ctx.createGain()
@@ -159,7 +160,7 @@ function spreadGain(ctx) {
   return gain
 }
 
-function sourceOf(ctx, buffer, frame) {
+export function sourceOf(ctx, buffer, frame) {
   const source = ctx.createBufferSource()
   source.buffer = buffer
   source.start(frameTime(frame, SR))
@@ -167,7 +168,7 @@ function sourceOf(ctx, buffer, frame) {
 }
 
 /** The lane's path as playback builds one (graph-lanes.ts): spread as a clip is, the chain, then a gain per side. */
-function buildLanePath(ctx, source, sound, profile) {
+export function buildLanePath(ctx, source, sound, profile) {
   const chain = createStudioFxChain(ctx, sound.spec, {
     profile,
     stereoHold: true,
@@ -186,12 +187,15 @@ function buildLanePath(ctx, source, sound, profile) {
   return () => chain.dispose()
 }
 
-async function renderOffline(length, build) {
+export async function renderOffline(length, build) {
   const ctx = new OfflineAudioContext({
     numberOfChannels: 2,
     length,
     sampleRate: SR,
   })
+  // A monitored compressor runs on a worklet, loaded on each context before
+  // a chain is built, as the recorder loads it (zero-latency-compressor.ts).
+  await prepareZeroLatencyCompressor(ctx)
   const cleanup = build(ctx)
   const rendered = await ctx.startRendering()
   cleanup?.()
@@ -199,7 +203,7 @@ async function renderOffline(length, build) {
 }
 
 /** A timer on the render's own clock, for a monitor released mid-render. */
-function renderClock(ctx) {
+export function renderClock(ctx) {
   return (callback, delayMs) => {
     const at = Math.ceil(((ctx.currentTime + delayMs / 1000) * SR) / 128) * 128
     void ctx.suspend(at / SR).then(() => {
@@ -211,7 +215,7 @@ function renderClock(ctx) {
 }
 
 /** The monitor itself, rendered offline: `sound` set at 0, the input from START, through `masterSpec`. */
-function monitorRender(
+export function monitorRender(
   input,
   sound,
   length = START + input.length,
@@ -227,14 +231,19 @@ function monitorRender(
   })
 }
 
-function lanePathRender(input, sound, profile, length = START + input.length) {
+export function lanePathRender(
+  input,
+  sound,
+  profile,
+  length = START + input.length,
+) {
   return renderOffline(length, (ctx) =>
     buildLanePath(ctx, sourceOf(ctx, input, START), sound, profile),
   )
 }
 
 /** `a` from `fromA` against `b` from `fromB`, over `count` frames of both sides. */
-function compare(a, b, fromA, fromB, count) {
+export function compare(a, b, fromA, fromB, count) {
   let peak = 0
   let differences = 0
   let signal = 0
@@ -254,14 +263,14 @@ function compare(a, b, fromA, fromB, count) {
   }
 }
 
-function rmsOf(data, from, count) {
+export function rmsOf(data, from, count) {
   let sum = 0
   for (const side of data)
     for (let i = from; i < from + count; i++) sum += side[i] * side[i]
   return Math.sqrt(sum / (2 * count))
 }
 
-function peakOf(data, from, count) {
+export function peakOf(data, from, count) {
   let peak = 0
   for (const side of data)
     for (let i = from; i < from + count; i++)
@@ -270,7 +279,7 @@ function peakOf(data, from, count) {
 }
 
 /** Frames from an impulse to the first thing heard, above -60 dBFS. */
-async function firstHeard(spec, profile) {
+export async function firstHeard(spec, profile) {
   const at = s(0.6)
   const impulse = new AudioBuffer({ length: 1, sampleRate: SR })
   impulse.getChannelData(0)[0] = 1
@@ -356,8 +365,16 @@ class MonitorProbeRecorder extends AudioWorkletProcessor {
 registerProcessor('monitor-probe-recorder', MonitorProbeRecorder)
 `
 
+/** The context behind each live view: `new AudioWorkletNode(view, ...)` makes its node there. */
+const viewed = new WeakMap()
+const NativeWorkletNode = globalThis.AudioWorkletNode
+globalThis.AudioWorkletNode = new Proxy(NativeWorkletNode, {
+  construct: (target, [context, ...rest]) =>
+    new target(viewed.get(context) ?? context, ...rest),
+})
+
 /** A running context whose destination is a recorder: what the monitor sends to the speakers, frame by frame. */
-async function liveContext() {
+export async function liveContext() {
   const ctx = new AudioContext({ sampleRate: SR, latencyHint: 'interactive' })
   await ctx.resume()
   const url = URL.createObjectURL(
@@ -380,11 +397,13 @@ async function liveContext() {
       return typeof value === 'function' ? value.bind(target) : value
     },
   })
+  viewed.set(view, ctx)
+  await prepareZeroLatencyCompressor(view)
   return { ctx, view, chunks }
 }
 
 /** The recorded frames from `first`, `length` of them, laid out as an offline render. */
-function laidOut(chunks, first, length) {
+export function laidOut(chunks, first, length) {
   const out = [new Float32Array(length), new Float32Array(length)]
   for (const { frame, left, right } of chunks) {
     for (let i = 0; i < left.length; i++) {
@@ -397,10 +416,10 @@ function laidOut(chunks, first, length) {
   return out
 }
 
-const median = (values) =>
+export const median = (values) =>
   [...values].sort((a, b) => a - b)[Math.floor(values.length / 2)]
 
-async function untilClock(ctx, time) {
+export async function untilClock(ctx, time) {
   while (ctx.currentTime < time)
     await new Promise((resolve) => setTimeout(resolve, 50))
 }
@@ -671,7 +690,7 @@ async function soundProbe() {
 }
 
 /** A steady sine of `seconds` peaking at `peakDbfs`, faded in and out over 10 ms. */
-function tone(seconds, peakDbfs, hz = 440) {
+export function tone(seconds, peakDbfs, hz = 440) {
   const length = s(seconds)
   const buffer = new AudioBuffer({ length, sampleRate: SR })
   const data = buffer.getChannelData(0)
@@ -685,11 +704,11 @@ function tone(seconds, peakDbfs, hz = 440) {
   return buffer
 }
 
-const levelDbOf = (data, from, count) =>
+export const levelDbOf = (data, from, count) =>
   20 * Math.log10(rmsOf(data, from, count))
 
 /** The steepest step from one sample to the next on either side, over `count` frames from `from`. */
-function steepestStep(data, from, count) {
+export function steepestStep(data, from, count) {
   let steepest = 0
   for (const side of data)
     for (let i = Math.max(1, from); i < from + count; i++)
@@ -698,7 +717,7 @@ function steepestStep(data, from, count) {
 }
 
 /** The lag, within 10 ms each way, at which `b` lines up best with `a`: the largest correlation. */
-function bestLag(a, b, from, count) {
+export function bestLag(a, b, from, count) {
   let best = { lag: 0, score: -Infinity }
   for (let lag = -480; lag <= 480; lag++) {
     let score = 0
@@ -710,7 +729,7 @@ function bestLag(a, b, from, count) {
 }
 
 /** Frames from an impulse at the monitor's input to the first thing heard, above -60 dBFS, through `masterSpec`. */
-async function monitorFirstHeard(sound, masterSpec) {
+export async function monitorFirstHeard(sound, masterSpec) {
   const impulse = new AudioBuffer({ length: 1, sampleRate: SR })
   impulse.getChannelData(0)[0] = 0.5
   const out = await monitorRender(impulse, sound, START + s(0.25), masterSpec)
@@ -1026,7 +1045,7 @@ async function masterProbe() {
   return { pass, levels, dryLane, latency, live, sides, ceiling }
 }
 
-async function timed(render) {
+export async function timed(render) {
   const times = []
   for (let run = 0; run < 3; run++) {
     const started = performance.now()
