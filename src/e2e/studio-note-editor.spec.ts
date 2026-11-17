@@ -1,5 +1,5 @@
 // Studio note editor — a MIDI clip draws its notes in its lane's canvas; a double-click opens its notes in a drawer under the lanes, Escape and Done close it and give the focus back to the clip; a clip too short for its Editing tag drops it whole; Clip details' Edit notes and E open it too; the drawer's top edge resizes it, Expand fills the arrangement and Mix takes turns with it; two taps open it on a tablet, and on a phone it fills the screen until Done.
-import { expect, type Locator, test } from '@playwright/test'
+import { expect, type Locator, type Page, test } from '@playwright/test'
 import { center, setStudioZoom, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import { clipCanvasAlpha, DRUM_NOTES, noteEditor, noteEditorArrived, openMidiSong, } from './helpers/studio-notes'
 
@@ -247,7 +247,91 @@ test.describe('Studio note editor on a computer', () => {
     await page.mouse.wheel(0, 300)
     await expect.poll(rows).toBeLessThan(lowest)
   })
+
+  test('a header too narrow for one row keeps Done beside the names and gives the tools the row under them, Add takes open at 1440', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    const clip = await openMidiSong(page)
+    await clip.dblclick()
+    const editor = noteEditor(page)
+    await expect(editor).toBeVisible()
+    await addTakes(page, false)
+
+    // At 1440 the names, the tools and Done share one row.
+    await expect
+      .poll(() => headerRows(editor))
+      .toEqual({
+        doneByNames: true,
+        toolsByDone: true,
+        rows: 1,
+      })
+
+    // Add takes takes 360 px of it: the tools go under the names and Done,
+    // and Done does not fall alone to a third row.
+    await addTakes(page, true)
+    await expect
+      .poll(() => headerRows(editor))
+      .toEqual({
+        doneByNames: true,
+        toolsByDone: false,
+        rows: 2,
+      })
+  })
+
+  test('a kit’s header, with no transpose, keeps one row at 1280', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    await page.setViewportSize({ width: 1280, height: 900 })
+    const clip = await openMidiSong(page, { notes: DRUM_NOTES, lane: 'Drums' })
+    await clip.dblclick()
+    const editor = noteEditor(page)
+    await expect(editor).toBeVisible()
+    await addTakes(page, false)
+
+    await expect
+      .poll(() => headerRows(editor))
+      .toEqual({
+        doneByNames: true,
+        toolsByDone: true,
+        rows: 1,
+      })
+  })
 })
+
+/** Open or close Add takes beside the lanes. */
+async function addTakes(page: Page, open: boolean): Promise<void> {
+  const toggle = studioRegion(page).locator('[data-tour="studio.add-takes"]')
+  if ((await toggle.getAttribute('aria-expanded')) !== String(open))
+    await toggle.click()
+  await expect(toggle).toHaveAttribute('aria-expanded', String(open))
+}
+
+/** How the editor's header sets out the names, the tools and Done: which share a row, and how many rows it takes. */
+function headerRows(editor: Locator) {
+  return editor.evaluate((root) => {
+    const tools = root.querySelector('[data-studio-note-tools]')!
+    const header = tools.parentElement!
+    const middle = (part: Element) => {
+      const box = part.getBoundingClientRect()
+      return box.top + box.height / 2
+    }
+    const names = header.firstElementChild!
+    const done = root.querySelector('[data-studio-note-done]')!
+    // Each part's row is where its middle falls; a row is 44 px at the most.
+    const rows = new Set(
+      [...header.children].map((part) =>
+        Math.round((middle(part) - middle(names)) / 41),
+      ),
+    )
+    return {
+      doneByNames: Math.abs(middle(done) - middle(names)) < 12,
+      toolsByDone: Math.abs(middle(tools) - middle(done)) < 12,
+      rows: rows.size,
+    }
+  })
+}
 
 test.describe('Studio note editor on a tablet', () => {
   test.use({ viewport: { width: 1180, height: 820 }, hasTouch: true })

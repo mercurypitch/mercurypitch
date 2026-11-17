@@ -153,8 +153,10 @@
 }
 
 /* The header: the lane and the clip, the chip, a place for the editing
-   tools, then Expand and Done. */
+   tools, then Expand and Done. It is a container, so its rows follow its
+   own width, which the Add takes panel narrows as much as a window does. */
 .header {
+  container: studio-note-header / inline-size;
   display: flex;
   flex: none;
   flex-wrap: wrap;
@@ -249,6 +251,25 @@
   align-items: center;
   gap: 4px;
   margin-left: auto;
+}
+/* A header too narrow for the names, the tools and Done on one row keeps
+   the names and Done on its first row and gives the tools a row of their
+   own under them, as a phone's does (.full), rather than leaving Undo,
+   Redo, Expand and Done alone on a third row. With Erase in, a piano's
+   tools need 1,344 px of the header's content for one row, a mouse's or a
+   finger's, and a kit's, without transpose, 1,177; each threshold sits a
+   little over, so a wider font stacks the rows before it spills one. */
+@container studio-note-header (max-width: 1353px) {
+  .header:not(.kitHeader) > .tools {
+    flex: 1 1 100%;
+    order: 1;
+  }
+}
+@container studio-note-header (max-width: 1186px) {
+  .kitHeader > .tools {
+    flex: 1 1 100%;
+    order: 1;
+  }
 }
 .touch .actions :is(button) {
   min-width: 44px;

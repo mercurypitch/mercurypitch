@@ -739,11 +739,21 @@ Erasing:
   the editor and the Studio, and FL Studio's piano roll pairs the two
   keys this way.
 - **The tool control is 44 px tall on every touch screen**, the tablet's
-  too, and sits in the phone's tool row. The header keeps its rows: the
-  identity's flex basis is 140 px, growing into any room the row leaves,
-  so a computer at 1440 px keeps one row; and a touch screen's grid
-  control goes without the word Snap, as a phone's already did, so a
-  tablet keeps two.
+  too, and sits in the phone's tool row.
+- **The header keeps its rows with Erase in.** The identity's flex basis
+  is 140 px, growing into any room the row leaves, so a computer at 1440
+  px keeps one row; and a touch screen's grid control goes without the
+  word Snap, as a phone's already did, so a tablet keeps two.
+- **A header too narrow for one row keeps Done beside the names.** The
+  Add takes panel, open on a new song, takes 360 px from the editor, and
+  there Erase pushed Undo, Redo, Expand and Done alone onto a third row:
+  at 1440 the roll lost 4 of its 17 note rows. Now a header that cannot
+  hold everything on one row keeps the names and Done on its first row
+  and gives the tools the row under them, as a phone's does. It follows
+  the header's own width, a container query: a piano's tools need 1,344
+  px of it for one row and a kit's, without transpose, 1,177, each
+  threshold set a little over, so a wider font stacks the rows before it
+  spills one.
 
 The ruler:
 
@@ -802,6 +812,7 @@ The keys:
 | `src/features/studio/notes/StudioNoteTools.tsx`              | Select, Draw and Erase, 44 px tall on a touch screen.                                                                        |
 | `src/features/studio/studio-icons.tsx`                       | `Eraser`: a rubber with its tip banded off, on its line.                                                                     |
 | `src/features/studio/notes/StudioNoteEditor.tsx`             | D for Erase; the workspace's seek and the audition handed to the roll.                                                       |
+| `src/features/studio/notes/StudioNoteEditor.module.css`      | The header's rows: one where everything fits, else the names and Done above the tools, by the header's own width.            |
 | `src/features/studio/timeline/ruler-gesture.ts`              | `dragScrubs`: a ruler with no range to draw scrubs on a drag.                                                                |
 | `src/features/studio/notes/note-roll-ruler.ts`               | The roll's ruler: a point's song frame through the clip, what a press takes, and the lanes' gesture with a drag that scrubs. |
 | `src/features/studio/notes/note-roll-bands.ts`               | The band of the roll a press lands in, which owns it until it is let go, and the band under a mouse, for its cursor.         |
@@ -811,3 +822,4 @@ The keys:
 | `src/e2e/studio-note-erase.spec.ts`                          | A right-click and a right-drag on a computer, Erase's tap and swipe on a phone and a tablet, piano and kit.                  |
 | `src/e2e/studio-note-ruler.spec.ts`                          | A click, a drag and a tap on the roll's ruler, stopped and playing, past the clip's end, and the End handle.                 |
 | `src/e2e/studio-note-keys.spec.ts`                           | A key's sound at the speakers and its light, a glissando, a drum's name, and a finger's pan.                                 |
+| `src/e2e/studio-note-editor.spec.ts`                         | The header's rows at 1440 with Add takes closed and open, and a kit's one row at 1280.                                       |
