@@ -69,3 +69,34 @@
 .roomLink:focus-visible {
   color: var(--text-primary);
 }
+
+/* On a phone on its side (844x390) a tab drew 30x24, a "..." and the
+   Studio's 32x26, and each took a press in that much and no more. Under a
+   finger a tab takes one 44 px tall from an invisible box centred on it.
+   The strip scrolls sideways and so clips the box to its own; it takes 6 px
+   more above and below, inside the header's row, and gives them back as
+   negative margins, so nothing moves. They are `!important` over app.css's
+   short-landscape `margin-top: 0 !important`, which left the tabs 3 px low.
+   Across, a group's tabs stand 8 px apart, so the box reaches 4 px either
+   side, to the middle of each gap, and no wider: 38 px for a tab, 40 for a
+   "...". At 44 a tab would take 3 px of its neighbour's press. */
+@media (min-width: 769px) and (pointer: coarse) {
+  :global(#app-tabs) {
+    padding-block: 6px;
+    margin-block: -6px !important;
+  }
+
+  :global(#app-tabs .app-tab) {
+    position: relative;
+  }
+
+  :global(#app-tabs .app-tab)::after {
+    position: absolute;
+    top: 50%;
+    right: -4px;
+    left: -4px;
+    height: 44px;
+    content: '';
+    transform: translateY(-50%);
+  }
+}
