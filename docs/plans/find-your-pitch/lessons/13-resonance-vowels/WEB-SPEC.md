@@ -1172,7 +1172,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    `<a href="/learn/11#step-3" target="_blank">`; answering all four quick-check questions marks
    Lesson 13 done in the explorer; each feedback line starts "Right." or "Not quite.".
 9. Every practice link carries `?lesson=13`; opening `/mirror?lesson=13` in a fresh profile boots
-   Voice Mirror with no intro, as `src/e2e/lesson-marker.spec.ts:121` checks its own documents.
+   Voice Mirror with no intro, as `src/e2e/lesson-marker.spec.ts:130` checks its own documents.
 10. The Wrap's next card names Lesson 14, says "Coming later" and leads to the map, never to a page,
     as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet (`:515`); its
     tease, "‘Twinkle, twinkle, little star’, twice. The second ‘star’ swells.", sits one line above

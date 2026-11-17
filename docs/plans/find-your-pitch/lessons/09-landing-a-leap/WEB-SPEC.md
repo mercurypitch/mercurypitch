@@ -966,7 +966,7 @@ End to end (Playwright, at 390 x 844 and 1440 x 900, on the e2e build, which sho
    `<a href="/learn/06#step-2" target="_blank">`; answering all four quick-check questions marks
    Lesson 9 done in the explorer; each feedback line starts "Right." or "Not quite.".
 9. Every practice link carries `?lesson=09`; opening `/pitch-training?lesson=09` in a fresh profile
-   shows the Exercises tab and no intro, as `src/e2e/lesson-marker.spec.ts:66-75` does for Lesson
+   shows the Exercises tab and no intro, as `src/e2e/lesson-marker.spec.ts:75-84` does for Lesson
    4's link.
 10. The Wrap's next card names Lesson 10, says "Coming later" and leads to the map, never to a page,
     as `src/e2e/learn-next-card.spec.ts` checks a card for a lesson not written yet; its tease,

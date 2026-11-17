@@ -955,7 +955,7 @@ and First Light does not step aside. Item 21 fixes it.
     (`EarDrillLaunch`, `src/features/exercises/slug-map.ts:82-92`). `applyExerciseSlug` hands it to
     the Ear Lab (`src/App.tsx:800-803`, through `startEarDrill`, `src/stores/ui-store.ts:641-652`),
     which opens the drill on the set whichever bench is showing, the web's or Merc's, and opens a
-    drill whole from the bench (`src/pages/EarLabPage.tsx:170-187`). A run over a set rates on a
+    drill whole from the bench (`src/pages/EarLabPage.tsx:224-241`). A run over a set rates on a
     track of its own, with the guess floor of the pads it shows, and leaves the drill's rating, the
     items' difficulties and Today alone, as Lesson 2 decided for its Leap pair (its DECISIONS 73;
     `src/features/ear-lab/use-identification-controller.ts:138-150`, :240, :442;
@@ -1335,7 +1335,7 @@ with Lessons 26 and 28.
     sings it a third above, in the key, each note heard until it holds in a band, taking turns on
     the speaker or together in headphones (`src/features/harmony/harmony-rules.ts:5-7`, `:17-21`).
     But it is the native app's, as the owner decided on 29 October 2026
-    (`docs/plans/ear-rooms.md:35-37`): it rides `PREMIUM_EXERCISES`, which is false on the web
+    (`docs/plans/ear-rooms.md:38-40`): it rides `PREMIUM_EXERCISES`, which is false on the web
     (`src/lib/native-build.ts:53-56`, `:68`), so no lesson page can open it. And it differs from
     item 17 in three ways: its lines are three to five notes of a major key, drawn at random, not a
     tune the lesson chooses (`src/features/harmony/harmony-rules.ts:10-15`; `harmony-line.ts:5-8`,
@@ -1345,9 +1345,9 @@ with Lessons 26 and 28.
     Drone Intonation, Lesson 28's keeps Karaoke Night and Cadence, and item 17 stays open for the
     web. When the lessons reach the native app, Harmony is the drill a learner can do alone, and its
     "How it works" demo sings the harmony wrong, with Merc's own note where the third goes, then
-    right (`docs/plans/ear-rooms.md:496-505`), the slip Lesson 26's reader names ("That was Merc's
+    right (`docs/plans/ear-rooms.md:499-508`), the slip Lesson 26's reader names ("That was Merc's
     note"). But it is a premium room, a free taste and then the paywall once the V1 flip brings the
-    gate (`docs/plans/ear-rooms.md:21-22`; `src/lib/native-build.ts:59-66`), and the card says
+    gate (`docs/plans/ear-rooms.md:24-25`; `src/lib/native-build.ts:59-66`), and the card says
     "Practise it free", so whether the card opens it first waits on MASTER-PLAN § 12 item 3, whether
     premium stays the Merc practice rooms. Reason: a card must open where its reader is, and on a
     web page a room the web cannot open is a dead end.

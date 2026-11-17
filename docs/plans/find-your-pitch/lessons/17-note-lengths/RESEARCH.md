@@ -165,7 +165,7 @@ back.", :53). Code read. Strong.
 **R17-16. No address opens one Ear Lab drill, or a subset of its patterns.**
 `src/stores/ui-store.ts:570-584` (`pendingEarDrill`, "An Ear Lab drill someone asked for from
 elsewhere in the app"); its only setters are `startEarDrill` (:582-583) and the Merc drill room
-(`src/features/ear-lab/merc/MercDrillRoom.tsx:434`). Code read. Strong.
+(`src/features/ear-lab/merc/MercDrillRoom.tsx:435`). Code read. Strong.
 
 **R17-17. `?lesson=17` is not a lesson marker today.** R15-19.
 
