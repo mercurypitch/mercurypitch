@@ -150,13 +150,11 @@ const ENTRIES_2: readonly Lesson[] = [
     fig: 'pads',
     hook: 'Six notes in a bar, grouped two ways: why does one feel like two beats and the other like three?',
     pr: {
-      needs:
-        'A practice card for Subdivide on 3/4 and 6/8, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/three-four-or-six-eight)',
       link: {
-        href: '/ear-lab?lesson=19',
-        addr: 'mercurypitch.com/ear-lab',
-        label: 'Ear Lab',
-        note: 'then tap Subdivide',
+        href: '/exercises/three-four-or-six-eight?lesson=19',
+        addr: 'mercurypitch.com/exercises/three-four-or-six-eight',
+        label: 'Subdivide',
+        note: '3/4 and 6/8',
       },
     },
   },
@@ -238,12 +236,12 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Which interval splits the octave exactly in half, and why does it want to move?',
     pr: {
       needs:
-        'A practice card for Leap on the perfect intervals and the tritone, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/perfect-or-tritone)',
+        "A sung card for Interval Trainer's perfect intervals (mercurypitch.com/exercises/perfect-intervals), with the care lines and the vocal coach's look",
       link: {
-        href: '/ear-lab?lesson=23',
-        addr: 'mercurypitch.com/ear-lab',
-        label: 'Ear Lab',
-        note: 'then tap Leap',
+        href: '/exercises/perfect-or-tritone?lesson=23',
+        addr: 'mercurypitch.com/exercises/perfect-or-tritone',
+        label: 'Leap',
+        note: 'P4, TT, P5 and P8',
       },
     },
   },

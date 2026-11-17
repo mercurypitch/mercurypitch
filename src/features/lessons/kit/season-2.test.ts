@@ -159,7 +159,7 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[18]).toEqual([16, 17])
   })
 
-  it("gives Lesson 19 its page and its reading time, a draft with no film, and the Ear Lab's link", () => {
+  it("gives Lesson 19 its page and its reading time, a draft with no film, and Subdivide's link", () => {
     // Act
     const L19 = LESSONS_2.find((L) => L.n === 19)
 
@@ -172,15 +172,13 @@ describe('Season 2', () => {
     ])
     expect(DRAFT_LESSONS[19]).toBe("Lesson 17's page at /learn/17")
     expect(L19?.pr.link).toEqual({
-      href: '/ear-lab?lesson=19',
-      addr: 'mercurypitch.com/ear-lab',
-      label: 'Ear Lab',
-      note: 'then tap Subdivide',
+      href: '/exercises/three-four-or-six-eight?lesson=19',
+      addr: 'mercurypitch.com/exercises/three-four-or-six-eight',
+      label: 'Subdivide',
+      note: '3/4 and 6/8',
     })
-    // the drill it still needs stays the team's
-    expect(L19?.pr.needs).toMatch(
-      /^A practice card for Subdivide on 3\/4 and 6\/8, .*\/exercises\/three-four-or-six-eight\)$/,
-    )
+    // the set it waited for has shipped, and its card links it
+    expect(L19?.pr.needs).toBeUndefined()
     // Lesson 17 is its one way in
     expect(SEASON_2.prereq[19]).toEqual([17])
   })
@@ -211,7 +209,7 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[22]).toEqual([14])
   })
 
-  it("gives Lesson 23 its page and its reading time, a draft with no film, and the Ear Lab's link", () => {
+  it("gives Lesson 23 its page and its reading time, a draft with no film, and Leap's link", () => {
     // Act
     const L23 = LESSONS_2.find((L) => L.n === 23)
 
@@ -226,14 +224,14 @@ describe('Season 2', () => {
       "Lesson 6's page at /learn/06, and the vocal coach's look at Sing it",
     )
     expect(L23?.pr.link).toEqual({
-      href: '/ear-lab?lesson=23',
-      addr: 'mercurypitch.com/ear-lab',
-      label: 'Ear Lab',
-      note: 'then tap Leap',
+      href: '/exercises/perfect-or-tritone?lesson=23',
+      addr: 'mercurypitch.com/exercises/perfect-or-tritone',
+      label: 'Leap',
+      note: 'P4, TT, P5 and P8',
     })
-    // the drill it still needs stays the team's
+    // the sung card it still needs stays the team's
     expect(L23?.pr.needs).toMatch(
-      /^A practice card for Leap on the perfect intervals and the tritone, .*\/exercises\/perfect-or-tritone\)$/,
+      /^A sung card for Interval Trainer's perfect intervals \(mercurypitch\.com\/exercises\/perfect-intervals\)/,
     )
     // a cross-season edge: Lesson 6 is its one way in
     expect(SEASON_2.prereq[23]).toEqual([6])

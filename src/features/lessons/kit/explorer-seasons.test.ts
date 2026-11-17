@@ -383,7 +383,9 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/ear-lab?lesson=19"]'),
+      card?.querySelector(
+        'a.addr[href="/exercises/three-four-or-six-eight?lesson=19"]',
+      ),
     ).not.toBeNull()
   })
 
@@ -439,7 +441,9 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/ear-lab?lesson=23"]'),
+      card?.querySelector(
+        'a.addr[href="/exercises/perfect-or-tritone?lesson=23"]',
+      ),
     ).not.toBeNull()
   })
 

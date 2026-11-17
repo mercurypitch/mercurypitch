@@ -365,16 +365,16 @@ describe("Lesson 23's page", () => {
       doc().querySelectorAll<HTMLAnchorElement>('a[href*="lesson="]'),
     )
 
-    // Assert: Ear Lab, on the card and in the footer (FACTS 62)
+    // Assert: Leap's set, on the card and in the footer (FACTS 63a)
     expect(links.map((a) => a.getAttribute('href'))).toEqual([
-      '/ear-lab?lesson=23',
-      '/ear-lab?lesson=23',
+      '/exercises/perfect-or-tritone?lesson=23',
+      '/exercises/perfect-or-tritone?lesson=23',
     ])
     for (const a of links)
       expect([a.target, a.rel, words(a)]).toEqual([
         '_blank',
         'noopener',
-        'mercurypitch.com/ear-lab',
+        'mercurypitch.com/exercises/perfect-or-tritone',
       ])
   })
 

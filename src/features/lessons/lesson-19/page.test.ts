@@ -308,18 +308,22 @@ describe("Lesson 19's page", () => {
       doc().querySelectorAll<HTMLAnchorElement>('a[href*="lesson="]'),
     )
 
-    // Assert: Subdivide and Pulse on the card, and the footer (FACTS 48 to 50)
-    expect(links.map((a) => a.getAttribute('href'))).toEqual([
-      '/ear-lab?lesson=19',
-      '/ear-lab?lesson=19',
-      '/ear-lab?lesson=19',
+    // Assert: Subdivide's set and Pulse on the card, and the footer (FACTS 48
+    // to 50a)
+    expect(links.map((a) => [a.getAttribute('href'), words(a)])).toEqual([
+      [
+        '/exercises/three-four-or-six-eight?lesson=19',
+        'mercurypitch.com/exercises/three-four-or-six-eight',
+      ],
+      ['/ear-lab?lesson=19', 'mercurypitch.com/ear-lab'],
+      [
+        '/exercises/three-four-or-six-eight?lesson=19',
+        'mercurypitch.com/exercises/three-four-or-six-eight',
+      ],
+      ['/ear-lab?lesson=19', 'mercurypitch.com/ear-lab'],
     ])
     for (const a of links)
-      expect([a.target, a.rel, words(a)]).toEqual([
-        '_blank',
-        'noopener',
-        'mercurypitch.com/ear-lab',
-      ])
+      expect([a.target, a.rel]).toEqual(['_blank', 'noopener'])
   })
 
   it('holds a practice card with no rest version, since nothing is sung', () => {
