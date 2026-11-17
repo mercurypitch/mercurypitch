@@ -24,7 +24,8 @@ Nothing else moves:
   `StagePad`, `TapPad` and its instrument with the props it passes today.
 - **The web.** The bench (`BenchStage`) and its instruments keep their look.
   The new parts live in the room's lazy chunk (`merc/`), which only a build
-  with the Ear Lab with Merc loads.
+  with the Ear Lab with Merc loads. (Superseded on 15 Nov 2026: the web
+  shows Merc's bench and rooms too. See "On the web too", below.)
 - **The rules.** The eye never sees the answer before the reveal; a state is
   never colour alone (a check or a cross, and "Your pick" or "The answer");
   nothing under 13 px; no target under 44; reduced motion draws stills.
@@ -303,7 +304,8 @@ inside the native tab, and it opened wherever the bench had been scrolled
 to. The native build now draws its own (`merc/MercReport.tsx`), from the
 mock-ups on the same canvas, [Ear Lab Native Bench](https://claude.ai/artifact/3AtwJJfqhUqE49e4BRssXw)
 (Report-top, -moved, -home, -contour and -empty). The web keeps its plates;
-both read the same data (`report-data.ts`).
+both read the same data (`report-data.ts`). (Superseded on 15 Nov 2026: the
+web draws this report too. See "On the web too", below.)
 
 - **A bar that stays**: the round glass back button, "Ear Report" and its
   line, over the night as the report scrolls under it. Android's back goes
@@ -361,3 +363,100 @@ both read the same data (`report-data.ts`).
 - **The reveal's step down on a phone with no room to spare** is decided on
   the devices, in the device pass: a smaller instrument at rest is the
   only cure.
+
+## On the web too (owner, 15 Nov 2026)
+
+The line above that the web keeps its bench, and its plates, is superseded.
+The owner decided on 15 Nov 2026 that the web's exercises are to be as good
+as the native app's, with Merc and his voice and nothing held back for the
+native app (`docs/plans/web-rooms.md`). So `EAR_LAB_WITH_MERC` is on in the
+web build as well as in a native test build (`KARAOKE_IMPORT || WEB_ROOMS`,
+`src/lib/native-build.ts`), and still off in the store build: the web's Ear
+Lab is Merc's bench, every drill opens in his room, and the Ear Report is
+the one in the room's light. The older bench and stage stay in the code for
+the store build until the owner flips it there.
+
+What the web needed that the phone did not:
+
+- **The room over the web's bars.** The native shell takes its rail away
+  while a room is up; the web's tab bar and voice pill stay on the page, at
+  `--z-tabbar`. The web's Ear Lab gives the room the stage's layer
+  (`--room-layer`, set to `--z-stage` in `src/pages/EarLabPage.tsx`),
+  over the bars and under the sheets, and the bench's shell takes the same
+  layer while the room is in it, since the shell's isolation would
+  otherwise hold the room under the bars (`EarRoomShell.module.css`).
+- **The foot of the window.** The web lays two things over everything, and
+  both share the foot with the room's console. The cookie bar is open until
+  a visitor has answered it: on a first visit from a lesson's link it lay
+  over Begin and the answer pads. The console, the room's sheets and the
+  bench's sheets now stand on the room the bar says it takes
+  (`--consent-banner-space`, `src/lib/foot-space.ts`), and the room's ground
+  still runs under the bar. A notice from the app is a toast over the room,
+  and a phone's toasts stand at the foot, so the console says how much of
+  the foot it takes, as a page's docked transport does
+  (`--page-dock-space`, `merc/foot-dock.ts`), and a toast stands over
+  the stage's foot, not over the pads. On a wide window the toasts keep the
+  top right corner, over the room's "?" for as long as one shows.
+- **A phone on its side.** A web visitor can turn the phone. The console
+  under the stage took 254 px of a 390 px screen, so on a short screen held
+  sideways it stands beside the stage (`merc/room.module.css`).
+- **The Ear rooms row.** On the web it lists the rooms the web opens (Home
+  note, Leap and Harmony; First note is not on the web yet), with no Premium
+  tag, and a card opens the room in the frame the Exercises tab opens it in
+  (`src/features/exercises/rooms/WebRoomHost.tsx`), over the Ear Lab. Back
+  comes back to the bench, the focus on the card. The page is in the native
+  bundle too, so it reaches the frame and the row only through lazy imports
+  behind constants that fold to false in a store build
+  (`merc/fold.test.ts`).
+- **A lesson's address** (`/exercises/te-or-ti` and the four others) opens
+  its drill in the room on the lesson's set, at Begin, the set named on the
+  pad's second line (`src/lib/ear/subsets.ts`). Closing the room comes back
+  to the bench, and the same drill from its station is whole again.
+- **The tour** walks Merc's bench: the Index, Calibrate, Today, the Ear
+  rooms, the stations, the Ear Path, the report and the "?"
+  (`EAR_LAB_TOUR_STEPS`, `src/stores/app-store.ts`).
+
+The reminder row stays native: it shows only where the phone hands the tab
+its reminders (`merc/reminder.ts`), so the web draws none.
+
+Merc and the room's pictures load with the Ear Lab, not with every page.
+The bench, the room and the report are one chunk (`merc/entry.ts`) that the
+page asks for when the tab or a drill opens: 213,569 bytes of script and
+68,323 of styles in the build of 17 Nov 2026, named by no document's first
+paint. Merc's three stills and the Wild's glasshouse are files of their own,
+13 to 24 KB each, so the build inlines none of them; they are an image's
+`src` and a stylesheet's `url()`, never fetched. The service worker
+precaches the chunk's script and styles with the rest of the build's, as it
+does the rooms', and not the pictures.
+
+What a web visitor gains, against the older bench: Merc at the console,
+saying the task, the question and the verdict; every drill over the whole
+window, in its station's light; a run that starts from one tap on a
+station's sheet, which asks Tap or Sing first where a drill can be sung;
+the day's close once today's three are done; and the Ear rooms on the
+bench.
+
+What a web visitor no longer has:
+
+- The room picker and its glass slider: the bench is the one Regulator Room
+  at night. The Glasshouse Bench, and a supporter's Transit Observatory and
+  Bell Loft, are not shown in the Ear Lab.
+- The Auto-advance switch and the hold after a verdict: the room paces by
+  Merc's rule.
+- Stop. It ended a practice run on the reading it had so far; the room's
+  Close asks first, and ending the run keeps nothing.
+- The round trip on the bench's own chip, and its tap check there. The
+  round trip is in the "?" of Pulse and the Chart, as on the phone, and in
+  Settings.
+- The click's voice anywhere but the four click drills' "?".
+- Why each of today's three was picked, and a Start on each of them: Today
+  names each drill's task and length and starts the next one; a station
+  starts any drill, as its own full run.
+- The date the next calibration is due, on the bench: the sealed plate
+  says it once, as the calibration ends.
+- The keycaps on the answer pads and the line naming the keys, at a desk.
+  The keys still answer.
+- The Ear Path's orbs as a way into their instruments: Merc's orbs are
+  drawn, and the line under them names the next.
+- The rack's list of every instrument on one screen: the six stations hold
+  them.

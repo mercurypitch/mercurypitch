@@ -15,6 +15,9 @@ canvas ("Ear rooms", 27 Oct 2026) has phone mock-ups of all four and of the Ear 
   So the rooms open on the web too, free: Home note, Leap and Harmony from its Exercises tab, with
   Long note, Echo, Lip roll and Ng slides (`docs/plans/web-rooms.md`). First note follows; its
   songs are the native Karaoke's. The native app's own gates are unchanged.
+- Done on 16 Nov 2026: the web's Ear Lab is the Ear Lab with Merc too, and its Ear rooms row lists
+  the three the web opens, with no Premium tag, and opens them over the Ear Lab
+  (`src/pages/EarLabPage.tsx`).
 
 **The owner's decision and requests of 28 Oct 2026.**
 
