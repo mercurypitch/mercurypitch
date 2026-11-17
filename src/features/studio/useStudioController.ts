@@ -19,6 +19,7 @@ import { createStudioEditorKeeper, lostOwnership, } from './controller/editor-ke
 import type { EditorPresenceSource } from './controller/editor-presence'
 import { defaultEditorPresence } from './controller/editor-presence'
 import { createStudioImporter, studioMissedLaneText, } from './controller/imports'
+import { createStudioMidiFileImports } from './controller/midi-file-imports'
 import type { StudioSaveQueue, StudioSaveState } from './controller/save-queue'
 import { createStudioSaveQueue } from './controller/save-queue'
 import { prepareStudioSource } from './integration/prepare-source'
@@ -216,6 +217,17 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     if (made !== null) persistence.afterKeep()
     return made
   }
+
+  // A MIDI file's tracks as new lanes, in one undo step (midi-file-imports.ts).
+  const midiFiles = createStudioMidiFileImports({
+    project,
+    canEdit,
+    addMidiClips: (clips, before) => importer.addMidiClips(clips, before),
+    clearRefusal: () => setImportRefusal(null),
+    refuse: setImportRefusal,
+    notice: (text) => setLaneNotice({ text }),
+  })
+  const addMidiFile = persistence.keeping(midiFiles.addMidiFile)
 
   /** Stop editing here: nothing more is written, and what is not saved waits. */
   function suspendEditor(error: unknown): void {
@@ -688,6 +700,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     addFile,
     addFiles,
     addMidiClips,
+    addMidiFile,
     addRecording,
     addTake,
     addTakes,
