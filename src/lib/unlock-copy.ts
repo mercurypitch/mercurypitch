@@ -3,9 +3,9 @@
 // ============================================================
 //
 // One place for the words, because three surfaces say them: the chip under a
-// room's result (room-kit/UnlockChip.tsx), the native shell's top pill
-// (apps/mercurypitch/src/shell/NoticePill.tsx) and, on the web, a drill's
-// stage (src/features/exercises/stage/stage-notice.ts). The web's toasts
+// room's result (room-kit/UnlockChip.tsx), the pill, the native shell's and
+// a room's on the web (src/components/notice-pill/NoticePill.tsx) and, on
+// the web, a drill's stage (src/features/exercises/stage/stage-notice.ts). The web's toasts
 // keep their own wording, "Badge unlocked: X", which the grant engine still
 // writes.
 //

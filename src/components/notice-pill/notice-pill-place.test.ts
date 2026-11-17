@@ -230,3 +230,82 @@ describe('placePill', () => {
     }
   })
 })
+
+// A room on the web (WebRoomHost.tsx): its bar is the header's row, with
+// Back, the room's name (not a control) and the room's end, 56 px tall
+// under no notch. The boxes are the ones measured in Harmony and in Merc's
+// room in Chromium at both sizes.
+describe("placePill under a web room's bar", () => {
+  const BAR_BOTTOM = 56
+  const room = (width: number, height: number, controls: Box[]) => ({
+    viewportWidth: width,
+    viewportHeight: height,
+    safeTop: 0,
+    safeLeft: 0,
+    safeRight: 0,
+    safeBottom: 0,
+    ceiling: BAR_BOTTOM,
+    pillHeight: 54,
+    controls,
+  })
+
+  it('sits under the bar on a phone, on none of its controls', () => {
+    // Back; "How to sing it", the level and "?" at the bar's end.
+    const controls = [
+      control(12, 4),
+      control(163, 4, 75, 44),
+      control(246, 4, 80, 44),
+      control(334, 4),
+    ]
+    const place = placePill(room(390, 844, controls))
+
+    expect(place.top).toBe(BAR_BOTTOM + PILL_TOP_GAP)
+    expect(place.docked).toBe('top')
+    expect(place).toMatchObject({ left: 12, width: 366 })
+    for (const box of controls) {
+      expect(overlaps(pillBox(place, 54), box)).toBe(false)
+    }
+  })
+
+  it('sits under the bar on a desktop, centred and no wider than a tablet', () => {
+    const controls = [
+      control(12, 4),
+      control(1213, 4, 75, 44),
+      control(1296, 4, 80, 44),
+      control(1384, 4),
+    ]
+    const place = placePill(room(1440, 900, controls))
+
+    expect(place.top).toBe(BAR_BOTTOM + PILL_TOP_GAP)
+    expect(place).toMatchObject({ left: 510, width: PILL_MAX_WIDTH })
+  })
+
+  it("would lie in the bar's row, over the room's name, without the ceiling", () => {
+    const place = placePill({
+      ...room(1440, 900, [control(12, 4), control(1384, 4)]),
+      ceiling: undefined,
+    })
+
+    expect(place.top).toBe(PILL_TOP_GAP)
+  })
+
+  it("sits under Merc's room's header, clear of Close and its question", () => {
+    const controls = [control(16, 9), control(330, 9)]
+    const place = placePill(room(390, 844, controls))
+
+    expect(place.top).toBe(BAR_BOTTOM + PILL_TOP_GAP)
+    for (const box of controls) {
+      expect(overlaps(pillBox(place, 54), box)).toBe(false)
+    }
+  })
+
+  it('steps below a control of the room just under the bar', () => {
+    // A chip across the middle, under the bar.
+    const chip = control(100, 64, 190, 40)
+    const place = placePill(room(390, 844, [control(12, 4), chip]))
+
+    expect(place.top).toBe(chip.bottom + PILL_CLEARANCE)
+    expect(place.docked).toBe('below')
+    expect(overlaps(pillBox(place, 54), chip)).toBe(false)
+  })
+})

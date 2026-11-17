@@ -53,7 +53,7 @@ import { registerRoomBack, setExerciseFocus } from '@/stores/native-shell-store'
 import { removeNotificationsByChannel, TOUR_OFFER_CHANNEL, } from '@/stores/notifications-store'
 import { setPendingEarDrill } from '@/stores/ui-store'
 import { useWakeAudio } from './audio-wake'
-import { dock } from './foot-dock'
+import { dock, noticesUnder } from './foot-dock'
 import { practiceEstimate } from './Glass'
 import { LIT_INSTRUMENTS } from './lit'
 import { IconQuestion } from './merc-icons'
@@ -517,6 +517,8 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
     return note === null ? words : `${words} · ${note}`
   }
 
+  const header = noticesUnder()
+
   return (
     <RoomContext.Provider value={state}>
       <StageSkinContext.Provider value={ROOM_SKIN}>
@@ -571,7 +573,7 @@ export function MercDrillRoom(props: EarStageProps): JSX.Element {
               </Show>
             </div>
 
-            <header class={styles.header}>
+            <header class={styles.header} ref={header}>
               <button
                 type="button"
                 class={styles.round}

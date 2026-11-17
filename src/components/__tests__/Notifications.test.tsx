@@ -1,6 +1,6 @@
 import { fireEvent, render, screen } from '@solidjs/testing-library'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { notifications, setNotifications } from '@/stores/notifications-store'
+import { notifications, presentNoticesInPill, resetNotifications, setNotifications, showNotification, } from '@/stores/notifications-store'
 import { Notifications } from '../Notifications'
 
 describe('Notifications', () => {
@@ -122,5 +122,19 @@ describe('Notifications', () => {
     expect(neverAsk).toHaveBeenCalledOnce()
     expect(keep).not.toHaveBeenCalled()
     expect(notifications()).toHaveLength(0)
+  })
+
+  it('draws no toast while a room holds the pill, and the toasts after', () => {
+    resetNotifications()
+    const release = presentNoticesInPill(() => null)
+    render(() => <Notifications />)
+    showNotification('Saved to your library', 'success')
+
+    expect(screen.queryByText('Saved to your library')).toBeNull()
+
+    release()
+
+    expect(screen.getByText('Saved to your library')).toBeInTheDocument()
+    resetNotifications()
   })
 })

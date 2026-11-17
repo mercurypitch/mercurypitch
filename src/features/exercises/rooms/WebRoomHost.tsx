@@ -11,7 +11,11 @@
 //     the app's theme (dark-stage.css), since a room's world is always dark;
 //   - the bar, whose right side it registers as the slot the room kit draws
 //     into (`registerPushedBarEnd`);
-//   - a way out: Back, Escape, and the room's own Done.
+//   - a way out: Back, Escape, and the room's own Done;
+//   - the app's notices in the pill under the bar, one at a time, as the
+//     native shell's pill says them over its rooms, and not as toasts over
+//     the room's controls and its microphone (the store's
+//     `presentNoticesInPill`).
 //
 // One room can open another over itself: the Warm-up's path opens each
 // stop's room, as the native shell pushes it over the path. The bar then
@@ -28,6 +32,7 @@ import { Dynamic, Portal } from 'solid-js/web'
 import '@/styles/dark-stage.css'
 import { ChevronLeft } from '@/components/icons'
 import { registerPushedBarEnd } from '@/stores/native-shell-store'
+import { presentNoticesInPill } from '@/stores/notifications-store'
 import type { WebRoomId } from './web-room-ids'
 import { webRoomName } from './web-room-list'
 import { WEB_ROOM_SCREENS } from './web-room-screens'
@@ -47,6 +52,9 @@ const OPEN_CLASS = 'web-room-open'
 
 export default function WebRoomHost(props: WebRoomHostProps): JSX.Element {
   let title: HTMLHeadingElement | undefined
+  let bar: HTMLDivElement | undefined
+  // The notices are the pill's, under the bar, for as long as a room is up.
+  onCleanup(presentNoticesInPill(() => bar))
   /** A room opened over this one: a Warm-up stop over its path. */
   const [over, setOver] = createSignal<WebRoomId | null>(null)
   /** The room on top, which the bar names. */
@@ -91,7 +99,7 @@ export default function WebRoomHost(props: WebRoomHostProps): JSX.Element {
         data-testid="web-room"
         data-room={shown()}
       >
-        <div class={styles.bar}>
+        <div class={styles.bar} ref={bar} data-testid="web-room-bar">
           <button
             type="button"
             class={styles.back}

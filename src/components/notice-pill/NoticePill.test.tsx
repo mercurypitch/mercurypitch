@@ -1,12 +1,15 @@
 // ============================================================
 // NoticePill: one notice at a time, merged unlocks, tap and swipe
 // ============================================================
+//
+// The native shell's pill, and a room's on the web: there it sits under the
+// room's bar, and under the native shell's pill a room's bar is nothing to it.
 
+import { render } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { UnlockItem } from '@/stores/notifications-store'
-import { notifications, onUnlockShown, resetNotifications, setNotificationPresenter, showActionNotification, showNotification, } from '@/stores/notifications-store'
+import { notifications, onUnlockShown, presentNoticesInPill, resetNotifications, setNotificationPresenter, showActionNotification, showNotification, } from '@/stores/notifications-store'
 import { NoticePill } from './NoticePill'
-import { renderShell } from './render-for-test'
 
 const STEADY: UnlockItem = { kind: 'badge', name: 'Steady Hold', icon: 'leaf' }
 const ECHO: UnlockItem = { kind: 'badge', name: 'Echo Ace', icon: 'star' }
@@ -20,7 +23,7 @@ let shown = 0
 let stop: () => void = () => undefined
 
 function mount(): HTMLElement {
-  const rendered = renderShell(() => <NoticePill />)
+  const rendered = render(() => <NoticePill />)
   unmount = rendered.unmount
   return rendered.container
 }
@@ -165,5 +168,56 @@ describe('NoticePill', () => {
     showNotification('Saved', 'success')
     expect(pill()?.getAttribute('role')).toBeNull()
     expect(pill()?.closest('[role="status"]')).not.toBeNull()
+  })
+})
+
+describe("NoticePill's place", () => {
+  /** A room's bar on the web, 56 px tall under no notch. */
+  let bar: HTMLElement
+  let release: () => void = () => undefined
+
+  beforeEach(() => {
+    bar = document.createElement('div')
+    document.body.appendChild(bar)
+    // jsdom lays nothing out: the window's safe area, and the bar, are told.
+    vi.spyOn(Element.prototype, 'getBoundingClientRect').mockImplementation(
+      function (this: Element) {
+        const box = (top: number, bottom: number) =>
+          ({ top, bottom, left: 0, right: 390, width: 390 }) as DOMRect
+        if (this === bar) return box(0, 56)
+        if (this.classList.contains('mp-notice-safe')) return box(0, 844)
+        return { top: 0, bottom: 0, left: 0, right: 0 } as DOMRect
+      },
+    )
+  })
+
+  afterEach(() => {
+    release()
+    release = () => undefined
+    bar.remove()
+    vi.restoreAllMocks()
+  })
+
+  /** Where the pill was put, once it has measured the screen. */
+  function placedTop(): string | undefined {
+    vi.advanceTimersByTime(300)
+    return pill()?.style.top
+  }
+
+  it("sits under a room's bar while the room holds it", () => {
+    setNotificationPresenter('toast')
+    release = presentNoticesInPill(() => bar)
+    mount()
+    showNotification('Saved', 'success')
+
+    expect(placedTop()).toBe('62px')
+  })
+
+  it("sits under the status bar under the native shell's pill, a room or not", () => {
+    release = presentNoticesInPill(() => bar)
+    mount()
+    showNotification('Saved', 'success')
+
+    expect(placedTop()).toBe('6px')
   })
 })

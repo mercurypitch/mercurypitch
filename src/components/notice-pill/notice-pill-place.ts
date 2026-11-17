@@ -28,6 +28,12 @@
 //      A notice that cannot be seen is worse than one that covers a row,
 //      but a row that cannot be tapped is worse than both.
 //
+// On the web a room holds the pill while it is up (the store's
+// `presentNoticesInPill`), and there the header's row is the room's own
+// bar: Back, the room's name and its end. The pill starts under that bar
+// (`ceiling`), so it never lies over the name, and the search above runs
+// from there.
+//
 // Pure, so the rule can be tested without a layout: the pill measures the
 // screen (its own height and every control a tap could reach) and asks.
 
@@ -47,6 +53,11 @@ export interface PillPlaceInput {
   readonly safeLeft: number
   readonly safeRight: number
   readonly safeBottom: number
+  /**
+   * The bottom of a bar the pill must sit under, a room's on the web, or
+   * none: the native shell's pill starts at the safe area's top.
+   */
+  readonly ceiling?: number
   /** The pill's height at the width it would be given. */
   readonly pillHeight: number
   /** Every control a tap could reach, anywhere on screen. */
@@ -141,7 +152,7 @@ function widestGap(
 
 export function placePill(input: PillPlaceInput): PillPlace {
   const centre = input.viewportWidth / 2
-  const firstTop = input.safeTop + PILL_TOP_GAP
+  const firstTop = Math.max(input.safeTop, input.ceiling ?? 0) + PILL_TOP_GAP
   const floor = input.viewportHeight - input.safeBottom - PILL_CLEARANCE
 
   // 1. The bands, top down, none past the safe area's bottom.

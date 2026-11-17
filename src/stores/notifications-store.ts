@@ -19,8 +19,19 @@
 //     notice is on screen at a time;
 //   - on a drill's stage in the web build (`presentNoticesOnStage`), the
 //     same, in Merc's bubble;
+//   - in a room on the web (`presentNoticesInPill`: a room of the Exercises
+//     tab, or Merc's room in the Ear Lab), the same, in the native app's
+//     pill under the room's bar;
 //   - elsewhere on the web nothing changes: one toast each, worded by the
 //     caller.
+//
+// THE CLAIMS. The stage and the rooms each hold the notices for as long as
+// they are up, and each hold returns its release. A room is drawn over the
+// page and over any drill on it, so while a room holds the pill a stage's
+// hold waits under it, and takes the notices back, in its own order, when
+// the last room is gone; with neither left, the toasts have them again. A
+// presenter the shell chooses (`setNotificationPresenter`: the native
+// shell's pill) outranks every hold.
 //
 // THE STAGE speaks in one place, so it orders what it says. A warning or an
 // error goes before any calmer notice, which waits behind it; and while the
@@ -154,10 +165,11 @@ const MAX_VISIBLE_NARROW = 2
 
 /**
  * Who draws the notices. `toast` is the web's stack (Notifications.tsx);
- * `pill` is the native shell's one-at-a-time pill under the status bar,
- * which the shell selects while it is mounted; `stage` is Merc's bubble on
- * a drill's stage in the web build (`presentNoticesOnStage`), one at a time
- * as the pill is.
+ * `pill` is the one-at-a-time pill (NoticePill.tsx), under the status bar
+ * where the native shell selects it while it is mounted, and under a room's
+ * bar where a room on the web holds it (`presentNoticesInPill`); `stage` is
+ * Merc's bubble on a drill's stage in the web build
+ * (`presentNoticesOnStage`), one at a time as the pill is.
  */
 export type NotificationPresenter = 'toast' | 'pill' | 'stage'
 
@@ -187,19 +199,52 @@ function visibleCap(): number {
   return isNarrow() ? MAX_VISIBLE_NARROW : Number.POSITIVE_INFINITY
 }
 
-/**
- * Choose who draws the notices. Narrowing to the pill hands every notice
- * past the first back to the queue, in order, the same way a rotation does.
- */
-export function setNotificationPresenter(next: NotificationPresenter): void {
-  setPresenter(next)
-  evictOverflow()
-  yieldCalm()
-  admitWaiting()
-}
+/** The presenter the shell chose; under the toasts, the holds decide. */
+let chosen: NotificationPresenter = 'toast'
 
 /** How many drill stages are on screen, each holding the presentation. */
 let stageHolds = 0
+
+/** A room's hold on the pill: the bar the pill sits under. */
+interface PillHold {
+  readonly under: () => Element | null | undefined
+}
+
+/** The rooms holding the pill on the web, the newest (on top) last. */
+const pillHolds: PillHold[] = []
+
+/** Who draws the notices now: the shell's choice, else a room, else a stage. */
+function heldPresenter(): NotificationPresenter {
+  if (chosen !== 'toast') return chosen
+  if (pillHolds.length > 0) return 'pill'
+  return stageHolds > 0 ? 'stage' : 'toast'
+}
+
+/**
+ * Draw the notices where they are held now. Narrowing to one at a time
+ * hands every notice past the first back to the queue, in order, the same
+ * way a rotation does; widening admits what waited.
+ */
+function present(): void {
+  // Untracked: a hold taken or let go inside a computation must not
+  // subscribe it to the queue.
+  untrack(() => {
+    setPresenter(heldPresenter())
+    evictOverflow()
+    yieldCalm()
+    admitWaiting()
+  })
+}
+
+/**
+ * Choose who draws the notices for the whole app: the native shell's pill,
+ * while the shell is mounted. A choice other than the toasts outranks the
+ * stage's and the rooms' holds.
+ */
+export function setNotificationPresenter(next: NotificationPresenter): void {
+  chosen = next
+  present()
+}
 
 /**
  * Present the notices on a drill's stage, in Merc's bubble, until the
@@ -211,18 +256,51 @@ let stageHolds = 0
  * pill is the native app's one place for notices, a drill's too.
  */
 export function presentNoticesOnStage(): () => void {
-  if (presenter() === 'pill') return () => undefined
   stageHolds += 1
-  if (stageHolds === 1) setNotificationPresenter('stage')
+  present()
   let held = true
   return () => {
     if (!held) return
     held = false
     stageHolds -= 1
-    if (stageHolds > 0) return
-    setStageQuietSignal(false)
-    if (untrack(presenter) === 'stage') setNotificationPresenter('toast')
+    if (stageHolds === 0) setStageQuietSignal(false)
+    present()
   }
+}
+
+/**
+ * Present the notices in the pill, under the bar `under` returns, until the
+ * returned release is called: a room on the web, the Exercises tab's
+ * (WebRoomHost) or Merc's in the Ear Lab (MercDrillRoom). One notice is on
+ * screen at a time and unlocks of one moment merge into it, as under the
+ * native shell's pill; the toasts draw nothing meanwhile, and a drill's
+ * stage under the room says none of them. Released by the last room, what
+ * still waits goes back to a stage that holds the notices, or else to the
+ * toasts, in order. Under the native shell's pill it changes nothing.
+ */
+export function presentNoticesInPill(
+  under: () => Element | null | undefined,
+): () => void {
+  const hold: PillHold = { under }
+  pillHolds.push(hold)
+  present()
+  let held = true
+  return () => {
+    if (!held) return
+    held = false
+    pillHolds.splice(pillHolds.indexOf(hold), 1)
+    present()
+  }
+}
+
+/**
+ * The bar the pill sits under: the newest room's, while a room's hold is
+ * what presents the notices; null under the native shell's pill, which
+ * sits under the status bar.
+ */
+export function noticePillCeiling(): Element | null {
+  if (chosen !== 'toast') return null
+  return pillHolds[pillHolds.length - 1]?.under() ?? null
 }
 
 /**
@@ -596,6 +674,8 @@ export function resetNotifications(): void {
   waiting.length = 0
   resetUnlockClaims()
   stageHolds = 0
+  pillHolds.length = 0
+  chosen = 'toast'
   setStageQuietSignal(false)
   setPresenter('toast')
   setNotifications([])

@@ -5,7 +5,8 @@
 // held back while a sound plays; Android's back goes through the same
 // question; the sound taken away pauses the run and Resume plays the
 // question again. A slip on a rated plate offers a pair practice, which
-// Merc names and the plate tallies.
+// Merc names and the plate tallies. On the web, the app's notices are the
+// pill's, under the room's header, while it is up.
 
 import { cleanup, fireEvent, render, screen, within, } from '@solidjs/testing-library'
 import type { JSX } from 'solid-js'
@@ -15,10 +16,18 @@ import { BeatPendulums } from '@/features/ear-lab/BeatPendulums'
 import { ConsoleStack, Pads, PlayPad, StagePad, } from '@/features/ear-lab/EarStage'
 import { FieldBookPage } from '@/features/ear-lab/FieldBookPage'
 import type { RoomBeat, StageRoom } from '@/features/ear-lab/stage-room'
+import type * as NativeBuild from '@/lib/native-build'
 import { notePageAudioContext, resetAirPlaySuspicionForTests, } from '@/stores/airplay-suspicion'
 import { setAudioRouteForTests } from '@/stores/audio-route-store'
 import { askRoomBack } from '@/stores/native-shell-store'
+import { noticePillCeiling, notificationPresenter, } from '@/stores/notifications-store'
 import { MercDrillRoom } from './MercDrillRoom'
+
+// The web's build, where the room holds the notices in the pill.
+vi.mock('@/lib/native-build', async (importOriginal) => ({
+  ...(await importOriginal<typeof NativeBuild>()),
+  WEB_ROOMS: true,
+}))
 
 vi.mock('@/lib/haptics', () => ({
   haptics: {
@@ -146,6 +155,19 @@ describe('the drill room', () => {
     )
     expect(h.room.abandon).toHaveBeenCalledTimes(1)
     expect(h.onBack).toHaveBeenCalledTimes(1)
+  })
+
+  it('says the notices in the pill under its header, and lets go when it goes', () => {
+    mount()
+
+    expect(notificationPresenter()).toBe('pill')
+    expect(noticePillCeiling()).toBe(
+      screen.getByTestId('merc-close').closest('header'),
+    )
+
+    cleanup()
+
+    expect(notificationPresenter()).toBe('toast')
   })
 
   it("answers Android's back with the same question", () => {

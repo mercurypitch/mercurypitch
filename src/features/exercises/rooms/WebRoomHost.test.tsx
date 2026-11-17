@@ -12,6 +12,7 @@ import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { EXERCISE_HARMONY_LAKE, EXERCISE_WARM_UP_PATH, } from '@/lib/domain/exercise-contracts'
 import { pushedBarEnd } from '@/stores/native-shell-store'
+import { noticePillCeiling, notificationPresenter, } from '@/stores/notifications-store'
 import WebRoomHost from './WebRoomHost'
 
 // The room is a stand-in with three controls: its own Done, one that opens
@@ -160,6 +161,36 @@ describe('WebRoomHost', () => {
 
     expect(onSong).toHaveBeenCalledTimes(1)
     expect(onBack).not.toHaveBeenCalled()
+  })
+
+  it('says the notices in the pill under its bar while it is open, and lets go after', () => {
+    open()
+    const bar = host()?.querySelector('[data-testid="web-room-bar"]')
+
+    expect(notificationPresenter()).toBe('pill')
+    expect(noticePillCeiling()).toBe(bar)
+
+    cleanup()
+
+    expect(notificationPresenter()).toBe('toast')
+  })
+
+  it('keeps the pill under the one bar with a stop opened over the path', () => {
+    render(() => (
+      <WebRoomHost
+        id={EXERCISE_WARM_UP_PATH}
+        onBack={vi.fn()}
+        onSong={onSong}
+      />
+    ))
+    const bar = noticePillCeiling()
+    fireEvent.click(
+      host()?.querySelector('[data-testid="room-open-stop"]') as HTMLElement,
+    )
+
+    expect(notificationPresenter()).toBe('pill')
+    expect(noticePillCeiling()).toBe(bar)
+    expect(bar).not.toBeNull()
   })
 
   it('holds the page under it still while it is open, and lets go after', () => {

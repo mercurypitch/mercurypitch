@@ -1,5 +1,5 @@
 // ============================================================
-// NoticePill — the native app's notices, one at a time, under the status bar
+// NoticePill — the app's notices, one at a time, under the status bar
 // ============================================================
 //
 // The web draws its notices as toasts, and on a phone it stacks them at the
@@ -19,15 +19,23 @@
 //   - a light haptic when an unlock arrives (NativeShell listens).
 //
 // Nothing here is new to the callers: `showNotification` is unchanged, and
-// the web's `<Notifications />` is simply not mounted in this build.
+// the web's `<Notifications />` is simply not mounted in the native build.
+//
+// The web draws it too, in its rooms: a room of the Exercises tab, or Merc's
+// room in the Ear Lab, holds the pill while it is up (the store's
+// `presentNoticesInPill`), since there a phone's toasts stood over the
+// room's controls and its microphone, and a wide window's over its "?". The
+// toast host mounts it, lazily (Notifications.tsx), and it sits under the
+// room's bar rather than in its row (`noticePillCeiling`).
 
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, Match, on, onCleanup, onMount, Show, Switch, } from 'solid-js'
+import './notice-pill.css'
 import { AlertTriangle, CheckCircle, XCircle } from '@/components/icons'
 import { badgeArtSrc } from '@/lib/badge-art'
 import { unlockNames } from '@/lib/unlock-copy'
 import type { Notification } from '@/stores/notifications-store'
-import { notifications, removeNotification, unlockShown, } from '@/stores/notifications-store'
+import { noticePillCeiling, notifications, removeNotification, unlockShown, } from '@/stores/notifications-store'
 import type { Box } from './notice-pill-place'
 import { placePill } from './notice-pill-place'
 
@@ -188,6 +196,7 @@ export const NoticePill: Component = () => {
       safeLeft: area.left,
       safeRight: window.innerWidth - area.right,
       safeBottom: window.innerHeight - area.bottom,
+      ceiling: noticePillCeiling()?.getBoundingClientRect().bottom,
       controls,
     }
     // The width decides how the text wraps, and so the height the band is
