@@ -369,10 +369,12 @@ describe('Erase on a kit', () => {
 })
 
 describe('a sweep held at an edge', () => {
-  it('takes the notes the roll scrolls under it, committed when let go', () => {
-    // Arrange: D, past the view's right edge on middle C's row.
+  it('takes the notes the roll scrolls under it between two frames, committed when let go', () => {
+    // Arrange: D, a tick long past the view's right edge on middle C's
+    // row: 2 px wide where a frame scrolls 14 px, so the point under the
+    // pointer passes it between two frames, at ticks 4353.5 and 4411.
     const host = noteHost({
-      notes: [...NOTES, note(4, 60, 4400, 240)],
+      notes: [...NOTES, note(4, 60, 4400, 1)],
       window: { startTick: 0, endTick: 7680 },
     })
     play(host, right('down', 600, 230), moveTo(700, 230), moveTo(959, 230))

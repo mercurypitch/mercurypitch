@@ -1,4 +1,4 @@
-// Studio note roll for browser tests — where the open note editor's roll, a piano's or a kit's, draws a note, a tick or a note's velocity, worked out from the roll's view and its box; a finger pressed, drawn along and lifted through Chromium's own touch input; and the MIDI clip's notes as the song saved them.
+// Studio note roll for browser tests — where the open note editor's roll, a piano's or a kit's, draws a note, a tick, a note's velocity, its ruler and its keys, worked out from the roll's view and its box; the key it lights while a press sounds it; a finger pressed, drawn along and lifted through Chromium's own touch input; and the MIDI clip's notes as the song saved them.
 import { expect, type Locator, type Page } from '@playwright/test'
 import type { StudioNote } from '@/lib/studio/model/types'
 import { readStudioProject } from './dedicatedstudio-fixture'
@@ -86,6 +86,24 @@ export function rowHeight(view: NoteRollView): number {
 /** How wide `ticks` are across the grid. */
 export function tickWidth(view: NoteRollView, ticks: number): number {
   return (ticks / (view.end - view.start)) * view.width
+}
+
+/** The middle of the ruler over the grid, on the page. */
+export function rulerY(view: NoteRollView): number {
+  return view.top - RULER_HEIGHT / 2
+}
+
+/** The middle of the keys' column, or of a kit's names, on the page. */
+export function keysX(view: NoteRollView, phone = false, kit = false): number {
+  return (
+    view.left - BANDS[kit ? 'kit' : 'piano'][phone ? 'phone' : 'other'].keys / 2
+  )
+}
+
+/** The key the roll lights while a press on the keys' column sounds it, or null while none sounds. */
+export async function litKey(page: Page): Promise<number | null> {
+  const lit = await noteRoll(page).getAttribute('data-studio-note-key-lit')
+  return lit === null ? null : Number(lit)
 }
 
 /** The middle of `pitch`'s row, on the page. */
