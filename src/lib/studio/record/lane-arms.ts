@@ -14,17 +14,19 @@
 // sums its armed tracks. A lane's monitor rises a quarter of a second after
 // its capture first meters a sound, past a new microphone's first moments;
 // an instrument's rises at once, and so does that of a lane joining a
-// microphone already flowing (armed-input.ts). Disarming one lane leaves the
-// others armed; a lane disarmed before its input opened lets that input go
-// as it arrives, and one disarmed while its monitor is heard keeps its input
-// until the monitor has glided out on it, a quarter of a second, so the
-// singer hears a release, not a cut; disarmed before its monitor rose, it
-// was not heard, and lets its input go at once. A re-arm on another input
-// device ends the old input at once all the same: MicManager ends the hold
-// the new device replaces before opening it, and WebKit keeps one capture
-// at a time anyway (mic-manager.ts `acquireFrom`), so the release does not
-// cover a device change. An instrument's port goes at once, free for the
-// next lane, and its sound glides out on the same release. The click track
+// microphone already flowing (armed-input.ts); a lane that joined one in its
+// first moments rises the moment another lane's monitor hears it settle.
+// Disarming one lane leaves the others armed; a lane disarmed before its
+// input opened lets that input go as it arrives, and one disarmed while its
+// monitor is heard keeps its input until the monitor has glided out on it,
+// a quarter of a second, so the singer hears a release, not a cut; disarmed
+// before its monitor rose, it was not heard, and lets its input go at once.
+// A re-arm on another input device ends the old input at once all the
+// same: MicManager ends the hold the new device replaces before opening it,
+// and WebKit keeps one capture at a time anyway (mic-manager.ts
+// `acquireFrom`), so the release does not cover a device change. An
+// instrument's port goes at once, free for the next lane, and its sound
+// glides out on the same release. The click track
 // is the clock's, shared by every lane.
 import type { StudioArmedInput } from './armed-input'
 import { createStudioArmedInputs } from './armed-input'
@@ -46,7 +48,10 @@ export interface StudioLaneArm {
   arming: boolean
   input: StudioArmedInput | null
   capture: StudioCaptureHandle | null
-  monitor: Pick<StudioInputMonitor, 'set' | 'inputArrived' | 'dispose'> | null
+  monitor: Pick<
+    StudioInputMonitor,
+    'set' | 'inputArrived' | 'inputSettled' | 'dispose'
+  > | null
   /** The loudest input sample lately, 0 to 1. */
   level: number
   /** Its take as it records, for the waveform growing in its lane. */
@@ -151,12 +156,15 @@ export function createStudioLaneArms(options: StudioLaneArmsOptions) {
     // An instrument the page plays sounds cleanly from its first note, and a
     // microphone source a lane's monitor heard settle has no onset left: a
     // lane on either rises at once. Settled here, the source is flowing for
-    // the lanes that join it after.
-    lane.monitor = deps.createMonitor(clock.context, input.node, {
+    // the lanes that join it after, and the lanes that joined it in its
+    // first moments rise with it, not a settle of their own later.
+    const monitor = deps.createMonitor(clock.context, input.node, {
       settled: input.flowing,
       onSettled: () => input.settled(),
     })
-    lane.monitor.set(deps.monitorSound(lane.trackId))
+    lane.monitor = monitor
+    input.whenFlowing(() => monitor.inputSettled())
+    monitor.set(deps.monitorSound(lane.trackId))
     if (input.opened !== null)
       deps.inputOpened?.({ ...input.opened, trackId: lane.trackId })
   }

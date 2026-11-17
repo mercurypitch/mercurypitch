@@ -205,7 +205,10 @@ export interface StudioRecorderDeps {
     context: AudioContext,
     input: AudioNode,
     options: { readonly settled: boolean; readonly onSettled?: () => void },
-  ): Pick<StudioInputMonitor, 'set' | 'inputArrived' | 'dispose'>
+  ): Pick<
+    StudioInputMonitor,
+    'set' | 'inputArrived' | 'inputSettled' | 'dispose'
+  >
   /** What lane `trackId`'s input sounds like through the lane: null is the new lane a take starts. */
   monitorSound(trackId: string | null): StudioMonitorSound
   /** The input a lane's arm opened (`trackId`): how many channels it has, what the lane records of them, and whether its pick was there. */

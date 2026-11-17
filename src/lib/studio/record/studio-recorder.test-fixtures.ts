@@ -92,6 +92,7 @@ export function harness(
   const monitor = {
     set: vi.fn(),
     inputArrived: vi.fn(),
+    inputSettled: vi.fn(),
     dispose: vi.fn((whenSilent?: () => void) => whenSilent?.()),
   }
   const transport = {
