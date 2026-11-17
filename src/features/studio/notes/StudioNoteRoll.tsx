@@ -14,13 +14,15 @@
 // which moves the notes and the view, the rows in fractions of a row, a
 // kit's kept on the kit (edit-kit.ts); its draw adds the engine's
 // selection, drafts, marquee, grips, hover and velocity readout
-// (edit-host.ts). A kit's rows are C's, its keys from the cymbals down,
-// fitted again when the kit or the height changes. Without an engine (a
-// song that cannot be edited now) the roll keeps C's navigation
-// (roll-navigation.ts). The roll's touches are its own: a finger lifted
-// while still moving starts no fling, whose end would swallow the next tap
-// elsewhere. The editor's buttons and keys reach the view through
-// `controls`.
+// (edit-host.ts), and a sweep's notes going (edit-erase.ts). The right
+// button erases over the roll, so the roll keeps the browser's menu off
+// it, the keys, the ruler and the velocity lane included. A kit's rows
+// are C's, its keys from the cymbals down, fitted again when the kit or
+// the height changes. Without an engine (a song that cannot be edited
+// now) the roll keeps C's navigation (roll-navigation.ts). The roll's
+// touches are its own: a finger lifted while still moving starts no
+// fling, whose end would swallow the next tap elsewhere. The editor's
+// buttons and keys reach the view through `controls`.
 //
 // The view keeps to the clip's window and two bars past its end, dimmed,
 // where the clip's End handle stands on the ruler (StudioNoteEnd.tsx,
@@ -44,6 +46,7 @@ import { noteKitOpening, notePianoOpening, noteRollDrafts, noteRollDrawing, } fr
 import type { NoteSnap } from './edit-snap'
 import { noteSnapGrid } from './edit-snap'
 import { studioRollWords } from './note-editor-words'
+import { noteRollCursor } from './note-roll-cursor'
 import type { StudioRollDraft, StudioRollInput, StudioRollLayout, StudioRollMeter, StudioRollTheme, } from './note-roll-draw'
 import { drawStudioRollBase, drawStudioRollOverlay, studioRollRegions, } from './note-roll-draw'
 import { createNoteRollPointers } from './note-roll-pointers'
@@ -102,6 +105,7 @@ const NO_DRAFTS: readonly StudioRollDraft[] = []
 /** The engine's marks over a roll it has no view of yet: none. */
 const NO_MARKS: NoteRollDrawing = {
   selected: NO_SELECTION,
+  erasing: NO_SELECTION,
   drafts: NO_DRAFTS,
   marquee: null,
   grips: [],
@@ -337,6 +341,17 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     NO_SELECTION,
     { equals: sameIds },
   )
+  // The notes a sweep is taking away, drawn going in the base.
+  const erasing = createMemo(
+    () => {
+      const shown = editView()
+      return shown === null || shown.erasing.length === 0
+        ? NO_SELECTION
+        : new Set(shown.erasing)
+    },
+    NO_SELECTION,
+    { equals: sameIds },
+  )
   const drafts = createMemo(() => {
     const shown = editView()
     return shown === null
@@ -368,6 +383,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       meter: meter(),
       notes: props.sequence.notes,
       selected: selected(),
+      erasing: erasing(),
       drafts: untrack(drafts),
       marquee: null,
       grips: [],
@@ -582,12 +598,14 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       class={styles.roll}
       data-studio-note-roll={viewData()}
       data-studio-note-editing={editing() === null ? undefined : ''}
+      // The right button erases here: no browser menu over the roll.
+      onContextMenu={(event) => event.preventDefault()}
     >
       <canvas ref={base} class={styles.rollCanvas} aria-hidden="true" />
       <canvas
         ref={overlay}
         class={styles.rollCanvas}
-        style={{ cursor: editView()?.cursor }}
+        style={{ cursor: noteRollCursor(editView()?.cursor) }}
         role="img"
         aria-label={words()}
         onWheel={wheel}

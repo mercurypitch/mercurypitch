@@ -102,18 +102,19 @@ export function rollStickHead(
   return { x, y: lane.y + velocityLaneY(note.velocity, lane.height) }
 }
 
-/** A note's velocity as a lollipop in the velocity lane: a stick up to its strength, a dot on top. */
+/** A note's velocity as a lollipop in the velocity lane: a stick up to its strength, a dot on top; `strength` overrides how strongly it shows. */
 export function drawRollStick(
   context: RollContext,
   input: StudioRollInput,
   note: StudioRollDraft,
   color: string,
+  strength?: number,
 ): void {
   const head = rollStickHead(input, note)
   if (head === null) return
   const lane = studioRollRegions(input).velocity
   const foot = lane.y + lane.height - VELOCITY_FOOT
-  context.globalAlpha = startsInWindow(input, note) ? 1 : 0.3
+  context.globalAlpha = strength ?? (startsInWindow(input, note) ? 1 : 0.3)
   context.fillStyle = color
   context.fillRect(head.x - 1, head.y, 2, foot - head.y)
   context.beginPath()
@@ -146,12 +147,15 @@ export function drawRollVelocities(
   dimOutsideWindow(context, input, lane)
   drawEndLine(context, input, lane)
   for (const note of notes)
-    drawRollStick(
-      context,
-      input,
-      note,
-      input.selected.has(note.id) ? theme.selection : theme.note,
-    )
+    if (input.erasing?.has(note.id) === true)
+      drawRollStick(context, input, note, theme.erase, 0.45)
+    else
+      drawRollStick(
+        context,
+        input,
+        note,
+        input.selected.has(note.id) ? theme.selection : theme.note,
+      )
   context.restore()
   smallCaps(context, input, 'Velocity', regions.velocityLabel, 'top')
 }

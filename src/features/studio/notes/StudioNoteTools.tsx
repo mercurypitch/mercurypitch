@@ -1,5 +1,5 @@
 // ============================================================
-// Studio note tools — the note editor's toolbar: Select and Draw, the snap grid, Quantize, and the selection's transpose, Duplicate, Delete and velocity
+// Studio note tools — the note editor's toolbar: Select, Draw and Erase, the snap grid, Quantize, and the selection's transpose, Duplicate, Delete and velocity
 // ============================================================
 //
 // In the mockups' style: the tools as one segmented control, the grid as a
@@ -8,13 +8,15 @@
 // selected (MISTAKES.md, "A control that refuses silently looks broken").
 // On a phone the tools stay at the top and the selection's edits sit in a
 // bar over the status line, where a thumb reaches; every target is 44 px.
+// On a tablet the tools are 44 px tall too. Erase is an eraser, never the
+// trash, which deletes the selection (Delete in the selection's edits).
 // Each button is one command to the engine (useStudioNoteEditing.ts), so
 // one commit and one undo step.
 import type { JSX } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { ChevronDown, ChevronUp, Copy, Minus, Pencil, Plus, Trash2, } from '@/components/icons'
 import type { StudioNote } from '@/lib/studio/model/types'
-import { ChevronsDown, ChevronsUp, Magnet, PointerArrow, QuantizeLines, VelocityBars, } from '../studio-icons'
+import { ChevronsDown, ChevronsUp, Eraser, Magnet, PointerArrow, QuantizeLines, VelocityBars, } from '../studio-icons'
 import type { NoteSnap } from './edit-snap'
 import { NOTE_SNAPS } from './edit-snap'
 import type { NoteEditCommand } from './edit-types'
@@ -29,6 +31,8 @@ export interface StudioNoteToolsProps {
   writable: boolean
   /** A phone's: icons alone, 44 px targets. */
   compact: boolean
+  /** A touch screen's: the tools 44 px tall for a finger, a tablet's too. */
+  touch?: boolean
   /** A drum lane's: no transpose, since Up and Down move a hit between rows. */
   kit?: boolean
 }
@@ -82,13 +86,16 @@ function ToolButton(props: {
   )
 }
 
-/** Select and Draw, the snap grid and Quantize. */
+/** Select, Draw and Erase, the snap grid and Quantize. */
 export function StudioNoteTools(props: StudioNoteToolsProps) {
   const tool = () => props.editing.tool()
   return (
     <div
       class={styles.tools}
-      classList={{ [styles.compact]: props.compact }}
+      classList={{
+        [styles.compact]: props.compact,
+        [styles.touch]: props.touch === true,
+      }}
       data-studio-note-toolbar=""
     >
       <div class={styles.segment} role="group" aria-label="Tool">
@@ -111,6 +118,16 @@ export function StudioNoteTools(props: StudioNoteToolsProps) {
           icon={<Pencil size={16} />}
           words="Draw"
           onClick={() => props.editing.setTool('draw')}
+        />
+        <ToolButton
+          label="Erase"
+          title="Erase: press a note, or drag across notes, to delete them (D switches)"
+          keys="D"
+          pressed={tool() === 'erase'}
+          compact={props.compact}
+          icon={<Eraser size={16} />}
+          words="Erase"
+          onClick={() => props.editing.setTool('erase')}
         />
       </div>
       <label class={styles.snap} title="Where notes snap in time">

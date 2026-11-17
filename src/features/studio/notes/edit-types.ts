@@ -20,7 +20,7 @@ import type { StudioRollRows } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioTickWindow } from '@/lib/studio/midi/time'
 import type { NoteSnap } from './edit-snap'
 
-export type NoteEditTool = 'select' | 'draw'
+export type NoteEditTool = 'select' | 'draw' | 'erase'
 export type NotePointerType = 'mouse' | 'pen' | 'touch'
 /** The roll's grid, or the velocity lane under it. */
 export type NoteSurface = 'roll' | 'velocity'
@@ -54,7 +54,7 @@ export interface NoteEditPointer {
   readonly y: number
   /** The event's time stamp, in milliseconds. */
   readonly time: number
-  /** The button that went down; only the primary (0, the default) starts anything. */
+  /** The button that went down: the primary (0, the default) does what the tool does, a mouse's or a pen's secondary (2) erases (edit-erase.ts), and no other starts anything. */
   readonly button?: number
   readonly shift?: boolean
   /** Ctrl, or Cmd on a Mac. */
@@ -173,6 +173,8 @@ export type NoteDragIntent =
   /** On a kit, in Draw: a hit in every empty cell the pointer crosses, each like `hit`. */
   | { readonly kind: 'paint'; readonly hit: StudioNoteDraft }
   | { readonly kind: 'marquee'; readonly add: boolean }
+  /** A sweep: every note the pointer passes over taken away (edit-erase.ts). */
+  | { readonly kind: 'erase' }
   | { readonly kind: 'pan' | 'none' }
 
 /** What a press does when it comes up where it went down. */
@@ -182,6 +184,8 @@ export type NoteTapIntent =
   | { readonly kind: 'draw' }
   /** On a kit, in Draw: take the hit pressed away. */
   | { readonly kind: 'remove'; readonly id: number }
+  /** Keep the sweep's draft: the note pressed taken away, if there was one. */
+  | { readonly kind: 'erase' }
 
 /** A marquee from where it was pressed to the pointer, in ticks and unrounded pitch. */
 export interface NoteMarquee {
@@ -197,6 +201,17 @@ export interface NoteVelocityReadout {
   readonly value: number
 }
 
+/**
+ * What a sweep has taken so far: the notes, in the order it reached them,
+ * and where it was last, in ticks and unrounded rows (studioRollPitchAt),
+ * so the next stretch of its path starts there however the roll scrolled.
+ */
+export interface NoteErasure {
+  readonly ids: readonly number[]
+  readonly tick: number
+  readonly row: number
+}
+
 /** What a gesture would leave if it ended now. */
 export interface NoteDraft {
   /** The notes as they would be kept; null while the gesture changes none. */
@@ -204,6 +219,8 @@ export interface NoteDraft {
   readonly selection: readonly number[]
   readonly marquee: NoteMarquee | null
   readonly readout: NoteVelocityReadout | null
+  /** A sweep's notes taken so far, which the roll shows going; absent for every other gesture. */
+  readonly erasure?: NoteErasure
 }
 
 /** One pointer's gesture, from its press to its release. */
@@ -258,8 +275,8 @@ export interface NoteTouch {
 /** What is under a mouse or a pen that is not pressed. */
 export interface NoteEditHover {
   readonly id: number
-  /** A note's body, its resize zone, or its velocity lollipop. */
-  readonly zone: 'body' | 'end' | 'velocity'
+  /** A note's body, its resize zone, or its velocity lollipop; in Erase, a note a press would take away. */
+  readonly zone: 'body' | 'end' | 'velocity' | 'erase'
 }
 
 export interface NoteEditState {

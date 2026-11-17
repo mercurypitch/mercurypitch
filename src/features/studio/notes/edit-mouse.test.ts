@@ -68,10 +68,11 @@ describe('a click in Select', () => {
     expect(commitsOf(host)).toEqual([])
   })
 
-  it('takes no button but the first', () => {
-    const host = play(noteHost({ notes: NOTES }), ...click(...A, { button: 2 }))
+  it('takes no button but the first, the second erasing instead (edit-erase.test.ts)', () => {
+    const host = play(noteHost({ notes: NOTES }), ...click(...A, { button: 1 }))
     expect(host.state.selection).toEqual([])
     expect(auditionsOf(host)).toEqual([])
+    expect(commitsOf(host)).toEqual([])
   })
 })
 

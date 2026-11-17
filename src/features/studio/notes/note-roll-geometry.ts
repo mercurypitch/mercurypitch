@@ -47,6 +47,8 @@ export interface StudioRollTheme {
   readonly playheadGlow: string
   readonly velocity: string
   readonly muted: string
+  /** A note a sweep is taking away, and a note under the eraser. */
+  readonly erase: string
   readonly font: string
 }
 
@@ -90,15 +92,17 @@ export interface StudioRollInput {
   /** The sequence's notes as stored. */
   readonly notes: readonly StudioNote[]
   readonly selected: ReadonlySet<number>
+  /** The stored notes a sweep is taking away (edit-erase.ts): drawn going; none when absent. */
+  readonly erasing?: ReadonlySet<number>
   readonly drafts: readonly StudioRollDraft[]
   /** A marquee being drawn, in the canvas's pixels. */
   readonly marquee: StudioRollRect | null
   /** The grips on the selected notes' right ends, in the canvas's pixels: where a resize takes them (edit-pick.ts, noteGripRect). */
   readonly grips: readonly StudioRollRect[]
-  /** The note under a mouse: its body, its end, or its lollipop. */
+  /** The note under a mouse: its body, its end, or its lollipop; in Erase, a note a press would take away. */
   readonly hover: {
     readonly id: number
-    readonly zone: 'body' | 'end' | 'velocity'
+    readonly zone: 'body' | 'end' | 'velocity' | 'erase'
   } | null
   /** A velocity being dragged, 1 to 127, shown over its note's lollipop. */
   readonly readout: { readonly id: number; readonly value: number } | null

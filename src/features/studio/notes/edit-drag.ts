@@ -14,11 +14,16 @@
 // line and ends it by the clip's end at the latest, the rest of the
 // selection changing by as many ticks. A drawn note runs from its press to
 // the grid line past the pointer, a step at the least.
+//
+// A kit's paint and a sweep that erases build on their draft instead: each
+// adds what the stretch of path since the last draft crossed
+// (edit-kit.ts, edit-erase.ts).
 import { xToTime } from '@/lib/roll-geometry'
 import type { StudioNoteEdit, StudioNoteSet } from '@/lib/studio/midi/notes'
 import { addStudioNote, resizeStudioNotes } from '@/lib/studio/midi/notes'
 import { studioRollPitchAt, studioRollRowOf } from '@/lib/studio/midi/roll-rows'
 import { noteById, playedIds } from './edit-changes'
+import { draftErase } from './edit-erase'
 import { draftPaint, editNotesInRange, moveEditNotes } from './edit-kit'
 import type { NoteSnap } from './edit-snap'
 import { lineAfter, noteSnapGrid, noteStepGrid, snapCeil, snapTravel, } from './edit-snap'
@@ -208,6 +213,8 @@ export function draftNoteDrag(
       )
     case 'marquee':
       return draftMarquee(gesture, intent, ctx, at)
+    case 'erase':
+      return draftErase(gesture, ctx, at)
     default:
       return gesture.draft
   }

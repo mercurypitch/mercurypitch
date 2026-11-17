@@ -149,6 +149,7 @@ describe("the engine's view on the roll", () => {
       note(4, 960),
     ],
     drafting: true,
+    erasing: [],
     selection: [2, 4],
     grips: [{ x: 100, y: 40, width: 3, height: 6 }],
     marquee: { x: 10, y: 20, width: 30, height: 40 },

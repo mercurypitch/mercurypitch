@@ -1,4 +1,4 @@
-// Studio note editing tests — the open editor carries its tools, each named, the selection's edits off with a word until notes are selected; B switches to Draw and back; a key's edit is one set-sequence-notes with its own fork id; the toolbar's velocity reads the selection 1 to 127 and moves it by 8; Escape clears the selection and then closes; a refused edit says so; notes copied in one opening paste in the next; a song that cannot be edited now edits nothing; and the render service hears a draft until its commit, is told when the editor closes, and its render's state shows in the header; on a drum lane the tools have no transpose, and Up moves the selection a row up the kit; Undo and Redo in the header are the Studio's; and the roll keeps its touches from the browser.
+// Studio note editing tests — the open editor carries its tools, each named, the selection's edits off with a word until notes are selected; B switches to Draw and back, D to Erase and back, and the trash still deletes the selection in Erase; the roll keeps the browser's menu off itself and leaves it to the rest of the editor; a key's edit is one set-sequence-notes with its own fork id; the toolbar's velocity reads the selection 1 to 127 and moves it by 8; Escape clears the selection and then closes; a refused edit says so; notes copied in one opening paste in the next; a song that cannot be edited now edits nothing; and the render service hears a draft until its commit, is told when the editor closes, and its render's state shows in the header; on a drum lane the tools have no transpose, and Up moves the selection a row up the kit; Undo and Redo in the header are the Studio's; and the roll keeps its touches from the browser.
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { createSignal } from 'solid-js'
 import { afterEach, beforeAll, beforeEach, describe, expect, it, vi, } from 'vitest'
@@ -185,6 +185,65 @@ describe('the tools', () => {
 
     expect(pressed).toBe('true')
     expect(draw).toHaveAttribute('aria-pressed', 'false')
+  })
+
+  it('hold Erase third, its key D, which switches to it and back to Select', async () => {
+    // Arrange
+    const region = await (renderEditor(), opened())
+    const tools = screen.getByRole('group', { name: 'Tool' })
+    const erase = screen.getByRole('button', { name: 'Erase' })
+
+    // Act
+    press(region, 'd')
+    const pressed = erase.getAttribute('aria-pressed')
+    press(region, 'd')
+
+    // Assert
+    expect(
+      [...tools.querySelectorAll('button')].map((each) =>
+        each.getAttribute('aria-label'),
+      ),
+    ).toEqual(['Select', 'Draw', 'Erase'])
+    expect(erase).toHaveAttribute('aria-keyshortcuts', 'D')
+    expect(pressed).toBe('true')
+    expect(erase).toHaveAttribute('aria-pressed', 'false')
+    expect(screen.getByRole('button', { name: 'Select' })).toHaveAttribute(
+      'aria-pressed',
+      'true',
+    )
+  })
+
+  it('leave Delete to the selection: the trash still deletes the selected notes in Erase', async () => {
+    // Arrange
+    const { commands } = renderEditor()
+    const region = await opened()
+    fireEvent.click(screen.getByRole('button', { name: 'Erase' }))
+    press(region, 'a', { ctrlKey: true })
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: 'Delete' }))
+
+    // Assert
+    expect(commands).toHaveLength(1)
+    expect(notesOf(commands[0])).toEqual([])
+  })
+})
+
+describe('the roll', () => {
+  it('keeps the browser’s menu off itself, the keys and ruler included, and leaves it to the rest of the editor', async () => {
+    // Arrange
+    const region = await (renderEditor(), opened())
+    const roll = region.querySelector('[data-studio-note-roll]')!
+    const canvas = roll.querySelector('canvas:last-of-type')!
+    const done = screen.getByRole('button', { name: 'Done' })
+
+    // Act
+    const onRoll = fireEvent.contextMenu(canvas)
+    const onDone = fireEvent.contextMenu(done)
+
+    // Assert: fireEvent answers false when the event's default was prevented.
+    expect(onRoll).toBe(false)
+    expect(onDone).toBe(true)
   })
 })
 

@@ -14,7 +14,10 @@
 //
 // A note is glass in the lane's colour, as strong as it was played and
 // faint when it starts outside the clip's window. A kit's hit is a square
-// of that glass at its start, sized to its row (kit-hit.ts). Only what the view shows
+// of that glass at its start, sized to its row (kit-hit.ts). A note a
+// sweep is taking away is a ghost of that glass, ringed and struck through
+// in the erase colour, until the sweep keeps it gone or puts it back
+// (edit-erase.ts). Only what the view shows
 // is drawn: a sequence of 10,000 notes costs one pass over its notes to find
 // those in view, and a fill for each of them.
 import { rowHeight } from '@/lib/roll-geometry'
@@ -41,6 +44,9 @@ export { studioRollRegions } from './note-roll-geometry'
 /** A note drawn less than this many pixels wide or high gets no name in it. */
 const LABEL_WIDTH = 30
 const LABEL_HEIGHT = 11
+/** How strong the glass of a note a sweep is taking away shows. */
+const ERASED_GHOST = 0.2
+const NO_IDS: ReadonlySet<number> = new Set()
 
 /** Each kit row's hits' starts, worked out once a draw: the drafts in place of the notes they stand in for. */
 const KIT_STARTS = new WeakMap<
@@ -172,16 +178,50 @@ function selectionMarks(
   context.stroke()
 }
 
-/** One note: its glass fill as strong as it was played, its rim, its name where it fits, and a selected note's marks; a ghost, the stored note a draft stands in for, is only a faint fill. */
+/** A note a sweep is taking away: a ghost of its glass, ringed and struck through in the erase colour. */
+function drawErased(
+  context: RollContext,
+  input: StudioRollInput,
+  box: StudioRollRect,
+  radius: number,
+): void {
+  context.globalAlpha = ERASED_GHOST
+  context.beginPath()
+  roundBox(context, box, radius)
+  context.fillStyle = input.theme.note
+  context.fill()
+  context.globalAlpha = 0.9
+  context.lineWidth = 1.5
+  context.strokeStyle = input.theme.erase
+  context.stroke()
+  const inset = Math.min(3, box.width / 4)
+  fillBox(context, input.theme.erase, {
+    x: box.x + inset,
+    y: box.y + box.height / 2 - 0.75,
+    width: Math.max(1, box.width - 2 * inset),
+    height: 1.5,
+  })
+  context.globalAlpha = 1
+}
+
+/** One note: its glass fill as strong as it was played, its rim, its name where it fits, and a selected note's marks; a ghost, the stored note a draft stands in for, is only a faint fill; a note a sweep is taking away is drawn going. */
 function drawNote(
   context: RollContext,
   input: StudioRollInput,
   note: StudioRollDraft,
-  look: { readonly chosen: boolean; readonly ghost: boolean },
+  look: {
+    readonly chosen: boolean
+    readonly ghost: boolean
+    readonly erased?: boolean
+  },
 ): void {
   const box = studioRollNoteBox(input, note)
   if (box === null) return
   const radius = Math.min(5, box.height / 2)
+  if (look.erased === true) {
+    drawErased(context, input, box, radius)
+    return
+  }
   context.globalAlpha = look.ghost ? 0.22 : studioRollNoteStrength(input, note)
   context.beginPath()
   roundBox(context, box, radius)
@@ -237,17 +277,17 @@ function drawNotes(
   const drafted = new Set(
     input.drafts.flatMap((draft) => (draft.id === undefined ? [] : [draft.id])),
   )
+  const erasing = input.erasing ?? NO_IDS
+  const shown = (note: StudioNote) =>
+    !drafted.has(note.id) && !erasing.has(note.id)
   context.save()
   clipTo(context, studioRollRegions(input).grid)
-  drawGlow(
-    context,
-    input,
-    notes.filter((note) => !drafted.has(note.id)),
-  )
+  drawGlow(context, input, notes.filter(shown))
   for (const note of notes)
     drawNote(context, input, note, {
-      chosen: input.selected.has(note.id) && !drafted.has(note.id),
+      chosen: input.selected.has(note.id) && shown(note),
       ghost: drafted.has(note.id),
+      erased: erasing.has(note.id),
     })
   context.restore()
 }
@@ -272,11 +312,12 @@ function drawHover(context: RollContext, input: StudioRollInput): void {
   const note = hover && input.notes.find((each) => each.id === hover.id)
   const box = note ? studioRollNoteBox(input, note) : null
   if (!hover || hover.zone === 'velocity' || box === null) return
+  const erases = hover.zone === 'erase'
   context.beginPath()
   roundBox(context, box, Math.min(5, box.height / 2))
-  context.globalAlpha = 0.7
-  context.lineWidth = 1.5
-  context.strokeStyle = input.theme.selection
+  context.globalAlpha = erases ? 0.95 : 0.7
+  context.lineWidth = erases ? 2 : 1.5
+  context.strokeStyle = erases ? input.theme.erase : input.theme.selection
   context.stroke()
   context.globalAlpha = 1
   if (hover.zone === 'end')
