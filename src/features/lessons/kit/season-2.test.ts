@@ -419,7 +419,7 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[27]).toEqual([12, 23])
   })
 
-  it("gives Lesson 28 its page and its reading time, a draft with no film, and Karaoke Night's link", () => {
+  it("gives Lesson 28 its page and its reading time, a draft with no film, and Sing It in Time's link", () => {
     // Act
     const L28 = LESSONS_2.find((L) => L.n === 28)
 
@@ -438,12 +438,14 @@ describe('Season 2', () => {
       "Lessons 18 and 26's pages at /learn/18 and /learn/26, the lab test (its WEB-SPEC, What the kit and the app still need, item 9), and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
     )
     expect(L28?.pr.link).toEqual({
-      href: '/karaoke-night?lesson=28',
-      addr: 'mercurypitch.com/karaoke-night',
-      label: 'Karaoke Night',
+      href: '/exercises/sing-it-in-time?lesson=28',
+      addr: 'mercurypitch.com/exercises/sing-it-in-time',
+      label: 'Sing It in Time',
+      note: 'three tunes at 60 BPM',
     })
-    // the drills it still needs stay the team's
-    expect(L28?.pr.needs).toMatch(/^A practice card for Name the Cadence/)
+    // what it still waits for stays the team's: no card waits for a drill
+    expect(L28?.pr.needs).not.toMatch(/practice card for Name the Cadence/)
+    expect(L28?.pr.needs).toMatch(/harmony-line drill/)
     expect(SEASON_2.prereq[28]).toEqual([18, 26])
   })
 

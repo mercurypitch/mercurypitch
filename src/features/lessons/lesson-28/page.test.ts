@@ -490,13 +490,13 @@ describe("Lesson 28's page", () => {
       doc().querySelectorAll<HTMLAnchorElement>('a[href*="lesson="]'),
     )
 
-    // Assert: Karaoke Night and Ear Lab, on the card and in the footer
-    // (WEB-SPEC, Practice links)
+    // Assert: Sing It in Time and Name the Cadence, on the card and in the
+    // footer (WEB-SPEC, Practice links)
     expect(links.map((a) => a.getAttribute('href'))).toEqual([
-      '/karaoke-night?lesson=28',
-      '/ear-lab?lesson=28',
-      '/karaoke-night?lesson=28',
-      '/ear-lab?lesson=28',
+      '/exercises/sing-it-in-time?lesson=28',
+      '/exercises/name-the-cadence?lesson=28',
+      '/exercises/sing-it-in-time?lesson=28',
+      '/exercises/name-the-cadence?lesson=28',
     ])
     for (const a of links) {
       expect([a.target, a.rel]).toEqual(['_blank', 'noopener'])
@@ -504,7 +504,7 @@ describe("Lesson 28's page", () => {
     }
   })
 
-  it("holds the practice card's rest line, hidden at first, in place of Karaoke Night, which asks for the voice; Ear Lab's Cadence stays", () => {
+  it("holds the practice card's rest line, hidden at first, in place of Sing It in Time, which asks for the voice; Name the Cadence stays", () => {
     // Arrange
     const card = doc().querySelector('#practiseCard')
 
@@ -512,11 +512,11 @@ describe("Lesson 28's page", () => {
     const rest = card?.querySelector('[data-ending="rest"]')
     const sing = card?.querySelector('[data-ending="practise"]')
 
-    // Assert: Lesson 10's rest form, naming Karaoke Night (LESSON.md, Wrap)
-    expect(words(card?.querySelector('h3'))).toBe('Karaoke Night')
+    // Assert: Lesson 10's rest form, naming Sing It in Time (LESSON.md, Wrap)
+    expect(words(card?.querySelector('h3'))).toBe('Sing It in Time')
     expect(rest?.hasAttribute('hidden')).toBe(true)
     expect(words(rest)).toBe(
-      'Rest today. Karaoke Night will be here when your voice feels comfortable: mercurypitch.com/karaoke-night',
+      'Rest today. Sing It in Time will be here when your voice feels comfortable: mercurypitch.com/exercises/sing-it-in-time',
     )
     expect(rest?.querySelector('a')).toBeNull()
     expect(sing?.hasAttribute('hidden')).toBe(false)

@@ -589,7 +589,7 @@ describe('the explorer, a tab per season', () => {
     ).not.toBeNull()
   })
 
-  it("opens Lesson 28's page on its own card, Ready, with the Karaoke Night link", async () => {
+  it("opens Lesson 28's page on its own card, Ready, with the Sing It in Time link", async () => {
     // Arrange: Lesson 28's page carries Season 2 before it draws (main.ts)
     vi.resetModules()
     const { carrySeason } = await import('./page-state')
@@ -613,7 +613,9 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/karaoke-night?lesson=28"]'),
+      card?.querySelector(
+        'a.addr[href="/exercises/sing-it-in-time?lesson=28"]',
+      ),
     ).not.toBeNull()
   })
 

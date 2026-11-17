@@ -344,11 +344,12 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: "How can a song sound as if it's ending, then keep going?",
     pr: {
       needs:
-        'A practice card for Name the Cadence, which shipped on 15 November 2026 (mercurypitch.com/exercises/name-the-cadence), and one for Sing It in Time (mercurypitch.com/exercises/sing-it-in-time); the harmony-line drill (SEASON-2 § 5.2 item 17)',
+        "The vocal coach's look at the card's lines for Sing It in Time; the harmony-line drill as SEASON-2 § 5.2 item 17 plans it, a part sung alone, which the Harmony room meets only in part",
       link: {
-        href: '/karaoke-night?lesson=28',
-        addr: 'mercurypitch.com/karaoke-night',
-        label: 'Karaoke Night',
+        href: '/exercises/sing-it-in-time?lesson=28',
+        addr: 'mercurypitch.com/exercises/sing-it-in-time',
+        label: 'Sing It in Time',
+        note: 'three tunes at 60 BPM',
       },
     },
   },
