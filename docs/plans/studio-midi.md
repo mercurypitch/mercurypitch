@@ -687,3 +687,127 @@ on either.
 | `src/features/studio/notes/kit-hit.ts`  | A hit's square and where a press takes it, for the drawing and the picking alike.                              |
 | `src/lib/studio/midi/roll-rows.ts`      | E adds a top row, so a kit's rows pan and zoom on the kit.                                                     |
 | `src/e2e/studio-drum-editing.spec.ts`   | Fingers on a phone and a tablet, a mouse and the keys on a computer, on a kit.                                 |
+
+## 10. After the owner's test (17 November 2026)
+
+The owner tried the editors on dev and asked for three changes in one
+follow-up pull request:
+
+> "on desktop, right click opens context menu on the midi editor lane which
+> doesn't make sense, we can bind that to delete mode, where right clicking
+> and going over notes deletes those notes. For touch devices, a separate
+> small icon button, like the thrash icon is, to delete notes could be used
+> and then they tap notes to delete or a selection. The playhead/current
+> position in the midi section should be able to be moved by clicking the
+> top timeline, as is in the main studio lanes. Third, the left piano roll
+> and drum names, should be tap/click to hear, they make a sound when
+> placing them, but also to hear the sound of each one should be clickable.
+> Add these in one follow up PR, test, and review it"
+
+### Decisions
+
+Erasing:
+
+- **The right button erases, in any tool.** A mouse's or a pen's
+  secondary button on a note takes it away. Held and moved, it takes every
+  note its path crosses. The roll, its keys, ruler and velocity lane
+  included, keeps the browser's menu off itself; the rest of the editor
+  keeps it. The middle button still starts nothing, and the right one in
+  the velocity lane takes no lollipop.
+- **A sweep tests its path, not its points.** Each move tests the line
+  since the move before against every note the clip plays, each note's
+  press target clipped against it (Liang and Barsky), where E's paint
+  samples its stretch every half a step. The line is kept in ticks and
+  rows, so a sweep held at an edge takes the notes the roll scrolls under
+  it. It is cut to the grid in view: a note out of sight is never taken.
+- **A mouse is exact; a pen or a finger reaches a little.** A press takes
+  the note under it, or the nearest in reach, as a press in Select picks
+  one. Along the path a mouse takes exactly what it crosses, and a pen or
+  a finger what passes within its reach, a quarter of a row at most, so a
+  swipe along a row leaves the rows beside it.
+- **A sweep is a draft, kept as one commit.** The swept notes show as
+  ghosts, ringed and struck through in the Studio's danger colour, their
+  lollipops faded. The release keeps them gone as one undo step. Escape, a
+  cancel or a lost capture puts them back. Nothing sounds.
+- **Erase is a third tool**, Select | Draw | Erase, with an eraser of its
+  own: the trash already deletes the selection, and still does in Erase.
+  In Erase a click or a tap takes a note, and a drag or a swipe every note
+  it crosses. Two fingers pinch and pan; the velocity lane stays the
+  velocity lane. Over the grid the cursor is an eraser, a cursor of the
+  roll's own, and the note under it is ringed in the danger colour.
+- **D switches Erase on and back to Select, as B does Draw.** D is free in
+  the editor and the Studio, and FL Studio's piano roll pairs the two
+  keys this way.
+- **The tool control is 44 px tall on every touch screen**, the tablet's
+  too, and sits in the phone's tool row. The header keeps its rows: the
+  identity's flex basis is 140 px, growing into any room the row leaves,
+  so a computer at 1440 px keeps one row; and a touch screen's grid
+  control goes without the word Snap, as a phone's already did, so a
+  tablet keeps two.
+
+The ruler:
+
+- **The roll's ruler takes the lanes' gesture** (ruler-gesture.ts). A
+  click or a tap seeks where it went down, playing or stopped, through the
+  workspace's seek, so it stops a take as any seek does. The playhead's
+  head scrubs it: 24 px wide for a mouse and 44 for a finger, as the
+  lanes' handle is.
+- **A drag along it scrubs.** The lanes draw their loop range on a drag;
+  the roll has no range, and a drag that did nothing would look broken.
+  The gesture's `dragScrubs` scrubs from the pointer by the handle's rules
+  instead (a stopped song follows, a playing one moves when let go), and
+  Shift is a plain press there.
+- **The roll's ticks are the song's frames through the clip**
+  (studioTickToSongFrame). A point in the dimmed room past the clip's end
+  is the song's time there; the transport keeps a seek inside the song, as
+  it does from the lanes.
+- **The End handle keeps its target.** It stands over the canvas, and the
+  ruler yields its 44 px to it all the same.
+- **The roll draws its playhead where a seek puts it**, and where a scrub
+  of a playing song holds it, and does not turn the page under a ruler
+  gesture.
+
+The keys:
+
+- **A key or a drum's name sounds when pressed**, through the editor's
+  audition: the lane's sound, on the Studio's clock, primed inside the
+  press, for as long as a pressed note sounds, at 100 of 127. A note's
+  press keeps its own velocity rule.
+- **It lights while it sounds**, from when its sound starts on the clock
+  to when it ends or the next key's starts: a piano key in the lane's
+  colour, a kit's name washed in it, and the row across the grid, faintly.
+  A key that cannot sound does not light.
+- **A mouse or a pen slid along the keys plays a glissando**, each key it
+  reaches sounding and the one before stopping.
+- **A finger dragged on the keys pans the rows**, and its key stops at
+  once. The brief said to keep what a drag on the keys did, likely a pan;
+  it did nothing, since the editor took the press and dropped it. The
+  closest sound alternative is the pan the brief expected, as one finger
+  pans the grid in Select, which gives Draw and Erase a one-finger way to
+  move the rows.
+
+### Where it lives
+
+| File                                                         | What it answers                                                                                                              |
+| ------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| `src/features/studio/notes/edit-erase.ts`                    | Which press starts a sweep, its path against each note's target, its draft, and what the eraser is over.                     |
+| `src/features/studio/notes/edit-types.ts`                    | The Erase tool, a sweep's intent and tap, and its erasure: the notes taken and where it was last.                            |
+| `src/features/studio/notes/edit-press.ts`, `edit-pointer.ts` | The secondary button's press in any tool, a press in Erase, and a sweep's frames at an edge.                                 |
+| `src/features/studio/notes/edit-drag.ts`                     | A sweep's draft at each move.                                                                                                |
+| `src/features/studio/notes/edit-kit.ts`                      | `editNoteTargets`: where a press takes each note the clip plays, a piano's or a kit's.                                       |
+| `src/features/studio/notes/edit-view.ts`                     | `erasing`, the notes a sweep is taking, and the eraser as a cursor.                                                          |
+| `src/features/studio/notes/note-roll-draw.ts`                | A sweep's notes drawn going, the note under the eraser ringed, and the lit key on the overlay.                               |
+| `src/features/studio/notes/note-roll-frame.ts`               | A sweep's lollipops faded, and the lit key: a piano key, a kit's name, its row.                                              |
+| `src/features/studio/notes/note-roll-cursor.ts`              | The eraser drawn as a cursor, and a hand over the ruler and the keys.                                                        |
+| `src/features/studio/notes/StudioNoteTools.tsx`              | Select, Draw and Erase, 44 px tall on a touch screen.                                                                        |
+| `src/features/studio/studio-icons.tsx`                       | `Eraser`: a rubber with its tip banded off, on its line.                                                                     |
+| `src/features/studio/notes/StudioNoteEditor.tsx`             | D for Erase; the workspace's seek and the audition handed to the roll.                                                       |
+| `src/features/studio/timeline/ruler-gesture.ts`              | `dragScrubs`: a ruler with no range to draw scrubs on a drag.                                                                |
+| `src/features/studio/notes/note-roll-ruler.ts`               | The roll's ruler: a point's song frame through the clip, what a press takes, and the lanes' gesture with a drag that scrubs. |
+| `src/features/studio/notes/note-roll-bands.ts`               | The band of the roll a press lands in, which owns it until it is let go, and the band under a mouse, for its cursor.         |
+| `src/features/studio/notes/note-roll-keys.ts`                | The key under a press, its sound and its light, a mouse's glissando and a finger's pan.                                      |
+| `src/features/studio/notes/note-audition.ts`                 | `play` says whether a note sounded; `stop` quiets the note sounding and one still loading.                                   |
+| `src/features/studio/notes/StudioNoteRoll.tsx`               | The ruler, the keys and the bands made, the menu kept off, the lit key and the playhead under a scrub drawn.                 |
+| `src/e2e/studio-note-erase.spec.ts`                          | A right-click and a right-drag on a computer, Erase's tap and swipe on a phone and a tablet, piano and kit.                  |
+| `src/e2e/studio-note-ruler.spec.ts`                          | A click, a drag and a tap on the roll's ruler, stopped and playing, past the clip's end, and the End handle.                 |
+| `src/e2e/studio-note-keys.spec.ts`                           | A key's sound at the speakers and its light, a glissando, a drum's name, and a finger's pan.                                 |
