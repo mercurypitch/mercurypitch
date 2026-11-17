@@ -1,4 +1,4 @@
-// Studio edit history tests — Undo and Redo name the lane change a control made, not a generic track edit, and new MIDI clips by the lanes they bring.
+// Studio edit history tests — Undo and Redo name the lane change a control made, not a generic track edit, and new MIDI clips by the lanes they bring, a MIDI file's tempo riding with them.
 import { describe, expect, it } from 'vitest'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
@@ -102,6 +102,57 @@ describe('Studio edit history', () => {
 
     // Assert
     expect(history.pastLabels).toEqual(['add lane', 'add lanes', 'add clips'])
+  })
+
+  it('names a MIDI file’s lanes by the lanes, with the tempo it gave a song of no clips', () => {
+    // Arrange: the silence every new clip plays.
+    const silence = {
+      ...studioMidiFixture().assets[1],
+      id: 'silence',
+      projectId: 'song',
+    }
+    let serial = 0
+    const empty = createStudioEditHistory(
+      createStudioProject({ id: 'song', title: 'Label song' }),
+    )
+    const made = studioNewMidiClips(
+      empty.state.present,
+      [
+        {
+          lane: { name: 'Piano', role: 'keys' },
+          startFrame: 0,
+          frames: 96_000,
+        },
+        {
+          lane: { name: 'Drums', role: 'drums' },
+          startFrame: 0,
+          frames: 96_000,
+        },
+      ],
+      silence.id,
+      () => `new-${++serial}`,
+    )
+    const edits =
+      made.command.type === 'batch' ? made.command.commands : [made.command]
+
+    // Act
+    const history = executeStudioEdit(
+      empty,
+      {
+        type: 'batch',
+        commands: [
+          { type: 'set-project-settings', changes: { tempoBpm: 96 } },
+          ...edits,
+        ],
+      },
+      { assets: [silence] },
+    )
+
+    // Assert
+    expect(history.pastLabels).toEqual(['add lanes'])
+    expect(
+      labelsFor({ type: 'set-project-settings', changes: { tempoBpm: 96 } }),
+    ).toEqual(['change song settings'])
   })
 
   it('keeps the name for Redo after an Undo', () => {
