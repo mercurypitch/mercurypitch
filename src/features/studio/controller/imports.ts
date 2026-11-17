@@ -440,6 +440,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
    */
   async function midiClipsNow(
     clips: readonly StudioNewMidiClip[],
+    before: readonly StudioEdit[],
   ): Promise<readonly string[] | null> {
     const snapshot = options.project()
     if (!options.canEdit() || active !== null || !snapshot || !clips.length)
@@ -466,9 +467,21 @@ export function createStudioImporter(options: ImportControllerOptions) {
         asset.id,
         options.createId,
       )
+      const command: StudioCommand =
+        before.length === 0
+          ? made.command
+          : {
+              type: 'batch',
+              commands: [
+                ...before,
+                ...(made.command.type === 'batch'
+                  ? made.command.commands
+                  : [made.command]),
+              ],
+            }
       const prepared = retained.values()
       retained.clear()
-      const committed = options.commit(made.command, prepared, options.report)
+      const committed = options.commit(command, prepared, options.report)
       await options.flush()
       return committed && options.current(epoch) ? made.clipIds : null
     } catch (error) {
@@ -480,15 +493,20 @@ export function createStudioImporter(options: ImportControllerOptions) {
     }
   }
 
-  /** New MIDI clips, as one undo step, in the imports' turn (midiClipsNow). */
+  /**
+   * New MIDI clips, as one undo step, in the imports' turn (midiClipsNow).
+   * `before` joins the step, applied first: a MIDI file sets the tempo of a
+   * song with no clips yet (midi-file-imports.ts).
+   */
   async function addMidiClips(
     clips: readonly StudioNewMidiClip[],
+    before: readonly StudioEdit[] = [],
   ): Promise<readonly string[] | null> {
     const epoch = options.epoch()
     let made: readonly string[] | null = null
     await inTurn(
       async () => {
-        made = await midiClipsNow(clips)
+        made = await midiClipsNow(clips, before)
         return made !== null
       },
       () => epoch === options.epoch(),
