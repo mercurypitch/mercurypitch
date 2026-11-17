@@ -40,15 +40,10 @@
 // - light: on the Light tier, whose playback leaves the de-esser and the
 //   dynamic EQ uncut (playback-quality.ts TIER_PROFILES), each lane the
 //   voice probe plays, on the sung vowel, monitored at Light's lite list
-//   against the same lane with its de-esser and dynamic EQ taken out: bit
-//   for bit with the echo out of both (bar: exact), and with it in, within
-//   the -120 dBFS bar. An echo sums three signals at each line's delay (its
-//   input, its own feedback and the other line's), and the order a node
-//   adds its inputs in can differ between two builds, so two builds of one
-//   lane with an echo can differ: in Chromium 148 the voice lane at
-//   Balanced or Light, or its echo alone, by -141 to -146.6 dBFS at the
-//   peak, six builds each. And the lane at Balanced against Light, for
-//   scale;
+//   against the same lane with its de-esser and dynamic EQ taken out, its
+//   echo in both: bit for bit (bar: exact). No node of an echo adds more
+//   than two signals (effects/delay.ts), so two builds of a lane with one
+//   match to the bit. And the lane at Balanced against Light, for scale;
 // - follow: a lane with a dynamic EQ band on a steady 480 Hz tone at -20
 //   dBFS and a de-esser, monitored live on a running context while its tier
 //   goes to Light and back to Balanced (input-monitor.ts, chain.ts
@@ -71,7 +66,7 @@ import { TIER_PROFILES } from '/src/lib/studio/playback/playback-quality.ts'
 import { frameTime } from '/src/lib/studio/playback/whole-frame.ts'
 import { createStudioInputMonitor } from '/src/lib/studio/record/input-monitor.ts'
 import { createStudioMonitorMaster } from '/src/lib/studio/record/monitor-master.ts'
-import { bestLag, compare, EMPTY_SPEC, firstHeard, laidOut, lanePathRender, laneSound, levelDbOf, liveContext, monitorFirstHeard, monitorRender, PLAIN_LANE, rmsOf, round, s, SKIP, SR, START, tone, untilClock, voiceInput, withinBar, } from '/scripts/studio-monitor-browser-probes.mjs'
+import { bestLag, compare, EMPTY_SPEC, firstHeard, laidOut, lanePathRender, laneSound, levelDbOf, liveContext, monitorFirstHeard, monitorRender, PLAIN_LANE, rmsOf, round, s, SKIP, SR, START, tone, untilClock, voiceInput, } from '/scripts/studio-monitor-browser-probes.mjs'
 import { laneOf, monitoredAndPlayed, peaksAround, STEP_LEVELS_DBFS, STEP_SECONDS, steepestAgainstToneOwn, stepEdges, steppingTone, withGainJump, } from '/scripts/studio-monitor-compressor-probes.mjs'
 
 const DYNAMICS = ['deesser', 'dyneq']
@@ -450,32 +445,16 @@ async function stepsProbe(dynamics) {
 /** What Light playback keeps only the lookahead of: a monitored lane passes them uncut. */
 const LIGHT_LITE = TIER_PROFILES.light.lite
 
-/** `sound` without its echo, which differs from one build to the next (see the header). */
-function withoutEcho(sound) {
-  return {
-    ...sound,
-    spec: normalizeChainSpec({
-      ...sound.spec,
-      effects: sound.spec.effects.filter((effect) => effect.kind !== 'delay'),
-    }),
-  }
-}
-
 async function lightProbe() {
   const input = voiceInput(4)
   const read = (a, b) => compare(a, b, START, START, input.length)
   const out = {}
   for (const [name, sound] of Object.entries(dynamicsLanes())) {
     const light = { ...sound, lite: LIGHT_LITE }
-    const without = withoutDynamics(sound)
     out[name] = {
       againstLaneWithoutThem: read(
-        await monitorRender(input, withoutEcho(light)),
-        await monitorRender(input, withoutEcho(without)),
-      ).peakDifferenceDbfs,
-      withEchoAgainstLaneWithoutThem: read(
         await monitorRender(input, light),
-        await monitorRender(input, without),
+        await monitorRender(input, withoutDynamics(sound)),
       ).peakDifferenceDbfs,
       balancedAgainstLightForScale: read(
         await monitorRender(input, sound),
@@ -484,9 +463,7 @@ async function lightProbe() {
     }
   }
   const pass = Object.values(out).every(
-    (lane) =>
-      lane.againstLaneWithoutThem === 'exact' &&
-      withinBar(lane.withEchoAgainstLaneWithoutThem),
+    (lane) => lane.againstLaneWithoutThem === 'exact',
   )
   return { pass, lite: LIGHT_LITE, ...out }
 }

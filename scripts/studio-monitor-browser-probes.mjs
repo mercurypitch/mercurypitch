@@ -17,10 +17,9 @@
 //   hand on the channel or pair it picks, summed: two lanes on two sides,
 //   two on one side, one on the pair, and one on an input the browser
 //   gives no count for, where an input heard twice, or a lane hearing
-//   another's side, would show. The lanes leave their delay out: the
-//   browser picks which node of a delay's feedback cycle takes the extra
-//   render quantum (effects/delay.ts), and two renders of one lane do not
-//   always pick alike;
+//   another's side, would show. Each lane plays its whole chain, its echo
+//   included: no node of an echo adds more than two signals
+//   (effects/delay.ts), so two builds of one lane play it to the bit;
 // - sound: each role's new lane monitored, against the same lane at full
 //   quality, as a take on it plays back;
 // - master: the song's master after the lane at a measured gain of 0, +6
@@ -496,8 +495,8 @@ async function liveProbe() {
     ),
     'no effects': await liveRun(input, { ...voice, spec: EMPTY_SPEC }),
     // A lane with effects is left out: the master's EQ turns a difference
-    // near -140 dBFS at its input (a reverb's threads, a delay's cycle) into
-    // one near -90, its own rounding. The lanes above show their own.
+    // near -140 dBFS at its input (a reverb's threads) into one near -90,
+    // its own rounding. The lanes above show their own.
     "no effects, through the song's master": await liveRun(
       input,
       { ...voice, spec: EMPTY_SPEC },
@@ -585,28 +584,12 @@ function handBuiltLanesRender(input, lanes) {
   })
 }
 
-/**
- * `sound` with its delay left out. Two renders of one lane with a delay can
- * differ near -105 dBFS, over the bar: which node of its feedback cycle
- * takes the extra render quantum is the browser's pick (effects/delay.ts),
- * not the split's.
- */
-function withoutDelay(sound) {
-  return {
-    ...sound,
-    spec: {
-      ...sound.spec,
-      effects: sound.spec.effects.filter(({ kind }) => kind !== 'delay'),
-    },
-  }
-}
-
-/** Lanes armed on one input, against their paths built by hand. */
+/** Lanes armed on one input, against their paths built by hand: whole lanes, echo and all. */
 async function lanesProbe() {
   const input = twoSides(4)
-  const voice = withoutDelay(laneSound('voice'))
-  const guitar = withoutDelay(laneSound('acoustic-guitar'))
-  const quieter = withoutDelay(laneSound('voice', { gainDb: -6, pan: 0.4 }))
+  const voice = laneSound('voice')
+  const guitar = laneSound('acoustic-guitar')
+  const quieter = laneSound('voice', { gainDb: -6, pan: 0.4 })
   const one = (channel) => ({ channel, pair: false })
   const cases = {
     'two lanes on inputs 1 and 2, each through its own chain': {
