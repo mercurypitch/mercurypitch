@@ -313,6 +313,71 @@ PR 2's first half is 1.4, MIDI files out.
   secondary one, and the WAV keeps the primary. When it is off, it says
   "This song has no MIDI clips yet."
 
+PR 2's second half is 1.5, MIDI files in.
+
+- **A file comes in where audio does.** Add takes' Choose file takes `.mid`
+  and `.midi`, and says so under its name. A drop takes them too. A file is
+  MIDI by its name, or by its type where its name says nothing.
+  - Its lanes start at the song's start, wherever it was dropped. Audio
+    dropped with it goes where it was dropped.
+  - Add takes' help says so: "Takes start at the playhead, a MIDI file's
+    lanes at the song's start."
+  - Each file is its own undo step.
+- **The song's tempo joins the lanes' undo step.** The builder adds clips at
+  a tempo but never changes the song's. So the controller's
+  `addMidiClips(clips, before)` takes edits to make first, in the same
+  batch: the file's tempo, for a song with no clips. Undo names the step
+  "add lanes", as it names the builder's own. These are PR 2's only changes
+  to PR 1's importer and history.
+- **A longer file keeps its first five minutes.** The window rule holds a
+  MIDI clip to five minutes, and the builder puts one clip on each new lane.
+  So a file that runs longer keeps its first five minutes, in whole bars,
+  and the lanes' notice says how long it ran.
+- **Two overlapping notes of one pitch stay two.** 1.5 named them as what the
+  validator refuses, but it takes them, and a recording keeps two held keys
+  so (`take-notes.ts`). Notes pair first in, first out for each pitch, as the
+  app's MIDI reader pairs them (`project-to-midi-song.ts`). What the
+  validator does refuse is made valid as a recording makes it:
+  - a note is a tick long at the least;
+  - a note never ended ends at the file's end;
+  - a velocity is above 0, to 4 decimals.
+- **A note-off velocity of 0 or 64 is no release velocity.** 0 comes from a
+  note-on of velocity 0, which ends a note. 64 is what a keyboard without
+  release velocity sends. Either leaves the note at the song's default, so
+  `releaseVelocity` is absent. Any other is kept, `v / 127` to 4 decimals.
+- **A track whose notes spread over channels names each lane after its
+  program.** A format 0 file has one track, named after the song. So its
+  piano and its organ come in as "Acoustic Grand Piano" and "Drawbar Organ".
+  - A channel 10 lane whose track has no name is "Drums".
+  - Two lanes of one name are numbered: "Acoustic Grand Piano 2".
+- **Names are read as UTF-8**, as the Studio writes them, and otherwise as
+  the parser read them (Latin-1).
+  - Control characters go, runs of spaces close up, and a name keeps its
+    first 64 characters.
+  - A new lane may share a name with a lane already in the song. The
+    song's own file, chosen again, adds a second "Keys".
+- **A lane is left out for more than 10,000 notes in its clip**, counted
+  for its track and channel, in its first five minutes. The clips are as
+  long as the lanes kept. A file whose every lane is left out, or which
+  holds no notes, adds nothing and says why where a refusal is said.
+- **The file's first tempo is kept to 4 decimals.** It must be one the
+  Studio holds, 20 to 300 bpm. Otherwise, and when it is the song's own,
+  the song keeps its tempo, and no edit joins the step.
+- **The parser loads with the file.** `midi-file-import.ts` is imported when
+  a MIDI file comes in, so `parseMidiProject` stays out of the Studio's
+  chunk. The parser's 20 MB ceiling is checked before a byte is read. It is
+  the Studio's one import from `src/features/piano-project/`.
+- **Every clip whose notes are rendering says "Rendering…"**, not only an
+  import's: after a note edit too, and when a song opens with stale clips.
+  - It shows 0.4 s after the edit, as the note editor's does, so a quick
+    render never flashes it.
+  - A draft's render is the note editor's to say, and a failed one the
+    lane's notice.
+- **The workspace keeps the renders.** Once the lanes are in, it asks the
+  render service to keep every stale clip's render, as a song's opening and
+  an export do. So the saved song holds their audio, not the builder's
+  silence.
+
 ## 3. Where PR 1 lives
 
 | File                                                  | What it answers                                                                                                       |
@@ -357,3 +422,14 @@ PR 2's first half is 1.4, MIDI files out.
 | `src/features/studio/timeline/clip-take-name.ts`       | A clip's take as its band names it, apart from the clip's component and its stylesheets.                                                 |
 | `src/tests/utils/studio-midi-file.fixture.ts`          | A file's bytes read back through `parseMidiProject`, its notes paired one sounding at a time, for the unit tests and the browser's.      |
 | `src/e2e/studio-midi-files.spec.ts`                    | The song's file and a clip's downloaded on a computer, a tablet and a phone, read back from their bytes.                                 |
+| `src/lib/studio/midi/midi-file-clips.ts`               | A MIDI file as the builder's new lanes: a lane a track and channel, its notes through the tempo map, and the lanes left out.             |
+| `src/features/studio/midi/midi-file-import.ts`         | The parser, loaded with a MIDI file: its refusals in the Studio's words, and the file mapped against the song.                           |
+| `src/features/studio/controller/midi-file-imports.ts`  | `addMidiFile`: a file's lanes in one undo step with the tempo it gives a song of no clips; its refusal, and what it left out, said.      |
+| `src/features/studio/controller/imports.ts`            | PR 2 adds `before` to `addMidiClips`: edits that join the new clips' undo step.                                                          |
+| `src/features/studio/controller/edit-history.ts`       | PR 2 lets the song's settings ride with new lanes in "add lanes".                                                                        |
+| `src/features/studio/integration/drop-audio.ts`        | PR 2 adds `STUDIO_FILE_ACCEPT` and `isStudioMidiFile`: the picker's files, and a MIDI file told from audio.                              |
+| `src/features/studio/StudioWorkspace.tsx`              | PR 2 sends a picked or dropped MIDI file to the import, then keeps its renders.                                                          |
+| `src/features/studio/StudioSourcePicker.tsx`           | PR 2 says Choose file takes a MIDI file, and where a MIDI file's lanes start.                                                            |
+| `src/features/studio/midi/midi-render-service.ts`      | PR 2 adds `renderingClips`: the clips whose notes have no audio yet.                                                                     |
+| `src/features/studio/timeline/StudioTimelineClip.tsx`  | PR 2 adds a MIDI clip's Rendering…, after its note count.                                                                                |
+| `src/e2e/studio-midi-files-in.spec.ts`                 | A file chosen and dropped on a computer and a phone, read back from the saved song, and the Studio's own file chosen again.              |
