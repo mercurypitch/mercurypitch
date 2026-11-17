@@ -2365,6 +2365,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Rule:** for a walk that must sing, launch Chromium with `--disable-3d-apis` beside the fake-device flags: the room runs without Merc at 60 frames a second, and a steady tone from `--use-file-for-fake-audio-capture` finishes every take. Take the pictures that show Merc in a second pass with WebGL on, and measure the frame rate before blaming the microphone.
 **See:** `src/lib/hold/settle-note.ts`, `src/lib/pitch-f0-stream.ts`, `src/components/room-kit/MercView.tsx`
 
+### An unlock raised in an exercise room never reaches the pill
+
+**Symptom:** a walk that raised two badges in a web room, to see them merged in the notice pill under the room's bar, saw no pill and no toast, in three rooms, at both sizes; leaving the room, one toast said "2 new badges".
+**Cause:** every premium room claims the unlocks announced while it is up, for the chip under its result (`createRoomUnlocks`, `claimUnlocks`), and the Warm-up's path claims a stop's; the store asks the claim before it raises anything. What a room held unseen is announced as it closes.
+**Rule:** to see a notice in a room, raise one that is not an unlock (an error with an action, a warning); to see two unlocks merged in the pill, use Merc's Ear Lab room, which has no chip. Measure the pill once its drop-in has finished (`getAnimations()`), since its box includes the transform.
+**See:** `src/components/room-kit/room-unlocks.ts`, `src/stores/unlock-claims.ts`, `src/e2e/room-notices.spec.ts`
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
