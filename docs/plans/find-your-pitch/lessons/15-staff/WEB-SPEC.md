@@ -163,9 +163,10 @@ reasons:
 - **The quick check, 341 words.** Four questions with three answers each and a line of feedback for
   every answer, as MASTER-PLAN § 4.2 item 8 asks.
 - **The recall, 206 words.** Lesson 2's questions, word for word.
-- **The Wrap, 304 words.** The practice card says how to use Compose for the task, keeps a
-  first-visit line until the marker takes Season 2's numbers, and has its rest version, Lesson 8's
-  (FACTS 42, 43, 59).
+- **The Wrap, 304 words.** The practice card said how to use Compose for the task, kept a
+  first-visit line until the marker took Season 2's numbers, and has its rest version, Lesson 8's
+  (FACTS 42, 43, 59). Since 17 November 2026 it says what Read the Note does, in fewer words
+  (FACTS 44a).
 
 The hints and status lines are stage directions in LESSON.md and are not counted, as in the text
 packages of Lessons 9 to 14: the predict's hints and its two "You said" lines, the name of the play
@@ -385,7 +386,7 @@ staff (Toys 1, state 6). In order:
 
 After "Effortful", "Uncomfortable" or "Just listen today" the Wrap's practice card shows its rest
 line, Lesson 8's word for word, "Rest today. This page's sung line will be here when your voice
-feels comfortable.", above its text, and keeps Compose, since Compose asks for no voice (FACTS 59).
+feels comfortable.", above its text, and keeps Read the Note, which asks for no voice (FACTS 59).
 It is Lesson 8's form, a line in the card shown for the rest ending, through the kit's
 `VisitEnding` (`src/features/lessons/kit/comfort.ts:89-114`), as Lesson 8's wrap shows it
 (`src/features/lessons/lesson-08/wrap.ts:5-10`, `:21-25`), with "Effortful" leading to the rest
@@ -492,33 +493,22 @@ other, paused off screen, and the still images when WebGL fails.
 
 ## Practice links: what exists and what needs engineering
 
-- **Today, Compose, in Sheet Music.** The link is `/?lesson=15#/compose`, printed
-  "mercurypitch.com/#/compose", with "then choose Sheet Music" (FACTS 45). Compose opens on its
-  piano roll with the Place tool, so a tap on the grid adds a note; on a first visit the roll holds
-  the app's C major scale from C3, which the card asks the learner to clear with the bin button,
-  Clear all notes, which Undo reverses; Sheet Music, or Split, then draws the notes on a staff and
-  plays them, in the bass clef when the melody's middle note sits below middle C (FACTS 43, 44).
-  The learner's do, re, mi, fa and so in G come out in their own clef: the lower voice's G3 to D4 in
-  the bass, the higher's G4 to D5 in the treble. Compose is free (FACTS 40). It is a sandbox, so the
-  card gives it a goal, as playbook rule 17 asks.
+- **Today, Read the Note**, since 17 November 2026. The link is `/exercises/read-the-note?lesson=15`,
+  printed "mercurypitch.com/exercises/read-the-note" (FACTS 44a). It writes a note on the staff and
+  takes its letter, with Letters or Piano keys; nothing listens; it opens on the bass clef for a bass
+  or a baritone and the treble for every other voice, by the saved range, and its Clef picker gives
+  the other, or Both; after a miss Merc names the note and says where it sits. The card says all of
+  that in the setup screen's words. It is free. It takes Compose's place, as this spec asked once
+  the note-reading drill shipped (SEASON-2 § 5.2 item 9), and one drill carries the lesson, so the
+  card has one link.
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
-  Lesson 8's rest line above its text and keeps the link, since Compose asks for no voice (Toys 5;
-  FACTS 59).
-- **Compose on a phone.** It is built for a bigger screen: on a screen up to 768 px wide it says so
-  in a toast once, and its view tabs are icons; turned sideways past 768 px, a phone gets the
-  labelled tabs (FACTS 41). The card says "on a phone, turn it sideways".
-- **The first visit.** `?lesson=15` is not a lesson marker today, so on a first visit First Light,
-  the app's intro, opens before Compose, and its close now asks "Skip the intro?" first: the card
-  and the footer keep Season 1's first-visit line with "then tap "Yes, skip"" until SEASON-2 § 5.2
-  item 21 widens the marker (FACTS 42). A returning visitor may meet the opening takeover over
-  Compose until then (FACTS 48).
-- **A visitor in simple mode or set to guitar** cannot open Compose: the app sends them Home with no
-  note while it starts (FACTS 46). The card does not say so; Edge cases.
-- **Needed: the note-reading drill** (SEASON-2 § 5.2 item 9): a note on the treble or bass staff, up
-  to two ledger lines, answered on a keyboard or by letter, the clef chosen by the singer's range.
-  When it ships, the card names it in Compose's place, or beside it (FACTS 44). The app's only note
-  quiz is the guitar's fretboard, and Sight-Singing, which reads a staff and asks for singing, is
-  Lesson 16's link.
+  Lesson 8's rest line above its text and keeps the link, since Read the Note asks for no voice
+  (Toys 5; FACTS 59).
+- **The first visit.** `?lesson=15` is a lesson marker since SEASON-2 § 5.2 item 21 widened it, so
+  First Light steps aside and the card and the footer carry no first-visit line.
+- **Until 17 November 2026, Compose, in Sheet Music** (`/?lesson=15#/compose`): a sandbox with a
+  goal, the learner's do, re, mi, fa and so written on the piano roll and seen on a staff in their
+  own clef, with a first-visit line while the marker read Season 1 only (FACTS 40 to 46).
 - Not linked: none of the premium exercises.
 
 ## Explorer and season data
@@ -533,12 +523,11 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form
   `minutes: 15` and `page: '/learn/15'` once the page is built, under the drafts' comment in Lesson
   6's form (`src/features/lessons/kit/season.ts:270`): `// A draft until the vocal coach's look at
 Sing it (drafts.ts).` The entry decides nothing about being live: the draft list and the console do.
-- `pr.link`: `href` `/?lesson=15#/compose`, `addr` `mercurypitch.com/#/compose`, `label` "Compose"
-  and `note` "then choose Sheet Music", which the explorer's card prints after the address as
-  "Compose, then choose Sheet Music" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:191-195`).
-  `pr.needs`, "A note-reading drill: a note on the treble or bass staff, up to two ledger lines,
-  answered on a keyboard or by letter", stays until it ships; it is "Admin only, never drawn on a
-  lesson page" (`src/features/lessons/kit/season.ts:102-103`).
+- `pr.link`: `href` `/exercises/read-the-note?lesson=15`, `addr`
+  `mercurypitch.com/exercises/read-the-note` and `label` "Read the Note", with no `note`, which the
+  explorer's card prints after the address (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:192-196`).
+  It has no `pr.needs`: the note-reading drill it waited for shipped, and the card links it. Until 17
+  November 2026 the link was Compose's, `/?lesson=15#/compose`, "then choose Sheet Music".
 - `EDGES` gains [2, 15], a cross-season edge, as SEASON-2 § 4.3 gives it (FACTS 2). Lesson 15's
   prerequisite list is then [2] (`PREREQ`, `src/features/lessons/kit/season.ts:474-480` at `ad0a099f7`).
 - The tease on this page's next-lesson card is Lesson 16's, set on Lesson 16 in the lesson copy
@@ -657,20 +646,13 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 - **No voice chosen**: nothing in Sing it plays until a voice is chosen, and the staff waits in the
   treble with no notes. A stored voice opens on its own staff.
 - **Effortful or Uncomfortable**: the guide goes for the visit; Play Merc's notes stays, as listening;
-  the practice card shows its rest line and keeps Compose, as after "Just listen today".
+  the practice card shows its rest line and keeps Read the Note, as after "Just listen today".
 - **No WebGL**: the Mercs' stills; everything else runs.
 - **No storage** (a private window): the quiz seeds and the voice last for the visit; nothing breaks.
 - **Lesson 2 not live** where the page is served: the prerequisite chip stays a plain chip and the
   recall's step links keep their words with no link (FACTS 7).
-- **The practice link, first visit**: First Light opens; the × asks "Skip the intro?", and "Yes,
-  skip" opens Compose with its first-visit C major scale (FACTS 42, 43).
-- **The practice link, returning visitor**: Compose opens on their own last melody; the card's
-  "clear it" speaks of the first visit's scale, and Clear all notes can be undone. The opening
-  takeover may show first (FACTS 48).
-- **The practice link in simple mode or set to guitar**: the app lands on Home with no note while it
-  starts; the card does not name the settings, as no card does (FACTS 46).
-- **Compose on a small phone held sideways**: a phone whose long side is 768 px or less stays narrow,
-  with the toast and icon tabs (FACTS 41).
+- **The practice link with no range saved**: Read the Note reads the visitor as a tenor and opens on
+  the treble clef; a clef chosen once is remembered on the device (FACTS 44a).
 - **A0 and C8** are named and never played (FACTS 25).
 
 ## Tests
@@ -705,7 +687,7 @@ kit parts it adds:
 8. **Sing it's flow**, in Lesson 12's tests' form: the voice before anything plays; the guide after
    Merc's notes heard; no Move do; Effortful and Uncomfortable put the guide away; Effortful,
    Uncomfortable and Just listen today show the practice card's rest line, and the card keeps
-   Compose after every ending (FACTS 57 to 59).
+   Read the Note after every ending (FACTS 57 to 59).
 
 Page tests, against a local or dev build, never production:
 
@@ -767,7 +749,7 @@ production:
 - The network panel and the browser's microphone indicator stay quiet through Sing it: no request,
   no microphone.
 - The Wrap's practice card shows its rest line after "Effortful", "Uncomfortable" and "Just listen
-  today", keeps Compose after every ending, and every link opens in a new tab.
+  today", keeps Read the Note after every ending, and every link opens in a new tab.
 - No faint staff shows behind the page at any width, and no section head carries one (Tests, 16).
 - The app-check sweep at phone and desktop width, with Sing it open in each state and the cold open
   before and after its reveal.

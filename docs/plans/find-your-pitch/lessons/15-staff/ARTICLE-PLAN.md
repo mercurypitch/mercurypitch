@@ -229,6 +229,8 @@ sound on this page is synthesised in your browser." The page carries no decorati
 - **Missing:** a note-reading drill (SEASON-2 § 5 item 9); the app's only note quiz is on the guitar
   fretboard (R15-18). And `?lesson=15` is not yet a lesson marker (R15-19), so First Light may intercept
   a first visit until § 5 item 21 ships; until then the card keeps Season 1's first-visit line.
+- **Since 17 November 2026** the card links the drill, Read the Note, in Compose's place:
+  `mercurypitch.com/exercises/read-the-note` (FACTS 44a).
 
 ## Go deeper
 

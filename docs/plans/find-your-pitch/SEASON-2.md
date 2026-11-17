@@ -200,11 +200,11 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
   only: noteheads are drawn without stems, since durations wait for Lesson 17.
 - Checkpoint (unscored sing-along, a theory lesson): after the comfort check, sing do re mi fa so in
   C as the notes light on the staff, in your own clef and octave; nothing listens.
-- Practise: `/?lesson=15#/compose`, then choose Sheet Music or the split view (Compose's views,
-  `src/App.tsx:2322-2346`): notes written in the piano roll appear on the staff, in the bass clef
-  when the melody's middle note sits below middle C (`src/lib/sheet-music-renderer.ts:127-135`). A
-  sandbox, not a drill. Needs building: a note-reading drill (§ 5 item 9); the app's only
-  note-locating quiz is the guitar's (`src/features/guitar-practice/NoteLocatorQuiz.tsx`).
+- Practise: Read the Note (`/exercises/read-the-note?lesson=15`; § 5 item 9), a note on the treble
+  or the bass staff named by its letter, with no microphone, on the clef the singer's range reads
+  first and either on the setup's Clef picker. Until 17 November 2026 the card linked Compose's
+  Sheet Music view (`/?lesson=15#/compose`), where notes written in the piano roll appear on the
+  staff: a sandbox, not a drill.
 - Facts to check: the clefs' positions, ledger lines and the grand staff (Open Music Theory and
   ABRSM Grade 1, as the benchmark cites them for T30: OMT 1.2 to 1.4; chapter numbers to check
   against OMT's current edition); 88 keys, A0 to C8, on a modern piano (**not verified**: read a
@@ -864,7 +864,7 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 
 | Lesson | Opens today                                                           | Waits for                                                                                                           |
 | ------ | --------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
-| 15     | Compose, Sheet Music view (`/?lesson=15#/compose`), a sandbox         | Its card's link to `/exercises/read-the-note` (item 9 and its slug shipped on 15 November 2026)                     |
+| 15     | Read the Note, `/exercises/read-the-note`, its card's link            | Nothing: its card links Read the Note (item 9 shipped on 15 November 2026)                                          |
 | 16     | Sight-Singing, at `/exercises/sing-what-you-see`, its phrases in G    | Its card's link to `/exercises/sing-what-you-see`, with the drill's new lines (item 10 shipped on 16 November 2026) |
 | 17     | Ear Lab: The Chart, Pulse; `/exercises/quarters-halves-and-eighths`   | Its card's link to The Chart's set (item 12 shipped on 16 November 2026)                                            |
 | 18     | Sight-Singing (pitch only), The Chart, `/exercises/sing-it-in-time`   | Card links to Sing It in Time, the new Sight-Singing (items 11 and 10 shipped), the sheet view (item 20 shipped)    |
@@ -895,7 +895,7 @@ and First Light does not step aside. Item 21 fixes it.
    note and says where it sits, in Lesson 15's words for the staff
    (`src/features/lessons/kit/staff-places.ts`). It opens no microphone. It writes naturals only,
    with no key signature and no accidental, which Lesson 21 would want of it. Its address is
-   `/exercises/read-the-note`. Lessons 15 and 21, whose cards do not link it yet.
+   `/exercises/read-the-note`. Lesson 15's card links it; Lesson 21's does not.
 10. **Sight-Singing for the lessons: shipped on 16 November 2026.** Sight-Singing
     (`src/features/exercises/sight-singing/`) writes its line on the singer's own clef, in a key,
     and hears it in any octave. (a) Lesson 16's two phrases, written as one line in G, open at
