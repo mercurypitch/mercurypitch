@@ -372,19 +372,19 @@ the hero but Tavi's in Step 3.
 
 - **Compose, in Sheet Music** (`/?lesson=21#/compose`, printed mercurypitch.com/#/compose): the
   practice card's first drill. On a first visit Compose holds a C major scale; Playback Setup's key
-  picker moves the tune into each key, and Sheet Music, or Split, writes it with its key signature
-  (FACTS 39 to 42). On a narrow screen Compose asks to be turned sideways (FACTS 43).
-- **Ear Lab's Home** (`/ear-lab?lesson=21`, printed mercurypitch.com/ear-lab, then tap Home): a
-  cadence sets a key, one note sounds, and the learner taps its degree, do to ti; the key is chosen
-  afresh each round (FACTS 44).
+  picker, twelve keys and B♭ written so since 17 November 2026, moves the tune into each key, and
+  Sheet Music, or Split, writes it with its key signature (FACTS 39 to 42, 40a). On a narrow screen
+  Compose asks to be turned sideways (FACTS 43).
+- **Ear Lab's Home** (`/ear-lab?lesson=21`, then tap Function, then Home; FACTS 44a): a cadence
+  sets a key, one note sounds, and the learner taps its degree, do to ti, the key new each round.
 
 **Not linked:** the Singing tab, whose key picker changes only the view and which has no sheet view
-on a phone held upright (FACTS 41), though SEASON-2 § 5.1's row names it; Sight-Singing, which writes
-every black key as a sharp (FACTS 45).
+on a phone held upright, so its sheet address opens the roll there (FACTS 41); Sight-Singing, which
+spells by key but takes the Singing tab's, no address opening it in this lesson's keys (FACTS 45).
 
-**Waiting for:** the note-reading drill reading key signatures (SEASON-2 § 5.2 item 9), key-aware
-Sight-Singing (item 10d), and all twelve keys with flat names in the key picker, with an address for
-the sheet view (item 20). When the first of these ships, the practice card names it (FACTS 45).
+**Waiting for:** the note-reading drill reading key signatures (SEASON-2 § 5.2 item 9), and an
+address for Sight-Singing in this lesson's keys. Key-aware Sight-Singing (item 10d) and the twelve
+keys (item 20) shipped on 16 and 17 November 2026. The card names a drill once it opens (FACTS 45).
 
 ## Explorer and season data
 
@@ -404,8 +404,8 @@ A draft until the vocal coach's look at Sing it (drafts.ts).` The entry decides 
   and `note` "then choose Sheet Music", which the explorer's card prints after the address as
   "Compose, then choose Sheet Music" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:191-195`).
   Ear Lab's Home is the page card's second drill only, as Lesson 8's entry links one of its two.
-  `pr.needs`, "A note-reading drill that reads key signatures, and Sight-Singing that spells by
-  key", stays until one ships; it is "Admin only, never drawn on a lesson page"
+  `pr.needs`, a note-reading drill that reads key signatures and an address for Sight-Singing in
+  this lesson's keys, stays until one ships; it is "Admin only, never drawn on a lesson page"
   (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [6, 21] and [15, 21], as SEASON-2 § 4.3 gives them (FACTS 2); Lesson 21's
   prerequisite list is then [6, 15].
