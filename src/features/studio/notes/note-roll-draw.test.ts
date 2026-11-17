@@ -1,4 +1,4 @@
-// Studio note roll drawing tests — each note in view is drawn where it sounds, as strong as it was played, named where it fits, and dimmed when it starts outside the clip's window; notes out of view cost nothing; a selected note gets a ring, and the editor's grips a bar each; a draft is drawn over the stored note it stands in for, which fades to a ghost; a note a sweep is taking away is a ghost ringed and struck in the erase colour, its lollipop faded, and the note under the eraser ringed in it; the marquee, the hover, a velocity's readout and the playhead are drawn on the overlay only; each note's velocity stands in its lane; rows sitting on fractions of a semitone draw every row they show part of; the keys name each C, a kit's rows their General MIDI names cut to fit, and its hits squares at their starts; the ruler names the song's bars; and the grid leaves out lines too close to read.
+// Studio note roll drawing tests — each note in view is drawn where it sounds, as strong as it was played, named where it fits, and dimmed when it starts outside the clip's window; notes out of view cost nothing; a selected note gets a ring, and the editor's grips a bar each; a draft is drawn over the stored note it stands in for, which fades to a ghost; a note a sweep is taking away is a ghost ringed and struck in the erase colour, its lollipop faded, and the note under the eraser ringed in it; a key a press sounds is lit on the overlay in the lane's colour, with its row; the marquee, the hover, a velocity's readout and the playhead are drawn on the overlay only; each note's velocity stands in its lane; rows sitting on fractions of a semitone draw every row they show part of; the keys name each C, a kit's rows their General MIDI names cut to fit, and its hits squares at their starts; the ruler names the song's bars; and the grid leaves out lines too close to read.
 import { describe, expect, it } from 'vitest'
 import type { StudioRollRows } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioNote } from '@/lib/studio/model/types'
@@ -254,6 +254,59 @@ describe('a gesture’s drafts', () => {
           paint.shapes[0].x === 360 + 3,
       ),
     ).toBe(true)
+  })
+})
+
+describe('a key lit while it sounds', () => {
+  /** A white key's fill over the keys' column, in the lane's colour. */
+  const keyLit = (paint: RecordedPaint) =>
+    paint.op === 'fillRect' && paint.style === 'note' && paint.shapes[0].x === 0
+
+  it('draws a white key in the lane’s colour, its name kept, and its row across the grid faintly', () => {
+    // Arrange: rows of 25 px from 66 down; C5 is out of view, so middle
+    // C's row (60) starts at 26 + 6 * 25.
+    const { context, paints, texts } = recordingRollContext()
+
+    // Act
+    drawStudioRollOverlay(context, input({ litKey: 60 }))
+
+    // Assert
+    const key = paints.find(keyLit)!
+    expect(key.shapes[0]).toMatchObject({ y: 176, width: 72 })
+    expect(key.alpha).toBe(1)
+    expect(
+      texts.find((text) => text.text === 'C4' && text.color === 'noteText'),
+    ).toBeDefined()
+    const row = paints.find(
+      (paint) =>
+        paint.op === 'fillRect' &&
+        paint.style === 'note' &&
+        paint.shapes[0].x === 72,
+    )!
+    expect(row.shapes[0]).toMatchObject({ y: 176, width: 768, height: 25 })
+    expect(row.alpha).toBeCloseTo(0.1, 6)
+  })
+
+  it('draws a black key in the lane’s colour', () => {
+    const { context, paints } = recordingRollContext()
+
+    drawStudioRollOverlay(context, input({ litKey: 61 }))
+
+    const key = paints.find(
+      (paint) => paint.op === 'fill' && paint.style === 'note',
+    )!
+    expect(key.shapes[0]).toMatchObject({ kind: 'round', x: 0, y: 152 })
+  })
+
+  it('lights nothing when no key sounds, and leaves the base alone', () => {
+    const overlay = recordingRollContext()
+    const base = recordingRollContext()
+
+    drawStudioRollOverlay(overlay.context, input({ litKey: null }))
+    drawStudioRollBase(base.context, input({ litKey: 60 }))
+
+    expect(overlay.paints.some(keyLit)).toBe(false)
+    expect(base.paints.some(keyLit)).toBe(false)
   })
 })
 

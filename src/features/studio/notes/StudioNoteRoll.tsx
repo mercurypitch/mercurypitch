@@ -31,9 +31,12 @@
 //
 // The ruler moves the song's position as the lanes' does
 // (note-roll-ruler.ts): a click or a tap seeks, the playhead's head
-// scrubs, and so does a drag elsewhere along it. Each press goes to the
-// band it lands in (note-roll-bands.ts) and stays with it until let go;
-// the End handle keeps its own target over the ruler.
+// scrubs, and so does a drag elsewhere along it. The keys' column sounds
+// the key or drum a press lands on, lit while it sounds, a mouse slid
+// along it playing each key it reaches and a finger dragged on it panning
+// the rows (note-roll-keys.ts). Each press goes to the band it lands in
+// (note-roll-bands.ts) and stays with it until let go; the End handle
+// keeps its own target over the ruler.
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, Show, untrack, } from 'solid-js'
 import type { RollViewport } from '@/lib/roll-geometry'
 import { timeToX } from '@/lib/roll-geometry'
@@ -51,12 +54,15 @@ import type { NoteRollDrawing } from './edit-host'
 import { noteKitOpening, notePianoOpening, noteRollDrafts, noteRollDrawing, } from './edit-host'
 import type { NoteSnap } from './edit-snap'
 import { noteSnapGrid } from './edit-snap'
+import { dragNoteRoll, sameRollViewport } from './edit-viewport'
 import { studioRollWords } from './note-editor-words'
 import { noteRollBandAt } from './note-roll-bands'
 import type { NoteRollOver } from './note-roll-cursor'
 import { noteRollCursor } from './note-roll-cursor'
 import type { StudioRollDraft, StudioRollInput, StudioRollLayout, StudioRollMeter, StudioRollTheme, } from './note-roll-draw'
 import { drawStudioRollBase, drawStudioRollOverlay, studioRollRegions, } from './note-roll-draw'
+import type { NoteKeyAudition } from './note-roll-keys'
+import { createNoteRollKeys, rollKeyAt } from './note-roll-keys'
 import { createNoteRollPointers } from './note-roll-pointers'
 import type { RollRulerTarget } from './note-roll-ruler'
 import { createNoteRollRuler, rollRulerFrame, rollRulerTarget, } from './note-roll-ruler'
@@ -109,6 +115,8 @@ interface StudioNoteRollProps {
   end?: StudioNoteRollEnd
   /** Move the song's position to frame `frame`, from the ruler (note-roll-ruler.ts); absent, the ruler only shows. */
   seek?(frame: number): void
+  /** The lane's sound, which the keys sound through when pressed (note-roll-keys.ts); absent, they only show. */
+  audition?: NoteKeyAudition
   controls?(controls: StudioNoteRollControls): void
 }
 
@@ -428,6 +436,20 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       )
     },
   })
+  // The keys' column sounds its keys, and a finger on it pans the rows.
+  const keys = createNoteRollKeys({
+    audition: () => props.audition ?? null,
+    keyAt: (y) => {
+      const current = view()
+      return current === null ? null : rollKeyAt(current, rows(), y)
+    },
+    pan: (dy) => {
+      const current = view()
+      if (current === null) return
+      const next = dragNoteRoll(current, range(), 0, dy, topRow())
+      if (!sameRollViewport(next, current)) setView(next)
+    },
+  })
   /** The playhead as the roll draws it: where a scrub holds it, else as heard or as it rests. */
   const playheadTick = () => {
     const scrubbed = ruler.scrubFrame()
@@ -452,6 +474,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
         ? NO_MARKS
         : noteRollDrawing(shown, props.sequence.notes, regions().grid)),
       playheadTick: playheadTick(),
+      litKey: keys.lit(),
     })
   }
 
@@ -478,6 +501,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     void editView()
     void restingTick()
     void ruler.scrubFrame()
+    void keys.lit()
     queue('overlay')
   })
 
@@ -604,18 +628,41 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     apply(move)
   }
 
-  // The pointers the ruler owns, from their press to their release.
-  const owners = new Set<number>()
+  // The pointers the ruler and the keys own, from their press to their release.
+  const owners = new Map<number, 'ruler' | 'keys'>()
   // The band under a mouse or a pen that is not pressed, for its cursor.
   const [over, setOver] = createSignal<NoteRollOver | null>(null)
 
-  /** Where a pointer is: the band of the canvas it is over, and its x across the grid. */
+  /** Where a pointer is: the band of the canvas it is over, its x across the grid and its y down the rows. */
   function placeOf(event: { clientX: number; clientY: number }) {
     const box = overlay?.getBoundingClientRect()
     const x = event.clientX - (box?.left ?? 0)
     const y = event.clientY - (box?.top ?? 0)
     const at = regions()
-    return { band: noteRollBandAt(at, x, y), x: x - at.grid.x }
+    return {
+      band: noteRollBandAt(at, x, y),
+      x: x - at.grid.x,
+      y: y - at.grid.y,
+    }
+  }
+
+  /** A pointer the ruler or the keys take, captured until it is let go. */
+  function own(event: PointerEvent, band: 'ruler' | 'keys'): void {
+    event.preventDefault()
+    owners.set(event.pointerId, band)
+    overlay?.setPointerCapture(event.pointerId)
+  }
+
+  /** A press on the keys' column: the key or drum under it sounds. */
+  function keysPress(event: PointerEvent, y: number): boolean {
+    if (event.button !== 0) return false
+    const pressed = keys.down({
+      pointerId: event.pointerId,
+      pointerType: event.pointerType === 'touch' ? 'touch' : 'mouse',
+      y,
+    })
+    if (pressed) own(event, 'keys')
+    return pressed
   }
 
   /** What a press `x` px across the ruler takes: the End handle's target, the playhead's head, or a seek. */
@@ -639,10 +686,8 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     if (props.seek === undefined || event.button !== 0) return false
     const target = rulerTarget(x, event.pointerType === 'touch')
     if (target === 'end') return false
-    event.preventDefault()
     ruler.press(event, target)
-    owners.add(event.pointerId)
-    overlay?.setPointerCapture(event.pointerId)
+    own(event, 'ruler')
     return true
   }
 
@@ -651,16 +696,24 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
     if (event.pointerType === 'touch' && ruler.active()) ruler.cancel()
     const at = placeOf(event)
     if (at.band === 'ruler' && rulerPress(event, at.x)) return
+    if (at.band === 'keys' && keysPress(event, at.y)) return
     if (pointers.down(event)) return
     if (!touch.down(event)) return
     event.preventDefault()
     overlay?.setPointerCapture(event.pointerId)
   }
 
+  /** A move of a pointer the ruler or the keys own, while the roll holds it. */
+  function ownedMove(event: PointerEvent, band: 'ruler' | 'keys'): void {
+    if (overlay?.hasPointerCapture(event.pointerId) !== true) return
+    if (band === 'ruler') ruler.move(event)
+    else keys.move({ pointerId: event.pointerId, y: placeOf(event).y })
+  }
+
   function moveOver(event: PointerEvent): void {
-    if (owners.has(event.pointerId)) {
-      if (overlay?.hasPointerCapture(event.pointerId) === true)
-        ruler.move(event)
+    const owner = owners.get(event.pointerId)
+    if (owner !== undefined) {
+      ownedMove(event, owner)
       return
     }
     if (event.pointerType !== 'touch' && event.buttons === 0) {
@@ -674,12 +727,12 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
   }
 
   function lift(event: PointerEvent, kind: 'up' | 'cancel'): void {
-    if (owners.delete(event.pointerId)) {
-      if (kind === 'up') ruler.release(event)
-      else ruler.cancel()
-      return
-    }
-    if (!pointers.end(event, kind)) touch.up(event)
+    const owner = owners.get(event.pointerId)
+    owners.delete(event.pointerId)
+    if (owner === 'keys') keys.end(event.pointerId)
+    else if (owner === 'ruler' && kind === 'up') ruler.release(event)
+    else if (owner === 'ruler') ruler.cancel()
+    else if (!pointers.end(event, kind)) touch.up(event)
   }
 
   const words = createMemo(() =>
@@ -703,6 +756,7 @@ export function StudioNoteRoll(props: StudioNoteRollProps) {
       class={styles.roll}
       data-studio-note-roll={viewData()}
       data-studio-note-editing={editing() === null ? undefined : ''}
+      data-studio-note-key-lit={keys.lit() ?? undefined}
       // The right button erases here: no browser menu over the roll.
       onContextMenu={(event) => event.preventDefault()}
     >

@@ -9,6 +9,9 @@
 // at once, and the one before it stops as it starts, so a drag across rows
 // plays a line rather than a pile. The instruments shape their own attack
 // and release, so nothing clicks; the drum kit's hits end on their own.
+// The roll's keys sound through it too (note-roll-keys.ts), which learn
+// when a key's sound starts, to light the key, and stop it when a finger
+// on a key pans instead.
 import type { StudioMidiSound } from '../record/midi/studio-midi-sound'
 import type { StudioMidiAttached, StudioMidiSounds, } from '../record/midi/studio-midi-sounds'
 import { createStudioMidiSounds, loadStudioMidiModules, } from '../record/midi/studio-midi-sounds'
@@ -43,6 +46,8 @@ export function createStudioNoteAudition(options: {
   let last: string | null = null
   let count = 0
   let disposed = false
+  // A stop's count: a note asked for before the latest stop never starts.
+  let stops = 0
 
   function load(): Promise<StudioMidiSounds> {
     const next = (library ??=
@@ -86,21 +91,35 @@ export function createStudioNoteAudition(options: {
       void options.clock.unlock().catch(() => false)
       void load().catch(() => undefined)
     },
-    /** Sound `pitch` at `velocity`, 0 to 1, for a moment; the note before it stops. */
-    play(pitch: number, velocity: number): void {
-      void load()
+    /**
+     * Sound `pitch` at `velocity`, 0 to 1, for a moment; the note before it
+     * stops. Resolves true once it sounds on the clock, and false when it
+     * cannot: no clock, the editor gone, the sound not loaded, or a stop
+     * asked for since.
+     */
+    play(pitch: number, velocity: number): Promise<boolean> {
+      const asked = stops
+      return load()
         .then((sounds) => {
-          if (disposed) return
+          if (disposed || asked !== stops) return false
           const playing = voice(sounds)
-          if (playing === null) return
+          if (playing === null) return false
           const now = playing.context.currentTime
           if (last !== null) playing.sound.voice.stop(last, now, 0.5)
           count += 1
           last = `audition-${count}`
           playing.sound.voice.start(last, pitch, velocity, now, 0)
           playing.sound.voice.stop(last, now + NOTE_AUDITION_SECONDS, 0.5)
+          return true
         })
-        .catch(() => undefined)
+        .catch(() => false)
+    },
+    /** The note sounding stops now, and a note still loading never starts: a finger's press on a key that turned into a pan. */
+    stop(): void {
+      stops += 1
+      if (attached !== null && last !== null)
+        attached.sound.voice.stop(last, attached.context.currentTime, 0.5)
+      last = null
     },
     dispose(): void {
       disposed = true

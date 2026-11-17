@@ -7,8 +7,10 @@
 // part. The grid's lines come from the song's bars over the sequence
 // (rollGridLines): bars always, beats and sixteenths where they have room.
 // Past the clip's window the grid and the velocity lane are dimmed, and the
-// window's end is a line in the lane's colour under the End handle.
+// window's end is a line in the lane's colour under the End handle. A key
+// a press sounds is lit on the overlay while it sounds (drawRollLitKey).
 import { rowHeight } from '@/lib/roll-geometry'
+import { studioRollRow } from '@/lib/studio/midi/roll-keyboard'
 import type { StudioNote } from '@/lib/studio/model/types'
 import { studioNoteName } from './note-names'
 import type { RollContext, StudioRollDraft, StudioRollInput, StudioRollRect, } from './note-roll-geometry'
@@ -160,6 +162,27 @@ export function drawRollVelocities(
   smallCaps(context, input, 'Velocity', regions.velocityLabel, 'top')
 }
 
+/** A C's name on its key, in the key's label colour or `ink`. */
+function keyLabel(
+  context: RollContext,
+  input: StudioRollInput,
+  row: number,
+  ink: string,
+): void {
+  const height = rowHeight(input.viewport)
+  if (row % 12 !== 0 || height < 9) return
+  const { keys } = studioRollRegions(input)
+  context.font = `600 ${Math.min(10, height - 2)}px ${input.theme.font}`
+  context.fillStyle = ink
+  context.textAlign = 'right'
+  context.textBaseline = 'middle'
+  context.fillText(
+    studioNoteName(row),
+    keys.x + keys.width - 6,
+    rowTop(input, row) + height / 2 + 0.5,
+  )
+}
+
 function drawPianoKey(
   context: RollContext,
   input: StudioRollInput,
@@ -182,16 +205,7 @@ function drawPianoKey(
     return
   }
   fillBox(context, theme.keyLine, { ...keys, y: y + height - 1, height: 1 })
-  if (row % 12 !== 0 || height < 9) return
-  context.font = `600 ${Math.min(10, height - 2)}px ${theme.font}`
-  context.fillStyle = theme.keyLabel
-  context.textAlign = 'right'
-  context.textBaseline = 'middle'
-  context.fillText(
-    studioNoteName(row),
-    keys.x + keys.width - 6,
-    y + height / 2 + 0.5,
-  )
+  keyLabel(context, input, row, theme.keyLabel)
 }
 
 /** A drum row's name, cut to fit the column. */
@@ -231,6 +245,50 @@ function drawKitRow(
     keys.x + 10,
     y + height / 2 + 0.5,
   )
+}
+
+/**
+ * The key a press on the column sounds, lit while it sounds: a piano's
+ * key in the lane's colour, a white key's name kept on it, or a kit's row
+ * washed in it and marked at its edge; and its row across the grid,
+ * faintly, so the eye finds where it plays.
+ */
+export function drawRollLitKey(
+  context: RollContext,
+  input: StudioRollInput,
+): void {
+  const key = input.litKey
+  const row =
+    key === undefined || key === null ? null : studioRollRow(input.rows, key)
+  if (row === null) return
+  const { keys, grid } = studioRollRegions(input)
+  const { theme } = input
+  const y = rowTop(input, row)
+  const height = rowHeight(input.viewport)
+  context.save()
+  clipTo(context, { x: 0, y: keys.y, width: input.width, height: keys.height })
+  context.globalAlpha = 0.1
+  fillBox(context, theme.note, { ...grid, y, height })
+  context.globalAlpha = 1
+  if (input.rows.kind === 'drums') {
+    context.globalAlpha = 0.3
+    fillBox(context, theme.note, { ...keys, y, height })
+    context.globalAlpha = 1
+    fillBox(context, theme.note, { x: keys.x, y, width: 3, height })
+  } else if (isBlackKey(row)) {
+    context.beginPath()
+    roundBox(
+      context,
+      { x: keys.x, y: y + 1, width: keys.width * 0.6, height: height - 2 },
+      3,
+    )
+    context.fillStyle = theme.note
+    context.fill()
+  } else {
+    fillBox(context, theme.note, { ...keys, y, height: height - 1 })
+    keyLabel(context, input, row, theme.noteText)
+  }
+  context.restore()
 }
 
 /** The column left of the grid: a piano's keys with each C named, or a kit's rows by name. */

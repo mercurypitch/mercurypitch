@@ -150,7 +150,7 @@ export function useStudioNoteEditing(options: StudioNoteEditingOptions) {
           )
         break
       case 'audition':
-        options.audition?.play(effect.pitch, effect.velocity)
+        void options.audition?.play(effect.pitch, effect.velocity)
         break
       case 'viewport':
         roll()?.setViewport(effect.viewport)

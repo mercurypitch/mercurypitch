@@ -475,6 +475,7 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
             color={color()}
             transport={props.transport}
             seek={props.seek}
+            audition={audition}
             editing={editor.editing}
             end={{
               snap: () => editor.snap(),
