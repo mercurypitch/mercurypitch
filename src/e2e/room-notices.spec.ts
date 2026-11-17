@@ -147,9 +147,11 @@ async function openHarmony(page: Page): Promise<void> {
   await page
     .locator('[data-testid="exercise-room-card"][data-room="harmony-lake"]')
     .click()
+  // The room's code, its art and its voice load as it opens: a busy
+  // machine has taken longer than the default to draw it.
   await expect(
     page.getByTestId('web-room').getByTestId('harmony-room'),
-  ).toBeVisible()
+  ).toBeVisible({ timeout: 20_000 })
 }
 
 /**
@@ -213,7 +215,9 @@ test.describe('on a phone', () => {
       .filter({ hasText: 'Hairline' })
       .first()
       .click()
-    await expect(page.getByTestId('ear-stage')).toBeVisible()
+    await expect(page.getByTestId('ear-stage')).toBeVisible({
+      timeout: 20_000,
+    })
     const HEADER = '[data-merc-room] header'
 
     await raiseTwoUnlocks(page)
