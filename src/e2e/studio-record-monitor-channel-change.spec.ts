@@ -69,8 +69,10 @@ test.describe('Studio monitoring, a channel changed', () => {
       })}`,
     )
     expect(steady).toBeGreaterThan(1e-3)
-    // The lane hears Input 2 now: twice Input 1's level.
-    expect(peak(after) / peak(heard)).toBeGreaterThan(1.6)
+    // The lane hears Input 2 now, 6 dB up on Input 1, and its compressor
+    // (2:1 above Input 1's level) passes about half of that, 3 dB, as
+    // playback's does.
+    expect(peak(after) / peak(heard)).toBeGreaterThan(1.3)
     expect(peak(after) / peak(heard)).toBeLessThan(2.4)
     // The source flows already: Input 2 rises at once, from silence, with
     // nothing steeper than the louder side's own tone.

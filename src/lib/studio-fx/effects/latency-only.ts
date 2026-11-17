@@ -12,7 +12,8 @@
 // lookahead of its own, so a following one is a plain wire.
 //
 // A monitored input (fx-profile.ts `zeroLatency`) keeps not even the
-// lookahead: every lookahead dynamics effect is a plain wire there.
+// lookahead: a de-esser or a dynamic EQ is a plain wire there, and so is a
+// compressor until its worklet has loaded (effects/compressor.ts).
 import type { EffectSpec } from '@/lib/studio-fx/chain-spec'
 import { createCompressorTwin, settleCompressorTwins, } from '@/lib/studio-fx/compressor-twin'
 import type { EffectEnv, EffectUnit } from '@/lib/studio-fx/effect-shell'

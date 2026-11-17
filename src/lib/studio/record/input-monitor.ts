@@ -17,9 +17,10 @@
 //
 // The effects and the master run at the monitor's profile (fx-profile.ts
 // MONITOR_FX_PROFILE), in which nothing delays the signal: the singer hears
-// no later through them than without them. The compressor, de-esser and
-// dynamic EQ sit out, a limiter plays its ceiling without its lookahead,
-// and everything else plays.
+// no later through them than without them. A compressor plays without its
+// lookahead (effects/compressor.ts), the de-esser and dynamic EQ sit out, a
+// limiter plays its ceiling without its lookahead, and everything else
+// plays.
 //
 // Each armed lane has a monitor of its own on its own input (lane-arms.ts),
 // so a lane is heard once, and lanes armed on one input are heard together,

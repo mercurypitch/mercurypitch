@@ -160,7 +160,7 @@ describe('the input monitor', () => {
     expect(feedingDestination(ctx)).toHaveLength(1)
   })
 
-  it('runs the chain at the monitor profile, so the compressor sits out', () => {
+  it('runs the chain at the monitor profile, so no DynamicsCompressorNode delays it', () => {
     const { ctx, monitor } = setup()
 
     monitor.set(sound())

@@ -2,15 +2,17 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { EffectSpec } from '@/lib/studio-fx/chain-spec'
 import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import { compressorAutoMakeupGain } from '@/lib/studio-fx/compressor-curve'
+import { COMPRESSOR_PARAMETERS, STUDIO_COMPRESSOR_DISPOSE, STUDIO_COMPRESSOR_PROCESSOR, } from '@/lib/studio-fx/compressor-kernel'
 import { measureCompressorLatency, resetCompressorLatencyForTests, } from '@/lib/studio-fx/compressor-twin'
 import { EFFECT_KINDS } from '@/lib/studio-fx/effect-definitions'
 import type { EffectEnv } from '@/lib/studio-fx/effect-shell'
 import { FAST_SETTLE_SECONDS } from '@/lib/studio-fx/effect-shell'
-import type { FakeBiquad, FakeCompressor, FakeConvolver, FakeDelay, FakeGain, FakeIir, FakeNode, FakeShaper, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
-import { createManualScheduler, FakeAudioContext, fakeImpulseRenderContext, fakeShaperRenderContext, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import type { FakeBiquad, FakeCompressor, FakeConvolver, FakeDelay, FakeGain, FakeIir, FakeNode, FakeShaper, FakeWorkletNode, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import { createManualScheduler, FakeAudioContext, fakeAudioWorklet, fakeImpulseRenderContext, fakeShaperRenderContext, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import type { StudioFxProfile } from '@/lib/studio-fx/fx-profile'
 import { FULL_FX_PROFILE, MONITOR_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
 import { measureShaperDelays, resetShaperDelaysForTests, } from '@/lib/studio-fx/shaper-delay'
+import { prepareZeroLatencyCompressor } from '@/lib/studio-fx/zero-latency-compressor'
 import { createEffectUnit } from './index'
 
 function spec(
@@ -336,7 +338,7 @@ describe('effects on a monitored input', () => {
   }
 
   it.each(['compressor', 'deesser', 'dyneq'])(
-    '%s passes the input straight through: one gain at unity, no lookahead, no cut',
+    '%s passes the input straight through until the compressor worklet has loaded: one gain at unity, no lookahead, no cut',
     (kind) => {
       const { ctx, unit } = monitored(kind)
       expect(unit.input).toBe(unit.output)
@@ -347,6 +349,109 @@ describe('effects on a monitored input', () => {
       expect(ctx.created[0].disconnectAllCount).toBe(1)
     },
   )
+
+  describe('once the compressor worklet has loaded', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    const loaded = async (
+      kind: string,
+      params: Record<string, number> = {},
+    ) => {
+      const { ctx, env } = setup(false)
+      fakeAudioWorklet(ctx, {
+        [STUDIO_COMPRESSOR_PROCESSOR]: COMPRESSOR_PARAMETERS,
+      })
+      await prepareZeroLatencyCompressor(ctx.asContext)
+      const unit = createEffectUnit(ctx.asContext, spec(kind, params), {
+        ...env,
+        profile: MONITOR_FX_PROFILE,
+      })
+      const worklets = ctx.ofType<FakeWorkletNode>('worklet')
+      return { ctx, unit, worklets }
+    }
+
+    const VOICE = {
+      thresholdDb: -20,
+      kneeDb: 6,
+      ratio: 2,
+      attackMs: 15,
+      releaseMs: 180,
+      makeupDb: 1.5,
+    }
+
+    /** Each of the worklet's parameters, as the last write left it. */
+    const settings = (worklet: FakeWorkletNode) =>
+      ['threshold', 'knee', 'ratio', 'attack', 'release'].map(
+        (name) => worklet.parameters.get(name)?.destination,
+      )
+
+    it('compresses on the worklet at its own settings and makeup, with nothing that delays', async () => {
+      const { ctx, unit, worklets } = await loaded('compressor', VOICE)
+
+      expect(worklets.map((worklet) => worklet.processor)).toEqual([
+        STUDIO_COMPRESSOR_PROCESSOR,
+      ])
+      const [worklet] = worklets
+      expect(settings(worklet)).toEqual([-20, 6, 2, 0.015, 0.18])
+      // The worklet adds no makeup of its own, so none is divided out.
+      const after = ctx
+        .ofType<FakeGain>('gain')
+        .filter((gain) => worklet.targets.includes(gain))
+      expect(after).toHaveLength(1)
+      expect(after[0].gain.destination).toBeCloseTo(10 ** (1.5 / 20), 12)
+      expect(
+        reaches(unit.input as unknown as FakeNode, worklet) &&
+          reaches(worklet, unit.output as unknown as FakeNode),
+      ).toBe(true)
+      expect(ctx.ofType<FakeCompressor>('compressor')).toEqual([])
+      expect(ctx.ofType<FakeDelay>('delay')).toEqual([])
+    })
+
+    it('mixes in its unprocessed input by the linear law, straight from its input', async () => {
+      const { ctx, unit, worklets } = await loaded('compressor', { mix: 30 })
+
+      const gains = shellGains(ctx, unit.output as unknown as FakeNode)
+      const [dry] = gains.filter((gain) => !reaches(worklets[0], gain))
+      const [wet] = gains.filter((gain) => reaches(worklets[0], gain))
+      expect(dry.gain.destination).toBeCloseTo(0.7, 12)
+      expect(wet.gain.destination).toBeCloseTo(0.3, 12)
+      expect((unit.input as unknown as FakeNode).targets).toContain(dry)
+    })
+
+    it('glides the worklet to new settings while it plays', async () => {
+      const { ctx, unit, worklets } = await loaded('compressor', VOICE)
+      ctx.state = 'running'
+
+      unit.setParams({ ...VOICE, thresholdDb: -30, ratio: 4 })
+
+      const [worklet] = worklets
+      expect(settings(worklet)).toEqual([-30, 6, 4, 0.015, 0.18])
+      expect(worklet.parameters.get('threshold')?.lastWrite?.kind).toBe(
+        'target',
+      )
+    })
+
+    it('tells its processor it is done when the unit is disposed, and takes the node out', async () => {
+      const { unit, worklets } = await loaded('compressor')
+
+      unit.dispose()
+
+      const [worklet] = worklets
+      expect(worklet.posted).toEqual([STUDIO_COMPRESSOR_DISPOSE])
+      expect(worklet.connections).toEqual([])
+    })
+
+    it.each(['deesser', 'dyneq'])(
+      '%s still passes the input straight through',
+      async (kind) => {
+        const { ctx, unit, worklets } = await loaded(kind)
+
+        expect(unit.input).toBe(unit.output)
+        expect(worklets).toEqual([])
+        expect(ctx.ofType<FakeCompressor>('compressor')).toEqual([])
+      },
+    )
+  })
 
   it('runs saturation and air without oversampling or a make-up delay, once 4x is measured late', async () => {
     await measureShaperDelays(

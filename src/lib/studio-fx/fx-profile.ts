@@ -47,11 +47,15 @@ export interface StudioFxProfile {
   readonly lite: readonly StudioLiteEffect[]
   /**
    * No effect delays the signal: shapers run without oversampling and make
-   * up nothing, the transient shaper looks no way ahead, and the lookahead
-   * dynamics (LOOKAHEAD_DYNAMICS) pass the signal through untouched, since
-   * a DynamicsCompressorNode cannot run without its lookahead. A limiter
-   * keeps its input gain and its ceiling, as a soft clip with nothing
-   * ahead of it (effects/limiter.ts). Only the monitor's profile sets it.
+   * up nothing, the transient shaper looks no way ahead, and no
+   * DynamicsCompressorNode runs: the compressor, de-esser, dynamic EQ and
+   * limiter are built on one, and it runs late by its lookahead (288 frames
+   * at 48 kHz in Chromium 148), which no setting of the node takes away.
+   * A compressor runs the node's own processing with no lookahead on a
+   * worklet (zero-latency-compressor.ts); the de-esser and the dynamic EQ
+   * pass the signal through untouched; a limiter keeps its input gain and
+   * its ceiling, as a soft clip with nothing ahead of it
+   * (effects/limiter.ts). Only the monitor's profile sets it.
    */
   readonly zeroLatency?: true
 }
@@ -65,26 +69,14 @@ export const FULL_FX_PROFILE: StudioFxProfile = {
 }
 
 /**
- * The effects built on a DynamicsCompressorNode: each runs late by its
- * lookahead (288 frames at 48 kHz in Chromium 148), which no setting of
- * the node takes away.
- */
-export const LOOKAHEAD_DYNAMICS = [
-  'compressor',
-  'deesser',
-  'dyneq',
-  'limiter',
-] as const
-
-/**
  * The armed lane's chain while its input is monitored, and the master it
  * plays through: every effect that adds no delay sounds as it does in
  * playback (EQ, tilt, gain, stereo, delay, reverb), saturation and the
  * exciter without their oversampling, the transient shaper without its
- * 3 ms lookahead, a limiter as its input gain and ceiling alone, and the
- * compressor, de-esser and dynamic EQ not at all. Measured in Chromium 148
- * at 48 kHz, the lookahead dynamics would add 6 ms each (the limiter 10),
- * and a voice lane's chain 22 ms in all.
+ * 3 ms lookahead, a compressor without its 6 ms lookahead, a limiter as
+ * its input gain and ceiling alone, and the de-esser and dynamic EQ not at
+ * all. Measured in Chromium 148 at 48 kHz, the lookahead dynamics would
+ * add 6 ms each (the limiter 10), and a voice lane's chain 22 ms in all.
  */
 export const MONITOR_FX_PROFILE: StudioFxProfile = {
   id: 'monitor',
@@ -131,17 +123,16 @@ export function keepsOnlyLatency(
 
 /**
  * Whether `profile` passes the signal straight through an effect of `kind`:
- * a lookahead dynamics effect while monitoring, all but the limiter, whose
- * ceiling plays without its lookahead (effects/limiter.ts).
+ * the de-esser and the dynamic EQ while monitoring. The compressor plays
+ * there with no lookahead (effects/compressor.ts), and the limiter its
+ * ceiling (effects/limiter.ts).
  */
 export function passesStraightThrough(
   profile: StudioFxProfile | undefined,
   kind: string,
 ): boolean {
   return (
-    profile?.zeroLatency === true &&
-    kind !== 'limiter' &&
-    LOOKAHEAD_DYNAMICS.some((dynamics) => dynamics === kind)
+    profile?.zeroLatency === true && (kind === 'deesser' || kind === 'dyneq')
   )
 }
 

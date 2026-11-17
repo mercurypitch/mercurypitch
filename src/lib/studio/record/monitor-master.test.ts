@@ -1,9 +1,11 @@
-// Studio monitor master — every monitored path reaches the speakers through one stage, built from the master spec at the monitor profile (no compressor, nothing oversampled or delayed, the ceiling a soft clip, the loudness and safety gains at the measured gain), gliding to a new gain as playback's master does, built for the first path and taken apart after the last.
-import { describe, expect, it } from 'vitest'
+// Studio monitor master — every monitored path reaches the speakers through one stage, built from the master spec at the monitor profile (no DynamicsCompressorNode, the glue compressor on the monitor's worklet once loaded, nothing oversampled or delayed, the ceiling a soft clip, the loudness and safety gains at the measured gain), gliding to a new gain as playback's master does, built for the first path and taken apart after the last.
+import { afterEach, describe, expect, it, vi } from 'vitest'
+import { COMPRESSOR_PARAMETERS, STUDIO_COMPRESSOR_PROCESSOR, } from '@/lib/studio-fx/compressor-kernel'
 import { dbToGain } from '@/lib/studio-fx/dsp'
-import type { FakeDelay, FakeGain, FakeShaper, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
-import { FakeAudioContext, FakeNode, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import type { FakeDelay, FakeGain, FakeShaper, FakeWorkletNode, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
+import { FakeAudioContext, fakeAudioWorklet, FakeNode, reaches, } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { masterChain } from '@/lib/studio-fx/master'
+import { prepareZeroLatencyCompressor } from '@/lib/studio-fx/zero-latency-compressor'
 import { createStudioMonitorMaster } from './monitor-master'
 
 /** A monitor path's end: what the stage hears from it. */
@@ -44,7 +46,7 @@ describe('the monitor master', () => {
     expect(reaches(second.level, speakers)).toBe(true)
   })
 
-  it('is the master spec at the monitor profile: no compressor, nothing oversampled or delayed, the ceiling a soft clip, the loudness and safety gains as measured', () => {
+  it('is the master spec at the monitor profile: no DynamicsCompressorNode, nothing oversampled or delayed, the ceiling a soft clip, the loudness and safety gains as measured', () => {
     const ctx = new FakeAudioContext()
     const master = createStudioMonitorMaster(
       masterChain({ gainDb: 6, safetyGainDb: -2, ceilingDb: -1.5 }),
@@ -69,6 +71,37 @@ describe('the monitor master', () => {
     expect(gainsAt(ctx, dbToGain(6))).toHaveLength(1)
     expect(gainsAt(ctx, dbToGain(-2))).toHaveLength(1)
     expect(ctx.ofType('biquad').length).toBeGreaterThan(0)
+  })
+
+  describe('once the compressor worklet has loaded', () => {
+    afterEach(() => vi.unstubAllGlobals())
+
+    it('plays the glue compressor on it, at its settings, between the trace saturation and the ceiling', async () => {
+      const ctx = new FakeAudioContext()
+      fakeAudioWorklet(ctx, {
+        [STUDIO_COMPRESSOR_PROCESSOR]: COMPRESSOR_PARAMETERS,
+      })
+      await prepareZeroLatencyCompressor(ctx.asContext)
+      const master = createStudioMonitorMaster(masterChain({ gainDb: 6 }))
+
+      const { level } = pathInto(ctx, master)
+
+      expect(ctx.ofType('compressor')).toEqual([])
+      const worklets = ctx.ofType<FakeWorkletNode>('worklet')
+      expect(worklets).toHaveLength(1)
+      const [glue] = worklets
+      expect(
+        ['threshold', 'ratio', 'knee'].map(
+          (name) => glue.parameters.get(name)?.value,
+        ),
+      ).toEqual([-12, 1.35, 5])
+      const shapers = ctx.ofType<FakeShaper>('shaper')
+      const [trace, softClip] = [shapers[0], shapers.at(-1)!]
+      expect(reaches(level, glue)).toBe(true)
+      expect(reaches(trace, glue)).toBe(true)
+      expect(reaches(glue, softClip)).toBe(true)
+      expect(reaches(softClip, glue)).toBe(false)
+    })
   })
 
   it("glides a stage to a new gain as playback's master does, and builds the next stage at it", () => {
