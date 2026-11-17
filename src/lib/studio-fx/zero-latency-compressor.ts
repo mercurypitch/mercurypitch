@@ -19,7 +19,12 @@
 //
 // A worklet runs on after it is disconnected, for as long as its process()
 // says it has work; `dispose` tells it it has none.
-import workletUrl from '@/workers/studio-compressor.worklet.ts?worker&url'
+//
+// The worklet's URL is imported only when a context loads it. Every browser
+// spec loads in plain Node with what it imports from src/
+// (scripts/playwright-list.test.mjs), and effects/compressor.ts is on that
+// path: a static `?worker&url` import there pulls the worklet itself into
+// Node, which cannot load it, and the whole browser suite fails to list.
 import { STUDIO_COMPRESSOR_DISPOSE, STUDIO_COMPRESSOR_PROCESSOR, } from './compressor-kernel'
 
 const loading = new WeakMap<BaseAudioContext, Promise<boolean>>()
@@ -47,8 +52,9 @@ export function prepareZeroLatencyCompressor(
     return Promise.resolve(false)
   let pending = loading.get(context)
   if (pending === undefined) {
-    pending = context.audioWorklet
-      .addModule(workletUrl)
+    const { audioWorklet } = context
+    pending = import('@/workers/studio-compressor.worklet.ts?worker&url')
+      .then(({ default: workletUrl }) => audioWorklet.addModule(workletUrl))
       .then(() => {
         ready.add(context)
         return true
