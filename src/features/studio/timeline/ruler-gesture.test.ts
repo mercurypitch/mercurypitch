@@ -1,4 +1,4 @@
-// Studio ruler gesture tests — a click seeks, a drag past the slop draws the range, the playhead's handle scrubs, and a second finger lets go.
+// Studio ruler gesture tests — a click seeks, a drag past the slop draws the range, the playhead's handle scrubs, and a second finger lets go; a ruler with no range to draw, the note roll's, scrubs on a drag instead and takes Shift as a plain press.
 import { createRoot } from 'solid-js'
 import { describe, expect, it, vi } from 'vitest'
 import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
@@ -28,6 +28,8 @@ function setup(
     /** What a finished draw sets: the drawn range, or null when too short. */
     drawn?: StudioFrameRange | null
     locked?: boolean
+    /** No range to draw, and a drag scrubs: the note roll's ruler. */
+    scrubs?: boolean
   } = {},
 ) {
   const seek = vi.fn()
@@ -48,7 +50,8 @@ function setup(
         seek(frame)
         if (options.playing !== true) playhead = frame
       },
-      draw,
+      draw: options.scrubs === true ? null : draw,
+      dragScrubs: options.scrubs,
     }),
   )
   return { gesture, seek, draw }
@@ -190,5 +193,56 @@ describe("the playhead's handle", () => {
     gesture.release(pointer(100))
 
     expect(seek).not.toHaveBeenCalled()
+  })
+})
+
+describe('a ruler with no range to draw, whose drag scrubs', () => {
+  it('seeks where a click landed once it is let go, playing or not', () => {
+    for (const playing of [false, true]) {
+      const { gesture, seek } = setup({ playing, scrubs: true })
+
+      gesture.press(pointer(40), false)
+      gesture.release(pointer(42))
+
+      expect(seek).toHaveBeenCalledExactlyOnceWith(40_000)
+    }
+  })
+
+  it('takes a stopped song to the pointer once a drag passes the slop, and follows it', () => {
+    const { gesture, seek, draw } = setup({ scrubs: true, playhead: 0 })
+
+    gesture.press(pointer(40), false)
+    gesture.move(pointer(42))
+    expect(seek).not.toHaveBeenCalled()
+    gesture.move(pointer(40 + STUDIO_RULER_SLOP_PX))
+    expect(seek).toHaveBeenLastCalledWith(44_000)
+    gesture.move(pointer(90))
+    gesture.release(pointer(90))
+
+    expect(seek).toHaveBeenLastCalledWith(90_000)
+    expect(gesture.scrubFrame()).toBeNull()
+    expect(draw.start).not.toHaveBeenCalled()
+  })
+
+  it('moves a playing song once, where the drag ends', () => {
+    const { gesture, seek } = setup({ scrubs: true, playing: true })
+
+    gesture.press(pointer(40), false)
+    gesture.move(pointer(60))
+    gesture.move(pointer(120))
+    expect(gesture.scrubFrame()).toBe(120_000)
+    expect(seek).not.toHaveBeenCalled()
+    gesture.release(pointer(120))
+
+    expect(seek).toHaveBeenCalledExactlyOnceWith(120_000)
+  })
+
+  it('takes Shift as a plain press, there being no range to draw', () => {
+    const { gesture, seek } = setup({ scrubs: true })
+
+    gesture.press(pointer(40, { shiftKey: true }), false)
+    gesture.release(pointer(40, { shiftKey: true }))
+
+    expect(seek).toHaveBeenCalledExactlyOnceWith(40_000)
   })
 })

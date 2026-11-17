@@ -62,6 +62,8 @@ export interface StudioNoteEditorProps {
   tablet: boolean
   /** The transport, and its clock for the notes the editor sounds. */
   transport: StudioNoteRollTransport & Partial<StudioNoteAuditionClock>
+  /** Move the song's position, as the lanes' ruler does: the roll's ruler seeks with it. */
+  seek?(frame: number): void
   /** The Studio's commands: each edit is one, and one undo step. */
   dispatch(command: StudioCommand): boolean
   /** Whether the song can be edited now. */
@@ -472,6 +474,7 @@ export function StudioNoteEditor(props: StudioNoteEditorProps) {
             compact={props.phone}
             color={color()}
             transport={props.transport}
+            seek={props.seek}
             editing={editor.editing}
             end={{
               snap: () => editor.snap(),

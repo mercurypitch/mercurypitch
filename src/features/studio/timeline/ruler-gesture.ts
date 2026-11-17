@@ -16,6 +16,11 @@
 // seeks and draws nothing. So does a drag while a take runs, which holds the
 // range still (take-running.ts); a click still seeks, which stops the take,
 // as every seek does.
+//
+// A ruler with no range to draw, the note roll's (note-roll-ruler.ts), can
+// ask a drag to scrub instead (`dragScrubs`): past the slop the playhead
+// goes to the pointer and follows it, by the handle's rules, and Shift
+// draws nothing there.
 import type { Accessor } from 'solid-js'
 import { createSignal } from 'solid-js'
 import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
@@ -60,6 +65,8 @@ export function createStudioRulerGesture(options: {
   seek(frame: number): void
   /** The range's drawing; without one, a drag draws nothing. */
   draw: StudioRulerDraw | null
+  /** With no range to draw, a drag past the slop scrubs from the pointer, as the handle does; without, it holds and does nothing. */
+  dragScrubs?: boolean
 }) {
   const [scrubFrame, setScrubFrame] = createSignal<number | null>(null)
   let gesture: Gesture | null = null
@@ -85,6 +92,33 @@ export function createStudioRulerGesture(options: {
       : { kind: 'held', pointerId }
   }
 
+  /** The playhead under a scrub: followed by a stopped song, kept for the release by a playing one. */
+  function scrubTo(scrub: Extract<Gesture, { kind: 'scrub' }>, frame: number) {
+    scrub.moved = true
+    setScrubFrame(frame)
+    if (!options.playing()) options.seek(frame)
+  }
+
+  /** A press past the slop: a range drawn from where it landed, or a scrub from the pointer where there is no range to draw. */
+  function dragFrom(
+    press: Extract<Gesture, { kind: 'press' }>,
+    event: StudioRulerPointer,
+  ): void {
+    if (options.draw === null && options.dragScrubs === true) {
+      const scrub = {
+        kind: 'scrub' as const,
+        pointerId: press.pointerId,
+        offset: 0,
+        moved: false,
+      }
+      gesture = scrub
+      scrubTo(scrub, Math.max(0, options.frameAt(event)))
+      return
+    }
+    gesture = startRange(press.pointerId, press.frame, true)
+    if (gesture.kind === 'range') options.draw?.move(event)
+  }
+
   return {
     /** Where a dragged playhead stands, or null while none is dragged. */
     scrubFrame: scrubFrame as Accessor<number | null>,
@@ -107,7 +141,8 @@ export function createStudioRulerGesture(options: {
           moved: false,
         }
         setScrubFrame(playhead)
-      } else if (event.shiftKey) gesture = startRange(pointerId, frame, false)
+      } else if (event.shiftKey && options.draw !== null)
+        gesture = startRange(pointerId, frame, false)
       else {
         const slop = studioRulerSlop(event.pointerType)
         gesture = { kind: 'press', pointerId, x: event.clientX, frame, slop }
@@ -117,16 +152,11 @@ export function createStudioRulerGesture(options: {
       const current = gesture
       if (current === null || event.pointerId !== current.pointerId) return
       if (current.kind === 'press') {
-        if (Math.abs(event.clientX - current.x) < current.slop) return
-        gesture = startRange(current.pointerId, current.frame, true)
-        if (gesture.kind === 'range') options.draw?.move(event)
+        if (Math.abs(event.clientX - current.x) >= current.slop)
+          dragFrom(current, event)
       } else if (current.kind === 'range') options.draw?.move(event)
-      else if (current.kind === 'scrub') {
-        const frame = Math.max(0, options.frameAt(event) - current.offset)
-        current.moved = true
-        setScrubFrame(frame)
-        if (!options.playing()) options.seek(frame)
-      }
+      else if (current.kind === 'scrub')
+        scrubTo(current, Math.max(0, options.frameAt(event) - current.offset))
     },
     release(event: StudioRulerPointer): void {
       const current = gesture
