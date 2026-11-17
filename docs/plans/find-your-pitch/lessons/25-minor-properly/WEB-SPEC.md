@@ -695,7 +695,7 @@ owner's.
   A learner who loads a song between setting the key and opening Sight-Singing gets that song's key
   and scale on the grid Sight-Singing writes from (`_alignScaleToMelody`,
   `src/stores/melody-store.ts:950-961`). The library window sets the key menu with it
-  (`src/components/LibraryModal.tsx:259-267`), but the sidebar's library list does not
+  (`src/components/LibraryModal.tsx:245-253`), but the sidebar's library list does not
   (`src/components/LibraryTab.tsx:220`), and then Sight-Singing still prints "Key: A harmonic-minor"
   over notes from another key (`src/features/exercises/sight-singing/SightSingingExercise.tsx:276-278` at `bcd86153b`).
   The card says to go straight to Exercises, and app-check confirms the route on both layouts before

@@ -12,6 +12,7 @@
 import type { Component, JSX } from 'solid-js'
 import { createEffect, createSignal, onCleanup, onMount, Show } from 'solid-js'
 import { Music } from '@/components/icons'
+import { keyDisplayName } from '@/lib/key-names'
 import { midiToFreq, midiToNote } from '@/lib/scale-data'
 import { ensureSheetMusicFonts } from '@/lib/sheet-music-fonts'
 import type { SheetLayout, SheetSystemBox } from '@/lib/sheet-music-renderer'
@@ -78,6 +79,9 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
   const [renderError, setRenderError] = createSignal<string | null>(null)
   const [fontsReady, setFontsReady] = createSignal(false)
   const editable = (): boolean => typeof props.onMelodyChange === 'function'
+  /** The key in words, its sign a real one: "B♭ natural minor". */
+  const keyWords = (): string =>
+    `${keyDisplayName(props.musicKey())} ${props.scaleType().replaceAll('-', ' ')}`
   // Scrub mode turns the editable score into a transport surface (click a
   // bar to jump, drag to scrub) without leaving the view. Only meaningful
   // when editing is available — read-only instances already seek.
@@ -427,10 +431,7 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
             <Music />
           </span>
           <span>
-            <span class={styles.kicker}>
-              Live score · {props.musicKey()}{' '}
-              {props.scaleType().replaceAll('-', ' ')}
-            </span>
+            <span class={styles.kicker}>Live score · {keyWords()}</span>
             <strong
               class={styles.scoreTitle}
               classList={{
@@ -439,8 +440,7 @@ export const SheetMusicView: Component<SheetMusicViewProps> = (props) => {
               title={props.melodyName?.() ?? undefined}
               data-testid="sheet-melody-name"
             >
-              {props.melodyName?.() ??
-                `${props.musicKey()} ${props.scaleType().replaceAll('-', ' ')}`}
+              {props.melodyName?.() ?? keyWords()}
             </strong>
           </span>
         </div>

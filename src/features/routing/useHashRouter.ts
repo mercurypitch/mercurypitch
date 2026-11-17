@@ -16,11 +16,12 @@ import { batch, createEffect, createSignal, onCleanup, onMount } from 'solid-js'
 import type { UvrView } from '@/components/UvrPanel'
 import { setSharedRunRequest, sharedRunRequest, } from '@/features/community/shared-run-link'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_JAM, TAB_KARAOKE, TAB_SETTINGS, } from '@/features/tabs/constants'
+import { TAB_COMMUNITY, TAB_COMPOSE, TAB_EXERCISES, TAB_JAM, TAB_KARAOKE, TAB_SETTINGS, TAB_SINGING, } from '@/features/tabs/constants'
 import type { HashRoute } from '@/lib/hash-router'
 import { buildHash, parseHash, pushHash, replaceHash } from '@/lib/hash-router'
 import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
+import { openSingingSheet } from '@/stores/singing-sheet-store'
 import { setSyncCodeToJoin } from '@/stores/sync-store'
 import type { AdminSection, SettingsSection } from '@/stores/ui-store'
 import { setCreditCostGuideRequested, setDeviceLinkCode, } from '@/stores/ui-store'
@@ -191,6 +192,7 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
 
   const routeDestinationTab = (route: HashRoute): ActiveTab | null => {
     if (route.type === 'tab') return route.tab
+    if (route.type === 'singing-sheet') return TAB_SINGING
     if (
       route.type === 'shared-result' ||
       (route.type === 'share-fallback' && route.shareType === 'session')
@@ -263,6 +265,14 @@ export function useHashRouter(deps: UseHashRouterDeps): void {
     } else if (route.type === 'tab') {
       deps.setActiveTab(route.tab)
       deps.setActiveUvrSessionId(null)
+    } else if (route.type === 'singing-sheet') {
+      deps.setActiveTab(TAB_SINGING)
+      deps.setActiveUvrSessionId(null)
+      openSingingSheet(route.key, route.scale)
+      // One-shot, like the cost guide below: the entry keeps the bare tab,
+      // so a reload or a Back to it is a plain visit to Singing, in the
+      // view and the key the singer has by then.
+      replaceHash({ type: 'tab', tab: TAB_SINGING })
     } else if (route.type === 'uvr-upload') {
       deps.setActiveTab(TAB_KARAOKE)
       deps.setInitialUvrView('upload')

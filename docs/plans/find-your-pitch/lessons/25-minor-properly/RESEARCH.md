@@ -135,7 +135,7 @@ Chromatic when this was read (`src/features/exercises/scale-runner/scale-runner-
 and `minor` maps to `natural-minor` (`src/lib/scale-data.ts:449-472`). Harmonic and melodic minor
 there shipped on 15 November 2026 (SEASON-2 § 5 item 13), melodic coming down as the natural minor
 (`src/features/exercises/scale-runner/scale-runner-scales.ts:53-69`). The sheet view gives a minor scale its relative major's signature
-(`src/lib/sheet-music-renderer.ts:157-169`: "Minor scales inherit the signature of their relative
+(`src/lib/sheet-music-renderer.ts:114-121`: "Minor scales inherit the signature of their relative
 major"), which matches R6. `?lesson=25` is not read (`src/lib/lesson-marker.ts:11-19`). Read: code.
 
 **R12. The AP reports.** pedagogy-research.md:677 lists the raised leading tone in minor among

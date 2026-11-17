@@ -36,7 +36,8 @@ export function releaseLine(version: string): string | null {
 /**
  * Routes that mean "somebody sent me here for THIS" — a shared song, a
  * scanned code, a password reset, one chapter of the guide, the plan, a
- * return from Stripe checkout. Arriving on one is a request for that thing,
+ * return from Stripe checkout, the Singing tab's sheet in a key a lesson
+ * names. Arriving on one is a request for that thing,
  * and opening a release page over it is the same rudeness whatever the page
  * says. The same list holds back the opening takeover (the plan's), which a
  * visit gets one of: a second layer over #/plan, or a sheet over the page a
@@ -67,6 +68,7 @@ export const DEEP_LINK_ROUTE_TYPES: readonly string[] = [
   'billing-return',
   'voice-constellation',
   'admin',
+  'singing-sheet',
 ]
 
 /**

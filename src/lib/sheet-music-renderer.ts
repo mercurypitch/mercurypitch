@@ -9,6 +9,8 @@
 // ============================================================
 
 import { Accidental, Barline, Beam, Dot, Formatter, Renderer, Stave, StaveNote, StaveTie, Voice, } from 'vexflow'
+import type { KeySpelledPitch } from '@/lib/key-names'
+import { keySpelling, signatureKeyFor } from '@/lib/key-names'
 import { KEY_SIGNATURES } from '@/lib/scale-data'
 import type { MelodyItem } from '@/types'
 
@@ -79,93 +81,43 @@ export function notationDurationBeats(code: string, dots: number): number {
 }
 
 // ---------------------------------------------------------------------------
-// MIDI → VexFlow key (key-aware sharp/flat spelling)
+// MIDI → VexFlow key, spelled by the key
 // ---------------------------------------------------------------------------
 
-const SHARP_NAMES = [
-  'c',
-  'c#',
-  'd',
-  'd#',
-  'e',
-  'f',
-  'f#',
-  'g',
-  'g#',
-  'a',
-  'a#',
-  'b',
-]
-const FLAT_NAMES = [
-  'c',
-  'db',
-  'd',
-  'eb',
-  'e',
-  'f',
-  'gb',
-  'g',
-  'ab',
-  'a',
-  'bb',
-  'b',
-]
+const SIGNS: Readonly<Record<number, string>> = {
+  [-2]: 'bb',
+  [-1]: 'b',
+  0: '',
+  1: '#',
+  2: '##',
+}
 
-/** VexFlow note key ("g#/4") spelled with flats or sharps per the key. */
-function midiToVFKey(midi: number, useFlats: boolean): string {
+/**
+ * VexFlow note key ("e#/4") as the key writes that pitch (`keySpelling`,
+ * key-names.ts). The octave is the written letter's: B sharp sounding as C4
+ * is "b#/3".
+ */
+function midiToVFKey(
+  midi: number,
+  spelling: readonly KeySpelledPitch[],
+): string {
   const rounded = Math.round(midi)
-  const pc = ((rounded % 12) + 12) % 12
-  const octave = Math.floor(rounded / 12) - 1
-  const name = (useFlats ? FLAT_NAMES : SHARP_NAMES)[pc]
-  return `${name}/${octave}`
+  const { letter, alter } = spelling[((rounded % 12) + 12) % 12]
+  const octave = Math.floor((rounded - alter) / 12) - 1
+  return `${letter.toLowerCase()}${SIGNS[alter] ?? ''}/${octave}`
 }
 
 // ---------------------------------------------------------------------------
 // Key signature (reuses scale-data's KEY_SIGNATURES)
 // ---------------------------------------------------------------------------
 
-const RELATIVE_MAJOR: Record<string, string> = {
-  A: 'C',
-  E: 'G',
-  B: 'D',
-  'F#': 'A',
-  'C#': 'E',
-  'G#': 'B',
-  D: 'F',
-  G: 'Bb',
-  C: 'Eb',
-  F: 'Ab',
-  Bb: 'Db',
-  Eb: 'Gb',
-}
-
-const ENHARMONIC_MAJOR: Record<string, string> = {
-  'A#': 'Bb',
-  'D#': 'Eb',
-  'G#': 'Ab',
-  'C#': 'Db',
-  Cb: 'B',
-  'B#': 'C',
-}
-
-function normalizeKeyName(key: string): string {
-  const ascii = key.trim().replace('♯', '#').replace('♭', 'b')
-  if (ascii.length === 0) return 'C'
-  return ascii.charAt(0).toUpperCase() + ascii.slice(1).toLowerCase()
-}
-
 /**
- * Return the actual VexFlow key name, not a string of accidental glyphs.
+ * Return the actual VexFlow key name, not a string of accidental glyphs: one
+ * of the twelve major keys' (key-names.ts), whatever name the key came by.
  * Minor scales inherit the signature of their relative major.
  */
 export function notationKeySignature(key: string, scaleType: string): string {
-  const normalized = normalizeKeyName(key)
-  const isMinor = scaleType.toLowerCase().includes('minor')
-  const relative = isMinor
-    ? (RELATIVE_MAJOR[normalized] ?? normalized)
-    : normalized
-  const signature = ENHARMONIC_MAJOR[relative] ?? relative
-  return KEY_SIGNATURES[signature] === undefined ? 'C' : signature
+  return signatureKeyFor(key, scaleType)
 }
 
 // ---------------------------------------------------------------------------
@@ -431,14 +383,14 @@ export const DEFAULT_SHEET_MUSIC_PALETTE: Readonly<SheetMusicPalette> = {
 function makeStaveNote(
   cell: Cell,
   clef: 'treble' | 'bass',
-  useFlats: boolean,
+  spelling: readonly KeySpelledPitch[],
 ): StaveNote {
   const dur = `${cell.code}${cell.dots > 0 ? 'd'.repeat(cell.dots) : ''}`
   const note =
     cell.midis === null
       ? new StaveNote({ type: 'r', duration: dur, keys: ['b/4'] })
       : new StaveNote({
-          keys: cell.midis.map((midi) => midiToVFKey(midi, useFlats)),
+          keys: cell.midis.map((midi) => midiToVFKey(midi, spelling)),
           duration: dur,
           clef,
           autoStem: true,
@@ -491,7 +443,7 @@ export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
 
   const clef = chooseClef(melody.map((m) => m.note.midi))
   const keySig = notationKeySignature(key, scaleType)
-  const useFlats = (KEY_SIGNATURES[keySig]?.flats ?? 0) > 0
+  const spelling = keySpelling(key, scaleType)
 
   const { measures, totalBeats } = melodyToMeasures(melody, beatsPerBar)
   if (!measures.length) {
@@ -586,7 +538,7 @@ export function renderSheetMusic(input: SheetMusicRenderInput): SheetLayout {
       stave.setContext(ctx)
 
       const measureBeats = cells.reduce((a, c) => a + c.beats, 0)
-      const notes = cells.map((c) => makeStaveNote(c, clef, useFlats))
+      const notes = cells.map((c) => makeStaveNote(c, clef, spelling))
 
       const voice = new Voice({
         numBeats: Math.max(1, Math.round(measureBeats)),

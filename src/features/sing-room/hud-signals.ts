@@ -17,6 +17,7 @@
 // tune. `centsToNearestScaleNote` is that second measurement, and the room
 // feeds it to the take summary rather than the chip.
 
+import { keyDisplayName } from '@/lib/key-names'
 import { freqToMidi, midiToFreq } from '@/lib/scale-data'
 import type { PitchResult } from '@/types'
 
@@ -74,9 +75,9 @@ export function noteChipSignal(pitch: PitchResult | null): NoteChipSignal {
   }
 }
 
-/** `C major` / `A natural minor` — the key chip's whole text. */
+/** `C major` / `B♭ natural minor` — the key chip's whole text. */
 export function keyChipLabel(keyName: string, scaleType: string): string {
-  return `${keyName} ${scaleType.replace(/-/gu, ' ')}`
+  return `${keyDisplayName(keyName)} ${scaleType.replace(/-/gu, ' ')}`
 }
 
 export type MicChipState = 'listening' | 'muted' | 'paused' | 'off'

@@ -401,6 +401,7 @@ import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
 import { CHARACTER_INFO, fontFamily, practiceScope, selectedCharacter, showHistoryPanel, showPracticeResultPopup, swipeNavEnabled, uiMode, VOCAL_RANGES, vocalRangePreset, } from '@/stores/settings-store'
+import { takeAddressedSheetKey } from '@/stores/singing-sheet-store'
 import { authModalMode, challengeStageLaunch, closeChallengeStage, closeSingingZen, openAuthModal, openSettingsSection, openSingingZen, setSingingSheetView, settingsSection, singingSheetView, singingZenLaunch, startEarDrill, triggerTargetFocus, } from '@/stores/ui-store'
 import { completionCount, recordActivity, startUsageTracking, usageMs, } from '@/stores/usage-store'
 import { uvrUploadQueue } from '@/stores/uvr-upload-queue-store'
@@ -2815,6 +2816,9 @@ const AppShell: Component<AppProps> = (props) => {
         if (m == null) return
         if (m.key !== '') setKeyName(m.key)
         if (m.scaleType !== '') setScaleType(m.scaleType)
+        // A sheet address read while the page booted named its key before
+        // this first melody's own was mirrored: it is set now, over it.
+        takeAddressedSheetKey()
       },
     ),
   )

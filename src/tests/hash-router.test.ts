@@ -474,6 +474,63 @@ describe('parseHash', () => {
   })
 })
 
+// ── The Singing tab's sheet address ────────────────────────────
+
+describe('the sheet address', () => {
+  it('reads #/singing/sheet as the sheet, naming no key', () => {
+    expect(parseHash('#/singing/sheet')).toEqual({
+      type: 'singing-sheet',
+      key: null,
+      scale: null,
+    })
+  })
+
+  it("hands on the key and the scale in the address's own words", () => {
+    expect(parseHash('#/singing/sheet?key=Bb')).toEqual({
+      type: 'singing-sheet',
+      key: 'Bb',
+      scale: null,
+    })
+    expect(parseHash('#/singing/sheet?key=A&scale=harmonic-minor')).toEqual({
+      type: 'singing-sheet',
+      key: 'A',
+      scale: 'harmonic-minor',
+    })
+  })
+
+  it('reads a sharp written bare, escaped, or with its real sign', () => {
+    const key = (hash: string): unknown => {
+      const route = parseHash(hash)
+      return route.type === 'singing-sheet' ? route.key : route.type
+    }
+    expect(key('#/singing/sheet?key=F#')).toBe('F#')
+    expect(key('#/singing/sheet?key=F%23')).toBe('F#')
+    expect(key('#/singing/sheet?key=B%E2%99%AD')).toBe('B♭')
+  })
+
+  it("is not the Singing tab's own address, nor any other tab's sheet", () => {
+    expect(parseHash('#/singing')).toEqual({ type: 'tab', tab: TAB_SINGING })
+    expect(parseHash('#/compose/sheet')).toEqual({ type: 'unknown' })
+    expect(parseHash('#/singing/sheets')).toEqual({ type: 'unknown' })
+  })
+
+  it('writes back an address that reads as the same route', () => {
+    for (const route of [
+      { type: 'singing-sheet', key: null, scale: null },
+      { type: 'singing-sheet', key: 'G', scale: null },
+      { type: 'singing-sheet', key: 'F#', scale: 'melodic-minor' },
+    ] as const) {
+      expect(parseHash(`#${buildHash(route)}`)).toEqual(route)
+    }
+    expect(buildHash({ type: 'singing-sheet', key: null, scale: null })).toBe(
+      '/singing/sheet',
+    )
+    expect(buildHash({ type: 'singing-sheet', key: 'Bb', scale: null })).toBe(
+      '/singing/sheet?key=Bb',
+    )
+  })
+})
+
 // ── buildHash ──────────────────────────────────────────────────
 
 describe('buildHash', () => {
