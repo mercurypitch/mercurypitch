@@ -171,12 +171,12 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'How do singers sing a fast run without the notes smudging together?',
     pr: {
       needs:
-        "Scale Runner's Pentatonic by launch, and a drill that sings a run continuously",
+        'A drill that sings a run continuously and reads it note by note, which no plan has yet (SEASON-2 § 5.3)',
       link: {
-        href: '/pitch-training?lesson=20',
-        addr: 'mercurypitch.com/pitch-training',
-        label: 'Exercises',
-        note: 'then tap Scale Runner',
+        href: '/exercises/pentatonic-run?lesson=20',
+        addr: 'mercurypitch.com/exercises/pentatonic-run',
+        label: 'Scale Runner',
+        note: 'the pentatonic',
       },
     },
   },
@@ -257,13 +257,11 @@ const ENTRIES_2: readonly Lesson[] = [
     page: '/learn/24',
     hook: 'Hold a note against a drone: how can you hear when the two are in tune?',
     pr: {
-      needs:
-        'The fifth, third and octave slug and a pure-tuning option (SEASON-2 § 5.2 item 15); a drone with harmonics',
       link: {
-        href: '/exercises/thirds-on-a-drone?lesson=24',
-        addr: 'mercurypitch.com/exercises/thirds-on-a-drone',
+        href: '/exercises/harmony-on-a-drone?lesson=24',
+        addr: 'mercurypitch.com/exercises/harmony-on-a-drone',
         label: 'Drone Intonation',
-        note: 'the two thirds',
+        note: 'the fifth, major third and octave, in pure tuning',
       },
     },
   },
@@ -280,12 +278,12 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Why does a minor key often raise one note just before it comes home?',
     pr: {
       needs:
-        "A practice card for Gravity on Te and Ti, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/te-or-ti); Scale Runner's harmonic and melodic minor; a practice card for Sight-Singing in A harmonic minor, which shipped on 16 November 2026 (mercurypitch.com/exercises/sight-sing-harmonic-minor)",
+        "Scale Runner's harmonic and melodic minor runs (mercurypitch.com/exercises/harmonic-minor-run, melodic-minor-run) are not linked: a card for them could take Sight-Singing's place, with its care lines and the vocal coach's look",
       link: {
-        href: '/ear-lab?lesson=25',
-        addr: 'mercurypitch.com/ear-lab',
-        label: 'Ear Lab',
-        note: 'then tap Gravity',
+        href: '/exercises/te-or-ti?lesson=25',
+        addr: 'mercurypitch.com/exercises/te-or-ti',
+        label: 'Gravity',
+        note: 'Te and Ti',
       },
     },
   },
@@ -324,12 +322,12 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Add one note to the V chord and it pulls towards home. Which note, and why?',
     pr: {
       needs:
-        'Chord Stacker opening on the dominant seventh, with triads and inversions (today it shuffles maj7, min7, dom7, dim7 and maj6); a practice card for Stack on major against dominant seventh, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/major-or-dominant-seventh)',
+        'An address that opens Chord Stacker on the dominant seventh and its inversions, one registry line (SEASON-2 § 5.2 item 18); its card links the triads in root position meanwhile',
       link: {
-        href: '/pitch-training?lesson=27',
-        addr: 'mercurypitch.com/pitch-training',
-        label: 'Exercises',
-        note: 'then tap Chord Stacker',
+        href: '/exercises/triads?lesson=27',
+        addr: 'mercurypitch.com/exercises/triads',
+        label: 'Chord Stacker',
+        note: 'the four triads',
       },
     },
   },

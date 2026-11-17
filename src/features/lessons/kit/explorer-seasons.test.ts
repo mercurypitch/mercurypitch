@@ -305,7 +305,7 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/pitch-training?lesson=20"]'),
+      card?.querySelector('a.addr[href="/exercises/pentatonic-run?lesson=20"]'),
     ).not.toBeNull()
   })
 
@@ -500,7 +500,7 @@ describe('the explorer, a tab per season', () => {
     ).toEqual(['#top'])
     expect(
       card?.querySelector(
-        'a.addr[href="/exercises/thirds-on-a-drone?lesson=24"]',
+        'a.addr[href="/exercises/harmony-on-a-drone?lesson=24"]',
       ),
     ).not.toBeNull()
   })
@@ -529,7 +529,7 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/ear-lab?lesson=25"]'),
+      card?.querySelector('a.addr[href="/exercises/te-or-ti?lesson=25"]'),
     ).not.toBeNull()
   })
 
@@ -583,7 +583,7 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/pitch-training?lesson=27"]'),
+      card?.querySelector('a.addr[href="/exercises/triads?lesson=27"]'),
     ).not.toBeNull()
   })
 

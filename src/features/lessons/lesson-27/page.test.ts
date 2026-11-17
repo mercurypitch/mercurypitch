@@ -527,10 +527,10 @@ describe("Lesson 27's page", () => {
     // Assert: Chord Stacker and Ear Lab's Stack, on the card and in the
     // footer (WEB-SPEC, Practice links)
     expect(links.map((a) => a.getAttribute('href'))).toEqual([
-      '/pitch-training?lesson=27',
-      '/ear-lab?lesson=27',
-      '/pitch-training?lesson=27',
-      '/ear-lab?lesson=27',
+      '/exercises/triads?lesson=27',
+      '/exercises/major-or-dominant-seventh?lesson=27',
+      '/exercises/triads?lesson=27',
+      '/exercises/major-or-dominant-seventh?lesson=27',
     ])
     for (const a of links) {
       expect([a.target, a.rel]).toEqual(['_blank', 'noopener'])
@@ -550,17 +550,19 @@ describe("Lesson 27's page", () => {
     expect(words(card?.querySelector('h3'))).toBe('Chord Stacker')
     expect(rest?.hasAttribute('hidden')).toBe(true)
     expect(words(rest)).toBe(
-      'Rest today. Chord Stacker will be here when your voice feels comfortable: mercurypitch.com/pitch-training, then tap Chord Stacker.',
+      'Rest today. Chord Stacker will be here when your voice feels comfortable: mercurypitch.com/exercises/triads',
     )
     expect(rest?.querySelector('a')).toBeNull()
     expect(drill?.hasAttribute('hidden')).toBe(false)
     expect(
-      drill?.querySelector('a[href="/pitch-training?lesson=27"]'),
+      drill?.querySelector('a[href="/exercises/triads?lesson=27"]'),
     ).not.toBeNull()
     // Stack asks for no voice: its link stays in every ending
     expect(
       card
-        ?.querySelector('a[href="/ear-lab?lesson=27"]')
+        ?.querySelector(
+          'a[href="/exercises/major-or-dominant-seventh?lesson=27"]',
+        )
         ?.closest('[data-ending]'),
     ).toBeNull()
   })

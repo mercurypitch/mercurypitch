@@ -530,10 +530,10 @@ describe("Lesson 20's page", () => {
     const card = d.getElementById('practiseCard')
     const second = card?.querySelector('.second-drill')
 
-    // Assert: LESSON.md, Wrap; FACTS 69 and 72
+    // Assert: LESSON.md, Wrap; FACTS 69, 69a and 72
     expect(words(card?.querySelector('h3'))).toBe('Scale Runner')
     expect(words(card?.querySelector('[data-ending="rest"]'))).toBe(
-      'Rest today. Scale Runner will be here when your voice feels comfortable: mercurypitch.com/pitch-training, then tap Scale Runner.',
+      'Rest today. Scale Runner will be here when your voice feels comfortable: mercurypitch.com/exercises/pentatonic-run',
     )
     expect(card?.querySelectorAll('[data-ending="rest"] a')).toHaveLength(0)
     expect(second?.closest('[data-ending]')?.getAttribute('data-ending')).toBe(
@@ -547,8 +547,9 @@ describe("Lesson 20's page", () => {
         a.getAttribute('href'),
       ),
     ).toEqual([
+      '/exercises/pentatonic-run?lesson=20',
       '/pitch-training?lesson=20',
-      '/pitch-training?lesson=20',
+      '/exercises/pentatonic-run?lesson=20',
       '/pitch-training?lesson=20',
     ])
     expect(PAGE).not.toContain('/exercises/speed-scales')

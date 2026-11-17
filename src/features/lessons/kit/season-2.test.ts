@@ -237,7 +237,7 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[23]).toEqual([6])
   })
 
-  it("gives Lesson 20 its page and its reading time, a draft with no film, and the Exercises' link", () => {
+  it("gives Lesson 20 its page and its reading time, a draft with no film, and Scale Runner's link", () => {
     // Act
     const L20 = LESSONS_2.find((L) => L.n === 20)
 
@@ -254,13 +254,13 @@ describe('Season 2', () => {
       "Lessons 5, 9 and 10's pages, and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
     )
     expect(L20?.pr.link).toEqual({
-      href: '/pitch-training?lesson=20',
-      addr: 'mercurypitch.com/pitch-training',
-      label: 'Exercises',
-      note: 'then tap Scale Runner',
+      href: '/exercises/pentatonic-run?lesson=20',
+      addr: 'mercurypitch.com/exercises/pentatonic-run',
+      label: 'Scale Runner',
+      note: 'the pentatonic',
     })
-    // the drill it still needs stays the team's
-    expect(L20?.pr.needs).toMatch(/^Scale Runner's Pentatonic by launch/)
+    // the drill it still needs, which no plan has, stays the team's
+    expect(L20?.pr.needs).toMatch(/^A drill that sings a run continuously/)
     // Lesson 5's steady note, Lesson 9's leaps and Lesson 10's minor
     expect(SEASON_2.prereq[20]).toEqual([5, 9, 10])
   })
@@ -312,18 +312,18 @@ describe('Season 2', () => {
       "the lab's two tests (its WEB-SPEC, What the kit and the app still need, item 7), and the vocal coach's sign-off (MASTER-PLAN § 12 item 8)",
     )
     expect(L24?.pr.link).toEqual({
-      href: '/exercises/thirds-on-a-drone?lesson=24',
-      addr: 'mercurypitch.com/exercises/thirds-on-a-drone',
+      href: '/exercises/harmony-on-a-drone?lesson=24',
+      addr: 'mercurypitch.com/exercises/harmony-on-a-drone',
       label: 'Drone Intonation',
-      note: 'the two thirds',
+      note: 'the fifth, major third and octave, in pure tuning',
     })
-    // the drill it still needs stays the team's
-    expect(L24?.pr.needs).toMatch(/^The fifth, third and octave slug/)
+    // the slug and the tuning it waited for have shipped, and its card links them
+    expect(L24?.pr.needs).toBeUndefined()
     // Lessons 5 and 10 from Season 1, and Lesson 23
     expect(SEASON_2.prereq[24]).toEqual([5, 10, 23])
   })
 
-  it("gives Lesson 25 its page and its reading time, a draft with no film, and the Ear Lab's link", () => {
+  it("gives Lesson 25 its page and its reading time, a draft with no film, and Gravity's link", () => {
     // Act
     const L25 = LESSONS_2.find((L) => L.n === 25)
 
@@ -341,14 +341,14 @@ describe('Season 2', () => {
       "Lessons 10, 21 and 23's pages at /learn/10, /learn/21 and /learn/23, and the vocal coach's look at the sung checkpoint and the sung drill",
     )
     expect(L25?.pr.link).toEqual({
-      href: '/ear-lab?lesson=25',
-      addr: 'mercurypitch.com/ear-lab',
-      label: 'Ear Lab',
-      note: 'then tap Gravity',
+      href: '/exercises/te-or-ti?lesson=25',
+      addr: 'mercurypitch.com/exercises/te-or-ti',
+      label: 'Gravity',
+      note: 'Te and Ti',
     })
-    // the drills it still needs stay the team's
+    // the Scale Runner card it may still have stays the team's
     expect(L25?.pr.needs).toMatch(
-      /^A practice card for Gravity on Te and Ti, .*\/exercises\/te-or-ti\);/,
+      /^Scale Runner's harmonic and melodic minor runs .* are not linked/,
     )
     // Lesson 10 from Season 1, and Lessons 21 and 23
     expect(SEASON_2.prereq[25]).toEqual([10, 21, 23])
@@ -384,7 +384,7 @@ describe('Season 2', () => {
     expect(SEASON_2.prereq[26]).toEqual([12, 24])
   })
 
-  it('gives Lesson 27 its page and its reading time, a draft with no film, and the Exercises link to Chord Stacker', () => {
+  it("gives Lesson 27 its page and its reading time, a draft with no film, and Chord Stacker's link", () => {
     // Act
     const L27 = LESSONS_2.find((L) => L.n === 27)
 
@@ -402,18 +402,17 @@ describe('Season 2', () => {
       "Lessons 12 and 23's pages at /learn/12 and /learn/23, and the vocal coach's look at the sung checkpoint and the sung drill",
     )
     expect(L27?.pr.link).toEqual({
-      href: '/pitch-training?lesson=27',
-      addr: 'mercurypitch.com/pitch-training',
-      label: 'Exercises',
-      note: 'then tap Chord Stacker',
+      href: '/exercises/triads?lesson=27',
+      addr: 'mercurypitch.com/exercises/triads',
+      label: 'Chord Stacker',
+      note: 'the four triads',
     })
-    // the drills it still needs stay the team's
+    // the address it still needs stays the team's: triads and inversions
+    // have shipped, and so has Stack's set
     expect(L27?.pr.needs).toMatch(
-      /^Chord Stacker opening on the dominant seventh/,
+      /^An address that opens Chord Stacker on the dominant seventh and its inversions/,
     )
-    expect(L27?.pr.needs).toMatch(
-      /a practice card for Stack on major against dominant seventh, .*\/exercises\/major-or-dominant-seventh\)$/,
-    )
+    expect(L27?.pr.needs).not.toMatch(/today it shuffles|a practice card for Stack/)
     // Lesson 12 from Season 1, and Lesson 23
     expect(SEASON_2.prereq[27]).toEqual([12, 23])
   })

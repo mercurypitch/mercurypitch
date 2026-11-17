@@ -403,10 +403,10 @@ describe("Lesson 24's page", () => {
         card?.querySelectorAll('[data-ending="practise"] a') ?? [],
         (a) => a.getAttribute('href'),
       ),
-    ).toEqual(['/exercises/thirds-on-a-drone?lesson=24'])
+    ).toEqual(['/exercises/harmony-on-a-drone?lesson=24'])
     expect(card?.querySelectorAll('[data-ending="rest"] a')).toHaveLength(0)
     expect(words(card?.querySelector('[data-ending="rest"]'))).toBe(
-      'Rest today. Drone Intonation will be here when your voice feels comfortable: mercurypitch.com/exercises/thirds-on-a-drone',
+      'Rest today. Drone Intonation will be here when your voice feels comfortable: mercurypitch.com/exercises/harmony-on-a-drone',
     )
     // Beat Hunt asks for no voice, so it stays on both versions
     expect(card?.querySelector('.second-drill a')?.getAttribute('href')).toBe(
@@ -417,9 +417,9 @@ describe("Lesson 24's page", () => {
         a.getAttribute('href'),
       ),
     ).toEqual([
-      '/exercises/thirds-on-a-drone?lesson=24',
+      '/exercises/harmony-on-a-drone?lesson=24',
       '/ear-lab?lesson=24',
-      '/exercises/thirds-on-a-drone?lesson=24',
+      '/exercises/harmony-on-a-drone?lesson=24',
       '/ear-lab?lesson=24',
     ])
   })

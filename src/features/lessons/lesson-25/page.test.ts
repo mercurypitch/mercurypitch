@@ -459,13 +459,13 @@ describe("Lesson 25's page", () => {
       doc().querySelectorAll<HTMLAnchorElement>('a[href*="lesson="]'),
     )
 
-    // Assert: Ear Lab's Gravity and the Singing tab, on the card and in the
-    // footer (WEB-SPEC, Practice links)
+    // Assert: Gravity on Te and Ti, and Sight-Singing in A harmonic minor, on
+    // the card and in the footer (WEB-SPEC, Practice links)
     expect(links.map((a) => a.getAttribute('href'))).toEqual([
-      '/ear-lab?lesson=25',
-      '/?lesson=25#/singing',
-      '/ear-lab?lesson=25',
-      '/?lesson=25#/singing',
+      '/exercises/te-or-ti?lesson=25',
+      '/exercises/sight-sing-harmonic-minor?lesson=25',
+      '/exercises/te-or-ti?lesson=25',
+      '/exercises/sight-sing-harmonic-minor?lesson=25',
     ])
     for (const a of links) {
       expect([a.target, a.rel]).toEqual(['_blank', 'noopener'])
@@ -485,16 +485,18 @@ describe("Lesson 25's page", () => {
     expect(words(card?.querySelector('h3'))).toBe("Ear Lab's Gravity")
     expect(rest?.hasAttribute('hidden')).toBe(true)
     expect(words(rest)).toBe(
-      'Rest today. Sight-Singing will be here when your voice feels comfortable: mercurypitch.com/#/singing, set to A and Harmonic Minor.',
+      'Rest today. Sight-Singing will be here when your voice feels comfortable: mercurypitch.com/exercises/sight-sing-harmonic-minor',
     )
     expect(drill?.hasAttribute('hidden')).toBe(false)
     expect(
-      drill?.querySelector('a[href="/?lesson=25#/singing"]'),
+      drill?.querySelector(
+        'a[href="/exercises/sight-sing-harmonic-minor?lesson=25"]',
+      ),
     ).not.toBeNull()
     // Gravity's own link stays in every ending
     expect(
       card
-        ?.querySelector('a[href="/ear-lab?lesson=25"]')
+        ?.querySelector('a[href="/exercises/te-or-ti?lesson=25"]')
         ?.closest('[data-ending]'),
     ).toBeNull()
   })

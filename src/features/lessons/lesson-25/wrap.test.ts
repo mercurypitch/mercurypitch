@@ -67,7 +67,7 @@ describe('the practice card', () => {
     expect(rested).toEqual([false, true, "Ear Lab's Gravity"])
     expect([restLine().hidden, secondDrill().hidden]).toEqual([true, false])
     expect(words(restLine())).toBe(
-      'Rest today. Sight-Singing will be here when your voice feels comfortable: mercurypitch.com/#/singing, set to A and Harmonic Minor.',
+      'Rest today. Sight-Singing will be here when your voice feels comfortable: mercurypitch.com/exercises/sight-sing-harmonic-minor',
     )
   })
 })
