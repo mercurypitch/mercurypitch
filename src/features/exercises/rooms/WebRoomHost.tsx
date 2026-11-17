@@ -13,12 +13,17 @@
 //     into (`registerPushedBarEnd`);
 //   - a way out: Back, Escape, and the room's own Done.
 //
+// One room can open another over itself: the Warm-up's path opens each
+// stop's room, as the native shell pushes it over the path. The bar then
+// names the room on top, and Back, Escape and that room's own end close it
+// alone, back to the path; from the path they leave.
+//
 // Portalled to the body: a `position: fixed` box inside a transformed
 // ancestor is fixed to that ancestor and not to the window, and the app's
 // panels are free to animate.
 
 import type { JSX } from 'solid-js'
-import { onCleanup, onMount, Show, Suspense } from 'solid-js'
+import { createEffect, createSignal, on, onCleanup, onMount, Show, Suspense, } from 'solid-js'
 import { Dynamic, Portal } from 'solid-js/web'
 import '@/styles/dark-stage.css'
 import { ChevronLeft } from '@/components/icons'
@@ -33,6 +38,8 @@ export interface WebRoomHostProps {
   id: WebRoomId
   /** The singer leaves: Back, Escape, or the room's own Done. */
   onBack: () => void
+  /** The singer leaves for a song: "Sing a song", at the Warm-up's end. */
+  onSong: () => void
 }
 
 /** On the page while a room is open, so the page under it does not scroll. */
@@ -40,11 +47,20 @@ const OPEN_CLASS = 'web-room-open'
 
 export default function WebRoomHost(props: WebRoomHostProps): JSX.Element {
   let title: HTMLHeadingElement | undefined
+  /** A room opened over this one: a Warm-up stop over its path. */
+  const [over, setOver] = createSignal<WebRoomId | null>(null)
+  /** The room on top, which the bar names. */
+  const shown = (): WebRoomId => over() ?? props.id
+  /** Back: the room on top closes, back to the one under it, or the singer leaves. */
+  const back = (): void => {
+    if (over() === null) props.onBack()
+    else setOver(null)
+  }
 
   const onKeyDown = (event: KeyboardEvent): void => {
-    // Escape leaves, as Back does. A field of the room's own (Long note's
+    // Escape does what Back does. A field of the room's own (Long note's
     // note picker) takes its Escape first: it stops the key there.
-    if (event.key === 'Escape' && !event.defaultPrevented) props.onBack()
+    if (event.key === 'Escape' && !event.defaultPrevented) back()
   }
 
   onMount(() => {
@@ -60,15 +76,20 @@ export default function WebRoomHost(props: WebRoomHostProps): JSX.Element {
     document.documentElement.classList.remove(OPEN_CLASS)
     document.removeEventListener('keydown', onKeyDown)
   })
+  // A room opened over another, or closed back to it: the focus goes to the
+  // name of the one now on top, as it did on the way in.
+  createEffect(
+    on(over, () => title?.focus({ preventScroll: true }), { defer: true }),
+  )
 
   return (
     <Portal>
       <div
         class={`${styles.host} mp-dark-stage`}
         role="group"
-        aria-label={webRoomName(props.id)}
+        aria-label={webRoomName(shown())}
         data-testid="web-room"
-        data-room={props.id}
+        data-room={shown()}
       >
         <div class={styles.bar}>
           <button
@@ -76,12 +97,12 @@ export default function WebRoomHost(props: WebRoomHostProps): JSX.Element {
             class={styles.back}
             aria-label="Back"
             data-testid="web-room-back"
-            onClick={() => props.onBack()}
+            onClick={back}
           >
             <ChevronLeft />
           </button>
           <h2 ref={title} class={styles.title} tabindex="-1">
-            {webRoomName(props.id)}
+            {webRoomName(shown())}
           </h2>
           <div
             class={styles.end}
@@ -90,7 +111,7 @@ export default function WebRoomHost(props: WebRoomHostProps): JSX.Element {
           />
         </div>
         <div class={styles.body}>
-          <Show when={WEB_ROOM_SCREENS[props.id]}>
+          <Show when={WEB_ROOM_SCREENS[shown()]}>
             {(Screen) => (
               <Suspense
                 fallback={
@@ -99,7 +120,12 @@ export default function WebRoomHost(props: WebRoomHostProps): JSX.Element {
                   </p>
                 }
               >
-                <Dynamic component={Screen()} onDone={() => props.onBack()} />
+                <Dynamic
+                  component={Screen()}
+                  onDone={back}
+                  onOpenRoom={setOver}
+                  onSong={() => props.onSong()}
+                />
               </Suspense>
             )}
           </Show>

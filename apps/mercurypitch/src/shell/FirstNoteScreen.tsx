@@ -45,10 +45,10 @@ import { rememberLastExercise } from '@/features/premium-exercises/last-exercise
 import { canStreamStems, openStemStream, } from '@/features/stem-mixer/stem-stream-source'
 import { createStreamingStemVoice } from '@/features/stem-mixer/streaming-stem-voice'
 import { TAB_KARAOKE } from '@/features/tabs/constants'
+import { warmUpStop } from '@/features/warm-up/warm-up-stop'
 import { EXERCISE_FIRST_NOTE_STAGE } from '@/lib/domain/exercise-contracts'
 import { popScreen } from './run-shell-store'
 import { goToTab } from './shell-navigation'
-import { warmUpStop } from './warm-up-stop'
 
 /** How the Karaoke room streams a stem, for First note's rounds. */
 const KARAOKE_STREAMS: SongStreams = {

@@ -2358,6 +2358,13 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Rule:** to prove what a take keeps, record its source beside the take's own capture (an AudioWorklet on the same `MediaStreamAudioSourceNode`, folded to mono as capture-node.ts folds it) and compare the take with that, converted as take-audio.ts `floatToPcm16` converts. The file fixes what the page hears in kind (a tone's pitch, where bursts and silences fall), never its samples.
 **See:** `src/e2e/studio-record-monitor.spec.ts` (`tapMicrophone`)
 
+### Turn WebGL off to sing an exercise room with a fake microphone
+
+**Symptom:** a headless walk of the Warm-up heard its fake microphone (RMS 0.26 at the room's analyser) and no room ever took the note: each stayed on "Sing any easy note first" until the walk gave up, as if a room were deaf to a fake device.
+**Cause:** a room reads pitch once per animation frame (`createF0Stream`), and taking the singer's note needs twelve voiced frames inside 0.6 s (`settleLiveNote`). Merc is the room's one WebGL canvas, and under software WebGL the page drew 5 frames a second.
+**Rule:** for a walk that must sing, launch Chromium with `--disable-3d-apis` beside the fake-device flags: the room runs without Merc at 60 frames a second, and a steady tone from `--use-file-for-fake-audio-capture` finishes every take. Take the pictures that show Merc in a second pass with WebGL on, and measure the frame rate before blaming the microphone.
+**See:** `src/lib/hold/settle-note.ts`, `src/lib/pitch-f0-stream.ts`, `src/components/room-kit/MercView.tsx`
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes

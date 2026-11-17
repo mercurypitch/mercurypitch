@@ -1,9 +1,9 @@
 # The exercise rooms on the web
 
-**Status:** in progress. Seven rooms open from the web's Exercises tab (15 Nov 2026): Long note,
-Echo, Lip roll, Ng slides, Home note, Leap and Harmony. The web's eighteen own drills run on one
-stage with Merc beside it (15 Nov 2026, "The stage the web's own drills run on"). First note, the
-Warm-up and the new drills follow (see "What follows").
+**Status:** in progress. Eight rooms open from the web's Exercises tab: Long note, Echo, Lip roll,
+Ng slides, Home note, Leap and Harmony (15 Nov 2026), and the Warm-up (16 Nov 2026). The web's
+eighteen own drills run on one stage with Merc beside it (15 Nov 2026, "The stage the web's own
+drills run on"). First note and the new drills follow (see "What follows").
 
 **The owner's decision of 15 Nov 2026**, after the web drills' mock-ups ("Web drills: Season 2
 mock-ups", a design canvas of six boards).
@@ -50,6 +50,28 @@ The native shell gives a room three things, and the web now gives the same three
   rooms.
 - **A lesson's link** can open one: a slug whose exercise is a room. `/exercises/harmony-line`
   opens Harmony, for Lessons 26 and 28.
+- **The Warm-up** (16 Nov 2026) is the room whose stops are four of the others. Its path
+  (`src/features/warm-up/WarmUpPath.tsx`) opens each stop's room over itself in the same frame, as
+  the native shell pushes the room over the path, and the bar names the room on top
+  (`rooms/WebRoomHost.tsx`). A room asks the Warm-up whether it is a stop as it opens
+  (`src/features/warm-up/warm-up-stop.ts`, moved out of the native shell so both builds share it);
+  opened by its own card, it is the room as shipped. The stop's result or its Skip stop brings the
+  path back, which moves on as it does in the native app. Back or Escape leaves a stop unfinished
+  and returns to the path, and from the path leaves the Warm-up; the focus goes to the name of
+  whichever comes up. The web's routine is four rooms and the song (`WEB_ROUTINE`,
+  `src/features/warm-up/warm-up-plan.ts`), so its card says "Four stops, about three minutes, then
+  a song." where the catalogue says five, and the level pill's lines leave First note out. "Sing a
+  song" at the end leaves for Karaoke Night (`/karaoke-night`), the web's stage for singing a
+  song: it opens on a song ready to sing and two more beside a singer's own, as the native Sing
+  room's song list does. The Karaoke tab is the studio, where a song is split into stems, and a
+  singer with none yet met its upload form there (seen on the dev site, 17 Nov 2026); the Singing
+  tab sings a melody's notes with no band (the page answers the path's button,
+  `src/pages/ExercisesPage.tsx`). There is no padlock and no offer: the web's rooms are free. The
+  path's code and art load when its card is pressed, and the stop's hand-over beside a room that
+  can be a stop (`rooms/web-room-screens.tsx`). The Warm-up's id is an exercise type now, as the
+  other rooms' ids are, so every build names it, and the store bundle's check finds the path by
+  another of its test ids (`apps/mercurypitch/scripts/assert-bundle.mjs`;
+  `rooms/web-rooms-fold.test.ts` keeps an id from being one of that check's strings).
 - **The Ear Lab** is Merc's bench on the web too, since 16 Nov 2026 (`EAR_LAB_WITH_MERC`, on in the
   web build): every drill opens in Merc's room, and the bench's Ear rooms row opens Home note, Leap
   and Harmony in the same frame, over the Ear Lab (`src/pages/EarLabPage.tsx`). What changed for
@@ -163,15 +185,15 @@ every run, since the PR gate builds no store bundle; `apps/mercurypitch/scripts/
 asks the bundle itself when one is made.
 
 A room's code, its art and Merc's renderer load when its card is pressed. The service worker
-precaches the rooms' scripts and styles with the rest of the build's (about 600 KB over seven
-rooms and the kit); their paintings and Merc's lines are not precached.
+precaches the rooms' scripts and styles with the rest of the build's (about 650 KB over eight
+rooms and the kit, 56 KB of it the Warm-up's path and its stop hand-over); their paintings and
+Merc's lines are not precached, nor are the path's night and its orbs.
 
 ## Not on the web yet
 
 - **First note.** Its songs are the native Karaoke's, and its stems and theatre art ship from
-  `apps/mercurypitch/native-only`.
-- **The Warm-up.** It opens the other rooms as its stops, through a helper that lives in the native
-  shell (`apps/mercurypitch/src/shell/warm-up-stop.ts`); the web needs the same, shared.
+  `apps/mercurypitch/native-only`. The web's Warm-up runs without it: four stops where the native
+  app's has five.
 - **The browser's own Back.** It leaves the tab, as it does from a drill. A room is a whole screen,
   so Back should close it; that goes through the app's hash router and is its own change.
 - **A layout for a wide window.** The Ear rooms, Long note and Lip roll fill a desktop window
@@ -180,7 +202,7 @@ rooms and the kit); their paintings and Merc's lines are not precached.
 
 ## What follows
 
-1. First note and the Warm-up on the web.
+1. First note on the web.
 2. Season 2's drills are on the stage (the vocal booth, a glass sheet holding the drill's one
    figure, Merc beside it): note reading as Read the Note, cadence types as Name the Cadence and
    sight-singing in time as Sing It in Time (`docs/plans/find-your-pitch/SEASON-2.md` § 5.2 items

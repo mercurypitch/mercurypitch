@@ -18,12 +18,14 @@
 // song (owner, 3 Nov 2026), coming in on a song's first note from its band
 // alone, the last thing before singing one. planWarmUp is where a later
 // planner can vary it by day, level or history, deterministic per day as
-// the web's buildDailySession is; today it returns the owner's routine.
-// A day's plan is stored whole with its run (routine.ts), so a later
-// build that plans differently never reorders a run in progress.
+// the web's buildDailySession is; today it returns the owner's routine,
+// and on the web the owner's without First note (WEB_ROUTINE). A day's
+// plan is stored whole with its run (routine.ts), so a later build that
+// plans differently never reorders a run in progress.
 
 import type { PremiumExerciseId } from '@/lib/domain/exercise-contracts'
 import { EXERCISE_ECHO_STARS, EXERCISE_FIRST_NOTE_STAGE, EXERCISE_LIP_ROLL_BAY, EXERCISE_LONG_NOTE_LANTERN, EXERCISE_NG_SLIDES_BRIDGE, } from '@/lib/domain/exercise-contracts'
+import { WEB_ROOMS } from '@/lib/native-build'
 
 /** The rooms that can run as a stop: the five with a warm-up mode. */
 export type WarmUpRoomId = Extract<
@@ -86,9 +88,25 @@ export const OWNER_ROUTINE: WarmUpPlan = {
   ],
 }
 
-/** The day's plan. The seam a planner by day, level or history fills. */
+/**
+ * The web's routine: the owner's without First note, whose songs are the
+ * native Karaoke's and stay in the native app (docs/plans/web-rooms.md). It
+ * is the owner's routine as it was before First note joined it: four rooms,
+ * then the song.
+ */
+export const WEB_ROUTINE: WarmUpPlan = {
+  id: 'four-rooms-and-a-song',
+  stops: OWNER_ROUTINE.stops.filter(
+    (stop) => stop.kind !== 'room' || stop.id !== EXERCISE_FIRST_NOTE_STAGE,
+  ),
+}
+
+/**
+ * The day's plan: the web's routine in the web build (`WEB_ROOMS`), the
+ * owner's otherwise. The seam a planner by day, level or history fills.
+ */
 export function planWarmUp(): WarmUpPlan {
-  return OWNER_ROUTINE
+  return WEB_ROOMS ? WEB_ROUTINE : OWNER_ROUTINE
 }
 
 export function isRoomStop(stop: WarmUpStop | undefined): stop is RoomStop {

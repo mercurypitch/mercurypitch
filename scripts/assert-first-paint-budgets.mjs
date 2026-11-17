@@ -478,7 +478,13 @@ export const FIRST_PAINT_BUDGETS_KB = {
   // dynamic import is Merc's renderer, as on Lesson 1. A build of this page
   // alone weighs it about 8 lighter, so weigh a new page in build:e2e,
   // where this check runs.
-  'learn/06.html': 156,
+  // Raised to 157 on 16 Nov 2026 for the Warm-up on the web, which changes
+  // nothing on this page: its path is a second lazy chunk that reads Merc's
+  // constants (src/lib/merc/constants.ts), so the bundler cuts them out of
+  // the renderer's chunk into one of their own, and the renderer's import
+  // here names it among its preloads. 159,707 bytes before, 159,788 with
+  // it, against 159,744 at 156.
+  'learn/06.html': 157,
   // Lesson 7, "Slides, sirens and your range", a draft too, built in every
   // mode as Lesson 3 is: its own module on the kit, with the range chart it
   // brings. Measured 129 in build:e2e, with the page state; the budget is a

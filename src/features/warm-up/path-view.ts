@@ -33,7 +33,7 @@ import type { ExerciseLevel } from '@/stores/exercise-level'
 import type { MercSpot } from './path-layout'
 import type { StopMark, WarmUpDay } from './routine'
 import { atEnd, nextStop, tally } from './routine'
-import type { WarmUpRoomId, WarmUpStop } from './warm-up-plan'
+import type { WarmUpPlan, WarmUpRoomId, WarmUpStop } from './warm-up-plan'
 import { isRoomStop } from './warm-up-plan'
 import type { LastMove } from './warm-up-store'
 
@@ -104,6 +104,27 @@ export const WARM_UP_LEVEL_LINES: Readonly<Record<ExerciseLevel, string>> = {
     'Steady waves and slides, a light vibrato on the long note, four notes a phrase in Echo, and the first note by ear.',
   professional:
     'Quick waves and slides with no notes in the breaths, a near-straight long note, five quick notes a phrase in Echo, and no line for the first note until you land.',
+}
+
+/** The same lines for a plan without First note: the web's (WEB_ROUTINE). */
+const LEVEL_LINES_WITHOUT_FIRST_NOTE: Readonly<Record<ExerciseLevel, string>> =
+  {
+    learning:
+      'Slow waves and slides with plenty of room, more room around the long note, and three slow notes a phrase in Echo.',
+    singer:
+      'Steady waves and slides, a light vibrato on the long note, and four notes a phrase in Echo.',
+    professional:
+      'Quick waves and slides with no notes in the breaths, a near-straight long note, and five quick notes a phrase in Echo.',
+  }
+
+/** The level pill's lines for a plan: none speaks of a stop it does not have. */
+export function warmUpLevelLines(
+  plan: WarmUpPlan,
+): Readonly<Record<ExerciseLevel, string>> {
+  const firstNote = plan.stops.some(
+    (stop) => isRoomStop(stop) && stop.id === EXERCISE_FIRST_NOTE_STAGE,
+  )
+  return firstNote ? WARM_UP_LEVEL_LINES : LEVEL_LINES_WITHOUT_FIRST_NOTE
 }
 
 /** "Next: Ng slides" */

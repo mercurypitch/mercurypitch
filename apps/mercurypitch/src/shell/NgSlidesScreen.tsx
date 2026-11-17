@@ -21,9 +21,9 @@ import type { JSX } from 'solid-js'
 import { onMount } from 'solid-js'
 import { NgSlidesRoom } from '@/features/ng-slides/NgSlidesRoom'
 import { rememberLastExercise } from '@/features/premium-exercises/last-exercise'
+import { warmUpStop } from '@/features/warm-up/warm-up-stop'
 import { EXERCISE_NG_SLIDES_BRIDGE } from '@/lib/domain/exercise-contracts'
 import { popScreen } from './run-shell-store'
-import { warmUpStop } from './warm-up-stop'
 
 export function NgSlidesScreen(): JSX.Element {
   // A stop of the Warm-up, or the room on its own (warm-up-stop.ts).

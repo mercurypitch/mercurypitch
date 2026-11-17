@@ -105,9 +105,11 @@ export const EXERCISE_HARMONY_LAKE = 'harmony-lake' as const
 /**
  * The premium Warm-up: the rooms above run one after another, each a stop
  * on a glass path through the night, with the singer's song on top. Not an
- * exercise with a ruler of its own: each stop records in its own room, so
- * it is a premium exercise id (the picker opens it) and never an
- * ExerciseType. The web warm-up is a different routine.
+ * exercise with a ruler of its own: each stop records in its own room. It
+ * is a premium exercise id (the picker opens it), and an ExerciseType only
+ * so that the web's Exercises tab can hold it as its selected exercise, as
+ * it holds the other rooms (exercises/rooms/web-room-ids.ts). The web's
+ * Guided Warmup (EXERCISE_WARMUP) is a different routine.
  */
 export const EXERCISE_WARM_UP_PATH = 'warm-up-path' as const
 
@@ -141,6 +143,7 @@ export type ExerciseType =
   | typeof EXERCISE_FIRST_NOTE_STAGE
   | typeof EXERCISE_LEAP_CLIFFS
   | typeof EXERCISE_HARMONY_LAKE
+  | typeof EXERCISE_WARM_UP_PATH
 
 /**
  * The premium exercises the phone app opens from the Sing screen (Long note,

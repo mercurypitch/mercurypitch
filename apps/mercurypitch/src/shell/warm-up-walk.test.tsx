@@ -21,6 +21,7 @@ import { lastExercise, resetLastExerciseForTests, } from '@/features/premium-exe
 import { TAB_SINGING } from '@/features/tabs/constants'
 import { ACTIONS_MS, END_SONG_MS, END_STEP_MS, } from '@/features/warm-up/path-motion'
 import type { WarmUpRoomId } from '@/features/warm-up/warm-up-plan'
+import { warmUpStop } from '@/features/warm-up/warm-up-stop'
 import { resetWarmUpForTests, warmUpDay, } from '@/features/warm-up/warm-up-store'
 import { PULSE_MS } from '@/features/warm-up/WarmUpPath'
 import { AUTO_CONTINUE_SECONDS } from '@/lib/auto-continue'
@@ -32,7 +33,6 @@ import type { RenderedShell } from './render-for-test'
 import { renderShell } from './render-for-test'
 import { popScreen, pushed, pushScreen, resetRunShell } from './run-shell-store'
 import { ShellScreens } from './ShellScreens'
-import { warmUpStop } from './warm-up-stop'
 import { WarmUpScreen } from './WarmUpScreen'
 
 vi.mock('@irchiinnuss/mobile-runtime/platform', async (importOriginal) => ({

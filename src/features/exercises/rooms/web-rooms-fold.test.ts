@@ -16,14 +16,19 @@
 //   - Every dynamic import of the rooms folder sits in `WEB_ROOMS ? lazy(`,
 //     so it goes with the branch when the constant folds to false.
 //   - The ids' module reaches for nothing but the exercise contracts.
+//   - No exercise's id is one of the strings assert-bundle.mjs refuses in a
+//     store build. The ids are in every build: the page asks whether its
+//     selected exercise is a room, and the drills' tables are keyed by them.
 
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
+import * as contracts from '@/lib/domain/exercise-contracts'
 
 /** Repo-relative: vitest runs from the workspace root. */
 const PAGE = 'src/pages/ExercisesPage.tsx'
 const MENU = 'src/features/exercises/ExerciseMenu.tsx'
 const IDS = 'src/features/exercises/rooms/web-room-ids.ts'
+const BUNDLE_CHECK = 'apps/mercurypitch/scripts/assert-bundle.mjs'
 
 const read = (path: string): string => readFileSync(path, 'utf8')
 
@@ -71,6 +76,18 @@ describe("the web's way in to the rooms", () => {
     expect(
       imports.filter((i) => !i.includes('@/lib/domain/exercise-contracts')),
     ).toEqual([])
+  })
+
+  it('gives no exercise an id the store bundle is checked for', () => {
+    // The Warm-up's id is its path's test id too, and that test id was what
+    // the check looked for until the web held the id as an exercise type.
+    const check = read(BUNDLE_CHECK)
+    const ids = Object.entries(contracts).flatMap(([name, value]) =>
+      name.startsWith('EXERCISE_') && typeof value === 'string' ? [value] : [],
+    )
+
+    expect(ids).toContain(contracts.EXERCISE_WARM_UP_PATH)
+    expect(ids.filter((id) => check.includes(`'${id}'`))).toEqual([])
   })
 
   it('would catch a static import of the strip, the host or a room', () => {

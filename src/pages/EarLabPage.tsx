@@ -343,7 +343,15 @@ export function EarLabPage(): JSX.Element {
           <Show when={webRoom()}>
             {(id) => (
               <Suspense>
-                <Dynamic component={Host()} id={id()} onBack={closeRoom} />
+                {/* The bench's row opens the Ear rooms alone. Only the
+                    Warm-up's end asks for a song, and it is not among them:
+                    were it asked, the room would close. */}
+                <Dynamic
+                  component={Host()}
+                  id={id()}
+                  onBack={closeRoom}
+                  onSong={closeRoom}
+                />
               </Suspense>
             )}
           </Show>
