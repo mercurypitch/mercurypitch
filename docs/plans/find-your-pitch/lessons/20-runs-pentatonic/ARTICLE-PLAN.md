@@ -192,7 +192,7 @@ one?" The tease names no sharp's place, Lesson 21's predict answer.
 - **Staccato Precision** for short notes: eight notes from the major scale in random order, each a short
   reference then 1.5 s to sing it (R20-12).
 - Not linked: `/exercises/speed-scales` (fast, R20-13).
-- `?lesson=20` is not a lesson marker yet (R20-14).
+- `?lesson=20` was not a marker yet (R20-14); it is since § 5 item 21 shipped on 4 November 2026.
 
 **§ 5 item 13 shipped on 15 November 2026:** a scale launch field and minor pentatonic in Scale
 Runner, and the beginner slugs `pentatonic-run` and `minor-pentatonic-run`, which open either

@@ -624,8 +624,8 @@ stills when WebGL fails.
   `src/features/lessons/kit/comfort.ts:126-149`; FACTS 59).
 - **The first visit.** Voice Mirror is its own document, so a link to it never meets First Light,
   and the card has no first-visit line (`src/seo/entry-pages.ts:154-157`; FACTS 34).
-- **The lesson marker.** Nothing reads `?lesson=22` until SEASON-2 § 5.2 item 21 widens the marker,
-  and until then the quiz's answers are refused whole (FACTS 35).
+- **The lesson marker.** It takes `?lesson=22` since 4 November 2026 (SEASON-2 § 5.2 item 21,
+  `623b3b7e2`), and the quiz's answers are kept; Voice Mirror itself never reads it (FACTS 35a).
 - **Not linked**: the Vibrato exercise, whose help uses a health word and gives a method for
   building a vibrato, whose default is "the polished sound" and which scores the vibrato itself
   (`src/features/exercises/exercise-help.ts:109-116`; FACTS 31); Long Note Lantern, whose help counts a
@@ -741,10 +741,10 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 8. **The lesson copy**: this lesson's tease and its variant set on Lesson 22, with the variant's team
    note (FACTS 5b), within `TEASE_MAX` (`src/features/lessons/kit/lesson-copy.ts:76`): 69 and 62
    characters; and the signature line in the team's notes.
-9. **Season 2 in the app's lesson plumbing** (SEASON-2 § 5.2 item 21), the app's work; the lesson
-   marker's range (`src/lib/lesson-marker.ts:11-19`) and the lesson-answer bounds
-   (`workers/db-worker/src/mirror-metrics.ts:57-62`), which refuse Lesson 22's answers whole today
-   (FACTS 35).
+9. **Season 2 in the app's lesson plumbing: shipped on 4 November 2026** (SEASON-2 § 5.2 item 21,
+   `623b3b7e2`), the app's work: the lesson marker's range (`src/lib/lesson-marker.ts:11-14`) and
+   the lesson-answer bounds (`workers/db-worker/src/mirror-metrics.ts:62-63`), which keep Lesson
+   22's answers (FACTS 35a).
 10. **The head and the share card** (Sections, 2): the title, the descriptions, the share card
     `learn/lesson-22-og.jpg` and its alt, and the structured data with `timeRequired` `PT15M`; the
     head test already has its word for fifteen (`src/tests/lesson-pages.test.ts:83`).
@@ -818,8 +818,8 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
   visit; nothing breaks.
 - **Lesson 5 or 14 not live** where the page is served: the chip stays a plain chip and the recall's
   step links keep their words with no link (FACTS 2, 7).
-- **The practice link before item 21 ships**: Voice Mirror opens as for any visit, since it never
-  meets First Light, and the quiz's answers are refused until then (FACTS 34, 35).
+- **The practice link**: Voice Mirror opens as for any visit, since it never meets First Light, and
+  since 4 November 2026 (`623b3b7e2`) the quiz's answers are kept (FACTS 34, 35a).
 
 ## Tests
 

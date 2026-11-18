@@ -508,7 +508,7 @@ the season's close, "Now sing a whole song." (FACTS 70, 71). Harmony Stack, whic
 is left out: it needs a friend, and its parts are the room's tune moved up a third or a fifth, not a
 written part; nor does the Harmony room sing a written part (FACTS 74). The card's lines for Sing It
 in Time are new and wait for the coach's look; its care lines are Lesson 10's, word for word. The
-page is not built before Season 2's plumbing (FACTS 75).]_
+page stands on Season 2's plumbing, shipped on 4 November 2026 (FACTS 75a).]_
 
 **End of Season 2** · "You've read a song in two parts. Now sing a whole song."
 [ Karaoke Night ] [ See the season map ]

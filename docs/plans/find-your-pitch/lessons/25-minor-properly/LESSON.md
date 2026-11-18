@@ -102,8 +102,8 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 The page is published only after Lessons 10, 21 and 23 are live, `/learn/10`, `/learn/21` and
 `/learn/23`, because its prerequisite chips link there and its recall imports Lesson 10's and Lesson
 21's questions. It also waits on the Season 2 kit work (WEB-SPEC, What the kit and the app still
-need), the lesson marker's reach to `?lesson=25` among it, so its practice card has no first-visit
-line (FACTS 50).
+need); the lesson marker's reach to `?lesson=25` shipped on 4 November 2026, so its practice card
+has no first-visit line (FACTS 50a).
 
 ---
 
@@ -387,9 +387,9 @@ A.
 
 _[Editorial: the links are `/exercises/te-or-ti?lesson=25` and
 `/exercises/sight-sing-harmonic-minor?lesson=25` since 17 November 2026, printed without the marker,
-as every card prints the public address (FACTS 50a). The page is not built before the lesson marker
+as every card prints the public address (FACTS 50a). Since 4 November 2026 the lesson marker
 reads Season 2's numbers (SEASON-2 § 5.2 item 21), so First Light, the app's intro, steps aside on a
-first visit and the card has no first-visit line (FACTS 50). The `ear-drill` launch kind (item 12)
+first visit and the card has no first-visit line (FACTS 50a). The `ear-drill` launch kind (item 12)
 opens Gravity on Te and Ti alone, so the card names the two and "A drill on those two alone isn't
 in the app yet." went (FACTS 49). The second drill shrank as Lesson 16's card did, once SEASON-2 §
 5.2 item 10 shipped: the `key` launch field (10g) opens Sight-Singing in A harmonic minor directly

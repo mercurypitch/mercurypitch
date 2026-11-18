@@ -48,8 +48,8 @@ to 35, 40); and it has nine notes, not the plan's eight (FACTS 36).
 
 The page is published only after Lesson 8's page, `/learn/08`, is live, because its prerequisite chip
 and its recall link there, and after the vocal coach has looked at the sing-along. It also waits on
-the Season 2 kit work (WEB-SPEC, What the kit and the app still need), the lesson marker's reach to
-`?lesson=17` among it (FACTS 47).
+the Season 2 kit work (WEB-SPEC, What the kit and the app still need); the lesson marker's reach to
+`?lesson=17`, once part of it, shipped on 4 November 2026 (`623b3b7e2`; FACTS 47a).
 
 ---
 
@@ -350,8 +350,8 @@ _[Editorial: since 17 November 2026 the card opens The Chart on the values this 
 set SEASON-2 § 5.2 item 12 gave this lesson, and "Some bars hold triplets, three notes in a beat,
 which come later; you've met every other note it writes." went, the Begin pad's "quarters and
 eighths only" said in its place (FACTS 46a). Pulse keeps the Ear Lab's address, by Time. Every link
-carries `?lesson=17` before any hash, so First Light, the app's intro, steps aside on a first visit
-once the lesson marker reads Season 2's numbers (FACTS 47); the page is not built before that, so
+carries `?lesson=17` before any hash, so First Light, the app's intro, steps aside on a first visit:
+the lesson marker reads Season 2's numbers since 4 November 2026 (`623b3b7e2`; FACTS 47a), so
 the card has no first-visit line.]_
 
 **Next lesson:** Lesson 18, Read and sing a whole line. "How do singers read a tune they've never

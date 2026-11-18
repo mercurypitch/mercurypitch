@@ -429,10 +429,10 @@ four semitones doesn't give a harmony in its key.
   here when your voice feels comfortable: **mercurypitch.com/exercises/harmony-line**"
 
 _[Editorial: the addresses link `/exercises/harmony-line?lesson=26` and `/jam?lesson=26` since 17
-November 2026 (FACTS 68a); before, `/jam?lesson=26` and `/exercises/thirds-on-a-drone?lesson=26`. The
-page is not built before the lesson marker reads Season 2's numbers (SEASON-2 § 5.2 item 21), so
+November 2026 (FACTS 68a); before, `/jam?lesson=26` and `/exercises/thirds-on-a-drone?lesson=26`. Since
+4 November 2026 the lesson marker reads Season 2's numbers (SEASON-2 § 5.2 item 21), so
 First Light, the app's intro, steps aside on a first visit and the card has no first-visit line
-(FACTS 67). The web opens Merc's Harmony room since 15 November 2026, free, and
+(FACTS 67a). The web opens Merc's Harmony room since 15 November 2026, free, and
 `/exercises/harmony-line` is its address (SEASON-2 § 7 item 15), so it takes the card's first place,
 as the drill a learner can do alone, and Harmony Stack moves to second, as this note planned; Drone
 Intonation leaves the card, which keeps to two links. The room's lines say what its screen shows: a

@@ -93,8 +93,8 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 
 The page is published only after Lesson 6's page, `/learn/06`, is live, because its prerequisite
 chip and its recall link there, and it imports Lesson 6's quiz questions. It also waits on the
-Season 2 kit work (WEB-SPEC, What the kit and the app still need), the lesson marker's reach to
-`?lesson=23` among it, so its practice card has no first-visit line (FACTS 62).
+Season 2 kit work (WEB-SPEC, What the kit and the app still need); the lesson marker's reach to
+`?lesson=23` shipped on 4 November 2026, so its practice card has no first-visit line (FACTS 62a).
 
 ---
 
@@ -375,9 +375,9 @@ major fifth.
 _[Editorial: the link is `/exercises/perfect-or-tritone?lesson=23` since 17 November 2026, Leap
 with only its P4, TT, P5 and P8, the set SEASON-2 § 5.2 item 12 gave this lesson, and "you name the
 distance from twelve answers, a semitone to an octave. Listen for" became "you name which of four
-it is:" (FACTS 63a). Before, it was `/ear-lab?lesson=23`. The page is not built before the lesson
+it is:" (FACTS 63a). Before, it was `/ear-lab?lesson=23`. Since 4 November 2026 the lesson
 marker reads Season 2's numbers (SEASON-2 § 5.2 item 21), so First Light, the app's intro, steps
-aside on a first visit and the card has no first-visit line (FACTS 62). The `perfect-intervals` slug shipped on 15 November 2026 (item 16), so a sung card can
+aside on a first visit and the card has no first-visit line (FACTS 62a). The `perfect-intervals` slug shipped on 15 November 2026 (item 16), so a sung card can
 follow, with the care lines and the coach's look (FACTS 63). The rest version is Lesson 8's: Leap asks for no voice, so it
 stays, and only the sung line is put off (FACTS 56).]_
 

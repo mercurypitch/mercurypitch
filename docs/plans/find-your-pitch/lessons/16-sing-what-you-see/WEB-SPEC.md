@@ -460,8 +460,8 @@ stills when WebGL fails.
   Lesson 12's form, "Rest today. Sight-Singing will be here when your voice feels comfortable:
   mercurypitch.com/exercises/sing-what-you-see", and is no longer a link, since the drill asks for
   the voice (FACTS 52).
-- **The first visit.** The page is not built before SEASON-2 § 5.2 item 21 widens the lesson marker,
-  so `?lesson=16` steps First Light aside and the card and footer have no first-visit line (FACTS 60).
+- **The first visit.** The lesson marker reads `?lesson=16` since 4 November 2026 (`623b3b7e2`),
+  so First Light steps aside and the card and footer have no first-visit line (FACTS 60a).
 - **Shipped on 16 November 2026: Sight-Singing for the lessons** (SEASON-2 § 5.2 item 10; FACTS 63):
   - (a) **Fixed phrases**, data: a launch's `notes` already replace the random round when there are
     two or more, and a link's notes are fitted to the saved range by whole octaves, the octave nearest
@@ -555,9 +555,9 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 8. **The lesson copy**: this lesson's tease and its variant set on Lesson 16, with the variant's team
    note (Lesson 15's item 8; FACTS 5b), within `TEASE_MAX` (`src/features/lessons/kit/lesson-copy.ts:76`):
    51 and 36 characters.
-9. **Season 2 in the app's lesson plumbing** (SEASON-2 § 5.2 item 21), the app's work: the lesson
-   marker's range, so `?lesson=16` steps First Light aside (FACTS 60), and the lesson-answer bounds,
-   which refuse Lesson 16's answers whole today (FACTS 61).
+9. **Season 2 in the app's lesson plumbing: shipped on 4 November 2026** (SEASON-2 § 5.2 item 21,
+   `623b3b7e2`): the lesson marker's range, so `?lesson=16` steps First Light aside (FACTS 60a), and
+   the lesson-answer bounds, which keep Lesson 16's answers (FACTS 61a).
 10. **Sight-Singing for the lessons** (SEASON-2 § 5.2 item 10), the app's work (Practice links), with
     (a) a fixed-phrase link that skips the octave fit, so each voice reads its own octave (FACTS
     59), and (e) names off covering the letters under the notes and the hold bar's name, since the
@@ -624,8 +624,8 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 - **No storage** (a private window): the quiz seeds and the voice last for the visit; nothing breaks.
 - **Lesson 9 or 15 not live** where the page is served: its chip stays a plain chip and the recall's
   step links keep their words with no link (FACTS 2, 7).
-- **The practice link before item 21 ships**: First Light would open on a first visit; the page is not
-  built before it (FACTS 60).
+- **The practice link**: the lesson marker reads `?lesson=16` since 4 November 2026 (`623b3b7e2`),
+  so First Light steps aside on a first visit (FACTS 60a).
 - **Sight-Singing in another key**: the drill writes the key its start screen shows, the app's key,
   C major unless the learner changed it in the Singing tab; the card says "in the key it shows".
 - **Sight-Singing's tracker hidden**: the choice is kept on the device, so a learner who hides it for

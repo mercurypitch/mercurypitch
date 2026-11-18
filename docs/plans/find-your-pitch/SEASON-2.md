@@ -879,9 +879,9 @@ entry; "code" is code with tests. Items are numbered on from CURRICULUM § 4's e
 | 27     | `/exercises/triads`; Stack's `/exercises/major-or-dominant-seventh`   | An address for the dominant seventh and its inversions, one registry line; its card links the triads meanwhile      |
 | 28     | `/exercises/sing-it-in-time`; `/exercises/name-the-cadence`           | Nothing for its two links (items 11, 19 shipped); a harmony line sung alone (item 17), which its card will not add  |
 
-Every Season 2 link waits for one thing first: the lesson marker. `?lesson=` is read only for 01 to
-14 (`SEASON_1_LESSON`, `src/lib/lesson-marker.ts:11-19`), so `?lesson=15` is today an ordinary visit,
-and First Light does not step aside. Item 21 fixes it.
+Every Season 2 link carries the lesson marker, which reads `?lesson=01` to `28` since item 21
+shipped (`LESSON_NUMBER`, `src/lib/lesson-marker.ts:19-20`), so First Light steps aside for good
+on a visit a Season 2 link sends to the main app, as it does for Season 1's.
 
 ### 5.2 What needs building
 
@@ -1109,17 +1109,17 @@ and First Light does not step aside. Item 21 fixes it.
     in the key, and the sheet is there once the screen is wider than 768 px. A browser spec opens it
     both ways (`src/e2e/singing-sheet-address.spec.ts`). Lessons 18 and 21, whose cards do not link
     it: a card may not promise the sheet on a phone.
-21. **Season 2 in the app's lesson plumbing** (code with tests, small): the lesson marker's range
-    (`src/lib/lesson-marker.ts:19`); the lesson-answer bounds, which refuse any page or question
-    lesson outside 1 to 14 (`workers/db-worker/src/mirror-metrics.ts:61-62`), so Season 2's answers
-    would be dropped whole; the admin console's one row per Season 1 lesson
-    (`src/features/admin/lessons/lesson-admin.ts:88`); `RELEASED_LESSONS`
-    (`src/lib/current-lesson.ts:34-37`). The lesson pages' own route already takes any two digits
-    (`src/lesson-gate.ts:129`), and the done list stores any lesson number
-    (`src/lib/lesson-done.ts:17-24`). At each lesson's release, SEARCH § 8's table and the entry
-    pages' `lessonsPractised` change together, since a test holds them equal room by room
-    (`src/tests/entry-page-model.test.ts:497-529`); Lesson 28's links split the shared Karaoke
-    Night and Jam row (Lesson 28 WEB-SPEC item 15).
+21. **Season 2 in the app's lesson plumbing: shipped on 4 November 2026** (`623b3b7e2`). The lesson
+    marker reads `?lesson=01` to `28` (`LESSON_NUMBER`, `src/lib/lesson-marker.ts:19-20`), so a
+    Season 2 link steps First Light aside and holds a returning visitor's takeover back
+    (`src/App.tsx:1039-1045`); the lesson-answer bounds take a page and a question's lesson from 1
+    to 28 (`workers/db-worker/src/mirror-metrics.ts:62-63`), so Season 2's answers are kept; the
+    admin console lists every season's lessons (`src/features/admin/lessons/lesson-admin.ts:89-96`);
+    a test holds `RELEASED_LESSONS` to every season's released lessons
+    (`src/lib/current-lesson.test.ts:17-27`). The pages' route and the done list take any lesson
+    number (`src/lesson-gate.ts:142`; `src/lib/lesson-done.ts:17-24`). At each release, SEARCH § 8's
+    table and the entry pages' `lessonsPractised` change together
+    (`src/tests/entry-page-model.test.ts:497-530`; Lesson 28 WEB-SPEC item 15).
 22. **A hold read on its middle** (kit code with tests, small): the kit's hold reader counts frames
     inside the band (`src/features/lessons/kit/hold-take.ts:308-314`), on frames that Voice Mirror's
     preprocessing has median-filtered over 5 frames. On the kit's 16 ms frames a held vibrato of ±50

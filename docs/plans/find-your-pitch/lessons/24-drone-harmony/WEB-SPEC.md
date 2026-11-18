@@ -672,9 +672,9 @@ stills when WebGL fails.
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
   Lesson 10's form, headed "Rest today", and is no longer a link, since Drone Intonation asks for the
   voice (`mountPractiseCard`, `src/features/lessons/kit/comfort.ts:126-149`; FACTS 63).
-- **The first visit and the marker.** Nothing reads `?lesson=24` until SEASON-2 § 5.2 item 21 widens
-  the marker, and until then the quiz's answers are refused whole; the page is not built before
-  that, so First Light steps aside and the card has no first-visit line (FACTS 64).
+- **The first visit and the marker.** The marker reads `?lesson=24` since 4 November 2026 (SEASON-2
+  § 5.2 item 21, `623b3b7e2`), so First Light steps aside, the card has no first-visit line, and the
+  quiz's answers are kept (FACTS 64a).
 - **Shipped: a drone with harmonics in Drone Intonation**, proposed here, the app's work, on 15
   November 2026: its drone has harmonics up to the eighth, Merc's "ooh" partials, whatever the
   app's instrument, so its fifths and thirds can beat as this page's do (FACTS 60, 66). The card
@@ -796,10 +796,10 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 10. **The lesson copy**: this lesson's tease and its variant set on Lesson 24, with the variant's team
     note (FACTS 5), within `TEASE_MAX`: 57 and 69 characters; and the signature line in the team's
     notes.
-11. **Season 2 in the app's lesson plumbing** (SEASON-2 § 5.2 item 21), the app's work: the lesson
-    marker's range (`src/lib/lesson-marker.ts:11-19`) and the lesson-answer bounds
-    (`workers/db-worker/src/mirror-metrics.ts:57-62`), which refuse Lesson 24's answers whole today
-    (FACTS 64).
+11. **Season 2 in the app's lesson plumbing: shipped on 4 November 2026** (SEASON-2 § 5.2 item 21,
+    `623b3b7e2`), the app's work: the lesson marker's range (`src/lib/lesson-marker.ts:11-14`) and
+    the lesson-answer bounds (`workers/db-worker/src/mirror-metrics.ts:62-63`), which keep Lesson
+    24's answers (FACTS 64a).
 12. **The head and the share card** (Sections, 2): the title, the descriptions, the share card
     `learn/lesson-24-og.jpg` and its alt, and the structured data with `timeRequired` `PT16M`; the
     head test already has its word for sixteen (`src/tests/lesson-pages.test.ts:84`).

@@ -85,7 +85,7 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   not three, four of them on a pitch line the learner can hide, and a launch's notes are fitted to
   the saved range by whole octaves, which the plan could not confirm. It promises nothing of
   SEASON-2 § 5.2 item 10 until it ships, prints the public address, and has no first-visit line,
-  since the page waits on the lesson plumbing (FACTS 54 to 63).
+  since the lesson plumbing shipped on 4 November 2026 (FACTS 54 to 63, 60a).
 - **No Go deeper drawer.** The plan's three items rest on sources read, but the page runs near the
   cap; FACTS keeps them for a later page (FACTS 3, Unsupported, not used).
 
@@ -374,9 +374,9 @@ to sing from the page.
 
 _[Editorial: the link is `/exercises/sing-what-you-see?lesson=16` since 17 November 2026, the
 address SEASON-2 § 5.2 item 10 gave this page's two phrases, written as one line in G (FACTS 60a).
-The page is not built before the lesson marker reads Season 2's numbers (SEASON-2 § 5.2 item 21),
-so First Light, the app's intro, steps aside on a first visit and the card has no first-visit line
-(FACTS 60, 61). The card is the shrunk one this page's spec proposed: the two phrases replace "six
+The lesson marker reads Season 2's numbers since 4 November 2026 (SEASON-2 § 5.2 item 21), so
+First Light, the app's intro, steps aside on a first visit and the card has no first-visit line
+(FACTS 60a, 61a). The card is the shrunk one this page's spec proposed: the two phrases replace "six
 notes it picks itself", Hear it first's do and do, mi, so, mi, do replace "It plays nothing first",
 the clef of the saved range and octave folding replace the clef and octave sentence, and the Names
 picker's Off replaces the last sentence (FACTS 55 to 58, 63). The drill draws no break between the

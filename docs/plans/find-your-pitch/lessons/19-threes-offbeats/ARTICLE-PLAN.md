@@ -168,8 +168,8 @@ feelings apply.
 - **Today:** `mercurypitch.com/ear-lab?lesson=19`, then tap **Subdivide**: two bars on a drum kit, name
   the metre among four of 3/4, 4/4, 5/4, 6/8 and 7/8 (R19-11). The card says what it plays: its 6/8 is
   six quick hits in two groups of three, and its 3/4 three slower hits, each bar 1.5 s; listen for the
-  groups. And **Pulse** for the triplet and the "and" patterns (R19-13). `?lesson=19` is not a marker
-  yet (R19-15).
+  groups. And **Pulse** for the triplet and the "and" patterns (R19-13). `?lesson=19` was not a marker
+  yet (R19-15); it is since § 5 item 21 shipped, on 4 November 2026.
 - **Missing:** the `ear-drill` subset of 3/4 against 6/8 only (SEASON-2 § 5 item 12); any compound
   metre written in the app (R19-12; § 5.3 lists the reading gap). Since 17 November 2026 the card
   links Subdivide on that subset, `mercurypitch.com/exercises/three-four-or-six-eight` (FACTS 50a).

@@ -626,9 +626,9 @@ stills when WebGL fails.
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
   Lesson 14's rest line, headed "Rest today", and is no longer a link, naming Sing It in Time; the
   second drill stays (`mountPractiseCard`, `src/features/lessons/kit/comfort.ts:126-149`).
-- **The first visit and the marker.** Nothing reads `?lesson=28` until SEASON-2 § 5.2 item 21
-  widens the marker, and until then the quiz's answers are refused whole; the page is not built
-  before that (FACTS 75).
+- **The first visit and the marker.** The marker reads `?lesson=28` since 4 November 2026 (SEASON-2
+  § 5.2 item 21, `623b3b7e2`), so First Light steps aside and the quiz's answers are kept
+  (FACTS 75a).
 - **Shipped on 15 November 2026: the cadence-type ear drill** (SEASON-2 § 5.2 item 19,
   `docs/plans/find-your-pitch/SEASON-2.md:1064-1075`), as Name the Cadence, a drill in the Exercises
   tab (`src/features/exercises/cadence/`): the key's own chord, then an ending's two chords, and the
@@ -763,10 +763,10 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 12. **The lesson copy and the team's notes**: this lesson's tease set on Lesson 28, with no
     alternative, within `TEASE_MAX`, 64 characters; Season 2's close in the kit (item 3); and the
     signature line in the team's notes.
-13. **Season 2 in the app's lesson plumbing** (SEASON-2 § 5.2 item 21), the app's work: the lesson
-    marker's range (`src/lib/lesson-marker.ts:11-19`) and the lesson-answer bounds
-    (`workers/db-worker/src/mirror-metrics.ts:57-62`), which refuse Lesson 28's answers whole today
-    (FACTS 75).
+13. **Season 2 in the app's lesson plumbing: shipped on 4 November 2026** (SEASON-2 § 5.2 item 21,
+    `623b3b7e2`), the app's work: the lesson marker's range (`src/lib/lesson-marker.ts:11-14`) and
+    the lesson-answer bounds (`workers/db-worker/src/mirror-metrics.ts:62-63`), which keep Lesson
+    28's answers (FACTS 75a).
 14. **The harmony-line drill** (SEASON-2 § 5.2 item 17), the app's work. **The card for the
     cadence-type drill**, Name the Cadence (item 19), is done since 17 November 2026, with its slug
     (Practice links).

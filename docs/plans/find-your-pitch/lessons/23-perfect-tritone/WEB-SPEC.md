@@ -496,10 +496,10 @@ other, paused off screen, and the still images when WebGL fails.
   lines. Until then the link was `/ear-lab?lesson=23`, "then tap Leap", with all twelve answers.
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
   Lesson 8's rest line above its text and keeps the link (Toys 5; FACTS 56).
-- **The first visit.** `?lesson=23` is not a lesson marker today, so a first visit would meet First
-  Light, the app's intro, before Ear Lab. The page is not built before SEASON-2 § 5.2 item 21 widens
-  the marker, so the card and the footer carry no first-visit line, as Lesson 19's carry none
-  (FACTS 62).
+- **The first visit.** The lesson marker reads `?lesson=23` since 4 November 2026 (SEASON-2 § 5.2
+  item 21, `623b3b7e2`), so a first visit meets no First Light, the app's intro, before Leap's set,
+  and the card and the footer carry no first-visit line, as Lesson 19's carry none
+  (FACTS 62a).
 - **Shipped on 16 November 2026: the `ear-drill` launch kind** (SEASON-2 § 5.2 item 12), which
   opens Leap with only P4, TT, P5 and P8. The card's text changed as LESSON.md's editorial note
   says, and the link opens the subset (FACTS 63, 63a).
@@ -589,13 +589,13 @@ coach's look at Sing it"`. Releasing it is deleting that line, then listing the 
    `TEASE_MAX` (`src/features/lessons/kit/lesson-copy.ts:76`; FACTS 5, 5b), both variants' notes in
    `TEASE_NOTES`, and Lesson 23's signature (Explorer and season data). The admin console switches
    between them; nothing on this page changes.
-10. **Season 2 in the app's lesson plumbing** (SEASON-2 § 5.2 item 21), the app's work, not the
-    page's, and this page waits for it: the lesson marker's range (`src/lib/lesson-marker.ts:19`), so
-    `?lesson=23` steps First Light aside (FACTS 62); the lesson-answer bounds
-    (`workers/db-worker/src/mirror-metrics.ts:61-62`), which refuse Lesson 23's answers whole today
-    (FACTS 64); the admin console's one row per Season 1 lesson
-    (`src/features/admin/lessons/lesson-admin.ts:88`); `RELEASED_LESSONS`
-    (`src/lib/current-lesson.ts:34-37`).
+10. **Season 2 in the app's lesson plumbing: shipped on 4 November 2026** (SEASON-2 § 5.2 item 21,
+    `623b3b7e2`), the app's work: the lesson marker reads 01 to 28 (`src/lib/lesson-marker.ts:19-20`),
+    so `?lesson=23` steps First Light aside (FACTS 62a); the lesson-answer bounds take 1 to 28
+    (`workers/db-worker/src/mirror-metrics.ts:62-63`), so Lesson 23's answers are kept
+    (FACTS 64a); the admin console lists every season's lessons
+    (`src/features/admin/lessons/lesson-admin.ts:89-96`); and a test holds `RELEASED_LESSONS` to
+    every season's released lessons (`src/lib/current-lesson.test.ts:17-27`).
 11. **The head, the structured data and llms.txt** (Sections, 2; SEARCH § 3.1, § 3.2 and § 12):
     the title, the descriptions, the share card `learn/lesson-23-og.jpg` and its alt, the two
     structured-data blocks with `alternativeHeadline`, `teaches` and `timeRequired` `PT14M`, and on
@@ -660,8 +660,8 @@ the vocal coach), not the owner's.
 - **No storage** (a private window): the quiz seeds and the voice last for the visit; nothing breaks.
 - **Lesson 6 not live** where the page is served: the prerequisite chip stays a plain chip and the
   recall's step links keep their words with no link (FACTS 7).
-- **The practice link** opens Ear Lab with the lesson marker, which by then steps First Light aside
-  (FACTS 62); a visitor taps Leap from Ear Lab's bench.
+- **The practice link** opens Leap's set with the lesson marker, which steps First Light aside
+  since 4 November 2026 (FACTS 62a, 63a); no tap on Ear Lab's bench is needed.
 
 ## Tests
 

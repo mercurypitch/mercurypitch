@@ -601,9 +601,9 @@ stills when WebGL fails.
   Lesson 10's form, headed "Rest today", and is no longer a link, naming Harmony; both drills
   ask for the voice, so neither stays on offer (`mountPractiseCard`,
   `src/features/lessons/kit/comfort.ts:126-149`; FACTS 66).
-- **The first visit and the marker.** Nothing reads `?lesson=26` until SEASON-2 § 5.2 item 21
-  widens the marker, and until then the quiz's answers are refused whole; the page is not built
-  before that, so First Light steps aside and the card has no first-visit line (FACTS 67).
+- **The first visit and the marker.** The marker reads `?lesson=26` since 4 November 2026 (SEASON-2
+  § 5.2 item 21, `623b3b7e2`), so First Light steps aside, the card has no first-visit line, and the
+  quiz's answers are kept (FACTS 67a).
 - **Needed: the harmony-line drill** (SEASON-2 § 5.2 item 17, `docs/plans/find-your-pitch/SEASON-2.md:1030-1032`),
   the app's work: a melody played and a third above or below it sung, scored per note, octave-folded,
   with a headphones prompt. Merc's Harmony room meets it in part (SEASON-2 § 7 item 14) and opens on
@@ -718,10 +718,10 @@ items 15 and 16 and Lesson 18's item 16 (item 4 below), which have shipped.
 11. **The lesson copy**: this lesson's tease and its `plan` variant set on Lesson 26, with the
     variant's team note (Explorer and season data), within `TEASE_MAX`: 68 and 56 characters; and
     the signature line in the team's notes.
-12. **Season 2 in the app's lesson plumbing** (SEASON-2 § 5.2 item 21), the app's work: the lesson
-    marker's range (`src/lib/lesson-marker.ts:11-19`) and the lesson-answer bounds
-    (`workers/db-worker/src/mirror-metrics.ts:57-62`), which refuse Lesson 26's answers whole today
-    (FACTS 67).
+12. **Season 2 in the app's lesson plumbing: shipped on 4 November 2026** (SEASON-2 § 5.2 item 21,
+    `623b3b7e2`), the app's work: the lesson marker's range (`src/lib/lesson-marker.ts:11-14`) and
+    the lesson-answer bounds (`workers/db-worker/src/mirror-metrics.ts:62-63`), which keep Lesson
+    26's answers (FACTS 67a).
 13. **The harmony-line drill** (SEASON-2 § 5.2 item 17), the app's work (Practice links).
 14. **At release, the room's link back**, optional: SEARCH § 8's row for Jam gains 26.
 15. **Harmony Stack's note names**, shipped (`fix(jam): Name harmony notes by their own pitch`):

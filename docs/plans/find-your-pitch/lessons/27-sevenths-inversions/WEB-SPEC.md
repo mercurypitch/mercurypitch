@@ -364,8 +364,8 @@ Lesson 25. Neither says "right" or "wrong"; the reveal's line says what the lear
    block chord on a roved root, and the learner says which of two it is, major or the dominant
    seventh, its pad marked 7 (FACTS 67, 68a); the `ear-drill` launch kind with that subset shipped on
    16 November 2026 (SEASON-2 § 5.2 item 12). Before, `/ear-lab?lesson=27`, then tap Stack, six.
-3. **The lesson marker** reads Season 1's numbers only (`src/lib/lesson-marker.ts:18-19`); `?lesson=27`
-   waits on SEASON-2 § 5.2 item 21, before which this page is not built (FACTS 69).
+3. **The lesson marker** reads 01 to 28 (`src/lib/lesson-marker.ts:19-20`) since 4 November 2026
+   (SEASON-2 § 5.2 item 21, `623b3b7e2`), so `?lesson=27` steps First Light aside (FACTS 69a).
 
 Both are free (FACTS 71). The rest version names Chord Stacker in Lesson 12's form, and Stack stays
 on offer under it (FACTS 70).
@@ -437,10 +437,10 @@ checkpoint and the sung drill"`. Releasing it is deleting that line, then listin
    No kit change.
 8. **Lesson 23's question object**: its quick check 1 registered under its id, so this page imports
    it (FACTS 7).
-9. **Season 2 in the app's plumbing** (SEASON-2 § 5.2 item 21): the lesson marker's range, the
-   lesson-answer bounds (`workers/db-worker/src/mirror-metrics.ts:57-67`), the admin console's
-   lesson list (`src/features/admin/lessons/lesson-admin.ts:88`) and the current lesson's reader
-   (`src/lib/current-lesson.ts:34-37`).
+9. **Season 2 in the app's plumbing: shipped on 4 November 2026** (SEASON-2 § 5.2 item 21,
+   `623b3b7e2`; FACTS 69a): the lesson marker's range, the lesson-answer bounds
+   (`workers/db-worker/src/mirror-metrics.ts:58-69`), the admin console's lesson list
+   (`src/features/admin/lessons/lesson-admin.ts:89-96`) and the current lesson's reader.
 10. **Chord Stacker's help text and its note lengths**, app content and an app fix, both shipped.
     The help said each note is tuned against the notes already sounding, and its summary that the
     learner builds a chord, though nothing sounds while the learner sings (FACTS 66). It now takes
@@ -545,7 +545,7 @@ kit parts it adds:
     "Effortful" and "Uncomfortable" put the guide away for the visit and choose the card's rest
     version; nothing asks for a microphone (FACTS 52, 56 to 61).
 15. **The practice card**: its links carry `?lesson=27`; its printed addresses carry none; the rest
-    version names Chord Stacker and keeps Stack (FACTS 69, 70).
+    version names Chord Stacker and keeps Stack (FACTS 69a, 70).
 16. **The next card**: Lesson 28's hook and the tease from the season data, "A song in two parts. At
     bar 8 it seems to end, then keeps going.", and "Coming later" while Lesson 28's page is not live
     (FACTS 5).

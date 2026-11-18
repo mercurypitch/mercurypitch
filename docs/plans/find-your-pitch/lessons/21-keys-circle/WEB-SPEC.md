@@ -481,9 +481,9 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    still need, item 7).
 10. **Lesson 15's quiz objects**: the recall imports `l15-q2` and its slot, which exist only once
     Lesson 15's page is built, so this page is built after it (FACTS 7).
-11. **The lesson plumbing** (SEASON-2 § 5.2 item 21): the marker's reach to 21, the lesson-answer
-    bounds, the admin console's row and the released list, so `?lesson=21` reads as a lesson's link
-    and the page's answers are kept (FACTS 46).
+11. **The lesson plumbing, shipped on 4 November 2026** (SEASON-2 § 5.2 item 21, `623b3b7e2`): the
+    marker's reach to 21, the lesson-answer bounds, the admin console's row and the released list,
+    so `?lesson=21` reads as a lesson's link and the page's answers are kept (FACTS 46a).
 12. **For the lead, SEASON-2 § 5.1's row for Lesson 21** names the Singing tab's key picker and sheet
     view; the package links Compose instead, since the Singing tab's picker changes only the view
     (FACTS 41, 42). The row's "Needs building" list stands. And § 3's card for Lesson 21 still gives
@@ -521,10 +521,10 @@ For the vocal coach), not the owner's.
   the C major scale, and the card says "on a first visit" (FACTS 39). **Compose's clef** changes as
   the tune moves between keys (FACTS 42). **Playback Setup turned off** in Settings: the panel, and
   with it the card's key picker, is not in the sidebar until the learner turns it back on (FACTS 40).
-- **Before the plumbing**: `?lesson=21` is an ordinary visit, so First Light opens on a first visit
-  and a returning visitor may meet the app's takeover over Compose (Lesson 15 FACTS 48), and the
-  page's answers are refused (Lesson 15 FACTS 47); the page is built only after § 5.2 item 21
-  (FACTS 46).
+- **The plumbing, shipped on 4 November 2026** (§ 5.2 item 21, `623b3b7e2`): `?lesson=21` reads as a
+  lesson's link, so First Light steps aside on a first visit, a returning visitor meets no takeover
+  over Compose (Lesson 15 FACTS 48a), and the page's answers are kept (Lesson 15 FACTS 47a); before
+  it, the link was an ordinary visit (FACTS 46, 46a).
 - **Home in microphone mode**: Home opens in the mode last chosen, so a learner who switched it to
   the microphone before finds it so, and can switch back to taps (FACTS 44).
 - **Reduced motion**: Look's rules; the thread and the house jump, and every sound still plays.

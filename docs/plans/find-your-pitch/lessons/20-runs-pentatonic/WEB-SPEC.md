@@ -486,7 +486,7 @@ Again, faster (FACTS 59). Neither speaks a line the page does not print.
 ## Practice links: what exists and what needs engineering
 
 **Today**, since 17 November 2026, Scale Runner printed as `mercurypitch.com/exercises/pentatonic-run`
-and linking `/exercises/pentatonic-run?lesson=20`, and Staccato Precision as before (FACTS 69, 69a):
+and linking `/exercises/pentatonic-run?lesson=20`, and Staccato Precision as before (FACTS 69a, 69b):
 
 - **Scale Runner**, opened on Pentatonic by its address: the major pentatonic, six notes up or down from the
   preset's anchor, one note at a time, each played, then a window to sing it back, 2 s at its
@@ -597,13 +597,13 @@ are listed so this page's needs are in one place.
 9. **The lesson copy and the team's notes**: Lesson 20's tease set on Lesson 20 with its variant
    and note (`src/features/lessons/kit/lesson-copy.ts:10-12`; FACTS 5b), and Lesson 20's signature
    (Explorer and season data). Lesson 21's tease is Lesson 21's package's to set.
-10. **Season 2 in the app's lesson plumbing** (SEASON-2 § 5.2 item 21), the app's work, not the
-    page's, and this page waits for it: the lesson marker's range (`src/lib/lesson-marker.ts:19`),
-    so `?lesson=20` steps First Light aside (FACTS 69); the lesson-answer bounds
-    (`workers/db-worker/src/mirror-metrics.ts:61-62`), which would refuse Lesson 20's answers whole
-    today; the admin console's one row per Season 1 lesson
-    (`src/features/admin/lessons/lesson-admin.ts:88`); `RELEASED_LESSONS`
-    (`src/lib/current-lesson.ts:34-37`).
+10. **Season 2 in the app's lesson plumbing: shipped on 4 November 2026** (SEASON-2 § 5.2 item 21,
+    `623b3b7e2`), the app's work: the lesson marker reads 01 to 28 (`src/lib/lesson-marker.ts:19-20`),
+    so `?lesson=20` steps First Light aside (FACTS 69b); the lesson-answer bounds take 1 to 28
+    (`workers/db-worker/src/mirror-metrics.ts:62-63`), so Lesson 20's answers are kept (Lesson 15
+    FACTS 47a); the admin console lists every season's lessons
+    (`src/features/admin/lessons/lesson-admin.ts:89-96`); and a test holds `RELEASED_LESSONS` to
+    every season's released lessons (`src/lib/current-lesson.test.ts:17-27`).
 11. **The head, the structured data and llms.txt** (Sections, 2): the title, the descriptions, the
     share card `learn/lesson-20-og.jpg` and its alt, the two structured-data blocks with
     `alternativeHeadline`, `teaches` and `timeRequired` `PT15M`, and on release the llms.txt line,

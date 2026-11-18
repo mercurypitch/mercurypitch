@@ -210,8 +210,8 @@ planner owns Lesson 22's predict; check the tease against it.
   a key, then switch to the sheet view".
 - Ear Lab's Home, `mercurypitch.com/ear-lab?lesson=21`, then tap Function, then Home (since 17
   November 2026): a cadence sets a key and you name the degree you hear (R21-17).
-- Not linked: Sight-Singing for flat keys, since it writes B♭ as A♯ (R21-16). `?lesson=21` is not a
-  marker yet (R21-18).
+- Not linked: Sight-Singing for flat keys, since it writes B♭ as A♯ (R21-16). `?lesson=21` was not a
+  marker yet (R21-18); it is since § 5 item 21 shipped, on 4 November 2026.
 
 **Waiting for:** a circle-of-fifths toy (kit, SEASON-2 § 6.2 item 4), and the note-reading drill with
 key signatures (§ 5 item 9), which would be this lesson's best link once it reads signatures. The
