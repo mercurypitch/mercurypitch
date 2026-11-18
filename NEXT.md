@@ -4204,3 +4204,16 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   Asked P2 to renumber its DECISIONS 132-135 -> 160-163 (clash with the kit's).
 - Tick in 1f sits between the pills (9 px each side): group A must make it read as pill 2's.
 - Launching scene group A now (one heavy agent, P2 re-render is the other); group B when P2 ends.
+
+## 22:10 UTC, 18 Nov
+- Group A (s01 to s04) handed back: clock-lint silent, root check 0 errors / 7 warnings (kit
+  pattern), contrast 19/19, its probe passes; both forms of the bead pass built behind HOOK_FORM.
+- Lead looked: the "blue Merc beside Tavi" in the hook sheets is only touching thumbnails (Tavi at
+  one frame's right edge, Merc at the next frame's left). The slide-out keys off hook + 0.21 (the
+  board's 37.30 on its own clock). No bug.
+- Lead calls, DECISIONS 164 to 168 and HANDOFFS § Pills: the critic's form of the pass (the bead
+  stays crisp, then defocuses); s01's and s04's departures stand; S1's check moves right of the
+  second pill, 12 px clear (it touched the capsule in the gap); the two frame-fixed passes keep
+  4.5:1 or get opaque backs. Sent to the group A builder (resumed): re-render s01, probe, reply.
+- Next: on its reply, one fresh motion-critic (component round) on s01 to s04, report
+  l5film/review/critic-A-01/. Group B and the P2 re-render still running.
