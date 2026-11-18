@@ -4116,3 +4116,25 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   BUILD-GUIDE and DECISIONS 89/93/100. Launch when the polish builder hands back ((model), xhigh).
 - 18:08: #1467 run 44363139142 finished: all green but Browser smoke (2/2) (infra) and PR Gate
   (its aggregate); smoke 1/2 passed. Comment 6979646551 edited to say so. Waiting on #1470.
+
+## 18:41 UTC, 18 Nov
+- Polish builder handed back (feat/sideways-polish, worktree modes): notices at the foot on a phone
+  on its side; tours pick steps by layout (isPhoneStage; new narrow/wide) with walks 0 unlit at
+  844/932/1440/390; Karaoke header folds behind Options; Warmup routine+dial behind a button.
+  Grids reviewed ($S/sidepolish/grids/*.png): good. Rebased --onto origin/main 4664e2e27: clean
+  (head e45077a5a). Gates + three walks running: $S/rebasepolish/validate.sh. PR body:
+  $S/prs/sideways-polish.md (fill unit counts after the run). Metrics baseline e2eHardWaits
+  502 -> 503 (walk spec settles 1.5 s a step, as jam-room-tour does): said in the PR body.
+- Kit builder launched (brief $S/briefs/l5-film-k-kit.md). Heavy now: P2 (Merc passes) + kit.
+- NEXT POLISH ROUND (follow-ups found):
+  1. Upright phone (390x844): the mic notice covers the Singing transport (8,679,382,780).
+  2. Light theme: the in-canvas "Your mic is off ..." banner on the Singing notes canvas is near
+     invisible (dark text on the always-dark canvas), desk 1440x900 and phone alike (pre-existing).
+  3. Tablet 1024x768: Karaoke header scrolls 180 px sideways.
+  4. Merc's coach tours pick by isNarrow (room-tour.ts:167-168): "Show me more" has no target at
+     844x390.
+  5. 20 px light strip under a drill at 844x390 (light theme).
+  6. Jam room phone wording names a menu button that does not exist at 641-768 px.
+  7. Tall spotlights flagged WIDE at 844/932 (16/13).
+  8. Ear Lab sideways (after #1467): bench stations far below the art; Hairline "Your call" at
+     the right edge.
