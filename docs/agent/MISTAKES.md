@@ -2287,6 +2287,26 @@ test's stand-in follow redirects for any other mode, as the runtime does.
 **Rule:** filter only the failing route from a temporary, sandbox-readable mirror list, retain the official HTTPS fallbacks and package authentication, and bound the root dependency process group. A partial index update must fail; do not enlarge test budgets or retry the whole installer. Keep sandbox-read mirror files under the system `/tmp`, not a private `RUNNER_TEMP` or `TMPDIR`; child permissions alone cannot grant access through a private ancestor. Verify reads as `_apt`, without changing ancestor permissions or disabling the sandbox.
 **See:** `scripts/install-ci-browser.mjs` and `scripts/install-ci-browser.test.mjs`.
 
+### Wait out a slow Ubuntu mirror, and cache what it serves
+
+**Symptom:** on 18 Nov 2026, at least 25 browser jobs, on main and on pull
+requests, failed in Install Chromium with `sudo exited with 124` before any
+test ran: apt was still downloading Chromium's 32.1 MB of Ubuntu packages when
+the 300 s cap ended it.
+**Cause:** install-deps fetches the browser's Ubuntu packages on every job,
+cached browser or not, and the mirrors delivered 50 to 110 KB/s in the logs
+read, so the download outlasted the cap.
+**Rule:** maff's call (18 Nov 2026): the dependency step gets 600 s and no
+retry; past that, wait for the mirror. Every job that installs a browser keeps
+room for all 600 s inside its own time limit. The packages travel in the
+Actions cache through `.github/actions/install-browser`, in a folder under the
+system `/tmp`. apt takes a package already in that folder on its size alone,
+without its hash, so nothing but that cache may fill it. apt never empties the
+folder either: the installer prunes it to the versions dpkg has installed
+before it is saved.
+**See:** `.github/actions/install-browser/action.yml` and
+`scripts/install-ci-browser.mjs`.
+
 ### Cross resize rendering before polling painted frame geometry
 
 **Symptom:** the icon-alignment geometry poll expired while its browser evaluation was still pending; the late result contained no geometry problems.

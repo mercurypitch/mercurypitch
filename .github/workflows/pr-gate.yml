@@ -201,6 +201,12 @@ jobs:
                     root=true
                     beside=true
                     ;;
+                  .github/actions/install-browser/*|scripts/install-ci-browser*)
+                    # Every browser job installs its browser through them,
+                    # the Beside Cue ones included.
+                    root=true
+                    beside=true
+                    ;;
                   *)
                     root=true
                     ;;
@@ -374,7 +380,14 @@ jobs:
     # ubuntu-latest became in November 2026: browser jobs stay on 24.04 until
     # Playwright supports it.
     runs-on: ubuntu-24.04
-    # 45, not 30, since 6 Nov 2026. With fullyParallel the shards split the
+    # 60 since 18 Nov 2026, when the browser install's cap went from five to
+    # ten minutes (.github/actions/install-browser), all of it spent before
+    # the tests start. That day a red shard 4 spent 41.8 minutes in its
+    # tests, and main's run 44350477604 hit the 45-minute limit after a
+    # 4.4-minute install. Setup (2.4), the install's 10.25 and those 41.8
+    # come to 54.5.
+    #
+    # 45, not 30, from 6 Nov 2026. With fullyParallel the shards split the
     # suite by test order, so the Studio's 102 audio specs, the slowest in
     # the suite, all land in shard 4: it ran 28:56 of its 30 minutes on a
     # green run (26:35 of tests), and a few retries ran it into the limit,
@@ -382,7 +395,7 @@ jobs:
     # shards would not help, since the Studio's specs stay together in the
     # last one (`--shard=5/5 --list` holds all 102). Lower it again if the
     # Studio's specs are split up or spread out.
-    timeout-minutes: 45
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -419,9 +432,13 @@ jobs:
           key: pw-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
       - name: Install Chromium
-        # OS dependencies still install on a cache hit. The helper limits apt
-        # to Ubuntu sources without changing package signature checks.
-        run: node scripts/install-ci-browser.mjs chromium
+        # The browser comes from the cache above and its Ubuntu packages from
+        # the action's own cache; apt fetches only what that lacks. The helper
+        # limits apt to Ubuntu sources without changing package signature
+        # checks.
+        uses: ./.github/actions/install-browser
+        with:
+          browser: chromium
 
       # The whole suite, on main and on a dispatch. From 31 Aug to 30 Oct
       # 2026 it ran on every pull request as well. Before that a pull request
@@ -480,7 +497,9 @@ jobs:
           key: pw-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
       - name: Install Chromium
-        run: node scripts/install-ci-browser.mjs chromium
+        uses: ./.github/actions/install-browser
+        with:
+          browser: chromium
 
       - name: Test MercuryPitch smoke paths
         run: pnpm run test:e2e --grep @smoke --shard=${{ matrix.shard }}/2
@@ -565,7 +584,10 @@ jobs:
     # ubuntu-latest became in November 2026: browser jobs stay on 24.04 until
     # Playwright supports it.
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    # 35 since 18 Nov 2026: setup (under a minute), the browser install's
+    # ten-minute cap and the test step's 20 all fit inside it, so a stuck
+    # browser still reaches the upload step below.
+    timeout-minutes: 35
     strategy:
       fail-fast: false
       matrix:
@@ -576,7 +598,9 @@ jobs:
         uses: ./.github/actions/lfs-pull
       - uses: ./.github/actions/setup
       - name: Install Chromium for Beside Cue browser tests
-        run: node scripts/install-ci-browser.mjs chromium
+        uses: ./.github/actions/install-browser
+        with:
+          browser: chromium
 
       # Keep the existing games and games-off paths sharded, but give the
       # heavier adventure files their own jobs below. One browser worker per
@@ -610,7 +634,10 @@ jobs:
     # ubuntu-latest became in November 2026: browser jobs stay on 24.04 until
     # Playwright supports it.
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    # 30 since 18 Nov 2026: setup (about a minute), the browser install's
+    # ten-minute cap and the test step's 17 all fit inside it, so a stuck
+    # browser still reaches the upload step below.
+    timeout-minutes: 30
     strategy:
       fail-fast: false
       matrix:
@@ -680,7 +707,9 @@ jobs:
         uses: ./.github/actions/lfs-pull
       - uses: ./.github/actions/setup
       - name: Install browser for Glass Adventure paths
-        run: node scripts/install-ci-browser.mjs ${{ matrix.spec == 'material-hosts' && 'webkit' || 'chromium' }}
+        uses: ./.github/actions/install-browser
+        with:
+          browser: ${{ matrix.spec == 'material-hosts' && 'webkit' || 'chromium' }}
 
       # Each file loads and compiles the authored museum through SwiftShader.
       # File-level jobs keep a slow GPU process from delaying unrelated paths

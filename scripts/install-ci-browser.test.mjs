@@ -1,6 +1,6 @@
 // CI browser installer regressions — preserve signed sources and setup failures.
 import assert from 'node:assert/strict'
-import { existsSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, } from 'node:fs'
+import { existsSync, mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, statSync, writeFileSync, } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { test } from 'node:test'
@@ -48,7 +48,7 @@ for (const browser of ['chromium', 'webkit']) {
             '/usr/bin/timeout',
             '--signal=TERM',
             '--kill-after=15s',
-            '300s',
+            '600s',
             'env',
           ])
           assert.ok(args[6].startsWith('APT_CONFIG='))
@@ -372,3 +372,232 @@ test('unsupported browser arguments are rejected before any process starts', (t)
     )
   }
 })
+
+test('keeps downloaded packages in the cache folder, open to the apt sandbox, and leaves restored ones in place', (t) => {
+  const f = fixture(t)
+  const aptArchives = join(f.root, 'apt-archives')
+  // A restore can leave the folder private; the installer opens it.
+  mkdirSync(aptArchives, { mode: 0o700 })
+  const restored = join(
+    aptArchives,
+    'fonts-unifont_1%3a15.1.01-1build1_all.deb',
+  )
+  writeFileSync(restored, 'restored package')
+  const previousUmask = process.umask(0o077)
+  t.after(() => process.umask(previousUmask))
+  t.mock.method(console, 'log', () => {})
+  let checked = false
+  installCiBrowser('chromium', {
+    ubuntuSources: f.ubuntuSources,
+    temporaryRoot: f.root,
+    aptArchives,
+    run(command, args) {
+      if (command === 'dpkg-query') {
+        return {
+          status: 0,
+          stdout: 'fonts-unifont\t1:15.1.01-1build1\tall\tinstalled\n',
+        }
+      }
+      if (command !== 'sudo') return { status: 0 }
+      const config = readFileSync(args[6].slice('APT_CONFIG='.length), 'utf8')
+      assert.match(
+        config,
+        /^Dir::Etc::sourcelist ("[^"\n]+");\nDir::Etc::sourceparts "-";\n/,
+      )
+      assert.ok(
+        config.includes(
+          `Dir::Cache::Archives ${JSON.stringify(`${aptArchives}/`)};\n`,
+        ),
+      )
+      assert.match(config, /^APT::Keep-Downloaded-Packages "true";$/m)
+      assert.equal(statSync(aptArchives).mode & 0o777, 0o755)
+      checked = true
+      return { status: 0 }
+    },
+  })
+  assert.ok(checked)
+  assert.equal(readFileSync(restored, 'utf8'), 'restored package')
+  assert.deepEqual(readdirSync(f.root).sort(), [
+    'apt-archives',
+    'microsoft-prod.list',
+    'ubuntu.sources',
+  ])
+})
+
+test('without a cache folder apt keeps its own archive', (t) => {
+  const f = fixture(t)
+  let checked = false
+  installCiBrowser('chromium', {
+    ubuntuSources: f.ubuntuSources,
+    temporaryRoot: f.root,
+    aptArchives: '',
+    run(command, args) {
+      if (command !== 'sudo') return { status: 0 }
+      const config = readFileSync(args[6].slice('APT_CONFIG='.length), 'utf8')
+      assert.doesNotMatch(config, /Dir::Cache|Keep-Downloaded/)
+      checked = true
+      return { status: 0 }
+    },
+  })
+  assert.ok(checked)
+})
+
+/** A cache folder as a restore and apt leave it, with apt's own entries. */
+function archivesWith(f, names) {
+  const aptArchives = join(f.root, 'apt-archives')
+  mkdirSync(join(aptArchives, 'partial'), { recursive: true })
+  writeFileSync(join(aptArchives, 'lock'), '')
+  for (const name of names) writeFileSync(join(aptArchives, name), name)
+  return aptArchives
+}
+
+test('after the install the cache folder keeps only the package versions dpkg has installed', (t) => {
+  const f = fixture(t)
+  const aptArchives = archivesWith(f, [
+    'fonts-unifont_1%3a15.1.01-1build1_all.deb',
+    'libnss3_2%3a3.98-1build1_amd64.deb',
+    // Superseded by the version apt downloads below.
+    'libgbm1_25.0.7-0ubuntu0.24.04.1_amd64.deb',
+    // Removed from the system, its configuration left behind.
+    'fonts-freefont-ttf_20211204+svn4273-2_all.deb',
+    // The same version for another architecture.
+    'libnss3_2%3a3.98-1build1_i386.deb',
+    'not-a-package-name.deb',
+  ])
+  const log = t.mock.method(console, 'log', () => {})
+  const calls = []
+  installCiBrowser('chromium', {
+    ubuntuSources: f.ubuntuSources,
+    temporaryRoot: f.root,
+    aptArchives,
+    run(command, args, options) {
+      calls.push(command)
+      if (command === 'sudo') {
+        writeFileSync(
+          join(aptArchives, 'libgbm1_25.0.7-0ubuntu0.24.04.2_amd64.deb'),
+          'downloaded',
+        )
+      }
+      if (command !== 'dpkg-query') return { status: 0 }
+      assert.deepEqual(args, [
+        '-W',
+        '-f=${Package}\t${Version}\t${Architecture}\t${db:Status-Status}\n',
+      ])
+      assert.equal(options.encoding, 'utf8')
+      return {
+        status: 0,
+        stdout: [
+          'fonts-freefont-ttf\t20211204+svn4273-2\tall\tconfig-files',
+          'fonts-unifont\t1:15.1.01-1build1\tall\tinstalled',
+          'libgbm1\t25.0.7-0ubuntu0.24.04.2\tamd64\tinstalled',
+          'libnss3\t2:3.98-1build1\tamd64\tinstalled',
+          '',
+        ].join('\n'),
+      }
+    },
+  })
+  assert.deepEqual(
+    calls,
+    ['sudo', 'dpkg-query', process.execPath],
+    'pruned between the dependency install and the browser download, without sudo',
+  )
+  assert.deepEqual(readdirSync(aptArchives).sort(), [
+    'fonts-unifont_1%3a15.1.01-1build1_all.deb',
+    'libgbm1_25.0.7-0ubuntu0.24.04.2_amd64.deb',
+    'libnss3_2%3a3.98-1build1_amd64.deb',
+    'lock',
+    'partial',
+  ])
+  assert.deepEqual(log.mock.calls.at(-1).arguments, [
+    'apt cache folder: kept 3 installed packages, removed 4: ' +
+      'fonts-freefont-ttf_20211204+svn4273-2_all.deb ' +
+      'libgbm1_25.0.7-0ubuntu0.24.04.1_amd64.deb ' +
+      'libnss3_2%3a3.98-1build1_i386.deb not-a-package-name.deb',
+  ])
+})
+
+for (const query of [
+  { status: 2 },
+  { error: new Error('spawn dpkg-query ENOENT') },
+]) {
+  test(`a failed dpkg-query leaves the cache folder as it was and still installs the browser: ${JSON.stringify(query)}`, (t) => {
+    const f = fixture(t)
+    const names = ['libgbm1_25.0.7-0ubuntu0.24.04.1_amd64.deb']
+    const aptArchives = archivesWith(f, names)
+    const warn = t.mock.method(console, 'warn', () => {})
+    const calls = []
+    installCiBrowser('chromium', {
+      ubuntuSources: f.ubuntuSources,
+      temporaryRoot: f.root,
+      aptArchives,
+      run(command) {
+        calls.push(command)
+        return command === 'dpkg-query' ? query : { status: 0 }
+      },
+    })
+    assert.deepEqual(calls, ['sudo', 'dpkg-query', process.execPath])
+    assert.deepEqual(readdirSync(aptArchives).sort(), [
+      ...names,
+      'lock',
+      'partial',
+    ])
+    assert.equal(warn.mock.callCount(), 1)
+  })
+}
+
+test('a failed dependency install prunes nothing', (t) => {
+  const f = fixture(t)
+  const names = ['libgbm1_25.0.7-0ubuntu0.24.04.1_amd64.deb']
+  const aptArchives = archivesWith(f, names)
+  const calls = []
+  assert.throws(
+    () =>
+      installCiBrowser('chromium', {
+        ubuntuSources: f.ubuntuSources,
+        temporaryRoot: f.root,
+        aptArchives,
+        run(command) {
+          calls.push(command)
+          return { status: 124 }
+        },
+      }),
+    /sudo exited with 124/,
+  )
+  assert.deepEqual(calls, ['sudo'])
+  assert.deepEqual(readdirSync(aptArchives).sort(), [
+    ...names,
+    'lock',
+    'partial',
+  ])
+})
+
+for (const aptArchives of [
+  'relative/apt',
+  '/',
+  '/tmp/apt/',
+  '/tmp/../etc',
+  '/tmp/./apt',
+  '/tmp/a"b',
+  '/tmp/a b',
+  '/tmp/a\nb',
+]) {
+  test(`a cache folder apt.conf cannot hold is refused before anything starts: ${JSON.stringify(aptArchives)}`, (t) => {
+    const f = fixture(t)
+    assert.throws(
+      () =>
+        installCiBrowser('chromium', {
+          ubuntuSources: f.ubuntuSources,
+          temporaryRoot: f.root,
+          aptArchives,
+          run() {
+            assert.fail('installation must not start')
+          },
+        }),
+      /CI_APT_ARCHIVES must be an absolute path of plain names/,
+    )
+    assert.deepEqual(readdirSync(f.root).sort(), [
+      'microsoft-prod.list',
+      'ubuntu.sources',
+    ])
+  })
+}

@@ -1,0 +1,91 @@
+name: Install a Playwright browser
+description: >-
+  scripts/install-ci-browser.mjs with the browser's Ubuntu packages carried in
+  the Actions cache: restores the packages an earlier run kept, lets apt fetch
+  only what the restore lacks, and saves the folder when it holds a set of
+  packages the cache does not have yet. Run after checkout and the setup
+  action.
+
+# Playwright's install-deps fetches the browser's Ubuntu packages on every job,
+# whether or not the browser itself came from the cache: for Chromium on
+# ubuntu-24.04, 13 packages and 32.1 MB on 18 Nov 2026. That day slow Ubuntu
+# mirrors failed at least 25 browser jobs, on main and on pull requests, each
+# still downloading when the installer's five-minute cap ended it, before any
+# test ran. apt does not download a package its archive folder already holds,
+# so a folder restored from the cache leaves it little or nothing to fetch.
+#
+# apt takes a package found in that folder on its size alone, without checking
+# its hash (tried in an ubuntu:24.04 container on 18 Nov 2026: a corrupted copy
+# of the right size went straight to dpkg). The folder is only as trusted as
+# what writes the cache. An entry saved on main serves every branch; a pull
+# request's own entry serves only its later runs. The Playwright browser cache,
+# whose binaries every browser job runs, rests on the same trust.
+#
+# After the install the folder holds only the package versions dpkg has
+# installed (the installer prunes the rest), and an entry's key ends in a hash
+# of those file names. A run restores the newest entry for its Ubuntu release
+# and browser, and saves a new one only when the folder no longer matches it,
+# as when Ubuntu has published a newer package: superseded versions leave the
+# cache, and an update is downloaded once rather than by every later run.
+# Parallel jobs that reach the same new set race to save it; the losers warn
+# rather than fail the build.
+
+inputs:
+  browser:
+    description: chromium or webkit
+    required: true
+
+runs:
+  using: composite
+  steps:
+    - name: Name the browser's package cache
+      id: key
+      shell: bash
+      env:
+        BROWSER: ${{ inputs.browser }}
+      run: echo "prefix=pw-apt-v2-${RUNNER_OS}-${ImageOS:-unknown}-${BROWSER}-" >> "$GITHUB_OUTPUT"
+
+    # No entry is named the prefix alone, so the restore takes the newest
+    # entry under it.
+    - name: Restore the browser's Ubuntu packages
+      id: restore
+      uses: actions/cache/restore@v4
+      with:
+        path: /tmp/playwright-apt-archives/*.deb
+        key: ${{ steps.key.outputs.prefix }}
+        restore-keys: ${{ steps.key.outputs.prefix }}
+
+    - name: Install the browser and its Ubuntu packages
+      shell: bash
+      env:
+        BROWSER: ${{ inputs.browser }}
+        # Under the system /tmp: the apt sandbox reaches the folder only
+        # through public ancestors (docs/agent/MISTAKES.md).
+        CI_APT_ARCHIVES: /tmp/playwright-apt-archives
+      run: node scripts/install-ci-browser.mjs "$BROWSER"
+
+    # Naming and saving only spare a later run its download, so neither can
+    # fail the job.
+    - name: Name the packages the folder now holds
+      id: held
+      continue-on-error: true
+      shell: bash
+      env:
+        PREFIX: ${{ steps.key.outputs.prefix }}
+      run: |
+        shopt -s nullglob
+        debs=(/tmp/playwright-apt-archives/*.deb)
+        if [ "${#debs[@]}" -eq 0 ]; then
+          echo "::warning::apt kept no packages in /tmp/playwright-apt-archives, so the next run downloads them again"
+          exit 0
+        fi
+        hash=$(printf '%s\n' "${debs[@]##*/}" | LC_ALL=C sort | sha256sum | cut -c1-16)
+        echo "key=${PREFIX}${hash}" >> "$GITHUB_OUTPUT"
+
+    - name: Save the browser's Ubuntu packages
+      if: steps.held.outputs.key != '' && steps.held.outputs.key != steps.restore.outputs.cache-matched-key
+      continue-on-error: true
+      uses: actions/cache/save@v4
+      with:
+        path: /tmp/playwright-apt-archives/*.deb
+        key: ${{ steps.held.outputs.key }}

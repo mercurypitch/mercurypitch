@@ -513,6 +513,18 @@ test("a pull request's own changes still set its scope", () => {
   assert.equal(preview.deploy, 'true')
 })
 
+// The Beside Cue browser jobs install their browser the same way, so a change
+// to the install alone must run them too, not only MercuryPitch's.
+for (const path of [
+  '.github/actions/install-browser/action.yml',
+  'scripts/install-ci-browser.mjs',
+]) {
+  test(`a change to the browser install scopes every browser job: ${path}`, () => {
+    const { gate } = scopePullRequest({ [path]: 'changed\n' })
+    assert.deepEqual([gate.root, gate.beside], ['true', 'true'])
+  })
+}
+
 test('a checkout that is not a test merge is scoped as everything', () => {
   const { gate, preview } = scopePullRequest(
     { 'docs/guide.md': 'a guide\n' },
