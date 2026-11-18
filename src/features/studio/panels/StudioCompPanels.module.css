@@ -60,7 +60,11 @@
   font-size: 11px;
   font-weight: 400;
 }
-/* At least a thumb wide, and wider for a time on a time ruler (0:07.5). */
+/* At least a thumb wide, and wider for a time on a time ruler (0:07.5).
+   Every cell of a sheet takes the width of its longest label in bold, from
+   a hidden copy of it below the text, so a pressed (bold) cell is no wider
+   than the rest and a bar's cells line up down the passes. Sized by its own
+   text, a cell drifted 0.66 px right for each bold 0:07.2 before it. */
 .cell {
   appearance: none;
   min-width: 44px;
@@ -74,6 +78,14 @@
   font-size: 12px;
   font-variant-numeric: tabular-nums;
   cursor: pointer;
+}
+.cell::after {
+  display: block;
+  height: 0;
+  overflow: hidden;
+  visibility: hidden;
+  content: var(--comp-widest, '');
+  font-weight: 600;
 }
 .cell[aria-pressed='true'] {
   border-color: var(--studio-accent);
