@@ -4155,3 +4155,4 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   jobs green so far, 2/2 and unit still running. One comment posted (6989633050; the server adds
   its footer, can't be removed). Plan: when #1470 lands, rebase #1467 and #1471 onto main, push,
   merge each on green, verify on dev.
+- 19:50: #1471 run finished: all green but Browser smoke (1/2) (infra) and PR Gate; 2/2 and both unit shards passed. Comment edited to say so. Both PRs wait on #1470.
