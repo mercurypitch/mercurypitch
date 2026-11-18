@@ -41,7 +41,10 @@ const MOBILE_QUERY = `(max-width: ${BREAKPOINTS.mobile}px), (pointer: coarse)`
 const NARROW_QUERY = `(max-width: ${BREAKPOINTS.mobile}px)`
 // A phone on its side: wider than the breakpoint, so not narrow, and short.
 // The pointer keeps a short desktop window, and a touch laptop's mouse, out.
-const SHORT_TOUCH_LANDSCAPE_QUERY = `(pointer: coarse) and (orientation: landscape) and (max-height: ${SHORT_LANDSCAPE_MAX_HEIGHT}px)`
+// Exported because the stylesheets that fold the sidebar into the menu on
+// such a phone write the same condition out by hand (AppSidebar.module.css,
+// app.css, AppHeader.css), and use-viewport.test.ts holds them to it.
+export const SHORT_TOUCH_LANDSCAPE_QUERY = `(pointer: coarse) and (orientation: landscape) and (max-height: ${SHORT_LANDSCAPE_MAX_HEIGHT}px)`
 
 /** Listens for a query's changes on the API the browser has; returns the way to stop. */
 function listen(mql: MediaQueryList, onChange: () => void): () => void {
@@ -108,6 +111,12 @@ export const isShortTouchLandscape: () => boolean = createReactiveMatch(
  * own, so `isNarrow() || isShortTouchLandscape()` was false for a moment
  * while an upright phone turned (narrow had answered, sideways had not), and
  * the desktop mixer mounted in between. One list answers in one notice.
+ *
+ * It is the phone's layout as a whole, not only its stages: on these screens
+ * the Karaoke and Singing tabs draw their phone stages, the sidebar is the
+ * drawer behind the header's menu button, and the voice pill sits in the
+ * header. Wider than the breakpoint, a phone on its side keeps the top tab
+ * bar, which costs it less height than the bottom one would.
  */
 export const isPhoneStage: () => boolean = createReactiveMatch(
   `${NARROW_QUERY}, ${SHORT_TOUCH_LANDSCAPE_QUERY}`,

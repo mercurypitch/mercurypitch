@@ -20,7 +20,7 @@ export interface HudShell {
   native: boolean
   /** A lab surface is open: no app header on any width. */
   labOpen: boolean
-  /** Narrow viewport: the header (when there is one) carries the pill. */
+  /** A phone's layout, narrow or on its side (isPhoneStage): the header (when there is one) carries the pill. */
   narrow: boolean
   /** The app header is unmounted: focus mode, Zen, the challenge stage. */
   headerHidden: boolean

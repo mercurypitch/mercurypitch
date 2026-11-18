@@ -19,9 +19,9 @@ const selectJamSong = vi.fn<(song: JamSong) => boolean>(() => true)
 const selectJamExercise = vi.fn()
 /**
  * The two things a page can be asked about its screen, kept apart because
- * they ARE apart: `phone` is the width the sidebar becomes a drawer at, and
- * `touch` is a finger instead of a mouse. A tablet is the second without
- * the first.
+ * they ARE apart: `phone` is where the sidebar becomes a drawer (narrow, or
+ * a phone on its side), and `touch` is a finger instead of a mouse. A
+ * tablet is the second without the first.
  */
 const viewport = vi.hoisted(() => ({ phone: false, touch: false }))
 
@@ -43,6 +43,8 @@ vi.mock('@/features/karaoke-night/demo-song', async (original) => ({
 vi.mock('@/lib/use-viewport', async (original) => ({
   ...(await original<typeof ViewportModule>()),
   isNarrow: () => viewport.phone,
+  // The drawer's own condition: narrow, or a phone on its side.
+  isPhoneStage: () => viewport.phone,
   // True on a phone as well: a narrow screen is "mobile" whatever points at it.
   isMobile: () => viewport.phone || viewport.touch,
 }))

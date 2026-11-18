@@ -8,6 +8,7 @@
 // is imported fresh for each device, because its matches are app-lifetime
 // singletons read when it loads.
 
+import { readFileSync } from 'node:fs'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 interface Device {
@@ -28,6 +29,10 @@ function feature(text: string): boolean {
       return device.width <= Number(value)
     case 'max-height':
       return device.height <= Number(value)
+    case 'min-width':
+      return device.width >= Number(value)
+    case 'min-height':
+      return device.height >= Number(value)
     case 'orientation':
       return value === (device.width > device.height ? 'landscape' : 'portrait')
     case 'pointer':
@@ -197,5 +202,76 @@ describe('the phone stage, as a phone turns', () => {
     ],
   ])('keeps %s on the desktop mixer', async (_name, device) => {
     expect((await loadFor(device)).isPhoneStage()).toBe(false)
+  })
+})
+
+// The sidebar folds into the header's menu on the phone stage's screens, and
+// the stylesheets turn the drawer on by hand, with the same two conditions.
+// A script and a stylesheet that decide one thing must read one rule
+// (docs/agent/MISTAKES.md, "isMobile() means touch"), so the media queries
+// are read off the files and held to the module's own.
+describe('the sidebar drawer, in the stylesheets', () => {
+  /** Every `@media` condition in a stylesheet, its whitespace collapsed. */
+  const queries = (path: string): string[] =>
+    [...readFileSync(path, 'utf8').matchAll(/@media([^{]+)\{/gu)].map((m) =>
+      m[1].replace(/\s+/gu, ' ').trim(),
+    )
+
+  const devices: Device[] = [
+    { width: 390, height: 844, coarse: true },
+    { width: 844, height: 390, coarse: true },
+    { width: 932, height: 430, coarse: true },
+    { width: 740, height: 360, coarse: true },
+    { width: 667, height: 375, coarse: true },
+    { width: 844, height: 390, coarse: false },
+    { width: 962, height: 521, coarse: true },
+    { width: 1024, height: 768, coarse: true },
+    { width: 1440, height: 900, coarse: false },
+    { width: 700, height: 900, coarse: false },
+  ]
+
+  it('opens the drawer in AppSidebar.module.css where isPhoneStage holds', async () => {
+    const viewport = await loadFor(devices[0])
+    const drawer = `(max-width: 768px), ${viewport.SHORT_TOUCH_LANDSCAPE_QUERY}`
+    const narrowBlocks = queries('src/components/AppSidebar.module.css').filter(
+      (query) => query.includes('(max-width: 768px)'),
+    )
+
+    // The drawer itself, its close button, no collapse button, no rail.
+    expect(narrowBlocks).toEqual([drawer, drawer, drawer, drawer])
+  })
+
+  it('shows the menu button exactly where the drawer is, and hides it everywhere else', async () => {
+    const { SHORT_TOUCH_LANDSCAPE_QUERY } = await loadFor(devices[0])
+    const css = queries('src/styles/app.css')
+    // The button's own rules, and the `display: none !important` above them.
+    const show = css.find(
+      (query) => query === `(max-width: 768px), ${SHORT_TOUCH_LANDSCAPE_QUERY}`,
+    )
+    const hide = css.find((query) =>
+      query.startsWith('(min-width: 769px) and (pointer: fine)'),
+    )
+    if (show === undefined || hide === undefined) {
+      throw new Error('app.css has lost the menu button rules')
+    }
+
+    const wrong: string[] = []
+    for (const device of devices) {
+      const drawer = (await loadFor(device)).isPhoneStage()
+      // The fake's pointer is coarse or fine, never none: a phone has one.
+      if (evaluate(show) !== drawer || evaluate(hide) === drawer) {
+        wrong.push(`${device.width}x${device.height}`)
+      }
+    }
+
+    expect(wrong).toEqual([])
+  })
+
+  it("lays the header's left end out as a phone's on the same screens", async () => {
+    const viewport = await loadFor(devices[0])
+
+    expect(queries('src/components/AppHeader.css')).toContain(
+      viewport.SHORT_TOUCH_LANDSCAPE_QUERY,
+    )
   })
 })

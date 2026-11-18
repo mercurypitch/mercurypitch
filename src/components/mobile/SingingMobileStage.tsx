@@ -13,6 +13,11 @@
 // Guides). Everything else stays desktop-only for now, advertised by the
 // DesktopHint. Key/scale/octave/precount reuse the same store paths the
 // sidebar uses; App-scope playback handlers arrive as props.
+//
+// A phone on its side gets this stage too (isPhoneStage in App), in two
+// columns: the song, the scrubber and the transport on the left, the notes
+// the full height beside them. Its portrait column spent 170 px of a 260 px
+// stage at 740x360 on chrome and left the notes 97.
 
 import type { Component, JSX } from 'solid-js'
 import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
@@ -30,6 +35,7 @@ import { haptics } from '@/lib/haptics'
 import { keyDisplayName, keysFor } from '@/lib/key-names'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import type { MidiSongPicker } from '@/lib/use-midi-song-picker'
+import { isShortTouchLandscape } from '@/lib/use-viewport'
 import { bpm, getCurrentSessionItem, keyName, practiceSession, scaleType, sessionActive, setBpm, setKeyName, setScaleType, } from '@/stores'
 import { melodyStore } from '@/stores/melody-store'
 import { nativeShellApi, registerRunControls, shellOwnsTransport, } from '@/stores/native-shell-store'
@@ -174,7 +180,13 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
         : 'Session'
 
   return (
-    <div class={styles.stage} data-testid="singing-mobile-stage">
+    <div
+      classList={{
+        [styles.stage]: true,
+        [styles.sideways]: isShortTouchLandscape(),
+      }}
+      data-testid="singing-mobile-stage"
+    >
       {/* ── Status chips ─────────────────────────────────── */}
       <div class={styles.chips} data-tour="singing-mobile-chips">
         <button

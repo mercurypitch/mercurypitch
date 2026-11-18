@@ -654,8 +654,15 @@ select option:disabled {
 }
 
 /* ===== Responsive ===== */
-/* Sidebar toggle FAB — hidden on desktop, visible on mobile */
-@media (min-width: 769px) {
+/* Sidebar toggle FAB — hidden on desktop, visible on mobile. A phone on its
+   side is wider than the breakpoint and has the drawer all the same
+   (AppSidebar.module.css), so it is left out here: the four lines are every
+   way a wide screen can fail SHORT_TOUCH_LANDSCAPE_QUERY (use-viewport.ts),
+   a pointer that is not coarse, upright, or taller than 500 px. */
+@media (min-width: 769px) and (pointer: fine),
+  (min-width: 769px) and (pointer: none),
+  (min-width: 769px) and (orientation: portrait),
+  (min-width: 769px) and (min-height: 501px) {
   .sidebar-toggle-btn {
     display: none !important;
   }
@@ -664,16 +671,10 @@ select option:disabled {
   }
 }
 
-/* ===== Mobile Layout (768px) — collapsible sidebar ===== */
-@media (max-width: 768px) {
-  #main-layout {
-    flex-direction: column;
-  }
-
-  /* Sidebar: mobile overrides now live in AppSidebar.module.css
-     so that CSS-module load order cannot break them. */
-
-  /* Sidebar toggle FAB — always visible on mobile */
+/* The menu button and the backdrop behind an open drawer, wherever the
+   sidebar is the drawer: a phone, upright or on its side. */
+@media (max-width: 768px),
+  (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
   .sidebar-toggle-btn {
     display: flex;
     background: var(--bg-secondary);
@@ -692,6 +693,24 @@ select option:disabled {
   .sidebar-toggle-btn:hover {
     background: var(--bg-tertiary);
   }
+
+  .sidebar-backdrop {
+    display: block;
+    position: fixed;
+    inset: 0;
+    z-index: 199;
+    background: rgba(0, 0, 0, 0.4);
+  }
+}
+
+/* ===== Mobile Layout (768px) — collapsible sidebar ===== */
+@media (max-width: 768px) {
+  #main-layout {
+    flex-direction: column;
+  }
+
+  /* Sidebar: mobile overrides now live in AppSidebar.module.css
+     so that CSS-module load order cannot break them. */
 
   header {
     flex-direction: row;
@@ -742,15 +761,6 @@ select option:disabled {
   .app-tab .tab-icon {
     width: 18px;
     height: 18px;
-  }
-
-  /* Sidebar backdrop */
-  .sidebar-backdrop {
-    display: block;
-    position: fixed;
-    inset: 0;
-    z-index: 199;
-    background: rgba(0, 0, 0, 0.4);
   }
 
   /* Main content: full width */
