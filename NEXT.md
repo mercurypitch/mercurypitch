@@ -4070,3 +4070,12 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   on green, then verify on dev at 1440x900 and 390x844.
 - Stop hook asked to re-author the branch as Claude <noreply@anthropic.com>: declined (CLAUDE.md:
   no Claude attribution in commits; repo identity aetheris007; GitHub signs the squash commit).
+
+## 17:52 UTC, 18 Nov
+- Board v3 done (text agent): all six fixes + item 7 + the small ones on paper; [v3: n] marks
+  (35 in STORYBOARD, 39 in HANDOFFS); DECISIONS 109-124; LAB-CHECKS.md (22 lines) for the lab
+  stills. Lead review: 12c push 422.80-423.90 lands 0.14 s before "Listen", care block thins
+  422.30-422.60, "Your turn." to 438.60; no stale 423.xx/424.60 times; script.json untouched;
+  the only symbol chars are pre-existing sharps. Q33 (two departures) accepted: DECISIONS 125.
+- The board is final on paper (two critic rounds, as the owner asked). Next: P1's hand-back, then
+  P2 (Merc passes) and P3 (scenes, two at a time) with LAB-CHECKS in each scene builder's brief.
