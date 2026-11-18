@@ -4248,3 +4248,19 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   group A builder (resumable) for the fix round. Kept-out list in its prompt (BUILD-NOTES, probe,
   measure*, contrast*, DECISIONS, LEDGER, briefs, leadnotes).
 - Film critic LEDGER started: l5film/LEDGER.md (storyboard-01/02, kit-01, A-01 pending).
+
+## 23:11 UTC, 18 Nov
+- #1471 MERGED (squash 34747e6c0, CI all green incl. both browser smoke shards). Dev check queued:
+  background wait for dev to serve 34747e6c0 then $S/dev/polish-dev.mjs -> $S/dev/polish/run.log
+  (notice place at 5 sizes, Karaoke header, Warmup Start, production requests).
+- #1467 conflicted after #1471 (MISTAKES.md, both appended): REBASED again onto 34747e6c0 in notice
+  (tag lead/ear-lab-wide-pre-rebase3 = 5c041bb6a), both entries kept; index current; Ear Lab tour
+  steps carry no viewport, so #1471's tour change does not reach them. Light gates running ->
+  $S/rebase1467c (one heavy job at a time this time). Then push with lease over 5c041bb6a9f9.
+- CRITIC A-01 back: ONE MORE PASS (saved l5film/review/critic-A-01/REPORT.md). Lead calls
+  DECISIONS 170-177 (guess over Merc's line at 0 + easy take dim + travelling head; pass: type and
+  hosts first, approach ~0.7 s log scale, no pop; S4 crane keeps its subject; S1 pull keeps band
+  fill + A3; S3 label left-aligned; q0 ring beside the swatches; S2 chart 0.2 s earlier; scratch
+  voice on every clip, S1 lost its audio stream). Sent to the group A builder (resumed). NO second
+  critic for group A: the lead checks the stills. LEDGER row filled.
+- FOR GROUP C's BRIEF: DECISIONS 170 applies to 10b (Merc's line to 0 under the guess).
