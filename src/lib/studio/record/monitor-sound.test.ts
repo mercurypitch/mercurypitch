@@ -217,6 +217,7 @@ describe('the master gain the monitored inputs play at', () => {
   // Compare measured +8 dB with a safety gain of -0.5 dB and matched the
   // sides: Before as it was, After turned down 7.5 dB.
   const gains = {
+    beforeEncodingGainDb: 0,
     beforeGainDb: -2,
     afterGainDb: -7.5,
     gainDb: 8,
@@ -232,6 +233,15 @@ describe('the master gain the monitored inputs play at', () => {
       gainDb: -2,
       safetyGainDb: -0.5,
     })
+  })
+
+  it("adds the gain Before's WAV was encoded at while Compare plays Before, as Before's song plays", () => {
+    // A dry mix peaking at -0.5 dBTP is encoded 2.5 dB down, then played
+    // at its match gain: 4.5 dB under the dry mix in all.
+    const loud = { ...gains, beforeEncodingGainDb: -2.5 }
+    expect(
+      studioMonitorMasterGain(heard, { side: 'before', gains: loud }),
+    ).toEqual({ gainDb: -4.5, safetyGainDb: -0.5 })
   })
 
   it("is the measured gain plus After's match gain while Compare plays After, as After's song plays", () => {

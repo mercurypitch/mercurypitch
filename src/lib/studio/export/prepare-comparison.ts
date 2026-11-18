@@ -20,6 +20,12 @@ export interface StudioComparison {
   revision: number
   before: Blob
   after: Blob
+  /**
+   * The gain Before's WAV was encoded at: the dry mix turned down to peak
+   * under -3 dBTP, else 0. `beforeGainDb` plays that WAV, so Before's song
+   * sounds at their sum from the dry mix.
+   */
+  beforeEncodingGainDb: number
   beforeGainDb: number
   afterGainDb: number
   gainDb: number
@@ -115,6 +121,7 @@ export async function prepareStudioComparison(
       revision: snapshot.revision,
       before,
       after: after.blob,
+      beforeEncodingGainDb: encodingGain,
       beforeGainDb: match - beforeMeasurement.integratedLufs,
       afterGainDb: match - after.measurement.integratedLufs,
       gainDb: after.gainDb,

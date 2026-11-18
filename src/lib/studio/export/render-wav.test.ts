@@ -4,7 +4,10 @@ import type { EffectSpecOf } from '@/lib/studio-fx/chain-spec'
 import { normalizeChainSpec } from '@/lib/studio-fx/chain-spec'
 import { FakeBuffer } from '@/lib/studio-fx/fake-audio-graph.test-fixtures'
 import { studioReservedMemoryBytes } from '../memory-budget'
+import { audioBufferReader, measureStudioPcm } from '../metering/measure-async'
+import { meterTone } from '../metering/meter.test-fixtures'
 import { studioFixture } from '../model/model.test-fixtures'
+import type { renderStudioArrangement } from '../playback/offline-render'
 import { PlaybackContext } from '../playback/playback.test-fixtures'
 import { analyzeStudioBalance } from './analyze-balance'
 import { prepareStudioComparison } from './prepare-comparison'
@@ -74,6 +77,40 @@ describe('Studio verified WAV job', () => {
     )
     result.release()
     result.release()
+    expect(studioReservedMemoryBytes()).toBe(0)
+  })
+
+  it("says how far Before's WAV was turned down from a dry mix peaking above -3 dBTP", async () => {
+    // The dry mix is a tone near full scale, so Before is encoded under
+    // -3 dBTP; After renders the fixture's quiet tone as it does.
+    const { project, asset } = studioFixture()
+    const adapters = testAdapters()
+    const dryMix = audio(meterTone(48000, 0.5, 997, 0.9))
+    let renders = 0
+    const arrangement = vi.fn<typeof renderStudioArrangement>(
+      async (...args) =>
+        ++renders === 1
+          ? adapters.arrangement(...args)
+          : { ...owned(dryMix), projectId: 'project-1', revision: 0 },
+    )
+    const dry = await measureStudioPcm(audioBufferReader(dryMix), {
+      createWorker: null,
+    })
+    const result = await prepareStudioComparison(project, [asset], vi.fn(), {
+      dependencies: { ...adapters, arrangement },
+    })
+    const before = await measureStudioWav(await result.before.arrayBuffer(), {
+      createWorker: null,
+    })
+    result.release()
+    // The WAV is the dry mix at the encoding gain, so the song on Before
+    // plays at beforeEncodingGainDb + beforeGainDb from the dry mix.
+    expect(result.beforeEncodingGainDb).toBeCloseTo(-3 - dry.truePeakDb, 8)
+    expect(result.beforeEncodingGainDb).toBeLessThan(-1)
+    expect(before.integratedLufs).toBeCloseTo(
+      dry.integratedLufs + result.beforeEncodingGainDb,
+      2,
+    )
     expect(studioReservedMemoryBytes()).toBe(0)
   })
 
