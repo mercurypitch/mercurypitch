@@ -4034,3 +4034,21 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - 18 Nov 16:47 UTC: L5 STORYBOARD v2 HANDED BACK ((builder)): STORYBOARD.md 595 lines (header maps each critic item to rows; changed rows end "[v2: n]"), HANDOFFS.md 602 lines (wave rule: cycle 203.6/W px, p-p 280/W, every framing tabled), DECISIONS 86-108 + Q30-Q32, script.json six "gap": 2.2, SCRIPT-DRAFT regenerated (Draft 3, 9:22.0), one FACTS § 4 line (out-breath). v1 kept in review/storyboard-v1/. 15 scenes/15 compositions, 82 shot rows. Lead answers Q30 keep small doctor lines, Q31 hops at the recap break, Q32 plain cut: appended to /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/leadnotes/l5-storyboard-answers.md (all match v2 as built). STORYBOARD CRITIC 02 (LAST) RUNNING: (builder) -> review/storyboard-02/REPORT.md (save its text). THEN: lead check, then PRODUCTION (cues.py to recreate; Kokoro ready).
 - 18 Nov 16:49 UTC: PRODUCTION P1 BRIEF READY: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/briefs/l5-film-p1-toolchain.md (scaffold hyperframes@0.8.97 into /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film, smoke test + doctor, copy/adapt L4's surviving tools, RECREATE lost tools: tts.py + cues.py (Kokoro am_michael 0.84 / af_heart 0.9, WAV + envelope + word times + cues.json + pacing; schema = l4film/tools/board-cues.json), build-merc.mjs, lab.mjs, clock lint; scratch clock vs board 9:22.0; gen-root placeholder render; one Merc test pass). L4's lost tools: cues.py, tts.py, clock-lint.py, lab.mjs, board-cues.js, text-sweep.py/.mjs, hdiff.py, build-merc.mjs, merc-combine.py. LAUNCH after storyboard critic 02 returns (fewer concurrent agents after the 13:30 usage limit). Phases after: P2 Merc passes (bg renders), P3 scene builders (groups A-E, two at a time), P4 mix + captions + film critic rounds, P5 the owner's ElevenLabs voices (connector disconnected now) + re-time + final.
 - 18 Nov 16:59 UTC: #1469 MERGED (squash 86fe1f081) after a FULLY GREEN PR Gate on 4664e2e27 (both smoke shards passed this time: the mirror is intermittent). Unsubscribed. NEXT: verify on dev (sideways sizes + upright) when dev serves 86fe1f081. NOTE: polish builder's branch feat/sideways-polish is stacked on 4664e2e27 -> after it hands back: git rebase --onto origin/main 4664e2e27 (the squash replaced the three commits). #1467 still waits (its re-run is spent; CI intermittent).
+
+## 17:11 UTC, 18 Nov
+- #1469 verified on dev (86fe1f081, served 17:04:05): Singing tab sideways at 844x390, 932x430,
+  740x360 (two columns; notes 608x342, 684x382, 533x250), upright 390x844 (notes 390x569) and desk
+  1440x900 (unchanged), both themes; no sideways slide, no page errors, no production requests.
+  The one empty reading (844x390 dark) was a cold first load (the static intro page still up at
+  9 s); with a wait for the header it measures as light. Shots: $S/dev/side/shots/. Task 34 done.
+- Storyboard critic 02 (the last): ONE MORE PASS, six paper fixes, no third round needed. Report
+  saved: $S/l5film/review/storyboard-02/REPORT.md. Baseline copies for the diff:
+  review/storyboard-02/before/.
+- Lead calls: all six fixes taken; 12c push moves to 422.80-423.90 (b41's gap stays 0.2, clock
+  unchanged), the care block thins 422.30-422.60; item 7 taken now on paper ("Your turn." stays to
+  438.60); the small items (9, 11, previous 2 and 5) on paper too; 8, 10 and the unjudgeable list to
+  a new LAB-CHECKS.md. Q30-Q32 answers go into DECISIONS (from $S/leadnotes). Length: decision 99
+  stands.
+- Launched: board v3 text agent (brief $S/briefs/l5-board-v3.md) and the P1 toolchain builder
+  (brief $S/briefs/l5-film-p1-toolchain.md, told the board is being edited alongside). Heavy
+  builders now: polish builder + P1.
