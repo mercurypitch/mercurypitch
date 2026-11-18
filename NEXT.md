@@ -4195,3 +4195,12 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   speaker (merc-shots.py); hop spacing 0.65 s kept. Re-render of affected chunks at 30 fps asked.
 - Told the kit builder: FEET 0.836 (not 0.829), roots.js exists (add to scripts.txt), Tavi
   mirrored by default.
+
+## 21:12 UTC, 18 Nov
+- Kit fix round done (370/370 probe, root check 0/0). Lead checked: figure redrawn as a
+  side-profile body (accepted); gauge backs + "Now: adding" + "added" inside; chapter card capped;
+  CU-scoop anchored left; recap first frame Merc-only; turn's phase row leaves before the push.
+  Lead edits: HANDOFFS "added" line [kit-01: 2]; LAB-CHECKS 2 reworded for L.roomCut [kit-01: 6].
+  Asked P2 to renumber its DECISIONS 132-135 -> 160-163 (clash with the kit's).
+- Tick in 1f sits between the pills (9 px each side): group A must make it read as pill 2's.
+- Launching scene group A now (one heavy agent, P2 re-render is the other); group B when P2 ends.
