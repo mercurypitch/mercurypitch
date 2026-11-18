@@ -359,9 +359,9 @@ button.
   subset as data: Subdivide on its two 3/4 and two 6/8 patterns only, `metre:3-4:a`, `metre:3-4:b`,
   `metre:6-8:a` and `metre:6-8:b`, with two pads, 3/4 and 6/8 (FACTS 50). The card's text changed
   as LESSON.md's editorial note says.
-- **Needs engineering: the lesson marker** for 15 to 28 (SEASON-2 § 5.2 item 21), without which
-  `?lesson=19` is an ordinary visit and First Light opens (FACTS 47). It is part of the kit PR this
-  page waits on.
+- **Shipped on 4 November 2026: the lesson marker** for 15 to 28 (SEASON-2 § 5.2 item 21,
+  `623b3b7e2`), so `?lesson=19` steps First Light aside on a first visit (FACTS 47a). It came ahead
+  of the kit PR this page waits on.
 - **No practice for 6/8 reading**: the app writes no compound metre (FACTS 52; SEASON-2 § 5.3), so
   only this page writes 6/8 until a drill does.
 
@@ -418,8 +418,8 @@ The page is built only after these, most of them shared with Lessons 15 and 17:
 8. **The woodblock in the kit**, Lesson 17's item.
 9. **The hop**: `kit/merc-hop.ts` exists; the page imports it and books the groupings with Lesson 8's
    lead of 0.6 s and their hops `HOP_MS` early (FACTS 57).
-10. **The lesson plumbing** (SEASON-2 § 5.2 item 21): the marker's reach to 19, the lesson-answer
-    bounds and the admin console.
+10. **The lesson plumbing, shipped on 4 November 2026** (SEASON-2 § 5.2 item 21, `623b3b7e2`): the
+    marker's reach to 19, the lesson-answer bounds and the admin console (FACTS 47a).
 11. **Lesson 17's page**, for the recall's imported questions and the chip's link.
 12. **The `ear-drill` launch kind** and Subdivide's subset (Practice links), after which the card's
     text changes.

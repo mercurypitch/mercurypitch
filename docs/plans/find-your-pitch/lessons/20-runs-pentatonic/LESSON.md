@@ -79,8 +79,8 @@ listing and arguing every one.
 The page is published only after Lessons 5, 9 and 10 are live, because its prerequisite chips and
 its recall link there and it imports Lessons 9 and 10's questions, and after the vocal coach's
 sign-off (For the vocal coach). It also waits on the Season 2 kit work (WEB-SPEC, What the kit and
-the app still need), the lesson marker's reach to `?lesson=20` among it, so its practice card has no
-first-visit line (FACTS 69).
+the app still need); the lesson marker's reach to `?lesson=20` shipped on 4 November 2026, so its
+practice card has no first-visit line (FACTS 69b).
 
 ---
 
@@ -355,9 +355,9 @@ smudging it.
   be here when your voice feels comfortable: **mercurypitch.com/exercises/pentatonic-run**"
 
 _[Editorial: Scale Runner's address links `/exercises/pentatonic-run?lesson=20` since 17 November
-2026, and Staccato Precision's `/pitch-training?lesson=20` (FACTS 69a). The page is not built before the
+2026, and Staccato Precision's `/pitch-training?lesson=20` (FACTS 69a). Since 4 November 2026 the
 lesson marker reads Season 2's numbers (SEASON-2 § 5.2 item 21), so First Light, the app's intro,
-steps aside on a first visit and the card has no first-visit line (FACTS 69). The rest card drops
+steps aside on a first visit and the card has no first-visit line (FACTS 69b). The rest card drops
 Staccato Precision, since it asks for the voice too (FACTS 72). Not linked:
 `/exercises/speed-scales`, which opens Scale Runner fast, since no score on this page rewards speed
 (FACTS 68). Scale Runner's scale launch field and minor pentatonic shipped on 15 November 2026

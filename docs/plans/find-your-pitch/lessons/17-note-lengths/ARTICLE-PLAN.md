@@ -186,7 +186,7 @@ this page is synthesised in your browser."
   **Pulse**, which plays a bar for you to tap back. Both at 100 BPM, a quarter note 0.6 s (R17 finding
   5), and both mix all fifteen patterns, triplets and sixteenths among them (R17-14), so the card says:
   "It mixes in triplets and sixteenths too; this lesson's are the quarters, halves and eighths."
-  `?lesson=17` is not a lesson marker yet (R17-17).
+  `?lesson=17` was not a marker yet (R17-17); it is since § 5 item 21 shipped on 4 November 2026.
 - **Missing:** the `ear-drill` launch kind (SEASON-2 § 5 item 12), to open The Chart on its own with
   only quarters, halves and eighths (R17-16); ties anywhere in the app (R17-13): Step 5's ties are
   practised on the page only. Since 17 November 2026 the card links The Chart on that set,

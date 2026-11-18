@@ -359,9 +359,9 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
   asks for your voice.
 
 _[Editorial: the links are `/?lesson=21#/compose` and `/ear-lab?lesson=21`, printed without the
-marker, as every Season 1 card prints the public address. The page is built only after the kit's
-first Season 2 work, which widens the lesson marker (SEASON-2 § 5.2 item 21, § 8.2 item 1), so
-First Light steps aside and the card has no first-visit line (FACTS 46). In Compose the key picker
+marker, as every Season 1 card prints the public address. The lesson marker reads Season 2's
+numbers since 4 November 2026 (SEASON-2 § 5.2 item 21, `623b3b7e2`), ahead of the kit's work, so
+First Light steps aside and the card has no first-visit line (FACTS 46a). In Compose the key picker
 moves the tune by the gap between the old key and the new, and Sheet Music picks its clef from the
 tune's middle note, so the staff may switch between bass and treble as the tune moves; both clefs'
 signatures are taught here (FACTS 42). Since 17 November 2026 the menu writes B♭ and the bench

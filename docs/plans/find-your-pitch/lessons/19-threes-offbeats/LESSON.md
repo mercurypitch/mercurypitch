@@ -74,8 +74,8 @@ every departure. In short:
 
 The page is published only after Lesson 17's page, `/learn/17`, is live, because its prerequisite
 chip and its recall link there, and imports Lesson 17's quiz questions. It also
-waits on the Season 2 kit work (WEB-SPEC, What the kit and the app still need), the lesson marker's
-reach to `?lesson=19` among it (FACTS 47).
+waits on the Season 2 kit work (WEB-SPEC, What the kit and the app still need); the lesson marker's
+reach to `?lesson=19`, once part of it, shipped on 4 November 2026 (`623b3b7e2`; FACTS 47a).
 
 ---
 
@@ -312,8 +312,8 @@ six.
 _[Editorial: since 17 November 2026 the card opens Subdivide with only its 3/4 and 6/8 bars, the set
 SEASON-2 § 5.2 item 12 gave this lesson, and "you name the metre from four pads" became "you say
 whether the bars are 3/4 or 6/8" (FACTS 50a). Pulse keeps the Ear Lab's address, by Time. Every link carries `?lesson=19` before any
-hash, so First Light, the app's intro, steps aside on a first visit once the lesson marker reads
-Season 2's numbers (FACTS 47); the page is not built before that, so the card has no first-visit
+hash, so First Light, the app's intro, steps aside on a first visit: the lesson marker reads
+Season 2's numbers since 4 November 2026 (`623b3b7e2`; FACTS 47a), so the card has no first-visit
 line. Nothing on the page is sung, so the card has no rest version.]_
 
 **Next lesson:** Lesson 20, Runs and the pentatonic scale. "How do singers sing a fast run without

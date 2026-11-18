@@ -138,8 +138,8 @@ heading, and the line above it, are in LESSON.md ("Section headings").
    play, the step toys unlocked.
 9. **Explorer**: the season's map, with a tab per season, opening on Season 2's (Explorer and season
    data).
-10. **Footer**: LESSON.md's, with the practice link and its first-visit line, the fonts line and
-    "Every sound on this page is synthesised in your browser."
+10. **Footer**: LESSON.md's, with the practice link and no first-visit line (FACTS 42a), the fonts
+    line and "Every sound on this page is synthesised in your browser."
 
 ## Length
 
@@ -181,9 +181,9 @@ words, which bring it back under; every fact they carry stays in FACTS:
 2. Step 5's Go deeper drawer, from 54 keys to 88 (41 words; FACTS 28).
 3. Step 4's second Go deeper item, the alto clef (20 words; FACTS 27). Its first, the octave
    treble clef, stays: SEASON-2 § 7 item 2 names it for Go deeper.
-4. The practice card's first-visit line (22 words; FACTS 42), which goes anyway once SEASON-2 § 5.2
-   item 21 widens the lesson marker, and this spec asks for item 21 first or with the page
-   (Decisions for the owner, 2).
+4. The practice card's first-visit line (22 words; FACTS 42), which went when SEASON-2 § 5.2 item 21
+   widened the lesson marker, shipped first, on 4 November 2026 (`623b3b7e2`; FACTS 42a), as
+   Decisions for the owner, 2, asked.
 
 The activities are timed from this spec's lengths (FACTS 3, 62 to 69). Free play is not counted.
 
@@ -587,14 +587,14 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    (`src/features/lessons/kit/lesson-copy.ts:12`, `:79`), within `TEASE_MAX` (`:75-76`; FACTS 5):
    the proposal and the plan's line as its variant, with the variant's team note (Explorer and
    season data). The admin console switches between them; nothing on this page changes.
-9. **Season 2 in the app's lesson plumbing** (SEASON-2 § 5.2 item 21), the app's work, not the
-   page's: the lesson marker's range (`src/lib/lesson-marker.ts:19`), so `?lesson=15` steps First
-   Light aside and holds the takeover back (FACTS 42, 48); the lesson-answer bounds
-   (`workers/db-worker/src/mirror-metrics.ts:61-62`), which refuse Lesson 15's answers whole today
-   (FACTS 47); the admin console's one row per Season 1 lesson
-   (`src/features/admin/lessons/lesson-admin.ts:88`); `RELEASED_LESSONS`
-   (`src/lib/current-lesson.ts:34-37`). When the marker widens, LESSON.md's first-visit line comes
-   out of the card and the footer, as Season 1's did.
+9. **Season 2 in the app's lesson plumbing: shipped on 4 November 2026** (SEASON-2 § 5.2 item 21,
+   `623b3b7e2`), the app's work: the lesson marker reads 01 to 28 (`src/lib/lesson-marker.ts:19-20`),
+   so `?lesson=15` steps First Light aside and holds the takeover back (FACTS 42a, 48a); the
+   lesson-answer bounds take 1 to 28 (`workers/db-worker/src/mirror-metrics.ts:62-63`), so Lesson
+   15's answers are kept (FACTS 47a); the admin console lists every season's lessons
+   (`src/features/admin/lessons/lesson-admin.ts:89-96`), and a test holds `RELEASED_LESSONS` to
+   every season's released lessons (`src/lib/current-lesson.test.ts:17-27`). LESSON.md's first-visit
+   line came out of the card and the footer, as Season 1's did.
 10. **The head and the share card** (Sections, 2): the title, the descriptions, the share card
     `learn/lesson-15-og.jpg` and its alt, and the structured data with `timeRequired` `PT15M`.
 11. **The recall pair's sound owner** (Toys 7; Audio): Lesson 2's handler for question 2's play
@@ -610,12 +610,12 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
    2026, with the terms people type: "read the staff", "clefs", "middle C". The alternative,
    "Treble and bass clef notes: reading the staff | MercuryPitch" (60), leads with the clefs and
    sits at the cap. Neither names how many places a staff has (FACTS 1a).
-2. **Release before or after the app's Season 2 plumbing** (SEASON-2 § 5.2 item 21). Recommended:
-   ship item 21 first, or with this page. Before it, the practice link meets First Light on a first
-   visit (the card's first-visit line covers it), a returning visitor may meet the takeover over
-   Compose, and every quiz answer on the page is dropped by the worker, so the season's first page
-   would report no first-try scores (FACTS 42, 47, 48). Since the release follows Lesson 16, which
-   waits on app work of its own (SEASON-2 § 7 item 6), item 21 can ride with it.
+2. **Release before or after the app's Season 2 plumbing** (SEASON-2 § 5.2 item 21). Taken: item 21
+   shipped first, on 4 November 2026 (`623b3b7e2`). The practice link steps First Light aside on a
+   first visit, so the card has no first-visit line; a returning visitor meets no takeover over the
+   drill; and the worker keeps every quiz answer on the page, so the season's first page reports
+   first-try scores (FACTS 42a, 47a, 48a). Before it, a first visit would have met First Light and
+   the worker would have dropped every answer (FACTS 42, 47, 48).
 
 ## Edge cases
 

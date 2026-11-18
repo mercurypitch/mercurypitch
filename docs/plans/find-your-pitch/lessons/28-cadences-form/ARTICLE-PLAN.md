@@ -209,9 +209,9 @@ For everyone (prerequisites Lessons 18 and 26); Lesson 14's shows once Lesson 14
 - **Linked: Ear Lab's Cadence**, `/ear-lab?lesson=28`, then tap Cadence: it names progressions
   (I–IV–V, I–V–vi–IV, ii–V–I and five more), not cadence types (R15); the card says "listen for how
   each progression ends".
-- **Waits:** the harmony-line drill (item 17); `?lesson=28` (item 21). Since 17 November 2026 the
-  card links Sing It in Time (`/exercises/sing-it-in-time?lesson=28`, item 11), the close keeping
-  Karaoke Night, and Name the Cadence (`/exercises/name-the-cadence?lesson=28`, item 19).
+- **Waits:** the harmony-line drill (item 17); `?lesson=28` reads since 4 November 2026 (item 21).
+  Since 17 November 2026 the card links Sing It in Time (`/exercises/sing-it-in-time?lesson=28`, item 11),
+  the close keeping Karaoke Night, and Name the Cadence (`/exercises/name-the-cadence?lesson=28`, item 19).
 
 ## Go deeper
 

@@ -601,8 +601,8 @@ stills when WebGL fails.
   Lesson 12's form, "Rest today. Sing It in Time will be here when your voice feels comfortable:
   mercurypitch.com/exercises/sing-it-in-time", is no longer a link for Sing It in Time, and keeps
   The Chart (FACTS 60).
-- **The first visit.** The page is not built before SEASON-2 § 5.2 item 21 widens the lesson marker,
-  so `?lesson=18` steps First Light aside and the card and footer have no first-visit line (FACTS 69).
+- **The first visit.** The lesson marker reads `?lesson=18` since 4 November 2026 (`623b3b7e2`),
+  so First Light steps aside and the card and footer have no first-visit line (FACTS 69b).
 - **Not linked: the Singing tab's sheet view.** Since 17 November 2026 `/?lesson=18#/singing/sheet`
   opens it and a take is scored there, but on a phone held upright it opens the piano roll, and it
   shows the tab's melody, not this page's tunes, so the card does not link it (FACTS 72a).
@@ -710,9 +710,9 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
 9. **No decorative staff** (Lesson 15's item 7).
 10. **The lesson copy**: this lesson's tease set on Lesson 18, with no alternative, within `TEASE_MAX`
     (`src/features/lessons/kit/lesson-copy.ts:76`): 57 characters (FACTS 5b).
-11. **Season 2 in the app's lesson plumbing** (SEASON-2 § 5.2 item 21), the app's work: the lesson
-    marker's range, so `?lesson=18` steps First Light aside (FACTS 69), and the lesson-answer bounds,
-    which refuse Lesson 18's answers whole today (FACTS 70).
+11. **Season 2 in the app's lesson plumbing: shipped on 4 November 2026** (SEASON-2 § 5.2 item 21,
+    `623b3b7e2`): the lesson marker's range, so `?lesson=18` steps First Light aside (FACTS 69b),
+    and the lesson-answer bounds, which keep Lesson 18's answers (FACTS 70a).
 12. **Sight-singing in time and Sight-Singing for the lessons** (SEASON-2 § 5.2 items 11 and 10):
     shipped, and the card links Sing It in Time since 17 November 2026 (Practice links).
 13. **The head and the share card** (Sections, 2): the title, the descriptions, the share card
@@ -822,8 +822,8 @@ each below is taken and nothing here waits.
   toy locks until the choice, since no done mark can be read; nothing breaks.
 - **Lesson 16 or 17 not live** where the page is served: its chip stays a plain chip and the recall's
   step links keep their words with no link (FACTS 2, 7).
-- **The practice links before item 21 ships**: First Light would open on a first visit; the page is
-  not built before it (FACTS 69).
+- **The practice links**: the lesson marker reads `?lesson=18` since 4 November 2026 (`623b3b7e2`),
+  so First Light steps aside on a first visit (FACTS 69b).
 - **Sing It in Time's tunes**: it deals its own, in a major key, not this page's two; the card does
   not say it sings them (FACTS 69a).
 - **The Chart's triplets**: its set's address writes none, quarters and eighths only (FACTS 71a).

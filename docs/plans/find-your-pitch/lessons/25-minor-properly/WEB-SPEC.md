@@ -476,9 +476,9 @@ other, paused off screen, and the still images when WebGL fails.
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card keeps
   Gravity and shows Lesson 12's rest line naming Sight-Singing in place of the second drill (Toys 5;
   FACTS 47).
-- **The first visit.** `?lesson=25` is not a lesson marker today, so a first visit would meet First
-  Light, the app's intro, before Ear Lab or the Singing tab. The page is not built before SEASON-2 §
-  5.2 item 21 widens the marker, so the card and the footer carry no first-visit line (FACTS 50).
+- **The first visit.** The lesson marker reads `?lesson=25` since 4 November 2026 (SEASON-2 § 5.2
+  item 21, `623b3b7e2`), so a first visit meets no First Light, the app's intro, before either drill,
+  and the card and the footer carry no first-visit line (FACTS 50a).
 - **Shipped on 16 November 2026: the `ear-drill` launch kind** (SEASON-2 § 5.2 item 12), which
   opens Gravity on Te and Ti alone. The card's last sentence went and the link opens the subset
   (FACTS 49, 50a).
@@ -596,13 +596,13 @@ first; they are listed so this page's needs are in one place.
     `TEASE_MAX` (`src/features/lessons/kit/lesson-copy.ts:76`; FACTS 5, 5b), both variants' notes in
     `TEASE_NOTES`, and Lesson 25's signature (Explorer and season data). The admin console switches
     between them; nothing on this page changes.
-13. **Season 2 in the app's lesson plumbing** (SEASON-2 § 5.2 item 21), the app's work, not the
-    page's, and this page waits for it: the lesson marker's range (`src/lib/lesson-marker.ts:19`), so
-    `?lesson=25` steps First Light aside (FACTS 50); the lesson-answer bounds
-    (`workers/db-worker/src/mirror-metrics.ts:61-62`), which refuse Lesson 25's answers whole today
-    (FACTS 57); the admin console's one row per Season 1 lesson
-    (`src/features/admin/lessons/lesson-admin.ts:88`); `RELEASED_LESSONS`
-    (`src/lib/current-lesson.ts:34-37`).
+13. **Season 2 in the app's lesson plumbing: shipped on 4 November 2026** (SEASON-2 § 5.2 item 21,
+    `623b3b7e2`), the app's work: the lesson marker reads 01 to 28 (`src/lib/lesson-marker.ts:19-20`),
+    so `?lesson=25` steps First Light aside (FACTS 50a); the lesson-answer bounds take 1 to 28
+    (`workers/db-worker/src/mirror-metrics.ts:62-63`), so Lesson 25's answers are kept
+    (FACTS 57a); the admin console lists every season's lessons
+    (`src/features/admin/lessons/lesson-admin.ts:89-96`); and a test holds `RELEASED_LESSONS` to
+    every season's released lessons (`src/lib/current-lesson.test.ts:17-27`).
 14. **The head, the structured data and llms.txt** (Sections, 2; SEARCH § 3.1, § 3.2 and § 12):
     the title, the descriptions, the share card `learn/lesson-25-og.jpg` and its alt, the two
     structured-data blocks with `alternativeHeadline`, `description`, `teaches` and `timeRequired`
@@ -687,8 +687,8 @@ owner's.
 - **No storage** (a private window): the quiz seeds and the voice last for the visit; nothing breaks.
 - **Lesson 10, 21 or 23 not live** where the page is served: its chip stays a plain chip and the
   recall's step link to it keeps its words with no link (FACTS 2, 7).
-- **The practice links** open Ear Lab and the Singing tab with the lesson marker, which by then steps
-  First Light aside (FACTS 50). A learner who switched Playback Setup off in Settings sees no
+- **The practice links** open Gravity's set and Sight-Singing with the lesson marker, which steps
+  First Light aside (FACTS 50a). A learner who switched Playback Setup off in Settings sees no
   Playback Setup in the sidebar on a wider screen; the phone stage's chip still sets the key and
   scale, and on a wider screen the Settings toggle "Playback Setup" brings the section back. A
   learner who reloads the app loses the key and scale, which last only for the visit (FACTS 52).

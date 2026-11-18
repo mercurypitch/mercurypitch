@@ -525,8 +525,8 @@ and `away` for another lesson's step links).
   plays two eighths and a quarter at 60 BPM over two clicks, 2 s (FACTS 68), drawn as nothing: the
   options are words, so the ear answers.
 - Storage, as every page's: `fyp-l17-recall-seed`, `fyp-l17-recall-v1`, `fyp-l17-seed` and
-  `fyp-l17-quiz-v1`. Each question's first answer in a visit is sent as the anonymous `lesson_answer`
-  once the lesson plumbing accepts lesson 17 (What the kit and the app still need, item 9).
+  `fyp-l17-quiz-v1`. Each question's first answer in a visit is sent as the anonymous `lesson_answer`,
+  which the worker keeps for lesson 17 since item 9 shipped (What the kit and the app still need).
 
 ### 10. Go deeper drawer
 
@@ -597,9 +597,9 @@ synthesised and the kit has no speech. Under reduced motion both stand still.
   `c-e-across` (the bank's ids, FACTS 42; their written values, FACTS 45), which write quarters,
   halves, eighths and dotted quarters, with one eighth rest, every one of which this page plays and
   writes. The card dropped its triplet sentence.
-- **Needs engineering: the lesson marker** for 15 to 28 (SEASON-2 § 5.2 item 21), without which
-  `?lesson=17` is an ordinary visit and First Light opens (FACTS 47). It is part of the kit PR this
-  page waits on.
+- **Shipped on 4 November 2026: the lesson marker** for 15 to 28 (SEASON-2 § 5.2 item 21,
+  `623b3b7e2`), so `?lesson=17` steps First Light aside on a first visit (FACTS 47a). It came ahead
+  of the kit PR this page waits on.
 - **App content, proposed**: the `PULSE_TIMING` comment that says a soft rail ticks while the take
   waits, which the anchored take no longer does (FACTS 40); and, for the Ear Lab's owner, that The
   Chart writes its "rest on 2" pattern as a half note, since a bank pattern holds note starts only
@@ -687,9 +687,9 @@ are in; items 6 to 8 and 12 come with the page's own PR.
    page keeps its own (`src/features/lessons/kit/move-do.ts:1-19`).
 8. **The pitch-line view of a rhythm**: Season 1's pitch line drawing notes as amber bands of their
    length, rests as dashed gaps, on the rhythm bar's time axis.
-9. **The lesson plumbing** (SEASON-2 § 5.2 item 21): the marker's reach to 17
-   (`src/lib/lesson-marker.ts:11-25`), the lesson-answer bounds, the admin console's row and the
-   released list, so the practise link steps First Light aside and the quiz answers are kept.
+9. **The lesson plumbing, shipped on 4 November 2026** (SEASON-2 § 5.2 item 21, `623b3b7e2`): the
+   marker's reach to 17 (`src/lib/lesson-marker.ts:11-25`), the lesson-answer bounds, the admin
+   console's row and the released list, so the link steps First Light aside and the answers are kept.
 10. **The shared lines**: Lesson 15's draft keeps the voice buttons and adds a line under them, that
     the staff follows the choice; the lead makes the two pages' words agree at review (FACTS 52).
 11. **The woodblock in the kit**: the Ear Lab's `wood` click voice
@@ -737,8 +737,8 @@ and season data; FACTS 5b), and the voice choice's words, Lesson 15's buttons wi
   and the recall's step links keep their words with no link (`linkAway`,
   `src/features/lessons/kit/quiz.ts:201`). The console asks before it publishes this page while
   Lesson 8's is not published.
-- **`?lesson=17` before the marker reads it**: First Light opens on a first visit to the Ear Lab
-  (FACTS 47); the page is not built before item 9.
+- **`?lesson=17`**: the marker reads it since 4 November 2026 (`623b3b7e2`), so First Light steps
+  aside on a first visit to The Chart's set or the Ear Lab (FACTS 47a).
 - **Narrow and short screens**: at 344 px every pad stays at least 44 px wide, since only one-bar
   figures have pads to press; the strip's readings follow its rule for narrow cells (Toys 6); at 844
   x 390 the kit's compact stage shows each step's figure with its first control, as Lesson 8's does.

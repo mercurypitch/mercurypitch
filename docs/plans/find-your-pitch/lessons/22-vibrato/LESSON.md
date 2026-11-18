@@ -395,8 +395,8 @@ either way can still be in tune.
 
 _[Editorial: both addresses link `/mirror?lesson=22`, as Lesson 5's card links `/mirror?lesson=05`.
 Voice Mirror is a document of its own, so a link to it never meets First Light, the main app's
-intro, and the card needs no first-visit line; nothing reads `?lesson=22` until SEASON-2 § 5.2 item
-21 widens the marker (FACTS 34, 35). Not linked: the Vibrato exercise, whose help calls a vibrato
+intro, and the card needs no first-visit line; the marker takes `?lesson=22` since SEASON-2 § 5.2
+item 21 shipped (FACTS 34, 35a). Not linked: the Vibrato exercise, whose help calls a vibrato
 "healthy", gives a method for building one, makes "the polished sound" its default and scores the
 vibrato itself, until SEASON-2 § 5.2 item 14 and the coach's call; Long Note Lantern, whose help says
 "a vibrato counts as a wobble, so a straight tone scores highest"; and Long Note, which scores the

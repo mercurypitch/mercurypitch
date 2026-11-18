@@ -385,8 +385,8 @@ without stopping on every note.
 
 _[Editorial: since 17 November 2026 the links are `/exercises/sing-it-in-time?lesson=18` and
 `/exercises/quarters-halves-and-eighths?lesson=18`, where they were `/pitch-training` and `/ear-lab`.
-The page is not built before the lesson marker reads Season 2's numbers (SEASON-2 § 5.2 item 21), so
-First Light steps aside on a first visit and the card has no first-visit line (FACTS 69). Sing It in
+The lesson marker reads Season 2's numbers since 4 November 2026 (SEASON-2 § 5.2 item 21), so
+First Light steps aside on a first visit and the card has no first-visit line (FACTS 69b). Sing It in
 Time is item 11, the one drill for pitch and time this note waited for; its lines say what its
 screen shows at the address's level 5, tunes of its own, not this page's two (FACTS 69a).
 Sight-Singing, pitch alone, leaves the card, which keeps to two links. The Chart's address opens it

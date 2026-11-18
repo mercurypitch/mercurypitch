@@ -466,9 +466,9 @@ held notes are in tune.
   Then the second drill.
 
 _[Editorial: the first address links `/exercises/harmony-on-a-drone?lesson=24` since 17 November
-2026, and the second `/ear-lab?lesson=24`, by Beat Hunt's station on Merc's bench (FACTS 60a). The page is not built before the lesson marker reads Season 2's numbers
+2026, and the second `/ear-lab?lesson=24`, by Beat Hunt's station on Merc's bench (FACTS 60a). Since 4 November 2026 the lesson marker reads Season 2's numbers
 (SEASON-2 § 5.2 item 21), so First Light, the app's intro, steps aside on a first visit and the card
-has no first-visit line (FACTS 64). The slug for the fifth, the major third and the octave shipped
+has no first-visit line (FACTS 64a). The slug for the fifth, the major third and the octave shipped
 on 15 November 2026, `/exercises/harmony-on-a-drone` (SEASON-2 § 5.2 item 15): the link swapped to
 it, and the text's second sentence became "This link opens it on this lesson's fifth, major third
 and octave; do is the drone itself." The slug opens on Pure tuning, so the sentence on 79, "It

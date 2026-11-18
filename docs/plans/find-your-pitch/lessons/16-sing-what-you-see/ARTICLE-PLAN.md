@@ -214,7 +214,7 @@ the do you heard on this page (R16-11); it writes the treble clef only, with sha
 note under it and on the hold bar (R16-12, R16-14); it shows your pitch line with the target and the
 next notes above the staff, so "read the staff, not the pitch line" (R16-15); and it wants each note
 in the octave written (R16-13). Lower voices therefore read it an octave up or down: say so once.
-`?lesson=16` is not a lesson marker yet (R16-17).
+`?lesson=16` was not a marker yet (R16-17); it is since § 5 item 21 shipped on 4 November 2026.
 
 **When § 5 item 10 ships (gains):** (a) a fixed-phrase slug (data: two or more `notes` replace the
 random round, R16-16) with this lesson's two phrases, then the card's address becomes

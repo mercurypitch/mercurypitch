@@ -208,8 +208,8 @@ Three answers each, shuffled.
   (`MirrorApp.tsx:2194-2199`; `src/lib/mirror/metrics.ts:72-74`, :499-509). Card text: Lesson 5's Voice Mirror card,
   plus "If your hold has a vibrato, it tells you its rate and extent, and doesn't count it against
   you." **[coach]**
-- **Missing:** `?lesson=22` is not read (`lesson-marker.ts:11-19`; SEASON-2 § 5 item 21), so First
-  Light does not step aside until item 21 ships; the card then needs Lesson 1's first-visit line.
+- **Shipped on 4 November 2026:** the marker takes `?lesson=22` (`lesson-marker.ts:11-14`; SEASON-2
+  § 5 item 21). The plan expected the card to need Lesson 1's first-visit line then; it needs none (FACTS 34).
 - **Not linked:** the Vibrato exercise (health word, method claim, "the polished sound" default,
   scores the vibrato itself; `exercise-help.ts:114-115`, `vibrato-styles.ts:56-57`, :71,
   `use-vibrato-controller.ts:12-14`) until SEASON-2 § 5 item 14 and the coach's call; Long Note

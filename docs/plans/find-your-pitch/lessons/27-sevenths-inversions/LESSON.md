@@ -93,8 +93,8 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
 
 The page is published only after Lessons 12 and 23 are live, `/learn/12` and `/learn/23`, because
 its prerequisite chips and its recall link there and its recall imports their questions. It also
-waits on the Season 2 kit work (WEB-SPEC, What the kit and the app still need), the lesson marker's
-reach to `?lesson=27` among it, so its practice card has no first-visit line (FACTS 69).
+waits on the Season 2 kit work (WEB-SPEC, What the kit and the app still need); the lesson marker's
+reach to `?lesson=27` shipped on 4 November 2026, so its card has no first-visit line (FACTS 69a).
 
 ---
 
@@ -398,9 +398,9 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
 
 _[Editorial: the links are `/exercises/triads?lesson=27` and
 `/exercises/major-or-dominant-seventh?lesson=27` since 17 November 2026, printed without the marker,
-as every card prints the public address (FACTS 68a). The page is not built before the lesson marker
+as every card prints the public address (FACTS 68a). Since 4 November 2026 the lesson marker
 reads Season 2's numbers (SEASON-2 § 5.2 item 21), so First Light, the app's intro, steps aside on a
-first visit and the card has no first-visit line (FACTS 69). Chord Stacker's chord-type launch
+first visit and the card has no first-visit line (FACTS 69a). Chord Stacker's chord-type launch
 field, triads and inversions shipped (§ 5.2 item 18), so "it has no triads or inversions yet" and
 "it doesn't say which one is playing" went; its address for this lesson opens the triads in root
 position, and the card names the setup's Chords and Inversions pickers for the sevenths and the
