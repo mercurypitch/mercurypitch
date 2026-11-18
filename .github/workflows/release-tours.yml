@@ -71,7 +71,9 @@ jobs:
           key: pw-${{ runner.os }}-${{ steps.pw.outputs.version }}
 
       - name: Install Chromium
-        run: node scripts/install-ci-browser.mjs chromium
+        uses: ./.github/actions/install-browser
+        with:
+          browser: chromium
 
       - name: Walk every tour
         shell: bash
