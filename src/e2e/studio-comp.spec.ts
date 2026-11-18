@@ -967,4 +967,91 @@ test.describe('Studio comping', () => {
       path: test.info().outputPath('studio-comp-phone-sheet.png'),
     })
   })
+
+  test("on a phone, a bar's cells line up across the passes on a time ruler", async ({
+    page,
+  }) => {
+    test.setTimeout(240_000)
+    await recordLoop(page)
+    const studio = studioRegion(page)
+    // At 100 bpm a bar is 2.4 s, so the time ruler names most cells to a
+    // tenth (0:07.2), the widest a cell's label gets.
+    const ruler = studio.getByRole('radiogroup', { name: 'Timeline ruler' })
+    await ruler.getByRole('radio', { name: 'Beats', exact: true }).click()
+    const tempo = studio.getByRole('spinbutton', {
+      name: 'Tempo in beats per minute',
+    })
+    await tempo.fill('100')
+    await tempo.press('Tab')
+    await expect
+      .poll(async () => (await readStudioProject(page)).tempoBpm)
+      .toBe(100)
+    await ruler.getByRole('radio', { name: 'Time', exact: true }).click()
+    await expect(
+      ruler.getByRole('radio', { name: 'Time', exact: true }),
+    ).toBeChecked()
+    await page.setViewportSize({ width: 390, height: 844 })
+    const take = await takeClip(page)
+    const lane = (await readStudioProject(page)).tracks.find(
+      (track) => track.id === take.trackId,
+    )!
+    await studio
+      .getByRole('button', { name: `${lane.name} details`, exact: true })
+      .click()
+    const pass = (number: number) =>
+      studio.getByRole('group', { name: `Pass ${number}`, exact: true })
+    // The newest pass plays every bar, so its cells are the pressed, bold
+    // ones and the other passes' are not.
+    await expect(
+      pass(3).getByRole('button', { name: /^Bar 4, from 0:07\.2$/ }),
+    ).toHaveAttribute('aria-pressed', 'true')
+    const cells = async (number: number) =>
+      await pass(number)
+        .getByRole('button')
+        .evaluateAll((buttons) =>
+          buttons.map((button) => {
+            const box = button.getBoundingClientRect()
+            const range = document.createRange()
+            range.selectNodeContents(button)
+            const text = range.getBoundingClientRect()
+            return {
+              name: button.getAttribute('aria-label'),
+              text: button.textContent,
+              x: box.left,
+              width: box.width,
+              height: box.height,
+              // How far the label sits from the cell's middle, across and down.
+              off: [
+                text.left + text.width / 2 - (box.left + box.width / 2),
+                text.top + text.height / 2 - (box.top + box.height / 2),
+              ],
+              clipped: button.scrollWidth > button.clientWidth,
+            }
+          }),
+        )
+    const passes = [await cells(1), await cells(2), await cells(3)]
+    console.log(`[studio-comp] phone time cells ${JSON.stringify(passes)}`)
+    expect(passes[0].length).toBeGreaterThan(2)
+    for (const row of passes) {
+      expect(row.map((cell) => cell.name)).toEqual(
+        passes[0].map((cell) => cell.name),
+      )
+      for (const [index, cell] of row.entries()) {
+        expect.soft(cell.clipped, `${cell.name} clipped`).toBe(false)
+        expect
+          .soft(Math.abs(cell.x - passes[0][index].x), `${cell.name} x`)
+          .toBeLessThanOrEqual(0.5)
+        expect.soft(cell.width, `${cell.name} width`).toBeGreaterThanOrEqual(44)
+        expect.soft(cell.height, `${cell.name} height`).toBe(44)
+        for (const off of cell.off)
+          expect
+            .soft(Math.abs(off), `${cell.name} off centre`)
+            .toBeLessThanOrEqual(1)
+        // One width for the sheet: the bars are columns, as on a ruler.
+        expect
+          .soft(Math.abs(cell.width - passes[0][0].width), `${cell.name} width`)
+          .toBeLessThanOrEqual(0.5)
+      }
+    }
+  })
 })

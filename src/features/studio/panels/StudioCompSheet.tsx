@@ -78,10 +78,19 @@ function CompBars(props: {
   const rows = createMemo(() => studioCompRows(props.clip()), [], {
     equals: (before, after) => before.length === after.length,
   })
+  // The longest label, which sizes every cell of the sheet (the CSS's .cell).
+  const widest = createMemo(() => {
+    let longest = ''
+    for (const bar of bars()) {
+      const text = label(bar).text
+      if (text.length > longest.length) longest = text
+    }
+    return longest
+  })
   return (
     <div class={local.sheet} role="group" aria-label={`Comp of ${props.name}`}>
       <p class={local.take}>{props.name}</p>
-      <div class={local.bars}>
+      <div class={local.bars} style={{ '--comp-widest': `"${widest()}"` }}>
         <For each={rows()}>
           {(row) => (
             <div
