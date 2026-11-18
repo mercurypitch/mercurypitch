@@ -4114,3 +4114,5 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   one component critic by the lead). NOTE: L4's lesson.js/motion.js/marks.js are NOT in the
   backup (only frames.js, hosts.js, stairs.js); the room is rebuilt from L4's compositions,
   BUILD-GUIDE and DECISIONS 89/93/100. Launch when the polish builder hands back ((model), xhigh).
+- 18:08: #1467 run 44363139142 finished: all green but Browser smoke (2/2) (infra) and PR Gate
+  (its aggregate); smoke 1/2 passed. Comment 6979646551 edited to say so. Waiting on #1470.
