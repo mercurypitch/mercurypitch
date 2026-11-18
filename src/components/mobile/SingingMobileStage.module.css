@@ -344,16 +344,36 @@
   grid-column: 1;
   grid-row: 1;
   flex-wrap: wrap;
-  padding: 10px 10px 6px max(10px, var(--safe-left, 0px));
+  padding: 8px 10px 6px max(10px, var(--safe-left, 0px));
 }
 
-/* The song first and the whole width: the name is what a singer looks for,
-   and the column is too narrow to share with it. */
+/* The song first, as wide as Zen beside it leaves it: the name is what a
+   singer looks for. The key and the tempo take the second row whole, so
+   the three chips never stack three rows deep, which the column has no
+   height for at 740x360. */
 .sideways .chipAccent {
-  order: -1;
-  flex: 1 1 100%;
+  order: -2;
+  flex: 1 1 0;
+  min-width: 0;
   max-width: none;
   margin-left: 0;
+}
+
+.sideways .zenChip {
+  order: -1;
+  flex: none;
+}
+
+.sideways .keyChip {
+  flex: 1 1 100%;
+}
+
+/* While a run goes the session pill comes into the column, and under a
+   48 px header and the tab bar (740x360) the column holds it only if the
+   key's row steps aside. More, at the column's foot, opens the same
+   options the key's chip does. */
+.sideways.inSession .keyChip {
+  display: none;
 }
 
 /* The scrubber's box is its 44 px touch target; the negative block margins
@@ -390,8 +410,8 @@
   align-items: center;
   justify-content: center;
   justify-items: center;
-  gap: 10px 14px;
-  padding: 8px 10px calc(10px + var(--safe-bottom, 0px))
+  gap: 8px 14px;
+  padding: 6px 10px calc(10px + var(--safe-bottom, 0px))
     max(10px, var(--safe-left, 0px));
 }
 

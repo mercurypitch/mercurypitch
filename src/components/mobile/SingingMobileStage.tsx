@@ -184,13 +184,16 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
       classList={{
         [styles.stage]: true,
         [styles.sideways]: isShortTouchLandscape(),
+        // The session pill below is in the column: on its side the key's
+        // chip steps aside for it (the stylesheet's `.inSession`).
+        [styles.inSession]: sessionActive() && !IS_NATIVE_BUILD,
       }}
       data-testid="singing-mobile-stage"
     >
       {/* ── Status chips ─────────────────────────────────── */}
       <div class={styles.chips} data-tour="singing-mobile-chips">
         <button
-          class={styles.chip}
+          class={`${styles.chip} ${styles.keyChip}`}
           onClick={() => setOptionsOpen(true)}
           aria-label="Key, scale and playback options"
         >

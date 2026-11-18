@@ -588,8 +588,12 @@
    44 is on the left, 6.6 px, inside the 8 px the header keeps between the
    pill and the wordmark at the least. While voice control is on, the cog
    sits 2.4 px to the mic's right, so there the box stops 1 px past the mic
-   and is 38 px wide. */
-@media (pointer: coarse) and (max-width: 768px) {
+   and is 38 px wide.
+   A phone on its side docks the pill in its header too (isPhoneStage in
+   use-viewport.ts), wider than the breakpoint or not, so the mic takes the
+   same box there. */
+@media (pointer: coarse) and (max-width: 768px),
+  (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
   .docked .toggle {
     position: relative;
   }
@@ -607,5 +611,15 @@
   .docked .toggle:not(:last-child)::after {
     right: -1px;
     width: 38px;
+  }
+}
+
+/* On its side the support heart's box hangs from the heart's right edge and
+   reaches 3 px left of the heart (SupportBadge.module.css), into the 8 px
+   between it and the mic: a box 7 px past the mic would share 2 px of it at
+   740x360. So the mic's stops 4 px past it, the gap's middle. */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
+  .docked .toggle:last-child::after {
+    right: -4px;
   }
 }

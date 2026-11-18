@@ -105,6 +105,22 @@ header h1 {
    chip of their own. The condition is SHORT_TOUCH_LANDSCAPE_QUERY
    (use-viewport.ts). */
 @media (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
+  /* The row holds the 44 px presses its controls take (the tabs, the
+     heart, the docked mic), and the 2 px app.css keeps above and below
+     them. One row of wordmark and menu is 39 px, so the presses ran 1 px
+     off the top of the screen and onto the page under the header.
+     The ends keep a notch's inset and 8 px at the least, which app.css's
+     short-window `padding: 2px 6px !important` had taken (so the
+     `!important` here, later in the cascade). The heart's box reaches 7 px
+     past it (SupportBadge.module.css): at 6 px it ran off the window's edge,
+     and the page slid 1 px sideways when the tab bar brought its tab into
+     view. */
+  header {
+    min-height: 48px;
+    padding-right: max(8px, var(--safe-right, 0px)) !important;
+    padding-left: max(8px, var(--safe-left, 0px)) !important;
+  }
+
   .header-left {
     flex-direction: row;
     align-items: center;

@@ -19,6 +19,7 @@
 
 import type { Page } from '@playwright/test'
 import { expect, test } from '@playwright/test'
+import { hitArea, neighbourAreas, sharePress } from './helpers/hit-area'
 import { dismissOverlays } from './helpers/ui'
 
 const PHONE = {
@@ -65,65 +66,93 @@ interface Sideways {
   besideTheControls: boolean
   /** The notes end above the tab bar, where there is one. */
   clearOfTheTabBar: boolean
+  /** The document's sideways scroll, and the body's: the body can be slid
+   *  by a script although no finger can scroll it. */
   sidewaysScroll: number
   pageScroll: number
   /** Each control a singer needs: in the window, and a tap on it lands on it. */
   unreachable: string[]
 }
 
-function measureStage(page: Page): Promise<Sideways> {
-  return page.evaluate((sel) => {
-    const stage = document.querySelector<HTMLElement>(sel)
-    if (stage === null) throw new Error('no phone stage')
-    const notes = stage
-      .querySelector<HTMLElement>('[data-stage-canvas]')
-      ?.getBoundingClientRect()
-    const transport = stage
-      .querySelector<HTMLElement>('[data-testid="mobile-transport-bar"]')
-      ?.getBoundingClientRect()
-    if (notes === undefined || transport === undefined) {
-      throw new Error('the stage has no notes or no transport')
-    }
-    const bar = document
-      .querySelector('[data-tour="mobile-tabbar"]')
-      ?.getBoundingClientRect()
-    const scroller = document.scrollingElement ?? document.documentElement
-    const names = [
-      'Choose a song',
-      'Key, scale and playback options',
-      'Start the mic',
-      'Play',
-      'Practice options',
-    ]
-    const unreachable = names.filter((name) => {
-      const button = [...stage.querySelectorAll('button')].find(
-        (element) => element.getAttribute('aria-label') === name,
-      )
-      if (button === undefined) return true
-      const r = button.getBoundingClientRect()
-      const hit = document.elementFromPoint(
-        r.left + r.width / 2,
-        r.top + r.height / 2,
-      )
-      return !(
-        r.top >= 0 &&
-        r.bottom <= innerHeight &&
-        r.left >= 0 &&
-        r.right <= innerWidth &&
-        hit !== null &&
-        button.contains(hit)
-      )
-    })
-    return {
-      notesShare: notes.height / innerHeight,
-      besideTheControls: transport.right <= notes.left + 0.5,
-      clearOfTheTabBar:
-        bar === undefined || bar.height === 0 || notes.bottom <= bar.top + 0.5,
-      sidewaysScroll: scroller.scrollWidth - scroller.clientWidth,
-      pageScroll: scroller.scrollHeight - scroller.clientHeight,
-      unreachable,
-    }
-  }, STAGE)
+/** What a singer reaches for before a run, by the names the stage gives. */
+const BEFORE_A_RUN = [
+  'Choose a song',
+  'Key, scale and playback options',
+  'Start the mic',
+  'Play',
+  'Practice options',
+]
+
+/** And during one: the run's own controls, and the session's. */
+const DURING_A_RUN = [
+  'Choose a song',
+  'Start the mic',
+  'Pause',
+  'Stop',
+  'Practice options',
+  'Skip',
+  'End',
+]
+
+function measureStage(
+  page: Page,
+  names: string[] = BEFORE_A_RUN,
+): Promise<Sideways> {
+  return page.evaluate(
+    ([sel, names]) => {
+      const stage = document.querySelector<HTMLElement>(sel)
+      if (stage === null) throw new Error('no phone stage')
+      const notes = stage
+        .querySelector<HTMLElement>('[data-stage-canvas]')
+        ?.getBoundingClientRect()
+      const transport = stage
+        .querySelector<HTMLElement>('[data-testid="mobile-transport-bar"]')
+        ?.getBoundingClientRect()
+      if (notes === undefined || transport === undefined) {
+        throw new Error('the stage has no notes or no transport')
+      }
+      const bar = document
+        .querySelector('[data-tour="mobile-tabbar"]')
+        ?.getBoundingClientRect()
+      const scroller = document.scrollingElement ?? document.documentElement
+      const unreachable = names.filter((name) => {
+        const button = [...stage.querySelectorAll('button')].find(
+          (element) =>
+            (element.getAttribute('aria-label') ??
+              element.textContent?.trim()) === name,
+        )
+        if (button === undefined) return true
+        const r = button.getBoundingClientRect()
+        const hit = document.elementFromPoint(
+          r.left + r.width / 2,
+          r.top + r.height / 2,
+        )
+        return !(
+          r.top >= 0 &&
+          r.bottom <= innerHeight &&
+          r.left >= 0 &&
+          r.right <= innerWidth &&
+          hit !== null &&
+          button.contains(hit)
+        )
+      })
+      return {
+        notesShare: notes.height / innerHeight,
+        besideTheControls: transport.right <= notes.left + 0.5,
+        clearOfTheTabBar:
+          bar === undefined ||
+          bar.height === 0 ||
+          notes.bottom <= bar.top + 0.5,
+        sidewaysScroll:
+          scroller.scrollWidth -
+          scroller.clientWidth +
+          document.body.scrollLeft,
+        pageScroll: scroller.scrollHeight - scroller.clientHeight,
+        unreachable,
+      }
+    },
+    [STAGE, names] as const,
+  )
 }
 
 test.describe('a phone on its side', () => {
@@ -166,6 +195,74 @@ test.describe('a phone on its side', () => {
         pageScroll: 0,
         unreachable: [],
       })
+    })
+  }
+
+  // A run brings the session pill into the column, under the 48 px header
+  // and, narrower than 768 px, over the tab bar: the key's chip steps aside
+  // for it, and the column still ends above the bar.
+  for (const size of SIDEWAYS) {
+    test(`at ${size.width}x${size.height}, keeps the run's controls and the session's in reach while it plays`, async ({
+      page,
+    }) => {
+      // The first run with the mic off offers the mic once ever, in a toast
+      // at the foot, over the transport, upright as well: spent here, so the
+      // run's own controls are what is measured.
+      await page.addInitScript(() => {
+        localStorage.setItem('pitchperfect_mic_practice_offered', 'true')
+      })
+      await openSinging(page, size)
+      const stage = page.locator(STAGE)
+      await stage.getByRole('button', { name: 'Play', exact: true }).tap()
+      await expect(
+        stage.getByRole('button', { name: 'Stop', exact: true }),
+      ).toBeVisible()
+      await expect(
+        stage.getByRole('button', { name: 'End', exact: true }),
+      ).toBeVisible()
+
+      const run = await measureStage(page, DURING_A_RUN)
+
+      expect(run.notesShare).toBeGreaterThanOrEqual(0.6)
+      expect({
+        clearOfTheTabBar: run.clearOfTheTabBar,
+        pageScroll: run.pageScroll,
+        unreachable: run.unreachable,
+      }).toEqual({ clearOfTheTabBar: true, pageScroll: 0, unreachable: [] })
+    })
+  }
+
+  // The header's last two controls take a finger's press on every phone on
+  // its side, inside the header's row, and leave each other theirs. The
+  // docked mic took 31 x 31 px wider than 768 px, and a 39 px row put a
+  // press 1 px off the top of the screen.
+  for (const size of SIDEWAYS) {
+    test(`at ${size.width}x${size.height}, the heart and the voice pill's mic take a 44 px press each`, async ({
+      page,
+    }) => {
+      await openSinging(page, size)
+      await expect(page.locator(STAGE)).toBeVisible()
+      const controls = {
+        Heart: page.getByTestId('support-heart'),
+        Mic: page
+          .locator('header')
+          .getByRole('button', { name: /^Turn voice control on/ }),
+      }
+      const wrong: string[] = []
+      for (const [name, control] of Object.entries(controls)) {
+        await expect(control, name).toBeVisible()
+        const own = await hitArea(control)
+        if (own.hit[0] < 44 || own.hit[1] < 44) {
+          wrong.push(`${name} takes ${own.hit.join('x')}`)
+        }
+        for (const near of await neighbourAreas(control)) {
+          if (sharePress(own.rect, near.rect)) {
+            wrong.push(`${name} shares a press`)
+          }
+        }
+      }
+
+      expect(wrong).toEqual([])
     })
   }
 

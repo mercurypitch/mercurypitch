@@ -274,4 +274,15 @@ describe('the sidebar drawer, in the stylesheets', () => {
       viewport.SHORT_TOUCH_LANDSCAPE_QUERY,
     )
   })
+
+  it('gives the voice pill docked in that header its mic box there too', async () => {
+    const { SHORT_TOUCH_LANDSCAPE_QUERY } = await loadFor(devices[0])
+
+    // App.tsx docks the pill by isPhoneStage: narrow, or on its side.
+    expect(
+      queries('src/features/voice-control/VoiceControlHud.module.css'),
+    ).toContain(
+      `(pointer: coarse) and (max-width: 768px), ${SHORT_TOUCH_LANDSCAPE_QUERY}`,
+    )
+  })
 })
