@@ -243,9 +243,16 @@ the tab's width, lost Merc and his line below its cap, and its glass grew a
 thumb thick; two answer pads were 600 px wide each; First note stood Merc
 taller than the room. Now:
 
-- The bench is a column of 560 px in the middle of the screen. Its hero and
-  glass are drawn to the column, and the painting fades into the night at
-  its sides.
+- The bench is a column of 560 px in the middle of a screen held upright.
+  Its hero and glass are drawn to the column, and the painting fades into
+  the night at its sides. From 860 px of tab (this tablet on its side, or a
+  web window of about 1170 px beside the sidebar; 18 Nov 2026) it is a desk
+  as wide as the rooms instead: the title over the whole width, Merc at his
+  desk beside the Mercury Index and Today, the Ear rooms and the stations
+  three to a row under them, and the Ear Path beside the Ear Report. The
+  Ear Report does the same: Merc's line beside the range, the Index beside
+  what moved, and the maps two to a row. A window under 600 px tall keeps
+  the column.
 - The drill room's lower half (Merc's line, the console, the pinned row)
   and its sheets keep a 600 px column under the instrument. So do the
   station sheet and the day's close.
