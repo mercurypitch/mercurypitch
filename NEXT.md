@@ -4168,3 +4168,17 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   critic's report). Asked the P2 builder to emit assets/merc/roots.js (per-chunk roots for
   L.mercGate) and check S6's all-zero root.
 - After the kit's fix round: scene builders A (s01-04) + B (s05-07) first, two at a time.
+
+## 20:16 UTC, 18 Nov
+- Kit critic 01: ONE MORE PASS. Figure REJECT (bottle-shaped front view, stick leg, jaw slash,
+  dome loose); gauge labels cut by the cursor + readout never switches; chapter card 1870 px
+  wide; turn's phase row rides the push; bead pass field frozen/banded/too bright; room snaps at
+  matched cuts; F-gauge push 46 px with 1.3 s holds; chips 2-7 px apart; CU-scoop at x 834;
+  recap wave too tight + Tavi's line at the cut; minors. Saved: l5film/review/critic-kit-01/.
+- Lead calls (brief $S/briefs/l5-film-k-fix1.md): redraw the figure as a side-profile body
+  (anchors and k kept); take gauge, card, turn, bead, chips, recap fixes; matched cuts get a
+  0.3 s room crossfade (supersedes DECISIONS 123); F-gauge push runs the full 10 s with no still
+  stretch (LAB-CHECKS 20's rule changes); CU-scoop anchored near x 360 (HANDOFFS edit allowed);
+  verify which S1 pill gets the tick. No second kit critic: the lead checks the stills.
+- Sent to the kit builder (resumed) with the 7 answers. Scene groups A and B wait for it (both
+  heavy slots in use: P2 passes + kit fix).
