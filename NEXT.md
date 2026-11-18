@@ -4156,3 +4156,15 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   its footer, can't be removed). Plan: when #1470 lands, rebase #1467 and #1471 onto main, push,
   merge each on green, verify on dev.
 - 19:50: #1471 run finished: all green but Browser smoke (1/2) (infra) and PR Gate; 2/2 and both unit shards passed. Comment edited to say so. Both PRs wait on #1470.
+
+## 19:58 UTC, 18 Nov
+- Kit step done (builder (builder)): kit in $S/l5film/assets/lib (lesson, motion, marks,
+  frames, chart, figure, gauge, mixup, folds, turn, recap, tease, hosts), probe 297/297, root
+  check 0/0, BUILD-GUIDE.md, DECISIONS 132-142, WIDTHS.md (clearances under 12 px: 5g stem 9.1,
+  Quiet/Loud 11.6). Sheets reviewed (lab/kit-sheets): looks right; teal sparkle dust in kit-room
+  stills worth the critic's eye.
+- Kit critic round 1 launched (motion-critic, report to review/critic-kit-01/REPORT.md).
+- Lead answers to the kit builder's 7 questions: $S/leadnotes/l5-kit-answers.md (send with the
+  critic's report). Asked the P2 builder to emit assets/merc/roots.js (per-chunk roots for
+  L.mercGate) and check S6's all-zero root.
+- After the kit's fix round: scene builders A (s01-04) + B (s05-07) first, two at a time.
