@@ -1140,6 +1140,13 @@ import handler, issue #813.
 **Rule:** import a helper from a module with no stylesheet, and move it out of a component that holds it. A new import of a component, from anywhere, can reorder CSS modules and flip the rules that tie. Look at the screens a change did not touch, too.
 **See:** `src/features/studio/timeline/clip-take-name.ts`, `src/e2e/studio-note-editor.spec.ts` (`clipTags`)
 
+### Ask `isPhoneStage` for a phone's layout; a phone on its side is wider than the breakpoint
+
+**Symptom:** on a phone held on its side the Singing tab drew its desktop panel, and at 844x390 the notes were 8 px tall under the sidebar, the top bar, the Vocal Guide header and the Performance monitor. Found on main on 17 Nov 2026; every check at 390x844 and 1440x900 passed.
+**Cause:** the tab chose its phone stage by `isNarrow()`, and the shell drew the sidebar beside the page by `max-width: 768px`. A phone on its side is 667 to 998 px wide, so the wider ones read as a desk. The narrower ones had the phone stage, but its portrait column left the notes 97 px of 360.
+**Rule:** a phone's layout asks `isPhoneStage()` (narrow, or a coarse pointer in landscape at most 500 px tall, one media query list), and a stylesheet that decides the same thing writes both conditions with a comma, with a test that reads the file and holds it to `SHORT_TOUCH_LANDSCAPE_QUERY`. Check a screen at 844x390 and 740x360 with touch and a phone's user agent; a mouse at the same size is a desk, and keeps the desk's layout.
+**See:** `src/lib/use-viewport.ts`, `src/lib/use-viewport.test.ts` (the sidebar drawer, in the stylesheets), `src/e2e/singing-phone-sideways.spec.ts`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry

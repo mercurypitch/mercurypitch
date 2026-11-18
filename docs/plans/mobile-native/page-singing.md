@@ -13,14 +13,14 @@ compresses; the control bar overflows and setup lives in a hamburger drawer.
 already closes over; no visual change, `pnpm check` + tours prove it). Then:
 
 ```tsx
-<Show when={!isNarrow()} fallback={<SingingMobileStage …/>}>
+<Show when={!isPhoneStage()} fallback={<SingingMobileStage …/>}>
   <SingingPanel …/>
 </Show>
 ```
 
 Engines, mic state, playback callbacks stay in `AppShell`/`EngineContext` —
 both branches share them (kit convention #1). `PitchCanvas` is reused as-is
-in both branches (it already handles resize/DPR; it must be *instanced* per
+in both branches (it already handles resize/DPR; it must be _instanced_ per
 branch, not moved across portals, so canvas context resets stay clean on
 swap).
 
@@ -58,19 +58,28 @@ swap).
 - **Session mode**: the status cluster (item N of M, skip/end) renders as a
   slim pill above the transport bar — same components, restyled.
 
+## Stage layout (a phone on its side)
+
+Shipped 18 Nov 2026. A phone on its side gets the stage too (`isPhoneStage`:
+narrow, or a coarse pointer in landscape at most 500 px tall), in two columns:
+the chips, the progress strip, the session pill and the transport down the
+left, the canvas the full height beside them (`.sideways` in
+`SingingMobileStage.module.css`). Wider than the breakpoint it keeps the top
+tab bar, and the sidebar folds into the header's menu as it does upright.
+
 ## Options sheet (the one sheet, D4)
 
-| Section | Rows (mobile v1) |
-| --- | --- |
-| Setup | Key, Octave ±, Scale (opens native-style picker rows; custom-scale *builder* stays desktop, saved custom scales are pickable) |
-| Playback | BPM slider, Speed (0.25–2×), Precount on/off, Metronome on/off |
-| Guides | Anchor tone on/off, Character/mascot on/off |
-| Footer | Mic auto-calibrate button · `DesktopHint` |
+| Section  | Rows (mobile v1)                                                                                                              |
+| -------- | ----------------------------------------------------------------------------------------------------------------------------- |
+| Setup    | Key, Octave ±, Scale (opens native-style picker rows; custom-scale _builder_ stays desktop, saved custom scales are pickable) |
+| Playback | BPM slider, Speed (0.25–2×), Precount on/off, Metronome on/off                                                                |
+| Guides   | Anchor tone on/off, Character/mascot on/off                                                                                   |
+| Footer   | Mic auto-calibrate button · `DesktopHint`                                                                                     |
 
 Desktop-only in v1 (hint copy: "A-B loops, session modes & more — on
 desktop"): A-B loop, session sub-modes, spaced rest, mic-waveform overlay,
 display-toggle grid, history strip, heatmap panel (the heatmap data still
-feeds the score sheet), Focus Mode (redundant — the stage *is* focus mode),
+feeds the score sheet), Focus Mode (redundant — the stage _is_ focus mode),
 Compose handoff.
 
 ## Score flow
@@ -82,15 +91,15 @@ reveal. Session summary uses the same sheet with the session table.
 
 ## Feature triage summary
 
-| Keep on stage | In options sheet | Desktop-only v1 |
-| --- | --- | --- |
-| Mic toggle + level | Key/octave/scale | A-B loop, loop markers |
-| Play/pause/stop | BPM, speed | Session sub-modes, spaced rest |
-| Play mode (3) | Precount, metronome | Anchor tone fine settings |
-| Song/track picker (sheet) | Anchor tone on/off | Display toggles, history strip |
-| Live accuracy + note chips | Mic auto-calibrate | Custom scale builder |
-| Score/session sheets | Mascot on/off | Focus Mode, Compose |
-| Canvas tap-to-hear | | Heatmap panel, waveform overlay |
+| Keep on stage              | In options sheet    | Desktop-only v1                 |
+| -------------------------- | ------------------- | ------------------------------- |
+| Mic toggle + level         | Key/octave/scale    | A-B loop, loop markers          |
+| Play/pause/stop            | BPM, speed          | Session sub-modes, spaced rest  |
+| Play mode (3)              | Precount, metronome | Anchor tone fine settings       |
+| Song/track picker (sheet)  | Anchor tone on/off  | Display toggles, history strip  |
+| Live accuracy + note chips | Mic auto-calibrate  | Custom scale builder            |
+| Score/session sheets       | Mascot on/off       | Focus Mode, Compose             |
+| Canvas tap-to-hear         |                     | Heatmap panel, waveform overlay |
 
 ## Sidebar on mobile
 
