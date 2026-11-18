@@ -4217,3 +4217,34 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   4.5:1 or get opaque backs. Sent to the group A builder (resumed): re-render s01, probe, reply.
 - Next: on its reply, one fresh motion-critic (component round) on s01 to s04, report
   l5film/review/critic-A-01/. Group B and the P2 re-render still running.
+
+## 22:32 UTC, 18 Nov
+- #1470 MERGED (main fb1e374d1, the CI apt cache + 600 s). Rebased both PR branches onto it, clean
+  (tags lead/ear-lab-wide-pre-rebase2 = 636e157d1, lead/sideways-polish-pre-rebase2 = e45077a5a):
+  #1467 head 5c041bb6a (notice), #1471 head 63e53583f (modes). Light gates: $S/bin/light-gates
+  (check, index, cites, validate, metrics, vitest related) -> $S/rebase1467b, $S/rebasepolishb.
+  #1471: check 0, index 0, cites 308 (= main), validate 0. #1467: eslint OOM-KILLED (two checks at
+  once, ~7 GB each): re-run alone queued (check2.log). LESSON: never two pnpm checks at once.
+- Then: push each with --force-with-lease (#1467 first), wait for CI green, squash-merge, verify on
+  dev (#1467 at 1440x900 and 390x844; #1471 at 844x390, 932x430, 740x360, 390x844, 1440x900).
+- Next polish round (after #1471 merges), item 1 plan: the Singing phone stage's TransportBar
+  publishes its footprint as --page-dock-space (publishFootSpace, lib/foot-space.ts) on an
+  upright phone only (sideways, the stack stands at the right end, beside the left column, so it
+  must not lift).
+
+## 22:54 UTC, 18 Nov
+- BOTH PRs PUSHED on main fb1e374d1: #1471 head 63e53583f (light gates all clean: check 0 errors,
+  index, cites 308, validate, metrics, unit related 9,726 / 825 files); #1467 head 5c041bb6a
+  (check re-run alone 0 errors / 11 warnings, no files changed; unit 590 / 75 files; rest clean).
+  Leases explicit (old heads e45077a5a0d3, 636e157d19f8). Subscribed to both. Check-in trigger
+  trig_01JA3bTrdZoZy19RhgKwNzgY moved to 23:40 UTC covering both (empty count 0). Merge #1467
+  first on green, then #1471 (rebase again only if it conflicts or goes stale).
+- Group A round 2 done: critic form shipped; check right of pill 2 (x 1443 to 1470, 12.0 px clear;
+  chips >= 27.4 px); s04 passes keep 4.5:1 (no backs; DECISIONS 169 records the kicker's one-frame
+  line crossings as accepted); probe 61/61; root check 0 errors. Open: measure.py flags a pop at
+  s01 38.467 (the critic disc grows fastest over 2 frames): left for the critic to judge.
+- CRITIC A-01 LAUNCHED (fresh motion-critic, xhigh): report -> l5film/review/critic-A-01/REPORT.md
+  (save its returned text there if it cannot write). Then send its report + lead calls to the
+  group A builder (resumable) for the fix round. Kept-out list in its prompt (BUILD-NOTES, probe,
+  measure*, contrast*, DECISIONS, LEDGER, briefs, leadnotes).
+- Film critic LEDGER started: l5film/LEDGER.md (storyboard-01/02, kit-01, A-01 pending).
