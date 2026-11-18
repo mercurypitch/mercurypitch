@@ -22,8 +22,8 @@ function fracture(
 ): number {
   const offset = value - center
   const width = offset < 0 ? left : right
-  const core = 0.07
-  const shoulder = 0.11
+  const core = 0.1
+  const shoulder = 0.14
   const distance = Math.abs(offset)
   const length = width - (core + shoulder) / 2
   if (distance >= width) return 0
@@ -35,19 +35,25 @@ function fracture(
 
 function sculpt(x: number, y: number, z: number, result: Vector3): Vector3 {
   const depth = -y
-  const band = ramp(0.28, 0.86, depth) * (1 - ramp(1.8, 2.05, depth))
+  // The upper donor has long, thin faces. Fade relief in gradually so their
+  // transported shading normals still face the deformed surface.
+  const band = ramp(0.28, 1.2, depth) * (1 - ramp(1.8, 2.05, depth))
   const face = ramp(-0.08, 0.64, z) * (1 - ramp(1.9, 2.35, Math.abs(x)))
-  const weight = band * face
+  const weight = 0.9 * band * face
   if (weight === 0) return result.set(x, y, z)
+  // Flatten the raised front shelf while broad, unequal clefts carry
+  // across the beds. The protected rim and tip retain their planted contacts.
   const bedding =
-    0.16 * pocket(-1.22, 0.72, x) * pocket(0.82, 0.64, depth) -
-    0.115 * pocket(0.05, 0.68, x) * pocket(1.14, 0.76, depth) +
-    0.09 * pocket(1.15, 0.62, x) * pocket(0.72, 0.55, depth)
-  // Carry cuts across the beds, tapering only at the planted rim and tip.
+    0.04 * x +
+    0.5 *
+      (0.16 * pocket(-1.22, 0.72, x) * pocket(0.82, 0.64, depth) -
+        0.115 * pocket(0.05, 0.68, x) * pocket(1.14, 0.76, depth) +
+        0.09 * pocket(1.15, 0.62, x) * pocket(0.72, 0.55, depth))
   const recess =
-    0.38 * fracture(-0.98 + depth * 0.16, 0.58, 0.44, x) +
-    0.18 * fracture(0.26 - depth * 0.07, 0.58, 0.38, x) +
-    0.34 * fracture(1.48 - depth * 0.21, 0.55, 0.36, x)
+    0.24 * ramp(0.5, 1.4, z) +
+    0.22 * fracture(-0.98 + depth * 0.16, 0.7, 0.5, x) +
+    0.14 * fracture(0.26 - depth * 0.07, 0.7, 0.48, x) +
+    0.2 * fracture(1.48 - depth * 0.21, 0.68, 0.46, x)
   return result.set(x, y + bedding * weight, z - recess * weight)
 }
 
