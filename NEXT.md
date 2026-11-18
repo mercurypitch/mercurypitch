@@ -4138,3 +4138,6 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   7. Tall spotlights flagged WIDE at 844/932 (16/13).
   8. Ear Lab sideways (after #1467): bench stations far below the art; Hairline "Your call" at
      the right edge.
+- 18:43: check-in on #1467: unchanged (red only from infra; #1470 still open, clean; #1467 merges
+  cleanly with main 033ed21c5; no reviews). Re-armed for 22:44 (trig_01W3VJJ2ZY3KmyjAteaMpZEB),
+  empty check-ins: 1.
