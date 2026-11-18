@@ -1,0 +1,146 @@
+"""Solids and surfaces of revolution around +Z from an (r, z) profile.
+
+The mesh is built explicitly (rings of `segments` vertices, one pole vertex where
+the profile touches the axis) rather than with the Screw modifier, so UVs, poles
+and the seam are exact and a closed profile always yields a closed manifold.
+"""
+
+import math
+
+import bmesh
+
+from . import scene
+
+POLE_EPS = 1e-6
+
+
+def lathe(name, profile, segments=48, *, closed=False, modulate=None, uv=True, smooth=True,
+          sharp_degrees=None, material=None, span_materials=None, flat_spans=(), coll=None):
+    """Revolve `profile` (list of Vector((r, z)) walked bottom to top) into a mesh object.
+
+    closed: True when the profile is a loop (first point = last point implied), for
+        beads and torus-like trims. An open profile that starts and ends on the axis
+        (r = 0) already gives a closed solid: outer wall, lip, inner wall, floor.
+    modulate: optional f(theta, z, i) -> metres, pushed along each point's outward
+        profile normal. Use it for lobes and flutes, and confine it to a height band
+        inside f; a modulation that also moves the lip and foot is what made v1 wobble.
+        On a hollow shell walked up its outside and down its inside, outward points
+        away from the axis on both walls: one negative push moves both in together
+        and keeps the wall even (a crease), where pushing the inner wall the other
+        way drives it through the outer. f may return (dr, dz) instead, for a push in
+        a fixed direction: a floor's corner has a diagonal normal, and a lobe pushed
+        along it lifted the urn's floor 2 cm in every crease and folded its inner wall
+        through the outer; moved straight in, the floor stays flat.
+    sharp_degrees: mark edges sharper than this as sharp (Smooth by Angle semantics).
+    material / span_materials: one material, or a list of slots with
+        span_materials[i] naming the slot of the faces between profile points i and
+        i + 1 (profile.chain builds both from pieces). One shell then carries glass,
+        gold bands and a stone foot; where a slot changes on a smooth join the
+        normal stays shared, so the change is a clean colour line, not a seam.
+    flat_spans: span indices shaded flat, for faceted metal or cut stone.
+    uv: True for UVs as fractions (u around, v along the outline), or a tile size
+        in metres for UVs in tiles: v = arc length / tile, and u runs a whole number
+        of tiles round, set by the widest ring of each run of one material (2 pi
+        r_max / tile, rounded), so a tiling texture keeps about its size on every
+        part (hammered gold on a wide base ring and a thin bead alike), meets itself
+        at angle 0 without a seam, and does not shear where the radius changes. A
+        per-ring scale spiralled the amphora's foot and twisted its rim into rope.
+    """
+    from .profile import normal_in
+
+    pts = list(profile)
+    n = len(pts)
+    bm = bmesh.new()
+    uv_layer = bm.loops.layers.uv.new('UVMap') if uv is not False else None
+    angles = [2 * math.pi * j / segments for j in range(segments)]
+    arc = [0.0]
+    for a, b in zip(pts, pts[1:] + ([pts[0]] if closed else [])):
+        arc.append(arc[-1] + (b - a).length)
+    total = arc[-1] or 1.0
+
+    rings = []
+    for i, p in enumerate(pts):
+        if p.x < POLE_EPS:
+            rings.append(bm.verts.new((0.0, 0.0, p.y)))
+            continue
+        outward = -normal_in(pts, i)
+        ring = []
+        for theta in angles:
+            r, z = p.x, p.y
+            if modulate is not None:
+                d = modulate(theta, p.y, i)
+                if isinstance(d, tuple):
+                    r += d[0]
+                    z += d[1]
+                else:
+                    r += outward.x * d
+                    z += outward.y * d
+            ring.append(bm.verts.new((r * math.cos(theta), r * math.sin(theta), z)))
+        rings.append(ring)
+
+    spans = list(zip(range(n - 1), range(1, n)))
+    if closed:
+        spans.append((n - 1, 0))
+    if span_materials is not None and len(span_materials) < len(spans):
+        if not (closed and len(span_materials) == len(spans) - 1):
+            raise ValueError(f'{name}: {len(span_materials)} span materials for {len(spans)} spans')
+    flat = set(flat_spans)
+    slots = [0 if span_materials is None else span_materials[min(si, len(span_materials) - 1)]
+             for si in range(len(spans))]
+    around = [1.0] * len(spans)  # tiles round each span: one whole number per run of one material
+    if not isinstance(uv, bool):
+        start = 0
+        for si in range(1, len(spans) + 1):
+            if si == len(spans) or slots[si] != slots[start]:
+                r_max = max(max(pts[ia].x, pts[ib].x) for ia, ib in spans[start:si])
+                for k in range(start, si):
+                    around[k] = max(1, round(2 * math.pi * r_max / uv))
+                start = si
+    for si, (ia, ib) in enumerate(spans):
+        ra, rb = rings[ia], rings[ib]
+        slot = slots[si]
+        if isinstance(uv, bool):
+            va = arc[ia] / total
+            vb = (arc[ib] if ib != 0 else total) / total
+        else:  # tiles: metres over the tile size
+            va = arc[ia] / uv
+            vb = (arc[ib] if ib != 0 else total) / uv
+        sa = sb = around[si]
+        for j in range(segments):
+            k = (j + 1) % segments
+            ua, ub = j / segments, (j + 1) / segments
+            if isinstance(ra, list) and isinstance(rb, list):
+                verts = (ra[j], ra[k], rb[k], rb[j])
+                uvs = ((ua * sa, va), (ub * sa, va), (ub * sb, vb), (ua * sb, vb))
+            elif isinstance(ra, list):  # top pole
+                verts = (ra[j], ra[k], rb)
+                uvs = ((ua * sa, va), (ub * sa, va), ((ua + ub) / 2 * sb, vb))
+            elif isinstance(rb, list):  # bottom pole
+                verts = (ra, rb[k], rb[j])
+                uvs = (((ua + ub) / 2 * sa, va), (ub * sb, vb), (ua * sb, vb))
+            else:
+                continue
+            face = bm.faces.new(verts)
+            face.material_index = slot
+            face.smooth = smooth and si not in flat
+            if uv_layer is not None:
+                for loop, coord in zip(face.loops, uvs):
+                    loop[uv_layer].uv = coord
+
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
+    obj = scene.from_bmesh(name, bm, coll=coll, smooth=None, material=material)
+    bm.free()
+    if sharp_degrees is not None:
+        scene.mark_sharp(obj, sharp_degrees)
+    return obj
+
+
+def band(z, z0, z1, feather):
+    """Weight 1 inside [z0, z1], easing to 0 over `feather` metres outside it (smoothstep)."""
+    if z0 <= z <= z1:
+        return 1.0
+    d = (z0 - z) if z < z0 else (z - z1)
+    if d >= feather:
+        return 0.0
+    t = 1.0 - d / feather
+    return t * t * (3 - 2 * t)

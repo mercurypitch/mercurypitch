@@ -1,0 +1,36 @@
+{
+  "amber_glass": {
+    "KHR_materials_volume": {
+      "thicknessFactor": 0.15,
+      "attenuationColor": [
+        0.965,
+        0.745,
+        0.254
+      ],
+      "attenuationDistance": 0.06,
+      "thicknessTexCoord": 1
+    }
+  },
+  "amber_cut": {
+    "KHR_materials_volume": {
+      "thicknessFactor": 0.08,
+      "attenuationColor": [
+        0.965,
+        0.745,
+        0.254
+      ],
+      "attenuationDistance": 0.06
+    }
+  },
+  "jade_stone": {
+    "KHR_materials_volume": {
+      "thicknessFactor": 0.02,
+      "attenuationColor": [
+        0.32,
+        0.4,
+        0.08
+      ],
+      "attenuationDistance": 0.03
+    }
+  }
+}
