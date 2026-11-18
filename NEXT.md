@@ -4141,3 +4141,12 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - 18:43: check-in on #1467: unchanged (red only from infra; #1470 still open, clean; #1467 merges
   cleanly with main 033ed21c5; no reviews). Re-armed for 22:44 (trig_01W3VJJ2ZY3KmyjAteaMpZEB),
   empty check-ins: 1.
+
+## 19:34 UTC, 18 Nov
+- Polish gates on the rebase (e45077a5a) all clean: check 0 errors; index current; cites 308;
+  pr:validate rc 0; metrics no regressions (baseline e2eHardWaits 503 in the branch); unit related
+  9,726 / 825 files; specs 135/135; mobile audit clean; walks 390x844 0/126 rc 0, 1440x900 0 unlit
+  (1 WIDE Guitar fretboard, pre-existing), 844x390 0/132 (16 WIDE, the same steps as before).
+  Default desk walk 1280x800 running ($S/rebasepolish/walk-1280x800.log).
+- PR #1471 opened (feat/sideways-polish), body footer removed via update_pull_request (verified),
+  subscribed. CI may hit the same browser-setup infra failure until #1470 lands.
