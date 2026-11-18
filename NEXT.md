@@ -4106,3 +4106,11 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Next heavy slot (when the polish builder hands back): the KIT step (shared world, framings,
   chart, frame, chips, type, hosts layer; kit lab + one component critic), then scenes A-E two
   at a time.
+
+## 18:07 UTC, 18 Nov
+- Kit brief ready: $S/briefs/l5-film-k-kit.md (series kit rebuilt with L4's call names; camera
+  from L4 frames.js; hosts from L4 hosts.js + PASSES.md; L5 world modules at HANDOFFS pixels;
+  lesson.css; lab proofs incl. real font widths -> lab/kit-type/WIDTHS.md; BUILD-GUIDE.md; then
+  one component critic by the lead). NOTE: L4's lesson.js/motion.js/marks.js are NOT in the
+  backup (only frames.js, hosts.js, stairs.js); the room is rebuilt from L4's compositions,
+  BUILD-GUIDE and DECISIONS 89/93/100. Launch when the polish builder hands back ((model), xhigh).
