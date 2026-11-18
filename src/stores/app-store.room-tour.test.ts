@@ -33,13 +33,15 @@ vi.mock('@/lib/use-viewport', () => ({
 }))
 vi.mock('@/lib/guide-funnel', () => ({ trackTour: vi.fn() }))
 
-/** The Guide's Singing section as a viewport shows it. */
+/** The Guide's Singing section as a viewport shows it: a phone's layout
+ *  and a narrow window's, or a desk's and a wide one's. */
 const singingFor = (narrow: boolean) =>
   WALKTHROUGH_STEPS.filter(
     (step) =>
       step.section === 'practice' &&
       (step.viewport === undefined ||
-        step.viewport === (narrow ? 'mobile' : 'desktop')),
+        step.viewport === (narrow ? 'mobile' : 'desktop') ||
+        step.viewport === (narrow ? 'narrow' : 'wide')),
   )
 
 beforeEach(() => {

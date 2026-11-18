@@ -368,6 +368,63 @@ test.describe('a phone on its side', () => {
     })
   }
 
+  // The Guide's Singing and Toolbar sections pick their steps as the tour
+  // starts. By the width alone, a phone on its side wider than 768 px got
+  // the desk's: fourteen bubbles in the middle of the screen with nothing
+  // lit, since the stage they point at is the phone's. And the phone's step
+  // for the bottom tab bar has nothing to light there: the top bar stays.
+  for (const size of SIDEWAYS.slice(0, 2)) {
+    test(`at ${size.width}x${size.height}, the Guide's Singing and Toolbar tours light something at every step`, async ({
+      page,
+    }) => {
+      // A step can open the drawer, unfold a section and wait about a second
+      // for its target: twelve of them are most of a minute.
+      test.slow()
+      await page.addInitScript(() => {
+        localStorage.setItem('pitchperfect_page_tour_offered_singing', 'true')
+      })
+      await openSinging(page, size)
+      await expect(page.locator(STAGE)).toBeVisible()
+
+      const unlit: string[] = []
+      for (const section of ['Singing', 'Toolbar']) {
+        await page.getByRole('button', { name: 'Menu', exact: true }).tap()
+        await page.getByTitle('Interactive guide tours').first().tap()
+        await page
+          .locator('[class*="guideSectionName"]', {
+            hasText: new RegExp(`^${section}$`),
+          })
+          .first()
+          .tap()
+        const title = page.locator('[class*="walkthroughStepTitle"]')
+        const light = page.locator('[class*="walkthroughHighlight"]')
+        await expect(title).toBeVisible()
+        for (let guard = 0; guard < 20; guard += 1) {
+          await page.waitForTimeout(1500)
+          const name = ((await title.textContent()) ?? '').trim()
+          const box = (await light.isVisible())
+            ? await light.boundingBox()
+            : null
+          if (box === null || box.width <= 14 || box.height <= 14) {
+            unlit.push(`${section}: ${name}`)
+          }
+          const finish = page.getByRole('button', {
+            name: 'Finish',
+            exact: true,
+          })
+          if (await finish.isVisible()) {
+            await finish.click()
+            break
+          }
+          await page.getByRole('button', { name: 'Next', exact: true }).click()
+        }
+        await expect(title).toHaveCount(0)
+      }
+
+      expect(unlit).toEqual([])
+    })
+  }
+
   test('folds the sidebar into the menu, as upright', async ({ page }) => {
     await openSinging(page, SIDEWAYS[0])
     const sidebar = page.locator('aside.app-sidebar')

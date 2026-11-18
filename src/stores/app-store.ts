@@ -34,7 +34,7 @@ import { STUDIO_LIBRARY_TOUR_STEPS, studioTourSteps } from '@/lib/studio-tour'
 import type { TourKey } from '@/lib/tour-ids'
 import type { TourSettingName } from '@/lib/tour-screen'
 import { startWhenClear } from '@/lib/tour-screen'
-import { isNarrow } from '@/lib/use-viewport'
+import { isNarrow, isPhoneStage } from '@/lib/use-viewport'
 import { getCompletedCount, getRemainingWalkthroughs, } from '@/stores/walkthrough-store'
 import type { ActiveTab } from './ui-store'
 import { activeTab } from './ui-store'
@@ -105,12 +105,18 @@ export interface WalkthroughStep {
    */
   inSidebar?: boolean
   /**
-   * Restrict a step to one viewport. Omitted = both. 'desktop' steps target
-   * chrome that only exists on the wide layout (the control bar / toolbar);
-   * 'mobile' steps walk the phone stages instead. Filtered at tour-build time
-   * against isNarrow(), so a tour started at either width shows the right run.
+   * Restrict a step to one layout. Omitted = every layout. 'desktop' steps
+   * target chrome that only exists on the desk's layout (the control bar /
+   * toolbar); 'mobile' steps walk the phone stages instead. Filtered at
+   * tour-build time against the layout the screen shows, `isPhoneStage()`:
+   * narrow, or a phone on its side, as the Singing tab and the header's
+   * voice pill ask it. A target that changes at the width breakpoint alone
+   * names that instead, 'narrow' or 'wide' against `isNarrow()`: the bottom
+   * tab bar, the Guitar and Piano pages, the jam room's header. A phone on
+   * its side wider than 768 px has the phone stages and the top tab bar, so
+   * there the two answers differ.
    */
-  viewport?: 'mobile' | 'desktop'
+  viewport?: 'mobile' | 'desktop' | 'narrow' | 'wide'
   /**
    * A control some hosts leave out (the mixer's Open in Karaoke Night is
    * not drawn in the native app, the Karaoke room or Karaoke Night itself).
@@ -340,7 +346,9 @@ export const WALKTHROUGH_STEPS: WalkthroughStep[] = [
     placement: 'top',
     section: 'practice',
     requiredTab: TAB_SINGING,
-    viewport: 'mobile',
+    // The bar at the foot is a narrow screen's (BottomTabBar): a phone on
+    // its side wider than 768 px keeps the top bar, as a desk does.
+    viewport: 'narrow',
   },
 
   // ── Toolbar Section (desktop) ──
@@ -1032,16 +1040,28 @@ function markGuideSectionCompleted(sectionId: string): void {
   saveGuideSections(completed)
 }
 
-/** Drop steps that don't apply to the current viewport (see WalkthroughStep
+/** Whether a step's layout is the one the screen shows (see
+ *  WalkthroughStep.viewport). */
+function showsLayout(viewport: WalkthroughStep['viewport']): boolean {
+  switch (viewport) {
+    case undefined:
+      return true
+    case 'mobile':
+      return isPhoneStage()
+    case 'desktop':
+      return !isPhoneStage()
+    case 'narrow':
+      return isNarrow()
+    case 'wide':
+      return !isNarrow()
+  }
+}
+
+/** Drop steps that don't apply to the current layout (see WalkthroughStep
  *  .viewport). Evaluated once at tour-build time — a mid-tour rotation keeps
  *  the run it started with, which is fine for a guided walk. */
 function forThisViewport(steps: WalkthroughStep[]): WalkthroughStep[] {
-  const narrow = isNarrow()
-  return steps.filter(
-    (s) =>
-      s.viewport === undefined ||
-      s.viewport === (narrow ? 'mobile' : 'desktop'),
-  )
+  return steps.filter((s) => showsLayout(s.viewport))
 }
 
 /** Build step list from given section IDs */
@@ -1099,6 +1119,10 @@ export const PRACTICE_MODES_TOUR_STEPS: WalkthroughStep[] = [
 // (decoupled from CSS/test ids so refactors don't break them). Started via
 // startPageTour(tab); offered per page by TourChipHost.
 
+// The Guitar and Piano pages draw their phone layouts at the width
+// breakpoint alone (isNarrow in GuitarPage and PianoPage), so their steps
+// are 'narrow' and 'wide': a phone on its side wider than 768 px has their
+// desk layouts.
 const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
   {
     title: 'Three ways to play',
@@ -1107,7 +1131,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="guitar.view-toggle"]',
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
-    viewport: 'desktop',
+    viewport: 'wide',
   },
   {
     title: 'Pick your sound',
@@ -1116,7 +1140,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="guitar.instruments"]',
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
-    viewport: 'desktop',
+    viewport: 'wide',
   },
   // Mobile: instrument sound, the view switch, Guitar Pro import and audio
   // devices all collapse behind one Options button.
@@ -1127,7 +1151,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="guitar.options"]',
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
-    viewport: 'mobile',
+    viewport: 'narrow',
   },
   {
     title: 'Load a song',
@@ -1145,7 +1169,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
     navigate: ['[data-tour="guitar.view-fretboard"]'],
-    viewport: 'desktop',
+    viewport: 'wide',
   },
   // Mobile: same transport, but the view lives in the Options sheet, so no
   // fretboard navigation here.
@@ -1156,7 +1180,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-testid="guitar-control-bar"]',
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
-    viewport: 'mobile',
+    viewport: 'narrow',
   },
   {
     title: 'Key & scale',
@@ -1168,7 +1192,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
     navigate: ['[data-tour="guitar.view-fretboard"]'],
     // Fretboard-view internals — reached on mobile via the Options sheet, so
     // these deeper steps are desktop-only.
-    viewport: 'desktop',
+    viewport: 'wide',
   },
   {
     title: 'The fretboard',
@@ -1179,7 +1203,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
     requiredTab: TAB_GUITAR,
     // Make sure we're in Fretboard view (not Practice) before pointing at it.
     navigate: ['[data-tour="guitar.view-fretboard"]'],
-    viewport: 'desktop',
+    viewport: 'wide',
   },
   {
     title: 'Practice modes',
@@ -1189,7 +1213,7 @@ const GUITAR_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     requiredTab: TAB_GUITAR,
     navigate: ['[data-tour="guitar.view-fretboard"]'],
-    viewport: 'desktop',
+    viewport: 'wide',
   },
 ]
 
@@ -1201,7 +1225,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="piano.song-picker"]',
     placement: 'bottom',
     requiredTab: TAB_PIANO,
-    viewport: 'desktop',
+    viewport: 'wide',
   },
   {
     title: 'Open Piano Night',
@@ -1210,7 +1234,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="piano-night-launch"]',
     placement: 'bottom',
     requiredTab: TAB_PIANO,
-    viewport: 'desktop',
+    viewport: 'wide',
   },
   {
     title: 'Play the falling notes',
@@ -1220,7 +1244,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     screen: ['piano.melody'],
     placement: 'top',
     requiredTab: TAB_PIANO,
-    viewport: 'desktop',
+    viewport: 'wide',
   },
   {
     title: 'Sing it or play it',
@@ -1229,7 +1253,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '#btn-mic',
     placement: 'bottom',
     requiredTab: TAB_PIANO,
-    viewport: 'desktop',
+    viewport: 'wide',
   },
   {
     title: 'Transport',
@@ -1238,7 +1262,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-testid="piano-control-bar"]',
     placement: 'bottom',
     requiredTab: TAB_PIANO,
-    viewport: 'desktop',
+    viewport: 'wide',
   },
   {
     title: 'Once or on repeat',
@@ -1247,7 +1271,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '#btn-once',
     placement: 'bottom',
     requiredTab: TAB_PIANO,
-    viewport: 'desktop',
+    viewport: 'wide',
   },
   {
     title: 'Tempo, volume & zoom',
@@ -1257,7 +1281,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     placement: 'bottom',
     requiredTab: TAB_PIANO,
     reveal: '[data-testid="piano-more-toggle"]',
-    viewport: 'desktop',
+    viewport: 'wide',
   },
   // ── Mobile stage steps ──
   {
@@ -1267,7 +1291,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="piano-songs"]',
     placement: 'bottom',
     requiredTab: TAB_PIANO,
-    viewport: 'mobile',
+    viewport: 'narrow',
   },
   {
     title: 'Play the falling notes',
@@ -1277,7 +1301,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     screen: ['piano.melody'],
     placement: 'top',
     requiredTab: TAB_PIANO,
-    viewport: 'mobile',
+    viewport: 'narrow',
   },
   {
     title: 'Your practice bar',
@@ -1286,7 +1310,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="piano-transport"]',
     placement: 'top',
     requiredTab: TAB_PIANO,
-    viewport: 'mobile',
+    viewport: 'narrow',
   },
   {
     title: 'Practice options',
@@ -1295,7 +1319,7 @@ const PIANO_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="piano-options"]',
     placement: 'top',
     requiredTab: TAB_PIANO,
-    viewport: 'mobile',
+    viewport: 'narrow',
   },
 ]
 
@@ -1663,7 +1687,10 @@ export const JAM_ROOM_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="jam.room-actions"]',
     placement: 'bottom',
     requiredTab: TAB_JAM,
-    viewport: 'desktop',
+    // The room's header folds its actions behind a menu by its own width
+    // (JamPanel.module.css), not by a phone's layout: on its side, wider
+    // than 768 px, a phone has the whole row.
+    viewport: 'wide',
   },
   {
     title: 'Your side of the room',
@@ -1672,7 +1699,7 @@ export const JAM_ROOM_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="jam.room-actions"]',
     placement: 'bottom',
     requiredTab: TAB_JAM,
-    viewport: 'mobile',
+    viewport: 'narrow',
   },
   {
     title: 'Who is here',

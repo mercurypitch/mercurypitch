@@ -140,11 +140,13 @@ describe('the room’s tour', () => {
     const variants = JAM_ROOM_TOUR_STEPS.filter(
       (step) => step.targetSelector === '[data-tour="jam.room-actions"]',
     )
+    // By the width, as the header folds: a phone on its side wider than
+    // the breakpoint has the whole row.
     expect(variants.map((step) => step.viewport).sort()).toEqual([
-      'desktop',
-      'mobile',
+      'narrow',
+      'wide',
     ])
-    expect(variants.find((s) => s.viewport === 'mobile')?.description).toMatch(
+    expect(variants.find((s) => s.viewport === 'narrow')?.description).toMatch(
       /menu button/,
     )
   })
