@@ -170,11 +170,11 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 
 ## Length
 
-The learner copy is 2,331 words today, every branch counted (FACTS 3; 2,336 before the Wrap's
+The learner copy is 2,333 words today, every branch counted (FACTS 3; 2,331 before the practice card named the Ear Lab's station, 2,336 before the Wrap's
 next-lesson line took Lesson 11's current hook, 2,341 at `1308fd2e7`, 2,376 on
 the review's count), under the series' cap, Lesson 3's page at 2,379 words on the same count once
-the note under its title is marked Editorial (2,382 at `616c97edb`). It runs about 17 minutes: 9.79
-of reading at 238 words a minute and 7.0 of sound, toys and tasks, 16.79 in all. That is past
+the note under its title is marked Editorial (2,382 at `616c97edb`). It runs about 17 minutes: 9.80
+of reading at 238 words a minute and 7.0 of sound, toys and tasks, 16.80 in all. That is past
 MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5, 6 and 7 are (16, 18, 17 and 16
 minutes). Each step's text, with its Try, its Notice and any predict, runs 92 to 120 words (Steps 1
 to 5: 103, 98, 120, 92 and 114), inside § 4.2's 50 to 120 a step. Four parts carry more:

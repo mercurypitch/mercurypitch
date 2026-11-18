@@ -179,10 +179,10 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 
 ## Length
 
-The learner copy is 2,340 words on `pnpm lesson:words` (FACTS 3; the review's 2,341), under the
+The learner copy is 2,342 words on `pnpm lesson:words` (FACTS 3; 2,340 before the practice card named the Ear Lab's station; the review's 2,341), under the
 series' cap of 2,379, Lesson 3's page on the same counter less the editorial note under its title.
-The page runs about 15 minutes: 9.83 of reading at 238 words a minute and 5.25 of sound, toys and
-tasks, 15.08 in all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3,
+The page runs about 15 minutes: 9.84 of reading at 238 words a minute and 5.25 of sound, toys and
+tasks, 15.09 in all. That is past MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3,
 5, 6, 7 and 10 are (16, 18, 17, 16 and 17 minutes: Lesson 3 FACTS 61, Lesson 5 FACTS 2, Lesson 6
 FACTS 3, Lesson 7 FACTS 4, Lesson 10 FACTS 3). Each step's text, with its Try, its Notice and any
 Tavi line, runs 96 to 118 words (Steps 1 to 5: 115, 118, 118, 111 and 96), inside § 4.2's 50 to 120

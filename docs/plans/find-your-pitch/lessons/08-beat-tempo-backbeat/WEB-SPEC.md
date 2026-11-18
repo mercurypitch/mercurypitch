@@ -205,11 +205,11 @@ section's heading, and the line above it, are in LESSON.md ("Section headings").
 
 ## Length
 
-The learner copy is 2,534 words today, every branch counted (FACTS 4; 2,502 at `1308fd2e7`), 155
+The learner copy is 2,536 words today, every branch counted (FACTS 4; 2,534 before the practice card named the Ear Lab's station, 2,502 at `1308fd2e7`), 157
 over the series' cap, Lesson 3's page at 2,379 words on the same count once the note under its title
 is marked Editorial (2,382 under its old title, at `616c97edb`); the text package's 2,328 was under
-it. The page runs about 16 minutes: 10.65 minutes of reading at 238 words a minute and 5.70 of
-sound, toys and tasks, 16.35 in all. That is past MASTER-PLAN § 4.2's budget, "8 to 12 minutes of
+it. The page runs about 16 minutes: 10.66 minutes of reading at 238 words a minute and 5.70 of
+sound, toys and tasks, 16.36 in all. That is past MASTER-PLAN § 4.2's budget, "8 to 12 minutes of
 active time, 500 to 900 words" (`MASTER-PLAN.md:137`), as Lessons 3, 5, 6 and 7 are (16, 18, 17 and
 16 minutes: Lesson 3 FACTS 61, Lesson 5 FACTS 2, Lesson 6 FACTS 3, Lesson 7 FACTS 4). The owner kept
 the longer lessons on 22 October 2026 (HANDOFF), so nothing is cut; were a cut wanted, the Go deeper
