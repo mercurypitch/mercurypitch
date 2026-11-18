@@ -19,7 +19,7 @@ import type { JSX } from 'solid-js'
 import { createMemo, createSignal, For, Show } from 'solid-js'
 import type { ConfusionMatrix } from '@/lib/ear/confusion-report'
 import { buildConfusionMatrix, topConfusions } from '@/lib/ear/confusion-report'
-import { findThresholdDrill } from '@/lib/ear/drills'
+import { findThresholdDrill, formatThresholdReading } from '@/lib/ear/drills'
 import { INDEX_MAX } from '@/lib/ear/mercury-index'
 import { calibrationHistory, earConfusions, thresholdHistory, } from '@/stores/ear-lab-store'
 import styles from './EarReport.module.css'
@@ -228,7 +228,8 @@ function ThresholdPlates(props: WindowProps): JSX.Element {
               }))
           const best = () => Math.min(...history().map((r) => r.value))
           const latest = () => history()[0]
-          const fmt = (value: number) => `${value.toFixed(decimals)}${unit}`
+          const fmt = (value: number) =>
+            `${formatThresholdReading(drillId, value)}${unit}`
           return (
             <Plate
               title={`${name} · threshold, rising is improving`}

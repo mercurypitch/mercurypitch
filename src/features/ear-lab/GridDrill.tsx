@@ -165,7 +165,6 @@ export function GridDrill(props: GridDrillProps): JSX.Element {
       answerHint="Which click was off: third, fourth, fifth, or sixth?"
       levelCaption="Offset"
       levelLabel={offset}
-      formatValue={(value) => value.toFixed(0)}
       unitLabel="ms"
       unitShort=" ms"
       latestValue={() => latestThresholdReading('the-grid')?.value ?? null}

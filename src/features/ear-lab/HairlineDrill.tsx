@@ -166,7 +166,6 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
       answerHint="Which tone was higher, the first or the second?"
       levelCaption="Gap"
       levelLabel={gap}
-      formatValue={(value) => value.toFixed(1)}
       unitLabel="cents"
       unitShort="¢"
       // The longer verdict, a wrong answer, at the starting gap: the

@@ -6,7 +6,7 @@
 // ============================================================
 
 import type { FacultyId } from '@/lib/ear/drills'
-import { findThresholdDrill } from '@/lib/ear/drills'
+import { findThresholdDrill, formatThresholdReading } from '@/lib/ear/drills'
 import { isProvisional } from '@/lib/ear/elo'
 import { scoreReading } from '@/lib/ear/mercury-index'
 import { clearedSubdivision } from '@/lib/ear/rhythm-take'
@@ -214,9 +214,8 @@ function thresholdReading(drillId: string): InstrumentReading | null {
   const reading = latestThresholdReading(drillId)
   if (!reading) return null
   const unit = findThresholdDrill(drillId)?.unitShort ?? ''
-  const decimals = unit === 'ms' ? 0 : 1
   return {
-    value: reading.value.toFixed(decimals),
+    value: formatThresholdReading(drillId, reading.value),
     unit,
     settling: reading.provisional === true,
   }

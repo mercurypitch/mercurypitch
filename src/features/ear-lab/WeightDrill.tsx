@@ -127,7 +127,6 @@ export function WeightDrill(props: DeskDrillProps): JSX.Element {
       answerHint="Which carried the heavier low end?"
       levelCaption="Shelf"
       levelLabel={() => `${run.level().toFixed(1)} dB`}
-      formatValue={(value) => value.toFixed(1)}
       unitLabel="dB shelf"
       unitShort=" dB"
       latestValue={() => latestThresholdReading('desk-weight')?.value ?? null}

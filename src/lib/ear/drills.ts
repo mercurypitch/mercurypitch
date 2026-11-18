@@ -240,6 +240,28 @@ export function findThresholdDrill(id: string): ThresholdDrill | undefined {
   return THRESHOLD_DRILLS.find((d) => d.id === id)
 }
 
+/**
+ * A threshold reading as every place that shows one writes it, without its
+ * unit: the drill room's plate and Merc's line under it, the day's close,
+ * the bench's Today and stations, the station sheet, both Ear Reports and
+ * the desk. One rounding, so one reading never reads two ways (Drift's
+ * plate said "4 %" while its row on the station sheet said "4.0 %").
+ * Milliseconds and notes are whole; a tempo keeps its tenth under 3 %,
+ * where a whole number would say nothing; cents and decibels keep a tenth,
+ * and so does a drill not in the catalogue (the desk's).
+ */
+export function formatThresholdReading(drillId: string, value: number): string {
+  switch (findThresholdDrill(drillId)?.unitShort) {
+    case 'ms':
+    case 'notes':
+      return value.toFixed(0)
+    case '%':
+      return value < 3 ? value.toFixed(1) : value.toFixed(0)
+    default:
+      return value.toFixed(1)
+  }
+}
+
 export function findIdentificationDrill(
   id: string,
 ): IdentificationDrill | undefined {

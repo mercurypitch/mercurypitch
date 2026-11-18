@@ -28,7 +28,7 @@ import { Dynamic } from 'solid-js/web'
 import { MercPresence } from '@/components/room-kit/MercPresence'
 import type { ConfusionMatrix, TopConfusion } from '@/lib/ear/confusion-report'
 import { buildConfusionMatrix, topConfusions } from '@/lib/ear/confusion-report'
-import { findThresholdDrill } from '@/lib/ear/drills'
+import { findThresholdDrill, formatThresholdReading } from '@/lib/ear/drills'
 import type { CalibrationRunEntry } from '@/stores/ear-lab-store'
 import { calibrationHistory, earConfusions, thresholdHistory, } from '@/stores/ear-lab-store'
 import { registerRoomBack } from '@/stores/native-shell-store'
@@ -406,13 +406,14 @@ function TraceCard(props: {
   // eslint-disable-next-line solid/reactivity -- a card is made for one drill
   const drillId = props.drillId
   const drill = findThresholdDrill(drillId)
-  const decimals = drill?.unitShort === 'ms' ? 0 : 1
   const unit = drill?.unitShort ?? ''
-  const format = (value: number): string =>
-    `${value.toFixed(decimals)} ${unit}`.trim()
+  // A reading as the plate and the bench write it (formatThresholdReading).
+  const reading = (value: number): string =>
+    formatThresholdReading(drillId, value)
+  const format = (value: number): string => `${reading(value)} ${unit}`.trim()
   // The axis prints its round ends without a trailing nought: "10 ¢".
   const tick = (value: number): string =>
-    `${Number(value.toFixed(decimals))} ${unit}`.trim()
+    `${Number(reading(value))} ${unit}`.trim()
   const name = drill?.name ?? drillId
   const faculty = stationOf(drillId) ?? 'resolution'
   const history = () => thresholdHistory(drillId)
@@ -444,7 +445,7 @@ function TraceCard(props: {
         </span>
         <span class={styles.reading}>
           <span class={styles.small}>
-            <b class={styles.readingValue}>{latest().toFixed(decimals)}</b>{' '}
+            <b class={styles.readingValue}>{reading(latest())}</b>{' '}
             <b class={styles.readingUnit}>{unit}</b>
           </span>
           <span class={styles.small}>best {format(best())}</span>

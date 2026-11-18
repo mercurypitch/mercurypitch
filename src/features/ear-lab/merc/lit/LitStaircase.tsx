@@ -38,7 +38,9 @@ const TRACK_LIGHT = [
 
 /**
  * The number the plate shows `t` ms in: the level the way has reached
- * while it draws, then easing onto the reading.
+ * while it draws, then easing onto the reading, and from STAIRS_MS.settled
+ * the reading itself, so the plate ends on the number Merc's line says (an
+ * ease that ends a float's width off it could round the other way).
  */
 export function countedLevel(
   points: readonly TracePoint[],
@@ -49,6 +51,7 @@ export function countedLevel(
   const p = progress(t, STAIRS_MS.from, STAIRS_MS.to)
   const tip = points[Math.round(p * (points.length - 1))].level
   const settle = progress(t, STAIRS_MS.to, STAIRS_MS.settled)
+  if (settle >= 1) return reading
   return settle > 0 ? lerp(tip, reading, easeInOut(settle)) : tip
 }
 

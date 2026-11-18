@@ -279,7 +279,6 @@ export function SpanDrill(props: SpanDrillProps): JSX.Element {
       }
       levelCaption="Length"
       levelLabel={length}
-      formatValue={(value) => value.toFixed(0)}
       unitLabel="notes held"
       unitShort=" notes"
       latestValue={() => latestThresholdReading('span')?.value ?? null}

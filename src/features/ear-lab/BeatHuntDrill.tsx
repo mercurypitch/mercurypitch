@@ -165,7 +165,6 @@ export function BeatHuntDrill(props: BeatHuntDrillProps): JSX.Element {
       answerHint="Which pair was beating: the first, or the second?"
       levelCaption="Detune"
       levelLabel={detune}
-      formatValue={(value) => value.toFixed(1)}
       unitLabel="cents detune"
       unitShort="¢"
       latestValue={() => latestThresholdReading('beat-hunt')?.value ?? null}
