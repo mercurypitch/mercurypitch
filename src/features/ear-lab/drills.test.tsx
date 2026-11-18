@@ -377,9 +377,9 @@ describe('Hairline', () => {
     expect(document.body.textContent).not.toContain('—')
   })
 
-  it("keeps the web's loupe lighting its own hairline, and no lamp on a pad", async () => {
+  it('keeps the older loupe lighting its own hairline, and no lamp on a pad', async () => {
     // The native room draws the loupe upright and lamps its pads
-    // (HairlineDrill.room.test.tsx); the web's stage is as it was.
+    // (HairlineDrill.room.test.tsx); the older bench's stage is as it was.
     render(() => (
       <Stage>
         <HairlineDrill onBack={vi.fn()} />

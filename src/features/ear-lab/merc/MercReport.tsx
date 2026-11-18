@@ -2,8 +2,8 @@
 // The Ear Report in the room's light (docs/plans/ear-lab-native-look.md,
 // "The Ear Report", from the mock-ups on the Ear Lab Native Bench
 // canvas): what moved, and what the ear mixes up, drawn as the native tab
-// draws everything else. The web's report (EarReport.tsx) keeps its
-// engraved plates; both read the same data (report-data.ts).
+// draws everything else. The older report (EarReport.tsx), which only the
+// store build shows, keeps its engraved plates; both read report-data.ts.
 //
 //   the bar      a round back button, the title and its line, staying
 //                at the top while the report scrolls under it

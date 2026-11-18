@@ -292,7 +292,7 @@ describe('the drill room', () => {
 
   it("draws a drill's instrument its own lit way, with the drill's props", () => {
     mount('practice', {}, () => <BeatPendulums sounding={1} reveal={null} />)
-    // Beat Hunt's strings of light, not the web's pendulums.
+    // Beat Hunt's strings of light, not the older pendulums.
     expect(document.querySelector('[data-instrument="beat-pendulums"]')).toBe(
       null,
     )
@@ -450,7 +450,7 @@ describe("the Field Book's page", () => {
       'data-station',
       'wild',
     )
-    // The room draws its own page: the song's timeline, not the web's.
+    // The room draws its own page: the song's timeline, not the older one.
     expect(
       document.querySelector('[data-instrument="song-timeline"]'),
     ).not.toBeNull()

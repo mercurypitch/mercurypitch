@@ -1,7 +1,7 @@
 // ============================================================
-// The room's lit instruments, by the name each web instrument exports
-// itself under (instrument-skin.ts). The room provides this to the drills
-// it draws; an instrument not named here draws itself as on the web.
+// The room's lit instruments, by the name each of the older stage's
+// instruments exports itself under (instrument-skin.ts). The room provides
+// this to its drills; an instrument not named here draws itself the old way.
 // Hairline's lens comes the older way, through the stage skin's
 // VernierLoupe (skin.tsx).
 // ============================================================

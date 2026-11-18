@@ -1,6 +1,6 @@
 // A sung answer's pad: in the room, the room kit's mic in place of the
-// keys (the mock-ups' "Answering by voice"); on the web, the lead pad it
-// always was.
+// keys (the mock-ups' "Answering by voice"); on the older bench's stage,
+// the lead pad it always was.
 
 import { cleanup, render, screen } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
@@ -52,7 +52,7 @@ describe('a sung answer', () => {
     expect(screen.getByText('Closed')).toBeTruthy()
   })
 
-  it("is the web's lead pad, as it was, outside the room", () => {
+  it('is the older lead pad, as it was, outside the room', () => {
     render(() => (
       <MicPad
         mic="sing"

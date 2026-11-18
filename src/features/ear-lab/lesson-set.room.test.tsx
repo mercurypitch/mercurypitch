@@ -1,5 +1,5 @@
 // A lesson's set in Merc's room (EAR_LAB_WITH_MERC): the drill hands the
-// room the same set as the web's stage, so the address does not depend on
+// room the same set as the older stage, so the address does not depend on
 // which bench is showing. Leap's console says what the set asks and draws
 // its four pads, and the room's plate names the rating as the set's;
 // Gravity's console draws Te's and Ti's pads.

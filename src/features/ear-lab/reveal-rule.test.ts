@@ -1,7 +1,7 @@
 // Merc's pacing rule, which the native room sets while it is up: a
 // right answer moves on after the hold, a wrong one waits for Next
 // whatever the rack's switch says, and a touch pauses a hold that was
-// counting down. The web keeps the switch (reveal-pacing.test.ts).
+// counting down. The older bench keeps the switch (reveal-pacing.test.ts).
 
 import { createRoot } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -19,7 +19,7 @@ function setUp() {
 }
 
 describe('revealStep', () => {
-  it("is the switch's on the web", () => {
+  it("is the switch's outside the room", () => {
     expect(revealStep('switch', true, false)).toBe('advance')
     expect(revealStep('switch', false, true)).toBe('park')
   })

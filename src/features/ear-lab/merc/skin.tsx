@@ -35,7 +35,7 @@ import styles from './room.module.css'
 import { spokenLabel, useRoom } from './room-context'
 import { RoomLoupe } from './RoomLoupe'
 
-/** Wake the audio inside the tap, as the web's lead pad does: iOS only
+/** Wake the audio inside the tap, as the older lead pad does: iOS only
  *  un-suspends a context from a gesture. */
 function RoomPlayPad(props: PlayPadProps): JSX.Element {
   const room = useRoom()
@@ -232,7 +232,7 @@ function RoomPads(props: PadsProps): JSX.Element {
   )
 }
 
-/** The web's tap pad (it already takes a tap the moment the finger
+/** The older stage's tap pad (it already takes a tap the moment the finger
  *  lands), ticking under the thumb. */
 function RoomTapPad(props: TapPadProps): JSX.Element {
   const room = useRoom()
@@ -316,7 +316,7 @@ function RoomMicPad(props: MicPadProps): JSX.Element {
 }
 
 /** A plate a drill draws for itself, when it gave the room no numbers
- *  to lay out: the web's, as it is. */
+ *  to lay out: the older stage's, as it is. */
 function RoomEndPlate(props: EndPlateProps): JSX.Element {
   return (
     <StageSkinContext.Provider value={null}>

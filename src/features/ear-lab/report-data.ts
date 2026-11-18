@@ -1,6 +1,6 @@
 // ============================================================
-// The Ear Report's data, read the same way by the web's report
-// (EarReport.tsx) and the native one (merc/MercReport.tsx): the ranges
+// The Ear Report's data, read the same way by the older report
+// (EarReport.tsx) and Merc's (merc/MercReport.tsx): the ranges
 // the traces can span, the drills it reports, where a range starts, and
 // how a trace's axis is fitted.
 //
@@ -41,7 +41,7 @@ export interface ConfusionSection {
   title: string
   /** Confusion-key labels in axis order. */
   labels: string[]
-  /** Display name per label: the web's axis ticks and sentences. */
+  /** Display name per label: the older report's ticks and sentences. */
   display: (label: string) => string
   /** The name the native report says in a sentence: "Fa", "Minor 3rd",
    *  "Major", "Up". */
