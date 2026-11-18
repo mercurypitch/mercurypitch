@@ -190,7 +190,7 @@ export function MercReport(props: MercReportProps): JSX.Element {
           onCalibrate={calibrate}
         />
 
-        <section aria-labelledby="merc-report-moved">
+        <section class={styles.moved} aria-labelledby="merc-report-moved">
           <SectionHead
             id="merc-report-moved"
             title="What moved"
@@ -199,7 +199,7 @@ export function MercReport(props: MercReportProps): JSX.Element {
           <Moved from={from()} to={now()} inRange={inRange} />
         </section>
 
-        <section aria-labelledby="merc-report-mixups">
+        <section class={styles.mixups} aria-labelledby="merc-report-mixups">
           <SectionHead
             id="merc-report-mixups"
             title="What your ear mixes up"
