@@ -4151,3 +4151,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - PR #1471 opened (feat/sideways-polish), body footer removed via update_pull_request (verified),
   subscribed. CI may hit the same browser-setup infra failure until #1470 lands.
 - 19:38: default desk walk 1280x800 on the polish rebase: 143 steps, 0 unlit, 0 rule breaks, rc 0.
+- 19:46: #1471 CI: Browser smoke (1/2) died at browser setup (same infra, mirror ~65 KB/s); other
+  jobs green so far, 2/2 and unit still running. One comment posted (6989633050; the server adds
+  its footer, can't be removed). Plan: when #1470 lands, rebase #1467 and #1471 onto main, push,
+  merge each on green, verify on dev.
