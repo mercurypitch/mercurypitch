@@ -4150,3 +4150,4 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   Default desk walk 1280x800 running ($S/rebasepolish/walk-1280x800.log).
 - PR #1471 opened (feat/sideways-polish), body footer removed via update_pull_request (verified),
   subscribed. CI may hit the same browser-setup infra failure until #1470 lands.
+- 19:38: default desk walk 1280x800 on the polish rebase: 143 steps, 0 unlit, 0 rule breaks, rc 0.
