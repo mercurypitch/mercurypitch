@@ -47,7 +47,7 @@ import { AppNavTabs } from './components'
 import { BottomTabBar } from './components/mobile/BottomTabBar'
 import { SingingMobileStage } from './components/mobile/SingingMobileStage'
 import { useFocusTrap } from './lib/use-focus-trap'
-import { isNarrow } from './lib/use-viewport'
+import { isNarrow, isPhoneStage } from './lib/use-viewport'
 import { installAutoResume } from './lib/uvr-auto-resume'
 
 const StudioPage = lazy(async () =>
@@ -3413,7 +3413,7 @@ const AppShell: Component<AppProps> = (props) => {
 
   // Shared factory for the Singing pitch canvas: the desktop panel and the
   // mobile stage each call it to create their OWN instance inside their
-  // branch (a canvas must never be re-parented across the isNarrow() swap —
+  // branch (a canvas must never be re-parented across the isPhoneStage() swap —
   // its ResizeObserver binds to the mount-time parent). Engines and playback
   // state live above the branch, so swapping is presentation-only.
   const renderSingingCanvas = () => (
@@ -3808,8 +3808,10 @@ const AppShell: Component<AppProps> = (props) => {
                     Down there it sat on top of whatever the page had put in
                     that corner — in the Ear Lab, the answer console, which
                     paid 46px of a 390px stage to clear it. The header is
-                    fixed chrome and occludes nothing. */}
-                <Show when={isNarrow()}>
+                    fixed chrome and occludes nothing. A phone on its side
+                    keeps the desktop's top bar, but its corner is the phone
+                    stage's controls, so the pill is in the header there too. */}
+                <Show when={isPhoneStage()}>
                   <VoiceControlHud
                     controller={voiceControl}
                     onShowCommands={() => setShowVoiceHelp(true)}
@@ -3856,10 +3858,12 @@ const AppShell: Component<AppProps> = (props) => {
                 // the full-width off-canvas drawer; never apply the collapsed
                 // (40px, content-hidden) state there, or a desktop-collapsed
                 // preference leaves the mobile drawer stuck as a thin rail.
+                // A phone on its side has the drawer too (isPhoneStage, the
+                // condition AppSidebar.module.css turns the drawer on by).
                 collapsed={
                   (activeTab() === TAB_STUDIO_NIGHT
                     ? !studioSidebarExpanded()
-                    : sidebarCollapsed()) && !isNarrow()
+                    : sidebarCollapsed()) && !isPhoneStage()
                 }
                 onToggleCollapse={() =>
                   activeTab() === TAB_STUDIO_NIGHT
@@ -3974,10 +3978,14 @@ const AppShell: Component<AppProps> = (props) => {
                     />
                   ) : (
                     /* Adaptive swap: purpose-built mobile stage on narrow
-                       viewports, the full desktop panel otherwise. Engines &
-                       handlers live in this component, above the branch. */
+                       viewports and on a phone on its side (isPhoneStage),
+                       the full desktop panel otherwise. Wider than the
+                       breakpoint, a phone on its side got the desktop panel,
+                       whose bars and Performance monitor left the notes 8 px
+                       at 844x390. Engines & handlers live in this component,
+                       above the branch. */
                     <Show
-                      when={!isNarrow()}
+                      when={!isPhoneStage()}
                       fallback={
                         <SingingMobileStage
                           picker={singingPicker}
@@ -5077,7 +5085,7 @@ const AppShell: Component<AppProps> = (props) => {
           when={bottomHudVisible({
             native: IS_NATIVE_BUILD,
             labOpen: labTab() !== null,
-            narrow: isNarrow(),
+            narrow: isPhoneStage(),
             headerHidden:
               focusMode() ||
               singingZenLaunch() !== null ||

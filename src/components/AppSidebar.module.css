@@ -18,8 +18,14 @@
 
 /* Mobile: off-canvas fixed sidebar, slide via `left` instead of
    `transform` so iOS Safari's native <select> picker is not broken
-   by a transformed ancestor (well-known WebKit bug). */
-@media (max-width: 768px) {
+   by a transformed ancestor (well-known WebKit bug).
+   A phone on its side too: wider than the breakpoint, but a 300 px rail
+   beside its stage left the Singing tab's notes 8 px tall at 844x390.
+   The second condition is SHORT_TOUCH_LANDSCAPE_QUERY (use-viewport.ts),
+   the one isPhoneStage reads; use-viewport.test.ts holds every drawer
+   rule here to it. */
+@media (max-width: 768px),
+  (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
   :global(.app-sidebar) {
     position: fixed;
     top: 0;
@@ -96,7 +102,8 @@
   opacity: 1;
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px),
+  (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
   .sidebarCloseBtn {
     display: flex;
     min-width: 44px;
@@ -180,7 +187,8 @@
   }
 }
 
-@media (max-width: 768px) {
+@media (max-width: 768px),
+  (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
   .sidebarCollapseBtn {
     display: none !important;
   }
@@ -472,7 +480,8 @@
    mobile drawer to a 40px rail. Placed last so it wins over the global
    .collapsed rules on equal specificity (the JS also gates the class off on
    narrow; this guarantees the outcome regardless). */
-@media (max-width: 768px) {
+@media (max-width: 768px),
+  (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
   :global(.app-sidebar.collapsed) {
     width: 270px;
     min-width: 0;

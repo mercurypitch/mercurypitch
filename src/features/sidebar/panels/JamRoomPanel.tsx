@@ -21,7 +21,7 @@ import { JamPickerList } from '@/components/jam/JamPickerList'
 import { JamPitchDisplay } from '@/components/jam/JamPitchDisplay'
 import { JamRoomCode } from '@/components/jam/JamRoomCode'
 import { JamSourcePicker } from '@/components/jam/JamSourcePicker'
-import { isNarrow } from '@/lib/use-viewport'
+import { isPhoneStage } from '@/lib/use-viewport'
 import { jamConnectedPeers, jamExerciseMelody, jamIsHost, jamIsMuted, jamPeers, jamRoomId, jamSong, jamState, } from '@/stores/jam-store'
 import { setSidebarOpen, sidebarOpen } from '@/stores/ui-store'
 import styles from './JamRail.module.css'
@@ -39,13 +39,14 @@ const JamRoomPanel: Component = () => {
    * anything looking a song up by name. The list is rebuilt whenever the
    * library ticks, too -- work worth doing only for a list on screen.
    *
-   * `isNarrow`, the width the drawer's own stylesheet turns on, and not
-   * `isMobile`: that one is also true for any touch screen. A tablet keeps
-   * the rail on the page at full width and never opens a drawer, so asking
-   * "is this a touch device" left its list unmounted for good -- the songs
-   * were in the popup and the sidebar had none.
+   * `isPhoneStage`, the conditions the drawer's own stylesheet turns on
+   * (narrow, or a phone on its side), and not `isMobile`: that one is also
+   * true for any touch screen. A tablet keeps the rail on the page at full
+   * width and never opens a drawer, so asking "is this a touch device" left
+   * its list unmounted for good -- the songs were in the popup and the
+   * sidebar had none.
    */
-  const railIsDrawer = isNarrow
+  const railIsDrawer = isPhoneStage
   const listOnScreen = (): boolean => !railIsDrawer() || sidebarOpen()
 
   return (

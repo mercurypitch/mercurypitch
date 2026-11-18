@@ -97,6 +97,43 @@ header h1 {
   }
 }
 
+/* A phone on its side keeps the top tab bar, but its sidebar is the drawer
+   behind the menu button (AppSidebar.module.css), so nothing below lines up
+   with the 260 px above, and the left end is the phone's: the menu and the
+   wordmark in one row. The tagline and the loaded-song pill step aside, as
+   they do on a phone held upright; the phone stages carry the song as a
+   chip of their own. The condition is SHORT_TOUCH_LANDSCAPE_QUERY
+   (use-viewport.ts). */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
+  /* The row holds the 44 px presses its controls take (the tabs, the
+     heart, the docked mic), and the 2 px app.css keeps above and below
+     them. One row of wordmark and menu is 39 px, so the presses ran 1 px
+     off the top of the screen and onto the page under the header.
+     The ends keep a notch's inset and 8 px at the least, which app.css's
+     short-window `padding: 2px 6px !important` had taken (so the
+     `!important` here, later in the cascade). The heart's box reaches 7 px
+     past it (SupportBadge.module.css): at 6 px it ran off the window's edge,
+     and the page slid 1 px sideways when the tab bar brought its tab into
+     view. */
+  header {
+    min-height: 48px;
+    padding-right: max(8px, var(--safe-right, 0px)) !important;
+    padding-left: max(8px, var(--safe-left, 0px)) !important;
+  }
+
+  .header-left {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    width: auto;
+  }
+
+  header .subtitle,
+  header .header-melody-context {
+    display: none;
+  }
+}
+
 /* ── The phone header under a finger ────────────────────────────
    The menu button drew 42x34 and the wordmark 20 px tall, so they took a
    press in that much and no more. Each now takes one at least 44 px each
@@ -105,12 +142,14 @@ header h1 {
    50 px, which holds the 44 px box. The menu's box gains 1 px a side,
    inside the header's padding and the 8 px gap before the wordmark; the
    wordmark's only grows up and down. The voice pill's mic and the support
-   heart get theirs in their own stylesheets.
+   heart get theirs in their own stylesheets. A phone on its side has the
+   menu button too, so it gets the same boxes.
    Above the phone block, and written `(pointer: coarse) and` first, because
    src/tests/header-account-touch-targets.test.ts and
    src/tests/header-voice-room.test.ts read everything from the last
    `@media (max-width: 768px)` to the end of this file as the phone rules. */
-@media (pointer: coarse) and (max-width: 768px) {
+@media (pointer: coarse) and (max-width: 768px),
+  (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
   .sidebar-toggle-btn,
   .logo-btn {
     position: relative;

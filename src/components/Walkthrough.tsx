@@ -9,7 +9,7 @@ import { applyPersistedValue } from '@/lib/storage'
 import type { TourSettingName } from '@/lib/tour-screen'
 import { applyTourSettings, undoTourSettings } from '@/lib/tour-screen'
 import { useFocusTrap } from '@/lib/use-focus-trap'
-import { isNarrow } from '@/lib/use-viewport'
+import { isPhoneStage } from '@/lib/use-viewport'
 import type { WalkthroughStep } from '@/stores/app-store'
 import { setWalkthroughStep, walkthroughStep } from '@/stores/app-store'
 import { tourSteps, walkthroughActive } from '@/stores/app-store'
@@ -458,8 +458,9 @@ export const Walkthrough: Component = () => {
     }
     preparing = true
 
-    // Narrow: open the off-canvas sidebar only for sidebar-anchored steps.
-    if (isNarrow()) {
+    // A phone, upright or on its side: open the off-canvas sidebar only for
+    // sidebar-anchored steps (isPhoneStage, where the sidebar is a drawer).
+    if (isPhoneStage()) {
       const want = step.inSidebar === true
       setSidebarOpen(want)
       if (want) tourOpenedSidebar = true

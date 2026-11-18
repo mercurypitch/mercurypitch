@@ -307,7 +307,7 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
   (Mishra 2014, Psychology of Music 42(2), 131-156, doi:10.1177/0305735612463770; abstract and
   summary only). How far ahead fluent readers look is **not verified** and not claimed.)
 - Signature: Lesson 16's staff, now with Lesson 17's beat grid under it; a cursor moves at tempo (as
-  the Singing tab's sheet view moves one, `src/App.tsx:4054-4102`); patterns bracket themselves
+  the Singing tab's sheet view moves one, `src/App.tsx:4062-4110`); patterns bracket themselves
   as the cursor reaches them (a run of steps, a repeated note, do-mi-so); the marks of T32 appear
   one by one over the sound they ask for.
 - Checkpoint (scored on the page): comfort check first; the page plays do and one bar of count-in at
@@ -319,7 +319,7 @@ plan its lesson was written from. Every Season 2 lesson now has a written packag
   bars read from the staff and sung on the beat, pitch scored per note and timing shown (§ 5 item
   11); The Chart for the rhythm, on Lesson 17's set (`/exercises/quarters-halves-and-eighths`).
   Sight-Singing, which advances on a held note, not on the beat, has left the card. The Singing
-  tab's sheet view plays a melody with a cursor (`src/App.tsx:4054-4102`), and since § 5 item 20
+  tab's sheet view plays a melody with a cursor (`src/App.tsx:4062-4110`), and since § 5 item 20
   `#/singing/sheet` opens it, where a take is scored as in the roll, but on a phone held upright
   it opens the roll, so the card does not link it.
 - Facts to check: Henry (2004) and Mishra (2014), past their abstracts, before a script quotes a
@@ -1105,8 +1105,8 @@ on a visit a Season 2 link sends to the main app, as it does for Season 1's.
     (`src/features/practice/usePracticeController.ts:161-165`), and a steady E3 sung into both views
     scored one note of seven the same, 13 per cent; the sheet shows the cursor and the Performance
     panel, not the pitch line. On a phone held upright the tab has no sheet view, the phone stage
-    standing in for the desktop panel (`src/App.tsx:3976-3982`), so there the address opens the roll
-    in the key, and the sheet is there once the screen is wider than 768 px. A browser spec opens it
+    standing in for the desktop panel (`src/App.tsx:3980-3990`), so there the address opens the roll
+    in the key, and the sheet is there once the screen is wider than 768 px and not a phone on its side. A browser spec opens it
     both ways (`src/e2e/singing-sheet-address.spec.ts`). Lessons 18 and 21, whose cards do not link
     it: a card may not promise the sheet on a phone.
 21. **Season 2 in the app's lesson plumbing: shipped on 4 November 2026** (`623b3b7e2`). The lesson

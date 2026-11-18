@@ -320,3 +320,129 @@
   left: 20px;
   background: #ffffff;
 }
+
+/* ── On its side ──
+   A phone held sideways (isShortTouchLandscape) has width to spare and no
+   height. The portrait column put the chips, the scrubber and the transport
+   above and below the notes, and left them 97 px of 360 at 740x360. Here the
+   stage takes two columns, as the Karaoke stage does on its side: the song,
+   the scrubber and the transport down the left, the notes the full height
+   beside them. A grid rather than wrappers, so the portrait column keeps
+   its DOM, its tab order and its tour targets. The fourth row is the
+   session pill's; the third gives way first, so the transport stays at the
+   foot of the column. The insets keep the column off a notch on the left
+   and the note names off one on the right. */
+.sideways {
+  --sideways-column: clamp(196px, 28vw, 248px);
+  display: grid;
+  grid-template-columns: var(--sideways-column) minmax(0, 1fr);
+  grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+  padding-right: var(--safe-right, 0px);
+}
+
+.sideways .chips {
+  grid-column: 1;
+  grid-row: 1;
+  flex-wrap: wrap;
+  padding: 8px 10px 6px max(10px, var(--safe-left, 0px));
+}
+
+/* The song first, as wide as Zen beside it leaves it: the name is what a
+   singer looks for. The key and the tempo take the second row whole, so
+   the three chips never stack three rows deep, which the column has no
+   height for at 740x360. */
+.sideways .chipAccent {
+  order: -2;
+  flex: 1 1 0;
+  min-width: 0;
+  max-width: none;
+  margin-left: 0;
+}
+
+.sideways .zenChip {
+  order: -1;
+  flex: none;
+}
+
+.sideways .keyChip {
+  flex: 1 1 100%;
+}
+
+/* While a run goes the session pill comes into the column, and under a
+   48 px header and the tab bar (740x360) the column holds it only if the
+   key's row steps aside. More, at the column's foot, opens the same
+   options the key's chip does. */
+.sideways.inSession .keyChip {
+  display: none;
+}
+
+/* The scrubber's box is its 44 px touch target; the negative block margins
+   (its own trick, Scrubber.module.css) keep the column counting only the
+   line and the air around it. */
+.sideways .progress {
+  grid-column: 1;
+  grid-row: 2;
+  margin: -10px 12px -12px max(12px, var(--safe-left, 0px));
+}
+
+.sideways .canvasWrap {
+  grid-column: 2;
+  grid-row: 1 / -1;
+}
+
+.sideways .sessionPill {
+  grid-column: 1;
+  grid-row: 4;
+  margin: 0 10px 6px max(10px, var(--safe-left, 0px));
+}
+
+/* Two rows under the thumb, every control in its own cell: Stop appears
+   beside Play without moving it. */
+.sideways .transport {
+  --transport-scrim: none;
+  grid-column: 1;
+  grid-row: 5;
+  display: grid;
+  grid-template-columns: repeat(3, auto);
+  grid-template-areas:
+    'mic play stop'
+    'mode mode more';
+  align-items: center;
+  justify-content: center;
+  justify-items: center;
+  gap: 8px 14px;
+  padding: 6px 10px calc(10px + var(--safe-bottom, 0px))
+    max(10px, var(--safe-left, 0px));
+}
+
+.sideways .micBtn {
+  grid-area: mic;
+}
+
+.sideways .playBtn {
+  grid-area: play;
+}
+
+.sideways .stopBtn {
+  grid-area: stop;
+}
+
+.sideways .modeBtn {
+  grid-area: mode;
+  justify-self: stretch;
+  min-height: var(--touch-target);
+}
+
+.sideways .moreBtn {
+  grid-area: more;
+}
+
+/* Wider than the breakpoint no tab bar stands under the stage, and the 20 px
+   of air the content area keeps at its foot on a short screen (app.css,
+   `max-height: 768px`) came out of the notes. The transport keeps the home
+   indicator clear itself. Narrower, that padding is the tab bar's room. */
+@media (min-width: 769px) {
+  :global(.main-content):has(.sideways) {
+    padding-bottom: 0;
+  }
+}
