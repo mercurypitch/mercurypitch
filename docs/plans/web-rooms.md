@@ -143,8 +143,11 @@ had, so each drill's own styles, the tests and the tours find what they looked f
   notice ends above the first control under it: on a phone Start heads the sheet, so a notice
   with a capsule keeps the head of its message there, and a screen reader still reads all of it.
   When the drill is left, whatever is still waiting goes back to the toasts, in order. The native
-  app keeps its pill for every notice, a drill's too. The rooms (`rooms/WebRoomHost.tsx`) do not
-  take part yet: a notice over a room is still a toast.
+  app keeps its pill for every notice, a drill's too. The rooms (`rooms/WebRoomHost.tsx`), and
+  Merc's room in the Ear Lab, say the app's notices in that pill (17 Nov 2026,
+  `src/components/notice-pill/NoticePill.tsx`, the store's `presentNoticesInPill`): one at a time
+  under the room's bar, on no control, and a room's own unlocks wait for the chip under its result.
+  A room outranks a drill's stage under it, which takes the notices back when the room closes.
 
 - **Hear it first.** Under Start, a drill can offer one example of what it asks for
   (`ExerciseShell`'s `demo`): Merc takes his singing pose, his bubble says what it is ("Listen: E3,

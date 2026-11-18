@@ -5058,7 +5058,7 @@ const AppShell: Component<AppProps> = (props) => {
         <DatabaseLifecycleNotice />
 
         {/* The native shell draws the same notices as its own pill under
-            the status bar (apps/mercurypitch/src/shell/NoticePill.tsx). */}
+            the status bar (src/components/notice-pill/NoticePill.tsx). */}
         {IS_NATIVE_BUILD ? null : <Notifications />}
         {/* The sync dialog and its corner chip outlive any tab — a
             transfer must survive the panel that started it

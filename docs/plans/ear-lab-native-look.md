@@ -391,12 +391,12 @@ What the web needed that the phone did not:
   over Begin and the answer pads. The console, the room's sheets and the
   bench's sheets now stand on the room the bar says it takes
   (`--consent-banner-space`, `src/lib/foot-space.ts`), and the room's ground
-  still runs under the bar. A notice from the app is a toast over the room,
-  and a phone's toasts stand at the foot, so the console says how much of
-  the foot it takes, as a page's docked transport does
-  (`--page-dock-space`, `merc/foot-dock.ts`), and a toast stands over
-  the stage's foot, not over the pads. On a wide window the toasts keep the
-  top right corner, over the room's "?" for as long as one shows.
+  still runs under the bar. A notice from the app is said in the pill under
+  the room's header while the room is up, as the native shell's pill says
+  it (the store's `presentNoticesInPill`, 17 Nov 2026), so no toast lies
+  over the pads, the "?" or "End the run?". The console still says how much
+  of the foot it takes, as a page's docked transport does
+  (`--page-dock-space`, `merc/foot-dock.ts`).
 - **A phone on its side.** A web visitor can turn the phone. The console
   under the stage took 254 px of a 390 px screen, so on a short screen held
   sideways it stands beside the stage (`merc/room.module.css`).

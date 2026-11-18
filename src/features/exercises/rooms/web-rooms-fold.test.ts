@@ -19,6 +19,10 @@
 //   - No exercise's id is one of the strings assert-bundle.mjs refuses in a
 //     store build. The ids are in every build: the page asks whether its
 //     selected exercise is a room, and the drills' tables are keyed by them.
+//   - The toast host, in the web's first paint, draws the pill a room holds
+//     (the store's `presentNoticesInPill`) through one lazy import behind
+//     the same constant, so the pill's code and its art load with a room.
+//     The native shell imports the pill itself.
 
 import { readFileSync } from 'node:fs'
 import { describe, expect, it } from 'vitest'
@@ -29,6 +33,7 @@ const PAGE = 'src/pages/ExercisesPage.tsx'
 const MENU = 'src/features/exercises/ExerciseMenu.tsx'
 const IDS = 'src/features/exercises/rooms/web-room-ids.ts'
 const BUNDLE_CHECK = 'apps/mercurypitch/scripts/assert-bundle.mjs'
+const TOAST_HOST = 'src/components/Notifications.tsx'
 
 const read = (path: string): string => readFileSync(path, 'utf8')
 
@@ -76,6 +81,19 @@ describe("the web's way in to the rooms", () => {
     expect(
       imports.filter((i) => !i.includes('@/lib/domain/exercise-contracts')),
     ).toEqual([])
+  })
+
+  it('loads the pill from the toast host only behind WEB_ROOMS, lazily', () => {
+    const source = read(TOAST_HOST)
+    const dynamic = source.match(/\bimport\(\s*'[^']*\/notice-pill\//gu) ?? []
+    const folded =
+      source.match(
+        /\bWEB_ROOMS\s*\?\s*lazy\(\s*\(\)\s*=>\s*import\(\s*'@\/components\/notice-pill\/NoticePill'\s*\)/gu,
+      ) ?? []
+
+    expect(source).not.toMatch(/\bfrom\s+'[^']*\/notice-pill\//u)
+    expect(dynamic.length).toBe(1)
+    expect(folded.length).toBe(1)
   })
 
   it('gives no exercise an id the store bundle is checked for', () => {

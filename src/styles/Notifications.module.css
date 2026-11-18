@@ -408,3 +408,26 @@
     animation: none;
   }
 }
+
+/* The pill a room on the web shows the notices in
+   (src/components/notice-pill/notice-pill.css). The native shell sets its
+   motion and the app's face round it; on the web this box does, and takes
+   no box of its own. */
+.pill {
+  display: contents;
+  --font-body:
+    var(--app-font, 'Inter'), -apple-system, BlinkMacSystemFont, 'Segoe UI',
+    Roboto, Helvetica, Arial, sans-serif;
+  --mp-ease: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --mp-in: 280ms;
+  --mp-lift: 16px;
+}
+
+/* Less motion: it only fades, as the native shell's does. */
+@media (prefers-reduced-motion: reduce) {
+  .pill {
+    --mp-ease: linear;
+    --mp-in: 120ms;
+    --mp-lift: 0px;
+  }
+}
