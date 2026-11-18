@@ -23,6 +23,7 @@ function comparisonResult(): StudioComparison {
     revision: 0,
     before: new Blob(['dry']),
     after: new Blob(['wet']),
+    beforeEncodingGainDb: 0,
     beforeGainDb: 0,
     afterGainDb: -4,
     gainDb: 5,

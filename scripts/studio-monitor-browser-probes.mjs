@@ -109,6 +109,7 @@ function songMaster(gainDb, bypassed = false) {
  * turned down: Before by 5 dB, After by 3 dB, so both sides move.
  */
 const COMPARED = {
+  beforeEncodingGainDb: 0,
   beforeGainDb: -5,
   afterGainDb: -3,
   gainDb: 6,

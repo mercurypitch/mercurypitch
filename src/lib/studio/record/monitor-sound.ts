@@ -29,8 +29,9 @@
 // so on After it keeps playback's balance with the song. Before plays the
 // song with every effect off and no master (prepare-comparison.ts), so there
 // the lane plays with every effect off too (`dry`), and the master with only
-// its loudness gain, which plays the side's match gain: a dry voice beside
-// the dry song. Their balance there is the faders', not playback's: each
+// its loudness gain, which plays the gain Before's song plays at: its WAV's
+// encoding gain and then the side's match gain. A dry voice beside the dry
+// song. Their balance there is the faders', not playback's: each
 // effect moves each sound by its own amount, and the monitor's chain leaves
 // out its lookahead dynamics, compressors among them (fx-profile.ts
 // MONITOR_FX_PROFILE).
@@ -138,15 +139,20 @@ export interface StudioMonitorCompare {
   readonly side: 'before' | 'after'
   readonly gains: Pick<
     StudioComparison,
-    'beforeGainDb' | 'afterGainDb' | 'gainDb' | 'safetyGainDb'
+    | 'beforeEncodingGainDb'
+    | 'beforeGainDb'
+    | 'afterGainDb'
+    | 'gainDb'
+    | 'safetyGainDb'
   >
 }
 
 /**
  * The master gain the monitor plays at: the one the listener hears; while
  * Compare plays, its side's, as comparison-preview.ts plays the song. Before
- * plays the dry mix at the side's match gain, After the master at the
- * measured gain and then the side's match gain. The safety gain stays, so the
+ * plays the dry mix at the gain its WAV was encoded at and then the side's
+ * match gain, After the master at the measured gain and then the side's match
+ * gain. The safety gain stays, so the
  * master keeps its shape as the sides change.
  */
 export function studioMonitorMasterGain(
@@ -158,7 +164,7 @@ export function studioMonitorMasterGain(
   return {
     gainDb:
       compare.side === 'before'
-        ? gains.beforeGainDb
+        ? gains.beforeEncodingGainDb + gains.beforeGainDb
         : gains.gainDb + gains.afterGainDb,
     safetyGainDb: gains.safetyGainDb,
   }
