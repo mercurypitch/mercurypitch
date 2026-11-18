@@ -37,7 +37,9 @@ async function armKeys(page: Page): Promise<string[]> {
   await captureStudioOutput(page)
   await openArrangement(page)
   const studio = studioRegion(page)
-  await studio.getByRole('button', { name: 'New lane', exact: true }).click()
+  await studio
+    .getByRole('button', { name: 'New audio lane', exact: true })
+    .click()
   await playLaneFromKeys(page, 'Lane 2')
   await armLane(page, 'Lane 2')
   await untilAudioClock(page, (await audioClock(page)) + 0.3)
