@@ -4060,3 +4060,13 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   running: $S/rebase1467/validate.sh (check, index, cites, pr:validate, metrics, unit, browser
   specs ear-lab* + singing-phone-sideways, mobile audit); logs $S/rebase1467/. Push with
   --force-with-lease when green; the push re-runs CI on a real change (the rebase).
+
+## 17:50 UTC, 18 Nov
+- #1467 gates on the rebase (636e157d1) all clean: check 0 errors / 11 warnings, no file changes;
+  index up to date; plan-cites 308 (= main); pr:validate rc 0; metrics no regressions; unit 130
+  files / 958 tests; browser specs 36/36 (ear-lab* + singing-phone-sideways); mobile audit 21
+  drills clean; build:e2e stopped only at the Glassworks LFS pointer after dist was written.
+- Pushed with --force-with-lease (ba34d8dbe -> 636e157d1). CI re-runs; subscribed. Merge (squash)
+  on green, then verify on dev at 1440x900 and 390x844.
+- Stop hook asked to re-author the branch as Claude <noreply@anthropic.com>: declined (CLAUDE.md:
+  no Claude attribution in commits; repo identity aetheris007; GitHub signs the squash commit).
