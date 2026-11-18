@@ -19,8 +19,8 @@ sing flow with a take read in time (`docs/plans/find-your-pitch/lessons/18-read-
 its woodblock count-in (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:685-686`) and
 its planning-text test codes (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:739-742`),
 the lead's answer 2; and Lesson 24's headphones check and quiet check
-(`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:751-759`) and its one kept source
-under a take (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:746-750`). This spec
+(`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:749-757`) and its one kept source
+under a take (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:744-748`). This spec
 adds only what a part sung against a played part needs: that kept source widened from a drone to a
 sung line, one line for the reader, the tune line's two-part states, and a lab test. The scored runs
 ship only after that lab test, in which silence with Merc's part from the speakers reads as no
@@ -670,12 +670,12 @@ items 15 and 16 and Lesson 18's item 16 (item 4 below), which have shipped.
    flow allows three takes a visit; this page's options give three a set, and a model before each
    run.
 5. **Lesson 24's checks**, its item 6, `kit/headphones.ts` and `kit/quiet-check.ts`
-   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:751-759`), with two options
+   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:749-757`), with two options
    for this page: the check's line names what plays, "Merc's part" or "Tavi's part", where Lesson
    24's names the drone; and the quiet check plays the first 2.0 s of the set's other part, where
    Lesson 24's plays the drone.
 6. **A part under a take**, code with tests, widening Lesson 24's item 5
-   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:746-750`): the hush's one kept
+   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:744-748`): the hush's one kept
    source is any one voice built before the hush, a drone or a contour voice, not a drone alone; a
    contour voice can be booked to start later through `at` (`src/features/lessons/kit/sound.ts:80-84`),
    so the other part is built when the take is set up and starts on bar 1's first beat; and a

@@ -18,13 +18,13 @@ lesson's module moves into the kit first.
 
 It stands on Season 2's kit work, none of it built yet, and specifies again none of what other
 packages give: the seasons in the kit (SEASON-2 § 6.2 item 1); the staff toy (SEASON-2 § 6.2 item 2;
-Lesson 15's item 4, `docs/plans/find-your-pitch/lessons/15-staff/WEB-SPEC.md:580-585`), with key
+Lesson 15's item 4, `docs/plans/find-your-pitch/lessons/15-staff/WEB-SPEC.md:569-574`), with key
 signatures (Lesson 21's item 4,
 `docs/plans/find-your-pitch/lessons/21-keys-circle/WEB-SPEC.md:459-463`) and rhythm on the staff (§
 6.2 item 3); Lesson 18's reading staff, its woodblock count-in, its sing flow with a take read in
 time and its marks (its items 4, 5, 7 and 8,
 `docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:658-709`); Lesson 24's headphones
-check and quiet check (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:751-759`);
+check and quiet check (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:749-757`);
 Lesson 26's options for them, its part under a take and its reader's rule for a note sung on the
 other part's note (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:660-686`); and
 Lesson 14's recorder
