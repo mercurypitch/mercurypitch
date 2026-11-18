@@ -4182,3 +4182,4 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   verify which S1 pill gets the tick. No second kit critic: the lead checks the stills.
 - Sent to the kit builder (resumed) with the 7 answers. Scene groups A and B wait for it (both
   heavy slots in use: P2 passes + kit fix).
+- 20:25: check-in on #1471: unchanged (main 033ed21c5, #1470 open, no reviews). Re-armed 4 h; empty: 1.
