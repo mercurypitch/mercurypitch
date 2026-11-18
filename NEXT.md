@@ -4052,3 +4052,11 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Launched: board v3 text agent (brief $S/briefs/l5-board-v3.md) and the P1 toolchain builder
   (brief $S/briefs/l5-film-p1-toolchain.md, told the board is being edited alongside). Heavy
   builders now: polish builder + P1.
+
+## 17:13 UTC, 18 Nov
+- #1467 was "dirty" (conflict with main after #1469). Rebased feat/ear-lab-wide onto 86fe1f081 in
+  worktree notice: MISTAKES.md kept both new entries (isPhoneStage first, then the container
+  name), INDEX.md regenerated (--check clean). New head 636e157d1 (local, not pushed). Gates
+  running: $S/rebase1467/validate.sh (check, index, cites, pr:validate, metrics, unit, browser
+  specs ear-lab* + singing-phone-sideways, mobile audit); logs $S/rebase1467/. Push with
+  --force-with-lease when green; the push re-runs CI on a real change (the rebase).
