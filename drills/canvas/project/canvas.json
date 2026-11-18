@@ -1,0 +1,28 @@
+{
+  "v": 3,
+  "createdOnFiles": { "v": 1, "at": "2026-11-15T00:02:00Z" },
+  "title": "Web drills: Season 2 mock-ups",
+  "launch": { "view": "canvas" },
+  "pages": [],
+  "boards": {
+    "Main.dc.html": { "x": 0, "y": 0, "w": 1310, "h": 930, "title": "Harmony line · Lessons 26 and 28" },
+    "SightInTime.dc.html": { "x": 1390, "y": 0, "w": 1310, "h": 930, "title": "Sight-singing in time · Lessons 18 and 28" },
+    "NoteReading.dc.html": { "x": 2780, "y": 0, "w": 1310, "h": 930, "title": "Read the note · Lessons 15 and 21" },
+    "Cadence.dc.html": { "x": 4170, "y": 0, "w": 880, "h": 930, "title": "Name the cadence · Lesson 28" },
+    "BeforeAfter.dc.html": { "x": 0, "y": 1260, "w": 1310, "h": 930, "title": "Interval Trainer: today, and on the stage" },
+    "Desktop.dc.html": { "x": 1390, "y": 1260, "w": 1280, "h": 800, "title": "Harmony line on a desktop" }
+  },
+  "order": [
+    "Main.dc.html",
+    "SightInTime.dc.html",
+    "NoteReading.dc.html",
+    "Cadence.dc.html",
+    "BeforeAfter.dc.html",
+    "Desktop.dc.html"
+  ],
+  "notes": {
+    "new": { "x": 0, "y": -300, "text": "New Season 2 drills for the web", "kind": "title1", "maxW": 5050 },
+    "old": { "x": 0, "y": 1010, "text": "Existing drills on the same stage", "kind": "title1", "maxW": 2670 }
+  },
+  "designSystems": []
+}

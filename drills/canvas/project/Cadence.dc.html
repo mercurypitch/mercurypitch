@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Name the cadence: listening, answered</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8fd3ff}a:hover{color:#c3e7ff}
+button{cursor:pointer;font-family:Inter,system-ui,sans-serif}
+.mat{width:880px;height:930px;box-sizing:border-box;padding:30px;display:flex;gap:40px;background:#03050a;font-family:Inter,system-ui,sans-serif}
+.col{display:flex;flex-direction:column;gap:10px}
+.cap{height:16px;font:500 12px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.12em;color:#8fa0b3}
+.ph{position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#060910;box-shadow:0 0 0 1px rgba(255,255,255,.09),0 30px 80px rgba(0,0,0,.6)}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,9,16,.86) 0%,rgba(6,9,16,.46) 28%,rgba(6,9,16,.6) 54%,rgba(6,9,16,.9) 80%,#060910 100%)}
+.top{position:absolute;left:16px;right:16px;top:20px;display:flex;align-items:center;gap:10px}
+.ic{width:44px;height:44px;border-radius:22px;border:1px solid rgba(255,255,255,.16);background:rgba(10,14,22,.62);color:#eef3f8;display:flex;align-items:center;justify-content:center;padding:0}
+.ttl{flex:1;font:600 19px Outfit,system-ui,sans-serif;color:#f4f7fb}
+.lvl{height:44px;padding:0 14px;border-radius:22px;border:1px solid rgba(255,255,255,.16);background:rgba(10,14,22,.62);color:#eef3f8;font:500 13px Inter,system-ui,sans-serif;display:flex;align-items:center;gap:6px}
+.sheet{position:absolute;left:16px;right:16px;top:80px;box-sizing:border-box;padding:14px 14px 12px;border-radius:22px;background:rgba(8,12,20,.82);border:1px solid rgba(255,255,255,.13);backdrop-filter:blur(10px);display:flex;flex-direction:column;gap:8px}
+.lab{display:flex;justify-content:space-between;font:500 10.5px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.1em;color:#8fa0b3}
+.bub{position:absolute;box-sizing:border-box;padding:13px 15px;border-radius:18px 18px 18px 4px;background:rgba(8,12,20,.86);border:1px solid rgba(255,255,255,.13);font:400 15px/1.42 Inter,system-ui,sans-serif;color:#eef3f8}
+.pillb{flex:1;height:46px;border-radius:23px;border:1px solid rgba(255,255,255,.22);background:rgba(8,12,20,.72);color:#eef3f8;font:500 14px Inter,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;padding:0}
+.orb{position:absolute;left:151px;top:658px;width:88px;height:88px;border-radius:44px;border:0;background:linear-gradient(135deg,#46c6f0 0%,#6f7cff 55%,#9a63ff 100%);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 10px rgba(111,124,255,.16),0 14px 44px rgba(86,140,255,.6)}
+.und{position:absolute;left:0;right:0;text-align:center;font:500 13px Inter,system-ui,sans-serif;color:#b3bfcc}
+.chip{height:42px;padding:0 18px;border-radius:21px;background:rgba(8,12,20,.88);border:1px solid rgba(255,255,255,.2);color:#eef3f8;font:600 15px Outfit,system-ui,sans-serif;display:flex;align-items:center;gap:10px}
+.dot{width:10px;height:10px;border-radius:5px;background:#5ee7ff;flex:none}
+.dot.off{background:#f6b24a}
+.dot.todo{background:rgba(255,255,255,.22)}
+.done{height:52px;border-radius:26px;border:0;background:linear-gradient(135deg,#46c6f0 0%,#6f7cff 55%,#9a63ff 100%);color:#fff;font:600 16px Outfit,system-ui,sans-serif;box-shadow:0 10px 30px rgba(86,140,255,.45)}
+.lamps{position:relative;height:122px}
+.wire{position:absolute;left:16px;right:16px;top:45px;height:2px;background:linear-gradient(90deg,rgba(255,212,121,.15),rgba(255,212,121,.5),rgba(255,212,121,.15))}
+.lamp{position:absolute;top:22px;width:46px;height:46px;border-radius:23px;background:radial-gradient(circle at 50% 40%,#fff6d8 0%,#ffd479 40%,rgba(255,212,121,.3) 72%);box-shadow:0 0 22px rgba(255,212,121,.6)}
+.lamp.dim{background:radial-gradient(circle at 50% 40%,rgba(255,246,216,.3),rgba(255,212,121,.12) 62%);box-shadow:none;border:1px solid rgba(255,212,121,.35);box-sizing:border-box}
+.lamp.now{box-shadow:0 0 0 6px rgba(255,212,121,.2),0 0 36px rgba(255,212,121,.95)}
+.lamp.turn{background:radial-gradient(circle at 50% 40%,#e9fbff 0%,#5ee7ff 40%,rgba(94,231,255,.3) 72%);box-shadow:0 0 0 6px rgba(94,231,255,.18),0 0 34px rgba(94,231,255,.9)}
+.num{position:absolute;top:80px;width:46px;text-align:center;font:600 17px Outfit,system-ui,sans-serif;color:#eef3f8}
+.brk{position:absolute;left:166px;top:2px;width:156px;height:112px;box-sizing:border-box;border:1px dashed rgba(238,243,248,.45);border-radius:16px}
+.brk span{position:absolute;left:10px;top:-7px;padding:0 6px;background:#0a0f18;font:500 10px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.1em;color:#b3bfcc}
+.pads{position:absolute;left:16px;right:16px;top:322px;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+.pad{height:84px;box-sizing:border-box;padding:12px 14px;border-radius:18px;border:1px solid rgba(255,255,255,.18);background:rgba(8,12,20,.82);text-align:left;display:flex;flex-direction:column;gap:4px;color:#b3bfcc;font:400 12.5px/1.3 Inter,system-ui,sans-serif}
+.pad b{font:600 16px Outfit,system-ui,sans-serif;color:#eef3f8}
+.pad.hit{border-color:#5ee7ff;background:rgba(94,231,255,.16)}
+.pad.rest{opacity:.55}
+</style>
+</helmet>
+<div class="mat">
+
+<div class="col">
+<div class="cap">1 · LISTEN, THEN CHOOSE</div>
+<div class="ph">
+<img class="bg" src="/_blob/ad60480dd84e4a7058060f1397db7efa" alt="">
+<div class="scrim"></div>
+<div class="top">
+<button class="ic" aria-label="Back to Ear Lab"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"></path></svg></button>
+<div class="ttl">Name the cadence</div>
+<button class="lvl">Learning<svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5 6 7.5l3-3"></path></svg></button>
+</div>
+<div class="sheet">
+<div class="lab"><span>LESSON 28 · HOW A PHRASE ENDS</span><span>3 OF 8</span></div>
+<div class="lamps">
+<div class="wire"></div>
+<div class="brk"><span>THE CADENCE</span></div>
+<div class="lamp" style="left: 24px"></div><div class="lamp" style="left: 104px"></div><div class="lamp now" style="left: 184px"></div><div class="lamp dim" style="left: 264px"></div>
+<div class="num" style="left: 24px">I</div><div class="num" style="left: 104px">IV</div><div class="num" style="left: 184px">?</div><div class="num" style="left: 264px">?</div>
+</div>
+</div>
+<div style="position: absolute; left: 0; right: 0; top: 262px; display: flex; justify-content: center">
+<div class="chip">How does the phrase end?</div>
+</div>
+<div class="pads">
+<button class="pad"><b>Perfect</b>Lands home. It sounds finished.</button>
+<button class="pad"><b>Imperfect</b>Stops on V. It waits for more.</button>
+<button class="pad"><b>Plagal</b>IV to home. The Amen.</button>
+<button class="pad"><b>Interrupted</b>Heads home, then turns away.</button>
+</div>
+<img src="/_blob/3d25fb55f2d965ae40245482943ec2c6" alt="Merc, listening" style="position: absolute; left: 4px; top: 518px; width: 124px; height: 124px">
+<div class="bub" style="left: 128px; right: 16px; top: 532px">Listen to the last two lamps. Where does it land?</div>
+<button class="orb" aria-label="Play the phrase again"><svg aria-hidden="true" width="30" height="30" viewBox="0 0 20 20"><path d="M6.5 3.5v13l11-6.5z" fill="currentColor"></path></svg></button>
+<div class="und" style="top: 762px">Hear it again</div>
+</div>
+</div>
+
+<div class="col">
+<div class="cap">2 · ANSWERED, AND COMPARED</div>
+<div class="ph">
+<img class="bg" src="/_blob/ad60480dd84e4a7058060f1397db7efa" alt="">
+<div class="scrim"></div>
+<div class="top">
+<button class="ic" aria-label="Back to Ear Lab"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"></path></svg></button>
+<div class="ttl">Name the cadence</div>
+<button class="lvl">Learning<svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5 6 7.5l3-3"></path></svg></button>
+</div>
+<div class="sheet" style="border-color: rgba(94,231,255,.4)">
+<div class="lab"><span>LESSON 28 · HOW A PHRASE ENDS</span><span style="color: #5ee7ff">3 OF 8</span></div>
+<div class="lamps">
+<div class="wire"></div>
+<div class="brk" style="border-color: rgba(94,231,255,.7)"><span style="color: #5ee7ff">INTERRUPTED</span></div>
+<div class="lamp" style="left: 24px"></div><div class="lamp" style="left: 104px"></div><div class="lamp" style="left: 184px"></div><div class="lamp turn" style="left: 264px"></div>
+<div class="num" style="left: 24px">I</div><div class="num" style="left: 104px">IV</div><div class="num" style="left: 184px">V</div><div class="num" style="left: 264px; color: #5ee7ff">vi</div>
+</div>
+</div>
+<div style="position: absolute; left: 0; right: 0; top: 262px; display: flex; justify-content: center">
+<div class="chip" style="border-color: rgba(94,231,255,.5)"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="#5ee7ff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m5 10.5 3.2 3L15 6.5"></path></svg>Interrupted: V, then vi.</div>
+</div>
+<div class="pads">
+<button class="pad rest"><b>Perfect</b>Lands home. It sounds finished.</button>
+<button class="pad rest"><b>Imperfect</b>Stops on V. It waits for more.</button>
+<button class="pad rest"><b>Plagal</b>IV to home. The Amen.</button>
+<button class="pad hit" aria-pressed="true"><b>Interrupted</b>Heads home, then turns away.</button>
+</div>
+<div style="position: absolute; left: 16px; right: 16px; top: 516px; display: flex; gap: 10px">
+<button class="pillb"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20"><path d="M6 3.5v13l11-6.5z" fill="currentColor"></path></svg>Hear it again</button>
+<button class="pillb" style="border-color: rgba(255,212,121,.6); color: #ffd479"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20"><path d="M6 3.5v13l11-6.5z" fill="currentColor"></path></svg>Hear it end at home</button>
+</div>
+<img src="/_blob/d0793554dafc7e38897f499f2cffe5f9" alt="Merc, cheering" style="position: absolute; left: 4px; top: 576px; width: 124px; height: 124px">
+<div class="bub" style="left: 128px; right: 16px; top: 588px">It set up home, then stepped to vi. Hear both endings and the turn is plain.</div>
+<div style="position: absolute; left: 0; right: 0; top: 730px; display: flex; justify-content: center"><button class="done" style="width: 220px">Next phrase</button></div>
+<div style="position: absolute; left: 0; right: 0; top: 802px; display: flex; justify-content: center; gap: 9px"><span class="dot"></span><span class="dot off"></span><span class="dot"></span><span class="dot todo"></span><span class="dot todo"></span><span class="dot todo"></span><span class="dot todo"></span><span class="dot todo"></span></div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":880,"height":930}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

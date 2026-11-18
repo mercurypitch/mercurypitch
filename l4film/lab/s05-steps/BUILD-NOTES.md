@@ -1,0 +1,349 @@
+# Build notes: group B (s05-steps, s06-groups)
+
+Running notes so a container restart or a usage-limit pause can resume. Builder B owns
+`compositions/s05-steps.html`, `compositions/s06-groups.html`, `lab/s05-steps/` and `lab/s06-groups/`
+only. Clock: Kokoro scratch, 483.73 s (cues.json = tools/board-cues.json today).
+
+## Spans
+
+- s05-steps 69.354 to 110.881 (D 41.527); cuts on act1 (69.50) 0.15 s early.
+- s06-groups 110.881 to 146.097 (D 35.216).
+
+## Merc passes
+
+- m06a-orange: rendered (225 px, 265 frames, filmStart 110.3833). From its alpha: frames 6 to 29 touch
+  the square's top row, frame 30 is the first with rows 0 to 2 empty (row max 4, 3, 3), frame 32 fully 0.
+  Its first whole frame is film 110.883 = s06's first frame. Hop: state from pass t 3.77 (114.153),
+  airborne about frames 236 to 263 (HOP + 0.17 to + 0.62).
+- m06b-orange: not rendered yet (07:37). Gate assumed at frame 31 like m06a until measured.
+
+## Decisions (builder)
+
+- Drops (trap 23 against the board's 60 px ease): box hidden until pass frame 31 (one after the first
+  whole frame, since 0.8.97 may show the frame before), fades in over 18 frames (sine.out), and eases down
+  the last 60 px over 0.4 s (power2.out) from that frame. In s05 m06a is therefore never seen (frames 0
+  to 29); its tags stay so the gate holds if a re-time moves frame 31 into s05.
+- Hops out: box carried 360 px right from HOP + 0.15 over 0.42 s (power1.in).
+- Room: L.room(floor false), a floor patch under Tavi's corner (x 1690 to 1920 from y 840) with her,
+  film-time dust (Lesson 2's filmDust, seed 7, 26 motes).
+- Stair light (40 % chrome), measured in lab/s05-steps/pulse (still F0 staircase, no dust):
+  - kit L.lit shape (up 0.15 power2.out, back 0.6 sine.inOut): registers 0.4, 0.4, 0.5, 0.6 s (stairs 2-5);
+  - + block scale 1.05: 0.4, 0.5, 0.5, 0.7 (no gain);
+  - up 0.3 / back 0.5 power1.inOut: 0.6 each; up 0.35 / back 0.6: 0.5-0.6; up 0.25 + hold 0.1 + 0.5: 0.5-0.7;
+  - up 0.3 linear / back 0.4 linear: 0.7, 0.7, 0.7  -> adopted as light() in both scenes.
+  - a held light (0.15 rise) registers 0.1 s.
+- Riser "grows" (bar 15 %) barely register on a draft clip; each riser pulse now also scales its label
+  1.25 (settle 0.8 s).
+- s06 brackets end 6 px short of HANDOFFS' 714 / 1194 (708 / 1188): at 714 the lower bracket touched the
+  F-G riser's bar. Ticks 8 px (down). The lower dims as the truck starts, the upper lights on G4.
+- s06 key names: E, F leave before the truck (F-high cuts them at the frame's foot), B, C before the push
+  (off the right edge in F-low); all back as the pull lands (123.6).
+- s06 count: on "semitones" the octave's twelve rows glow in turn (fills the 131.4 to 132.7 pause).
+
+## Item 2 (S6b), lab/s06-groups/item2/clearance.mjs (kit hop formula, real Outfit ink)
+
+- Middle of every hop: label gap 52.3 (tones) / 28.3 (semitones) world px; bar gap 37.1 / 38.9. Passes.
+- Closest anywhere in a hop: tones 6.6 px at take-off (+0.02 s), semitones 7.6; bars 27.6 / 34.5.
+- At rest: 7.6 px (tones), 10 (semitones). Model said 8 at rest, 7 in flight: real T ink is ~0.4 px wider.
+
+## Round 2 measurements (07:41 to 07:55)
+
+- s05 round 2: 4.7 s of holds inside (3.4 s per 30 s), longest 0.3 s. Passes the 0.5 s limit, fails the
+  1.8 s per 30 s one (no Merc on screen in s05). Twenty-five holds of 0.1 to 0.3 s, each where one event's
+  registration ends before the next word.
+- s06 round 2: 7.6 s (6.5 per 30), longest 2.4 s. From 24.5 on (m06b's span, its pass not rendered) the holds
+  are where Tavi will be on screen: 25.0 (0.2), 25.9 (1.2), 27.4 (0.1), 27.9 (2.4), 32.5 (1.0), 34.1 (0.6).
+  Before it, with no Merc (4.4 to 24.5): 1.9 s (13.2, 14.6, 15.0, 17.0, 17.6, 18.0, 18.7, 19.4, 19.9).
+- Text sweep (both): no label under 4.5:1. EDGE: s05 only single samples mid-move; s06 riser 6's "T" at the
+  frame's top through F-low (5.75 to 8.75), stair 2's "D" cut at the left through F-high (9.75 to 12.25).
+- What registers (from the motion samples): a linear ramp registers by its largest change only when it is
+  0.42 s or shorter (16 luma per 0.1 s at 40 % chrome); a slower ramp registers only by area (stairs 4 and up
+  at F0, any stair in a close-up). Every light or pulse has a dead sample near its peak about a third of the
+  time (the change reverses inside the 0.1 s sample), so a long pause needs a larger event, not a later one.
+
+## Round 3 changes (07:55)
+
+- s05: the strip slides from act1 - 0.1 over 1.3 s (power3.out) so the cut does not open on a hold and the
+  slide carries to "doh"; doh - 0.06; the name switch from "from C" + 0.12 (the switch itself stays
+  § Type's 0.25 s, 0.05 stagger); the keys come up over 0.8 s and each pulses as it reaches full; "a major
+  scale" rises 20 px over 0.6 s (power2.out); the second ripple from "scale" - 0.05; echo rings 0.9 s, 3 px,
+  3.5x (scale-c, steps-c, group-high); the beads leave over 0.5 s (power1.in); larger lights (up 0.4,
+  back 0.8 or 0.9) for stairs 1 and 2 in CU-A ("2." and "tone."), stair 3 in CU-B ("semitone?", now from
+  0.2 s before the word), b11's two semitones (stairs 4, 8) and b12's "two short ones" (stairs 4, 8; their
+  light on "equal" too); C#4 lights over 0.5 s; "C#", "E", "F" land with a 12 px rise over 0.5 s; the pan
+  1.7 s; the legend's lines 0.5 s apart, 40 px over 0.65 s (power2.out).
+- s06: the stairs go unlit over 0.5 s from pull + 0.8; the ghost in from climb - 0.05, travels 1.45 s,
+  fades over 0.5 s (power1.in); each b14 pair lights the stair above it (semitone pair's stairs 4, 8 larger,
+  1.2 s back); "One more tone" from 0.1 s before the word, G4's stair lighting (larger) on it and on
+  "joins"; brackets and legend leave over 0.3 s; "C again" larger; riser 6's label and stair 7's name leave
+  through F-low, stair 2's name through F-high (text sweep EDGE).
+
+## Round 3 results (08:10)
+
+- s05 clip (lab/s05-steps/clip.mp4, measure/): holds inside 0.1 s (0.1 s per 30 s), longest 0.1 s (at 1.1);
+  final 0.2 s at the cut. Passes both limits. The four tight spans have no hold.
+- s06 clip: holds 5.3 s inside, but only 0.2 s (2.9, Tavi m06a talking) falls outside m06b's span; the no-Merc
+  stretch 4.4 to 24.5 has none. In m06b's span (24.5 to 34.8, pass not rendered): 25.0 (0.2), 25.9 (1.2),
+  27.5 (0.1), 28.3 (2.0), 32.5 (1.0), 34.1 (0.6, her hop out covers it). Re-measure once m06b exists.
+- Stills: lab/s05-steps/stills-r3, lab/s06-groups/stills-r3 (+ stills-r3c for the respaced sum),
+  lab/s06-groups/item2/hops-sheet.png (hop middles), lab/s06-groups/scratch/tavi/sheet.png (m06a drop, hop).
+- Sum respaced (after round 3's clip): a space between numbers, a space and two hair spaces round each dot,
+  "= 12" 20 px after; ends x 1828.
+- Root check: 3 errors, all missing_local_asset (m01-orange, m04-orange, m06b-orange); mine is m06b only.
+
+## Round 4: fix round for review/component-B-01 (items 1, 2, 4 to 10; item 3 by the gate move)
+
+- Shared block (identical in both files, diffed): sequential name swap (out 0.125 s power2.in, then in
+  0.125 s power2.out, 12 px each way); riserOverlays gold = the whole 8 px gap plus a 56 x 5 px corner on the
+  upper tread; featherRows (the row field feathers 160 px at each end once the camera is zoomed);
+  tokenRow / tokenSet (tally and sum laid out by measured advance).
+- s05: CU-B holds to "Watch" (pull 1.4 s from it); the demo T and S stay through the pull and the legend and
+  reset at STEP(0); legend at pull + 1.4, lines 0.3 s apart; tally T T S T T T S at x 1240, baseline 260,
+  landing on b11's words, riding the cut.
+- s06: brackets y 460 / 278 (24 up); legend and tally out at push - 0.35, legend back at pull + 1.1 (124.0);
+  ghost under risers and labels, its riser-3 segment gold; sum gaps half an em, ends x 1800; "Exactly" lights
+  stairs 1 and 8; "Seven steps" lights them in turn; b16 "semitones" ripples the rows; the octave bracket
+  grows up the 12 rows (0.9 s) with each row glowing as its tip passes; "= 1 octave" to b16 end + 0.3.
+- Bead vs raised brackets (found on stills 8.4, 9.7, 11.15): brackets now y 458 / 276 (26 up); the semitone
+  hops (E-F, B-C) lift 24 with x on power2.inOut (bracket 6.3 px, S label 6.8, bar 22.2, top speed 46 px a
+  frame against a tone hop's 43; lab/s06-groups/item5/bracket-clear.mjs 24 power2.inOut). First try (lift 22,
+  power3.inOut) made measure.py flag a pop at 8.40 (65 px a frame). The F-G hop has to climb out through the
+  lower bracket's line, so the lower bracket leaves over the truck (0.4 s) and comes back on "Both halves".
+  Stills: lab/s06-groups/stills-r4d (final), r4b (before), r4c (first try).
+- Round 4 proof: clock-lint silent (both); merc-tags --check 10 tags, 0 stale; shared block identical; root
+  check 5 errors, all missing_local_asset for m12 passes (s12 to s16), none in mine; text sweep sweep-r4: no
+  label under 4.5:1, EDGE only mid-move (s05 11.5, 17.75, 18.25, 18.5, 22.75; s06 5.5, 12.5); s05 clip:
+  holds 0.1 s (longest 0.1), events 4.833, 4.900, 12.067 (as before, 24.30 gone); s06 clip (after the
+  final hop): holds 0.5 s (0.4 per 30 s), longest 0.2 (2.9), the 0.7 s at 29.2 gone; events 1.967, 6.400,
+  26.100 (small jumps), 23.967 (pop: Tavi's first intro frame, the gate's), 27.733, 33.100 (Tavi's face, x 1728
+  to 1792, y 738 to 794, the m06b pass).
+- Seam S5 to S6: my layers match; 3584 px differ by > 24, all Tavi's corner (her landing ring is on S5's
+  last frame and not on S6's first: the intro segment hands over to the pass at the cut). The gate's.
+- Stills: lab/s05-steps/stills-r4 (+ r4b after the 56 px corner, phone-34.9s.png), lab/s06-groups/stills-r4
+  (+ r4b crossing before, r4c after).
+
+## Round 5: fix round for review/component-B-02 (items 2 to 5; item 1 done in the kit, DECISIONS 86)
+
+- s06 item 2: the octave bracket grows over 0.6 s on power2.out (was 0.9 s linear); the row glows follow its
+  tip (octAt); "= 1 octave" starts once the tip is at y 491, past the middle (y 508): about 0.14 s in.
+- s05 item 3: RESETAT = STEP(0) - 0.36 (23.94): the demo T and S fade 23.94 to 24.14, the bars shrink back by
+  24.29, the bead drops 24.10 to 24.30.
+- s06 item 4: the sum at Outfit 600 56 px, gaps 16 (digits), 12 (dots), 16 and 12 round "=", ending x 1739:
+  ink x 1254 to 1737, so the 1.2 pulse of "= 12" stays inside 1746 (scratch/sum56.mjs).
+- Item 5 (shared block): the row feather ramps on smootherstep (8 stops) over 180 z world px (F-low 144 world,
+  259 on screen from x 496; CU 180 world).
+- Shared block also: tokenRow takes `size`, tokens carry cy (the scale centre) for tokenSet.
+- Correction to round 4's report: the semitone hop's power2.inOut is GSAP's cubic, so its middle frame moves
+  65 px in F-low, not 46 (I had modelled a quadratic). measure.py flagged nothing there in round 4's clip.
+- Proof: clock-lint silent, shared block identical, npm run check 5 errors (m12-orange in s12 to s16 only).
+  Stills: lab/s05-steps/stills-r5 (reset-sheet.png), lab/s06-groups/stills-r5 (octave-sheet.png, 6.5 F-low).
+
+## Round 6: small round for review/component-B-03 (items 2, 3, 4) and the full check's layout error
+
+- Item 2 (both scenes, the same call): the tally at x 1270 (the sum's lane), baseline 260, Outfit 600 64 px,
+  21 px of advance between letters (23 to 24 px of ink): ink x 1271 to 1668 (was 1241 to 1692). Stills: Tavi's
+  body min x 1734 to 1738 through 40.6 to 40.9; nearest tally ink to her body 73 px (was 41). Tally band at
+  s05 41.5 against s06 0: max difference 5 levels.
+- Item 3 (s06): the sum at 50 px, advance gaps 12 (digits), 19 (dots), 15 and 12 round "=", ending x 1739:
+  ink x 1280 to 1737, gaps 15 to 18 / 20 to 22 / 20 and 17; "= 12" at 1.2 ends 1746; first "2" landing from
+  1.3x starts about 1276 (scratch/sum-fit.mjs).
+- Item 4 (s06): both brackets 10 more up (y 448, 266); the bead's top keeps 16.3 world px (29 on screen in
+  F-low and F-high) under them; brackets drawn over the bead's glow and the echo rings. The glow itself (70 px
+  halo; +16 levels out to about 57 world px) cannot clear the line in F-high: see the report.
+- Layout error (s06 17.86 to 19.73): the F-G "T"'s glow was a second, blurred "T" text; now a soft 28 x 31 box
+  (0.45 peak). Layout check on both lab projects, 80 samples: 0 errors.
+- 60 fps: lab/s05-steps/tools/hostpass60.sh (a copy of builder E's); round 5's 30 fps clips kept as clip-r3.mp4.
+- Results (60 fps, 00:45 and 00:51): s05 holds 0.4 s (0.3 per 30 s), longest 0.1; s06 0.7 s (0.6 per 30 s),
+  longest 0.2. npm run check: passed, 0 errors (lint 0, layout 0, 2 infos in s01), contrast 59/59.
+
+## Round 7 (coordinator's "round 5", S6 only): critic B-04 items 1, 3, 5
+
+- Item 1: names ride out with the world; three fade, each after its outer neighbour has left: "B" from 5.44
+  (stair 8's "C" out 5.42), riser 6's "T" from 5.60 ("S" out 5.60), both back 8.75 to 8.93 (before "S" 9.03,
+  "C" 9.15); "D" from 9.42 (stair 1's "C" out 9.40), back 12.20 to 12.42 (before "C" 12.53).
+  lab/s06-groups/item1/names.mjs.
+- Item 3: brackets y 462 / 280 (72 px above F and C5); upper line at screen 52 to 55 in F-high (was 26 to 30);
+  tone hops under brackets lift 30, semitone hops semiHopAt top 15 (flat top): bead rim 21 px under each line
+  at closest (clip, 8.333 and 11.100); S label 3.8 world (was 6.8); glow still reaches the lines (+40 / +46
+  levels under them); the C5 echo ring crosses behind the upper line (11.52 on). item5/hop-clear.mjs.
+- Item 5: ghost masked out of each riser label's box (ink + 5 px, soft).
+- Clip lab/s06-groups/clip.mp4 (60 fps, 02:24), round 4's kept as clip-r4.mp4. Holds 0.6 s (0.5 per 30 s),
+  longest 0.2. Handoffs: S5/S6 168 px > 24 outside Tavi (max 45); S6/S7 156 (max 52). npm run check passed;
+  80-sample layout check on S6: 0. Text sweep: EDGE only mid-move (5.5, 12.5).
+
+## Status
+
+| Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| s05-steps | polish round (30 Oct) | polish/leap-sheet.jpg | 60 fps, 13:55 | 0.4 s (0.3/30), longest 0.1: pass | polish: as round 4 | clean | current (2 tags) |
+| s06-groups | polish round 2 (30 Oct) | polish2/*.jpg | 60 fps, 22:11 | 0.7 s (0.6/30), longest 0.2: pass | polish2: clean | clean | current (4 tags) |
+
+## Next
+
+1. Polish round 2 (film round 2 item 4) reported to the director (30 Oct, 22:20).
+
+## Polish round (30 Oct, from 13:30): film-01 items 4 and 9, B-05 items 2 and 3, decision 123's check
+
+Brief: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l4entr/polish/BRIEF-B.md.
+Scratch in lab/s06-groups/polish/ (harness.mjs runs a JS body in a page with the kit and fonts).
+
+- Plan, item 1 (s06 copy): a closed silhouette of stairs 1 to 4 (left side, treads, risers through the
+  risers' centres, right side, foot), 15 % chrome fill, 4 px chrome outline plus a soft halo, the E-F segment
+  gold; in on stairs 1 to 4 from climb - 0.25, travels climb + 0.05 over 1.3 s (the row's 124.3 to 125.6),
+  out from word semitone + 0.35 over 0.3 s (127.30 to 127.60). The label mask goes. Measured
+  (polish/contact.js): the copy moves along the staircase's own slope (182/480 = the stairs' rise), so every
+  tread slides through the labels for most of the flight (T1 touches a label 0.21 to 0.99 s of 1.3 s with
+  gaps of 0.04 s) and every riser crosses a label four times; a whole segment is dropped while it touches a
+  label (band + 3 px) or while an end of it is free (its neighbour dropped) within 24 px of one. In practice
+  the outline goes after the first ~0.2 s of travel and comes back in the last 0.06 s; the fill carries the
+  flight.
+- Plan, item 2 (s06): no camera moves; anchors A.push / A.truck / A.pull go. Events in their place: on "two,"
+  (115.49) stairs 1 to 4 light together, stairs 5 to 8 0.35 s later; at the old truck's start (group-low
+  + 1.52) the lower bracket leaves (as before), the upper lights, keys G4 A4 B4 C5 pulse 0.2 s apart (as C4
+  to F4 do on "each"); the stairs go unlit from "Both" (123.50 to 124.00); the legend stays from S5 to b15;
+  the tally still leaves at in - 0.35; key names stay to b16's end; no edge fades. Brackets heavier (4 px,
+  10 px ticks) and 10 px higher (452, 270) so the bead's edge keeps 21 px under them at 1x, as HANDOFFS says.
+  The C5 echo ring at F0 grows to 2x (at 3.5x it crossed the upper bracket and touched the "S" at 1x too).
+- Plan, item 3 (shared block, both scenes): echo rings through a helper that caps the growth at 2x when the
+  camera passes 1.5x during the ring's life. s05's two rings are at F0 (78.60 and 99.90; CU-A starts 79.80,
+  the first ring has faded by 79.50), so nothing changes on screen today; it guards a re-voice.
+- Built (13:40): s06 copy as planned; brackets 452 / 270, 4 px, ticks 10; ring 2x; anchors two, tallyOut, turn,
+  copyOut; legend stays; key names stay; edgeA gone. Drop engine: touch = line within 3 px of a label's ink;
+  free end = the joined segment dropped (after merging runs closer than 0.3 s) and the end within 24 px;
+  iterated to a fixed point. polish/verify-copy.js (the real scene seeked at 240/s): outline on stairs 1 to 4
+  until 124.42 (gone 124.48), F back 124.87, RS 124.97, all back 125.54 to 125.60; no drawn segment touches a
+  label and no free end of any segment comes within 24 px of one. (A first try that widened the free-end test
+  by the ramp's length crept back to the travel's first frame: two segments sharing a corner by a label
+  dropped each other a ramp earlier each pass.)
+- polish/hop-bracket.js: bead edge to the 4 px lines at F0: 20.8 px (semitone hops), 31.8 (tone hops), 35.8 at
+  rest; at 462 / 280 it would be 10.8. Ring (2x) 12.5 px under the upper line, 21.2 from riser 7's "S". Lower
+  right tick ends 18 px above the F-G bar, 33 above its "T".
+- Text sweep (13:43, both): s05 as round 4 (EDGE 'C' 11.50 to 22.75 and 'T' 18.50, mid-move only); s06 clean,
+  nothing flagged (no camera moves, so no EDGE).
+- s06 clip 1 (13:46): holds 1.7 s (1.4 per 30 s), longest 0.3: 4.30 (0.3), 5.70 (0.3), 12.10 (0.2), 13.30
+  (0.2), 18.70 (0.1) in the no-Merc stretch, 1.1 s in 19.3 s (1.7 per 30 s, at the limit). Fixes: the tally
+  fades over 0.5 s linear (was 0.25); the group lights go back over 0.9 s (four stairs register by area);
+  the bead scales 1.2 as it sends the C5 ring; the copy fades in linear and comes up at 28 % fill on stairs
+  1 to 4, easing to the flight's 23 % over 124.25 to 124.65. Re-rendering.
+- s06 clip 2 (13:52, lab/s06-groups/clip.mp4, 60 fps): holds 0.8 s (0.7 per 30 s), longest 0.2: 2.90 (0.2, Tavi
+  talking), 12.10 (0.1), 18.70 (0.1), then 28.9 to 34.9 with Tavi on screen; the no-Merc stretch 4.4 to 23.66
+  has 0.2 s. Events: small jumps only (1.40, 1.58, 25.58 to 32.38, all with Tavi on screen); the old 6.78 is gone.
+- s05 clip (13:55, lab/s05-steps/clip.mp4, 60 fps): holds 0.4 s (0.3 per 30 s), longest 0.1; events as B-05 listed
+  (4.68 to 4.90, 12.05, 16.92, 19.37 to 19.93, 38.13 to 38.42), nothing new from Tavi's leap at 40.30.
+- Rings (polish/verify-rings.js, the scenes seeked at 60/s): s05 78.60 to 79.49 and 99.90 to 100.79 at F0, 3.5x
+  (75.5 px); s06 122.41 to 123.30 at F0, 2.0x (42.5 px). The guard (polish/ring-cap-test.js, s05's camera and
+  the helper verbatim): a ring at 80.30, 82.80, 87.10 or 92.07 grows to 2.0x; at 78.60, 79.30 or 93.07, 3.5x.
+- Seams: s04/s05 (s05 frame 0 new against old) identical, max 0. S5/S6: outside the corners max 51, 181 px over
+  24, all on "S" edges (the gold S labels and the tally's S's; round 7 had 168, B-05 328); Tavi's box (x 1640 to
+  1920, y 560 to 900) mean 1.66, max 64, consecutive pass frames, polish/seams/cut-s05-s06-corner.jpg. s06 last,
+  new against old: max 27, 1 px over 24 (B to C unchanged).
+- Tavi (decision 123): s05 40.2 to 41.5 stills and s06 23.70 to 24.45 at 20 fps: she comes in at floor level,
+  body x 1720 or more once in frame; the tally (ink to x 1668, y 214 to 260) and the sum (y 224 to 260) are far
+  above her path; the strip ends at 1676; the rows are masked round her box. Nothing of mine on her path.
+- check (root, 14:02): passed, 0 errors; my scenes' warnings are the same kinds as round 6 (too large,
+  duplicate media, nested media start for the Merc tags), four fewer (the intro seg tags went). 80-sample check
+  on lab/s06-groups/proj: layout 0 issues, contrast 128/128. merc-tags --check: 2 and 4 tags, 0 stale.
+
+## Polish round 2 (30 Oct, from 22:00): film round 2 item 4 (DECISIONS 130), S6 only
+
+Brief: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l4entr/polish2/BRIEF-B.md.
+Scratch in lab/s06-groups/polish2/; renders into /dev/shm/l4lab-B/ (TMPDIR /dev/shm, 1 worker), clips moved to lab.
+Before: the 13:52 clip's frames went into polish2/before-after-sheet.jpg and its measure summary into polish2/measure-before-summary.md (the /dev/shm copies are deleted).
+
+- Plan: a local framing F_GRP { s 1.4, ox -44, oy -248 } (about world (110, 620)): the content box (upper bracket's
+  line top 268, the copy's halo to 749, x 229 to 1207) lands at screen x 277 to 1646, y 127 to 801. Push from
+  "Both" (A.both) to "climb" (dur A.climb - A.both = 0.75 s), power2.inOut; pull from b14's end (A.pull, 130.15)
+  over min(0.8, semis - 0.2 - pull) = 0.8 s, power2.inOut, at rest 130.95. Key names E F B C leave over 0.2 s from
+  the push (in F_GRP their baseline is y 963, the text sweep's BAND) and return over 0.2 s from the pull's landing.
+- Built (22:05): s06 lines: anchors `pull`; camera block (F_GRP, PUSH, PULL, two cam.to); keyNameA. clock-lint
+  silent on both. s05 untouched.
+- Framing check (22:03, lab/s06-groups/polish2/framing.js, out in framing.out.json; the scene seeked at 60/s, the mid
+  layer's real transform, the real paths and labels): held F_GRP holds stairs x 295 to 1628, y 245 to 782; brackets
+  lower x 292 to 958, y 382 to 402, upper x 963 to 1630, y 127 to 147; the copy with its halo x 277 to 1646, y 227 to
+  801; riser labels (em boxes, pulses included) x 406 to 1458, y 200 to 688; stair names y 716 to 779. Legend (hud)
+  x 140 to 524, y 156 to 263: 119 px above the lower bracket. Key names: alpha over 0.3 only while their box ends
+  above y 870. The rig: 1.0 at 123.50, 1.24 at 123.90, 1.40 by 124.25; pull 130.15 to 130.95.
+- Stills (22:02, snapshot into /dev/shm then sheets): lab/s06-groups/polish2/push-sheet.jpg, hold-sheet.jpg,
+  pull-sheet.jpg, fgrp-at-13.37s.jpg, fgrp-at-14.5s.jpg, fgrp-at-18.8s.jpg, before-after-14.5s.jpg.
+- Clip render started 22:05 (polish2/render.sh, 1 worker, 60 fps).
+- Clip (22:11, lab/s06-groups/clip.mp4, 60 fps, 1 worker; measure in lab/s06-groups/measure): holds 0.7 s (0.6 per 30 s),
+  longest 0.2 (was 0.8 s, 0.7 per 30 s, longest 0.2): 2.90 (0.2, Tavi), 12.10 (0.1), then 28.9 to 34.9 with Tavi on
+  screen; the 18.70 hold is gone, so the no-Merc stretch has 0.1 s. Single-frame events exactly as before (1.400, 1.583,
+  25.583 to 32.383, all with Tavi on screen); none from 12 to 21.5. Largest frame change 8.74 at 13.000 (the push's
+  middle; s05's CU-A push peaks at 7.84). frames.csv against the 13:52 clip's: equal outside the GOPs the change
+  touches (12.5 to 25.0, keyframes every 4.167 s); after 20.3 the differences are encoding only (mean change within
+  0.08, changed share within 0.009 %), so m06a's hop out and m06b's leap in are as before.
+- Seams (polish2/seams.log): s06 frame 0 and frame 2112 against the 13:52 clip's: max 0. S5 last (s05 clip) against
+  S6 first: outside the corners max 51, 181 px over 24, as the polish round.
+- Text sweep (polish2/sweep-report.txt): s06 clean, nothing flagged (no LOW, EDGE or BAND). Lab check over the move
+  (33 samples, 12.5 to 20.5 every 0.25 s, polish2/lab-check-s06.log): layout 0 issues, contrast 107/107. Root check
+  (polish2/root-check.log): passed, 0 errors, 66 warnings; mine the same 8 as the polish round (file too large x2,
+  duplicate media x2, nested media start x4; s06's line count 595 to 614). clock-lint silent on both; merc-tags 2 and
+  4 tags, 0 stale; the shared block identical in both files.
+- Dense sheets: polish2/dense/dense-013.00s-20fps.jpg (push), dense-014.60s-10fps.jpg and dense-016.40s-10fps.jpg (the
+  copy's travel, landing, pairs and fade), dense-019.67s-20fps.jpg (pull); frame-exact polish2/exact/dense-012.99s-60fps.jpg
+  and dense-019.67s-60fps.jpg. Before and after: polish2/before-after-sheet.jpg (top the 13:52 clip, bottom new).
+- Share of the frame: the staircase with its brackets (x 242 to 1194, y 268 to 736) is 21.5 % of the frame at F0 and
+  42.1 % in F_GRP (the stairs alone 17.6 % and 34.5 %).
+
+## Holds round (1 November), builder BC: film round 5 item 1 (DECISIONS 139), s05 to s08
+
+Brief: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l4entr/polish5/BRIEF-BC.md (one item: the
+board sits still through the voiced lines). Builder BC owns s05 to s08 this round; s07 and s08 notes go in
+lab/s07-predict/BUILD-NOTES.md, the shared tools and s05/s06 notes here. Clock: ElevenLabs, 551.21 s.
+Spans now: s05 78.362 to 128.004 (D 49.642), s06 to 169.640 (D 41.636), s07 to 229.508 (D 59.868), s08 to 262.670
+(D 33.162).
+
+Tools (lab/s05-steps/holds/): render.sh <sid> <tag> (draft 30 fps, 1 worker, TMPDIR and output in /dev/shm/l4lab-BC,
+then measure.py into /dev/shm/l4lab-BC/measure-<sid>-<tag>); probe.mjs (seeks the scene without the Mercs, prints
+the rig's state and cam.slide, and with --shots runs measure.py's motion filter on screenshots); variant.py (a copy
+of a scene with lines inserted, for probe.mjs --file).
+
+- Before (23:41 to 00:00): stills at each scene's first and last frames in /dev/shm/l4lab-BC/before/ (lab.mjs
+  snapshot: s05 0 and 49.633, s06 0 and 41.633, s07 0 and 59.867, s08 0 and 33.133). Lab clips of the scenes as
+  they stand, measured: s05 5.1 s of holds, longest 0.8 (film-05: 5.3); s06 1.9 s, longest 0.4 (film-05: 2.2).
+  The lab clip reproduces film-05's holds to a sample or two, so it is the proxy for the film.
+- Targets (brief): no hold over 0.3 s; totals at most a third of film-05's: s05 1.77 s, s06 0.73, s07 1.53,
+  s08 0.47.
+- Learned before building: a creep with a vertical part moves every baseline by a whole pixel at once (DECISIONS
+  98: builder D's S11 drift, 7 jumps in 2 s), and a slow text drift settles in whole-pixel steps (decision 104), so
+  the creeps here are horizontal (ox only: s and oy stay). Probe (no encoding): a 20 px horizontal creep over 6.3 s
+  breaks a hold where a 2 % push over the same span does not. A creep's eased ends are slow, so each leg runs from
+  one beat to the next, its fast middle across the still stretch, and turns only where something else moves.
+- Built (00:05 to 00:10), s05: seven creeps (ox only, sine.inOut) through `creep(t0, t1, dx, base, px)` beside the
+  three scripted moves: 0.148 to 4.858 (act1 to "a major scale") 0 to -24 px at F0; 12.118 to 18.618 (the push's
+  last 0.4 s into the pan's first 0.5 s) CU-A to CU-A - 24; 19.318 to 25.598 (the pan's last 0.5 s into the pull's
+  first 0.3 s) to CU-B - 44, px kept at -480; 26.698 to 35.878 0 to -20; 35.878 to 41.498 to +10; 41.498 to 45.428
+  to -15; 45.428 to 48.218 ("C") to 0, at rest before Tavi's leap is in frame (about 48.45). Probe (no Mercs): 9
+  hold samples, 6 of them under Tavi's landing at the end; largest creep slide 5.99 px/s.
+- s06: five creeps: 11.156 to 14.126 (group-high into the push) 0 to +12; 14.396 to 18.436 (from the push's tail to
+  "semitone.") F_GRP to F_GRP + 20; 18.436 to 22.086 (into the pull) to F_GRP - 10; 22.286 to 25.996 (the pull's
+  tail to "one.") 0 to -20; 25.996 to 28.966 (o6 - 1.38, where m06b's pass opens) back to 0. Largest creep slide
+  7.73 px/s. And "= 1 octave" drifts 8 px on (sine.inOut) from its landing (40.537) to its fade's end (41.586).
+- Round 1 clips (00:12 to 00:25, /dev/shm/l4lab-BC/<sid>-r1.mp4): s05 0.3 s of holds (12.50, 28.00, 41.40, 0.1
+  each; was 5.1, longest 0.8); s06 0.4 s (2.30, 31.40, 32.90, 36.10, all with Tavi in frame; was 1.9, longest 0.4).
+  s05's and s06's creeps move by fractions of a pixel in the renders (the strip's left edge read off the frames:
+  30 to 40 distinct fractions in 1.5 s). New single-frame "jumps" of 0.03 to 0.15 % of pixels in the creeps are the
+  draft encoder's skipped blocks catching up, not the source.
+- Found in s07's first clip: while the staircase is dimmed (its group at 25 %, s07 0.15 to 28.04) the renderer and
+  the probe set the mid layer on whole pixels, so a creep there steps a pixel at a time (the strip's edge: 240.51,
+  241.51, 242.51 ...); the scripted slow push in the before clip does the same. With the staircase at full every
+  creep is smooth. Not a kit change: noted, and the creeps there kept few and short (lab/s07-predict notes).
+- After stills (lab.mjs snapshot), s05 and s06 at 0 and the last frame against the before stills: max difference 0
+  (no pixel changed). Text sweep: s05 EDGE 'C' (18.50) and 'T' (19.25), one sample each, both inside the pan; s06
+  clean. merc-tags --check: 2 + 4 tags, 0 stale. clock-lint silent on all four.
+- Result (00:55), all four scenes, holds in the lab clips (film-05 / lab before / after; target): s05 5.3 / 5.1 / 0.3 s
+  (1.77), longest 0.8 to 0.1; s06 2.2 / 1.9 / 0.4 (0.73), longest 0.4 to 0.1; s07 4.6 / 4.6 / 0.5 (1.53), longest 0.9
+  to 0.1; s08 1.4 / 1.0 + 0.2 at the end / 0.4 (0.47), longest 0.3 to 0.1, no final hold. Every hold the brief lists
+  is gone. What is left is single 0.1 s samples: s05 12.50 (the push's landing), 28.00 and 41.40 (a creep's slow
+  start and a turn); s06 2.30, 31.40, 32.90, 36.10 and s08 3.30 to 6.90 (Tavi in frame: nothing she stands on
+  moves); s07 0.00, 3.80, 7.80 (Tavi in frame), 58.20 and 58.50 (after the last pull: signature 2).
+- First and last frames of all four against the before stills: max difference 0. `hyperframes check` (root): 0
+  errors, 65 warnings (the baseline; my four files only carry the kinds they had: nested media start, duplicate
+  media, file over 300 lines), 40/40 text checks pass. Text sweep: s05 as above, s06, s07 and s08 clean. clock-lint
+  silent; merc-tags --check 14 tags, 0 stale.
+- Evidence: lab/s05-steps/holds/ (ends-s05-steps.jpg and ends-s06-groups.jpg: before, after and difference x8 at
+  the first and last frames; measure summaries before and after; root-check.log; sweep reports) and
+  lab/s07-predict/holds/ (the same for s07 and s08, and s08-settles.jpg). Clips in /dev/shm/l4lab-BC/:
+  <sid>-before.mp4 and <sid>.mp4 (after); before stills at full size in /dev/shm/l4lab-BC/before/. Scratch variants
+  deleted.

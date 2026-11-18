@@ -1,0 +1,202 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Sight-singing in time: ready, singing, result</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8fd3ff}a:hover{color:#c3e7ff}
+button{cursor:pointer;font-family:Inter,system-ui,sans-serif}
+.mat{width:1310px;height:930px;box-sizing:border-box;padding:30px;display:flex;gap:40px;background:#03050a;font-family:Inter,system-ui,sans-serif}
+.col{display:flex;flex-direction:column;gap:10px}
+.cap{height:16px;font:500 12px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.12em;color:#8fa0b3}
+.ph{position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#060910;box-shadow:0 0 0 1px rgba(255,255,255,.09),0 30px 80px rgba(0,0,0,.6)}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,9,16,.88) 0%,rgba(6,9,16,.38) 30%,rgba(6,9,16,.44) 56%,rgba(6,9,16,.93) 80%,#060910 100%)}
+.scrim.deep{background:linear-gradient(180deg,rgba(6,9,16,.92) 0%,rgba(6,9,16,.78) 30%,rgba(6,9,16,.9) 60%,#060910 100%)}
+.top{position:absolute;left:16px;right:16px;top:20px;display:flex;align-items:center;gap:10px}
+.ic{width:44px;height:44px;border-radius:22px;border:1px solid rgba(255,255,255,.16);background:rgba(10,14,22,.62);color:#eef3f8;display:flex;align-items:center;justify-content:center;padding:0}
+.ttl{flex:1;font:600 19px Outfit,system-ui,sans-serif;color:#f4f7fb}
+.lvl{height:44px;padding:0 14px;border-radius:22px;border:1px solid rgba(255,255,255,.16);background:rgba(10,14,22,.62);color:#eef3f8;font:500 13px Inter,system-ui,sans-serif;display:flex;align-items:center;gap:6px}
+.sheet{position:absolute;left:16px;right:16px;top:80px;box-sizing:border-box;padding:14px 14px 12px;border-radius:22px;background:rgba(8,12,20,.82);border:1px solid rgba(255,255,255,.13);backdrop-filter:blur(10px);display:flex;flex-direction:column;gap:8px}
+.lab{display:flex;justify-content:space-between;font:500 10.5px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.1em;color:#8fa0b3}
+.bub{position:absolute;box-sizing:border-box;padding:13px 15px;border-radius:18px 18px 18px 4px;background:rgba(8,12,20,.86);border:1px solid rgba(255,255,255,.13);font:400 15px/1.42 Inter,system-ui,sans-serif;color:#eef3f8}
+.pillb{flex:1;height:46px;border-radius:23px;border:1px solid rgba(255,255,255,.22);background:rgba(8,12,20,.72);color:#eef3f8;font:500 14px Inter,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;padding:0}
+.orb{position:absolute;left:151px;top:658px;width:88px;height:88px;border-radius:44px;border:0;background:linear-gradient(135deg,#46c6f0 0%,#6f7cff 55%,#9a63ff 100%);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 10px rgba(111,124,255,.16),0 14px 44px rgba(86,140,255,.6)}
+.ring{position:absolute;left:135px;top:642px;width:120px;height:120px;border-radius:60px;border:2px solid rgba(94,231,255,.6);box-sizing:border-box}
+.und{position:absolute;left:0;right:0;text-align:center;font:500 13px Inter,system-ui,sans-serif;color:#b3bfcc}
+.chip{height:42px;padding:0 18px;border-radius:21px;background:rgba(8,12,20,.88);border:1px solid rgba(94,231,255,.5);color:#eef3f8;font:600 15px Outfit,system-ui,sans-serif;display:flex;align-items:center;gap:10px}
+.dot{width:10px;height:10px;border-radius:5px;background:#5ee7ff;flex:none}
+.dot.off{background:#f6b24a}
+.big{font:700 72px/1 Outfit,system-ui,sans-serif;color:#fff;letter-spacing:-.02em}
+.big span{font:600 28px Outfit,system-ui,sans-serif;color:#b3bfcc;letter-spacing:0}
+.sub{font:500 16px Inter,system-ui,sans-serif;color:#b3bfcc}
+.best{margin-top:10px;align-self:flex-start;height:30px;padding:0 12px;border-radius:15px;border:1px solid rgba(255,212,121,.55);color:#ffd479;font:600 12px Inter,system-ui,sans-serif;display:flex;align-items:center}
+.card{position:absolute;left:16px;right:16px;box-sizing:border-box;border-radius:20px;background:rgba(8,12,20,.84);border:1px solid rgba(255,255,255,.13)}
+.lnk{position:absolute;left:95px;width:200px;height:44px;border:0;background:none;color:#8fd3ff;font:500 14px Inter,system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.acts{position:absolute;left:16px;right:16px;top:708px;display:flex;gap:12px}
+.again{flex:1;height:56px;border-radius:28px;border:1.5px solid rgba(255,255,255,.4);background:rgba(8,12,20,.5);color:#eef3f8;font:600 16px Outfit,system-ui,sans-serif}
+.done{flex:1;height:56px;border-radius:28px;border:0;background:linear-gradient(135deg,#46c6f0 0%,#6f7cff 55%,#9a63ff 100%);color:#fff;font:600 16px Outfit,system-ui,sans-serif;box-shadow:0 10px 30px rgba(86,140,255,.45)}
+.syl{font:500 10px 'JetBrains Mono',ui-monospace,monospace;fill:#b3bfcc;text-anchor:middle}
+.bn{font:600 12px Inter,system-ui,sans-serif;fill:#b3bfcc;text-anchor:middle}
+.ts{font:700 25px Outfit,system-ui,sans-serif;fill:#eef3f8}
+.nb{width:44px;display:flex;flex-direction:column;align-items:center;gap:9px}
+.nb b{font:500 11px 'JetBrains Mono',ui-monospace,monospace;color:#b3bfcc}
+.tl{position:relative;width:36px;height:14px;border-left:1px solid rgba(255,255,255,.0)}
+.tl:before{content:"";position:absolute;left:17.5px;top:0;width:1px;height:14px;background:rgba(255,255,255,.28)}
+.tl i{position:absolute;top:1px;width:4px;height:12px;border-radius:2px;background:#5ee7ff}
+</style>
+</helmet>
+<div class="mat">
+<svg aria-hidden="true" width="0" height="0" style="position: absolute"><defs>
+<path id="fclef" d="M50 -123Q216 -231 288 -301Q336 -348 373.0 -408.5Q410 -469 431.5 -536.0Q453 -603 453 -669Q453 -728 435.0 -773.5Q417 -819 383.0 -845.0Q349 -871 302 -871Q284 -871 264.5 -867.0Q245 -863 224 -855Q181 -839 158.0 -813.5Q135 -788 135 -765Q135 -756 143.0 -752.0Q151 -748 158 -748Q168 -748 183 -752Q190 -754 196.5 -755.0Q203 -756 210 -756Q248 -756 272.0 -733.5Q296 -711 296 -674Q296 -638 266.0 -612.0Q236 -586 195 -586Q146 -586 111.0 -617.0Q76 -648 76 -697Q76 -756 109.0 -802.0Q142 -848 198.5 -874.0Q255 -900 324 -900Q400 -900 460.0 -867.0Q520 -834 555.5 -776.5Q591 -719 591 -646Q591 -551 538 -464Q511 -419 476.5 -379.0Q442 -339 389.0 -297.5Q336 -256 256.0 -208.0Q176 -160 57 -101ZM687 -809Q710 -809 726.0 -793.0Q742 -777 742 -754Q742 -731 726.0 -715.5Q710 -700 687 -700Q664 -700 648.0 -715.5Q632 -731 632 -754Q632 -777 648.0 -793.0Q664 -809 687 -809ZM687 -589Q710 -589 726.0 -573.0Q742 -557 742 -534Q742 -511 726.0 -495.5Q710 -480 687 -480Q664 -480 648.0 -495.5Q632 -511 632 -534Q632 -557 648.0 -573.0Q664 -589 687 -589Z"></path>
+<path id="sharp" d="M97 -46V-189L50 -177V-277L97 -290V-486H128V-298L195 -314V-509H226V-322L275 -333V-234L226 -220V-77L275 -89V14L226 26V214H195V34L128 52V247H97V59L50 71V-32ZM195 -70V-214L128 -197V-54Z"></path>
+<g id="staff"><path d="M0 40.5H330M0 52.5H330M0 64.5H330M0 76.5H330M0 88.5H330M204.5 40.5V88.5M324.5 40.5V88.5" stroke="rgba(238,243,248,.5)" stroke-width="1" fill="none"></path><path d="M328.5 40.5V88.5" stroke="rgba(238,243,248,.8)" stroke-width="3" fill="none"></path><g fill="#eef3f8"><use href="#fclef" transform="translate(2 84.2) scale(.04918)"></use><use href="#sharp" transform="translate(44 58.9) scale(.04918)"></use></g><text class="ts" x="62" y="63">4</text><text class="ts" x="62" y="87">4</text></g>
+</defs></svg>
+
+<div class="col">
+<div class="cap">1 · READY</div>
+<div class="ph">
+<img class="bg" src="/_blob/cbbcae31021f99e6922c2591b07b2ee1" alt="">
+<div class="scrim"></div>
+<div class="top">
+<button class="ic" aria-label="Back to practice"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"></path></svg></button>
+<div class="ttl">Sing it in time</div>
+<button class="lvl">Singer<svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5 6 7.5l3-3"></path></svg></button>
+</div>
+<div class="sheet">
+<div class="lab"><span>LESSON 18 · A TUNE IN G</span><span>60 BPM</span></div>
+<svg role="img" aria-label="Two bars in G major on the bass staff: do re mi fa, so mi do" width="330" height="146" viewBox="0 0 330 146">
+<use href="#staff"></use>
+<g fill="#eef3f8" stroke="#eef3f8" stroke-width="1.4">
+<ellipse cx="96" cy="88.5" rx="6.6" ry="4.6" transform="rotate(-20 96 88.5)" stroke="none"></ellipse><path d="M102 87V52"></path>
+<ellipse cx="126" cy="82.5" rx="6.6" ry="4.6" transform="rotate(-20 126 82.5)" stroke="none"></ellipse><path d="M132 81V46"></path>
+<ellipse cx="156" cy="76.5" rx="6.6" ry="4.6" transform="rotate(-20 156 76.5)" stroke="none"></ellipse><path d="M162 75V40"></path>
+<ellipse cx="186" cy="70.5" rx="6.6" ry="4.6" transform="rotate(-20 186 70.5)" stroke="none"></ellipse><path d="M192 69V34"></path>
+<ellipse cx="222" cy="64.5" rx="6.6" ry="4.6" transform="rotate(-20 222 64.5)" stroke="none"></ellipse><path d="M216 66V100"></path>
+<ellipse cx="252" cy="76.5" rx="6.6" ry="4.6" transform="rotate(-20 252 76.5)" stroke="none"></ellipse><path d="M258 75V40"></path>
+<ellipse cx="282" cy="88.5" rx="6.2" ry="4.2" transform="rotate(-20 282 88.5)" fill="none" stroke-width="1.8"></ellipse><path d="M288 87V52"></path>
+</g>
+<text class="syl" x="96" y="112">do</text><text class="syl" x="126" y="112">re</text><text class="syl" x="156" y="112">mi</text><text class="syl" x="186" y="112">fa</text><text class="syl" x="222" y="112">so</text><text class="syl" x="252" y="112">mi</text><text class="syl" x="282" y="112">do</text>
+<g fill="none" stroke="rgba(238,243,248,.28)"><rect x="83" y="120.5" width="26" height="22" rx="6"></rect><rect x="113" y="120.5" width="26" height="22" rx="6"></rect><rect x="143" y="120.5" width="26" height="22" rx="6"></rect><rect x="173" y="120.5" width="26" height="22" rx="6"></rect><rect x="209" y="120.5" width="26" height="22" rx="6"></rect><rect x="239" y="120.5" width="26" height="22" rx="6"></rect><rect x="269" y="120.5" width="26" height="22" rx="6"></rect><rect x="299" y="120.5" width="26" height="22" rx="6"></rect></g>
+<text class="bn" x="96" y="136">1</text><text class="bn" x="126" y="136">2</text><text class="bn" x="156" y="136">3</text><text class="bn" x="186" y="136">4</text><text class="bn" x="222" y="136">1</text><text class="bn" x="252" y="136">2</text><text class="bn" x="282" y="136">3</text><text class="bn" x="312" y="136">(4)</text>
+</svg>
+</div>
+<img src="/_blob/3d25fb55f2d965ae40245482943ec2c6" alt="Merc, listening" style="position: absolute; left: 4px; top: 316px; width: 136px; height: 136px">
+<div class="bub" style="left: 140px; right: 16px; top: 322px">I give you do, then the click counts one bar. Keep reading: the beat won't wait.</div>
+<div style="position: absolute; left: 16px; right: 16px; top: 474px; display: flex; gap: 10px">
+<button class="pillb"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20"><path d="M6 3.5v13l11-6.5z" fill="currentColor"></path></svg>Hear do</button>
+<button class="pillb" aria-pressed="true">Names on</button>
+</div>
+<div style="position: absolute; left: 16px; right: 16px; top: 534px; height: 56px; box-sizing: border-box; padding: 0 6px 0 16px; border-radius: 18px; border: 1px solid rgba(255,255,255,.13); background: rgba(8,12,20,.8); display: flex; align-items: center; gap: 10px">
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font: 600 14px Inter, system-ui, sans-serif; color: #eef3f8">Tempo</span><span style="font: 400 12px Inter, system-ui, sans-serif; color: #b3bfcc">The lesson's is 60</span></span>
+<button class="ic" aria-label="Slower" style="background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 10h10"></path></svg></button>
+<span style="width: 62px; text-align: center; font: 600 16px Outfit, system-ui, sans-serif; color: #eef3f8">60 BPM</span>
+<button class="ic" aria-label="Faster" style="background: none"><svg aria-hidden="true" width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 10h10M10 5v10"></path></svg></button>
+</div>
+<button class="orb" aria-label="Start: Merc gives do, then the count-in"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"></path><path d="M12 18v3"></path></svg></button>
+<div class="und" style="top: 762px">Tap for do and a one-bar count-in</div>
+<button class="lnk" style="top: 786px">Watch Merc do one first</button>
+</div>
+</div>
+
+<div class="col">
+<div class="cap">2 · SINGING, ON THE BEAT</div>
+<div class="ph">
+<img class="bg" src="/_blob/cbbcae31021f99e6922c2591b07b2ee1" alt="">
+<div class="scrim"></div>
+<div class="top">
+<button class="ic" aria-label="Back to practice"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"></path></svg></button>
+<div class="ttl">Sing it in time</div>
+<button class="lvl">Singer<svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5 6 7.5l3-3"></path></svg></button>
+</div>
+<div class="sheet" style="border-color: rgba(94,231,255,.35)">
+<div class="lab"><span>LESSON 18 · A TUNE IN G</span><span style="color: #5ee7ff">BAR 1 · BEAT 3</span></div>
+<svg role="img" aria-label="The cursor is on the third note, mi; do and re are read" width="330" height="146" viewBox="0 0 330 146">
+<path d="M156 28V144" stroke="#5ee7ff" stroke-width="1.6" opacity=".75"></path>
+<use href="#staff"></use>
+<g stroke-width="1.4">
+<g fill="#5ee7ff" stroke="#5ee7ff"><ellipse cx="96" cy="88.5" rx="6.6" ry="4.6" transform="rotate(-20 96 88.5)" stroke="none"></ellipse><path d="M102 87V52"></path><ellipse cx="126" cy="82.5" rx="6.6" ry="4.6" transform="rotate(-20 126 82.5)" stroke="none"></ellipse><path d="M132 81V46"></path></g>
+<g fill="#ffffff" stroke="#ffffff" style="filter: drop-shadow(0 0 6px rgba(94,231,255,.95))"><ellipse cx="156" cy="76.5" rx="7.2" ry="5" transform="rotate(-20 156 76.5)" stroke="none"></ellipse><path d="M162.5 75V40"></path></g>
+<g fill="#eef3f8" stroke="#eef3f8" opacity=".78"><ellipse cx="186" cy="70.5" rx="6.6" ry="4.6" transform="rotate(-20 186 70.5)" stroke="none"></ellipse><path d="M192 69V34"></path><ellipse cx="222" cy="64.5" rx="6.6" ry="4.6" transform="rotate(-20 222 64.5)" stroke="none"></ellipse><path d="M216 66V100"></path><ellipse cx="252" cy="76.5" rx="6.6" ry="4.6" transform="rotate(-20 252 76.5)" stroke="none"></ellipse><path d="M258 75V40"></path><ellipse cx="282" cy="88.5" rx="6.2" ry="4.2" transform="rotate(-20 282 88.5)" fill="none" stroke-width="1.8"></ellipse><path d="M288 87V52"></path></g>
+</g>
+<text class="syl" x="96" y="112">do</text><text class="syl" x="126" y="112">re</text><text class="syl" x="156" y="112" style="fill: #ffffff">mi</text><text class="syl" x="186" y="112">fa</text><text class="syl" x="222" y="112">so</text><text class="syl" x="252" y="112">mi</text><text class="syl" x="282" y="112">do</text>
+<g stroke="#5ee7ff" fill="rgba(94,231,255,.16)"><rect x="83" y="120.5" width="26" height="22" rx="6"></rect><rect x="113" y="120.5" width="26" height="22" rx="6"></rect></g>
+<rect x="143" y="120.5" width="26" height="22" rx="6" fill="rgba(255,255,255,.1)" stroke="#ffffff" stroke-width="1.6"></rect>
+<g fill="none" stroke="rgba(238,243,248,.28)"><rect x="173" y="120.5" width="26" height="22" rx="6"></rect><rect x="209" y="120.5" width="26" height="22" rx="6"></rect><rect x="239" y="120.5" width="26" height="22" rx="6"></rect><rect x="269" y="120.5" width="26" height="22" rx="6"></rect><rect x="299" y="120.5" width="26" height="22" rx="6"></rect></g>
+<text class="bn" x="96" y="136" style="fill: #eef3f8">1</text><text class="bn" x="126" y="136" style="fill: #eef3f8">2</text><text class="bn" x="156" y="136" style="fill: #ffffff">3</text><text class="bn" x="186" y="136">4</text><text class="bn" x="222" y="136">1</text><text class="bn" x="252" y="136">2</text><text class="bn" x="282" y="136">3</text><text class="bn" x="312" y="136">(4)</text>
+</svg>
+</div>
+<div style="position: absolute; left: 0; right: 0; top: 318px; display: flex; justify-content: center">
+<div class="chip"><span class="dot" style="box-shadow: 0 0 10px #5ee7ff"></span>On the beat. Eyes one note ahead.</div>
+</div>
+<div aria-hidden="true" style="position: absolute; left: -40px; right: -40px; top: 320px; height: 330px; background: radial-gradient(closest-side, rgba(94,231,255,.2), rgba(111,124,255,.1) 55%, rgba(111,124,255,0) 78%)"></div>
+<svg aria-hidden="true" width="390" height="70" viewBox="0 0 390 70" style="position: absolute; left: 0; top: 442px; filter: drop-shadow(0 0 8px rgba(94,231,255,.9))"><path d="M0 36 C 22 20, 44 52, 66 36 S 110 20, 132 36 S 176 50, 198 36 S 242 24, 264 36 S 308 48, 330 36 S 372 28, 390 34" fill="none" stroke="#5ee7ff" stroke-width="3" stroke-linecap="round"></path></svg>
+<img src="/_blob/3d25fb55f2d965ae40245482943ec2c6" alt="Merc, listening" style="position: absolute; left: 127px; top: 410px; width: 136px; height: 136px">
+<div style="position: absolute; left: 0; right: 0; top: 570px; display: flex; justify-content: center; gap: 10px; align-items: center; font: 500 12px 'JetBrains Mono', ui-monospace, monospace; letter-spacing: .1em; color: #b3bfcc">CLICK<span class="dot"></span><span class="dot"></span><span class="dot" style="background: #ffffff; box-shadow: 0 0 10px #5ee7ff"></span><span class="dot" style="background: rgba(255,255,255,.25)"></span></div>
+<div class="ring" aria-hidden="true"></div>
+<button class="orb" aria-label="Stop" style="box-shadow: 0 0 0 10px rgba(94,231,255,.2), 0 14px 44px rgba(86,140,255,.6)"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"></path><path d="M12 18v3"></path></svg></button>
+<div class="und" style="top: 776px">Listening. Tap to stop.</div>
+</div>
+</div>
+
+<div class="col">
+<div class="cap">3 · RESULT</div>
+<div class="ph">
+<img class="bg" src="/_blob/cbbcae31021f99e6922c2591b07b2ee1" alt="">
+<div class="scrim deep"></div>
+<div class="top">
+<button class="ic" aria-label="Back to practice"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"></path></svg></button>
+<div class="ttl">Sing it in time</div>
+<button class="lvl">Singer<svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5 6 7.5l3-3"></path></svg></button>
+</div>
+<div style="position: absolute; left: 24px; top: 92px; display: flex; flex-direction: column; gap: 4px">
+<div class="big">6<span> of 7</span></div>
+<div class="sub">notes in tune, on the beat</div>
+<div class="best">Level up: 80 BPM is open</div>
+</div>
+<img src="/_blob/d0793554dafc7e38897f499f2cffe5f9" alt="Merc, cheering" style="position: absolute; right: 8px; top: 78px; width: 150px; height: 150px">
+<div class="bub" style="left: 16px; right: 16px; top: 250px; border-radius: 18px 18px 4px 18px">Fa came in late and a touch flat. Count 3, 4 out loud once, then sing it again.</div>
+<div class="card" style="top: 336px; padding: 14px 14px 12px; display: flex; flex-direction: column; gap: 12px">
+<div class="lab"><span>NOTE BY NOTE</span><span>EARLY · LATE</span></div>
+<div style="display: flex; justify-content: space-between">
+<div class="nb"><b>do</b><span class="dot"></span><span class="tl"><i style="left: 16px"></i></span></div>
+<div class="nb"><b>re</b><span class="dot"></span><span class="tl"><i style="left: 23px"></i></span></div>
+<div class="nb"><b>mi</b><span class="dot"></span><span class="tl"><i style="left: 17px"></i></span></div>
+<div class="nb"><b style="color: #f6b24a">fa</b><span class="dot off"></span><span class="tl"><i style="left: 31px; background: #f6b24a"></i></span></div>
+<div class="nb"><b>so</b><span class="dot"></span><span class="tl"><i style="left: 15px"></i></span></div>
+<div class="nb"><b>mi</b><span class="dot"></span><span class="tl"><i style="left: 18px"></i></span></div>
+<div class="nb"><b>do</b><span class="dot"></span><span class="tl"><i style="left: 12px"></i></span></div>
+</div>
+<div style="font: 400 12px Inter, system-ui, sans-serif; color: #b3bfcc">Counted from your first note, so a late start isn't a wrong note.</div>
+</div>
+<div style="position: absolute; left: 16px; right: 16px; top: 506px; display: flex; gap: 10px">
+<button class="pillb"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20"><path d="M6 3.5v13l11-6.5z" fill="currentColor"></path></svg>Hear yours</button>
+<button class="pillb"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20"><path d="M6 3.5v13l11-6.5z" fill="currentColor"></path></svg>Hear Merc's</button>
+</div>
+<button aria-pressed="false" style="position: absolute; left: 16px; right: 16px; top: 568px; height: 52px; box-sizing: border-box; padding: 0 14px; border-radius: 18px; border: 1px solid rgba(255,255,255,.1); background: rgba(8,12,20,.6); color: #eef3f8; display: flex; align-items: center; gap: 12px; text-align: left">
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font: 500 14px Inter, system-ui, sans-serif">Keep this take</span><span style="font: 400 12px Inter, system-ui, sans-serif; color: #b3bfcc">0:09, on this device only</span></span>
+<span style="width: 42px; height: 26px; border-radius: 13px; background: rgba(255,255,255,.18); position: relative"><span style="position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #eef3f8"></span></span>
+</button>
+<button class="lnk" style="top: 640px">Back to Lesson 18</button>
+<div class="acts"><button class="again">Again</button><button class="done">Done</button></div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1310,"height":930}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,533 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s11-why" data-composition-id="s11-why" data-start="0" data-duration="50.731" data-width="1920" data-height="1080">
+      <div class="scene" id="s11-why-scene"></div>
+      <!-- Merc passes, static (trap 4); timing written by python3 tools/merc-tags.py s11-why -->
+      <video id="s11-why-m09-orange" data-merc="m09-orange" class="clip" muted playsinline src="assets/merc/m09-orange-merc.webm" data-start="0.000" data-duration="3.563" data-media-start="56.442"></video>
+      <video id="s11-why-m09-orange-refl" data-merc="m09-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m09-orange-merc.webm" data-start="0.000" data-duration="3.563" data-media-start="56.442"></video>
+      <video id="s11-why-m10-blue" data-merc="m10-blue" class="clip" muted playsinline src="assets/merc/m10-blue-merc.webm" data-start="0.000" data-duration="3.563" data-media-start="14.942"></video>
+      <video id="s11-why-m10-blue-refl" data-merc="m10-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m10-blue-merc.webm" data-start="0.000" data-duration="3.563" data-media-start="14.942"></video>
+      <video id="s11-why-m11-blue" data-merc="m11-blue" class="clip" muted playsinline src="assets/merc/m11-blue-merc.webm" data-start="24.546" data-duration="26.083" data-media-start="0.008"></video>
+      <video id="s11-why-m11-blue-refl" data-merc="m11-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m11-blue-merc.webm" data-start="24.546" data-duration="26.083" data-media-start="0.008"></video>
+      <video id="s11-why-m11-orange" data-merc="m11-orange" class="clip" muted playsinline src="assets/merc/m11-orange-merc.webm" data-start="23.979" data-duration="26.650" data-media-start="0.008"></video>
+      <video id="s11-why-m11-orange-refl" data-merc="m11-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m11-orange-merc.webm" data-start="23.979" data-duration="26.650" data-media-start="0.008"></video>
+      <script>
+        ;(function () {
+          /* S11, Why do is home (STORYBOARD rows 11a to 11f; HANDOFFS § S10 to S11, § Inside D, § D to E).
+             In (S10 to S11): both Mercs on screen (m09 and m10 span the cut); F0; the staircase on C, the stairs
+             lit blue (they fade from 0.04 s before the cut, over 0.4 s, drawn alike in s10), no bead, the top
+             house lit, the bottom house returning lit over the same 0.4 s.
+             Out (to s12, fixed, D to E): F0, no Mercs (m11 ended 341.15), the kicker lane empty, every label
+             gone (340.9); the staircase on D at full: names do to do, both houses lit, risers measured (no
+             labels), hairlines; the strip with D major's keys, F♯4 and C♯5 lit. */
+          const SID = 's11-why'
+          const D = L.dur(SID)
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: false })
+          const S0 = L.scene(SID).start
+          const tl = gsap.timeline({ paused: true })
+          const ST = L.ST, P = L.prog, clamp = L.clamp, lerp = L.lerp, light = L.light
+          const f1 = (v) => (Math.round(v * 100) / 100).toString()
+          const SEMI = (n) => ST.H[n] - ST.H[n - 1] === 1
+          const CMAJ = ST.scale(0), DMAJ = ST.scale(2)
+          const SOL = ['do', 're', 'mi', 'fa', 'so', 'la', 'ti', 'do']
+
+          /* ---------------------------------------------------------------- anchors */
+          const A = {
+            blueOff: at('o10', 'start', -0.04),               // 11a: the blue fades, the bottom house returns (0.4 s; also in s10)
+            dohHome: word('o10', 'doh'),                      // the top house glows, the top stair lights
+            tee: word('o10', 'tee?'),                         // stair 7 lights
+            hop: at('o10', 'end'),                            // both Mercs hop out (merc-shots.py's exits)
+            kickIn: at('b35'),                                // the kicker "AN EXPERIMENT" and the first credit
+            push: word('b35', 1, 'start', 0.32),              // the push to F-chart (1.2 s)
+            heard: word('b35', 'heard'),                      // stair 1 lights ("heard a C ..."), peaking on "heard" and on "C"
+            heardC: word('b35', 'C'),
+            cMajor: word('b35', 'major'),                     // the stairs light in quick turn (the board's "major scale", 300.95)
+            oneMore: word('b35', 'one more'),                 // the probe bead and its "?" appear
+            note: word('b35', 'note,'),                       // its echo ring
+            rated: word('b35', 'rated'),                      // the axis draws, "least" and "finishes it best"
+            finished: word('b35', 'finished'),                // the probe scales 1.2
+            top: word('b36', 'top'),                          // 11b: the probe fades, the staircase dims to 20 %, the names fly out
+            doh: word('b36', 'doh.'),                         // do lands on the top shelf and scales 1.05
+            later: word('b36', 'Later'),                      // "later studies: ..." lands
+            without: word('b36', 'without'),                  // "as summed up in Janata et al., 2003" lands
+            only: word('b36', 'only', 'start', -0.04),        // the shelves close to 64 px apart (0.8 s)
+            so: word('b36', 'So', 'start', 0.06),             // 11c: the shelves spread back to 80 px (0.8 s)
+            seemsB: word('b36', 'seems'),                     // a lit house falls toward the top shelf ...
+            learned: word('b36', 'learned,'),                 // ... and lands beside do, pulsing as it lands
+            just: word('b36', 'just'),                        // the one cascade: the chips scale 1.05 and light in turn, top
+                                                              // shelf to bottom (DECISIONS 92)
+            pull: at('o11', 'start', -1.35),                  // the pull to F0, landing as Tavi's fall ends
+            o11: at('o11'),                                   // 11d: the kicker and credits leave; the chips fly back
+            full: word('o11', 'finished', 'start', 0.02),     // the staircase back to full (0.4 s)
+            onDoh: word('o11', 'doh'),                        // the top stair lights
+            learnedO: word('o11', 'learned'),                 // "learned, it seems" lands
+            isHome: word('o11', 'home,'),                     // the top house scales
+            teeO: word('o11', 'tee'),                         // stair 7 lights
+            oneShort: word('o11', 'one short step'),          // the ti-do riser grows; "one short step" and its hairline
+            under: word('o11', 'under'),                      // the riser grows again
+            itQ: word('o11', 'it?#2'),                        // the top stair lights ("under it?")
+            seems: word('b37', 'how'),                        // 11e: both labels glow
+            labelsOut: word('b37', 'Tee'),                    // they leave; stair 7 lights
+            leading: word('b37', 'leading'),                  // "leading note" lands above ti
+            noteW: word('b37', 'note,'),                      // it scales 1.2
+            its: word('b37', "it's"),                         // stair 7 lights ("because it's thought of as leading")
+            leadingTo: word('b37', 'leading#2'),              // the ink arrow curves from ti's tread up to do's (0.6 s)
+            tonic: word('b37', 'tonic.'),                     // the top stair lights
+            leads: word('b38', 'leads'),                      // 11f: the arrow pulses
+            slide: word('b38', 'wherever', 'start', 0.06),    // the slide to D (0.8 s), "leading note" and the arrow riding
+            homeIs: word('b38', 'is.'),                       // the top stair lights ("wherever home is")
+            fromD: word('b38', 'From'),                       // D4 scales, stair 1 lights
+            teeCs: word('b38', 'tee'),                        // C♯5 scales and is named; "ti = C♯" lands
+            cSharp: word('b38', 'C sharp'),                   // stair 7 lights
+            leans: word('b38', 'leans'),                      // the arrow draws again
+            toD: word('b38', 'D.#2'),                           // the top stair lights
+            allOut: at('b38', 'end'),                         // every label leaves (0.2 s)
+            hop2: at('b38', 'end', -0.19),                    // both Mercs hop out
+          }
+          const SLIDE = 0.8
+          // the pull lasts 0.8 s and lands at o11 - 0.55, as Tavi's fall ends (she drops 1.1 s before o11 and
+          // falls 0.55 s), so the strip's end is clear of her column when she lands (DECISIONS 83)
+          const PULL_DUR = 0.8
+
+          /* ---------------------------------------------------------------- settles (holds round, 1 November) */
+          // The re-voiced lines run longer than the moves keyed to their starts, so the board waited through them
+          // (film round 5, DECISIONS 139; study rule 8). Through each held span the thing just named settles, coming
+          // to rest as the next thing begins (the hosts are in frame from o11, so only labels and lights move there):
+          //   the kicker and the first credit glide their 18 px in over 1.4 s (power2.out; the kit's is 0.45 s), into
+          //   the push;
+          //   each of Tavi's two labels lands with a glide in from the left, "learned, it seems" 8 px over 1.2 s and
+          //   "one short step" 10 px until just after "it?" (the hairline's start rides with it), so they stand
+          //   aligned again at rest;
+          //   "leading note" rides the slide to D up to 11 px behind, and glides back over "From D";
+          //   ti's light on "it's" falls until the arrow draws on "leading" (0.92 s; was 0.4), and the top stair's light
+          //   on "D." over 0.91 s instead of 0.8, out 0.04 s before the last frame (both the kit's linear fall)
+          const KICK_IN = 1.4
+          const RAMP2 = 0.3
+          const trap2 = (u, r) => u < r ? (u * u) / (2 * r * (1 - r)) : u > 1 - r ? 1 - ((1 - u) * (1 - u)) / (2 * r * (1 - r)) : (u - r / 2) / (1 - r)
+          const glide = (t, t0, t1) => trap2(clamp((t - t0) / (t1 - t0)), Math.min(RAMP2, (t1 - t0) / 3) / (t1 - t0))
+          const LAB_IN = [{ px: -8, t0: A.learnedO, t1: A.learnedO + 1.2 }, { px: -10, t0: A.oneShort, t1: A.itQ + 0.4 }]
+          const labDx = (i, t) => LAB_IN[i].px * (1 - glide(t, LAB_IN[i].t0, LAB_IN[i].t1))
+          const LEAD_LAG = 12
+
+          /* ---------------------------------------------------------------- camera */
+          // 11a's push lands on F-exp (the staircase, the probe and the axis; the stair names stay over the caption
+          // band, since the chips fly up from them). On "top", as the names fly up, the camera follows them in to
+          // F-chart, which frames the shelves and the axis, not the dimmed staircase (component critic D-02 item D),
+          // coming to rest as the last chips land (1.85 s: slow enough that the strip is still in frame when the five
+          // dim chips leave it, so no chip enters across the frame's edge).
+          // Between the push and the pull the camera drifts sideways, 5 px a second, so the MS stays alive between
+          // its beats (DECISIONS 92): a slow truck, so the bokeh and staves part from the diagram by a few px. It
+          // turns only inside a beat that moves something else (the probe's arrival, the names' flight, each credit
+          // landing, the shelves spreading, the cascade on "just"; holds round: it turned on the house's landing,
+          // which left the board still just after it), each turn eased over 0.35 s, and it is back on
+          // F-chart, at rest, as the pull starts. It is horizontal only: a vertical drift moves every text
+          // baseline by a whole pixel at once, which reads as a judder
+          const F_EXP = { s: 1.3, ox: -252, oy: -75 }, F_CHART = L.FRAMES['F-chart']
+          // (the drift sets off 0.3 s before the push lands, so the landing never stands still)
+          const RAMP = 0.35
+          const DRIFT = [[A.push + 0.9, 0], [A.oneMore + 0.66, 15], [A.top + 0.55, -5.5], [A.later + 0.08, 2], [A.without + 0.1, -13],
+            [A.so + 0.4, 4], [A.just, -6], [A.pull, 0]]
+          const trap = (u, r) => u < r ? (u * u) / (2 * r * (1 - r)) : u > 1 - r ? 1 - ((1 - u) * (1 - u)) / (2 * r * (1 - r)) : (u - r / 2) / (1 - r)
+          const drift = (t) => {
+            for (let i = 0; i + 1 < DRIFT.length; i++) {
+              const [t0, x0] = DRIFT[i], [t1, x1] = DRIFT[i + 1]
+              if (t < t1) return lerp(x0, x1, trap(clamp((t - t0) / (t1 - t0)), RAMP / (t1 - t0)))
+            }
+            return 0
+          }
+          const cam = L.frameRig(room, { from: 'F0' })
+          const LEG = 1.85                                  // F-exp to F-chart, from "top" (307.13 to 308.98)
+          // one curve from the push to the pull: F0 to F-exp (1.2 s), F-exp to F-chart (from "top", LEG), the drift
+          cam.curve(A.push, A.pull - A.push, (u) => {
+            const t = A.push + u * (A.pull - A.push)
+            const k0 = P(t, A.push, 1.2, 'power2.inOut'), k = P(t, A.top, LEG, 'power2.inOut')
+            const f = (key) => lerp(lerp(1 * (key === 's'), F_EXP[key], k0), F_CHART[key], k)
+            return { s: f('s'), ox: f('ox') + drift(t), oy: f('oy') }
+          })
+          cam.to(A.pull, PULL_DUR, 'F0', 'power2.inOut')
+
+          /* ---------------------------------------------------------------- the world (mid layer) */
+          const mid = L.stage(room.mid)
+          const defs = L.svg('defs', {}, mid)
+          const soft = L.svg('filter', { id: SID + '-soft', x: '-200%', y: '-60%', width: '500%', height: '220%' }, defs)
+          L.svg('feGaussianBlur', { stdDeviation: 6 }, soft)
+          const st = L.stairs(mid, {})
+          const accents = L.svg('g', {}, null)
+          st.svg.insertBefore(accents, st.gAll)
+          const goldGlow = L.svg('rect', { width: 18, rx: 9, fill: L.C.gold, opacity: 0, filter: `url(#${SID}-soft)` }, accents)
+          const kb = L.strip(mid, {})
+          st.stairs.forEach((S, i) => S.names.prepare([SOL[i]]))
+          kb.keys[13].names.prepare(['C♯'])
+          // a curved arrow (s10's, after group A's s01): a quadratic from A through Q to B, drawn on from A
+          const curveArrow = (parent, { color = L.C.ink, width = 3, head = 14 } = {}) => {
+            const g = L.svg('g', { opacity: 0 }, parent)
+            const shaft = L.svg('path', { fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round' }, g)
+            const tip = L.svg('path', { fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g)
+            const qb = (A, Q, B, u) => [(1 - u) * (1 - u) * A[0] + 2 * u * (1 - u) * Q[0] + u * u * B[0], (1 - u) * (1 - u) * A[1] + 2 * u * (1 - u) * Q[1] + u * u * B[1]]
+            return {
+              g,
+              draw(p, a, { A, Q, B }, { scale = 1 } = {}) {
+                const u = clamp(p)
+                if (a <= 0.004 || u <= 0.01) { g.setAttribute('opacity', '0'); return }
+                let d = ''
+                for (let i = 0; i <= 24; i++) { const q = qb(A, Q, B, (u * i) / 24); d += (i ? 'L' : 'M') + f1(q[0]) + ' ' + f1(q[1]) }
+                shaft.setAttribute('d', d)
+                const e = qb(A, Q, B, u), e0 = qb(A, Q, B, Math.max(0, u - 0.05))
+                const ang = Math.atan2(e[1] - e0[1], e[0] - e0[0])
+                const hx = (k) => e[0] - head * Math.cos(ang + k), hy = (k) => e[1] - head * Math.sin(ang + k)
+                tip.setAttribute('d', `M${f1(hx(0.5))} ${f1(hy(0.5))} L${f1(e[0])} ${f1(e[1])} L${f1(hx(-0.5))} ${f1(hy(-0.5))}`)
+                const m = qb(A, Q, B, 0.5)
+                g.setAttribute('transform', scale === 1 ? '' : `translate(${f1(m[0])} ${f1(m[1])}) scale(${scale.toFixed(4)}) translate(${f1(-m[0])} ${f1(-m[1])})`)
+                g.setAttribute('opacity', a.toFixed(3))
+              },
+            }
+          }
+          // 11e's arrow from ti's tread up onto the top do's, left of its house, as s10's ink arrow; it rides the slide
+          const arrow = curveArrow(mid, { color: L.C.ink, width: 3, head: 14 })
+          const arrowAt = (w, s0) => {
+            // larger than s10's (that one is seen at 1.8x): its apex stands 60 px under "leading note" and 24 px over
+            // the ti-do riser; its tip 15 px over the semitone's gold corner on do's tread (DECISIONS 85)
+            const A = [ST.colX(7, w) - 18, ST.tread(7, s0) - 14], B = [ST.houseBox(8, w, s0).x - 14, ST.tread(8, s0) - 18]
+            return { A, Q: [(A[0] + B[0]) / 2 - 2, Math.min(A[1], B[1]) - 46], B }
+          }
+          // "leading note" (Outfit 600 64 px, riding the world): centred over ti's column, baseline 250 on C (x 840 to
+          // 1196, its descender 23 px over the top house and 60 px over the arrow), 120 right and 52 up on D; a hairline
+          // from under it down to ti's tread, 20 px left of the arrow's foot (component critic D-01 item 9)
+          const LEAD = { x: ST.colX(7, 0), y: 250 }
+          const leadT = L.svg('text', { x: LEAD.x, y: LEAD.y, 'text-anchor': 'middle', fill: L.C.ink, opacity: 0, style: "font: 600 64px 'Outfit', sans-serif; white-space: pre;", text: 'leading note' }, mid)
+          const leadHair = L.svg('line', { stroke: '#c3ccd6', 'stroke-opacity': 0.7, 'stroke-width': 1.5, 'stroke-linecap': 'round', opacity: 0 }, mid)
+
+          // the experiment, riding the world (HANDOFFS § S11's experiment): the probe bead and its "?", the axis
+          // and its labels, the four shelves, the chips and the house beside do
+          const exp = L.svg('g', {}, mid)
+          const probeG = L.svg('g', { opacity: 0 }, exp)
+          const probe = L.bead(probeG, { r: 22, color: L.C.chrome })
+          L.svg('text', { x: 34, y: -6, fill: L.C.ink2, style: "font: 600 44px 'Outfit', sans-serif;", text: '?' }, probe.g)
+          const axis = L.arrow(exp, { x1: 1300, y1: 560, x2: 1300, y2: 280, color: L.C.ink2, width: 3, head: 14 })
+          const LAB32 = "font: 500 32px 'Outfit', sans-serif; white-space: pre;"
+          const bestT = L.svg('text', { x: 1320, y: 290, fill: L.C.ink2, opacity: 0, style: LAB32, text: 'finishes it best' }, exp)
+          const leastT = L.svg('text', { x: 1320, y: 568, fill: L.C.ink2, opacity: 0, style: LAB32, text: 'least' }, exp)
+          const shelves = [0, 1, 2, 3].map(() => L.svg('rect', { x: 400, width: 0, height: 2, fill: '#c3ccd6', 'fill-opacity': 0.5, opacity: 0 }, exp))
+          const chipLayer = L.svg('g', {}, exp)
+          const shelfHouse = L.house(chipLayer)
+          // a scale chip is an unlit stair's fill with a 55 % chrome rim, ink letters; a chip from outside the scale is
+          // outline only (the obsidian ground, opaque over the dimmed stairs, a 35 % rim, ink-2 letters), so the bottom
+          // shelf reads as the least, not as highlighted (component critic D-01 item 8)
+          const UNLIT = '#1b232d'
+          const UNLIT_C = [27, 35, 45], OBSIDIAN = [13, 17, 23], CHROME = [195, 204, 214], INK = [230, 237, 243], INK2 = [168, 179, 191]
+          const mixC = (A, B, u) => `rgb(${A.map((v, i) => Math.round(lerp(v, B[i], u))).join(',')})`
+          const makeChip = (text, dim) => {
+            const g = L.svg('g', { opacity: 0 }, chipLayer)
+            const box = L.svg('rect', { x: -60, y: -28, width: 120, height: 56, rx: 12, fill: dim ? L.C.obsidian : UNLIT, stroke: '#c3ccd6', 'stroke-width': 2, 'stroke-opacity': dim ? 0.35 : 0.55 }, g)
+            const lab = L.spell(g, text, { x: 0, y: 14, size: 40, family: 'Outfit', weight: 600, fill: dim ? L.C.ink2 : L.C.ink, anchor: 'middle' })
+            lab.g.querySelectorAll('text').forEach((el) => el.setAttribute('data-layout-allow-overlap', ''))
+            return { g, box, lab, letters: [...lab.g.querySelectorAll('text, path')] }
+          }
+          // each chip: its source (a stair's name, or a black key), its tier (0 top) and its centre x on the shelf
+          const CHIPS = [
+            { text: 'do', tier: 0, x: 840, n: 1 }, { text: 'do', tier: 0, x: 840, n: 8 },
+            { text: 'mi', tier: 1, x: 760, n: 3 }, { text: 'so', tier: 1, x: 920, n: 5 },
+            { text: 're', tier: 2, x: 600, n: 2 }, { text: 'fa', tier: 2, x: 760, n: 4 }, { text: 'la', tier: 2, x: 920, n: 6 }, { text: 'ti', tier: 2, x: 1080, n: 7 },
+            { text: 'C♯', tier: 3, x: 520, m: 1 }, { text: 'D♯', tier: 3, x: 680, m: 3 }, { text: 'F♯', tier: 3, x: 840, m: 6 }, { text: 'G♯', tier: 3, x: 1000, m: 8 }, { text: 'A♯', tier: 3, x: 1160, m: 10 },
+          ]
+          // The flights (component critic D-01 items 3 and 11). Out, top shelf first: each chip rises in its own column
+          // to its shelf's height, then slides to its slot, so it never enters a shelf above its own and no two paths
+          // cross; in a shelf the slides keep their order, the chip in front leaving first. Back (from o11, 321.6 to
+          // 322.6), bottom shelf first: each slides to its column, then drops onto its stair (a dim chip toward its key,
+          // gone before the names' row). The two do chips: stair 1's fades into stair 8's before they meet, and only
+          // stair 8's flies back, stair 1's name fading in as it lands.
+          const OUT0 = [A.top + 0.12, A.top + 0.25, A.top + 0.36, A.top + 0.66], OUTD = 0.75, OUTST = [0, 0.06, 0.06, 0.07]
+          const BACK0 = [A.o11 + 0.44, A.o11 + 0.3, A.o11 + 0.16, A.o11], BACKD = [0.55, 0.6, 0.6, 0.55], BACKST = 0.04
+          CHIPS.forEach((c, i) => {
+            c.el = makeChip(c.text, c.m != null)
+            c.el.g.setAttribute('data-tier', c.tier)
+            c.dim = c.m != null
+            const row = CHIPS.filter((k) => k.tier === c.tier)
+            const fromRight = row.filter((k) => k.x > c.x || (k.x === c.x && k.n > c.n)).length
+            c.out = OUT0[c.tier] + OUTST[c.tier] * (c.tier === 0 ? 0 : fromRight)
+            c.dur = c.tier === 0 ? A.doh - c.out : OUTD        // do lands on "doh"
+            c.back = BACK0[c.tier] + (c.tier === 0 ? 0 : BACKST * (row.length - 1 - fromRight))
+            c.bdur = BACKD[c.tier]
+            // where it starts: a stair's name (its cap centre, at 0.9 so the 40 px name is the 36 px one) or the key
+            c.home = c.dim ? [ST.keyX(c.m), 798] : [ST.colX(c.n, 0), ST.foot(0) - 12 - 0.9 * 14]
+          })
+          const DO1 = CHIPS[0], DO8 = CHIPS[1]
+          A.chipsHome = DO8.back + DO8.bdur                   // the last chip lands: the houses and stair 1's name return
+          const dust = L.filmDust(room.near)
+
+          /* ---------------------------------------------------------------- the Mercs (top layer, screen space) */
+          const tavi9 = L.mercGate(room.top, { sid: SID, pass: 'm09-orange', tag: SID + '-m09-orange', x: 1800, hop: A.hop })
+          const merc10 = L.mercGate(room.top, { sid: SID, pass: 'm10-blue', tag: SID + '-m10-blue', x: 110, mirror: true, hop: A.hop, hopDx: -360 })
+          // m11: both leap back in, each from its own edge (film round 2, item 1; DECISIONS 131)
+          const merc11 = L.mercGate(room.top, { sid: SID, pass: 'm11-blue', tag: SID + '-m11-blue', x: 110, mirror: true, hop: A.hop2, hopDx: -360, leap: true, leapDx: -300 })
+          const tavi11 = L.mercGate(room.top, { sid: SID, pass: 'm11-orange', tag: SID + '-m11-orange', x: 1800, hop: A.hop2, leap: true })
+          const topSvg = L.stage(room.top)
+          const echo = L.echoRings(topSvg, { dur: 0.9, grow: 3.5, width: 3, max: 4 })
+
+          /* ---------------------------------------------------------------- frame-fixed type (hud) */
+          const hud = L.stageOf(room.hud)
+          const kicker = L.kicker(room.hud, 'An experiment')
+          // the credits, Outfit 500 ink-2 at x 120, each landing whole (0.2 s, from 18 px left, as the kicker)
+          const credit1 = L.svg('text', { x: 120, y: 160, fill: L.C.ink2, opacity: 0, style: "font: 500 36px 'Outfit', sans-serif; white-space: pre;", text: 'Krumhansl & Shepard, 1979' }, hud)
+          const credit2 = L.svg('text', { x: 120, y: 205, fill: L.C.ink2, opacity: 0, style: LAB32, text: 'later studies: without training too, only weaker' }, hud)
+          const credit3 = L.svg('text', { x: 120, y: 245, fill: L.C.ink2, opacity: 0, style: LAB32, text: 'as summed up in Janata et al., 2003' }, hud)
+          const LAB48 = "font: 600 48px 'Outfit', sans-serif; white-space: pre;"
+          // Tavi's answer as two labels (x 1250, baselines 320 and 400). Each glows through a filter on its own text
+          // (its blurred shape in chrome under it, the glow's strength the flood's opacity), not through a second copy
+          // of the text, so each label is one element in its own zone (the full check's content_overlap at 328.7)
+          const hdefs = L.svg('defs', {}, hud)
+          const answer = ['learned, it seems', 'one short step'].map((text, i) => {
+            const id = `${SID}-hglow${i}`
+            const fl = L.svg('filter', { id, x: '-20%', y: '-60%', width: '140%', height: '220%' }, hdefs)
+            L.svg('feGaussianBlur', { in: 'SourceAlpha', stdDeviation: 7, result: 'b' }, fl)
+            const flood = L.svg('feFlood', { 'flood-color': '#c3ccd6', 'flood-opacity': 0, result: 'c' }, fl)
+            L.svg('feComposite', { in: 'c', in2: 'b', operator: 'in', result: 'g' }, fl)
+            const merge = L.svg('feMerge', {}, fl)
+            L.svg('feMergeNode', { in: 'g' }, merge)
+            L.svg('feMergeNode', { in: 'SourceGraphic' }, merge)
+            const g = L.svg('g', { opacity: 0 }, hud)
+            const el = L.svg('text', { x: 1250, y: 320 + 80 * i, fill: L.C.ink, style: LAB48, text }, g)
+            return { g, el, flood, url: `url(#${id})` }
+          })
+          // the hairline from "one short step"'s left end to the top of the ti-do riser (1078, 352; component critic
+          // D-02 item E), drawn on toward the riser. It lies in the world between the stairs' blocks and their risers,
+          // so its end runs under the semitone's gold corner and the gold stays whole (DECISIONS 85); the camera is at
+          // F0 while it shows, so world and screen agree
+          const hair = L.svg('line', { x1: 1240, y1: 383, x2: 1240, y2: 383, stroke: '#c3ccd6', 'stroke-opacity': 0.7, 'stroke-width': 1.5, 'stroke-linecap': 'round', opacity: 0 }, null)
+          st.gAll.insertBefore(hair, st.gAll.children[1])
+          const tiCs = L.spell(hud, 'ti = C♯', { x: 1360, y: 300, size: 48, family: 'Outfit', weight: 600, fill: L.C.ink })
+          tiCs.g.setAttribute('opacity', '0')
+
+          /* ---------------------------------------------------------------- per-frame state */
+          const LIGHTS = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] }
+          const addL = (n, t0, up = 0.4, down = 0.8) => LIGHTS[n].push([t0, up, down])
+          // stair 1 (C) lights to peak on "heard" (a C), as C4 scales on it
+          addL(8, A.dohHome); addL(7, A.tee); addL(1, A.heard - 0.3, 0.3, 0.4); addL(1, A.heardC - 0.3, 0.3, 0.4)
+          for (let n = 1; n <= 8; n++) addL(n, A.cMajor + 0.1 * (n - 1), 0.3, 0.4)
+          addL(8, A.onDoh); addL(7, A.teeO); addL(7, A.labelsOut); addL(8, A.tonic)
+          addL(1, A.fromD); addL(7, A.cSharp); addL(8, A.toD, 0.4, D - 0.04 - A.toD - 0.4)
+          addL(8, A.itQ, 0.3, 0.4); addL(7, A.its, 0.3, A.leadingTo - A.its - 0.3); addL(8, A.homeIs, 0.3, 0.4)
+          const litC = (n, t) => LIGHTS[n].reduce((k, [t0, up, dn]) => Math.max(k, light(t, t0, up, dn)), 0)
+          const GROW = [A.oneShort, A.under]
+          const gap = (t) => 80 - 16 * (P(t, A.only, 0.8) - P(t, A.so, 0.8))
+          const shelfY = (k, t) => 300 + gap(t) * k
+          // a flight's place: out, the rise (first 60 %) then the slide (last 60 %); back, the slide then the drop.
+          // The chip keeps its small size (a name's) until it slides, so chips rising side by side stay 12 px apart
+          const ease2 = L.ease('power2.inOut')
+          const flight = (F, T, u, back) => {
+            const a = ease2(clamp(u / 0.6)), b = ease2(clamp((u - 0.4) / 0.6))
+            const ex = back ? a : b, ey = back ? b : a
+            return { p: [lerp(F[0], T[0], ex), lerp(F[1], T[1], ey)], ex }
+          }
+          const slotOf = (c, t) => [c.x, shelfY(c.tier, t) - 2 - 28]
+          const chipAt = (c, t) => {
+            const s0 = c.dim ? 0.7 : 0.9
+            if (t < c.out) return null
+            if (t < c.out + c.dur) {
+              const u = clamp((t - c.out) / c.dur)
+              const f = flight(c.home, slotOf(c, t), u, false)
+              let a = c.dim ? clamp(u / 0.25) : 1
+              if (c === DO1) {
+                // stair 1's do fades into stair 8's before they meet (gone 20 px before their boxes would touch)
+                const o = flight(DO8.home, slotOf(DO8, t), u, false)
+                a = clamp((Math.abs(o.p[0] - f.p[0]) - 140) / 80)
+              }
+              return { p: f.p, box: clamp(u / 0.35), s: lerp(s0, 1, f.ex), a }
+            }
+            if (c === DO1 && t >= c.out + c.dur) return null   // it has become stair 8's: one do on the top shelf
+            if (t < c.back) return { p: slotOf(c, t), box: 1, s: 1, a: 1 }
+            if (c === DO1 || t >= c.back + c.bdur) return null
+            const u = clamp((t - c.back) / c.bdur)
+            const f = flight(slotOf(c, t), c.home, u, true)
+            return { p: f.p, box: clamp((1 - u) / 0.35), s: lerp(1, s0, f.ex), a: c.dim ? 1 - clamp((u - 0.5) / 0.3) : 1 }
+          }
+          // a stair's name is the chip while its chip is away (stair 1's comes back as the last chip lands)
+          const nameA = (n, t) => {
+            const c = CHIPS.find((k) => k.n === n)
+            if (t < c.out) return 1
+            if (c === DO1) return P(t, A.chipsHome, 0.25)
+            return t >= c.back + c.bdur ? 1 : 0
+          }
+          // The one cascade, on "just by hearing music" (DECISIONS 92): each tier in turn, top shelf to bottom, 0.15 s
+          // apart, scales 1.05 and lights (40 % chrome; an outline chip's rim brightens), with a linear attack of
+          // 0.133 s (so no frame changes a chip by more than 17 levels) and a sine settle. The settle fits the gap
+          // from "just" to the pull (up to 0.6 s; 0.32 s on this clock), so the bottom shelf is at rest two frames
+          // before the pull starts, with the credits still in place (component critic D-04 item 2, DECISIONS 107).
+          // The shelves stand 80 px apart by then, so the chips keep 21 px apart at 1.05
+          const CASC_GAP = 0.15, ATTACK = 0.4 / 3
+          const CASC = [0, 1, 2, 3].map((k) => A.just + CASC_GAP * k)
+          const SETTLE = Math.min(0.6, A.pull - 2 / 60 - CASC[3] - ATTACK)
+          const cascade = (tier, t) => {
+            const dt = t - CASC[tier]
+            if (dt < 0 || dt >= ATTACK + SETTLE) return 0
+            return dt < ATTACK ? dt / ATTACK : 1 - L.ease('sine.inOut')((dt - ATTACK) / SETTLE)
+          }
+          // do's landing on "doh." (the board's scale 1.05) stays the kit's pulse; it lands moving, so it never pops
+          const tierPulse = (tier, t) => Math.max(1 + 0.05 * cascade(tier, t), tier === 0 ? L.pulse(t, A.doh, 'tile') : 1)
+
+          L.clock(tl, D, (t) => {
+            cam.apply(t)
+            dust(S0 + t)
+            const boxes = [tavi9(t), merc10(t), merc11(t), tavi11(t)].filter(Boolean)
+            const uS = P(t, A.slide, SLIDE)
+            const w = uS, s0 = 2 * uS
+            const blue = 1 - P(t, A.blueOff, 0.4)
+            // the staircase dims to 20 % (its names leave as chips) and returns to full as the chips land
+            const stA = 1 - 0.8 * P(t, A.top, 0.4) + 0.8 * P(t, A.full, 0.4)
+            // its houses and risers leave while it is dim, so no shelf crosses a house and no gold shows between the
+            // chips (component critic D-01 item 15); they return as the last chip lands
+            const hideA = 1 - P(t, A.top, 0.2) + P(t, A.chipsHome, 0.3)
+            st.draw({
+              w, s0, a: stA,
+              rows: { keep: { boxes, cam, t } },
+              stair: (n) => {
+                const names = [{ text: SOL[n - 1], a: nameA(n, t) }]
+                if (blue > 0.002) return { lit: blue, color: 'blue', names }
+                return { lit: litC(n, t), color: 'chrome', names }
+              },
+              riser: (n) => ({ a: hideA, state: SEMI(n) ? 'semi' : 'tone', scale: n === 7 ? L.pulse(t, GROW, 'bar') : 1 }),
+              houses: {
+                bottom: { a: P(t, A.blueOff, 0.4) * hideA, lit: 1, scale: L.pulse(t, A.isHome, 0.12) },
+                top: { a: hideA, lit: 1, glow: L.env(t, A.dohHome, 0.3, 0.4, 0.6), scale: L.pulse(t, A.isHome + 0.08, 0.12) },
+              },
+            })
+            {
+              const x = ST.riserX(7, w), y0 = ST.tread(8, s0), y1 = ST.tread(7, s0)
+              goldGlow.setAttribute('x', f1(x - 9)); goldGlow.setAttribute('y', f1(y0 - 6)); goldGlow.setAttribute('height', f1(y1 - y0 + 12))
+              goldGlow.setAttribute('opacity', (0.6 * Math.max(...GROW.map((g) => L.env(t, g, 0.15, 0.2, 0.6)))).toFixed(3))
+            }
+            // the strip (and its hairlines and names) dims to 20 % over the push to F-exp, where it would sit bright in
+            // the caption band with no job (component critic D-01 item 2); the black keys' names rise from it as chips.
+            // Once they have left it, it fades out as the camera comes to rest on F-chart, so no frame of F-chart shows
+            // its edge along the frame's foot (D-03 item 2, DECISIONS 100: 308.22 to 308.98), and it returns over the
+            // pull, before the chips fly back to their keys
+            kb.draw({
+              a: (1 - 0.8 * P(t, A.push, 1.2)) * (1 - P(t, A.doh, A.top + LEG - A.doh)) + P(t, A.pull, PULL_DUR),
+              key: (m) => {
+                const inS = lerp(CMAJ.includes(m) ? 1 : 0, DMAJ.includes(m) ? 1 : 0, uS)
+                return {
+                  full: inS, lit: ST.isBlack(m) ? inS : 0,
+                  scale: m === 13 ? L.pulse(t, A.teeCs, 'key') : m === 2 ? L.pulse(t, A.fromD, 'key') : m === 0 ? L.pulse(t, A.heard, 'key') : 1,
+                  names: m === 13 ? [{ text: 'C♯', a: P(t, A.teeCs, 0.25) * (1 - P(t, A.allOut, 0.2)), dy: 10 * (1 - P(t, A.teeCs, 0.45, 'power2.out')) }] : [],
+                }
+              },
+              hair: { a: 1, w, s0 },
+            })
+
+            // 11a: the probe bead with its "?" (hovering on a 4 px circle, a 1.2 s cycle from film time, so it never
+            // stands still in this span with no Merc), its echo, its pulse
+            {
+              const pa = P(t, A.oneMore, 0.2) * (1 - P(t, A.top, 0.3))
+              const ph = (2 * Math.PI * (S0 + t)) / 1.2
+              const sc = L.ease('back.out(2)')(clamp((t - A.oneMore) / 0.35)) * L.pulse(t, A.finished, 'bead')
+              probeG.setAttribute('opacity', pa.toFixed(3))
+              L.bead4.place(probe, pa > 0.004 ? { x: 1420 + 4 * Math.cos(ph), y: 420 + 4 * Math.sin(ph), scale: Math.max(0.01, sc) } : null)
+            }
+            // the axis and its labels draw on "rated" and leave as the pull starts, with the kicker and credits: the
+            // pull carries "finishes it best" into Tavi's column while she falls (DECISIONS 86); the shelves fade as
+            // the chips fly back
+            const expOut = 1 - P(t, A.o11, 0.4), axOut = 1 - P(t, A.pull, 0.2)
+            axis.draw(P(t, A.rated, 0.6, 'power2.inOut'), (t >= A.rated ? 1 : 0) * axOut)
+            leastT.setAttribute('opacity', (P(t, A.rated + 0.05, 0.2) * axOut).toFixed(3))
+            bestT.setAttribute('opacity', (P(t, A.rated + 0.5, 0.2) * axOut).toFixed(3))
+            shelves.forEach((el, k) => {
+              el.setAttribute('y', f1(shelfY(k, t) - 1))
+              el.setAttribute('width', f1(880 * P(t, A.top + 0.05 * k, 0.45, 'power2.out')))
+              el.setAttribute('opacity', ((t >= A.top ? 1 : 0) * expOut).toFixed(3))
+            })
+            for (const c of CHIPS) {
+              const s = chipAt(c, t)
+              if (!s) { c.el.g.setAttribute('opacity', '0'); continue }
+              const sc = s.s * (t >= c.out + c.dur && t < c.back ? tierPulse(c.tier, t) : 1)
+              c.el.g.setAttribute('opacity', s.a.toFixed(3))
+              c.el.box.setAttribute('opacity', s.box.toFixed(3))
+              // the cascade lights each tier as it scales: a scale chip's fill to 40 % chrome; an outline chip's fill
+              // to 50 % chrome, its rim brightening and its letters going from ink-2 to ink, so the bottom shelf's turn
+              // reads (D-03 item 4, DECISIONS 100)
+              const k = cascade(c.tier, t)
+              if (c.dim) {
+                c.el.box.setAttribute('stroke-opacity', (0.35 + 0.45 * k).toFixed(3))
+                c.el.box.setAttribute('fill', k > 0.002 ? mixC(OBSIDIAN, CHROME, 0.5 * k) : L.C.obsidian)
+                const ink = k > 0.002 ? mixC(INK2, INK, k) : L.C.ink2
+                c.el.letters.forEach((el) => el.setAttribute('fill', ink))
+              } else c.el.box.setAttribute('fill', k > 0.002 ? mixC(UNLIT_C, CHROME, 0.4 * k) : UNLIT)
+              c.el.g.setAttribute('transform', `translate(${f1(s.p[0])} ${f1(s.p[1])}) scale(${sc.toFixed(4)})`)
+            }
+            {
+              // it falls 70 px from "seems" (accelerating, as a drop) and lands on "learned"
+              const u = P(t, A.seemsB, A.learned - A.seemsB, 'power2.in')
+              shelfHouse.draw({ x: 916, y: shelfY(0, t) - 2 - 52 - 70 * (1 - u), a: P(t, A.seemsB, 0.2) * expOut, lit: 1, scale: Math.max(1 + 0.05 * cascade(0, t), L.pulse(t, A.learned, 0.12)) })
+            }
+            // 11e and 11f: "leading note" (in on "leading", rising 14 px; scaling 1.2 on "note"), riding the slide;
+            // the arrow (drawn on "leading to", pulsing on "leads", drawn again on "leans")
+            {
+              const out = 1 - P(t, A.allOut, 0.2)
+              const lag = -LEAD_LAG * (uS - P(t, A.slide + 0.64, 1.8, 'sine.inOut'))
+              const dx = 120 * w + lag, ride = -26 * s0, dy = ride + 14 * (1 - P(t, A.leading, 0.45, 'power2.out'))
+              const sc = L.pulse(t, A.noteW, 'label')
+              const cy = LEAD.y - 22
+              leadT.setAttribute('opacity', (P(t, A.leading, 0.2) * out).toFixed(3))
+              leadT.setAttribute('transform', `translate(${f1(dx + LEAD.x)} ${f1(dy + cy)}) scale(${sc.toFixed(4)}) translate(${f1(-LEAD.x)} ${f1(-cy)})`)
+              {
+                // the hairline draws down to ti's tread once the label has landed, and rides the slide with it
+                const hx = ST.colX(7, w) - 38, y1 = LEAD.y + 20 + ride, y2 = ST.tread(7, s0) - 6
+                const hu = P(t, A.leading + 0.2, 0.3, 'power2.out')
+                leadHair.setAttribute('x1', f1(hx)); leadHair.setAttribute('x2', f1(hx))
+                leadHair.setAttribute('y1', f1(y1)); leadHair.setAttribute('y2', f1(lerp(y1, y2, hu)))
+                leadHair.setAttribute('opacity', ((hu > 0.01 ? 1 : 0) * out).toFixed(3))
+              }
+              const p = t < A.leans ? P(t, A.leadingTo, 0.6, 'power2.inOut') : Math.max(1 - P(t, A.leans, 0.12, 'power2.in'), P(t, A.leans + 0.12, 0.5, 'power2.inOut'))
+              arrow.draw(p, out, arrowAt(w, s0), { scale: L.pulse(t, A.leads, 'label') })
+            }
+            // the probe's echo (screen space, over everything)
+            {
+              const pp = cam.map(1420, 420, t)
+              echo.draw(t, [{ t: A.note, x: pp[0], y: pp[1], r: 22 * cam.scale(t) }])
+            }
+
+            // frame-fixed type
+            // the kicker and the credits leave as the pull starts (gone by 320.43), clear of Merc's column before his
+            // fall from above the frame (321.03 to 321.58, DECISIONS 86; component critic D-01 item 17)
+            kicker.draw(t, A.kickIn, A.pull)
+            kicker.g.setAttribute('transform', `translate(${f1(-18 * (1 - P(t, A.kickIn, KICK_IN, 'power2.out')))} 0)`)
+            for (const [el, t0] of [[credit1, A.kickIn], [credit2, A.later], [credit3, A.without]]) {
+              el.setAttribute('opacity', (P(t, t0, 0.2, 'power2.out') * (1 - P(t, A.pull, 0.2, 'power2.in'))).toFixed(3))
+              const u = el === credit1 ? P(t, t0, KICK_IN, 'power2.out') : P(t, t0, 0.45, 'power3.out')
+              el.setAttribute('transform', `translate(${f1(-18 * (1 - u))} 0)`)
+            }
+            answer.forEach((lab, i) => {
+              const t0 = i === 0 ? A.learnedO : A.oneShort
+              const u = P(t, t0, 0.45, 'power2.out')
+              lab.g.setAttribute('opacity', (P(t, t0, 0.2) * (1 - P(t, A.labelsOut, 0.2))).toFixed(3))
+              const sc = L.pulse(t, A.seems + 0.1 * i, 0.08)
+              const y = 320 + 80 * i - 17
+              const lx = labDx(i, t)
+              lab.g.setAttribute('transform', `translate(${f1(1250 + lx)} ${f1(y + 12 * (1 - u))}) scale(${sc.toFixed(4)}) translate(-1250 ${-y})`)
+              const glow = 0.7 * L.env(t, A.seems + 0.1 * i, 0.3, 0.5, 0.6)
+              lab.flood.setAttribute('flood-opacity', glow.toFixed(3))
+              if (glow > 0.002) lab.el.setAttribute('filter', lab.url)
+              else lab.el.removeAttribute('filter')
+            })
+            {
+              const u = P(t, A.oneShort + 0.1, 0.5, 'power2.inOut'), hx = 1240 + labDx(1, t)
+              hair.setAttribute('x1', f1(hx))
+              hair.setAttribute('x2', f1(lerp(hx, 1078, u))); hair.setAttribute('y2', f1(lerp(383, 352, u)))
+              hair.setAttribute('opacity', ((t >= A.oneShort + 0.1 ? 1 : 0) * (1 - P(t, A.labelsOut, 0.2))).toFixed(3))
+            }
+            {
+              const u = P(t, A.teeCs, 0.45, 'power2.out')
+              tiCs.draw({ px: 1360, py: 300 + 12 * (1 - u), alpha: P(t, A.teeCs, 0.2) * (1 - P(t, A.allOut, 0.2)) })
+            }
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

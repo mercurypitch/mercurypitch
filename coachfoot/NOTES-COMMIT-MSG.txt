@@ -1,0 +1,19 @@
+docs(release): Add the coach bubble's fix and Lesson 12's page to 0.9.24's notes
+
+0.9.24's dev-changelog section counted 51 commits from 6 PRs, written
+before Lesson 12's page (#1242), the second notes PR (#1241), the
+.gitignore line (#1240) and this PR. It now counts 67 from 10, and names
+#1240 as the one that came in with a merge commit rather than by rebase.
+
+- On the web: the coach's bubble keeps its buttons in view at 320x568
+  while its words scroll (#1243), with what was measured and its tests.
+- For the lessons: Lesson 12's page as far as Step 4, as a draft, with
+  the two helpers it moves into the kit and its first-paint numbers
+  (#1242).
+- Docs only: #1242's re-anchored citations, the lesson tour's page count
+  and the module map. Repository only: #1240's `.gitignore` line.
+- Release steps: the site worker's gate holds /learn/12 back as it holds
+  /learn/10; Lesson 12's footer links the landing's legal pages, as
+  every lesson's does; og:versions on this branch stamped its 13 cards
+  with no change, and Lesson 12's new card is outside that set, as every
+  lesson's card is.

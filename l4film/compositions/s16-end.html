@@ -1,0 +1,300 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s16-end" data-composition-id="s16-end" data-start="0" data-duration="6.200" data-width="1920" data-height="1080">
+      <div class="scene" id="s16-end-scene"></div>
+      <!-- Merc passes, static (trap 4); timing written by python3 tools/merc-tags.py s16-end -->
+      <video id="s16-end-m12-blue" data-merc="m12-blue" class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="0.000" data-duration="6.220" data-media-start="149.158"></video>
+      <video id="s16-end-m12-blue-refl" data-merc="m12-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-blue-merc.webm" data-start="0.000" data-duration="6.220" data-media-start="149.158"></video>
+      <video id="s16-end-m12-orange" data-merc="m12-orange" class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="0.000" data-duration="6.220" data-media-start="149.675"></video>
+      <video id="s16-end-m12-orange-refl" data-merc="m12-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m12-orange-merc.webm" data-start="0.000" data-duration="6.220" data-media-start="149.675"></video>
+      <script>
+        ;(function () {
+          /* S16, the end card (STORYBOARD row 16; HANDOFFS § S15 to S16, § S16), adapted from Lesson 2's s17-end:
+             the MercuryPitch lockup forms, "Find your pitch." and the address land above the Mercs' heads, the skip
+             line and the Scale Runner path between their bodies; the orange bead rises from behind Tavi into a small orbit
+             beside the lockup, and S15's chrome bead flies on across the cut (FLIGHT, as in s15-next; DECISIONS 130) into
+             the other, turning blue. The Mercs grow from 300 in the corners to 520 at (330, 840) and (1590, 840); their
+             celebration (one hop, sparkles off) is the passes' own, and the scene draws one chrome ring under each as it
+             lands. The passes run to the film's end (trap 15). The call to action is the film's one hold: since film round 1
+             (DECISIONS 122) the card is complete by end + 1.37 (479.9), as soon as the hosts' celebration hop allows, every
+             element landing over 0.3 s or more. Film round 3 (DECISIONS 134) made the 'end' sting 6 s, one more second
+             of room tone, so it holds 4.8 s (5.1 s from 479.6, where the critic reads it complete). Every time is a cue
+             plus a duration. */
+          const SID = 's16-end'
+          const D = L.dur(SID)
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const S0 = L.scene(SID).start
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: false })
+          const tl = gsap.timeline({ paused: true })
+          const C = L.C, P = L.prog, lerp = L.lerp, sv = L.svg
+          const f2 = (v) => v.toFixed(2)
+          const TAU = Math.PI * 2
+
+          /* ---------------------------------------------------------------- anchors (from the end cue) */
+          const MOVE = at('end', 'start', 0.07)           // the Mercs grow and move (0.6 s, power2.inOut)
+          // the lockup first (film round 1: its letters show from end + 0.4, before "Find your pitch.", whole by + 1.08)
+          const ORB_IN = at('end', 'start', 0.15)         // the orb opens (0.82 s, expo.out)
+          const WAVE = at('end', 'start', 0.27)           // its waterline draws (0.7 s)
+          const WORD = at('end', 'start', 0.25)           // the wordmark wipes in (0.83 s)
+          const TAG = at('end', 'start', 0.45)            // "Find your pitch." (0.6 s)
+          // the address (in over 0.3 s, rising 18 px over 0.45 s), its underline drawn from 0.12 s later (0.4 s): both at
+          // rest by end + 1.07 (479.6), before the hop lifts the heads (its top at end + 1.2, 479.73); it stands high
+          // enough (URL_Y) that the hop's top keeps 20 px or more from it (DECISIONS 95, 122), so it need not wait
+          const URL = at('end', 'start', 0.55)
+          const SKIP = at('end', 'start', 0.75)           // the skip line, then the Scale Runner path, 0.12 s apart (0.45 s)
+          // the orange bead rises from behind Tavi as she starts to move, and passes the address's end (y 370 to 426)
+          // by end + 0.4, before it lands; in orbit by end + 0.95 and settled by end + 1.2. The blue bead is S15's, in
+          // flight since o14's end (FLY0), and lands at the same moment (FLY + FLYD), settled by end + 1.2 as before
+          const FLY = at('end', 'start', 0.15), FLYD = 0.8
+          const FLY0 = at('o14', 'end'), FLYE = at('end', 'start', 0.95)
+          const LAND = at('end', 'start', 0.87 + 0.58)    // the celebration (end + 0.87, merc-shots.py) lands its hop 0.58 s in
+          // the card's layout (film round 1): the lockup as Lesson 2's (y 40 to 220), "Find your pitch." (serif italic),
+          // the address (Outfit 600 56 px) and the two lower lines (Outfit 500, LPX, ink-2) between the Mercs
+          const TAG_Y = 326, TAG_PX = 112, URL_Y = 412, LPX = 54, LINE_Y = [496, 564]
+
+          /* ---------------------------------------------------------------- the room */
+          const dust = L.filmDust(room.near)
+          room.mid.style.transformOrigin = '960px 400px'
+          room.mid.setAttribute('data-layout-allow-overflow', '')
+          const mid = L.stage(room.mid)
+
+          /* ---------------------------------------------------------------- the chrome rings, behind the Mercs */
+          const rings = [330, 1590].map((x) => ({ x, glow: sv('ellipse', { cx: x, cy: 842, rx: 0, ry: 0, fill: C.chrome, opacity: 0 }, mid), ring: sv('ellipse', { cx: x, cy: 842, rx: 0, ry: 0, fill: 'none', stroke: C.chrome, 'stroke-width': 3, opacity: 0 }, mid) }))
+
+          /* ---------------------------------------------------------------- the lockup (assets/brand/lockup-horizontal.svg, built in place) */
+          const defs = sv('defs', {}, mid)
+          const ID = (n) => SID + '-' + n
+          const grad = (id, stops, attrs) => { const g = sv(attrs.r ? 'radialGradient' : 'linearGradient', { id: ID(id), ...attrs }, defs); stops.forEach(([o, c, op]) => sv('stop', { offset: o, 'stop-color': c, 'stop-opacity': op == null ? 1 : op }, g)); return `url(#${ID(id)})` }
+          const chrome = grad('chrome', [['0', '#f4f8fd'], ['0.32', '#c3ccd6'], ['0.62', '#8a97a6'], ['1', '#3d4b5c']], { cx: '0.38', cy: '0.28', r: '1.05' })
+          const liquid = grad('liquid', [['0', '#1d3050'], ['1', '#0b1220']], { x1: '0', y1: '0', x2: '0', y2: '1' })
+          const spectrum = grad('spec', [['0', '#58a6ff'], ['0.5', '#2dd4bf'], ['1', '#bc8cff']], { x1: '0', y1: '0', x2: '1', y2: '0' })
+          const halo = grad('halo', [['0', '#58a6ff', 0.22], ['0.55', '#2dd4bf', 0.07], ['1', '#0d1117', 0]], { r: '0.5', cx: '0.5', cy: '0.5' })
+          const orbClip = sv('clipPath', { id: ID('orb') }, defs)
+          sv('circle', { cx: 130, cy: 130, r: 118 }, orbClip)
+          // the wordmark's wipe: a mask whose edge is feathered over FEATHER lockup units (60 px on screen at the
+          // lockup's scale, 180 / 236), so no frame slices a letter with a hard edge
+          const FEATHER = 60 * 236 / 180
+          const wordMask = sv('mask', { id: ID('word'), maskUnits: 'userSpaceOnUse', x: 200, y: -60, width: 1400, height: 380 }, defs)
+          const wipeGrad = sv('linearGradient', { id: ID('wipe'), gradientUnits: 'userSpaceOnUse', x1: 270 - FEATHER, y1: 0, x2: 270, y2: 0 }, defs)
+          sv('stop', { offset: '0', 'stop-color': '#ffffff' }, wipeGrad)
+          sv('stop', { offset: '1', 'stop-color': '#000000' }, wipeGrad)
+          sv('rect', { x: 200, y: -60, width: 1400, height: 380, fill: `url(#${ID('wipe')})` }, wordMask)
+          const glowE = sv('ellipse', { cx: 960, cy: 130, rx: 700, ry: 200, fill: halo, opacity: 0 }, mid)
+          const lock = sv('g', {}, mid)
+          const orbG = sv('g', {}, lock)
+          const orbIn = sv('g', { 'clip-path': `url(#${ID('orb')})` }, orbG)
+          sv('circle', { cx: 130, cy: 130, r: 118, fill: chrome }, orbIn)
+          sv('path', { d: 'M12,130 C54,86 86,86 130,130 S206,174 248,130 A118,118 0 0 1 12,130 Z', fill: liquid }, orbIn)
+          const wave = sv('path', { d: 'M12,130 C54,86 86,86 130,130 S206,174 248,130', fill: 'none', stroke: spectrum, 'stroke-width': 11, 'stroke-linecap': 'round', 'stroke-dasharray': '300 300', 'stroke-dashoffset': 300 }, orbIn)
+          const spec = sv('ellipse', { cx: 94, cy: 69, rx: 25, ry: 12.5, fill: '#ffffff', opacity: 0, transform: 'rotate(-20 94 69)' }, orbIn)
+          sv('circle', { cx: 130, cy: 130, r: 118, fill: 'none', stroke: '#c3ccd6', 'stroke-opacity': 0.35, 'stroke-width': 2 }, orbG)
+          const wordG = sv('g', { mask: `url(#${ID('word')})` }, lock)
+          // the wordmark as two runs, "Mercury" chrome-white and "Pitch" in the spectrum (BRAND.md), each shown
+          // only once the wipe's leading edge reaches it (hidden behind the mask it would read as a label at 1:1)
+          const wStyle = 'font-family:Outfit;font-weight:600;font-size:118px;letter-spacing:-2px'
+          const word = sv('text', { x: 292, y: 172, fill: '#e6edf3', opacity: 0, style: wStyle, text: 'Mercury' }, wordG)
+          const word2 = sv('text', { x: 292, y: 172, fill: spectrum, opacity: 0, style: wStyle, text: 'Pitch' }, wordG)
+          // "Find your pitch." and the address, above the Mercs' heads (their glow at y 512 at rest, 443 at the hop's top)
+          const tag = sv('text', { x: 960, y: TAG_Y, 'text-anchor': 'middle', fill: C.ink, opacity: 0, style: `font-family: 'Instrument Serif'; font-style: italic; font-size: ${TAG_PX}px; letter-spacing: -0.01em`, text: 'Find your pitch.' }, mid)
+          const url = sv('text', { x: 960, y: URL_Y, 'text-anchor': 'middle', opacity: 0, style: "font-family: 'Outfit'; font-weight: 600; font-size: 56px; letter-spacing: -0.01em; white-space: pre" }, mid)
+          sv('tspan', { fill: C.ink2, text: 'Practise it free: ' }, url)
+          const u2 = sv('tspan', { fill: C.ink, text: 'mercurypitch.com/pitch-training' }, url)
+          // the underline crosses the descenders' tips (its foot at URL_Y + 12, theirs)
+          const under = sv('rect', { x: 0, y: URL_Y + 9, width: 0, height: 3, rx: 1.5, fill: spectrum, opacity: 0 }, mid)
+
+          // the skip line and the Scale Runner path between the Mercs, Outfit 500 LPX px (54: 1.35 times the 40 px
+          // whose lines measured about 34 px, so about 46), ink-2, each icon the app's own at b803c7d43 (the intro's close glyph,
+          // src/components/icons.tsx X; Exercises, src/components/AppNavTabs.tsx TAB_META), drawn in the line's ink-2
+          // and scaled with the type (32 and 36 px at 40 px)
+          const ICONS = {
+            x: { sw: 2, paths: ['M18 6 L6 18', 'M6 6 L18 18'] },
+            bell: { sw: 1.9, paths: ['M6.2 7.8v8.4M3.4 9.6v4.8M17.8 7.8v8.4M20.6 9.6v4.8M6.2 12h11.6'] },
+          }
+          const LSTYLE = `font-family: 'Outfit'; font-weight: 500; font-size: ${LPX}px; white-space: pre;`
+          const LINES = [
+            { y: LINE_Y[0], tIn: SKIP, runs: ['First visit? Skip the intro: ', { icon: 'x', size: 32 * LPX / 40 }, ' › Yes, skip'] },
+            { y: LINE_Y[1], tIn: SKIP + 0.12, runs: ['then ', { icon: 'bell', size: 36 * LPX / 40 }, ' Exercises › Scale Runner'] },
+          ]
+          for (const Ln of LINES) {
+            Ln.g = sv('g', { opacity: 0 }, mid)
+            Ln.parts = Ln.runs.map((r) => {
+              const R = typeof r === 'string' ? { text: r } : r
+              if (R.icon) {
+                const I = ICONS[R.icon]
+                R.g = sv('g', { fill: 'none', stroke: C.ink2, 'stroke-width': I.sw, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, Ln.g)
+                for (const d of I.paths) sv('path', { d }, R.g)
+              } else R.el = sv('text', { x: 960, y: Ln.y, fill: C.ink2, style: LSTYLE, text: R.text }, Ln.g)
+              return R
+            })
+          }
+          L.afterFonts(() => {
+            for (const Ln of LINES) {
+              for (const R of Ln.parts) R.w = R.icon ? R.size : (R.el.getComputedTextLength ? R.el.getComputedTextLength() : R.text.length * 20)
+              let x = 960 - Ln.parts.reduce((s, R) => s + R.w, 0) / 2
+              Ln.x0 = x
+              for (const R of Ln.parts) {
+                if (R.icon) R.g.setAttribute('transform', `translate(${f2(x + R.size / 2)} ${f2(Ln.y - 0.35 * LPX)}) scale(${(R.size / 24).toFixed(4)}) translate(-12 -12)`)
+                else R.el.setAttribute('x', f2(x))
+                x += R.w
+              }
+              Ln.x1 = x
+            }
+          })
+
+          /* ---------------------------------------------------------------- the beads: arrive, then orbit beside the lockup */
+          // S15 to S16 (polish round 2, DECISIONS 130): the bead's flight from the long note's end into the end card's blue
+          // bead, the same code in s15-next and s16-end and drawn from film time, so it is on the same pixels either side of
+          // the cut: off the line and left at about y 440, under the space '"support"' leaves and above the end card's lower
+          // lines, then up left of "Find your pitch." to the blue bead's place left of the orb (FEND; s16-end draws the last
+          // pixels onto its orbit), each part passing before the type that lands there; 401 points read by arc length
+          const FEND = [482, 106], FP = [], FC = [0]
+          for (const [p0, p1, p2, p3] of [[[1360, 520], [1180, 455], [900, 440], [700, 432]], [[700, 432], [560, 425], [505, 300], FEND]]) {
+            for (let i = FP.length ? 1 : 0; i <= 200; i++) {
+              const s = i / 200, a = (1 - s) ** 3, b = 3 * (1 - s) ** 2 * s, c = 3 * (1 - s) * s * s, d = s ** 3
+              FP.push([a * p0[0] + b * p1[0] + c * p2[0] + d * p3[0], a * p0[1] + b * p1[1] + c * p2[1] + d * p3[1]])
+            }
+          }
+          for (let i = 1; i < FP.length; i++) FC.push(FC[i - 1] + Math.hypot(FP[i][0] - FP[i - 1][0], FP[i][1] - FP[i - 1][1]))
+          const flightAt = (t, t0, t1) => {             // null before t0, then on sine.inOut along the path to t1
+            if (t < t0) return null
+            const s = P(t, t0, t1 - t0, 'sine.inOut') * FC[FC.length - 1]
+            let i = 1
+            while (i < FC.length - 1 && FC[i] < s) i++
+            const f = (s - FC[i - 1]) / (FC[i] - FC[i - 1] || 1)
+            return [0, 1].map((k) => lerp(FP[i - 1][k], FP[i][k], f))
+          }
+          const beadLayer = sv('g', {}, mid)
+          const BB = L.bead(beadLayer, { r: 22, color: C.blue }), OB = L.bead(beadLayer, { r: 22, color: C.orange })
+          // a scene helper: it re-tints the blue bead's body stop, halo stops and rim (the kit's L.bead takes a colour once)
+          const BBT = [...BB.g.querySelectorAll('stop')].filter((e, i) => i === 1 || i > 2).concat(BB.body.children[1])
+          const rgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16)), CHR = rgb(C.chrome), BLU = rgb(C.blue)
+          const tint = (c) => {
+            const col = c >= 1 ? C.blue : c <= 0 ? C.chrome : `rgb(${CHR.map((v, i) => Math.round(lerp(v, BLU[i], c))).join(',')})`
+            for (const e of BBT) e.setAttribute(e.tagName === 'stop' ? 'stop-color' : 'stroke', col)
+          }
+          const squash = (b, sx, sy) => b.body.setAttribute('transform', `translate(0 ${b.r}) scale(${sx.toFixed(3)} ${sy.toFixed(3)}) translate(0 ${-b.r})`)
+          // Lesson 1's orbit: a speed that slows to a drift, integrated from the arrival; blue goes round once while
+          // orange goes twice
+          const speed = (t) => 0.32 + 0.68 * (1 - L.smooth(FLY + FLYD + 0.3, D, t))
+          const angle = (t) => {
+            const a = FLY + FLYD
+            if (t <= a) return t - a
+            let acc = 0
+            for (let i = 0; i < 48; i++) acc += speed(a + (t - a) * (i + 0.5) / 48)
+            return acc * (t - a) / 48
+          }
+          const WB = TAU / 8.5, WO = 2 * WB
+
+          /* ---------------------------------------------------------------- the Mercs (screen space) */
+          // Placed by L.mercGate as S15 leaves them (300 in the corners, the gate's floor patch under each), each in
+          // its own layer, which the scene scales about his feet and moves to the end card's place: the box, his
+          // reflection and the floor patch grow together, so the cut from s15 matches and nothing is re-laid out
+          const POSE = [{ pass: 'm12-blue', x0: 110, x1: 330 }, { pass: 'm12-orange', x0: 1800, x1: 1590 }]
+          for (const M of POSE) {
+            M.layer = L.el('div', { class: 'clip', style: 'pointer-events:none;transform-origin:0 0' }, room.top)
+            M.draw = L.mercGate(M.layer, { sid: SID, pass: M.pass, tag: SID + '-' + M.pass, x: M.x0, size: 300, feet: 0.81 })
+            M.patch = M.layer.firstChild && M.layer.firstChild.firstChild   // the gate's floor patch (its wrap's first child)
+          }
+          // the corner patches would carry their outer edges into the frame as they grow: they hand over to the
+          // room's full floor (Lesson 2's end card) over the move, in a layer of its own so the drift leaves the
+          // horizon at the Mercs' feet
+          const floorLayer = L.el('div', { class: 'layer', 'data-layout-allow-overflow': '' })
+          root.insertBefore(floorLayer, room.top)
+          const floorEl = L.el('div', { class: 'floor', 'data-layout-allow-overflow': '', style: 'opacity:0' }, floorLayer)
+          const placeMercs = (t) => {
+            const u = P(t, MOVE, 0.6, 'power2.inOut'), k = lerp(300, 520, u) / 300
+            floorEl.style.opacity = P(t, MOVE, 0.6).toFixed(3)
+            for (const M of POSE) {
+              M.draw(t)
+              if (M.patch && !M.patch.classList.contains('merc')) M.patch.style.opacity = (1 - P(t, MOVE, 0.45)).toFixed(3)
+              const fx = lerp(M.x0, M.x1, u)
+              M.layer.style.transform = u <= 0 ? '' : `matrix(${k.toFixed(5)}, 0, 0, ${k.toFixed(5)}, ${f2(fx - k * M.x0)}, ${f2(840 - k * 840)})`
+            }
+            return u
+          }
+
+          L.clock(tl, D, (t) => {
+            const T = S0 + t
+            dust(T)
+            const mu = placeMercs(t)                     // the Mercs' move, 0 to 1: the beads leave from where they are
+            // hold with drift: the card's layer eases in 1 % over the card (an accent; the end card may hold)
+            const dr = 1 + 0.01 * P(t, 0, D, 'sine.inOut')
+            room.mid.style.transform = dr === 1 ? '' : `scale(${dr.toFixed(5)})`
+
+            // the lockup: the orb opens, the waterline draws, the wordmark wipes in (Lesson 1's s21-end)
+            const k = 180 / 236
+            const w1 = word.getComputedTextLength ? word.getComputedTextLength() : 420
+            const w2 = word2.getComputedTextLength ? word2.getComputedTextLength() : 270
+            word2.setAttribute('x', f2(292 + w1))
+            const content = 292 + w1 + w2
+            const ou = P(t, ORB_IN, 0.82, 'expo.out')
+            const X = 960 - k * (12 + content) / 2, Y = 40 - 12 * k
+            lock.setAttribute('transform', `translate(${f2(X)} ${f2(Y + 14 * (1 - ou))}) scale(${k.toFixed(5)})`)
+            orbG.setAttribute('transform', `translate(130 130) scale(${(0.55 + 0.45 * ou).toFixed(4)}) rotate(${f2(-30 * (1 - ou))}) translate(-130 -130)`)
+            orbG.setAttribute('opacity', P(t, ORB_IN, 0.22).toFixed(3))
+            wave.setAttribute('stroke-dashoffset', f2(300 * (1 - P(t, WAVE, 0.7, 'power3.inOut'))))
+            spec.setAttribute('opacity', (0.85 * P(t, ORB_IN + 0.47, 0.3)).toFixed(3))
+            // the wipe's leading edge runs from x 270 until its feather has cleared the wordmark's end (+ 30)
+            const wipe = (content - 270 + 30 + FEATHER) * P(t, WORD, 0.83, 'power3.inOut'), edge = 270 + wipe
+            wipeGrad.setAttribute('x1', f2(edge - FEATHER)); wipeGrad.setAttribute('x2', f2(edge))
+            word.setAttribute('opacity', L.clamp((edge - 292) / 6).toFixed(3))
+            word2.setAttribute('opacity', L.clamp((edge - 292 - w1) / 6).toFixed(3))
+            glowE.setAttribute('opacity', (P(t, ORB_IN, 0.9) * (0.85 + 0.15 * Math.sin(TAU * T / 3.2))).toFixed(3))
+            const fu = P(t, TAG, 0.6, 'power3.out')
+            tag.setAttribute('opacity', fu.toFixed(3))
+            tag.setAttribute('transform', `translate(0 ${f2(22 * (1 - fu))})`)
+            const uu = P(t, URL, 0.45, 'power3.out')
+            url.setAttribute('opacity', P(t, URL, 0.3, 'power2.out').toFixed(3))
+            url.setAttribute('transform', `translate(0 ${f2(18 * (1 - uu))})`)
+            const uw = url.getComputedTextLength ? url.getComputedTextLength() : 1230
+            const u2w = u2.getComputedTextLength ? u2.getComputedTextLength() : 870
+            under.setAttribute('x', f2(960 + uw / 2 - u2w)); under.setAttribute('width', f2(Math.max(0.01, u2w * P(t, URL + 0.12, 0.4, 'power3.inOut'))))
+            under.setAttribute('opacity', (0.9 * P(t, URL + 0.12, 0.15)).toFixed(3))
+            for (const Ln of LINES) {
+              Ln.g.setAttribute('opacity', P(t, Ln.tIn, 0.3).toFixed(3))
+              Ln.g.setAttribute('transform', `translate(0 ${f2(12 * (1 - P(t, Ln.tIn, 0.45, 'power3.out')))})`)
+            }
+
+            // the beads: orange rises from inside Tavi as she moves (y 0.385 of her size above her feet); blue is S15's, on
+            // FLIGHT, drawn from the cut (kb: power2.inOut from 0, so the cut's frames are S15's curve) the last pixels onto
+            // its orbit's moving place and from 1 to its scale, turning blue over its rise (FLYE - 0.6, 0.5 s); each lands
+            // in a small tilted orbit beside the lockup, every point 70 px clear of its ends, and squashes as it lands
+            const left = X + 12 * k, right = X + content * k
+            const ORB = { b: { cx: left - 70 - 130, cy: 130, rx: 130, ry: 34 }, o: { cx: right + 70 + 130, cy: 130, rx: 130, ry: 34 } }
+            const fromY = 840 - 0.385 * lerp(300, 520, mu)
+            const fly = (b, which, fromX, base, w) => {
+              const o = ORB[which], th = base + w * angle(t)
+              const op = { x: o.cx + o.rx * Math.cos(th), y: o.cy + o.ry * Math.sin(th), z: Math.sin(th) }
+              const u = P(t, FLY, FLYD, 'none'), e = L.easeInOut(u), kb = P(t, 0, FLYE, 'power2.inOut'), fl = which === 'b' && flightAt(t, FLY0, FLYE)
+              const p = fl ? { x: fl[0] + kb * (op.x - FEND[0]), y: fl[1] + kb * (op.y - FEND[1]) } : { x: lerp(fromX, op.x, e), y: lerp(fromY, op.y, e) - 120 * Math.sin(Math.PI * u) }
+              const s = lerp(fl ? 1 : 0.7, 0.86 + 0.24 * (op.z + 1) / 2, fl ? kb : e)
+              b.g.setAttribute('transform', `translate(${f2(p.x)} ${f2(p.y)}) scale(${s.toFixed(3)})`)
+              b.g.setAttribute('opacity', fl ? '1' : P(t, FLY, 0.25).toFixed(3))
+              const a = t - (FLY + FLYD), sq = a < 0 || a > 0.25 ? 0 : Math.sin(Math.PI * a / 0.25) * Math.exp(-a * 5)
+              squash(b, 1 - 0.18 * sq, 1 + 0.28 * sq)
+            }
+            fly(BB, 'b', 0, 1.75 * Math.PI, WB)
+            fly(OB, 'o', lerp(POSE[1].x0, POSE[1].x1, mu), 1.25 * Math.PI, WO)
+            tint(P(t, FLYE - 0.6, 0.5, 'sine.inOut'))
+
+            // one chrome ring under each Merc as the celebration's hop lands (Lesson 1's ring; gold is the semitones')
+            const ra = t - LAND, ru = L.clamp(ra / 0.9), on = ra < 0 || ra > 0.9 ? 0 : 1
+            for (const r of rings) {
+              const rx = 34 + 200 * L.easeOut(ru)
+              for (const e of [r.ring, r.glow]) { e.setAttribute('rx', f2(rx)); e.setAttribute('ry', f2(rx * 0.22)) }
+              r.ring.setAttribute('opacity', (on * 0.9 * Math.pow(1 - ru, 1.4)).toFixed(3))
+              r.ring.setAttribute('stroke-width', (1 + 3 * (1 - ru)).toFixed(2))
+              r.glow.setAttribute('opacity', (on * 0.14 * Math.pow(1 - ru, 2)).toFixed(3))
+            }
+          })
+
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

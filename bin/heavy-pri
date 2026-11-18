@@ -1,0 +1,3 @@
+#!/bin/bash
+# heavy-pri <command...>: heavy, first in the queue. Only for PR #1177's work.
+exec env HEAVY_PRI=1 /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/bin/heavy "$@"

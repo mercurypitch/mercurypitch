@@ -1,0 +1,45 @@
+#!/bin/bash
+# light <command...>: run a small check (vitest on one to three test files,
+# eslint or prettier on a handful of files) in the one light slot beside the
+# two heavy ones, so it need not wait behind a long Playwright run or a full
+# pnpm check. It runs at low CPU priority (nice 10), so the heavy jobs and
+# their timing-sensitive specs keep the cores, and it starts only while at
+# least 4 GiB of the shells' shared memory cap is free. Anything bigger goes
+# through heavy, and so does a re-run of a light check that failed on a
+# timeout. Waiters take the slot in the order they came.
+L=${HEAVY_LOCKS:-/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/locks}
+CG=/sys/fs/cgroup/memory$(awk -F: '$2 ~ /(^|,)memory(,|$)/ {print $3; exit}' /proc/self/cgroup)
+mkdir -p "$L"
+T="$L/l-$(date +%s%N)-$$"
+: >"$T"
+trap 'rm -f "$T"' EXIT
+# free bytes under the cap: the limit, less what is used, plus the page cache
+# the kernel can drop
+free_gib() {
+  [ -r "$CG/memory.limit_in_bytes" ] || { echo 99; return; }
+  local lim use inact
+  lim=$(cat "$CG/memory.limit_in_bytes")
+  use=$(cat "$CG/memory.usage_in_bytes")
+  inact=$(awk '$1 == "total_inactive_file" {print $2}' "$CG/memory.stat")
+  echo $(( (lim - use + ${inact:-0}) / 1073741824 ))
+}
+while true; do
+  for f in "$L"/l-*; do
+    [ -e "$f" ] || continue
+    kill -0 "${f##*-}" 2>/dev/null || rm -f "$f"
+  done
+  first=$(ls "$L" | grep '^l-' | sort | head -n 1)
+  if [ "$L/$first" = "$T" ] && [ "$(free_gib)" -ge 4 ]; then
+    exec {fd}>"$L/light.lock"
+    if flock -n "$fd"; then
+      rm -f "$T"
+      echo "[light] $*" >&2
+      NODE_OPTIONS=${NODE_OPTIONS:---max-old-space-size=4096} nice -n 10 "$@"
+      rc=$?
+      flock -u "$fd"
+      exit $rc
+    fi
+    exec {fd}>&-
+  fi
+  sleep 3
+done

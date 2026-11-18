@@ -1,0 +1,396 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s09-names" data-composition-id="s09-names" data-start="0" data-duration="52.559" data-width="1920" data-height="1080">
+      <div class="scene" id="s09-names-scene"></div>
+      <!-- Merc passes, static (trap 4); timing written by python3 tools/merc-tags.py s09-names -->
+      <video id="s09-names-m09-orange" data-merc="m09-orange" class="clip" muted playsinline src="assets/merc/m09-orange-merc.webm" data-start="24.072" data-duration="28.500" data-media-start="0.008"></video>
+      <video id="s09-names-m09-orange-refl" data-merc="m09-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m09-orange-merc.webm" data-start="24.072" data-duration="28.500" data-media-start="0.008"></video>
+      <video id="s09-names-m09-orange-seg1" data-merc="m09-orange-in" data-merc-seg="m09-orange:1" class="clip" muted playsinline src="assets/merc/m09-orange-in-tall-merc.webm" data-start="23.188" data-duration="0.700" data-media-start="0.008"></video>
+      <video id="s09-names-m09-orange-seg1-refl" data-merc="m09-orange-in" data-merc-seg="m09-orange:1" data-merc-refl class="clip" muted playsinline src="assets/merc/m09-orange-in-tall-merc.webm" data-start="23.188" data-duration="0.700" data-media-start="0.008"></video>
+      <video id="s09-names-m09-orange-seg2" data-merc="m09-orange-in" data-merc-seg="m09-orange:2" class="clip" muted playsinline src="assets/merc/m09-orange-in-merc.webm" data-start="23.838" data-duration="7.784" data-media-start="0.658"></video>
+      <video id="s09-names-m09-orange-seg2-refl" data-merc="m09-orange-in" data-merc-seg="m09-orange:2" data-merc-refl class="clip" muted playsinline src="assets/merc/m09-orange-in-merc.webm" data-start="23.838" data-duration="7.784" data-media-start="0.658"></video>
+      <script>
+        ;(function () {
+          /* S9, Name the stairs (STORYBOARD rows 9a to 9f; HANDOFFS § C to D, § Inside D, § S9 to S10).
+             In (C to D, fixed): F0, no Mercs, the kicker lane empty, the tally gone; the staircase on C at
+             full: letters C D E F G A B C, riser labels T T S T T T S, hairlines; the strip with C major's
+             keys at full and the rest at 45 %, no key names. The scene cuts on act3, 0.15 s before it.
+             Out (to s10, same group): Tavi on screen (m09 spans the cut); the staircase on C (back from D),
+             names do to do, both houses lit, no riser labels, no key names; the strip with C major's keys
+             at full, hairlines. */
+          const SID = 's09-names'
+          const D = L.dur(SID)
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: false })
+          const S0 = L.scene(SID).start
+          const tl = gsap.timeline({ paused: true })
+          const ST = L.ST, P = L.prog, clamp = L.clamp, lerp = L.lerp, light = L.light
+          const f1 = (v) => (Math.round(v * 100) / 100).toString()
+          const SEMI = (n) => ST.H[n] - ST.H[n - 1] === 1
+          const CMAJ = ST.scale(0), DMAJ = ST.scale(2)
+          const LETTERS = ['C', 'D', 'E', 'F', 'G', 'A', 'B', 'C']
+          const NUMS = ['1', '2', '3', '4', '5', '6', '7', '1']
+          const SOL = ['do', 're', 'mi', 'fa', 'so', 'la', 'ti', 'do']
+
+          /* ---------------------------------------------------------------- anchors */
+          const A = {
+            dim: at('act3'),                                  // 9a: the staircase dims to 25 % under the card, its labels hidden
+            cardIn: at('act3', 'start', 0.22), cardOut: at('b26', 'start', -0.48),
+            back: at('b26', 'start', -0.1),                    // the card's exit has ended: back to full, with its letters
+            b26: at('b26'),                                   // 9b: the kicker lands; the push's first leg starts
+            names: word('b26', 'names'),                      // the stairs light in turn
+            first: word('b26', 'first', 'start', -0.12),      // stair 1 lights ("first note")
+            tonic: word('b26', 'tonic'),                      // "tonic" lands
+            home: word('b26', 'its home'),                    // a house lands over each do; " = home" slides in
+            number: word('b27', 'number'),                    // 9c: letters to numbers
+            oneTo: word('b27', 'one'),                        // stairs 1 to 7 light in turn
+            degrees: word('b27', 'the scale degrees'),        // "scale degrees" lands
+            leave: word('b27', 'with'),                       // "scale degrees" and "tonic = home" leave
+            these: word('b27', 'these'),                      // the push's second leg, to rest on F-names-1
+            kickOut: at('b27', 'end'),                        // the kicker leaves
+            truck: at('b28'),                                 // 9d: the truck along the names
+            pull: at('o9', 'start', -1.35),                   // the pull to F0, landing as Tavi's fall ends
+            dohO: word('o9', 'doh'),                          // stair 1 lights ("doh moved up")
+            moved: word('o9', 'moved'),                       // 9e: stair 1's outline rises two rows
+            doubt: word('o9', "isn't"),                       // "do = C?" draws, as a guess
+            always: word('o9', 'always'),                     // the guess pulses
+            fixed: word('b29', 'fixed'),                      // it turns solid: "fixed do: do = C"
+            system: word('b29', 'system'),                    // the guess pulses ("In one system", on both words)
+            oneSys: word('b29', 'one'), called: word('b29', 'called'),
+            itIs: word('b29', 'it is'),                       // it moves up and shrinks to 40 px
+            isC: word('b29', 'is.'),                          // C4 and C5 scale (in fixed do, do is C)
+            use: word('b29', "We'll use"),                    // the two do stairs light
+            movDo: word('b29', 'doh#2'),                       // the houses (do's) pulse
+            movable: word('b29', 'movable'),                  // "movable do" lands under it
+            nameW: word('b29', 'names'),                      // the names pulse
+            stairs: word('b29', 'stairs'),                    // the stairs light in turn
+            keys: word('b29', 'keys'),                        // the scale's keys scale in turn
+            slideD: word('b30', 'Slide', 'start', 0.08),      // 9f: the slide to D (0.8 s)
+            dohD: word('b30', 'doh'), rayE: word('b30', 'ray'), meeF: word('b30', 'mee'),
+            isD: word('b30', 'D#2'), isE: word('b30', 'E'), isF: word('b30', 'F'),   // each key scales again as it is said
+            sharp: word('b30', 'sharp'),                      // mi's stair scales and lights on "sharp", F♯ scales
+            homeMoves: word('b31', 'Home'),                   // both houses glow, both do stairs light
+            keysOut: word('b31', 'and', 'start', -0.2),       // the key names fade
+            withIt: word('b31', 'with'),                      // the houses pulse as the names land back on C
+            slideC: word('b31', 'and', 'start', 0.1),         // the slide back to C (0.8 s)
+            pillsOut: at('b31', 'end'),                       // "fixed do" and "movable do" leave
+          }
+          const SYL = [0, 1, 2, 3, 4, 5, 6].map((k) => word('b28', k)).concat(word('b28', 'doh#2'))   // 9d: each name as it is sung
+          // the pull starts on the second "doh", lasts 0.8 s and lands at o9 - 0.55, as Tavi's fall ends (she drops
+          // 1.1 s before o9 and falls 0.55 s), so the strip's end is clear of her column when she lands (DECISIONS 83)
+          const PULL_DUR = 0.8
+          A.solfege = A.pull + PULL_DUR                       // once the pull has landed: "solfège", "(sol)"
+          A.solOut = A.doubt - 0.38                           // they leave before the guess lands
+          const SLIDE = 0.8, TRUCK = 3.0
+
+          /* ---------------------------------------------------------------- settles (holds round, 1 November) */
+          // The re-voiced lines run longer than the moves keyed to their starts, so the board waited through them
+          // (film round 5, DECISIONS 139; study rule 8). Through each held span the thing just named settles: a
+          // label drifts a few px, eased in and out, coming to rest as the next thing begins. `sway` sums legs
+          // [t0, t1, dx], each a ramped glide (0.3 s eased ramps at each end, a steady middle) so the whole span
+          // keeps moving; a leg turns only inside a beat that moves something else. Horizontal only for type: a
+          // vertical drift moves a text baseline a whole pixel at a time. While Tavi is in frame nothing she stands
+          // on or looks at moves; only labels, the house landing back and the names riding the slides settle.
+          const RAMP = 0.3
+          const trap = (u, r) => u < r ? (u * u) / (2 * r * (1 - r)) : u > 1 - r ? 1 - ((1 - u) * (1 - u)) / (2 * r * (1 - r)) : (u - r / 2) / (1 - r)
+          // a leg is [from, to, px] and, for a quicker turn, its own ramp
+          const sway = (t, legs) => legs.reduce((x, [t0, t1, dx, rp = RAMP]) => x + dx * trap(clamp((t - t0) / (t1 - t0)), Math.min(rp, (t1 - t0) / 3) / (t1 - t0)), 0)
+          // "solfège" drifts 8 px left as Tavi starts ("In the opening"), at rest once stair 1 has lit on "doh"
+          const SOL_LEGS = [[A.dohO - 0.85, A.dohO + 0.3, -8]]
+          // the guess, while it is asked and answered (its ink-2 needs the larger glide): left 18 px from "always" into
+          // the rise of its pulse on "called", back 8 px to its solid turn on "fixed", 10 px more into its move up on
+          // "it is", so it rises from x 1360 as before
+          const PILL_LEGS = [[A.always + 0.35, A.called + 0.08, -18], [A.called + 0.08, A.fixed + 0.22, 8], [A.fixed + 0.22, A.itIs + 0.25, 10],
+            // once up, out 5 px through "it is." and back as "We'll use" lights the do stairs, at rest on "movable"
+            [A.isC + 0.2, A.use + 0.07, -5], [A.use + 0.07, A.movable, 5],
+            // b30: out 8 px from just after "doh" is named to "ray", back from "ray is" to "mee" (the pill and
+            // "movable do" take turns)
+            [A.isD - 0.63, A.rayE + 0.03, -8], [A.rayE + 0.25, A.meeF, 8]]
+          // "movable do" lands gliding in from 20 px right, through "names" and "the names belong to the" (its own
+          // definition), at rest as the stairs light on "stairs"; in b30 out 9 px from "mee", turning in the rise of
+          // "sharp" (0.2 s ends), and back into "Home moves"
+          const MOV_LEGS = [[A.movable, A.stairs + 0.3, -20],
+            [A.meeF, A.sharp + 0.06, -9, 0.2], [A.sharp + 0.06, A.homeMoves + 0.28, 9, 0.2]]
+          // the names ride each slide a little behind their stairs and glide back to centre after it (up to 11 px):
+          // "the names move with it" (signature 3)
+          // after the slide back to C they glide back through the pause until the last frame, where they are at rest
+          // (0.3 s in, 0.1 s out: the film's 0.3 s hold at the cut, film round 5)
+          const NAME_LAG = 12
+          const trap2 = (u, r0, r1) => { const v = 1 / (1 - r0 / 2 - r1 / 2); return u <= 0 ? 0 : u >= 1 ? 1 : u < r0 ? (v * u * u) / (2 * r0) : u > 1 - r1 ? 1 - (v * (1 - u) * (1 - u)) / (2 * r1) : v * (u - r0 / 2) }
+          const backC = (t) => { const T0 = A.slideC + 0.48, T = D - T0; return trap2((t - T0) / T, 0.3 / T, 0.1 / T) }
+          const nameLag = (t) => -NAME_LAG * (P(t, A.slideD, SLIDE) - P(t, A.slideD + 0.48, 1.6, 'sine.inOut')) + NAME_LAG * (P(t, A.slideC, SLIDE) - backC(t))
+
+          /* ---------------------------------------------------------------- camera */
+          // HANDOFFS § Camera moves, the push in S9: one curve with no stop. Its first leg, s on sine.in from
+          // 1 to 1.2 about (420, 736), reaches F-near as "these" starts; the second leg is a Hermite that starts
+          // at the first leg's rates and comes to rest on F-names-1 (cam.hermite reads the rates off the curve)
+          const cam = L.frameRig(room, { from: 'F0' })
+          const sineIn = L.ease('sine.in')
+          cam.curve(A.b26, A.these - A.b26, (u) => {
+            const s = 1 + 0.2 * sineIn(u)
+            return { s, ox: -420 * (s - 1), oy: -736 * (s - 1) }
+          })
+          cam.hermite(A.these, 1.4, 'F-names-1')
+          cam.to(A.truck, TRUCK, 'F-names-2', 'power1.inOut')   // a truck: s holds at 2.4, the layers part
+          // a creep on along the names from the truck's end into the pull (no host in frame yet): 20 px further,
+          // sine.inOut, so the near bokeh slides at most 7.6 px a second and never lifts; the pull starts from it
+          const F2 = L.FRAMES['F-names-2']
+          cam.to(A.truck + TRUCK, A.pull - A.truck - TRUCK, { s: F2.s, ox: F2.ox - 20, oy: F2.oy }, 'sine.inOut')
+          cam.to(A.pull, PULL_DUR, 'F0', 'power2.inOut')
+
+          /* ---------------------------------------------------------------- the world (mid layer) */
+          const mid = L.stage(room.mid)
+          const defs = L.svg('defs', {}, mid)
+          const soft = L.svg('filter', { id: SID + '-soft', x: '-60%', y: '-60%', width: '220%', height: '220%' }, defs)
+          L.svg('feGaussianBlur', { stdDeviation: 6 }, soft)
+          const st = L.stairs(mid, {})
+          const kb = L.strip(mid, {})
+          st.stairs.forEach((S, i) => S.names.prepare([LETTERS[i], NUMS[i], SOL[i]]))
+          st.risers.forEach((R) => R.labels.prepare(['T', 'S']))
+          const KEYNAME = { 2: 'D', 4: 'E', 6: 'F♯' }
+          for (const m in KEYNAME) kb.keys[m].names.prepare([KEYNAME[m]])
+          // 9e: the outline of stair 1 rising two rows (do moved up to D in the opening), drawn between the
+          // stair names and the houses, its stroke fading toward the foot so it never crosses the name
+          const ghost = L.svg('g', { opacity: 0 }, null)
+          st.gAll.insertBefore(ghost, st.gAll.children[3])
+          {
+            const gr = L.svg('linearGradient', { id: SID + '-ghostfade', gradientUnits: 'userSpaceOnUse', x1: 0, y1: ST.tread(1, 0), x2: 0, y2: ST.foot(0) }, defs)
+            L.svg('stop', { offset: 0, 'stop-color': '#c3ccd6', 'stop-opacity': 1 }, gr)
+            L.svg('stop', { offset: 0.45, 'stop-color': '#c3ccd6', 'stop-opacity': 0.5 }, gr)
+            L.svg('stop', { offset: 0.8, 'stop-color': '#c3ccd6', 'stop-opacity': 0 }, gr)
+            const xa = ST.colX(1, 0) - 56, xb = ST.colX(1, 0) + 56, tr = ST.tread(1, 0), ft = ST.foot(0)
+            const d = `M${xa} ${ft} L${xa} ${tr + 6} Q${xa} ${tr} ${xa + 6} ${tr} L${xb - 6} ${tr} Q${xb} ${tr} ${xb} ${tr + 6} L${xb} ${ft}`
+            L.svg('path', { d, fill: 'none', stroke: `url(#${SID}-ghostfade)`, 'stroke-width': 9, 'stroke-opacity': 0.35, 'stroke-linejoin': 'round', filter: `url(#${SID}-soft)` }, ghost)
+            L.svg('path', { d, fill: 'none', stroke: `url(#${SID}-ghostfade)`, 'stroke-width': 3, 'stroke-linejoin': 'round', 'stroke-linecap': 'round' }, ghost)
+          }
+          // the house glow on "Home moves" (an accent), behind the houses
+          // world labels: "tonic = home" (x 150, baseline 540) and "(sol)" (right-aligned at x 828, baseline 474)
+          const LAB56 = "font: 600 56px 'Outfit', sans-serif; white-space: pre;"
+          const tonicT = L.svg('text', { x: 150, y: 540, fill: L.C.ink, opacity: 0, style: LAB56, text: 'tonic' }, mid)
+          const homeT = L.svg('text', { x: 150, y: 540, fill: L.C.ink, opacity: 0, style: LAB56, text: ' = home' }, mid)
+          let tonicW = 150
+          L.afterFonts(() => { tonicW = tonicT.getComputedTextLength() })
+          const solT = L.svg('text', { x: 828, y: 474, 'text-anchor': 'end', fill: L.C.ink2, opacity: 0, style: "font: 500 28px 'Outfit', sans-serif; white-space: pre;", text: '(sol)' }, mid)
+          const dust = L.filmDust(room.near)
+
+          /* ---------------------------------------------------------------- Tavi (top layer, screen space) */
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm09-orange', tag: SID + '-m09-orange', x: 1800 })
+
+          /* ---------------------------------------------------------------- frame-fixed type (hud) */
+          const hud = L.stageOf(room.hud)
+          const card = L.chapterCard(room.hud, { num: 3, title: 'Name the stairs', baseline: 480, tIn: A.cardIn, tOut: A.cardOut })
+          // the card settles as it holds: a slow 2 % zoom about its own centre (x 960, baseline - 110), from its
+          // entrance through its exit, so neither the end of its entrance nor its turn from breathing to leaving stands
+          const cardWrap = L.svg('g', {}, card.g.parentNode)
+          cardWrap.appendChild(card.g)
+          const kicker = L.kicker(room.hud, '3 · Name the stairs')
+          const KICK_IN = 1.4                                 // the kicker glides its 18 px in over 1.4 s (the kit: 0.45 s)
+          const degreesT = L.svg('text', { x: 1400, y: 420, fill: L.C.ink, opacity: 0, style: LAB56, text: 'scale degrees' }, hud)
+          const solfegeT = L.svg('text', { x: 1400, y: 420, fill: L.C.ink, opacity: 0, style: LAB56, text: 'solfège' }, hud)
+          // A pill in the hud, left edge at x, its text inset 0.6 of its size, its box 1.6 of its size tall and
+          // centred on the text's cap height. `mix` (0 to 1) switches its words inside the pill's own shape (a clip),
+          // so the two never overlap, nothing stands past the box (component critic D-01 item 4) and the pill is
+          // never empty (D-04 item 3, DECISIONS 107): the box first widens to the new words (0 to 0.45), then the
+          // words roll one line (1.25 of the size) up, the old out through the pill's top and the new in from its
+          // foot (0.45 to 1), so the box's growing edge never cuts a letter (film round 2, item 6). The roll's window
+          // is the pill's inner box, 5 px inside the rim, so no word rides over the border (film round 3, item 5),
+          // and the words fade out and in across its top and bottom 18 % rather than meet a cut (film round 4).
+          // The guess is L.GUESS (dashed ink-2), traced on from the top left; the solid rim is ink.
+          // draw({ a, reveal, solid, mix, scale, x, baseline, pulse })
+          const makePill = (parent, { size, items, guess = false }) => {
+            const inset = 0.6 * size, h = 1.6 * size, roll = 1.25 * size
+            const g = L.svg('g', { opacity: 0 }, parent)
+            const id = SID + '-pill' + makePill.n++
+            const mask = L.svg('mask', { id, maskUnits: 'userSpaceOnUse', x: -40, y: -h, width: 2400, height: 2 * h }, g)
+            const reveal = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2, fill: 'none', stroke: '#fff', 'stroke-width': 12, pathLength: 1, 'stroke-dasharray': '1 1' }, mask)
+            // the roll's window: the pill's inner box, 5 px inside the rim (2.5 px), its top and bottom 18 % a
+            // fade (film round 4: a hard cut there read as the words pushing through the rim), clear of the type
+            const IN = 5
+            const fade = L.svg('linearGradient', { id: id + '-fade', x1: 0, y1: 0, x2: 0, y2: 1 }, g)
+            for (const [o, c] of [[0, '#000'], [0.18, '#fff'], [0.82, '#fff'], [1, '#000']]) L.svg('stop', { offset: o, 'stop-color': c }, fade)
+            const win = L.svg('mask', { id: id + '-win', maskUnits: 'userSpaceOnUse', x: -40, y: -h, width: 2400, height: 2 * h }, g)
+            const clipR = L.svg('rect', { x: IN, y: -h / 2 + IN, height: h - 2 * IN, rx: h / 2 - IN, fill: `url(#${id}-fade)` }, win)
+            const fillR = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2, fill: 'rgba(22,27,34,0.92)' }, g)
+            // the words, under the rims, inside the window
+            const words = L.svg('g', { mask: `url(#${id}-win)` }, g)
+            const dash = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2, fill: 'none', stroke: L.GUESS.stroke, 'stroke-width': L.GUESS.width, 'stroke-dasharray': L.GUESS.dash, 'stroke-linecap': 'round', mask: `url(#${id})`, display: guess ? 'inline' : 'none' }, g)
+            const solidR = L.svg('rect', { x: 0, y: -h / 2, height: h, rx: h / 2, fill: 'none', stroke: L.C.ink, 'stroke-width': 2.5, 'stroke-opacity': 0.85, opacity: 0 }, g)
+            const texts = items.map((it) => L.svg('text', { x: inset, y: 0.35 * size, fill: it.fill || L.C.ink, opacity: 0, 'data-layout-allow-overlap': '', style: `font: 600 ${size}px 'Outfit', sans-serif; white-space: pre;`, text: it.text }, words))
+            const widths = items.map(() => size * 4)
+            L.afterFonts(() => texts.forEach((el, i) => { widths[i] = el.getComputedTextLength() }))
+            return {
+              size,
+              draw({ a = 1, reveal: rv = 1, solid = guess ? 0 : 1, mix = 0, scale = 1, x, baseline, pulse = 1 }) {
+                g.setAttribute('opacity', a.toFixed(3))
+                if (a <= 0.004) return
+                const grow = L.ease('power2.inOut')(clamp(mix / 0.45))
+                const w = lerp(widths[0], widths[Math.min(1, widths.length - 1)], grow) + 2 * inset
+                for (const r of [fillR, dash, solidR, reveal]) r.setAttribute('width', f1(w))
+                clipR.setAttribute('width', f1(w - 2 * IN))
+                reveal.setAttribute('stroke-dashoffset', (1 - clamp(rv)).toFixed(4))
+                fillR.setAttribute('opacity', clamp(rv * 1.6).toFixed(3))
+                dash.setAttribute('opacity', (1 - solid).toFixed(3))
+                solidR.setAttribute('opacity', solid.toFixed(3))
+                const u = L.ease('power2.inOut')(clamp((mix - 0.45) / 0.55))
+                texts.forEach((el, i) => {
+                  // the old words show until they have rolled out, the new from the first frame of the roll
+                  const on = i === 0 ? u < 1 : u > 0
+                  el.setAttribute('opacity', ((on ? 1 : 0) * clamp(rv * 1.6)).toFixed(3))
+                  el.setAttribute('transform', `translate(0 ${f1(i === 0 ? -roll * u : roll * (1 - u))})`)
+                })
+                const cy = baseline - 0.35 * size * scale, sc = scale * pulse
+                g.setAttribute('transform', `translate(${f1(x)} ${f1(cy)}) scale(${sc.toFixed(4)})`)
+              },
+            }
+          }
+          makePill.n = 0
+          // "do = C?" (a guess, ink-2) turning into "fixed do: do = C" (ink): 48 px at baseline 260, then 40 px at 170
+          const fixedPill = makePill(hud, { size: 48, guess: true, items: [{ text: 'do = C?', fill: L.C.ink2 }, { text: 'fixed do: do = C', fill: L.C.ink }] })
+          // "movable do" is plain type, Outfit 600 64 px (HANDOFFS § Inside D), not a pill: a pill read as an answer
+          // to choose (component critic D-01 item 14)
+          const movableT = L.svg('text', { x: 1360, y: 300, fill: L.C.ink, opacity: 0, style: "font: 600 64px 'Outfit', sans-serif; white-space: pre;", text: 'movable do' }, hud)
+
+          /* ---------------------------------------------------------------- per-frame state */
+          // the counted lights (L.light: 40 % chrome, up 0.3 s, back 0.4 s; [t, up, down] for a larger one)
+          const LIGHTS = { 1: [], 2: [], 3: [], 4: [], 5: [], 6: [], 7: [], 8: [] }
+          const addL = (n, t0, up = 0.3, down = 0.4) => LIGHTS[n].push([t0, up, down])
+          for (let n = 1; n <= 8; n++) {
+            addL(n, A.names + 0.12 * (n - 1))               // "names for the stairs", in turn
+            addL(n, SYL[n - 1], 0.3, 0.6)                    // each name as it is sung (2.4x: a larger stair)
+            addL(n, A.stairs + 0.1 * (n - 1))                // "the names belong to the stairs"
+          }
+          addL(1, A.first, 0.4, 0.8)                         // "first note"
+          for (let n = 1; n <= 7; n++) addL(n, A.oneTo + 0.1 * (n - 1))   // "one to seven"
+          addL(1, A.dohD, 0.3, 0.5); addL(2, A.rayE, 0.3, 0.5); addL(3, A.meeF, 0.3, 0.5)   // over the key being named
+          addL(1, A.homeMoves, 0.4, 0.8); addL(8, A.homeMoves, 0.4, 0.8)                     // "Home moves"
+          addL(1, A.use, 0.4, 0.8); addL(8, A.use, 0.4, 0.8); addL(1, A.dohO); addL(3, A.sharp, 0.3, 0.5)   // "We'll use"; "doh moved"; "F sharp"
+          addL(1, A.isC); addL(8, A.isC, 0.4, 0.8)                                            // "it is.": in fixed do, do is C
+          const lit = (n, t) => LIGHTS[n].reduce((k, [t0, up, dn]) => Math.max(k, light(t, t0, up, dn)), 0)
+          // the names: letters (hidden while the staircase is dim), numbers on "number" (staggered), and each
+          // number to its name as it is sung. A switch is the old name out (0.12 s, rising 12 px) and then the new in
+          // (0.18 s, from 12 px below), so no frame shows two names on a stair, even at 2.4x where 12 px world is
+          // only 29 px against 86 px glyphs (component critic D-01 item 7)
+          const swap2 = (t, t0, from, to) => {
+            const uo = P(t, t0, 0.12, 'power1.in'), ui = P(t, t0 + 0.12, 0.18, 'power2.out')
+            return t < t0 + 0.12 ? [{ text: from, a: 1 - uo, dy: -12 * uo }] : [{ text: to, a: ui, dy: 12 * (1 - ui) }]
+          }
+          const nameList = (n, t) => {
+            if (t >= SYL[n - 1]) return swap2(t, SYL[n - 1], NUMS[n - 1], SOL[n - 1])
+            const vis = t < A.back ? 1 - P(t, A.dim, 0.4, 'sine.inOut') : P(t, A.back, 0.3, 'power2.out')
+            return swap2(t, A.number + 0.05 * (n - 1), LETTERS[n - 1], NUMS[n - 1]).map((it) => ({ ...it, a: it.a * vis }))
+          }
+          const HOUSEP = [0, 1].map((k) => [A.movDo + 0.08 * k, A.withIt + 0.08 * k])   // the houses' pulses ("movable doh", "with it")
+          const KEYP = { 2: [A.dohD, A.isD], 4: [A.rayE, A.isE], 6: [A.meeF, A.isF, A.sharp] }   // on the name, and on the key's own word
+          CMAJ.forEach((m, i) => { (KEYP[m] = KEYP[m] || []).push(A.keys + 0.08 * i) })   // "not the keys"
+          KEYP[0].push(A.isC); KEYP[12].push(A.isC + 0.08)                                // "it is": do on C
+
+          L.clock(tl, D, (t) => {
+            cam.apply(t)
+            dust(S0 + t)
+            const tb = tavi(t)
+            const boxes = tb ? [tb] : []
+            // the staircase (and the strip with it) at 25 % under the card
+            // (0.5 s, sine.inOut: a 0.3 s power2 dim read as a flicker, component critic D-01 item 13)
+            const dimA = 1 - 0.75 * P(t, A.dim, 0.5, 'sine.inOut') + 0.75 * P(t, A.back, 0.4)
+            // the slide to D and back: w and s0 on one curve (power2.inOut)
+            const uS = P(t, A.slideD, SLIDE) - P(t, A.slideC, SLIDE)
+            const w = uS, s0 = 2 * uS
+            const lagX = nameLag(t)
+            // the houses: from "its home", lit, riding every slide; glowing on "Home moves"
+            const hU = P(t, A.home, 0.35, 'power2.out')
+            // 9e: the bottom house rides up with stair 1's rising outline and fades with it, then lands back on stair 1
+            // as the outline goes, so the outline never rises round it (component critic D-01 item 10); it settles the
+            // last 12 px onto stair 1 until "solfège" leaves (sine.inOut, holds round)
+            const g0 = A.moved - 0.05
+            const house = (k) => ({
+              a: P(t, A.home + 0.08 * k, 0.15) * (k === 0 ? (t < g0 + 0.7 ? 1 - P(t, g0 + 0.4, 0.3, 'power1.in') : P(t, g0 + 0.7, 0.25)) : 1),
+              lit: 1,
+              dy: -26 * (1 - P(t, A.home + 0.08 * k, 0.35, 'power2.out')) - (k === 0 && t < g0 + 0.7 ? 52 * P(t, g0, 0.5, 'power2.inOut') : 0) + (k === 0 && t >= g0 + 0.7 ? -12 * (1 - P(t, g0 + 0.7, A.solOut - g0 - 0.7, 'sine.inOut')) : 0),
+              scale: Math.max(1 + 0.06 * (L.pulse(t, A.home + 0.08 * k + 0.3, 1) - 1), L.pulse(t, HOUSEP[k], 0.14)),
+              glow: L.env(t, A.homeMoves, 0.3, 0.5, 0.7),
+            })
+            st.draw({
+              w, s0, a: dimA,
+              rows: { keep: { boxes, cam, t } },
+              stair: (n) => ({
+                lit: lit(n, t),
+                scale: Math.max(L.pulse(t, A.nameW + 0.05 * (n - 1), 'tile'), n === 3 ? L.pulse(t, A.sharp, 'tile') : 1),
+                names: nameList(n, t).map((it) => ({ ...it, dx: lagX })),
+              }),
+              riser: (n) => ({
+                state: SEMI(n) ? 'semi' : 'tone',
+                // the riser labels leave for good under the card
+                labels: t < A.back ? [{ text: SEMI(n) ? 'S' : 'T', a: 1 - P(t, A.dim, 0.4, 'sine.inOut') }] : [],
+              }),
+              houses: hU > 0 || t >= A.home ? { bottom: house(0), top: house(1) } : {},
+            })
+            kb.draw({
+              a: dimA,
+              key: (m) => {
+                const inS = lerp(CMAJ.includes(m) ? 1 : 0, DMAJ.includes(m) ? 1 : 0, clamp(uS))
+                const named = KEYNAME[m] ? P(t, KEYP[m][0], 0.25, 'power2.out') * (1 - P(t, A.keysOut, 0.2)) : 0
+                return {
+                  full: inS, lit: ST.isBlack(m) ? inS : 0,
+                  scale: KEYP[m] ? L.pulse(t, KEYP[m], 'key') : 1,
+                  names: KEYNAME[m] ? [{ text: KEYNAME[m], a: named, dy: 10 * (1 - P(t, KEYP[m][0], 0.45, 'power2.out')) }] : [],
+                }
+              },
+              hair: { a: 1, w, s0 },
+            })
+            // 9e: stair 1's outline rises two rows (0.5 s) and fades
+            {
+              const t0 = A.moved - 0.05
+              ghost.setAttribute('opacity', (P(t, t0, 0.12) * (1 - P(t, t0 + 0.4, 0.3, 'power1.in'))).toFixed(3))
+              ghost.setAttribute('transform', `translate(0 ${f1(-52 * P(t, t0, 0.5, 'power2.inOut'))})`)
+            }
+            // "tonic" lands (0.2 s, rising 12 px), " = home" slides in after it; both leave before the push quickens
+            {
+              const out = 1 - P(t, A.leave, 0.2)
+              tonicT.setAttribute('opacity', (P(t, A.tonic, 0.2) * out).toFixed(3))
+              tonicT.setAttribute('transform', `translate(0 ${f1(12 * (1 - P(t, A.tonic, 0.4, 'power2.out')))})`)
+              const u = P(t, A.home + 0.05, 0.4, 'power2.out')
+              homeT.setAttribute('opacity', (P(t, A.home + 0.05, 0.2) * out).toFixed(3))
+              // from the right, so it never passes over "tonic" (it slid in from the left through its last letters)
+              homeT.setAttribute('transform', `translate(${f1(tonicW + 28 * (1 - u))} 0)`)
+              solT.setAttribute('opacity', (P(t, A.solfege, 0.2) * (1 - P(t, A.solOut, 0.2))).toFixed(3))
+            }
+
+            // frame-fixed type
+            card.draw(t)
+            const cz = 1 + 0.02 * P(t, A.cardIn, A.cardOut + 0.38 - A.cardIn, 'sine.inOut')
+            cardWrap.setAttribute('transform', `translate(960 370) scale(${cz.toFixed(4)}) translate(-960 -370)`)
+            kicker.draw(t, A.b26, A.kickOut)
+            kicker.g.setAttribute('transform', `translate(${f1(-18 * (1 - P(t, A.b26, KICK_IN, 'power2.out')))} 0)`)
+            degreesT.setAttribute('opacity', (P(t, A.degrees, 0.2) * (1 - P(t, A.leave, 0.2))).toFixed(3))
+            degreesT.setAttribute('transform', `translate(0 ${f1(14 * (1 - P(t, A.degrees, 0.45, 'power2.out')))})`)
+            solfegeT.setAttribute('opacity', (P(t, A.solfege, 0.2) * (1 - P(t, A.solOut, 0.2))).toFixed(3))
+            solfegeT.setAttribute('transform', `translate(${f1(sway(t, SOL_LEGS))} ${f1(14 * (1 - P(t, A.solfege, 0.45, 'power2.out')))})`)
+            // the guess: traced on (0.5 s), pulsing on "always"; solid on "fixed" with its new words (0.35 s); up to
+            // baseline 170 and down to 40 px on "it is" (0.5 s); gone with "movable do" at b31's end
+            {
+              const out = 1 - P(t, A.pillsOut, 0.2)
+              const up = P(t, A.itIs, 0.5, 'power2.inOut')
+              fixedPill.draw({
+                a: (t >= A.doubt ? 1 : 0) * out,
+                reveal: P(t, A.doubt, 0.5, 'power1.inOut'),
+                solid: P(t, A.fixed, 0.35),
+                mix: clamp((t - A.fixed) / 0.6),
+                scale: lerp(1, 40 / 48, up), x: 1360 + sway(t, PILL_LEGS), baseline: lerp(260, 170, up),
+                pulse: L.pulse(t, [A.always, A.oneSys, A.system, A.called], 'key'),
+              })
+              const mu = P(t, A.movable, 0.4, 'power2.out')
+              movableT.setAttribute('opacity', (P(t, A.movable, 0.2) * out).toFixed(3))
+              movableT.setAttribute('transform', `translate(${f1(20 + sway(t, MOV_LEGS))} ${f1(14 * (1 - mu))})`)
+            }
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

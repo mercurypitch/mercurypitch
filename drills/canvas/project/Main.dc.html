@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Harmony line: ready, singing, result</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8fd3ff}a:hover{color:#c3e7ff}
+button{cursor:pointer}
+.ph{position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#060910;box-shadow:0 0 0 1px rgba(255,255,255,.09),0 30px 80px rgba(0,0,0,.6)}
+.cap{height:16px;font:500 12px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.12em;color:#8fa0b3}
+.lanes{position:relative;height:176px;background:repeating-linear-gradient(to bottom,transparent 0 10px,rgba(255,255,255,.08) 10px 11px,transparent 11px 22px)}
+.rl{position:absolute;left:0;width:30px;font:500 10px/12px 'JetBrains Mono',ui-monospace,monospace;color:#8fa0b3}
+.tb{position:absolute;height:12px;border-radius:6px;background:rgba(88,166,255,.34);border:1px solid rgba(88,166,255,.75);box-sizing:border-box}
+.yb{position:absolute;height:12px;border-radius:6px;border:1.5px dashed rgba(238,243,248,.5);box-sizing:border-box}
+.yb.on{border:0;background:#5ee7ff;box-shadow:0 0 12px rgba(94,231,255,.7)}
+.yb.off{border:0;background:#f6b24a;box-shadow:0 0 10px rgba(246,178,74,.55)}
+.yb.now{border:0;background:#ffffff;box-shadow:0 0 0 4px rgba(94,231,255,.28),0 0 18px rgba(94,231,255,.9)}
+.dot{width:8px;height:8px;border-radius:4px;background:#5ee7ff}
+.dot.off{background:#f6b24a}
+</style>
+</helmet>
+<div style="width: 1310px; height: 930px; box-sizing: border-box; padding: 30px; display: flex; gap: 40px; background: #03050a; font-family: Inter, system-ui, sans-serif">
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="cap">1 · READY</div>
+<div class="ph">
+<img src="/_blob/cbbcae31021f99e6922c2591b07b2ee1" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+<div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6,9,16,.88) 0%, rgba(6,9,16,.38) 30%, rgba(6,9,16,.44) 56%, rgba(6,9,16,.93) 80%, #060910 100%)"></div>
+<div style="position: absolute; left: 16px; right: 16px; top: 20px; display: flex; align-items: center; gap: 10px">
+<button aria-label="Back to practice" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid rgba(255,255,255,.16); background: rgba(10,14,22,.62); color: #eef3f8; display: flex; align-items: center; justify-content: center; padding: 0"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"></path></svg></button>
+<div style="flex: 1; font: 600 19px Outfit, system-ui, sans-serif; color: #f4f7fb">Harmony line</div>
+<button style="height: 44px; padding: 0 14px; border-radius: 22px; border: 1px solid rgba(255,255,255,.16); background: rgba(10,14,22,.62); color: #eef3f8; font: 500 13px Inter, system-ui, sans-serif; display: flex; align-items: center; gap: 6px">Singer<svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5 6 7.5l3-3"></path></svg></button>
+</div>
+<div style="position: absolute; left: 16px; right: 16px; top: 80px; box-sizing: border-box; padding: 14px 14px 12px; border-radius: 22px; background: rgba(8,12,20,.82); border: 1px solid rgba(255,255,255,.13); backdrop-filter: blur(10px); display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; font: 500 10.5px 'JetBrains Mono', ui-monospace, monospace; letter-spacing: .1em; color: #8fa0b3"><span>LESSON 26 · TWINKLE IN C</span><span>PHRASE 1 OF 4</span></div>
+<div class="lanes">
+<span class="rl" style="top: 5px">do′</span><span class="rl" style="top: 27px">ti</span><span class="rl" style="top: 49px">la</span><span class="rl" style="top: 71px">so</span><span class="rl" style="top: 93px">fa</span><span class="rl" style="top: 115px">mi</span><span class="rl" style="top: 137px">re</span><span class="rl" style="top: 159px">do</span>
+<div class="tb" style="left: 40px; top: 159px; width: 32px"></div><div class="tb" style="left: 80px; top: 159px; width: 32px"></div><div class="tb" style="left: 120px; top: 71px; width: 32px"></div><div class="tb" style="left: 160px; top: 71px; width: 32px"></div><div class="tb" style="left: 200px; top: 49px; width: 32px"></div><div class="tb" style="left: 240px; top: 49px; width: 32px"></div><div class="tb" style="left: 280px; top: 71px; width: 46px"></div>
+<div class="yb" style="left: 40px; top: 115px; width: 32px"></div><div class="yb" style="left: 80px; top: 115px; width: 32px"></div><div class="yb" style="left: 120px; top: 27px; width: 32px"></div><div class="yb" style="left: 160px; top: 27px; width: 32px"></div><div class="yb" style="left: 200px; top: 5px; width: 32px"></div><div class="yb" style="left: 240px; top: 5px; width: 32px"></div><div class="yb" style="left: 280px; top: 27px; width: 46px"></div>
+</div>
+<div style="display: flex; gap: 16px; align-items: center; font: 500 12px Inter, system-ui, sans-serif; color: #b3bfcc">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 18px; height: 8px; border-radius: 4px; background: rgba(88,166,255,.34); border: 1px solid rgba(88,166,255,.75); box-sizing: border-box"></span>Merc: the tune</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 18px; height: 8px; border-radius: 4px; border: 1.5px dashed rgba(238,243,248,.5); box-sizing: border-box"></span>You: a third above</span>
+</div>
+</div>
+<img src="/_blob/3d25fb55f2d965ae40245482943ec2c6" alt="Merc, listening" style="position: absolute; left: 4px; top: 356px; width: 136px; height: 136px">
+<div style="position: absolute; left: 140px; right: 16px; top: 372px; box-sizing: border-box; padding: 13px 15px; border-radius: 18px 18px 18px 4px; background: rgba(8,12,20,.86); border: 1px solid rgba(255,255,255,.13); font: 400 15px/1.42 Inter, system-ui, sans-serif; color: #eef3f8">I sing the tune. You sing a third above it. Your first note is mi.</div>
+<button aria-pressed="true" style="position: absolute; left: 16px; right: 16px; top: 514px; height: 56px; box-sizing: border-box; padding: 0 14px; border-radius: 18px; border: 1px solid rgba(255,255,255,.13); background: rgba(8,12,20,.8); color: #eef3f8; display: flex; align-items: center; gap: 12px; text-align: left">
+<svg aria-hidden="true" width="22" height="22" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M4 13v-2a6 6 0 0 1 12 0v2"></path><rect x="3" y="12.5" width="3.5" height="5" rx="1.2"></rect><rect x="13.5" y="12.5" width="3.5" height="5" rx="1.2"></rect></svg>
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font: 600 14px Inter, system-ui, sans-serif">Headphones on</span><span style="font: 400 12px Inter, system-ui, sans-serif; color: #b3bfcc">So the microphone hears only you</span></span>
+<span style="width: 42px; height: 26px; border-radius: 13px; background: #5ee7ff; position: relative"><span style="position: absolute; right: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #060910"></span></span>
+</button>
+<div style="position: absolute; left: 16px; right: 16px; top: 584px; display: flex; gap: 10px">
+<button style="flex: 1; height: 46px; border-radius: 23px; border: 1px solid rgba(255,255,255,.22); background: rgba(8,12,20,.72); color: #eef3f8; font: 500 14px Inter, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20"><path d="M6 3.5v13l11-6.5z" fill="currentColor"></path></svg>Hear the tune</button>
+<button style="flex: 1; height: 46px; border-radius: 23px; border: 1px solid rgba(255,255,255,.22); background: rgba(8,12,20,.72); color: #eef3f8; font: 500 14px Inter, system-ui, sans-serif; display: flex; align-items: center; justify-content: center; gap: 8px"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20"><path d="M6 3.5v13l11-6.5z" fill="currentColor"></path></svg>Hear both parts</button>
+</div>
+<button aria-label="Sing" style="position: absolute; left: 151px; top: 658px; width: 88px; height: 88px; border-radius: 44px; border: 0; background: linear-gradient(135deg, #46c6f0 0%, #6f7cff 55%, #9a63ff 100%); color: #ffffff; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 10px rgba(111,124,255,.16), 0 14px 44px rgba(86,140,255,.6)"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"></path><path d="M12 18v3"></path></svg></button>
+<div style="position: absolute; left: 0; right: 0; top: 762px; text-align: center; font: 500 13px Inter, system-ui, sans-serif; color: #b3bfcc">Tap, then sing with Merc</div>
+<button style="position: absolute; left: 95px; top: 786px; width: 200px; height: 44px; border: 0; background: none; color: #8fd3ff; font: 500 13px Inter, system-ui, sans-serif; text-decoration: underline; text-underline-offset: 3px">Watch Merc do one first</button>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="cap">2 · SINGING</div>
+<div class="ph">
+<img src="/_blob/cbbcae31021f99e6922c2591b07b2ee1" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+<div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6,9,16,.88) 0%, rgba(6,9,16,.38) 30%, rgba(6,9,16,.44) 56%, rgba(6,9,16,.93) 80%, #060910 100%)"></div>
+<div style="position: absolute; left: 16px; right: 16px; top: 20px; display: flex; align-items: center; gap: 10px">
+<button aria-label="Back to practice" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid rgba(255,255,255,.16); background: rgba(10,14,22,.62); color: #eef3f8; display: flex; align-items: center; justify-content: center; padding: 0"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"></path></svg></button>
+<div style="flex: 1; font: 600 19px Outfit, system-ui, sans-serif; color: #f4f7fb">Harmony line</div>
+<button style="height: 44px; padding: 0 14px; border-radius: 22px; border: 1px solid rgba(255,255,255,.16); background: rgba(10,14,22,.62); color: #eef3f8; font: 500 13px Inter, system-ui, sans-serif; display: flex; align-items: center; gap: 6px">Singer<svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5 6 7.5l3-3"></path></svg></button>
+</div>
+<div style="position: absolute; left: 16px; right: 16px; top: 80px; box-sizing: border-box; padding: 14px 14px 12px; border-radius: 22px; background: rgba(8,12,20,.82); border: 1px solid rgba(94,231,255,.35); backdrop-filter: blur(10px); display: flex; flex-direction: column; gap: 10px">
+<div style="display: flex; justify-content: space-between; font: 500 10.5px 'JetBrains Mono', ui-monospace, monospace; letter-spacing: .1em; color: #8fa0b3"><span>LESSON 26 · TWINKLE IN C</span><span style="color: #5ee7ff">PHRASE 2 OF 4</span></div>
+<div class="lanes">
+<span class="rl" style="top: 5px">do′</span><span class="rl" style="top: 27px">ti</span><span class="rl" style="top: 49px">la</span><span class="rl" style="top: 71px">so</span><span class="rl" style="top: 93px">fa</span><span class="rl" style="top: 115px">mi</span><span class="rl" style="top: 137px">re</span><span class="rl" style="top: 159px">do</span>
+<div style="position: absolute; left: 215px; top: 0; width: 2px; height: 176px; background: linear-gradient(180deg, #5ee7ff, rgba(94,231,255,.15))"></div>
+<div class="tb" style="left: 40px; top: 93px; width: 32px"></div><div class="tb" style="left: 80px; top: 93px; width: 32px"></div><div class="tb" style="left: 120px; top: 115px; width: 32px"></div><div class="tb" style="left: 160px; top: 115px; width: 32px"></div><div class="tb" style="left: 200px; top: 137px; width: 32px; background: rgba(88,166,255,.8)"></div><div class="tb" style="left: 240px; top: 137px; width: 32px"></div><div class="tb" style="left: 280px; top: 159px; width: 46px"></div>
+<div class="yb on" style="left: 40px; top: 49px; width: 32px"></div><div class="yb on" style="left: 80px; top: 49px; width: 32px"></div><div class="yb off" style="left: 120px; top: 71px; width: 32px"></div><div class="yb on" style="left: 160px; top: 71px; width: 32px"></div><div class="yb now" style="left: 200px; top: 93px; width: 32px"></div><div class="yb" style="left: 240px; top: 93px; width: 32px"></div><div class="yb" style="left: 280px; top: 115px; width: 46px"></div>
+</div>
+<div style="display: flex; gap: 16px; align-items: center; font: 500 12px Inter, system-ui, sans-serif; color: #b3bfcc">
+<span style="display: flex; align-items: center; gap: 6px"><span class="dot"></span>In the third</span>
+<span style="display: flex; align-items: center; gap: 6px"><span class="dot off"></span>Off it</span>
+<span style="margin-left: auto; color: #eef3f8">Merc: re · You: fa</span>
+</div>
+</div>
+<div style="position: absolute; left: 0; right: 0; top: 350px; display: flex; justify-content: center">
+<div style="height: 42px; padding: 0 18px; border-radius: 21px; background: rgba(8,12,20,.88); border: 1px solid rgba(94,231,255,.5); color: #eef3f8; font: 600 15px Outfit, system-ui, sans-serif; display: flex; align-items: center; gap: 10px"><span class="dot" style="box-shadow: 0 0 10px #5ee7ff"></span>In the third. Hold it.</div>
+</div>
+<div aria-hidden="true" style="position: absolute; left: -40px; right: -40px; top: 330px; height: 330px; background: radial-gradient(closest-side, rgba(94,231,255,.2), rgba(111,124,255,.1) 55%, rgba(111,124,255,0) 78%)"></div>
+<svg aria-hidden="true" width="390" height="70" viewBox="0 0 390 70" style="position: absolute; left: 0; top: 452px; filter: drop-shadow(0 0 8px rgba(94,231,255,.9))"><path d="M0 36 C 22 20, 44 52, 66 36 S 110 20, 132 36 S 176 50, 198 36 S 242 24, 264 36 S 308 48, 330 36 S 372 28, 390 34" fill="none" stroke="#5ee7ff" stroke-width="3" stroke-linecap="round"></path></svg>
+<img src="/_blob/3d25fb55f2d965ae40245482943ec2c6" alt="Merc, singing the tune" style="position: absolute; left: 127px; top: 420px; width: 136px; height: 136px">
+<div aria-hidden="true" style="position: absolute; left: 135px; top: 642px; width: 120px; height: 120px; border-radius: 60px; border: 2px solid rgba(94,231,255,.6); box-sizing: border-box"></div>
+<button aria-label="Stop" style="position: absolute; left: 151px; top: 658px; width: 88px; height: 88px; border-radius: 44px; border: 0; background: linear-gradient(135deg, #46c6f0 0%, #6f7cff 55%, #9a63ff 100%); color: #ffffff; display: flex; align-items: center; justify-content: center; box-shadow: 0 0 0 10px rgba(94,231,255,.2), 0 14px 44px rgba(86,140,255,.6)"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"></path><path d="M12 18v3"></path></svg></button>
+<div style="position: absolute; left: 0; right: 0; top: 776px; text-align: center; font: 500 13px Inter, system-ui, sans-serif; color: #b3bfcc">Listening. Tap to stop.</div>
+</div>
+</div>
+
+<div style="display: flex; flex-direction: column; gap: 10px">
+<div class="cap">3 · RESULT</div>
+<div class="ph">
+<img src="/_blob/cbbcae31021f99e6922c2591b07b2ee1" alt="" style="position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover">
+<div style="position: absolute; inset: 0; background: linear-gradient(180deg, rgba(6,9,16,.92) 0%, rgba(6,9,16,.78) 30%, rgba(6,9,16,.9) 60%, #060910 100%)"></div>
+<div style="position: absolute; left: 16px; right: 16px; top: 20px; display: flex; align-items: center; gap: 10px">
+<button aria-label="Back to practice" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid rgba(255,255,255,.16); background: rgba(10,14,22,.62); color: #eef3f8; display: flex; align-items: center; justify-content: center; padding: 0"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"></path></svg></button>
+<div style="flex: 1; font: 600 19px Outfit, system-ui, sans-serif; color: #f4f7fb">Harmony line</div>
+<button style="height: 44px; padding: 0 14px; border-radius: 22px; border: 1px solid rgba(255,255,255,.16); background: rgba(10,14,22,.62); color: #eef3f8; font: 500 13px Inter, system-ui, sans-serif; display: flex; align-items: center; gap: 6px">Singer<svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5 6 7.5l3-3"></path></svg></button>
+</div>
+<div style="position: absolute; left: 24px; top: 92px; display: flex; flex-direction: column; gap: 4px">
+<div style="font: 700 72px/1 Outfit, system-ui, sans-serif; color: #ffffff; letter-spacing: -.02em">26<span style="font: 600 28px Outfit, system-ui, sans-serif; color: #b3bfcc; letter-spacing: 0"> of 28</span></div>
+<div style="font: 500 16px Inter, system-ui, sans-serif; color: #b3bfcc">notes in the third</div>
+<div style="margin-top: 10px; align-self: flex-start; height: 30px; padding: 0 12px; border-radius: 15px; border: 1px solid rgba(255,212,121,.55); color: #ffd479; font: 600 12px Inter, system-ui, sans-serif; display: flex; align-items: center">Your best at Singer</div>
+</div>
+<img src="/_blob/d0793554dafc7e38897f499f2cffe5f9" alt="Merc, cheering" style="position: absolute; right: 8px; top: 78px; width: 150px; height: 150px">
+<div style="position: absolute; left: 16px; right: 16px; top: 250px; box-sizing: border-box; padding: 13px 15px; border-radius: 18px 18px 4px 18px; background: rgba(8,12,20,.86); border: 1px solid rgba(255,255,255,.13); font: 400 15px/1.42 Inter, system-ui, sans-serif; color: #eef3f8">Two slips, both in phrase 3, a shade flat. Hear it with me, then go again.</div>
+<div style="position: absolute; left: 16px; right: 16px; top: 336px; box-sizing: border-box; padding: 2px 8px 2px 14px; border-radius: 20px; background: rgba(8,12,20,.84); border: 1px solid rgba(255,255,255,.13); display: flex; flex-direction: column">
+<div style="display: flex; align-items: center; gap: 12px; height: 56px"><span style="width: 74px; font: 600 14px Inter, system-ui, sans-serif; color: #eef3f8">Phrase 1</span><span style="flex: 1; display: flex; gap: 5px"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><button aria-label="Hear phrase 1 with Merc" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid rgba(255,255,255,.2); background: none; color: #eef3f8; display: flex; align-items: center; justify-content: center; padding: 0"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20"><path d="M6 3.5v13l11-6.5z" fill="currentColor"></path></svg></button></div>
+<div style="display: flex; align-items: center; gap: 12px; height: 56px; border-top: 1px solid rgba(255,255,255,.08)"><span style="width: 74px; font: 600 14px Inter, system-ui, sans-serif; color: #eef3f8">Phrase 2</span><span style="flex: 1; display: flex; gap: 5px"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><button aria-label="Hear phrase 2 with Merc" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid rgba(255,255,255,.2); background: none; color: #eef3f8; display: flex; align-items: center; justify-content: center; padding: 0"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20"><path d="M6 3.5v13l11-6.5z" fill="currentColor"></path></svg></button></div>
+<div style="display: flex; align-items: center; gap: 12px; height: 56px; border-top: 1px solid rgba(255,255,255,.08)"><span style="width: 74px; display: flex; flex-direction: column; gap: 1px"><span style="font: 600 14px Inter, system-ui, sans-serif; color: #eef3f8">Phrase 3</span><span style="font: 500 11px Inter, system-ui, sans-serif; color: #f6b24a">ti, flat</span></span><span style="flex: 1; display: flex; gap: 5px"><span class="dot"></span><span class="dot"></span><span class="dot off"></span><span class="dot off"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><button aria-label="Hear phrase 3 with Merc" style="width: 44px; height: 44px; border-radius: 22px; border: 0; background: #f6b24a; color: #1a1205; display: flex; align-items: center; justify-content: center; padding: 0"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20"><path d="M6 3.5v13l11-6.5z" fill="currentColor"></path></svg></button></div>
+<div style="display: flex; align-items: center; gap: 12px; height: 56px; border-top: 1px solid rgba(255,255,255,.08)"><span style="width: 74px; font: 600 14px Inter, system-ui, sans-serif; color: #eef3f8">Phrase 4</span><span style="flex: 1; display: flex; gap: 5px"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="dot"></span></span><button aria-label="Hear phrase 4 with Merc" style="width: 44px; height: 44px; border-radius: 22px; border: 1px solid rgba(255,255,255,.2); background: none; color: #eef3f8; display: flex; align-items: center; justify-content: center; padding: 0"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20"><path d="M6 3.5v13l11-6.5z" fill="currentColor"></path></svg></button></div>
+</div>
+<button aria-pressed="false" style="position: absolute; left: 16px; right: 16px; top: 580px; height: 52px; box-sizing: border-box; padding: 0 14px; border-radius: 18px; border: 1px solid rgba(255,255,255,.1); background: rgba(8,12,20,.6); color: #eef3f8; display: flex; align-items: center; gap: 12px; text-align: left">
+<span style="flex: 1; display: flex; flex-direction: column; gap: 2px"><span style="font: 500 14px Inter, system-ui, sans-serif">Keep this take</span><span style="font: 400 12px Inter, system-ui, sans-serif; color: #b3bfcc">0:32, on this device only</span></span>
+<span style="width: 42px; height: 26px; border-radius: 13px; background: rgba(255,255,255,.18); position: relative"><span style="position: absolute; left: 3px; top: 3px; width: 20px; height: 20px; border-radius: 10px; background: #eef3f8"></span></span>
+</button>
+<button style="position: absolute; left: 95px; top: 646px; width: 200px; height: 44px; border: 0; background: none; color: #8fd3ff; font: 500 14px Inter, system-ui, sans-serif; text-decoration: underline; text-underline-offset: 3px">Back to Lesson 26</button>
+<div style="position: absolute; left: 16px; right: 16px; top: 708px; display: flex; gap: 12px">
+<button style="flex: 1; height: 56px; border-radius: 28px; border: 1.5px solid rgba(255,255,255,.4); background: rgba(8,12,20,.5); color: #eef3f8; font: 600 16px Outfit, system-ui, sans-serif">Again</button>
+<button style="flex: 1; height: 56px; border-radius: 28px; border: 0; background: linear-gradient(135deg, #46c6f0 0%, #6f7cff 55%, #9a63ff 100%); color: #ffffff; font: 600 16px Outfit, system-ui, sans-serif; box-shadow: 0 10px 30px rgba(86,140,255,.45)">Done</button>
+</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1310,"height":930}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>

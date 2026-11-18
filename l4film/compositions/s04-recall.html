@@ -1,0 +1,414 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s04-recall" data-composition-id="s04-recall" data-start="0" data-duration="25.505" data-width="1920" data-height="1080">
+      <div class="scene" id="s04-recall-scene"></div>
+      <!-- Merc pass, static (trap 4); timing written by python3 tools/merc-tags.py s04-recall -->
+      <video id="s04-recall-m04-orange" data-merc="m04-orange" class="clip" muted playsinline src="assets/merc/m04-orange-merc.webm" data-start="16.151" data-duration="8.717" data-media-start="0.008"></video>
+      <video id="s04-recall-m04-orange-refl" data-merc="m04-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m04-orange-merc.webm" data-start="16.151" data-duration="8.717" data-media-start="0.008"></video>
+      <video id="s04-recall-m04-orange-seg1" data-merc="m04-orange" data-merc-seg="m04-orange:1" class="clip" muted playsinline src="assets/merc/m04-orange-tall-merc.webm" data-start="16.151" data-duration="0.700" data-media-start="0.008"></video>
+      <video id="s04-recall-m04-orange-seg1-refl" data-merc="m04-orange" data-merc-seg="m04-orange:1" data-merc-refl class="clip" muted playsinline src="assets/merc/m04-orange-tall-merc.webm" data-start="16.151" data-duration="0.700" data-media-start="0.008"></video>
+      <script>
+        ;(function () {
+          // S4, from Lesson 2 (STORYBOARD rows 4a to 4d; HANDOFFS § S3 to S4, § S4, § S4c's stand-up, § A to B).
+          // F0 throughout. The staircase dims; Lesson 2's row of thirteen tiles, C4 to C5, rises over it and is
+          // asked about afresh; q0's ring timer; the answer on the row (the twelve "1" brackets, the seven white
+          // tiles, the five dark ones); then the row stands up into the staircase's rows and the staircase
+          // returns on them, its seven risers growing in turn; Tavi drops in, asks, and hops out; the stairs light
+          // in turn on "measure" and go back to unlit, so the scene ends on the A to B rest frame. Every time is a
+          // word or a duration.
+          const SID = 's04-recall'
+          const D = L.dur(SID)
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: false })
+          const tl = gsap.timeline({ paused: true })
+          const C = L.C, ST = L.ST, P = L.prog, clamp = L.clamp, lerp = L.lerp
+          const f2 = (v) => v.toFixed(2)
+
+          // ==== group A shared block (s01 to s04): identical in each ====
+          const T0 = L.scene(SID).start
+          const cueF = (id, edge = 'start', off = 0) => window.CUES.cues[id][edge] + off   // film time
+          const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
+          const mixRgb = (a, b, u) => a.map((v, i) => v + (b[i] - v) * u)
+          const rgbStr = (c) => `rgb(${c.map((v) => Math.round(Math.max(0, Math.min(255, v)))).join(',')})`
+          // Dust in the near layer, drawn from film time so it never jumps at a cut (L.dust keys scene time).
+          // Lesson 2's motes and density, spread over a field larger than the frame: F-cold's near layer is
+          // scaled 1.32 and sits 157 px right of F0's, so a frame-sized field would leave its left edge bare.
+          const dustF = (parent, { n = 66, seed = 7, color = 'rgba(195,204,214,0.5)', x0 = -460, y0 = -380, w = 2840, h = 1840 } = {}) => {
+            const r = L.rng(seed)
+            const svg = L.stage(parent)
+            svg.setAttribute('data-layout-allow-overflow', '')
+            const motes = []
+            for (let i = 0; i < n; i++) {
+              const m = { x: r() * w, y: r() * h, s: 0.8 + r() * 2.2, vx: (r() - 0.5) * 14, vy: -4 - r() * 10, ph: r() * 6.28 }
+              m.el = L.svg('circle', { r: m.s, fill: color, opacity: 0.4 }, svg)
+              motes.push(m)
+            }
+            return {
+              svg,
+              draw(T) {
+                for (const m of motes) {
+                  m.el.setAttribute('cx', (((m.x + m.vx * T) % w + w) % w + x0).toFixed(1))
+                  m.el.setAttribute('cy', (((m.y + m.vy * T) % h + h) % h + y0).toFixed(1))
+                  m.el.setAttribute('opacity', (0.18 + 0.22 * (0.5 + 0.5 * Math.sin(m.ph + T * 0.9))).toFixed(3))
+                }
+              },
+            }
+          }
+          // The full-frame field (HANDOFFS § S1 to S2): chrome mixed into the ground, 75 % at the frame's centre
+          // falling linearly to 35 % at the corners (mean brightness about 117 of 255), opaque over the whole
+          // frame, breathing 2 % in brightness from film time. A smaller disc is the same field scaled down, a
+          // glow with no edge: it is opaque out to `soft` of its radius and fades to nothing at its rim (soft 0.1
+          // as it leaves the house, 0.8 once it fills the frame, where the opaque part reaches past the corners).
+          const FIELD = { R: 1500, corner: Math.hypot(960, 540), inner: 0.75, outer: 0.35, ground: hexRgb('#0d1117'), chrome: hexRgb('#c3ccd6') }
+          FIELD.mixAt = (r) => FIELD.inner - ((FIELD.inner - FIELD.outer) * r) / FIELD.corner
+          FIELD.breathe = (T) => 1 + 0.01 * Math.sin(2 * Math.PI * (T - cueF('title')))
+          const fieldDisc = (svg, id) => {
+            const defs = L.svg('defs', {}, svg)
+            const grad = L.svg('radialGradient', { id, gradientUnits: 'userSpaceOnUse', cx: 960, cy: 540, r: FIELD.R }, defs)
+            const offs = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, FIELD.corner / FIELD.R, 0.8, 0.85, 0.9, 0.95, 1]
+            const stops = offs.map((o) => L.svg('stop', { offset: o.toFixed(4) }, grad))
+            const disc = L.svg('circle', { cx: 960, cy: 540, r: FIELD.R, fill: `url(#${id})`, opacity: 0 }, svg)
+            return {
+              disc,
+              draw({ x = 960, y = 540, r = FIELD.R, a = 1, T, soft = 0.8 }) {
+                if (a <= 0.004 || r <= 0.5) { disc.setAttribute('opacity', '0'); return }
+                const k = FIELD.breathe(T)
+                offs.forEach((o, i) => {
+                  stops[i].setAttribute('stop-color', rgbStr(mixRgb(FIELD.ground, FIELD.chrome, FIELD.mixAt(o * FIELD.R) * k)))
+                  stops[i].setAttribute('stop-opacity', (1 - L.smooth(soft, 1, o)).toFixed(4))
+                })
+                for (const el of [grad, disc]) { el.setAttribute('cx', f2(x)); el.setAttribute('cy', f2(y)); el.setAttribute('r', f2(r)) }
+                disc.setAttribute('opacity', a.toFixed(3))
+              },
+            }
+          }
+          // Plain SVG type (no sharps in group A): Outfit 600 unless given; opacity 0 until drawn
+          const txt = (parent, str, { x = 0, y = 0, size = 64, family = 'Outfit', weight = 600, italic = false, anchor = 'start', fill = C.ink } = {}) =>
+            L.svg('text', { x, y, 'text-anchor': anchor, fill, opacity: 0, text: str, style: `font-family: '${family}'; font-weight: ${weight}; font-size: ${size}px;${italic ? ' font-style: italic;' : ''} white-space: pre;` }, parent)
+          // a label's frame: in over 0.2 s from tIn, out over `out` s from tOut, rising `up` px as it leaves
+          const fadeIO = (t, tIn, tOut, { dIn = 0.2, out = 0.2, up = 0, ease = 'power2.in', rise = 0 } = {}) => {
+            const a = P(t, tIn, dIn, 'power2.out') * (1 - P(t, tOut, out, ease))
+            return { a, dy: -up * P(t, tOut, out, ease) + rise * (1 - P(t, tIn, dIn + 0.05, 'power3.out')) }
+          }
+          const place = (el, { a, dy = 0, dx = 0 }) => {
+            el.setAttribute('opacity', a.toFixed(3))
+            el.setAttribute('transform', dx || dy ? `translate(${f2(dx)} ${f2(dy)})` : '')
+          }
+          // A curved arrow (the kit's L.arrow is straight): a quadratic from A through Q to B, drawn on from A,
+          // its head riding the tip along the curve; scale pulses it about the curve's middle
+          const curveArrow = (parent, { color = C.ink2, width = 3, head = 14 } = {}) => {
+            const g = L.svg('g', { opacity: 0 }, parent)
+            const shaft = L.svg('path', { fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round' }, g)
+            const tip = L.svg('path', { fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g)
+            const qb = (A, Q, B, u) => [(1 - u) * (1 - u) * A[0] + 2 * u * (1 - u) * Q[0] + u * u * B[0], (1 - u) * (1 - u) * A[1] + 2 * u * (1 - u) * Q[1] + u * u * B[1]]
+            return {
+              g,
+              draw(p, a, { A, Q, B }, { scale = 1, color: col = null, width: w = null } = {}) {
+                const u = clamp(p)
+                if (a <= 0.004 || u <= 0.01) { g.setAttribute('opacity', '0'); return }
+                let d = ''
+                for (let i = 0; i <= 24; i++) { const q = qb(A, Q, B, (u * i) / 24); d += (i ? 'L' : 'M') + f2(q[0]) + ' ' + f2(q[1]) }
+                shaft.setAttribute('d', d)
+                const e = qb(A, Q, B, u), e0 = qb(A, Q, B, Math.max(0, u - 0.05))
+                const ang = Math.atan2(e[1] - e0[1], e[0] - e0[0])
+                const hx = (k) => e[0] - head * Math.cos(ang + k), hy = (k) => e[1] - head * Math.sin(ang + k)
+                tip.setAttribute('d', `M${f2(hx(0.5))} ${f2(hy(0.5))} L${f2(e[0])} ${f2(e[1])} L${f2(hx(-0.5))} ${f2(hy(-0.5))}`)
+                if (col) { shaft.setAttribute('stroke', col); tip.setAttribute('stroke', col) }
+                if (w) { shaft.setAttribute('stroke-width', w); tip.setAttribute('stroke-width', w) }
+                const m = qb(A, Q, B, 0.5)
+                g.setAttribute('transform', scale === 1 ? '' : `translate(${f2(m[0])} ${f2(m[1])}) scale(${scale.toFixed(4)}) translate(${f2(-m[0])} ${f2(-m[1])})`)
+                g.setAttribute('opacity', a.toFixed(3))
+              },
+            }
+          }
+          const SOL = ['do', 're', 'mi', 'fa', 'so', 'la', 'ti', 'do']
+          // ==== end group A shared block ====
+
+          /* ---------------------------------------------------------------- anchors */
+          // 4a: "First," the kicker lands and the staircase dims to 25 %, its names and house fading (0.4 s);
+          // 0.3 s into the dim, as it settles, the tile row rises from 300 px below (1.2 s, power3.out, so it
+          // still lands as the board has it, as the names start) and fades in from 0 over 0.45 s (sine.inOut), so
+          // the retrieval follows the dim with no still between them and no frame where the row jumps on (film
+          // critic 01 item 1: it popped on at a quarter in one frame, after 0.3 s with nothing moving; keyed off
+          // the dim it serves, so a longer pause before "one" cannot bring the still back); on "2." the white
+          // tiles' names land in turn, 0.14 s apart; on "semitones" the thirteen tiles scale in turn over 0.8 s;
+          // on "octave?" C4 and C5 scale together (long pulse)
+          const DIM = word('b4', 'First', 'start', 0.02)
+          const RISE = DIM + 0.3, RISE_DUR = 1.2, RISE_FADE = 0.45
+          const NAMES_IN = word('b4', '2'), NAMES_GAP = 0.14
+          const SEMIS = word('b4', 'semitones'), SEMIS_DUR = 0.8
+          const OCT = word('b4', 'octave')
+          // 4b: q0's ring timer over the pause; on "Twelve." the answer lands top left and the twelve "1" brackets
+          // draw left to right (0.04 s apart, 0.26 s each, so over 0.7 s); from "Seven" the seven white tiles C4
+          // to B4 scale in turn across "Seven letters" (0.15 s apart, long; the board has them together, which
+          // left 0.4 s still before "five"); from "five" the five dark tiles light to 60 % chrome in turn, 0.3 s
+          // apart, each up over 0.3 s and back over 0.7 s, both linear (a large-area change that registers all
+          // the way, across "five notes between them"); the kicker leaves as b5 ends, the brackets over 0.45 s
+          // q0 (component critic A-02 item 4): C4 and C5, the octave's two ends, lift 40 px with a chrome outline
+          // as the pause opens (0.06 s in, 0.4 s, power3.out), hold through it, and drop as "Twelve" lands and the
+          // brackets start (0.25 s, power2.in), each settling with a tile pulse
+          const Q0 = at('q0'), Q0_DUR = at('q0', 'end') - at('q0'), LIFT0 = at('q0', 'start', 0.06)
+          const TWELVE = word('b5', 'Twelve'), BR0 = word('b5', 'Twelve', 'start', 0.04)
+          const SEVEN_L = word('b5', 'Seven')
+          const FIVE = word('b5', 'five')
+          const B5_END = at('b5', 'end')
+          // 4c: on "major" the tiles' names fade (0.2 s) and the stand-up starts 0.04 s later, one move of 2.0 s
+          // anchored by its start (film critic 01 item 8, polish item 2: the row no longer shrinks to a small comb
+          // at the left of an empty frame): the row turns upright about its middle tile at full scale, closing its
+          // pitch as it turns and stretching its tiles into the row bands as it comes upright, so it lands as the
+          // thirteen bands at x 220 to 1680 at 2.0 s, as before; the slivers' fill fades from 1.3 s; the rows above
+          // C5 fade in from 1.6 s; the staircase returns from 1.8 s, its names in turn from 2.0 s. On "seven steps" the
+          // seven risers grow in turn (0.07 s apart) and "in 7 steps" lands
+          const NAMES_OUT = word('b6', 'major'), STAND = word('b6', 'major', 'start', 0.04)
+          const SU_DUR = 2.0, P2 = STAND + 1.0, ROWS_IN = STAND + 1.6, BACK = STAND + 1.8, NAMES_BACK = STAND + 2.0, SWAP = STAND + 2.2
+          const SEVEN = word('b6', 'seven steps')
+          // 4d: m04's tag starts at at('o3', 'start', -1.1) (merc-tags.py), where she drops in; on "steps?" a "?"
+          // joins and pulses as she asks it; on "bigger" the seven riser bars brighten together (component critic
+          // A-02 item 2: 4 to 8 px, chrome at 40 % to full ink, 0.25 s, then back by "Let's", linear) and grow
+          // together, so their unequal heights read side by side; on "Let's" the two labels and the numerals leave
+          // up fast; her hop out at at('b7', 'start', 0.29); on "measure" a sweep runs along the seven riser bars,
+          // left to right, the steps S5 measures (component critic A-04 item 2, polish item 4: the stair lights
+          // repeated S3's naming wave): each bar flares from 4 px chrome at 40 % to 8 px full ink (0.12 s,
+          // power2.out) and settles back (0.55 s, sine.inOut), 0.1 s apart, so the last settles into the cut (back
+          // 0.04 s before it) and the last frame is HANDOFFS § A to B's (risers unmeasured). On "seven steps" each riser's event also
+          // pulses the stair above it to 1.06 and flashes its tread (DECISIONS 88), and an ink numeral, 1 to 7,
+          // lands above each riser as it flashes (A-02 item 2, FACTS 71)
+          const QMARK = word('o3', 'steps?'), BIGGER = word('o3', 'bigger')
+          const LEAVE = word('b7', "Let's")
+          const HOP = at('b7', 'start', 0.29)
+          const MEASURE = word('b7', 'measure'), SWEEP_GAP = 0.1
+
+          /* ---------------------------------------------------------------- the room */
+          // the dust: this group's (dustF) at the open, crossfaded over q0 into group B's (Lesson 2's filmDust,
+          // seed 7, 26 motes over 1960 x 1120, as s05 and s06 draw it), so the cut to s05 meets the same motes
+          const dustA = dustF(room.near)
+          const dustB = (() => {
+            const svg = L.stage(room.near)
+            const r = L.rng(7)
+            const motes = []
+            for (let i = 0; i < 26; i++) {
+              const m = { x: r() * 1920, y: r() * 1080, s: 0.8 + r() * 2.2, vx: (r() - 0.5) * 14, vy: -4 - r() * 10, ph: r() * 6.28 }
+              m.el = L.svg('circle', { r: m.s, fill: 'rgba(195,204,214,0.5)', opacity: 0 }, svg)
+              motes.push(m)
+            }
+            return {
+              svg,
+              draw(T) {
+                for (const m of motes) {
+                  m.el.setAttribute('cx', (((m.x + m.vx * T) % 1960 + 1960) % 1960 - 20).toFixed(1))
+                  m.el.setAttribute('cy', (((m.y + m.vy * T) % 1120 + 1120) % 1120 - 20).toFixed(1))
+                  m.el.setAttribute('opacity', (0.18 + 0.22 * (0.5 + 0.5 * Math.sin(m.ph + T * 0.9))).toFixed(3))
+                }
+              },
+            }
+          })()
+
+          /* ---------------------------------------------------------------- the world: staircase, tiles, brackets */
+          const mid = L.stage(room.mid)
+          const st = L.stairs(mid, {})
+          st.stairs.forEach((S, i) => S.names.prepare([SOL[i]]))
+          // the line on top of row D5 (the cold open's top edge): the kit draws it as row C#5's bottom line, which
+          // fades in with that row, so this copy holds it until C#5 is in (the two sum to the kit's 6 %)
+          const edgeD5 = L.svg('rect', { x: 220, width: 1460, y: f2(ST.rowTop(14) - 0.5), height: 1, fill: '#e6edf3', 'fill-opacity': 0.06 }, null)
+          mid.insertBefore(edgeD5, st.gAll)
+          // Lesson 2's tile row, C4 to C5 (HANDOFFS § Carried: centres x 240 + 120 i, home y 420 to 700), over the
+          // dimmed staircase; from phase 2 of the stand-up its slivers are the rows, so the group moves behind the
+          // staircase then (the staircase is at 0 at that moment, so nothing changes on screen)
+          const tileG = L.svg('g', { class: 'recall-tiles' }, mid)
+          const brG = L.svg('g', { class: 'recall-brackets' }, mid)
+          const row = L.tiles(tileG, { from: 60, to: 72 })
+          const brackets = L.tileBrackets(brG, row)
+          brackets.list.forEach((b, k) => { b.k = k })
+          const WHITE_K = {}, DARK_K = {}
+          row.tiles.filter((x) => x.white).forEach((x, k) => { WHITE_K[x.i] = k })
+          row.tiles.filter((x) => !x.white).forEach((x, k) => { DARK_K[x.i] = k })
+          let tilesBehind = false
+          const DARKC = [42, 49, 59], INKC = [230, 237, 243]
+
+          /* ---------------------------------------------------------------- Tavi (screen space, top layer) */
+          // L.mercGate (assets/lib/hosts.js), as every scene places a Merc: her drop seen whole from its intro
+          // (DECISIONS 81, the segment tags from tools/merc-tags.py), the hop carrying the box 360 px right through
+          // the hop's time in the air (from HOP + 0.15 over 0.42 s, power1.in), and a local floor patch under her corner.
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm04-orange', tag: SID + '-m04-orange', x: 1800, size: 300, hop: HOP })
+
+          /* ---------------------------------------------------------------- frame-fixed type and marks (hud) */
+          const hud = L.stageOf(room.hud)
+          const kicker = L.kicker(room.hud, 'From Lesson 2')
+          const ring = L.ringTimer(room.hud, { x: 164, y: 232 })
+          const lab1 = txt(hud, '1 octave = 12 semitones', { x: 140, y: 250, size: 56 })
+          const lab2 = txt(hud, 'in 7 steps', { x: 140, y: 330, size: 56 })
+          const labQ = txt(hud, '?', { x: 400, y: 330, size: 56 })
+          L.afterFonts(() => { labQ.setAttribute('x', f2(140 + lab2.getComputedTextLength())) })
+
+          // a riser's brightening as it grows on "seven steps" (4 px chrome at 40 % to 6 px at full): up over 0.28 s
+          // and back over 0.5 s, both linear, so each riser's change carries until the next one's
+          const env = (d) => (d < 0 ? 0 : d < 0.28 ? d / 0.28 : Math.max(0, 1 - (d - 0.28) / 0.5))
+          const growAt = (n) => SEVEN + 0.07 * (n - 1)
+          // the numerals 1 to 7 (Outfit 600 36 px, ink, the stair names' size), centred over each riser, 24 px above its top (the upper
+          // stair's tread), clear of that stair's pulse
+          const numerals = [1, 2, 3, 4, 5, 6, 7].map((n) => txt(mid, String(n), { x: ST.riserX(n, 0), y: ST.tread(n + 1, 0) - 24, size: 36, anchor: 'middle' }))
+          // C4's and C5's outline through q0: a 3 px chrome rim 6 px out from the tile, in the tile's own group so
+          // it rides the lift
+          const qOut = [row.tiles[0], row.tiles[12]].map((x) => L.svg('rect', { x: f2(x.x - 6), y: f2(x.y - 6), width: x.w + 12, height: x.h + 12, rx: 15, fill: 'none', stroke: C.chrome, 'stroke-width': 3, opacity: 0 }, x.g))
+          const INK = hexRgb(C.ink)
+          // the tread flashes (S3's): a soft chrome glow and a bright core along a stair's tread, over the staircase
+          const flashDefs = L.svg('defs', {}, mid)
+          const flashBlur = L.svg('filter', { id: SID + '-flash', x: '-20%', y: '-300%', width: '140%', height: '700%' }, flashDefs)
+          L.svg('feGaussianBlur', { stdDeviation: 5 }, flashBlur)
+          const flashG = L.svg('g', { class: 'tread-flash' }, mid)
+          const flashes = [1, 2, 3, 4, 5, 6, 7, 8].map(() => ({
+            glow: L.svg('path', { fill: 'none', stroke: C.chrome, 'stroke-width': 12, 'stroke-linecap': 'round', filter: `url(#${SID}-flash)`, opacity: 0 }, flashG),
+            core: L.svg('path', { fill: 'none', stroke: '#f2f5f8', 'stroke-width': 4, 'stroke-linecap': 'round', opacity: 0 }, flashG),
+          }))
+          const flashUp = (d) => (d < 0 ? 0 : d < 0.08 ? d / 0.08 : Math.max(0, 1 - (d - 0.08) / 0.5))
+          // the "?" pulses about its own middle; its width once the fonts are in
+          let qW = 28
+          L.afterFonts(() => { qW = labQ.getComputedTextLength() || qW })
+          const CHR = hexRgb(C.chrome)
+
+          L.clock(tl, D, (t) => {
+            const Tf = T0 + t
+            const xd = P(t, Q0, Q0_DUR, 'sine.inOut')
+            dustA.draw(Tf); dustA.svg.setAttribute('opacity', (1 - xd).toFixed(3))
+            dustB.draw(Tf); dustB.svg.setAttribute('opacity', xd.toFixed(3))
+            const box = tavi(t)
+
+            /* the stand-up (polish item 2; modelled in lab/s04-recall/polish/standup-sim.py): one progress su over
+               2.0 s (sine.inOut) turns the row 90 degrees anticlockwise about its middle tile (F#4) and carries that
+               tile's centre on a cubic from the row's centre (960, 560) to the bands' centre (950, 521), bowing up
+               then right and down, so the turning block keeps 25 px or more from "1 octave = 12 semitones" and above
+               y 892; the pitch closes from 120 to 26 px as it turns (26 + 94 (1 - su)^2.23) and the tiles stretch
+               from 280 to 1460 px as it comes upright (su^4.04), their gaps closing with the stretch. The block's
+               box never falls below 20 % of the frame (the row at rest is 21 %, the bands 24 %; it was 4.5 % for a
+               second); the slivers' fill fades from the tile's to its row band's from 1.3 s (0.7 s, power2.in) */
+            const su = P(t, STAND, SU_DUR, 'sine.inOut'), sL = Math.pow(su, 4.04), sv = 1 - su
+            const fade = P(t, P2 + 0.3, 0.7, 'power2.in')
+            const swap = P(t, SWAP, 0.6, 'none')
+            const pitch = 26 + 94 * Math.pow(sv, 2.23), tw = pitch * lerp(112 / 120, 1, sL), th = lerp(280, 1460, sL)
+            const rx = lerp(Math.min(10, 0.25 * tw), 0, sL)
+            const rise = P(t, RISE, RISE_DUR, 'power3.out')
+            const bez = (a, b, c, d) => sv * sv * sv * a + 3 * sv * sv * su * b + 3 * sv * su * su * c + su * su * su * d
+            const rowT = { s: 1, rot: -90 * su, cx: 240 + 6 * pitch, cy: 420 + th / 2, x: bez(960, 890, 1090, 950), y: bez(560, 422, 675, 521), dy: 300 * (1 - rise) }
+            const behind = t >= P2
+            if (behind !== tilesBehind) { mid.insertBefore(tileG, behind ? st.gAll : brG); tilesBehind = behind }
+
+            /* the staircase: 25 % from DIM (its names and house gone), then out as the tile row lands over it, so
+               its top stairs and feet never show round the row (component critic A-01 item 8); back to full on the
+               new rows (0.4 s), its names in turn */
+            const stA = t < BACK ? (1 - 0.75 * P(t, DIM, 0.4, 'power2.inOut')) * (1 - P(t, RISE + 0.4, 0.6, 'power2.inOut')) : P(t, BACK, 0.4, 'power2.out')
+            const nameA = (n) => (t < BACK ? 1 - P(t, DIM, 0.4, 'power2.inOut') : P(t, NAMES_BACK + 0.07 * (n - 1), 0.2, 'power2.out'))
+            const out12 = t < SWAP ? 1 - P(t, P2, 1.0, 'power1.inOut') : swap
+            // riser n's event on "seven steps" moves stair n + 1: a pulse to 1.06 (long) and a tread flash
+            const blockPulse = (n) => (n < 2 ? 1 : L.pulse(t, growAt(n - 1), 0.06, { long: true }))
+            const flashK = (n) => (n < 2 ? 0 : flashUp(t - growAt(n - 1)))
+            // "measure": a sweep along the riser bars, riser n flaring 0.1 s after riser n - 1
+            // (should a re-voice bring "measure" so near the cut that the last bar would still be settling, every bar is
+            // eased to rest over the last 0.3 s, so the last frame stays HANDOFFS § A to B's)
+            const sweepEnd = MEASURE + SWEEP_GAP * 6 + 0.12 + 0.55, sweepGuard = sweepEnd > D - 0.04 ? 1 - P(t, D - 0.3, 0.26, 'sine.inOut') : 1
+            const sweep = (n) => { const t0 = MEASURE + SWEEP_GAP * (n - 1); return sweepGuard * P(t, t0, 0.12, 'power2.out') * (1 - P(t, t0 + 0.12, 0.55, 'sine.inOut')) }
+            // "bigger": all seven bars together, up over 0.25 s and back by "Let's", linear
+            const big = P(t, BIGGER, 0.25, 'power2.out') * (1 - P(t, BIGGER + 0.25, LEAVE - BIGGER - 0.25, 'none'))
+            const in15 = P(t, ROWS_IN, 0.5, 'power1.inOut')
+            st.draw({
+              w: 0, s0: 0, a: stA,
+              rows: { x0: 220, x1: 1680, k0: 0, k1: 19, kA: (k) => (k <= 12 ? out12 : k <= 14 ? 1 : in15), keep: { boxes: box ? [box] : [], cam: null, t } },
+              stair: (n) => ({ scale: blockPulse(n), names: [{ text: SOL[n - 1], a: nameA(n) }] }),
+              riser: (n) => ({ scale: Math.max(L.pulse(t, growAt(n), 'bar', { long: true }), L.pulse(t, BIGGER, 'bar', { long: true })) }),
+              houses: { top: { a: 1 - P(t, DIM, 0.4, 'power2.inOut'), w: 0, lit: 1 } },
+            })
+            edgeD5.setAttribute('opacity', (1 - in15).toFixed(3))
+            st.risers.forEach((Rz, i) => {
+              const k = env(t - growAt(i + 1)), ink = Math.max(big, sweep(i + 1))
+              if (k <= 0.001 && ink <= 0.001) return
+              const x = ST.riserX(i + 1, 0), bw = Math.max(4 + 2 * k, 4 + 4 * ink)
+              Rz.bar.setAttribute('x', f2(x - bw / 2)); Rz.bar.setAttribute('width', f2(bw))
+              Rz.bar.setAttribute('fill', rgbStr(mixRgb(CHR, INK, ink)))
+              Rz.bar.setAttribute('fill-opacity', (0.4 + 0.6 * Math.max(k, ink)).toFixed(3))
+            })
+            // the numerals: each lands (0.2 s, rising 8 px) as its riser grows on "seven steps"; all leave with the labels
+            numerals.forEach((el, i) => place(el, fadeIO(t, growAt(i + 1), LEAVE, { out: 0.3, up: 60, ease: 'power3.in', rise: 8 })))
+            flashes.forEach((F, i) => {
+              const n = i + 1, k = flashK(n)
+              if (k <= 0.001) { F.glow.setAttribute('opacity', '0'); F.core.setAttribute('opacity', '0'); return }
+              const sc = blockPulse(n), cx = ST.colX(n, 0), tr = ST.tread(n, 0), my = (tr + ST.foot(0)) / 2
+              const y = my + (tr + 1.5 - my) * sc, hw = 51 * sc
+              const d = `M${f2(cx - hw)} ${f2(y)} L${f2(cx + hw)} ${f2(y)}`
+              F.glow.setAttribute('d', d); F.core.setAttribute('d', d)
+              F.core.setAttribute('stroke-width', f2(4 * sc))
+              F.glow.setAttribute('opacity', (0.85 * k * stA).toFixed(3)); F.core.setAttribute('opacity', (k * stA).toFixed(3))
+            })
+
+            /* the tile row */
+            const gone = t >= SWAP + 0.6
+            const darkLit = (i) => { const d = t - (FIVE + 0.3 * DARK_K[i]); return clamp(Math.min(d / 0.3, 1 - (d - 0.3) / 0.7)) }
+            // q0: C4 and C5 up 40 px with their outlines, and down as "Twelve" lands
+            const lift = P(t, LIFT0, 0.4, 'power3.out') * (1 - P(t, TWELVE, 0.25, 'power2.in'))
+            qOut.forEach((el) => el.setAttribute('opacity', lift.toFixed(3)))
+            // the stand-up (item 7): the dark tiles take a full chrome rim and a lighter fill through the spin, so all
+            // thirteen slivers read; the fade to the row bands takes both away
+            const spin = P(t, STAND - 0.1, 0.3, 'power2.out')
+            row.draw((tile) => {
+              const i = tile.i
+              if (gone) return { a: 0 }
+              const cx = 240 + pitch * i
+              const sc = Math.max(
+                L.pulse(t, SEMIS + (SEMIS_DUR * i) / 12, 'tile'),
+                i === 0 || i === 12 ? Math.max(L.pulse(t, OCT, 'tile', { long: true }), L.pulse(t, TWELVE + 0.25, 'tile')) : 1,
+                tile.white && WHITE_K[i] < 7 ? L.pulse(t, SEVEN_L + 0.15 * WHITE_K[i], 'tile', { long: true }) : 1,
+              )
+              return {
+                a: P(t, RISE, RISE_FADE, 'sine.inOut'),
+                scale: sc,
+                dy: i === 0 || i === 12 ? -40 * lift : 0,
+                lit: tile.white ? 0 : darkLit(i),
+                labelA: tile.white ? P(t, NAMES_IN + NAMES_GAP * WHITE_K[i], 0.2, 'power2.out') * (1 - P(t, NAMES_OUT, 0.2, 'power2.in')) : 0,
+                shape: { x: cx - tw / 2, y: 420, w: tw, h: th, rx },
+              }
+            }, rowT)
+            // each sliver's fill, from the tile's to its row band's (#e6edf3 at 2.5 %, or 6 % on a black-key row),
+            // then handed to the kit's rows: the sliver's share falls as the row's rises, so the sum holds the band
+            for (const tile of row.tiles) {
+              const b = tile.white ? 0.025 : 0.06
+              const o0 = tile.white ? 0.92 : 1
+              let o = o0 * Math.pow(b / o0, fade)
+              if (t >= SWAP) o = (b * (1 - swap)) / (1 - b * swap)
+              tile.rect.setAttribute('fill-opacity', o.toFixed(4))
+              if (!tile.white) {
+                // the kit's fill holds the 60 % chrome light; that has settled before the spin, so the mix starts dark
+                if (spin > 0 || fade > 0) tile.rect.setAttribute('fill', rgbStr(mixRgb(mixRgb(DARKC, CHR, 0.3 * spin), INKC, fade)))
+                tile.rect.setAttribute('stroke-opacity', (lerp(0.65, 1, spin) * (1 - fade)).toFixed(3))
+                tile.rect.setAttribute('stroke-width', f2(2 + 1.5 * spin))
+              }
+            }
+
+            /* the brackets: drawn left to right on "Twelve.", gone as b5 ends */
+            const brOut = P(t, B5_END, 0.45, 'power2.inOut')
+            brackets.draw((b) => {
+              const t0 = BR0 + 0.04 * b.k
+              const p = P(t, t0, 0.26, 'power2.out')
+              return { p, a: (p > 0.001 ? 1 : 0) * (1 - brOut), labelA: P(t, t0 + 0.1, 0.2, 'power2.out') }
+            })
+
+            /* the hud: kicker, q0's ring timer, the two labels and the "?" */
+            kicker.draw(t, DIM, B5_END)
+            ring.draw(t, Q0, Q0_DUR)
+            const lv = { out: 0.3, up: 60, ease: 'power3.in', rise: 12 }
+            place(lab1, fadeIO(t, TWELVE, LEAVE, lv))
+            place(lab2, fadeIO(t, SEVEN, LEAVE, lv))
+            const fq = fadeIO(t, QMARK, LEAVE, lv), qs = L.pulse(t, QMARK + 0.25, 'label', { long: true })
+            const qx = parseFloat(labQ.getAttribute('x')) + qW / 2, qy = 310
+            labQ.setAttribute('opacity', fq.a.toFixed(3))
+            labQ.setAttribute('transform', `translate(0 ${f2(fq.dy)}) translate(${f2(qx)} ${qy}) scale(${qs.toFixed(4)}) translate(${f2(-qx)} ${-qy})`)
+          })
+
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

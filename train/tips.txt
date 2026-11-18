@@ -1,0 +1,9 @@
+leap-ladder-slug 4092f6b6896dc20dc48a3b6df2b153e6741c0eb7
+kit-ladder-reader 8e723d20b4d3ea7ad73c00e211e73b0e48ab4024
+kit-runs-chords-mic 1d019016fac94475b75388d48eb1cd8f193560f7
+lesson-09-kit c31d2d978bd0c05d32af6434825b28c3ad79854d
+lesson-10-kit 398e8b1f5f4ec5bb92bd94f037c9fdf5c646a11e
+lesson-12-music 348e85e603eb5e42f3bf7817eb4530ea0a5c4705
+lesson-order-warning 4d16aeaaeb699e193bb40ac95578c2b808acebe9
+arpeggio-jumper-v2 81e0c3d1c67604bad5917c1c15b2de01e7b76df6
+STOPPED lesson-10-app-copy

@@ -1,0 +1,160 @@
+#!/usr/bin/env bash
+# Back up the lead's working notes to the branch feat/lead-notes, which holds
+# only these files and is never merged (the owner asked for a backup, 24 Oct).
+# Builder ids are dropped from the notes. No worktree is used: the files go in
+# through a throwaway index, so nothing on the machine changes but the ref.
+# Restore: git fetch origin feat/lead-notes && git archive FETCH_HEAD | tar -x -C <scratchpad>
+set -euo pipefail
+R=/home/user/mercurypitch
+S=/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad
+REF=refs/heads/feat/lead-notes
+FILES=(
+  NEXT.md PAUSED.md audit/audit.cjs audit/sheet.py steptext/look.cjs branches/check.py
+  audit/probe.cjs audit/hub.cjs audit/compare.py steptext/plays.cjs steptext/held.cjs
+  drills/FINDINGS.md drills/preview.cjs drills/native-shots.cjs
+  drills/canvas/project/canvas.json drills/canvas/project/Main.dc.html drills/canvas/project/SightInTime.dc.html
+  drills/canvas/project/NoteReading.dc.html drills/canvas/project/Cadence.dc.html drills/canvas/project/BeforeAfter.dc.html
+  drills/canvas/project/Desktop.dc.html
+  l9/PLAN.md l9/DECISIONS.md l9/FOLLOWUPS.md l9/BUILDER-RULES.md l9/REVIEWER-RULES.md
+  l9/a1b-brief.md l9/a1b-design.md
+  l10/PLAN.md l10/DECISIONS.md l10/FOLLOWUPS.md l10/k5k4-brief.md l10/k5k4-handback.md
+  l11/INBOX.md
+  l12/PLAN.md l12/DECISIONS.md
+  arp/CONSENSUS.md arp/FOLLOWUPS.md arp/BRIEF-v2.md
+  tour/PLAN.md onb/FINDINGS.md
+  l9/BRIEF-page-3.md l9/BRIEF-page-4.md l12/BRIEF-sing-layout.md
+  polish/BUILDER-RULES.md polish/BRIEF-P.md polish/BRIEF-S.md
+  release/walk/release-walk.cjs release/walk/run.sh
+  release/BRIEF-notes.md release/bin/cut.py release/bin/polish-notes.py
+  release/notes/CHANGELOG-entry.pre-polish.md release/notes/dev-changelog-entry.pre-polish.md
+  release/notes/PR-BODY.pre-polish.md release/notes/REACH.pre-polish.md
+  polish/S-PR-BODY.md polish/P-PR-BODY.md polish/P-lead/gates.sh
+  release/notes/CHANGELOG-entry.md release/notes/dev-changelog-entry.md release/notes/PR-BODY.md
+  release/notes/REACH.md release/notes/REPORT.md release/notes/LEAD-REVIEW.md
+  release/OWNER-PING.md release/PR-BODY-final.md
+  devpass/dev-pass.cjs devpass/dev-pass-2.cjs
+  bin/heavy bin/heavy-pri bin/light bin/seq-fold.py bin/verify-rebase-merge.sh bin/push-notes bin/restack.sh
+  checkup/BRIEF.md polish23/BRIEF.md
+  rebase-1026/gates.sh rebase-1026/bodies/1205-merge.md rebase-1026/bodies/1206-merge.md
+  rebase-1026/bodies/1208-final.md rebase-1026/bodies/1212-merge.md
+  rebase-1026/bodies/1213-new.md rebase-1026/bodies/1214-new.md
+  train/train.sh train/tips.txt train/wordmerged.txt train/resolve1214.py train/step.sh rebase-1026/bodies/1212-final.md rebase-1026/bodies/1213-final.md
+  l10/BRIEF-page-6.md l10/pr/BODY.md l10/pr/BODY.final.md l10/pr/fill.py l12/BRIEF-page-1.md l12/FOLLOWUPS.md
+  r2fix/karaoke-fetch-retry.patch r2fix/COMMIT-MSG.txt coachfoot/PR-BODY.md release24/notes3/l12-bullet.md
+  jamfix/jam-stage-layout.patch coachfoot/PR-BODY2.md coachfoot/NOTES-COMMIT-MSG.txt jamfix/COMMIT-MSG.txt r2pr/PR-BODY.md release24/OWNER-PING-final.md
+  rel25/OWNER-GO.md s2/BRIEF.md s2/SEASON-2.md s2/CURRICULUM-s5.md s2review/REVIEW.md s2review/SEASON-2.planner.md
+  l4setup/make_script.py l4setup/setup-tts.sh l4check/pitch_check.py
+  l4film/BRIEF.md l4film/FACTS.md l4film/script.json l4film/SCRIPT-DRAFT.md l4film/SCRIPT.md l4film/DECISIONS.md l4film/LEDGER.md
+  l4film/tools/script-draft.py l4film/tools/gen-root.py l4film/tools/mix.py l4film/tools/captions.py l4film/tools/script-md.py
+  l4film/review/script-01/REPORT.md l4film/review/script-02/REPORT.md l4film/review/script-03/REPORT.md
+  l4film/STORYBOARD.md l4film/HANDOFFS.md l4film/review/storyboard-01/REPORT.md l4film/review/storyboard-02/REPORT.md l4film/review/storyboard-03/REPORT.md
+  l4film/study/RULES.md l4film/study/lesson-01/NOTES.md l4film/study/lesson-02/NOTES.md
+  l4film/study/lesson-01/events.md l4film/study/lesson-02/events.md
+  l4film/assets/lib/frames.js l4film/assets/lib/stairs.js l4film/assets/lib/scripts.txt l4film/lab/kit-src/stairs.html
+  l4film/BUILD-GUIDE.md l4film/tools/board-cues.json l4film/tools/board-clock.py l4film/tools/merc-shots.py l4film/tools/CHANGES.md l4film/tools/chapters.py
+  l4merc/queue.sh l4merc/yield.py l4merc/verify.py l4merc/whole-watch.sh l4merc/leadtest/sheet2.png l4voice/BATCH.md assemble.py shared-a.txt shared-tf.txt
+  l4film/assets/lib/hosts.js l4film/tools/merc-whole.py l4film/tools/merc-pass.mjs l4film/assets/merc/whole.js l4film/lab/s04-recall/s04-src.html l4film/lab/s03-promise/s03-src.html
+  l4film/compositions/s01-cold-open.html l4film/compositions/s02-title.html l4film/compositions/s03-promise.html l4film/compositions/s04-recall.html l4film/compositions/s05-steps.html l4film/compositions/s06-groups.html l4film/compositions/s07-predict.html l4film/compositions/s08-anywhere.html l4film/compositions/s09-names.html l4film/compositions/s10-ti.html l4film/compositions/s11-why.html l4film/compositions/s12-sing.html l4film/compositions/s13-your-turn.html l4film/compositions/s14-recap.html l4film/compositions/s15-next.html l4film/compositions/s16-end.html l4film/lab/s01-cold-open/BUILD-NOTES.md l4film/lab/s05-steps/BUILD-NOTES.md l4film/lab/s07-predict/BUILD-NOTES.md l4film/lab/s09-names/BUILD-NOTES.md l4film/lab/s12-sing/BUILD-NOTES.md l4film/lab/s14-recap/BUILD-NOTES.md l4film/captions/chapters.json
+  l4film/tools/merc-tags.py l4film/assets/merc/intro.js l4film/merc/intros.json l4film/review/component-B-01/REPORT.md
+  l4entr/q/queue.sh l4entr/E-prompt.txt l4entr/F-prompt.txt
+  render-l4.sh wait-l4.sh seamcheck.py render-l4.before-contig.sh l4entr/polish/HELD.md l4entr/polish/BRIEF-common.md l4entr/critics/FILM1-ready.txt l4entr/critics/FILM2.txt l4entr/freeze.sh l4entr/render-switch.sh l4entr/mem-guard.sh l4entr/push-film06.sh l4entr/critics/FILM6-ready.txt
+  s2/BRIEF-articles-common.md s2/BRIEF-arc-c.md s2/BRIEF-arc-d.md s2/lessons/ARC-C-REPORT.md s2/lessons/ARC-D-REPORT.md
+  s2/lessons/15-staff/RESEARCH.md s2/lessons/15-staff/ARTICLE-PLAN.md s2/lessons/16-sing-what-you-see/RESEARCH.md s2/lessons/16-sing-what-you-see/ARTICLE-PLAN.md
+  s2/lessons/17-note-lengths/RESEARCH.md s2/lessons/17-note-lengths/ARTICLE-PLAN.md s2/lessons/18-read-a-line/RESEARCH.md s2/lessons/18-read-a-line/ARTICLE-PLAN.md
+  s2/lessons/19-threes-offbeats/RESEARCH.md s2/lessons/19-threes-offbeats/ARTICLE-PLAN.md s2/lessons/20-runs-pentatonic/RESEARCH.md s2/lessons/20-runs-pentatonic/ARTICLE-PLAN.md
+  s2/lessons/21-keys-circle/RESEARCH.md s2/lessons/21-keys-circle/ARTICLE-PLAN.md s2/lessons/22-vibrato/RESEARCH.md s2/lessons/22-vibrato/ARTICLE-PLAN.md
+  s2/lessons/23-perfect-tritone/RESEARCH.md s2/lessons/23-perfect-tritone/ARTICLE-PLAN.md s2/lessons/24-drone-harmony/RESEARCH.md s2/lessons/24-drone-harmony/ARTICLE-PLAN.md
+  s2/lessons/25-minor-properly/RESEARCH.md s2/lessons/25-minor-properly/ARTICLE-PLAN.md s2/lessons/26-second-voice/RESEARCH.md s2/lessons/26-second-voice/ARTICLE-PLAN.md
+  s2/lessons/27-sevenths-inversions/RESEARCH.md s2/lessons/27-sevenths-inversions/ARTICLE-PLAN.md s2/lessons/28-cadences-form/RESEARCH.md s2/lessons/28-cadences-form/ARTICLE-PLAN.md
+  sing-art/BRIEF.md sing-art/PLAN.md sing-art/LEDGER.md
+  l4entr/polish/make-briefs.py l4entr/polish/items-A.md l4entr/polish/items-B.md l4entr/polish/items-C.md l4entr/polish/items-D.md l4entr/polish/items-E.md l4entr/polish/items-F.md
+  l4entr/polish/BRIEF-A.md l4entr/polish/BRIEF-B.md l4entr/polish/BRIEF-C.md l4entr/polish/BRIEF-D.md l4entr/polish/BRIEF-E.md l4entr/polish/BRIEF-F.md l4entr/leap/DECISION-123.md l4entr/DELIVERY.draft.md
+  l4film/review/component-A-04/REPORT.md l4film/review/component-B-05/REPORT.md l4film/review/component-C-03/REPORT.md l4film/review/component-D-04/REPORT.md l4film/review/component-E-03/REPORT.md l4film/review/component-F-04/REPORT.md l4film/review/film-01/REPORT.md
+  l4film/review/film-02/REPORT.md l4film/review/film-03/REPORT.md l4film/review/film-04/REPORT.md l4film/review/film-05/REPORT.md l4film/review/film-06/REPORT.md l4film/DELIVERY.md l4entr/f6-docs-draft.md
+  s2pkg/BRIEF-15.md s2pkg/BRIEF-17.md s2pkg/BRIEF-19.md s2pkg/BRIEF-21.md s2pkg/BRIEF-23.md s2pkg/BRIEF-reviewer.md s2pkg/BRIEF-writer-common.md s2pkg/15-REVIEW.md s2pkg/17-REVIEW.md s2pkg/19-REVIEW.md s2pkg/21-REVIEW.md s2pkg/15-HANDBACK.md s2pkg/17-HANDBACK.md s2pkg/19-HANDBACK.md s2pkg/21-HANDBACK.md s2pkg/21-FIXPASS-MSG.md s2pkg/21/FACTS.md s2pkg/21/LESSON.md s2pkg/21/WEB-SPEC.md s2pkg/shared-19-21/L19-entries.md s2pkg/shared-19-21/L21-entries.md
+  s2pkg/23/FACTS.md s2pkg/23/LESSON.md s2pkg/23/WEB-SPEC.md s2pkg/23-HANDBACK.md s2pkg/23-REVIEW.md s2pkg/23-FIXPASS-MSG.md s2pkg/shared-19-21/L23-entries.md
+)
+# Season 2's remaining lessons (owner, 2 Nov): whichever of these exist.
+for n in 16 18 20 22 24 25 26 27 28; do
+  for f in s2pkg/BRIEF-$n.md s2pkg/$n-REVIEW.md s2pkg/$n-HANDBACK.md s2pkg/$n-FIXPASS-MSG.md \
+    s2pkg/$n/FACTS.md s2pkg/$n/LESSON.md s2pkg/$n/WEB-SPEC.md s2pkg/shared-rest/L$n-entries.md; do
+    [ -f "$S/$f" ] && FILES+=("$f")
+  done
+done
+for f in s2pkg/shared-rest/NOTES.md s2pkg/shared-rest/apply_shared.py s2pkg/shared-rest/findings-before.txt s2pkg/shared-rest/COMMIT-MSG.txt; do
+  [ -f "$S/$f" ] && FILES+=("$f")
+done
+# The lead's own page builds (Lessons 16 to 28).
+for f in l17/PLAN-B.md l19/PLAN.md l19/SPEC-NOTES.md l23/PLAN.md l22/PLAN.md \
+  l16/PLAN.md l18/PLAN.md l20/PLAN.md l21/PLAN.md l25/PLAN.md l25/pr-body.md \
+  l26/PLAN.md l27/PLAN.md l28/PLAN.md; do
+  [ -f "$S/$f" ] && FILES+=("$f")
+done
+
+# The Lesson 4 film's text files live in its gitignored working folder; copy them in first.
+L4=/home/user/mercurypitch/output/motion/lesson-04
+for f in BRIEF.md FACTS.md script.json SCRIPT-DRAFT.md SCRIPT.md DECISIONS.md LEDGER.md tools/script-draft.py tools/gen-root.py tools/mix.py tools/captions.py tools/script-md.py review/script-01/REPORT.md review/script-02/REPORT.md review/script-03/REPORT.md STORYBOARD.md HANDOFFS.md review/storyboard-01/REPORT.md review/storyboard-02/REPORT.md review/storyboard-03/REPORT.md study/RULES.md study/lesson-01/NOTES.md study/lesson-02/NOTES.md study/lesson-01/events.md study/lesson-02/events.md assets/lib/frames.js assets/lib/stairs.js assets/lib/scripts.txt lab/kit-src/stairs.html BUILD-GUIDE.md tools/board-cues.json tools/board-clock.py tools/merc-shots.py tools/CHANGES.md tools/chapters.py assets/lib/hosts.js tools/merc-whole.py tools/merc-pass.mjs assets/merc/whole.js lab/s04-recall/s04-src.html lab/s03-promise/s03-src.html compositions/s01-cold-open.html compositions/s02-title.html compositions/s03-promise.html compositions/s04-recall.html compositions/s05-steps.html compositions/s06-groups.html compositions/s07-predict.html compositions/s08-anywhere.html compositions/s09-names.html compositions/s10-ti.html compositions/s11-why.html compositions/s12-sing.html compositions/s13-your-turn.html compositions/s14-recap.html compositions/s15-next.html compositions/s16-end.html lab/s01-cold-open/BUILD-NOTES.md lab/s05-steps/BUILD-NOTES.md lab/s07-predict/BUILD-NOTES.md lab/s09-names/BUILD-NOTES.md lab/s12-sing/BUILD-NOTES.md lab/s14-recap/BUILD-NOTES.md captions/chapters.json tools/merc-tags.py assets/merc/intro.js merc/intros.json review/component-B-01/REPORT.md; do
+  if [ -f "$L4/$f" ]; then mkdir -p "$S/l4film/$(dirname "$f")" && cp "$L4/$f" "$S/l4film/$f"; fi
+done
+for f in review/component-A-04/REPORT.md review/component-B-05/REPORT.md review/component-C-03/REPORT.md review/component-D-04/REPORT.md review/component-E-03/REPORT.md review/component-F-04/REPORT.md review/film-01/REPORT.md review/film-02/REPORT.md review/film-03/REPORT.md review/film-04/REPORT.md review/film-05/REPORT.md review/film-06/REPORT.md DELIVERY.md; do
+  if [ -f "$L4/$f" ]; then mkdir -p "$S/l4film/$(dirname "$f")" && cp "$L4/$f" "$S/l4film/$f"; fi
+done
+
+tmp=$(mktemp -d "$S/.notes-XXXXXX")
+trap 'rm -rf -- "${tmp:?}"' EXIT
+export GIT_INDEX_FILE="$tmp/index"
+git -C "$R" read-tree --empty
+
+add() { # add <path in branch> <mode>, content on stdin
+  local h
+  h=$(git -C "$R" hash-object -w --stdin)
+  git -C "$R" update-index --add --cacheinfo "$2,$h,$1"
+}
+
+for f in "${FILES[@]}"; do
+  if [ ! -f "$S/$f" ]; then echo "missing: $f" >&2; continue; fi
+  mode=100644; [ -x "$S/$f" ] && mode=100755
+  case "$f" in
+    # Builder ids and other private words never leave the machine: bin/scrub.sed (kept local).
+    *.md) sed -E -f "$S/bin/scrub.sed" "$S/$f" | add "$f" "$mode" ;;
+    *) add "$f" "$mode" < "$S/$f" ;;
+  esac
+done
+
+add README.md 100644 <<'EOF'
+# Lead notes (backup)
+
+Working notes for the Find Your Pitch lesson builds, backed up from the
+session's scratchpad. This branch is never merged.
+
+- `NEXT.md`: the queue, the owner's decisions, open PRs, what runs now.
+- `PAUSED.md`: where each paused piece of work stopped, and what it needs next.
+- `l9/`, `l10/`, `l11/`, `l12/`: build plans, decisions and follow-ups.
+- `arp/`: the arpeggio grading consensus.
+- `tour/`: the lesson page tour plan.
+- `onb/`: findings from walking the onboarding and the lesson links locally.
+- `bin/`: the lane scripts builders run tests through, and the fold helper.
+
+Builder ids are replaced with "(builder)". The work itself is on the `feat/`
+branches these notes name.
+
+Restore into a scratchpad:
+`git fetch origin feat/lead-notes && git archive FETCH_HEAD | tar -x -C <scratchpad>`
+EOF
+
+tree=$(git -C "$R" write-tree)
+parent=$(git -C "$R" rev-parse -q --verify "$REF" || true)
+if [ -n "$parent" ] && [ "$(git -C "$R" rev-parse "$parent^{tree}")" = "$tree" ]; then
+  # still push: a run cut off after its commit leaves the local ref ahead of the remote
+  echo "notes unchanged (${parent:0:9})"
+  c=$parent
+else
+  c=$(git -C "$R" commit-tree "$tree" ${parent:+-p "$parent"} -m "docs: lead notes, $(date -u '+%Y-%m-%d %H:%M') UTC")
+  git -C "$R" update-ref "$REF" "$c" ${parent:+"$parent"}
+fi
+for i in 1 2 3 4 5; do
+  if git -C "$R" push -q -u origin "$REF:$REF"; then echo "notes pushed: ${c:0:9}"; exit 0; fi
+  sleep $((2 ** i))
+done
+echo "push failed" >&2
+exit 1

@@ -1,0 +1,284 @@
+# Build notes: group C (s07-predict, s08-anywhere)
+
+Running notes so a container restart or a usage-limit pause can resume. Builder C owns
+`compositions/s07-predict.html`, `compositions/s08-anywhere.html`, `lab/s07-predict/` and
+`lab/s08-anywhere/` only. Clock: Kokoro scratch, 483.73 s (cues.json = tools/board-cues.json).
+
+## Spans
+
+- s07-predict 146.097 to 199.360 (D 53.263); cuts on act2 (146.25) 0.15 s early.
+- s08-anywhere 199.360 to 229.240 (D 29.880).
+
+## Merc passes
+
+- m07-orange (s07, 148.35 to 153.35): rendering from 08:43 (m07-orange-merc.part.webm).
+- m08-orange (s07 to s08, 198.9 to 228.25): queued.
+- Both placed with L.mercGate (gate falls back to 30 with a console warning until whole.js has them). In s07
+  m08's tag covers 198.9 to 199.36 only (27 frames < 31), so the gate keeps it hidden there; it shows from s08.
+
+## Decisions (builder)
+
+- Strip in 7b: as Tavi's dashed staircase draws, the white keys D4 to D5 come up to full (D5 up from 45 %) and
+  C4 goes down to 45 %, so the strip shows exactly the guess's keys. In 7e's slide the strip goes to D major:
+  F4 and C5 to 45 %, F#4 and C#5 lit (40 % chrome). The real staircase's hairlines dim with it under the card.
+- Tavi's "?" is right-aligned to the top stair's right edge (x 1314, baseline 250), not centred on x 1258: centred,
+  the bead's hop onto stair 8 (white-d and major-d) passes through it. Measured: 7.0 px (white-d) and 7.5 px
+  (major-d) at the closest, 14.4 px at rest (lab/s07-predict/item2/clearance.json).
+- The pills leave with the ring timer as the predict pause ends and come back once the pull out of F-white has
+  landed (170.3): in F-white the bead's drop onto the dashed stair 1 (screen x 420 to 476, from y 423) crossed
+  "No: it changes" (x 140 to 443, y 433 to 497). Back in F0, the major-d bead keeps 9 px from that pill.
+- "Predict." stays up through F-white and leaves with the pills on "The white keys climb".
+- Step rows: per HANDOFFS (steps x 340 to 596, each letter centred on the same column in both rows).
+- 7f's "dashed riser flashes" are drawn as the dashed step itself (riser plus the tread it climbs to) in a
+  5 px ink line with a glow, faded linearly; the dashed riser alone sat on the real riser's bar.
+- Lead-ins for holds (each tied to the word it serves): dashed stairs 1 to 3 fill on "doh ray mee"; the white
+  keys D to D ripple on "white keys" (b18) and on "climb" (b20); the rows' S's scale on "short steps" too; the
+  real gold pair grows (and stairs 4 and 8 light) on "fall"; the tread flashes lead "third"/"seventh" by 0.15 s;
+  the key names lead "F sharp"/"C sharp" by 0.15 s and their keys scale again; the risers grow in turn on
+  "Keeping the pattern" (0.15 s apart); the "D" of "D major" scales on "named"; D4 scales on "note".
+- Edge fades (text sweep EDGE): stair 1's letter through CU-D; riser 7's label through F-keys-D; the label pulses
+  of the "Keeping" ripple only on risers 1 to 5 (6 and 7 sit at F-keys-D's top edge).
+- s08: stair 1 lights (and D4 scales) on "Start"; the beads drop onto the moving stair when a slide is landing,
+  and slide-g's rides stair 8 while it fades as the slide to E starts.
+
+- s07 round 2 (after the first measure): the step flashes are L-shaped (riser plus upper tread, 5 px ink with a
+  14 px glow, linear fade); the rows' letters land from 1.5x over 0.6 s; "WHITE KEYS" slides 30 px over 0.7 s; the
+  "?" grows through "changes" and fades at its end (power4.in, so it spends under 0.2 s at part-faded alphas: the
+  round-2 sweep had flagged the linear fade as LOW at 176.85 to 177.10).
+- s08 round 2 (the first s08 measure, with m08 not rendered, had 9.7 s of holds, longest 2.7 s at 219.06 to
+  221.76; every one but 228.26 (0.4 s) sits inside m08's span, so Tavi's idle carries them in the film): the eight
+  lit keys' pulse on "set of keys" and the four black keys' on "keys under it change" settle over 0.8 s, the four
+  now in turn (0.2 s apart); the ghost outlines fade over 0.7 s; the tally's pulses settle over 0.8 s; on the slide
+  back to C, E major's black keys go dark over 1.2 s from 0.3 s in, trailing the stairs.
+
+## Results
+
+- s07 round 2 clip (m07 rendered, m08 not): 2.8 s of holds inside (1.6 s per 30 s), longest 0.4 s (31.30, film
+  177.4); 2.2 s in the no-Merc stretch 153.3 to 198.9 (45.6 s), 1.45 s per 30 s; final hold 0.3 s (52.9, where m08
+  drops in). Single-frame "pops" at 39.03 (the flash on "different places", 2-frame onset) and 43.30 (the step
+  rows' 0.2 s leave, 189.3 to 189.5): both intended, checked frame by frame (frames 1166 to 1176, 1294 to 1304).
+- s07 round 3 clip: 2.7 s of holds inside (1.5 s per 30 s), longest 0.3 s; 2.1 s in the no-Merc stretch
+  (1.38 s per 30 s). m07 placed by the gate (whole.js has m07-orange 28 since 08:56): Tavi whole from 148.81,
+  hopping out right 152.7 to 153.3 (frames in lab/s07-predict/scratch/merc-sheet.png).
+- s08 round 2 clip (m08 not rendered): 9.0 s of holds, longest 2.1 s (219.66 to 221.76), all inside m08's span
+  but 28.9 (0.4 s, after Tavi has hopped out). Needs the m08 pass to prove.
+- s07 text sweep round 3: clean. s08 text sweep round 2: clean.
+- s08 last (29.873) vs s09's first still (lab/s09-names/frame-00-at-0s.png, 09:08): max 10, none over 16.
+- CU-D (40.6): the dashed and real treads at stairs 3 and 7 are one row apart (26 px world, 52 px at 2x); the
+  visible lines' centres read 49 px because L.stairs draws its tread highlight 1.5 px inside the block.
+- Handoffs: s06 last clip frame (director's 08:49 measure) vs s07 frame 0: max 36, mean 0.39, edges only
+  (draft encode). s07 53.253 vs s08 0.007 stills: max 21, 2 pixels over 16 (dust), mean 0.001.
+- Key names F# and C# settled on their 40 % chrome keys (49.1): 5.23:1 each.
+- item 2: lab/s07-predict/item2/clearance.json (numbers); stills lab/s07-predict/stills-r2/frame-03..09 (S7e hop
+  middles) and lab/s08-anywhere/stills-item2/ (S8b, S8c); sheets lab/s07-predict/scratch/item2-S7e.png,
+  lab/s08-anywhere/scratch/item2-S8b.png, item2-S8c.png.
+
+## Status
+
+| Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| s07-predict | fix round 1 | fix1, fix1-slide, fix1b, fix1b-slide | fix 1 (13:39): 1.0 s per 30 s, longest 0.2 | passes both limits | fix 1: clean | clean | current |
+| s08-anywhere | fix round 1 | fix1, fix1-slides | fix 1: 0.8 s per 30 s, longest 0.1 | passes both limits | fix 1: clean | clean | current |
+
+## Final checks (09:25)
+
+- Root `hyperframes check`: my scenes' only errors are missing_local_asset for m08-orange (both tags), as expected
+  until the pass lands; warnings are the shared Merc-tag ones (nested_media_start_basis_ambiguous,
+  duplicate_media_discovery_risk) and composition_file_too_large on s07 (449 lines). Log: lab/s07-predict/root-check.log.
+- merc-tags --check: 6 tags, 0 stale, 0 problems. clock-lint: prints nothing on both scenes.
+- m08-orange still rendering at 09:25 (1.3 MB part file, 32 min in). Once it lands and merc-whole.py runs:
+  re-render lab s08 (and s07's last 0.5 s) and re-measure; s08's diagram-only holds (longest 2.1 s at 219.66)
+  must then be covered by Tavi's idle.
+
+## Fix round 1 (component critic C-01, review/component-C-01/REPORT.md), from 12:50
+
+Sources re-read: DECISIONS 81, 83, 85; FACTS 77; BUILD-GUIDE § Handoff confirmations (Tavi's entrances stay as
+the director tagged them: m07 from 147.34 with its tall intro, m08-in from 198.27, the splice at 203.65).
+
+- Item 1 (S8 dead): lights instead of 1.05 pulses. 8b: stair 1 lights on "Start" and the light climbs the stairs
+  on "pattern"; on "any of the twelve notes" the six keys outside D major come up in turn (0.12 s apart) so all
+  twelve stand lit, and go back in turn from "get". 8d: each stair's hairline flashes to its key in turn on "keys
+  under it change" (its black key flashing, its white key scaling); the four entries scale in turn on "Every
+  start"; the header scales on "needs"; "D 2" flashes F#4 and C#5, "G 1" lights F#5, "E 4" flashes E's four; on the
+  slide back E's black keys go dark in turn (0.25 s apart); the stairs light in turn on "fits the white keys alone".
+  A black key's flash is a chrome face (50 %) over the lit key, an accent written in the scene.
+- Item 2: header "BLACK KEYS" with L.kicker (mono 30 px, .18em, ink-2) at x 140, baseline 172; the tally's text is
+  FACTS 77's, real spaces, with word spacing (entries +0.3 em: a 32 px space; probe +0.5 em: 44 px round each dot).
+  The line is about 805 px now (HANDOFFS said 476), x 140 to about 945, clear of every start's stairs.
+- Item 3: the "?" from x 1360, baseline 330 (world): 80.9 px from the bead at rest on stair 8, 24.6 px from the
+  echo ring at its largest (lab/s07-predict/item2/clearance.mjs).
+- Item 4: all eight names out over the slide's first 30 %, in over its last 30 %: none shows between, so no stair
+  holds two letters and no letter rides more than a fifth of the way to another key. Checked every 1/60 s
+  (lab/s07-predict/scratch/names-check.py): PASS on all four slides.
+- Item 5: the pills stay up; the lane ("Predict." and both pills) eases 50 px left with the push to F-white and back
+  with the pull. At x 140 white-d's drop and its first hop cross "No: it changes" by 23 px; at x 90 they clear it
+  by 26.7 px (drop) and 33.9 px (hops) (lab/s07-predict/scratch/pills.mjs).
+- Item 6: the ghosts one at a time (0.5 s apart; each 0.2 s in, 0.6 s slide, fit), the rim (the outline, ink 3.5 px
+  with a chrome glow) flashing as each fits; ghosts at 40 %.
+- Item 7: two beads; slide-g's fades in 0.25 s riding stair 8, slide-e's drops 0.2 s onto E's moving stair 1.
+- Item 8: the steps at x 354 + 46 k (both rows).
+- Item 9: the strip (and both sets of hairlines) fades over the CU-D push and returns with the crane; stair 7's
+  arrow fades 0.35 s before the crane.
+- Item 10: the strip dims to 25 % from the staircase's dim (1.0 s, power1.in) and returns as the card leaves.
+- Item 11: the "?" shrinks away on "changes" (0.35 s, power2.in); the rows leave over 0.4 s drifting 24 px left,
+  from 0.5 s before the crane; the flashes rise over 0.15 s.
+- DECISIONS 85: the dashed staircase's lines, fills and flashes are cut clear of the real staircase's two golds
+  (gap and corner, as the real staircase comes to full); S8's ghosts and rim are cut clear of E's golds.
+- For the holds (about 1 s per 30 s with Tavi): S7's stair 3 and 7 letters scale and their keys flash on
+  "changes" (+0.45 s); F#4 and C#5 flash on "black" and "keys" instead of scaling.
+- Holds, last pass (S7): every riser grows in turn on "the major pattern" (b19, 0.1 s apart, as the real staircase
+  is back on C); stairs 3 and 7 light with F#4 and C#5 on "black" and "keys" (their flashes to 75 %, back in 0.35 s);
+  the strip dims over 0.8 s (was 1.0) so it settles as the card lands.
+- Director's 13:29 note (L.mercGate's tall intro now falls from above the frame): s07 re-rendered after it (clip
+  13:39:22). Column rule from y 0 for each fall (m07 1.25 to 1.80, m08 52.17 to 52.72), every 1/30 s
+  (lab/s07-predict/scratch/column.sh): nothing of mine inside x 1680 to 1920. Only two things reach it: the kit's
+  staircase rows, which end at x 1680 (their own keep cut), and one L.filmDust mote at x 1904 to 1907, y 201 to 209
+  (alpha 0.38) during m08's fall. That dust is the kit's, not a mark of mine, so it is left as it is.
+
+## Fix round 1 results (13:50)
+
+- measure.py, fresh clips with Tavi in: s07 (13:39:22, new entrance) 1.8 s inside, 1.0 s per 30 s, longest 0.2 s;
+  s08 (13:32:25) 0.8 s inside, 0.8 s per 30 s, longest 0.1 s, final hold 0.2 s (exempt). The 13:27 s07 clip (old
+  entrance) measured the same (scratch/measure-1327-old-entrance.md).
+- Text sweep: clean on both (lab/<scene>/sweep-report.txt). clock-lint silent on both. merc-tags --check: 14 tags,
+  0 stale, 0 problems. Root check: 5 errors, all missing m12 passes in s12 to s16; my scenes carry only the shared
+  Merc-tag warnings and composition_file_too_large (lab/s07-predict/root-check.log).
+- names-check.py: PASS on all four slides after the last edits. Dense stills of S7's slide retaken
+  (lab/s07-predict/fix1b-slide/, sheet scratch/fix1b-dense-slide.png).
+- Handoffs: s06 clip last vs s07 clip first: max 53, mean 0.48, edges only (draft encodes). s08 clip last vs s09
+  clip first (s09's 12:56 clip; its frame-00-at-0s still is gone): max 60, mean 0.46, edges only. s07 53.253 still
+  vs s08 0.007 still: max 166, all on Tavi (m08 moving through the cut); across the clip cut her region changes by
+  mean 4.38, as much as her own frame-to-frame change just before it (3.99, 4.09), so it is her motion, not a jump.
+
+## Fix round 2 (component critic C-02, review/component-C-02/REPORT.md: both KEEP), 30 Oct from 01:30
+
+N1 (the cut) needs no change (DECISIONS 87). HANDOFFS now records the "?" and the tally. The depth cue, the near
+bokeh and the Merc tags past a scene's end are the kit's and the director's; nothing of mine changes for them.
+
+- N2 (one-frame snaps): S7's F#4 and C#5 flashes on "black" and "keys" (and on "changes") rise over 0.15 s with
+  power1.out instead of L.env's power2.out: GSAP's power2 is cubic, so its first 1/60 s carries 30 % of the rise
+  (0.22 of the key's 0.75, about 28 luma on the lit key), which measure.py reads as a jump; power1.out's first frame
+  carries 21 % (0.16, about 20 luma) and each frame after it less. S8's rim flash rises over 0.15 s (power2.out, as
+  asked) instead of 0.06 s.
+- N3: stair 3's "semitone low" arrow fades with stair 7's, over 0.3 s from 0.35 s before the crane (43.4).
+- N4: major-d's echo ring on stair 8 grows to 2.5 bead radii (55 px) instead of 3.5 (77 px), from its own pool
+  (white-d's ring in F-white keeps 3.5, as s05's and s06's). Probe: at its largest the ring's geometry ends 10 px
+  from riser 7's "S" box (8.5 px with the 3 px stroke); before, it crossed the box by about 13 px.
+- N5: the strip's dim starts at "act2" (0.15) with the staircase's: 80 % of it over the staircase's 0.3 s, the
+  last 20 % over the next 0.8 s (sine.inOut), so the frame keeps moving until Tavi falls in. Strip brightness as the
+  card lands (0.37): 0.94 before, 0.45 now; at 0.6: 0.76 before, 0.39 now; settled at 0.25 by 1.25.
+- N6: white-d's bead has its halo at half opacity from its drop (18.42) until its first hop, back to full over that
+  hop (18.77 to 19.07); major-d's bead keeps its full glow.
+- Checks before rendering: clock-lint silent, node --check passes on both scenes' scripts, merc-tags --check
+  14 tags, 0 stale, 0 problems. The r3 clips are kept as lab/<sid>/clip-r3.mp4 (measures in measure-r3/).
+- Renders: 60 fps drafts from lab/<sid>/proj with the pinned CLI (lab/s07-predict/scratch/hostpass60.sh, my copy
+  of builder E's), nice 10, TMPDIR=/dev/shm, waiting for 1150 MB free on /.
+- S8's rim, second pass: at 60 fps the 0.15 s power2.out rise still left one frame (19.000, 0.24 % of pixels) alone in
+  a still frame after the third ghost lands, so its rise is power1.out too (the same as S7's key flashes).
+
+## Fix round 2 results (30 Oct 02:05)
+
+- s07 (lab/s07-predict/clip.mp4, 60 fps, 01:50): holds 1.5 s inside, 0.8 s per 30 s, longest 0.2 s (r3 at 30 fps:
+  1.0 s per 30 s, longest 0.2). Single-frame events: 46.133 and 46.533 (0.61 % each in r3) are gone; per frame at
+  60 fps through both flashes no frame changes more than 0.01 % of pixels by over 24. The events left are 0.1 to
+  0.5 %: the chapter card's own steps (0.733, 0.833, 2.000 with Tavi's landing), and whole-pixel snaps of moving type
+  (7.27 to 7.55 the kicker, 25.433 the D names landing, 30.53 to 30.80 "Yes" and the "?" leaving, 50.77 to 50.93
+  "D major").
+- s08 (lab/s08-anywhere/clip.mp4, 60 fps, 02:00:48): holds 0.7 s inside, 0.7 s per 30 s, longest 0.1 s, final hold
+  0.2 s (exempt). 19.000 (1.04 % in r3; 0.24 % with power2.out at 60 fps) is gone. The events left are 0.03 to
+  0.10 %: the tally's label pulses (22.75 to 25.48, L.pulse) and 1.833 (0.05 %, the strip under Tavi).
+- Text sweep clean on both. clock-lint silent, node --check passes, merc-tags --check 14 tags, 0 stale,
+  0 problems. Root check: 0 errors, 79 warnings (lab/s07-predict/root-check.log).
+- Stills: lab/s07-predict/fix2/ (33) and lab/s08-anywhere/fix2/ (15).
+  Sheets: lab/s07-predict/scratch/fix2-N5.png, fix2-N6.png, fix2-N3-N4.png; lab/s08-anywhere/scratch/fix2-rims.png.
+- The s07 53.25 to s08 0.0 handoff outside Tavi's box: max 21, 2 pixels over 16.
+
+## Polish round (film critic FILM1 items 6 and 7, held C-03 items 1, 2 and 4), 30 Oct from 14:30
+
+Brief: $S/l4entr/polish/BRIEF-C.md (items 1 to 5). Renders: TMPDIR=/dev/shm, --workers 2 at most, --output into
+/dev/shm/l4lab-C/ and then mv into the lab folder; one render at a time. "Before" numbers are the fix-2 clips'
+(lab/<sid>/measure/summary.md, 60 fps).
+
+Plan (as started):
+- Item 1: the ring timer docks at the pills' right end, centred on the pair (y 425), 16 px from the "Yes" pill's cap
+  (the pills' own spacing), riding the lane's 50 px ease with the pills; was (620, 440) fixed.
+- Item 2: S8d's three ghosts become one: a copy of the staircase's step profile lifted off it (4 rows up), with a
+  "same shape" label beside its top step, settling back into the staircase as its rim flashes; nothing of it comes
+  within 24 px of a label.
+- Item 3: riser 7's "S" stays on through the crane and the pull (edgeRiser7 removed).
+- Item 4: F-keys-D passed as { s 1.6, ox -380.8, oy -440 } from the scene (L.FRAMES is the kit's, read-only).
+  With it risers 6 and 7 are in frame, so their labels join the "Keeping the pattern" ripple again.
+- Item 5: "Predict." and "D major" fade in place (no 24 px rise).
+
+As built (15:00), before the clips:
+- Item 1: ring at (484, 425) (`RING`), its group translated by the lane's dx each frame (it reaches x 441.7 as it
+  leaves at 162.19). Probe every 1/60 s over 12.65 to 16.15 (scratch/polish/ring-gaps.js, ring-before.txt,
+  ring-after.txt): before (620, 440) its ink came 27.0 px from dashed stair 3's (ink to ink; C-03 read 18 px to
+  the corner) at 15.63; after, 81.3 px from dashed stair 2 at 15.45; 16.2 px from the "Yes" box and 30.6 px from its
+  text, 24.8 and 40.3 from "No"'s.
+- Item 2: s08's ghost is `ghost` (one group, the profile `profile(w, s0)` on E), `sameT` ("same shape", Outfit 600
+  40 px ink at x 1466, baseline 166, in mid), the rim now the same profile. Probe every 1/60 s over 17.2 to 18.9
+  (lab/s08-anywhere/scratch/polish/ghost-gaps.js, gaps-before.txt, gaps-after.txt): before, three ghosts, ink
+  x 242 to 1674 and y 170 to 736, down to -1.5 px from riser 1's "T" (on it), under 24 px in 95 of 102 samples;
+  after, one ghost, ink x 482 to 1433 and y 156 to 493, nearest label 27.8 px (riser 1's "T", as it fades in).
+- Items 3 and 4: probe every 0.05 s over 43.3 to 50.8 (scratch/polish/top-s.js, tops-*.txt): before, the top "S"
+  gone 43.75 to 50.0; after, at alpha 1 throughout, its ink at x 1491 to 1527, y 22 to 70 in F-keys-D. The
+  black-key names settle at baseline 875.4 (787.4 before). Riser 7's label stays out of the "Keeping" label ripple
+  (scaled 1.25 its ink reached y 12); riser 6's joins it.
+- Item 5: both titles fade in place over 0.3 s.
+- Handoff frames (probe, no Mercs): s07 0 and 53.253, s08 0.007 and 29.873, before against after: max 0, no pixel
+  changed. Stills (HyperFrames, with Tavi): lab/s07-predict/polish/; sheets sheet-item1-ring.png,
+  sheet-item3-4-crane.png, sheet-item5-predict.png, sheet-item5-dmajor.png there.
+- Root check 15:00: 0 errors, 75 warnings; my scenes' are the same ones as before (the Merc-tag pair and
+  composition_file_too_large). The fix-2 measures moved to lab/<sid>/measure-fix2 (the "before" numbers); the r3
+  clips are deleted.
+- s07 clip rendering from 14:57 (scratch/polish/render.sh, workers 2).
+
+Results (15:30):
+- s07 clip (lab/s07-predict/clip.mp4, 60 fps, 15:04): holds 2.0 s inside (1.1 s per 30 s), longest 0.3 s (7.20, after
+  "Predict." has faded in); fix 2 had 1.5 s (0.8), longest 0.2. In the no-Merc stretch (7.2 to 52.8) 1.8 s in 45.6 s,
+  1.18 per 30 s (fix 2: 1.3 s, 0.86). Single-frame events: the twelve title snaps (7.267 to 7.550, 50.767 to 50.933)
+  are gone; every other event is as in fix 2 (same times, same shares).
+- s08 clip (lab/s08-anywhere/clip.mp4, 60 fps, 15:13; second render after retiming the ghost): holds 0.8 s (0.8 per
+  30 s), longest 0.1 s, final 0.2 s (fix 2: 0.7 s, longest 0.1). The first render (lift power2.out 0.9 s, label 0.3 s,
+  rim back power2.in) had 1.1 s and three label-fade "jumps"; now the lift runs sine.inOut to the drop, the label fades
+  over 0.4 s sine.inOut and the rim goes back linearly over 0.5 s. New events 17.47 to 18.55 (0.06 to 0.21 %) are the
+  ghost's lift: its line moves 0.2 to 0.7 px every frame (centroid measured frame by frame), no whole-pixel steps.
+- Text sweeps clean on both (final code). clock-lint silent, merc-tags --check 10 + 4 tags, 0 stale, 0 problems.
+- Handoffs: probe before/after max 0 at s07 0 and 53.253, s08 0.007 and 29.873. HyperFrames stills: s07 0 vs the
+  director's seam-s07-first max 11; s06's seam-last vs s07 0 max 23, none over 24; s07 53.253 vs s08 0.007 outside
+  Tavi's box max 21, two pixels over 16 (as before); s08 29.873 vs fix 2's 29.87 still max 0.
+- Stills: lab/s07-predict/polish/ (23), lab/s08-anywhere/polish/ (11); sheets there; dense sheets in polish/dense/.
+
+## Status (polish round)
+
+| Scene | Built | Stills | Clip | measure.py | Text sweep | clock-lint | merc-tags |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| s07-predict | polish round | polish/ | 15:04, 60 fps: 1.1 s per 30 s, longest 0.3 | passes both limits | clean | clean | current |
+| s08-anywhere | polish round | polish/ | 15:13, 60 fps: 0.8 s per 30 s, longest 0.1 | passes both limits | clean | clean | current |
+
+## Holds round (1 November), builder BC: film round 5 item 1 (DECISIONS 139), s07 and s08
+
+Brief: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l4entr/polish5/BRIEF-BC.md. Builder BC
+owns s05 to s08 this round; the tools, the method and the s05/s06 notes are in lab/s05-steps/BUILD-NOTES.md
+("Holds round"), these are s07's and s08's. Spans now: s07 169.640 to 229.508 (D 59.868), s08 to 262.670 (D 33.162).
+Targets: no hold over 0.3 s; s07 at most 1.53 s of holds (film-05 4.6), s08 at most 0.47 s (film-05 1.4).
+- Built (00:05 to 00:10), s07: creeps (ox only, sine.inOut) at F0 in b17, in F-white, in 7e/7f at F0, in CU-D and in
+  F-keys-D, none while Tavi is in frame and none after the last pull (the camera holds F0 from there: signature 2);
+  settles: Tavi's "?" 12 px (4.95 to 6.94, she is in frame), "Predict." 24 px from "Predict", "D major" 20 px from the
+  pull's landing to "named" + 0.15. Largest creep slide 6.5 px/s.
+- s08 (no camera: signature 2): "same shape" drifts 12 px right from "never" through its fade (20.67 to 21.86); "C 0"
+  settles 8 px into place as "D 2" lands (9.65 to 10.19); the tally drifts 24 px left from b25's end - 0.3 and leaves
+  over 0.45 s (was 0.2), gone by 33.07 (the last frame is 33.13).
+- Round 1 (00:18 to 00:25): s07 0.6 s of holds (0.00, 3.80, 7.80, 9.80, 58.20, 58.50; was 4.6, longest 0.9); s08 0.5 s
+  (3.30, 3.80, 6.10, 6.90, 26.20; was 1.0 inside + 0.2 at the end, longest 0.3). s08 is 0.03 s over its 0.47 target.
+- While the staircase is dimmed (s07 to 28.04) the mid layer moves in whole pixels (see s05 notes): the b17 creep from
+  "the white keys" to the pills fixed nothing, so it is gone; "Predict." now settles until FILL(1); one creep from the
+  pills into the slow push (20 px) and the F-white one stay, stepping like the slow push itself.
+- s08 round 2 change: "C 0", named again on "except C", drifts 8 px and back (sin^2, so eased both ways) until
+  "needs" + 0.3, for the gap at 26.2.
+- Round 2 (00:31 to 00:39, /dev/shm/l4lab-BC/<sid>.mp4): s07 0.5 s of holds (0.00, 3.80, 7.80, 58.20, 58.50, 0.1
+  each), under its 1.53 target; s08 0.4 s (3.30, 3.80, 6.10, 6.90, 0.1 each, Tavi in frame), under 0.47, and no final
+  hold. First and last frames of both against the before stills: max difference 0 (ends-s07-predict.jpg,
+  ends-s08-anywhere.jpg in holds/). Text sweep (step 0.25): s07 240 samples and s08 133, nothing flagged.
+  s08-settles.jpg: the "C 0" bump (25.30, 25.96, 26.62) and the tally's exit (32.40, 32.80, 33.05).

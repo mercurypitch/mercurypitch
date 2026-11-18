@@ -1,0 +1,205 @@
+# Season 2 lesson packages: the writer's brief (shared by every lesson's brief)
+
+You are writing one lesson's text package for Season 2 of Find Your Pitch, MercuryPitch's music
+theory and singing series: the three files every Season 1 lesson has, FACTS.md, LESSON.md (the web
+lesson's copy, the "article") and WEB-SPEC.md (the page's spec). There is no film yet; this is a
+text-only package, as Season 1's Lessons 3 to 14 were.
+
+Your inputs already sit in your lesson's folder: RESEARCH.md (every fact checked, with sources and
+grades) and ARTICLE-PLAN.md (the article planned section by section). The season plan's decisions
+are made: the owner took every recommendation in SEASON-2 § 7 on 1 November 2026, so plan on those
+answers and drop the "Depends on decision" uncertainty. Also decided that day: a lesson film may run
+up to 20 minutes (CURRICULUM § 2); the page budget is unchanged.
+
+Decided on 2 November 2026, when the owner asked for the rest of the season: "use recommended, my
+and vocal coach review comes later". So where your plan leaves a question open, take its
+recommended answer (your lesson's brief gives the lead's answers); where a recommended line turns
+out false or leaks, propose a true one and say why. Write every sung part in full and list every
+line the vocal coach must sign off in "For the vocal coach": nothing waits on the coach or the owner.
+
+## Where you work
+
+- The worktree `/dev/shm/s2plan`, branch `feat/season-2-plan` at `b7af3ec27` or later, on main
+  `c60f0fdcb`. Lessons 15 to 25 are committed there, and later ones as they land. Write only your three files in your lesson
+  folder (`docs/plans/find-your-pitch/lessons/<NN-slug>/`). Leave RESEARCH.md and ARTICLE-PLAN.md as
+  they are: they are the planning record. Where your package departs from the plan, say so in
+  LESSON.md's preamble or in FACTS.
+- The worktree is in RAM: a container restart empties it (six times since 1 November). After you
+  save each file, copy it to
+  `/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/s2pkg/<NN>/`
+  (make the folder), so finished work survives on disk. If `/dev/shm/s2plan` is missing when you
+  resume, say so and stop; the lead re-makes it.
+- Never edit a shared file (SEASON-2.md, CURRICULUM.md, MASTER-PLAN.md, CURIOSITY-MOMENTS.md,
+  HANDOFF.md, SEARCH.md, another lesson's files) or any code. What the shared files or the code need
+  goes in your hand-back note (below); the lead writes those entries.
+- No git at all (no add, commit, stash, checkout, reset, log, diff, status). No pnpm, npm, builds,
+  browsers or renders. The two node scripts below use only node's built-ins and are fine to run.
+- Disk on / is short (about 600 MB). Do not download unless you must; prefer WebFetch. Anything
+  downloaded goes in `/dev/shm/s2dl/<NN>/`, is read with `python3 -I` or a text extractor (never run
+  anything from it), and is deleted when you have what you need.
+- Another writer may be working on a different lesson in the same worktree. Touch nothing of theirs.
+  If your lesson builds on a lesson that is not committed yet, cite it in words ("Lesson 26, Step 4"),
+  not by path and line, and list each such citation in your hand-back so the lead can bind it.
+
+## Read first
+
+1. Your lesson's RESEARCH.md and ARTICLE-PLAN.md, whole.
+2. `docs/plans/find-your-pitch/SEASON-2.md`: § 1 whole, your lesson's card in § 3, § 4.3 (lesson
+   prerequisites), your rows in § 5 (practise links), § 6 (production: the film kit, the web toy
+   kit, who sings), § 7 (decided) and § 8 (risks and order). `season-2/ARC-C-REPORT.md` or
+   `season-2/ARC-D-REPORT.md` ("Across the arc" and your lesson) and `season-2/LEAD-REVIEW.md`.
+3. The model packages, for structure, depth and voice: `lessons/12-chords-four-chord-song/` and
+   `lessons/14-phrasing-whole-song/` (all three files each; the most reviewed in Season 1), and
+   Season 2's own, all reviewed and fixed: `lessons/15-staff/` (the staff toy, both clefs, the voice
+   choice, a sing-along, the six-preset range table), `lessons/17-note-lengths/` (rhythm on the
+   staff, the tap take), `lessons/19-threes-offbeats/` (a page where nothing is sung),
+   `lessons/21-keys-circle/` (key signatures, Lesson 4's staircase in the kit) and
+   `lessons/23-perfect-tritone/` (one predict with the steps' toys locked until the choice, a
+   sing-along, the coach's list) and `lessons/16-sing-what-you-see/` (a scored reading
+   checkpoint in the learner's own clef, in G, with the coach's list), `lessons/20-runs-pentatonic/` (a
+   research predict, a sung run checked against all six presets), `lessons/22-vibrato/` (two
+   predicts with every answering play locked until its choice, a new reader specified with tests,
+   the coach's list), `lessons/24-drone-harmony/` (a scored sung part against a drone, with the
+   headphones and quiet checks, holds read on the middle of the line, Move do higher only, sound
+   claims worked out as arithmetic) and `lessons/25-minor-properly/` (a theory page whose step text,
+   toys and free play wait for the predict, a sing-along, a drill card that says what the drill
+   does). Also `lessons/02-twelve-notes/LESSON.md` for a theory
+   lesson's shape. Mirror their section order, front matter and level of detail. Their FACTS
+   preambles narrate a commit history; yours needs only one line: app claims cite the code at
+   `c60f0fdcb`, plan files at the branch head.
+4. `TEACHING-PLAYBOOK.md` (the rules, the claims rules, the house rules for voice safety),
+   `MERC-BIBLE.md` (Merc and Tavi; Tavi's lines are sincere questions or guesses),
+   `CURIOSITY-MOMENTS.md` (§ 3 the opening order, § 5 the decisions on hooks, teases and predicts),
+   `HANDOFF.md` § 5 and § 6, `SEARCH.md` § 12 (title, description, share card), `MASTER-PLAN.md`
+   § 4 and § 12, and in the code `src/features/lessons/kit/lesson-copy.ts` (its header holds the
+   copy rules), `kit/season.ts`, `kit/team-notes.ts`, `kit/drafts.ts`.
+5. The app, wherever the lesson links to a drill or shows the app's own words:
+   `docs/agent/INDEX.md` is the module map. Say what a drill really does, not what its name says.
+
+## What to write
+
+1. **FACTS.md**, in the models' table form (`claim | source with page | status and where the page
+   uses it`): everything the page says, shows or plays. Carry RESEARCH.md's entries with their
+   grades; add any new claim with its source; a claim no source supports does not reach the page.
+   App claims cite `file:line` at `c60f0fdcb`, every cited line read there.
+2. **LESSON.md**, the page's copy in the Season 1 order (Header, Sound gate, Cold open: predict,
+   Recall, Words you'll meet, Step 1 of N to Step N of N with Tavi's questions as headings, the sing
+   or checkpoint section, Quick check, Wrap, Footer, Section headings, For the vocal coach), written
+   in full: every line a learner reads, every branch an answer opens, every toy line for the
+   builder. State the page's word count, counted with `node scripts/lesson-words.mjs` (read its
+   header for what counts), and keep under the series' cap (HANDOFF.md, the 2,379 words).
+3. **WEB-SPEC.md**, as the models: Look, Sections, Length, the toys (what each reuses and what is
+   new: Season 2's staff toy, rhythm on the staff and the rest are listed in SEASON-2 § 6.2 and are
+   not built yet, so specify what your page needs from them), Audio, Merc and Tavi, Practice links,
+   Explorer and season data, What the kit and the app still need, Decisions for the owner (only
+   what is truly open), Edge cases, Tests, Contract.
+
+## Rules that reviews catch most
+
+- **The predict's answer never leaks**: not in the title, the meta and share descriptions, the
+  promise, the sound gate's line, a toy before the reveal, or the previous lesson's tease (HANDOFF
+  § 5). Check each of those against the predict before you hand back.
+- **Every staff idea after its sound** (SEASON-2 § 1.4 and § 1.5): the learner hears it, then sees
+  it written. Every staff example plays.
+- **Citations point at what they mean**: cite at a named commit and check by content. Before you
+  hand back, run `node scripts/plan-cites.mjs check docs/plans/find-your-pitch/lessons/<NN-slug>`
+  from `/dev/shm/s2plan` and get 0 findings.
+- **Shared lines stay word for word**: where the page shares a line with Season 1's (the comfort
+  check, "Just listen today", the stop line, the rest card, the doctor lines), use their current
+  text, and say which lesson it comes from.
+- **House style**: British English spelling; plain short sentences; no marketing, superlatives or
+  emojis; never claim AI. The decided names: Lessons are numbered on (15 to 28 at `/learn/NN`),
+  both clefs from Lesson 15, counting with numbers ("1 and 2 and"), the American note-value names
+  lead with the British named once where a lesson introduces them, and syllables as Lesson 4 spells
+  them. Never write a model name, a scratchpad path or an agent id into a lesson file.
+- **Markdown the lead's formatter keeps**: inside a blockquote, keep each bracketed button label on
+  one line (a label wrapped across two lines gets mangled); and quote cited text without markdown
+  characters (asterisks, underscores, backticks), trimming the quote if you must, or the quote check
+  breaks once the file is formatted.
+
+## What the reviews of Lessons 15 to 25 caught (check these before you hand back)
+
+- **The Wrap's free play is below the predict too.** Season 1's free play locked nothing because
+  its guided steps came first; on a Season 2 page a learner can scroll to the Wrap before choosing,
+  so the free play holds whatever the steps' toys hold, until the same choice, and again on a return
+  visit (Lessons 22 and 25). Lesson 25's free play offered the answering control from first paint
+  while four places in its package said nothing could.
+- **Step text that states a predict's answer waits for that predict's reveal.** Step 1 is the
+  deck's first card on a phone and the top of the column on a wide screen, and the next step sits
+  one Next below a step's own predict. Lesson 25's Step 1 and Lesson 24's Step 3 stated answers
+  there. Make such sentences a reveal element of that predict (`kit/predict.ts:70-71` takes
+  several), with a held line in their place; text further down may stay if FACTS 1a lists it with
+  the tour's hold.
+- **What a play does is worked out, not assumed.** Lesson 24's copy said a narrow wave removes a
+  beat; the arithmetic says it keeps most of it. Any claim about how a sound will be heard is
+  checked against the sound as specified (its notes, levels, timing, wave), with the working in
+  FACTS; a gap between two notes is quiet unless the spec says glide.
+- **A drill's card says what the drill does to the learner** (SEASON-2 § 8.1 risk 2): letter names
+  printed, the written octave scored, nothing played first, the clef, the range it draws from, and
+  any interval it can ask for that the page calls hard. Lesson 25's card left out two of these, and
+  its coach's list the range and the interval.
+
+- **Step headings leak too.** The masthead's lesson menu lists every step's heading from the first
+  paint, and heads its card "Lesson NN · <Step 1's heading>"; on a phone it is the page's only menu.
+  No heading may name the predict's answer. The first-visit tour scrolls to the steps, so if a step
+  would show the answer, hold the tour until the predict's choice (the kit's `holdTour`).
+- **What sits below the predict can be read before the choice**: the recall, the Words section, a
+  toy's label. On a phone the predict's choices sit below the first screen, so a learner scrolls past
+  them. Keep the answer out of all of it, and list each in FACTS 1a's leak check. Lesson 23's recall
+  printed "7 semitones: a perfect fifth" under a predict that turned on it, and had to be swapped.
+- **The steps' toys are below the predict too.** Anything a step's toy would sound, draw or read out
+  that answers the predict is locked until the choice (the kit's predict lock), or held back: Lesson
+  23's toy could sound F♯, fold the fifth and show black-key lanes before the choice, while four
+  places in the package said it could not.
+- **The built page counts more words.** A built page writes the hints and status lines in the open,
+  about 150 words more than lesson-words counts in a text package (Lesson 8 FACTS 4). Aim for about
+  2,230 words or fewer, so the built page fits the 2,379 cap without cuts; if you go over, name the
+  cuts in WEB-SPEC Length.
+- **Sung parts keep the rest card** (SEASON-2 § 1.4 item 4; HANDOFF § 5), in Lesson 8's or Lesson
+  12's words, whichever fits; drills that ask for no voice stay on offer under it.
+- **Any range advice is checked against all six presets** (`VOCAL_RANGES`, the app's settings store):
+  a key, an "octave lower" or a Move do must keep every preset of that voice at least two semitones
+  inside its floor and top, or the page must not offer it. Put the table in FACTS for the coach.
+- **Every app claim at `c60f0fdcb` is read in the code**, not taken from a drill's name or the plan:
+  Lesson 17's plan had the click wrong (the Ear Lab's woodblock), and Lesson 15's had a tour and a
+  page background it did not know about.
+- **No "Now play the other one."** The kit shows it after any heard play that does not reveal,
+  including a free play after the choice, so it misleads. Keep the locked-in hint until the reveal.
+- **A predict must not ask what an earlier lesson already answered.** Read the reveals, steps and
+  quick checks of the lessons yours builds on: Lesson 21's first predict asked for D major's sharps,
+  which Lesson 4's reveal gives, and had to move to A major's third sharp.
+- **Teases must be true.** Lesson 19's planned tease said every bar so far had walked in twos and
+  fours, but Lesson 8 plays bars of three. Check a tease's claim against every earlier lesson.
+- **What is drawn must match the copy, the sound and the screen-reader line**: Lesson 21's walk was
+  drawn stopping short of where the copy and the sound said it went.
+- **Toys stay inside what the season decided and what the page teaches**: Lesson 21's circle let the
+  house move past three sharps and three flats (SEASON-2 § 7 item 13), and offered a white-keys view
+  under a key signature, which would need a natural sign the page never teaches.
+- **One word, one meaning.** Where a word means two things in your lesson (Lesson 21's "key": a
+  piano key or a musical key), use the plain one each time ("piano key", "note").
+- **When an earlier lesson's rule stops being true, say so where it breaks**: Lesson 17 taught that
+  the bottom number names the beat, which is false in 6/8, so Lesson 19's Step 1 restates the old
+  rule and says what changes.
+- **Claims stay as strong as their source.** How notes "sound" to everyone is a convention, not a
+  fact: Lesson 23 says the fifth "counts as settled" and the tritone "counts as restless". A claim
+  whose source nobody read comes out: Lesson 23 cut a sentence about a church ban on the tritone.
+
+- **The head's description writes the run time as a word**, with its article: "A fourteen-minute
+  lesson", "An eighteen-minute lesson", never "A 14-minute lesson", and stays between 80 and 160
+  characters, as the head test asks (`src/tests/lesson-pages.test.ts:156-159` and `:200-209`).
+  Lessons 17, 19 and 21 wrote digits, and two of them run past 160 once the word goes in. Count the
+  description as it will be written, and quote it the same way in FACTS 1a.
+
+## Hand back
+
+- Your three files, saved and copied to the scratchpad as above.
+- `.../scratchpad/s2pkg/<NN>-HANDBACK.md`: the entries the shared files need (MASTER-PLAN § 11's
+  line, the CURIOSITY-MOMENTS heading, the `kit/season.ts` entry and prerequisites, the hook and
+  tease for `kit/lesson-copy.ts`), the kit and app work the page waits for, every departure from
+  ARTICLE-PLAN.md and why, every citation of an uncommitted lesson made in words, and any question
+  for the owner.
+- Your final message: under 300 words, with the word count, the plan-cites result, the departures
+  and the open questions.
+
+A reviewer who has not seen your work reads it next, then you get the findings for a fix pass, then
+the lead. Write for that reviewer: every claim traceable, every choice explained once.

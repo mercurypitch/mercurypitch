@@ -1,0 +1,99 @@
+          // ==== group A shared block (s01 to s04): identical in each ====
+          const T0 = L.scene(SID).start
+          const cueF = (id, edge = 'start', off = 0) => window.CUES.cues[id][edge] + off   // film time
+          const hexRgb = (h) => [1, 3, 5].map((i) => parseInt(h.slice(i, i + 2), 16))
+          const mixRgb = (a, b, u) => a.map((v, i) => v + (b[i] - v) * u)
+          const rgbStr = (c) => `rgb(${c.map((v) => Math.round(Math.max(0, Math.min(255, v)))).join(',')})`
+          // Dust in the near layer, drawn from film time so it never jumps at a cut (L.dust keys scene time).
+          // Lesson 2's motes and density, spread over a field larger than the frame: F-cold's near layer is
+          // scaled 1.32 and sits 157 px right of F0's, so a frame-sized field would leave its left edge bare.
+          const dustF = (parent, { n = 66, seed = 7, color = 'rgba(195,204,214,0.5)', x0 = -460, y0 = -380, w = 2840, h = 1840 } = {}) => {
+            const r = L.rng(seed)
+            const svg = L.stage(parent)
+            svg.setAttribute('data-layout-allow-overflow', '')
+            const motes = []
+            for (let i = 0; i < n; i++) {
+              const m = { x: r() * w, y: r() * h, s: 0.8 + r() * 2.2, vx: (r() - 0.5) * 14, vy: -4 - r() * 10, ph: r() * 6.28 }
+              m.el = L.svg('circle', { r: m.s, fill: color, opacity: 0.4 }, svg)
+              motes.push(m)
+            }
+            return {
+              svg,
+              draw(T) {
+                for (const m of motes) {
+                  m.el.setAttribute('cx', (((m.x + m.vx * T) % w + w) % w + x0).toFixed(1))
+                  m.el.setAttribute('cy', (((m.y + m.vy * T) % h + h) % h + y0).toFixed(1))
+                  m.el.setAttribute('opacity', (0.18 + 0.22 * (0.5 + 0.5 * Math.sin(m.ph + T * 0.9))).toFixed(3))
+                }
+              },
+            }
+          }
+          // The full-frame field (HANDOFFS § S1 to S2): chrome mixed into the ground, 75 % at the frame's centre
+          // falling linearly to 35 % at the corners (mean brightness about 117 of 255), opaque over the whole
+          // frame, breathing 2 % in brightness from film time. A smaller disc is the same field scaled down, a
+          // glow with no edge: it is opaque out to `soft` of its radius and fades to nothing at its rim (soft 0.1
+          // as it leaves the house, 0.8 once it fills the frame, where the opaque part reaches past the corners).
+          const FIELD = { R: 1500, corner: Math.hypot(960, 540), inner: 0.75, outer: 0.35, ground: hexRgb('#0d1117'), chrome: hexRgb('#c3ccd6') }
+          FIELD.mixAt = (r) => FIELD.inner - ((FIELD.inner - FIELD.outer) * r) / FIELD.corner
+          FIELD.breathe = (T) => 1 + 0.01 * Math.sin(2 * Math.PI * (T - cueF('title')))
+          const fieldDisc = (svg, id) => {
+            const defs = L.svg('defs', {}, svg)
+            const grad = L.svg('radialGradient', { id, gradientUnits: 'userSpaceOnUse', cx: 960, cy: 540, r: FIELD.R }, defs)
+            const offs = [0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6, FIELD.corner / FIELD.R, 0.8, 0.85, 0.9, 0.95, 1]
+            const stops = offs.map((o) => L.svg('stop', { offset: o.toFixed(4) }, grad))
+            const disc = L.svg('circle', { cx: 960, cy: 540, r: FIELD.R, fill: `url(#${id})`, opacity: 0 }, svg)
+            return {
+              disc,
+              draw({ x = 960, y = 540, r = FIELD.R, a = 1, T, soft = 0.8 }) {
+                if (a <= 0.004 || r <= 0.5) { disc.setAttribute('opacity', '0'); return }
+                const k = FIELD.breathe(T)
+                offs.forEach((o, i) => {
+                  stops[i].setAttribute('stop-color', rgbStr(mixRgb(FIELD.ground, FIELD.chrome, FIELD.mixAt(o * FIELD.R) * k)))
+                  stops[i].setAttribute('stop-opacity', (1 - L.smooth(soft, 1, o)).toFixed(4))
+                })
+                for (const el of [grad, disc]) { el.setAttribute('cx', f2(x)); el.setAttribute('cy', f2(y)); el.setAttribute('r', f2(r)) }
+                disc.setAttribute('opacity', a.toFixed(3))
+              },
+            }
+          }
+          // Plain SVG type (no sharps in group A): Outfit 600 unless given; opacity 0 until drawn
+          const txt = (parent, str, { x = 0, y = 0, size = 64, family = 'Outfit', weight = 600, italic = false, anchor = 'start', fill = C.ink } = {}) =>
+            L.svg('text', { x, y, 'text-anchor': anchor, fill, opacity: 0, text: str, style: `font-family: '${family}'; font-weight: ${weight}; font-size: ${size}px;${italic ? ' font-style: italic;' : ''} white-space: pre;` }, parent)
+          // a label's frame: in over 0.2 s from tIn, out over `out` s from tOut, rising `up` px as it leaves
+          const fadeIO = (t, tIn, tOut, { dIn = 0.2, out = 0.2, up = 0, ease = 'power2.in', rise = 0 } = {}) => {
+            const a = P(t, tIn, dIn, 'power2.out') * (1 - P(t, tOut, out, ease))
+            return { a, dy: -up * P(t, tOut, out, ease) + rise * (1 - P(t, tIn, dIn + 0.05, 'power3.out')) }
+          }
+          const place = (el, { a, dy = 0, dx = 0 }) => {
+            el.setAttribute('opacity', a.toFixed(3))
+            el.setAttribute('transform', dx || dy ? `translate(${f2(dx)} ${f2(dy)})` : '')
+          }
+          // A curved arrow (the kit's L.arrow is straight): a quadratic from A through Q to B, drawn on from A,
+          // its head riding the tip along the curve; scale pulses it about the curve's middle
+          const curveArrow = (parent, { color = C.ink2, width = 3, head = 14 } = {}) => {
+            const g = L.svg('g', { opacity: 0 }, parent)
+            const shaft = L.svg('path', { fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round' }, g)
+            const tip = L.svg('path', { fill: 'none', stroke: color, 'stroke-width': width, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g)
+            const qb = (A, Q, B, u) => [(1 - u) * (1 - u) * A[0] + 2 * u * (1 - u) * Q[0] + u * u * B[0], (1 - u) * (1 - u) * A[1] + 2 * u * (1 - u) * Q[1] + u * u * B[1]]
+            return {
+              g,
+              draw(p, a, { A, Q, B }, { scale = 1, color: col = null, width: w = null } = {}) {
+                const u = clamp(p)
+                if (a <= 0.004 || u <= 0.01) { g.setAttribute('opacity', '0'); return }
+                let d = ''
+                for (let i = 0; i <= 24; i++) { const q = qb(A, Q, B, (u * i) / 24); d += (i ? 'L' : 'M') + f2(q[0]) + ' ' + f2(q[1]) }
+                shaft.setAttribute('d', d)
+                const e = qb(A, Q, B, u), e0 = qb(A, Q, B, Math.max(0, u - 0.05))
+                const ang = Math.atan2(e[1] - e0[1], e[0] - e0[0])
+                const hx = (k) => e[0] - head * Math.cos(ang + k), hy = (k) => e[1] - head * Math.sin(ang + k)
+                tip.setAttribute('d', `M${f2(hx(0.5))} ${f2(hy(0.5))} L${f2(e[0])} ${f2(e[1])} L${f2(hx(-0.5))} ${f2(hy(-0.5))}`)
+                if (col) { shaft.setAttribute('stroke', col); tip.setAttribute('stroke', col) }
+                if (w) { shaft.setAttribute('stroke-width', w); tip.setAttribute('stroke-width', w) }
+                const m = qb(A, Q, B, 0.5)
+                g.setAttribute('transform', scale === 1 ? '' : `translate(${f2(m[0])} ${f2(m[1])}) scale(${scale.toFixed(4)}) translate(${f2(-m[0])} ${f2(-m[1])})`)
+                g.setAttribute('opacity', a.toFixed(3))
+              },
+            }
+          }
+          const SOL = ['do', 're', 'mi', 'fa', 'so', 'la', 'ti', 'do']
+          // ==== end group A shared block ====

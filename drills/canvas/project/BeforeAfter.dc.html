@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Interval Trainer: today, and on the stage</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@500;600;700&family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+body{margin:0}
+a{color:#8fd3ff}a:hover{color:#c3e7ff}
+button{cursor:pointer;font-family:Inter,system-ui,sans-serif}
+.mat{width:1310px;height:930px;box-sizing:border-box;padding:30px;display:flex;gap:40px;background:#03050a;font-family:Inter,system-ui,sans-serif}
+.col{display:flex;flex-direction:column;gap:10px}
+.cap{height:16px;font:500 12px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.12em;color:#8fa0b3}
+.ph{position:relative;width:390px;height:844px;border-radius:40px;overflow:hidden;background:#060910;box-shadow:0 0 0 1px rgba(255,255,255,.09),0 30px 80px rgba(0,0,0,.6)}
+.bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.scrim{position:absolute;inset:0;background:linear-gradient(180deg,rgba(6,9,16,.88) 0%,rgba(6,9,16,.38) 30%,rgba(6,9,16,.44) 56%,rgba(6,9,16,.93) 80%,#060910 100%)}
+.top{position:absolute;left:16px;right:16px;top:20px;display:flex;align-items:center;gap:10px}
+.ic{width:44px;height:44px;border-radius:22px;border:1px solid rgba(255,255,255,.16);background:rgba(10,14,22,.62);color:#eef3f8;display:flex;align-items:center;justify-content:center;padding:0}
+.ttl{flex:1;font:600 19px Outfit,system-ui,sans-serif;color:#f4f7fb}
+.lvl{height:44px;padding:0 14px;border-radius:22px;border:1px solid rgba(255,255,255,.16);background:rgba(10,14,22,.62);color:#eef3f8;font:500 13px Inter,system-ui,sans-serif;display:flex;align-items:center;gap:6px}
+.sheet{position:absolute;left:16px;right:16px;top:80px;box-sizing:border-box;padding:14px 14px 12px;border-radius:22px;background:rgba(8,12,20,.82);border:1px solid rgba(255,255,255,.13);backdrop-filter:blur(10px);display:flex;flex-direction:column;gap:10px}
+.lab{display:flex;justify-content:space-between;font:500 10.5px 'JetBrains Mono',ui-monospace,monospace;letter-spacing:.1em;color:#8fa0b3}
+.bub{position:absolute;box-sizing:border-box;padding:13px 15px;border-radius:18px 18px 18px 4px;background:rgba(8,12,20,.86);border:1px solid rgba(255,255,255,.13);font:400 15px/1.42 Inter,system-ui,sans-serif;color:#eef3f8}
+.pillb{flex:1;height:46px;border-radius:23px;border:1px solid rgba(255,255,255,.22);background:rgba(8,12,20,.72);color:#eef3f8;font:500 14px Inter,system-ui,sans-serif;display:flex;align-items:center;justify-content:center;gap:8px;padding:0}
+.orb{position:absolute;left:151px;top:658px;width:88px;height:88px;border-radius:44px;border:0;background:linear-gradient(135deg,#46c6f0 0%,#6f7cff 55%,#9a63ff 100%);color:#fff;display:flex;align-items:center;justify-content:center;box-shadow:0 0 0 10px rgba(111,124,255,.16),0 14px 44px rgba(86,140,255,.6)}
+.ring{position:absolute;left:135px;top:642px;width:120px;height:120px;border-radius:60px;border:2px solid rgba(94,231,255,.6);box-sizing:border-box}
+.und{position:absolute;left:0;right:0;text-align:center;font:500 13px Inter,system-ui,sans-serif;color:#b3bfcc}
+.chip{height:42px;padding:0 18px;border-radius:21px;background:rgba(8,12,20,.88);border:1px solid rgba(94,231,255,.5);color:#eef3f8;font:600 15px Outfit,system-ui,sans-serif;display:flex;align-items:center;gap:10px}
+.dot{width:10px;height:10px;border-radius:5px;background:#5ee7ff;flex:none}
+.dot.off{background:#f6b24a}
+.dot.todo{background:rgba(255,255,255,.22)}
+.lnk{position:absolute;left:95px;width:200px;height:44px;border:0;background:none;color:#8fd3ff;font:500 13px Inter,system-ui,sans-serif;text-decoration:underline;text-underline-offset:3px}
+.lanes{position:relative;height:132px;background:repeating-linear-gradient(to bottom,transparent 0 12px,rgba(255,255,255,.08) 12px 13px,transparent 13px 26px)}
+.rl{position:absolute;left:0;width:30px;font:500 10px/12px 'JetBrains Mono',ui-monospace,monospace;color:#8fa0b3}
+.tb{position:absolute;height:14px;border-radius:7px;background:rgba(88,166,255,.34);border:1px solid rgba(88,166,255,.75);box-sizing:border-box}
+.yb{position:absolute;height:14px;border-radius:7px;border:1.5px dashed rgba(238,243,248,.5);box-sizing:border-box}
+.yb.on{border:0;background:#5ee7ff;box-shadow:0 0 14px rgba(94,231,255,.8)}
+.old{font:500 13px/1.45 Inter,system-ui,sans-serif;color:#b3bfcc}
+.old b{color:#eef3f8;font-weight:600}
+</style>
+</helmet>
+<div class="mat">
+
+<div class="col">
+<div class="cap">TODAY</div>
+<div class="ph" style="background: #0d1117">
+<img src="/_blob/e7da9d819d7a7bb8a857eb4631a96b52" alt="Interval Trainer today: a grey panel with a small pitch graph, a round counter and a red stop button" style="position: absolute; left: 0; top: 0; width: 390px; height: 664px">
+<div style="position: absolute; left: 20px; right: 20px; top: 684px; display: flex; flex-direction: column; gap: 8px">
+<div class="old"><b>One grey shell for all 18 drills.</b> A graph and numbers to read while singing, a form to fill before starting, a letter grade after.</div>
+<div class="old">Nobody shows what to do, and nobody sings the answer after a miss.</div>
+</div>
+</div>
+</div>
+
+<div class="col">
+<div class="cap">ON THE STAGE · READY</div>
+<div class="ph">
+<img class="bg" src="/_blob/cbbcae31021f99e6922c2591b07b2ee1" alt="">
+<div class="scrim"></div>
+<div class="top">
+<button class="ic" aria-label="Back to practice"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"></path></svg></button>
+<div class="ttl">Interval trainer</div>
+<button class="lvl">Singer<svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5 6 7.5l3-3"></path></svg></button>
+</div>
+<div class="sheet">
+<div class="lab"><span>A PERFECT FIFTH · 7 SEMITONES</span><span>ROUND 3 OF 8</span></div>
+<div class="lanes">
+<span class="rl" style="top: 7px">so</span><span class="rl" style="top: 33px">fa</span><span class="rl" style="top: 59px">mi</span><span class="rl" style="top: 85px">re</span><span class="rl" style="top: 111px">do</span>
+<svg aria-hidden="true" width="330" height="132" viewBox="0 0 330 132" style="position: absolute; left: 0; top: 0"><path d="M118 112 C 150 112, 170 20, 204 14" fill="none" stroke="rgba(238,243,248,.55)" stroke-width="1.6" stroke-dasharray="3 5" stroke-linecap="round"></path></svg>
+<div class="tb" style="left: 48px; top: 110px; width: 70px"></div>
+<div class="yb" style="left: 206px; top: 6px; width: 90px"></div>
+<span style="position: absolute; left: 150px; top: 52px; height: 24px; padding: 0 9px; border-radius: 12px; background: #0a0f18; border: 1px solid rgba(255,255,255,.2); font: 600 12px Inter, system-ui, sans-serif; color: #eef3f8; display: flex; align-items: center">up 7</span>
+</div>
+<div style="display: flex; gap: 16px; align-items: center; font: 500 12px Inter, system-ui, sans-serif; color: #b3bfcc">
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 18px; height: 8px; border-radius: 4px; background: rgba(88,166,255,.34); border: 1px solid rgba(88,166,255,.75); box-sizing: border-box"></span>Merc sings do</span>
+<span style="display: flex; align-items: center; gap: 6px"><span style="width: 18px; height: 8px; border-radius: 4px; border: 1.5px dashed rgba(238,243,248,.5); box-sizing: border-box"></span>You land on so</span>
+</div>
+</div>
+<img src="/_blob/3d25fb55f2d965ae40245482943ec2c6" alt="Merc, listening" style="position: absolute; left: 4px; top: 318px; width: 136px; height: 136px">
+<div class="bub" style="left: 140px; right: 16px; top: 330px">I sing do. You leap straight to so. Hear it in your head first, then jump.</div>
+<div style="position: absolute; left: 16px; right: 16px; top: 500px; display: flex; gap: 10px">
+<button class="pillb"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20"><path d="M6 3.5v13l11-6.5z" fill="currentColor"></path></svg>Hear do</button>
+<button class="pillb"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 20 20"><path d="M6 3.5v13l11-6.5z" fill="currentColor"></path></svg>Hear the leap</button>
+</div>
+<button class="orb" aria-label="Sing"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"></path><path d="M12 18v3"></path></svg></button>
+<div class="und" style="top: 762px">Tap, then leap to so</div>
+<button class="lnk" style="top: 786px">Watch Merc do one first</button>
+</div>
+</div>
+
+<div class="col">
+<div class="cap">ON THE STAGE · LANDED</div>
+<div class="ph">
+<img class="bg" src="/_blob/cbbcae31021f99e6922c2591b07b2ee1" alt="">
+<div class="scrim"></div>
+<div class="top">
+<button class="ic" aria-label="Back to practice"><svg aria-hidden="true" width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12.5 4.5 7 10l5.5 5.5"></path></svg></button>
+<div class="ttl">Interval trainer</div>
+<button class="lvl">Singer<svg aria-hidden="true" width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 4.5 6 7.5l3-3"></path></svg></button>
+</div>
+<div class="sheet" style="border-color: rgba(94,231,255,.4)">
+<div class="lab"><span>A PERFECT FIFTH · 7 SEMITONES</span><span style="color: #5ee7ff">ROUND 3 OF 8</span></div>
+<div class="lanes">
+<span class="rl" style="top: 7px; color: #5ee7ff">so</span><span class="rl" style="top: 33px">fa</span><span class="rl" style="top: 59px">mi</span><span class="rl" style="top: 85px">re</span><span class="rl" style="top: 111px">do</span>
+<svg aria-hidden="true" width="330" height="132" viewBox="0 0 330 132" style="position: absolute; left: 0; top: 0"><path d="M118 112 C 150 112, 170 20, 204 14" fill="none" stroke="#5ee7ff" stroke-width="2.2" stroke-linecap="round" style="filter: drop-shadow(0 0 6px rgba(94,231,255,.9))"></path></svg>
+<div class="tb" style="left: 48px; top: 110px; width: 70px"></div>
+<div class="yb on" style="left: 206px; top: 6px; width: 90px"></div>
+<span style="position: absolute; left: 150px; top: 52px; height: 24px; padding: 0 9px; border-radius: 12px; background: #0a0f18; border: 1px solid rgba(94,231,255,.5); font: 600 12px Inter, system-ui, sans-serif; color: #5ee7ff; display: flex; align-items: center">up 7</span>
+</div>
+<div style="display: flex; gap: 16px; align-items: center; font: 500 12px Inter, system-ui, sans-serif; color: #b3bfcc">
+<span style="display: flex; align-items: center; gap: 6px"><span class="dot"></span>Landed on so</span>
+<span style="margin-left: auto; color: #eef3f8">a touch sharp</span>
+</div>
+</div>
+<div style="position: absolute; left: 0; right: 0; top: 320px; display: flex; justify-content: center">
+<div class="chip"><span class="dot" style="box-shadow: 0 0 10px #5ee7ff"></span>Landed. A touch sharp.</div>
+</div>
+<div aria-hidden="true" style="position: absolute; left: -40px; right: -40px; top: 320px; height: 330px; background: radial-gradient(closest-side, rgba(94,231,255,.2), rgba(111,124,255,.1) 55%, rgba(111,124,255,0) 78%)"></div>
+<img src="/_blob/d0793554dafc7e38897f499f2cffe5f9" alt="Merc, cheering" style="position: absolute; left: 127px; top: 400px; width: 136px; height: 136px">
+<div style="position: absolute; left: 0; right: 0; top: 556px; display: flex; flex-direction: column; align-items: center; gap: 12px">
+<div style="display: flex; gap: 9px"><span class="dot"></span><span class="dot off"></span><span class="dot"></span><span class="dot todo"></span><span class="dot todo"></span><span class="dot todo"></span><span class="dot todo"></span><span class="dot todo"></span></div>
+<div style="font: 500 13px Inter, system-ui, sans-serif; color: #b3bfcc">Next: a fourth, do up to fa</div>
+</div>
+<div class="ring" aria-hidden="true"></div>
+<button class="orb" aria-label="Stop" style="box-shadow: 0 0 0 10px rgba(94,231,255,.2), 0 14px 44px rgba(86,140,255,.6)"><svg aria-hidden="true" width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="3" width="6" height="11" rx="3"></rect><path d="M5.5 11.5a6.5 6.5 0 0 0 13 0"></path><path d="M12 18v3"></path></svg></button>
+<div class="und" style="top: 776px">Listening. Tap to stop.</div>
+</div>
+</div>
+
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1310,"height":930}}'>
+class Component extends DCLogic {
+renderVals() {
+return {};
+}
+}
+</script>
+</body>
+</html>
