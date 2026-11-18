@@ -4183,3 +4183,15 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Sent to the kit builder (resumed) with the 7 answers. Scene groups A and B wait for it (both
   heavy slots in use: P2 passes + kit fix).
 - 20:25: check-in on #1471: unchanged (main 033ed21c5, #1470 open, no reviews). Re-armed 4 h; empty: 1.
+
+## 20:42 UTC, 18 Nov
+- P2 (Merc passes) done: Tavi scratch 0.78 -> clock 9:07.6 (-14.4 s vs board; Tavi 167 wpm,
+  Merc 147); board clock frozen (tools/board-cues.json); pin enforced in merc-pass.mjs; 27 chunks
+  at 30 fps (2.06 h, ~232 ms/frame), all joins byte-identical (review/merc/joins.md); contact
+  sheet review/merc/contact-sheet.png (looks right); PASSES.md; assets/merc/roots.js.
+- Lead answers: Tavi mirrored ACCEPTED; hops move into a silence (no mouth in a hop, "Voice
+  Mirror" must be said with the mouth moving); hop floor rings suppressed by state if possible,
+  else the kit clips below the soles; listen capped at 3 s per line then idle eyes open toward the
+  speaker (merc-shots.py); hop spacing 0.65 s kept. Re-render of affected chunks at 30 fps asked.
+- Told the kit builder: FEET 0.836 (not 0.829), roots.js exists (add to scripts.txt), Tavi
+  mirrored by default.
