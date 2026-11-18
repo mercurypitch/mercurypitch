@@ -30,7 +30,7 @@ import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
 import { createPersistedSignal } from '@/lib/storage'
 import { isE2ETestMode } from '@/lib/test-utils'
-import { isNarrow } from '@/lib/use-viewport'
+import { isNarrow, isPhoneStage } from '@/lib/use-viewport'
 import { getProcessStatus, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, UVR_DEFAULT_MULTI_STEM_MODEL, } from '@/lib/uvr-api'
 import { startManagedStemSplit } from '@/lib/uvr-auto-resume'
 import { deleteUvrSessionWithWarning } from '@/lib/uvr-delete'
@@ -2387,12 +2387,14 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
                 stem choice, device, credits — plus Guide, Settings and the
                 way through to Karaoke Night. That is nine controls, and on
                 a phone they wrapped into four rows above a view that has
-                not started yet. Below the breakpoint they move into the
+                not started yet. On a phone's layout they move into the
                 mobile kit's options sheet behind one button, which is the
-                pattern every other mobile stage already uses. */}
+                pattern every other mobile stage already uses: below the
+                breakpoint, and on a phone on its side (isPhoneStage), whose
+                row ran 61 px past an 844 px window and cut off Settings. */}
             <div class="header-actions">
-              <Show when={!isNarrow()}>{headerExtras('header')}</Show>
-              <Show when={isNarrow()}>
+              <Show when={!isPhoneStage()}>{headerExtras('header')}</Show>
+              <Show when={isPhoneStage()}>
                 <button
                   class="view-tab uvr-more-btn"
                   onClick={() => setOptionsOpen(true)}
@@ -2405,7 +2407,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
               </Show>
             </div>
             <OptionsSheet
-              isOpen={isNarrow() && optionsOpen()}
+              isOpen={isPhoneStage() && optionsOpen()}
               close={() => setOptionsOpen(false)}
               ariaLabel="Separation options"
             >

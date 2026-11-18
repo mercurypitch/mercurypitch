@@ -353,6 +353,79 @@ for (const phone of [PHONES[2], PHONES[3]]) {
   })
 }
 
+// With no song loaded the tab shows its upload view under a header row of
+// its own: Sing and Upload, then how a song is separated, Guide, Settings
+// and the way to Karaoke Night. On a phone on its side wider than 768 px
+// that row was the desk's, 61 px wider than an 844 px window, and Settings
+// was cut off at the edge. On every phone it folds behind Options, at the
+// row's end, and Settings is in the sheet.
+test.describe('with no song loaded', () => {
+  /** The header's row: how far it scrolls, and what lies past the window. */
+  async function openHeader(
+    page: Page,
+    viewport: { width: number; height: number },
+  ) {
+    await page.setViewportSize(viewport)
+    await page.route(
+      (url) => url.hostname !== '127.0.0.1' && url.hostname !== 'localhost',
+      (route) => route.abort(),
+    )
+    await page.addInitScript(() => {
+      ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
+    })
+    await page.goto('/#/karaoke')
+    // The welcome and the plan are spent in storage, and a fresh load reads
+    // them: the welcome's dialog, hidden, still takes the taps it covers.
+    await dismissOverlays(page)
+    await page.reload()
+    const header = page.locator('.panel-header')
+    await expect(header).toBeVisible()
+    return header.evaluate((row) => ({
+      scrolls: row.scrollWidth - row.clientWidth,
+      pastTheEdge: [...row.querySelectorAll<HTMLElement>('button, a')]
+        .filter((control) => {
+          const r = control.getBoundingClientRect()
+          return r.width > 0 && (r.left < 0 || r.right > innerWidth)
+        })
+        .map((control) => control.textContent?.trim() ?? ''),
+    }))
+  }
+
+  for (const size of [
+    { width: 844, height: 390 },
+    { width: 932, height: 430 },
+    { width: 740, height: 360 },
+    { width: 667, height: 375 },
+    { width: 390, height: 844 },
+  ]) {
+    test(`at ${size.width}x${size.height}, keeps the header's row in the window, and Settings behind Options`, async ({
+      page,
+    }) => {
+      const row = await openHeader(page, size)
+
+      expect(row).toEqual({ scrolls: 0, pastTheEdge: [] })
+      await page.getByTestId('uvr-mobile-options').tap()
+      await expect(
+        page
+          .getByRole('dialog', { name: 'Separation options' })
+          .getByTestId('uvr-open-settings'),
+      ).toBeInViewport()
+    })
+  }
+
+  test.describe('at a desk', () => {
+    test.use({ hasTouch: false, isMobile: false })
+
+    test('keeps every control in the row', async ({ page }) => {
+      const row = await openHeader(page, { width: 1440, height: 900 })
+
+      await expect(page.getByTestId('uvr-open-settings')).toBeInViewport()
+      await expect(page.getByTestId('uvr-mobile-options')).toHaveCount(0)
+      expect(row).toEqual({ scrolls: 0, pastTheEdge: [] })
+    })
+  })
+})
+
 test.describe('a phone upright at 360x780', () => {
   test.beforeEach(({ page }) => openOnPhone(page, PHONES[0]))
 
