@@ -9,9 +9,10 @@
 // its portrait column, which left the notes 97 px of 360. Now every phone
 // on its side gets the phone stage in two columns (src/App.tsx,
 // SingingMobileStage): the song, the scrubber and the transport down the
-// left, the notes the full height beside them; and the sidebar folds into
-// the header's menu, as it does upright. Upright, on a tablet and at a desk
-// nothing changes.
+// left, the notes the full height beside them; the sidebar folds into the
+// header's menu, as it does upright; and the notices stand at the foot, as
+// a phone's do, at its right end beside the stage's column. Upright, on a
+// tablet and at a desk nothing changes.
 //
 // Geometry, so only a browser can tell. A phone's user agent and touch,
 // because a coarse pointer is half of what makes a phone on its side: a
@@ -155,6 +156,79 @@ function measureStage(
   )
 }
 
+/** Where the first notice stands, at rest. */
+interface NoticePlace {
+  /** Its box, rounded: left, top, right, bottom. */
+  box: number[]
+  /** Inside the window, whole. */
+  inTheWindow: boolean
+  /** On the foot: within 24 px of the tab bar where there is one, else of
+   *  the window's edge. */
+  atTheFoot: boolean
+  /** What it lies over, of the header, the tab bar and the stage's column
+   *  of controls (from the header down to the transport's foot, as wide as
+   *  the transport). */
+  over: string[]
+}
+
+async function noticePlace(page: Page): Promise<NoticePlace> {
+  const notice = page
+    .getByRole('region', { name: 'Notifications' })
+    .locator('> div')
+    .first()
+  await expect(notice).toBeVisible()
+  // At rest: it slides into place as it comes.
+  await notice.evaluate((el) =>
+    Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)),
+  )
+  return notice.evaluate((el, sel) => {
+    const r = el.getBoundingClientRect()
+    const header = document.querySelector('header')?.getBoundingClientRect()
+    const bar = document
+      .querySelector('[data-tour="mobile-tabbar"]')
+      ?.getBoundingClientRect()
+    const transport = document
+      .querySelector(`${sel} [data-testid="mobile-transport-bar"]`)
+      ?.getBoundingClientRect()
+    const near: Array<[string, DOMRect | undefined]> = [
+      ['the header', header],
+      ['the tab bar', bar],
+      [
+        "the stage's column",
+        transport === undefined || header === undefined
+          ? undefined
+          : new DOMRect(
+              0,
+              header.bottom,
+              transport.right,
+              transport.bottom - header.bottom,
+            ),
+      ],
+    ]
+    const floor = bar === undefined || bar.height === 0 ? innerHeight : bar.top
+    return {
+      box: [r.left, r.top, r.right, r.bottom].map(Math.round),
+      inTheWindow:
+        r.left >= 0 &&
+        r.top >= 0 &&
+        r.right <= innerWidth &&
+        r.bottom <= innerHeight,
+      atTheFoot: r.bottom <= floor && r.bottom >= floor - 24,
+      over: near
+        .filter(
+          ([, b]) =>
+            b !== undefined &&
+            b.width > 0 &&
+            r.left < b.right &&
+            b.left < r.right &&
+            r.top < b.bottom &&
+            b.top < r.bottom,
+        )
+        .map(([name]) => name),
+    }
+  }, STAGE)
+}
+
 test.describe('a phone on its side', () => {
   test.use(PHONE)
 
@@ -229,6 +303,34 @@ test.describe('a phone on its side', () => {
         pageScroll: run.pageScroll,
         unreachable: run.unreachable,
       }).toEqual({ clearOfTheTabBar: true, pageScroll: 0, unreachable: [] })
+    })
+  }
+
+  // The first run with the mic off offers the mic, in a notice. The desk's
+  // corner put it over the header's mic and heart at 844x390 and 932x430,
+  // and the phone's full-width banner over the transport at 740x360 and
+  // 667x375. On its side it stands at the foot's right end, beside the
+  // stage's column.
+  for (const size of SIDEWAYS) {
+    test(`at ${size.width}x${size.height}, offers the mic at the foot, clear of the header, the tab bar and the transport`, async ({
+      page,
+    }) => {
+      await openSinging(page, size)
+      await page
+        .locator(STAGE)
+        .getByRole('button', { name: 'Play', exact: true })
+        .tap()
+      await expect(
+        page.getByRole('region', { name: 'Notifications' }),
+      ).toContainText('Your mic is off')
+
+      const { box, ...place } = await noticePlace(page)
+
+      expect(place, `the notice at ${box.join(', ')}`).toEqual({
+        inTheWindow: true,
+        atTheFoot: true,
+        over: [],
+      })
     })
   }
 
@@ -330,6 +432,23 @@ test.describe('everywhere else, nothing changes', () => {
         transportUnderTheNotes: true,
       })
     })
+
+    test("keeps the notices at the foot, the window's width, on the tab bar", async ({
+      page,
+    }) => {
+      await openSinging(page, { width: 390, height: 844 })
+      await page
+        .locator(STAGE)
+        .getByRole('button', { name: 'Play', exact: true })
+        .tap()
+
+      const place = await noticePlace(page)
+
+      expect({
+        atTheFoot: place.atTheFoot,
+        edges: [place.box[0], 390 - place.box[2]],
+      }).toEqual({ atTheFoot: true, edges: [8, 8] })
+    })
   })
 
   test.describe('a tablet on its side', () => {
@@ -362,5 +481,18 @@ test.describe('everywhere else, nothing changes', () => {
         ).toBeHidden()
       })
     }
+
+    test('keeps the notices in the top right corner', async ({ page }) => {
+      await openSinging(page, { width: 1440, height: 900 })
+      await page.getByTestId('play-btn').click()
+
+      const place = await noticePlace(page)
+
+      expect({
+        top: place.box[1] <= 20,
+        right: place.box[2] >= 1440 - 20,
+        width: place.box[2] - place.box[0],
+      }).toEqual({ top: true, right: true, width: 340 })
+    })
   })
 })

@@ -2,7 +2,10 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
 const viewport = vi.hoisted(() => ({ narrow: false }))
-vi.mock('@/lib/use-viewport', () => ({ isNarrow: () => viewport.narrow }))
+vi.mock('@/lib/use-viewport', () => ({
+  isNarrow: () => viewport.narrow,
+  isPhoneStage: () => viewport.narrow,
+}))
 
 import { TAB_STUDIO_NIGHT } from '@/features/tabs/constants'
 import { TOUR_IDS } from '@/lib/tour-ids'

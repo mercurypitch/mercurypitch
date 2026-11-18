@@ -27,7 +27,10 @@ import { endWalkthrough, hasGuideRoomTour, hasPageTour, PAGE_TOURS, startGuideRo
 
 const viewport = vi.hoisted(() => ({ narrow: false }))
 
-vi.mock('@/lib/use-viewport', () => ({ isNarrow: () => viewport.narrow }))
+vi.mock('@/lib/use-viewport', () => ({
+  isNarrow: () => viewport.narrow,
+  isPhoneStage: () => viewport.narrow,
+}))
 vi.mock('@/lib/guide-funnel', () => ({ trackTour: vi.fn() }))
 
 /** The Guide's Singing section as a viewport shows it. */

@@ -17,6 +17,7 @@ const viewport = vi.hoisted(() => ({ narrow: false }))
 
 vi.mock('@/lib/use-viewport', () => ({
   isNarrow: () => viewport.narrow,
+  isPhoneStage: () => viewport.narrow,
 }))
 
 import { TAB_JAM, TAB_PIANO } from '@/features/tabs/constants'

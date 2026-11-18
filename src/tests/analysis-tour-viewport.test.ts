@@ -4,6 +4,7 @@ const viewport = vi.hoisted(() => ({ narrow: true }))
 
 vi.mock('@/lib/use-viewport', () => ({
   isNarrow: () => viewport.narrow,
+  isPhoneStage: () => viewport.narrow,
 }))
 
 import { hasPageTour } from '@/stores/app-store'
