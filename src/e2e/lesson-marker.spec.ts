@@ -45,9 +45,9 @@ test.describe('a lesson link on a first visit', () => {
     await settle(page)
     await expect(intro(page)).toHaveCount(0)
 
-    // "Then tap Leap", as the lesson says: on Merc's bench, Leap is on
-    // Shape's sheet. A modal intro would take these taps; here nothing
-    // covers the bench.
+    // "Then tap Shape, then Leap", as the lesson says: on Merc's bench,
+    // Leap is on Shape's sheet. A modal intro would take these taps; here
+    // nothing covers the bench.
     await page
       .locator('[data-testid="merc-station"][data-faculty="shape"]')
       .click()

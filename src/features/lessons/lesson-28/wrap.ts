@@ -2,10 +2,10 @@
 // Lesson 28 wrap — the practice card's rest version, and free play
 // ============================================================
 //
-// The practice card names Karaoke Night, and Ear Lab's Cadence for the ear
+// The practice card names Sing It in Time, and Name the Cadence for the ear
 // (WEB-SPEC, Practice links). After "Effortful", "Uncomfortable" or "Just
 // listen today" the card takes Lesson 10's rest form, headed "Rest today",
-// Karaoke Night's address in its words with no link (kit/comfort.ts
+// Sing It in Time's address in its words with no link (kit/comfort.ts
 // `mountPractiseCard`): Sing it's ending is held in memory for the visit
 // (`VisitEnding`), never stored, so a new visit opens on the full card.
 // The season's close follows the same ending (main.ts, kit/next-card.ts).

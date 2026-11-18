@@ -260,7 +260,7 @@ B and C.
   distance. There a semitone is called a minor 2nd (m2) and a tone a major 2nd (M2). Leap mixes in
   all twelve distances, so listen out for those two. For an easier first drill, Contour asks only
   whether the second note went up, down or stayed.
-- Address: Practise it free: **mercurypitch.com/ear-lab**, then tap Leap.
+- Address: Practise it free: **mercurypitch.com/ear-lab**, then tap Shape, then Leap.
 - Figure: Leap's twelve answers in the app's six columns, m2 and M2 lit, the other ten ghosted.
   Caption: "Illustration: Leap's twelve answers. In Leap: m2 = semitone · M2 = tone."
 
@@ -352,7 +352,7 @@ The page's head, its share text and its footer, exactly (WEB-SPEC, Footer; Lesso
 - Footer, first column: the wordmark, Find Your Pitch; then "Season 1 · Lesson 02 · Twelve notes".
   No dateline, as on Lesson 1's.
 - Footer, Practise: the link "mercurypitch.com/ear-lab" (to `/ear-lab?lesson=02`, in a new tab),
-  then "Ear Lab is free: tap Leap."
+  then "Ear Lab is free: tap Shape, then Leap."
 - Footer, Credits: "Fonts: Outfit, Inter, Instrument Serif, JetBrains Mono and Noto Music, all SIL
   OFL 1.1. Voices in the episode: ElevenLabs (Eleven v3). Merc's sung notes in the film:
   stand-ins for now, made with ElevenLabs and retuned. Every other musical example, Merc's slides

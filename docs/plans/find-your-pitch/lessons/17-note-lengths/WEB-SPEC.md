@@ -143,9 +143,9 @@ with the promise after the predict. Each section's heading, and the line above i
     (Toys 8). Both drill links open in a new tab.
 12. **Lesson explorer**: the kit's, with Lesson 17 as the current node, on Season 2's tab (Explorer
     and season data).
-13. **Footer**: Lesson 1's, with "Season 2 · Lesson 17 · How long is a note?", the practice link
-    printed `mercurypitch.com/ear-lab` and linked `/ear-lab?lesson=17`, "The Chart and Pulse are
-    free.", Lesson 1's fonts line and "Every sound on this page is synthesised in your browser"; the
+13. **Footer**: Lesson 1's, with "Season 2 · Lesson 17 · How long is a note?", the practice links
+    printed `mercurypitch.com/exercises/quarters-halves-and-eighths` and `mercurypitch.com/ear-lab`,
+    "The Chart and Pulse are free.", Lesson 1's fonts line and "Every sound on this page is synthesised in your browser"; the
     legal links, as every lesson document closes.
 
 ## Length
@@ -581,18 +581,22 @@ synthesised and the kit has no speech. Under reduced motion both stand still.
 
 ## Practice links: what exists and what needs engineering
 
-- **Today**: Ear Lab, printed `mercurypitch.com/ear-lab` and linked `/ear-lab?lesson=17`, "then tap
-  The Chart", with Pulse as the second drill (FACTS 39 to 42, 48). The card says what The Chart does
-  as it stands at `c60f0fdcb`: a bar on one line, four clicks at 100 BPM, a quarter note 0.6 s, a
-  silent wait for the first tap, then the click under the rest of the bar; and that some of its bars
-  hold triplets, which come later (FACTS 45). Pulse plays a bar as clicks and is tapped back (FACTS
-  41).
-- **Needs engineering: the `ear-drill` launch kind** (SEASON-2 § 5.2 item 12; code with tests), then
-  a subset as data: The Chart on the patterns this lesson's values write, with no triplet and no
+- **Today**: The Chart on this lesson's set, printed
+  `mercurypitch.com/exercises/quarters-halves-and-eighths` and linked
+  `/exercises/quarters-halves-and-eighths?lesson=17`, since 17 November 2026, with Pulse as the
+  second drill, on the Ear Lab's address, "then tap Time, then Pulse", since Merc's bench puts Pulse
+  on Time's sheet (FACTS 39 to 42, 46a, 48). The card says what The Chart does: a bar on one line,
+  four clicks at 100 BPM, a quarter note 0.6 s, a silent wait for the first tap, then the click under
+  the rest of the bar; and, in its Begin pad's words, that the link opens it on "quarters and eighths
+  only", every value of which this page writes (FACTS 45, 46a). Pulse plays a bar as clicks and is
+  tapped back (FACTS 41). Until then the link was the Ear Lab's, "then tap The Chart", and the card
+  said that some bars hold triplets, which come later.
+- **Shipped on 16 November 2026: the `ear-drill` launch kind** (SEASON-2 § 5.2 item 12), and the
+  subset as data: The Chart on the patterns this lesson's values write, with no triplet and no
   sixteenth: `c-q3`, `c-q4`, `c-q-rest`, `c-e-and`, `c-e-one`, `c-e-off`, `c-e-run` and
   `c-e-across` (the bank's ids, FACTS 42; their written values, FACTS 45), which write quarters,
   halves, eighths and dotted quarters, with one eighth rest, every one of which this page plays and
-  writes. The card then drops its triplet sentence.
+  writes. The card dropped its triplet sentence.
 - **Needs engineering: the lesson marker** for 15 to 28 (SEASON-2 § 5.2 item 21), without which
   `?lesson=17` is an ordinary visit and First Light opens (FACTS 47). It is part of the kit PR this
   page waits on.
@@ -611,11 +615,11 @@ The lead writes these entries; this spec gives them:
 - **The season entry**, in Season 2's module (What the kit and the app still need, item 1): `n: 17`,
   `lane: 'theory'`, `title: 'How long is a note?'`, `short: 'Note lengths'`, `topics: ['T07']`,
   `minutes: 16`, `page: '/learn/17'`, `hook: 'Why is a quarter note not a quarter of a second?'`,
-  `pr.link` with `href: '/ear-lab?lesson=17'`, `addr: 'mercurypitch.com/ear-lab'`, `label: 'Ear
-Lab'` and `note: 'then tap The Chart'`, since the explorer prints the label, a comma and the note,
-  as Season 1's Ear Lab entries read (`practiseMarkup`,
-  `src/features/lessons/kit/explorer.ts:191-195`), and `pr.needs: 'The Chart without triplets or
-sixteenths (an ear-drill link)'`, which no page draws
+  `pr.link` with `href: '/exercises/quarters-halves-and-eighths?lesson=17'`, `addr:
+'mercurypitch.com/exercises/quarters-halves-and-eighths'`, `label: 'The Chart'` and `note:
+  'quarters and eighths only'`, the explorer printing the label, a comma and the note
+  (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:192-196`), since 17 November 2026, and no
+  `pr.needs`, since the set it waited for shipped (FACTS 46a); `pr.needs` is what no page draws
   (`src/features/lessons/kit/season.ts:90-106`). The edge `[8, 17]`; Lesson 15 only helps, so it is
   no edge (SEASON-2 § 4.3). The topic T07, "Note values, rests, dots, ties, subdivision"
   (SEASON-2 § 4.1).

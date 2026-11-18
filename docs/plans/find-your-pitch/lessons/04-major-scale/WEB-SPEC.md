@@ -315,7 +315,7 @@ on the CPU.
   `/pitch-training?lesson=04`, and the `?lesson=` marker lets First Light, the main app's intro,
   step aside on a first visit (FACTS 35b), so the card carries no first-visit line (the series' old
   line, FACTS 35a, went when the marker shipped).
-- **Today, Ear Lab Home.** `mercurypitch.com/ear-lab`, then tap Home (FACTS 46, 47); on the public
+- **Today, Ear Lab Home.** `mercurypitch.com/ear-lab`, then tap Function, then Home (FACTS 46, 47); on the public
   host `/ear-lab?lesson=04`.
 - **Needed: a data-only slug** (CURRICULUM § 4 item 1, the Phase 1 App track): `slow-scales`
   (proposed; the name pairs with `speed-scales`), registered in `EXERCISE_SLUGS`

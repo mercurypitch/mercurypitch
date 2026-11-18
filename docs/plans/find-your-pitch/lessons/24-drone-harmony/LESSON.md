@@ -18,8 +18,8 @@ asks for headphones before the scored holds and keeps the no-headphones path uns
 scored path waits on a lab test in which silence over a speaker drone reads as no voice (answer 1);
 the drone's timbre is a lab test before any beat rate goes on screen, and the page's rates are
 arithmetic for tones with harmonics, never a claim to hear the learner's beats (answer 2); the band
-sits on the piano's note (answer 3); and the practice card links `/exercises/thirds-on-a-drone` and
-says what it holds and what it scores against (answer 4).
+sits on the piano's note (answer 3); and the practice card linked `/exercises/thirds-on-a-drone` and
+says what it holds and what it scores against (answer 4); since 17 November 2026 it links `harmony-on-a-drone`.
 
 The page draws no staff: its one object is Lesson 5's band chart with a drone held under it, so
 nothing here is written before it is heard, and every example plays (SEASON-2 § 1.4 item 1). No
@@ -93,8 +93,8 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   the plan's line on headphones is left to Sing it's headphones check, where it matters (FACTS 6).
 - **The quick check's feedback** loses "most clearly", which no source supports, and is reworded to
   fit the page (FACTS 74 to 77).
-- **The practice card** says what its link opens, the two thirds only, what it scores against, what
-  a pure major third scores in a round, and that headphones help there too, since its drone plays
+- **The practice card** says what its link opens, since 17 November 2026 the fifth, major third and
+  octave, what it scores against, the pure interval (FACTS 60a), and that headphones help there too, since its drone plays
   while it listens; it leaves out Lesson 10's line on the drill's sharps, which Lesson 10's card has
   given, and the drill's run score, which an app fix let reach 100; Beat Hunt is the second drill
   (FACTS 60 to 64, 66).
@@ -453,31 +453,30 @@ held notes are in tune.
 - Eyebrow: Practise in MercuryPitch
 - Title: Drone Intonation
 - Text: Drone Intonation holds a drone and shows you a note to sing above it, without playing it.
-  This link opens it on the two thirds only. It scores against the piano's tuning: a pure major
-  third, held throughout, scores about 79 a round. Headphones help here too: its drone plays while
-  it listens. It wants each note in the octave it asks for, not an octave away, so set your range in
+  This link opens it on this lesson's fifth, major third and octave; do is the drone itself. It
+  opens on Pure tuning: each note is scored against the pure interval over the drone, not the
+  piano's note. Headphones help here too: its drone plays while it listens. It wants each note in the octave it asks for, not an octave away, so set your range in
   Settings first (under Singing Voice Range). Sore, hoarse or unwell today? Just listen along. Sing
   at about speaking volume, and stop immediately if anything feels uncomfortable.
-- Address: Practise it free: **mercurypitch.com/exercises/thirds-on-a-drone**
+- Address: Practise it free: **mercurypitch.com/exercises/harmony-on-a-drone**
 - Second drill: For your ear, Ear Lab's Beat Hunt plays two pairs of tones, and you say which pair
-  was beating. Free: **mercurypitch.com/ear-lab**, then tap Beat Hunt.
+  was beating. Free: **mercurypitch.com/ear-lab**, then tap Resolution, then Beat Hunt.
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Drone Intonation
-  will be here when your voice feels comfortable: **mercurypitch.com/exercises/thirds-on-a-drone**"
+  will be here when your voice feels comfortable: **mercurypitch.com/exercises/harmony-on-a-drone**"
   Then the second drill.
 
-_[Editorial: the first address links `/exercises/thirds-on-a-drone?lesson=24` and the second
-`/ear-lab?lesson=24`. The page is not built before the lesson marker reads Season 2's numbers
+_[Editorial: the first address links `/exercises/harmony-on-a-drone?lesson=24` since 17 November
+2026, and the second `/ear-lab?lesson=24`, by Beat Hunt's station on Merc's bench (FACTS 60a). The page is not built before the lesson marker reads Season 2's numbers
 (SEASON-2 § 5.2 item 21), so First Light, the app's intro, steps aside on a first visit and the card
-has no first-visit line (FACTS 64). "About 79 a round" is a round's score, "Last round: 79%" on the
-drill's screen, not the run's, which weighs in the best round and the steadiness and since the
-app's fix reaches 100 (FACTS 60, 66). The slug for the fifth, the major third and the octave
-shipped on 15 November 2026, `/exercises/harmony-on-a-drone` (SEASON-2 § 5.2 item 15): the link
-swaps to it, and the text's second sentence becomes "This link opens it on this lesson's fifth,
-major third and octave; do is the drone itself." When a
-pure-tuning option ships (item 15), the sentence on 79 goes. The headphones sentence stays while the
-drill's drone plays from the speakers as it listens; the card says nothing of its drone's timbre, a
-plain sine by default, which the app's item for a drone with harmonics would change (FACTS 51,
-60, 66). The rest version is Lesson 10's: Beat Hunt asks for no voice, so it stays (FACTS 63).]_
+has no first-visit line (FACTS 64). The slug for the fifth, the major third and the octave shipped
+on 15 November 2026, `/exercises/harmony-on-a-drone` (SEASON-2 § 5.2 item 15): the link swapped to
+it, and the text's second sentence became "This link opens it on this lesson's fifth, major third
+and octave; do is the drone itself." The slug opens on Pure tuning, so the sentence on 79, "It
+scores against the piano's tuning: a pure major third, held throughout, scores about 79 a round.",
+which was true of the thirds' link, became the setup screen's own words on Pure: each note against
+the pure interval over the drone, not the piano's note (FACTS 60a). The headphones sentence stays
+while the drill's drone plays from the speakers as it listens; the card says nothing of its drone's
+timbre, a voice with harmonics since 15 November 2026 (FACTS 51, 60, 66). The rest version is Lesson 10's: Beat Hunt asks for no voice, so it stays (FACTS 63).]_
 
 **Next lesson:** Lesson 25, Minor, properly. "Why does a minor key often raise one note just before
 it comes home?" One line above it, the tease: "A minor tune, played twice. The second ending changes
@@ -498,8 +497,8 @@ and plays nothing, and the card stays one link. Until Lesson 25's page is live, 
 ## Footer
 
 Season 2 · Lesson 24 · Harmony against a drone. The practice links, printed
-mercurypitch.com/exercises/thirds-on-a-drone and mercurypitch.com/ear-lab and linking
-`/exercises/thirds-on-a-drone?lesson=24` and `/ear-lab?lesson=24`, with "Drone Intonation and Beat
+mercurypitch.com/exercises/harmony-on-a-drone and mercurypitch.com/ear-lab and linking
+`/exercises/harmony-on-a-drone?lesson=24` and `/ear-lab?lesson=24`, with "Drone Intonation and Beat
 Hunt are free." Lesson 1's fonts line, and "Every sound on this page is synthesised in your
 browser." No decorative clef or staff: on a Season 2 page a staff is always music (SEASON-2 § 1.5
 item 7).
@@ -647,7 +646,7 @@ and band, so a decision here carries there.
   Just listen along. Sing at about speaking volume, and stop immediately if anything feels
   uncomfortable." (FACTS 60, 63).
 - The rest card, Lesson 10's form: "Rest today. Drone Intonation will be here when your voice feels
-  comfortable: mercurypitch.com/exercises/thirds-on-a-drone", after "Effortful", "Uncomfortable" or
+  comfortable: mercurypitch.com/exercises/harmony-on-a-drone", after "Effortful", "Uncomfortable" or
   "Just listen today", then Beat Hunt, which asks for no voice (FACTS 63).
 
 ### Proposed, not applied: the four answers to "How did that feel?"

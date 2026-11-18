@@ -21,8 +21,8 @@ doctor lines), it is Lesson 12's current text, which is Lesson 3's, word for wor
 exercise changed: "Just listen today" names do, re, mi, fa and so where Lesson 12's names the loop's
 roots. Four lines are new: the line under the voice choice that names each voice's clef, the line
 that says where the lower voice's notes sit, the line for a top note that feels high, and the Easy
-and Workable line. The rest card is Lesson 8's, word for word, since Compose, like Lesson 8's drills,
-asks for no voice (FACTS 59). Black keys are named by their sharps, as the app names them, except
+and Workable line. The rest card is Lesson 8's, word for word, since Read the Note, like Lesson 8's
+drills, asks for no voice (FACTS 59). Black keys are named by their sharps, as the app names them, except
 Step 2's one flat; syllables follow Lesson 4's spelling, "so" (FACTS 10).
 
 Where this package departs from the article plan (ARTICLE-PLAN.md), and why:
@@ -45,10 +45,10 @@ Where this package departs from the article plan (ARTICLE-PLAN.md), and why:
   from; Step 2 then brings the whole pitch line back beside the staff, where the plan folded it
   (FACTS 37; WEB-SPEC, Toys 1 and 2).
 - **Recall 2 is Lesson 2's question 3**, the direct prerequisite's, as the lead decided (FACTS 7).
-- **The practice card says Compose is built for a bigger screen, tells a first visit to clear the C
-  major scale its piano roll opens on, and keeps a first-visit line** until `?lesson=15` steps the
-  app's intro aside: the intro's close now asks "Skip the intro?" first, so the line adds "then tap
-  "Yes, skip"" to Season 1's (FACTS 41 to 43).
+- **The practice card links Read the Note** since 17 November 2026, in Compose's place, and says it
+  listens to nothing and which clef it opens on (FACTS 44a). Until then it linked Compose, in Sheet
+  Music, said Compose is built for a bigger screen, told a first visit to clear the C major scale its
+  piano roll opens on, and kept a first-visit line (FACTS 41 to 43).
 - **Your turn drops the plan's "Any octave counts." and offers a way past a top note that feels
   high: leave it out.** The octave below would start the line on or below the floor of four of the
   six presets, and leaving a note out takes nobody lower. Lesson 12's Your turn has no octave line
@@ -354,30 +354,25 @@ piano's 88 keys.
 **Practise it.** The practice card, in the version Sing it's ending picks:
 
 - Eyebrow: Practise in MercuryPitch
-- Title: Compose, in Sheet Music
-- Text: Compose opens on its piano roll, where a tap on the grid adds a note. On a first visit it
-  holds a C major scale: clear it with the bin button, Clear all notes. Then write do, re, mi, fa and
-  so, G, A, B, C and D, in your octave, choose Sheet Music, or Split, and play them: your notes
-  appear on a staff. A tune whose middle note sits below middle C gets the bass clef. Compose is
-  built for a bigger screen: on a phone, turn it sideways.
-  First visit? MercuryPitch opens with its intro: close it with the × at the top right ("Skip the
-  intro"), then tap "Yes, skip".
-- Address: Practise it free: **mercurypitch.com/#/compose**, then choose Sheet Music.
+- Title: Read the Note
+- Text: Read the Note writes a note on the staff, and you name it by its letter, with Letters or
+  with Piano keys. Nothing listens: you read, and tap. It opens on the bass staff for a bass or a
+  baritone and on the treble for every other voice, by the voice range saved in Settings; under
+  Clef, choose the other staff, or Both. After a miss, Merc names the note and says where it sits.
+- Address: Practise it free: **mercurypitch.com/exercises/read-the-note**
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. This page's sung
-  line will be here when your voice feels comfortable." Then Compose, as above, since it asks for no
-  voice.
+  line will be here when your voice feels comfortable." Then Read the Note, as above, since it asks
+  for no voice.
 
-_[Editorial: the link is `/?lesson=15#/compose`. Today `?lesson=15` is not a lesson marker, so the
-app's intro, First Light, does not step aside on a first visit, and the card keeps a first-visit
-line; once the marker takes Season 2's numbers (SEASON-2 § 5.2 item 21), the line goes, as Season
-1's went (FACTS 42). On a first visit the piano roll holds the app's C major scale, so the card says
-to clear it; a returning visitor finds their own last melody there, and Clear all notes can be
-undone (FACTS 43). A visitor whose app is set to its simple mode, or to guitar, is sent to Home
-instead, with no note while the app starts; the card does not say so, as no other card names the
-app's settings (FACTS 46; WEB-SPEC, Edge cases). Compose is a sandbox, not a drill, so the card gives
-it a goal (playbook rule 17). The season's note-reading drill is not built yet (SEASON-2 § 5.2 item
-9); when it ships, the card names it (FACTS 44). The rest version is Lesson 8's: Compose asks for no
-voice, so it stays, and only the sung line is put off (FACTS 59).]_
+_[Editorial: the link is `/exercises/read-the-note?lesson=15` since 17 November 2026, in Compose's
+place, as this page's spec asked once the season's note-reading drill shipped (SEASON-2 § 5.2 item
+9; FACTS 44a). One drill carries the lesson, so the card has one link. Read the Note says on its
+setup screen that nothing listens, and the card says so; its clef follows the saved range, and the
+card says which voices start where. `?lesson=15` steps First Light aside since the marker reads
+Season 2's numbers, so the card has no first-visit line. The rest version is Lesson 8's: Read the
+Note asks for no voice, so it stays, and only the sung line is put off (FACTS 59). Until 17
+November 2026 the card linked Compose, in Sheet Music, as a sandbox with a goal (playbook rule
+17).]_
 
 **Next lesson:** Lesson 16, Sing what you see. "Can you sing a tune you've never heard, just by
 reading it?" One line above it, the tease: "Five notes on the staff. Tavi has never heard them."
@@ -395,8 +390,8 @@ it on the map".)
 ## Footer
 
 Season 2 · Lesson 15 · The staff: where notes sit. The practice link, printed
-mercurypitch.com/#/compose and linking `/?lesson=15#/compose`, with "Compose is free. On a first
-visit, close the intro first, with the × at the top right ("Skip the intro"), then tap "Yes, skip"."
+mercurypitch.com/exercises/read-the-note and linking `/exercises/read-the-note?lesson=15`, with
+"Read the Note is free."
 Lesson 1's fonts line, and "Every sound on this page is synthesised in your browser." No decorative
 clef or staff: on this page a staff is always music (SEASON-2 § 1.5 item 7).
 
@@ -476,7 +471,7 @@ scale, as Lesson 12's checkpoint asks for five roots:
   notes, one step up the staff each time." (FACTS 58).
 - The rest card, Lesson 8's word for word: after "Effortful", "Uncomfortable" or "Just listen
   today" the Wrap shows "Rest today. This page's sung line will be here when your voice feels
-  comfortable.", then Compose, as before, since it asks for no voice, as Lesson 8 keeps its two
+  comfortable.", then Read the Note, since it asks for no voice, as Lesson 8 keeps its two
   drills (FACTS 59). The coach confirms its wording.
 
 ### Proposed, not applied: the four answers to "How did that feel?"

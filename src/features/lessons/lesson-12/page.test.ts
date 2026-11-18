@@ -319,7 +319,7 @@ describe("Lesson 12's page", () => {
     )
     expect(second?.closest('[data-ending]')).toBeNull()
     expect(linksIn(second)).toEqual(['/ear-lab?lesson=12'])
-    expect(words(second)).toMatch(/then tap Cadence\.$/)
+    expect(words(second)).toMatch(/then tap Color, then Cadence\.$/)
   })
 
   it('reads no draft switch: the page state decides (kit/drafts.ts)', () => {

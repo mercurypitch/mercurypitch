@@ -193,6 +193,10 @@ the beat, so the card links one drill for both pitch and time; item 10 gives "he
 and octave folding (as Lesson 16); item 20 gives the sheet view an address, which could then be the
 "sing a whole song from the page" link once it is known to score.
 
+**Since 17 November 2026:** the card links Sing It in Time (`/exercises/sing-it-in-time?lesson=18`,
+item 11 as a drill of its own) and The Chart's set (`/exercises/quarters-halves-and-eighths`); the
+sheet view's address is not linked, since a phone held upright opens the roll.
+
 ## Go deeper
 
 - Exam singers tap one bar of the beat first (R18 finding 4).

@@ -170,11 +170,11 @@ FACTS 5a). Each section's heading, and the line above it, are in LESSON.md ("Sec
 
 ## Length
 
-The learner copy is 2,331 words today, every branch counted (FACTS 3; 2,336 before the Wrap's
+The learner copy is 2,333 words today, every branch counted (FACTS 3; 2,331 before the practice card named the Ear Lab's station, 2,336 before the Wrap's
 next-lesson line took Lesson 11's current hook, 2,341 at `1308fd2e7`, 2,376 on
 the review's count), under the series' cap, Lesson 3's page at 2,379 words on the same count once
-the note under its title is marked Editorial (2,382 at `616c97edb`). It runs about 17 minutes: 9.79
-of reading at 238 words a minute and 7.0 of sound, toys and tasks, 16.79 in all. That is past
+the note under its title is marked Editorial (2,382 at `616c97edb`). It runs about 17 minutes: 9.80
+of reading at 238 words a minute and 7.0 of sound, toys and tasks, 16.80 in all. That is past
 MASTER-PLAN § 4.2's 8 to 12 minutes of active time, as Lessons 3, 5, 6 and 7 are (16, 18, 17 and 16
 minutes). Each step's text, with its Try, its Notice and any predict, runs 92 to 120 words (Steps 1
 to 5: 103, 98, 120, 92 and 114), inside § 4.2's 50 to 120 a step. Four parts carry more:
@@ -734,7 +734,7 @@ still images when WebGL fails or would run on the CPU.
   card, the rest card and the footer carry no first-visit line. The rest card names Drone
   Intonation and its address in words, with no link: after a rest answer nothing may send the
   learner to sing (REQ-GVC-055).
-- **Today, Ear Lab's Stack.** `mercurypitch.com/ear-lab`, then tap Stack (FACTS 47, 51): twelve
+- **Today, Ear Lab's Stack.** `mercurypitch.com/ear-lab`, then tap Color, then Stack (FACTS 47, 51): twelve
   rounds, each one chord on a roved root, named from six qualities, of which this lesson teaches
   two. On the public host `/ear-lab?lesson=10`, the marker before the hash the entry document adds
   (`src/seo/entry-pages.ts:453-458`). Stack needs no voice, so it stays on the rest card, as its one
@@ -791,8 +791,8 @@ Lesson 10's entry (`src/features/lessons/kit/season.ts:345-364`), built with thi
   (`src/features/lessons/kit/drafts.test.ts:57-68`), so the entry folds nothing away.
 
 - `pr.link`: `href` `/ear-lab?lesson=10`, `addr` `mercurypitch.com/ear-lab`, `label` "Ear
-  Lab" and `note` "then tap Stack", which `practiseMarkup` joins with a comma after the address
-  (`kit/explorer.ts:191-196`), so the card reads "Ear Lab, then tap Stack". Stack is the lesson's ear drill and needs no voice,
+  Lab" and `note` "then tap Color, then Stack", which `practiseMarkup` joins with a comma after the address
+  (`kit/explorer.ts:191-196`), so the card reads "Ear Lab, then tap Color, then Stack". Stack is the lesson's ear drill and needs no voice,
   so the card stays right whatever Sing it's ending, as Lesson 6's card links Leap
   (`season.ts:278-281`). For the owner (Decisions for the owner), the other choice: Drone
   Intonation, `href` `/pitch-training?lesson=10`, `label` "Exercises" and `note` "then tap Drone
@@ -962,7 +962,7 @@ CURIOSITY-MOMENTS § 5 item 2.
    6?". "Publish anyway" still publishes it, so the owner keeps the order. On 25 October 2026 the
    owner added that "Use default" asks the same question when going back to the code's default would
    put the lesson live (`defaultGoesLive`, `src/features/admin/lessons/lesson-publish.ts:227-235`).
-4. **The explorer card's practice link: Stack**, `/ear-lab?lesson=10` and "then tap Stack" (Explorer
+4. **The explorer card's practice link: Stack**, `/ear-lab?lesson=10` and "then tap Color, then Stack" (Explorer
    and season data). It needs no microphone, Ear Lab locks nothing, Lesson 6's card links Leap the
    same way, and it is right whatever Sing it's ending. The other choice: Drone Intonation.
 5. **The rest card after "Effortful".** Shown, as on Lessons 6 and 7 (Toys 6; FACTS 67). The kit's

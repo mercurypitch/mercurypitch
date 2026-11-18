@@ -647,29 +647,27 @@ stills when WebGL fails.
 
 ## Practice links: what exists and what needs engineering
 
-- **Today, Drone Intonation's thirds.** The link is `/exercises/thirds-on-a-drone?lesson=24`,
-  printed mercurypitch.com/exercises/thirds-on-a-drone (`src/features/exercises/slug-map.ts:118-127`):
-  it opens Drone Intonation on the minor and the major third only, so this lesson's do and so are
-  not in it, and it scores against the piano's notes, its Piano tuning, whatever the learner last
-  chose, so a pure major third held through a round scores about 79 a round (FACTS 60), as the lead
-  answered. The card says both, and that headphones
-  help there too, since the drill plays its drone from the speakers while it listens
-  (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:171-174`) on the same
-  raw microphone chain as this page (`src/lib/mic-manager.ts:47-56`; FACTS 51). It says nothing of
-  the drill's drone's timbre, a voice with harmonics since 15 November 2026 (FACTS 60), nor of its run score, which an app
-  fix let reach 100 (below); its editorial note says "about 79 a round" is a round's score, not the
-  run's.
+- **Today, Drone Intonation on this lesson's three, in pure tuning.** The link is
+  `/exercises/harmony-on-a-drone?lesson=24` since 17 November 2026, printed
+  mercurypitch.com/exercises/harmony-on-a-drone (`src/features/exercises/slug-map.ts:152-160`): it
+  opens Drone Intonation on the fifth, the major third and the octave, and on Pure tuning whatever
+  the learner last chose (FACTS 60a). The card says both, in its setup screen's words for Pure, and
+  that headphones help there too, since the drill plays its drone from the speakers while it
+  listens (`src/features/exercises/drone-intonation/use-drone-intonation-controller.ts:171-174`) on
+  the same raw microphone chain as this page (`src/lib/mic-manager.ts:47-56`; FACTS 51). It says
+  nothing of the drill's drone's timbre, a voice with harmonics since 15 November 2026 (FACTS 60),
+  nor of its run score, which an app fix let reach 100 (below).
   It is the season plan's link for this lesson (SEASON-2 § 5.1, row 24,
   `docs/plans/find-your-pitch/SEASON-2.md:876`).
-- **The link to swap.** The slug for the fifth, the major third and the octave shipped on 15
-  November 2026, `/exercises/harmony-on-a-drone` (SEASON-2 § 5.2 item 15,
-  `docs/plans/find-your-pitch/SEASON-2.md:993-1022`): the card's link becomes that
-  slug with `?lesson=24`, and the text's second sentence becomes "This link opens it on this
-  lesson's fifth, major third and octave; do is the drone itself." The slug opens on Pure tuning, which
-  shipped with it (the same item), so with the swap the sentence on 79 goes: a pure third scores 100
-  there. Both are lines in LESSON.md's editorial note.
+- **The link swapped.** Until 17 November 2026 the link was `/exercises/thirds-on-a-drone?lesson=24`,
+  the minor and the major third only, on the piano's notes, and the card said a pure major third
+  held through a round scores about 79 a round, as the lead answered (FACTS 60). The slug for the
+  fifth, the major third and the octave shipped on 15 November 2026, `/exercises/harmony-on-a-drone`
+  (SEASON-2 § 5.2 item 15, `docs/plans/find-your-pitch/SEASON-2.md:993-1022`), with Pure tuning:
+  the card's second sentence became "This link opens it on this lesson's fifth, major third and
+  octave; do is the drone itself.", and the sentence on 79 gave way to the screen's own on Pure.
 - **The second drill, Ear Lab's Beat Hunt**: `/ear-lab?lesson=24`, printed mercurypitch.com/ear-lab,
-  "then tap Beat Hunt": two pairs of tones, which pair was beating (FACTS 61). It asks for no voice,
+  "then tap Resolution, then Beat Hunt", by its station on Merc's bench (FACTS 60a): two pairs of tones, which pair was beating (FACTS 61). It asks for no voice,
   so it stays on the rest card.
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
   Lesson 10's form, headed "Rest today", and is no longer a link, since Drone Intonation asks for the
@@ -699,11 +697,11 @@ Lesson 10's is (`src/features/lessons/kit/season.ts:346-364`):
   `topics: ['S20a']`, with S20a's name as SEASON-2 § 4.1 gives it, "Hold a part against a drone;
   beats"; the hook word for word (FACTS 1); `minutes: 16` and `page: '/learn/24'` once the page is
   built, under the drafts' comment, `// A draft until its sign-off (drafts.ts), as Lesson 3 is.`
-- `pr.link`: `href` `/exercises/thirds-on-a-drone?lesson=24`, `addr`
-  `mercurypitch.com/exercises/thirds-on-a-drone`, `label` "Drone Intonation" and `note` "the two
-  thirds"; `pr.needs`, "The fifth, third and octave slug and a pure-tuning option (SEASON-2 § 5.2
-  item 15); a drone with harmonics", is the team's only: the field is
-  "Admin only, never drawn on a lesson page" (`src/features/lessons/kit/season.ts:102-103`).
+- `pr.link`: `href` `/exercises/harmony-on-a-drone?lesson=24`, `addr`
+  `mercurypitch.com/exercises/harmony-on-a-drone`, `label` "Drone Intonation" and `note` "the fifth,
+  major third and octave, in pure tuning" since 17 November 2026 (FACTS 60a); before, the thirds'
+  slug and "the two thirds". It has no `pr.needs`, the team's only field
+  ("Admin only, never drawn on a lesson page", `src/features/lessons/kit/season.ts:102-103`): what it named has shipped.
 - `EDGES` gains [5, 24], [10, 24] and [23, 24], as SEASON-2 § 4.3 gives them (FACTS 2); Lesson 24's
   prerequisite list is then [5, 10, 23] (`PREREQ`, `src/features/lessons/kit/season.ts:474-479` at `ad0a099f7`).
 - The tease on Lesson 23's card is this lesson's, set on Lesson 24 in the lesson copy: `tease` "A

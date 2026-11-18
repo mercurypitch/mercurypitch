@@ -349,11 +349,11 @@ not half. The page puts "Right." or "Not quite." before each feedback line.]_
 - Text: Compose holds a tune on its piano roll: on a first visit, a C major scale. Open Playback
   Setup in the sidebar and set the key to G, then D, then A. The tune moves into each key, and
   Sheet Music, or Split, writes it with its key signature, one more sharp each time. Then try F,
-  then B♭, which the menu writes as Bb. Compose is built for a bigger screen: on a phone, turn it sideways.
+  then B♭, one flat, then two. Compose is built for a bigger screen: on a phone, turn it sideways.
 - Address: Practise it free: **mercurypitch.com/#/compose**, then choose Sheet Music.
 - Second drill: For your ear, Ear Lab's Home plays four chords that set a key, then one note: tap
   its degree, do to ti. Each round picks its key at random. Free: **mercurypitch.com/ear-lab**,
-  then tap Home.
+  then tap Function, then Home.
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. This page's sung
   line will be here when your voice feels comfortable." Then both drills, as above, since neither
   asks for your voice.
@@ -364,9 +364,9 @@ first Season 2 work, which widens the lesson marker (SEASON-2 § 5.2 item 21, §
 First Light steps aside and the card has no first-visit line (FACTS 46). In Compose the key picker
 moves the tune by the gap between the old key and the new, and Sheet Music picks its clef from the
 tune's middle note, so the staff may switch between bass and treble as the tune moves; both clefs'
-signatures are taught here (FACTS 42). When the note-reading drill reads key signatures
-(SEASON-2 § 5.2 item 9), or Sight-Singing spells by key (item 10d), the card names it (FACTS
-45).]_
+signatures are taught here (FACTS 42). Since 17 November 2026 the menu writes B♭ and the bench
+needs Function before Home (FACTS 40a, 44a). Sight-Singing spells by key (item 10d), but no address
+opens it in this page's keys, and Read the Note writes naturals only (item 9) (FACTS 45).]_
 
 **Next lesson:** Lesson 22, Vibrato. "If a singer's held note swings up and down six times a second,
 why do we still hear one note?" One line above it, the tease: "Merc holds one note, and its line

@@ -121,7 +121,7 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
 8. **Wrap**: the three recap lines and the challenge, then:
    - **The practice card** (LESSON.md): Lesson 1's app card, with Leap's text, today's caveat and
      Contour as an optional first drill; the address line "Practise it free:
-     mercurypitch.com/ear-lab, then tap Leap", as the film's end card prints the address, linking
+     mercurypitch.com/ear-lab, then tap Shape, then Leap", as the film's end card prints the address, linking
      `/ear-lab?lesson=02` in a new tab, as Lesson 1's card links Voice Mirror, so a first visit
      meets no intro (Practice link, below; FACTS 33b). Its figure is a house-style drawing of Leap's
      twelve answer pads in the app's six columns, each its label over its name (FACTS 32), in the
@@ -157,11 +157,11 @@ are Lesson, Watch and Explorer. Each section's heading, and the line above it, a
     the film plays. The line under the explorer's heading names no lesson's state: the legend
     (Ready, Coming later, Done) and the cards say it, from the season. Lesson 2 marks done when its
     quiz is finished. Its card's practice link reads as LESSON.md's Wrap: `season.ts` links
-    `/ear-lab?lesson=02` with the note "then tap Leap"; the subset launch it still needs is the
+    `/ear-lab?lesson=02` with the note "then tap Shape, then Leap"; the subset launch it still needs is the
     team's (`pr.needs`), kept for the admin console and never drawn on the card.
 11. **Footer**: Lesson 1's, with every string as LESSON.md gives it ("Head and footer"): "Season 1
     · Lesson 02 · Twelve notes"; the practice link, printed `mercurypitch.com/ear-lab` and linking
-    `/ear-lab?lesson=02`, with "Ear Lab is free: tap Leap."; and the credits as Lesson 1's built
+    `/ear-lab?lesson=02`, with "Ear Lab is free: tap Shape, then Leap."; and the credits as Lesson 1's built
     footer words them ("Voices in the episode: ElevenLabs (Eleven v3).", `learn/01.html:1605-1609`),
     with the episode's sung notes, its synthesised examples and this page's synthesised sound
     (FACTS 41, 50, 51; FACTS, Labels).
@@ -465,7 +465,7 @@ the buttons and the reveal carry the moment.
 - Today: `mercurypitch.com/ear-lab` opens the Ear Lab bench; the viewer taps Leap, which offers all
   twelve intervals, plays each pair up or down, and roves the lower note from C3 to A4 (FACTS 32,
   33). The page says so in the Wrap, whose address line reads "Practise it free:
-  mercurypitch.com/ear-lab, then tap Leap". The link carries `?lesson=02` (`/ear-lab?lesson=02`),
+  mercurypitch.com/ear-lab, then tap Shape, then Leap". The link carries `?lesson=02` (`/ear-lab?lesson=02`),
   which keeps the bench's own `#/ear-lab` boot (`src/seo/render-entry-page.ts` adds the hash only
   when there is none) and lets First Light step aside on a first visit (FACTS 33b).
 - First visit (FACTS 33a, 33b): `/ear-lab` boots the full studio, where a visitor with no stored
@@ -473,7 +473,7 @@ the buttons and the reveal carry the moment.
   `?lesson=02` steps the intro aside for good before the app renders (the step-aside, shipped in
   `152aad288`), so the page's links open the Ear Lab, and the practice card and the footer carry no
   first-visit line, as DECISIONS 84 planned; nor does the explorer card's note in `season.ts`,
-  "then tap Leap" (Lesson explorer, above). Lesson 1's link, `/mirror`, boots Voice Mirror's own
+  "then tap Shape, then Leap" (Lesson explorer, above). Lesson 1's link, `/mirror`, boots Voice Mirror's own
   page, which has no intro.
 - Needed (CURRICULUM § 4 item 5, Phase 1 App track): an `ear-drill` launch kind that accepts a bank
   subset, so `/exercises/semitone-or-tone` (proposed slug) opens Leap with only `leap:m2` and
@@ -561,7 +561,7 @@ what it must do. The kit items move Lesson 1's code into `src/features/lessons/k
     for a lesson whose page is live and whose film is not published, "Ready · read", whose card
     offers its action without Watch the episode (built: `kit/lesson-state.ts` gives the state and
     the action, and Lesson 2's entry carries `minutes: 13`, its film's `len: '7:11'` for the team,
-    and `film: 'production'` until the film is published). Its practice note is "then tap Leap":
+    and `film: 'production'` until the film is published). Its practice note is "then tap Shape, then Leap":
     a lesson's link skips the app's intro since the `?lesson=` step-aside shipped (item 18).
 11. **`kit/notes.ts`**: the sharp and flat names of the five (`letterOf` returns null for them,
     Lesson 1's unnamed beads), in signs ("C♯4") and in words ("C sharp 4"), for the toggle, the

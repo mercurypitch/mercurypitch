@@ -2,9 +2,9 @@
 // Lesson 26 wrap — the practice card's rest version, and free play
 // ============================================================
 //
-// The practice card names Harmony Stack, a Jam room's mode, and Drone
-// Intonation's thirds on a drone (WEB-SPEC, Practice links; FACTS 63 to
-// 66). After "Effortful", "Uncomfortable" or "Just listen today" the card
+// The practice card names Merc's Harmony room, to sing a third above his
+// line alone, and Harmony Stack, a Jam room's mode for two (WEB-SPEC,
+// Practice links; FACTS 63 to 66, 68a). After "Effortful", "Uncomfortable" or "Just listen today" the card
 // takes Lesson 10's rest form, headed "Rest today", its rest line in the
 // drills' place (kit/comfort.ts `mountPractiseCard`): Sing it's ending is
 // held in memory for the visit (`VisitEnding`), never stored, so a new

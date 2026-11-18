@@ -344,25 +344,25 @@ smudging it.
 - Title: Scale Runner
 - Text: Scale Runner is an echo: it plays a note, then gives you two seconds or more to sing it
   back, less as its level rises, in the octave it plays. Good for tuning the pattern; this page is
-  where you run it. Under Scale, choose Pentatonic. It starts from the voice range saved in
-  Settings: set yours there first, under Singing Voice Range. Sore, hoarse or unwell today? Just
-  listen along. Sing at about speaking volume, and stop immediately if anything feels uncomfortable.
-- Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Scale Runner.
+  where you run it. It starts from the voice range saved in Settings: set yours there first, under
+  Singing Voice Range. Sore, hoarse or unwell today? Just listen along. Sing at about speaking
+  volume, and stop immediately if anything feels uncomfortable.
+- Address: Practise it free: **mercurypitch.com/exercises/pentatonic-run**
 - Second drill: For short notes, Staccato Precision plays short notes from the major scale,
   shuffled; sing each back in the octave it plays. Free: **mercurypitch.com/pitch-training**, then
   tap Staccato Precision.
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Scale Runner will
-  be here when your voice feels comfortable: **mercurypitch.com/pitch-training**, then tap Scale
-  Runner."
+  be here when your voice feels comfortable: **mercurypitch.com/exercises/pentatonic-run**"
 
-_[Editorial: both addresses link `/pitch-training?lesson=20`. The page is not built before the
+_[Editorial: Scale Runner's address links `/exercises/pentatonic-run?lesson=20` since 17 November
+2026, and Staccato Precision's `/pitch-training?lesson=20` (FACTS 69a). The page is not built before the
 lesson marker reads Season 2's numbers (SEASON-2 § 5.2 item 21), so First Light, the app's intro,
 steps aside on a first visit and the card has no first-visit line (FACTS 69). The rest card drops
 Staccato Precision, since it asks for the voice too (FACTS 72). Not linked:
 `/exercises/speed-scales`, which opens Scale Runner fast, since no score on this page rewards speed
 (FACTS 68). Scale Runner's scale launch field and minor pentatonic shipped on 15 November 2026
 (SEASON-2 § 5.2 item 13), with `/exercises/pentatonic-run`, which opens Pentatonic at a slow pace;
-when the card links it, "Under Scale, choose Pentatonic." goes (FACTS 70).]_
+the card links it, and "Under Scale, choose Pentatonic." went (FACTS 70).]_
 
 **Next lesson:** Lesson 21, Keys and the circle of fifths. "G major needs one sharp and D major two.
 Why does each key a fifth up keep its sharps and add one?" One line above it, the tease: "D major:
@@ -380,8 +380,8 @@ and "See it on the map": FACTS 5.)
 
 ## Footer
 
-Season 2 · Lesson 20 · Runs and the pentatonic scale. The practice link, printed
-mercurypitch.com/pitch-training and linking `/pitch-training?lesson=20`, with "Scale Runner and
+Season 2 · Lesson 20 · Runs and the pentatonic scale. The practice links, printed
+mercurypitch.com/exercises/pentatonic-run and mercurypitch.com/pitch-training, with "Scale Runner and
 Staccato Precision are free." Lesson 1's fonts line, and "Every sound on this page is synthesised in
 your browser." No decorative clef or staff: on a Season 2 page a staff is always music (SEASON-2 §
 1.5 item 7).

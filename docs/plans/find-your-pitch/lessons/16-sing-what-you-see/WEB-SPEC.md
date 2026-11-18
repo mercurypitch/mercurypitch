@@ -447,24 +447,22 @@ stills when WebGL fails.
 
 ## Practice links: what exists and what needs engineering
 
-- **Today, Sight-Singing.** The link is `/pitch-training?lesson=16`, printed
-  "mercurypitch.com/pitch-training", with "then tap Sight-Singing", in Lesson 9's form (FACTS 60, 62).
-  The card says what the drill does at `c60f0fdcb` (FACTS 54 to 58): six notes it picks itself, in
-  the key its start screen shows and the saved range, which it asks the learner to set first;
-  nothing played first; the treble clef only, a lower voice reading below it on ledger lines; the
-  written octave; and its names. It names notes in six places, four of them on its pitch tracker,
-  which its round button at the top right hides; that choice is remembered for every drill, so the
-  card does not suggest it and says only "It prints each note's name under it: read the staff, not
-  the names." (FACTS 58). The
-  drill is free (FACTS 62). It is the season plan's link for this lesson, with its limits said
-  (SEASON-2 § 5.1).
+- **Today, Sight-Singing on this page's two phrases**, since 17 November 2026. The link is
+  `/exercises/sing-what-you-see?lesson=16`, printed "mercurypitch.com/exercises/sing-what-you-see"
+  (FACTS 60a). The card is the shrunk one proposed below, in the setup screen's words: the two
+  phrases, one after the other, since the drill draws no break; the clef of the saved range, which
+  it asks the learner to set first; Hear it first's do, then do, mi, so, mi, do, and the line never
+  played; any octave; a note held to light the next; and the Names picker's Off. The drill is free
+  (FACTS 62). Until then the link was `/pitch-training?lesson=16`, "then tap Sight-Singing", and the
+  card said what the drill did at `c60f0fdcb`: six notes it picked, nothing played first, the treble
+  clef only, the written octave and its names (FACTS 54 to 58, 60).
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
   Lesson 12's form, "Rest today. Sight-Singing will be here when your voice feels comfortable:
-  mercurypitch.com/pitch-training, then tap Sight-Singing.", and is no longer a link, since the drill
-  asks for the voice (FACTS 52).
+  mercurypitch.com/exercises/sing-what-you-see", and is no longer a link, since the drill asks for
+  the voice (FACTS 52).
 - **The first visit.** The page is not built before SEASON-2 § 5.2 item 21 widens the lesson marker,
   so `?lesson=16` steps First Light aside and the card and footer have no first-visit line (FACTS 60).
-- **Needed: Sight-Singing for the lessons** (SEASON-2 § 5.2 item 10; FACTS 63), the app's work:
+- **Shipped on 16 November 2026: Sight-Singing for the lessons** (SEASON-2 § 5.2 item 10; FACTS 63):
   - (a) **Fixed phrases**, data: a launch's `notes` already replace the random round when there are
     two or more, and a link's notes are fitted to the saved range by whole octaves, the octave nearest
     the range's middle winning (FACTS 59). Proposed: one entry, `sing-what-you-see`, holding the two
@@ -487,7 +485,8 @@ stills when WebGL fails.
     (FACTS 58). The item lists the first;
   - (f) **octave-folded scoring**;
   - (g) a **`key` launch field**.
-- **The card once (a), (b), (c), (e) and (f) ship**, proposed: "Sight-Singing writes this page's two
+- **The card once (a), (b), (c), (e) and (f) ship**, proposed, and in the page's words since 17
+  November 2026 (Today, above): "Sight-Singing writes this page's two
   phrases on your own clef. It sings do and do, mi, so, mi, do first, then you read and sing, in any
   octave; hold each note to light the next. Turn the names off to read from the house." with the
   care lines, and the address "Practise it free: mercurypitch.com/exercises/sing-what-you-see". Each
@@ -504,11 +503,11 @@ Lesson 16's entry, proposed for Season 2's data in its own module, in Season 1's
   `topics: ['S11a']`, with S11a's name as SEASON-2 § 4.1 gives it; the hook word for word (FACTS
   1); `minutes: 15` and `page: '/learn/16'` once the page is built, under the drafts' comment,
   `// A draft until its sign-off (drafts.ts), as Lesson 3 is.`
-- `pr.link`: `href` `/pitch-training?lesson=16`, `addr` `mercurypitch.com/pitch-training`, `label`
-  "Exercises" and `note` "then tap Sight-Singing", as Lesson 9's (FACTS 60). `pr.needs`, "Sight-Singing
-  for the lessons: fixed phrases, a hear-do start, the bass clef, names off and octave-folded scoring
-  (SEASON-2 § 5.2 item 10)", which is "Admin only, never drawn on a lesson page"
-  (`src/features/lessons/kit/season.ts:102-103`).
+- `pr.link`: `href` `/exercises/sing-what-you-see?lesson=16`, `addr`
+  `mercurypitch.com/exercises/sing-what-you-see`, `label` "Sight-Singing" and `note` "the lesson's
+  two phrases" since 17 November 2026 (FACTS 60a); before, `/pitch-training?lesson=16`, "then tap
+  Sight-Singing", as Lesson 9's (FACTS 60). It has no `pr.needs`: SEASON-2 § 5.2 item 10, which it
+  waited for, has shipped (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [9, 16], a cross-season edge, and [15, 16], as SEASON-2 § 4.3 gives them (FACTS 2);
   Lesson 16's prerequisite list is then [9, 15] (`PREREQ`, `src/features/lessons/kit/season.ts:474-480` at `ad0a099f7`).
 - The tease on Lesson 15's card is this lesson's, set on Lesson 16 in the lesson copy: `tease` "Five

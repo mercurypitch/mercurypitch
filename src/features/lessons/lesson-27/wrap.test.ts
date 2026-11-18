@@ -70,7 +70,7 @@ describe('the practice card', () => {
     expect(rested).toEqual([false, true, false])
     expect([restLine().hidden, firstDrill().hidden]).toEqual([true, false])
     expect(words(restLine())).toBe(
-      'Rest today. Chord Stacker will be here when your voice feels comfortable: mercurypitch.com/pitch-training, then tap Chord Stacker.',
+      'Rest today. Chord Stacker will be here when your voice feels comfortable: mercurypitch.com/exercises/triads',
     )
     // after a rest answer nothing may send the learner to sing (REQ-GVC-055)
     expect(restLine().querySelector('a')).toBeNull()

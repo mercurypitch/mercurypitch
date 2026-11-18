@@ -18,13 +18,13 @@ lesson's module moves into the kit first.
 
 It stands on Season 2's kit work, none of it built yet, and specifies again none of what other
 packages give: the seasons in the kit (SEASON-2 § 6.2 item 1); the staff toy (SEASON-2 § 6.2 item 2;
-Lesson 15's item 4, `docs/plans/find-your-pitch/lessons/15-staff/WEB-SPEC.md:580-585`), with key
+Lesson 15's item 4, `docs/plans/find-your-pitch/lessons/15-staff/WEB-SPEC.md:569-574`), with key
 signatures (Lesson 21's item 4,
 `docs/plans/find-your-pitch/lessons/21-keys-circle/WEB-SPEC.md:459-463`) and rhythm on the staff (§
 6.2 item 3); Lesson 18's reading staff, its woodblock count-in, its sing flow with a take read in
 time and its marks (its items 4, 5, 7 and 8,
 `docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:658-709`); Lesson 24's headphones
-check and quiet check (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:751-759`);
+check and quiet check (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:749-757`);
 Lesson 26's options for them, its part under a take and its reader's rule for a note sung on the
 other part's note (`docs/plans/find-your-pitch/lessons/26-second-voice/WEB-SPEC.md:660-686`); and
 Lesson 14's recorder
@@ -193,9 +193,9 @@ words, for these reasons:
   this does" box with Lesson 14's two sentences on a recording; the reading's example lines; the
   playback and its cadence line; the feelings' lines with Lesson 14's take lines; the sing-along;
   and the can't-record line (FACTS 53 to 69).
-- **The Wrap, 251 words.** The three lines, the challenge, Karaoke Night's card in Lesson 14's
-  words with its care lines and rest version, Cadence as the second drill, and the season's close
-  (FACTS 5, 70 to 73).
+- **The Wrap, 251 words.** The three lines, the challenge, Sing It in Time's card with its care
+  lines and rest version, Name the Cadence as the second drill, and the season's close (FACTS 5,
+  70a, 72a).
 - **Step 2, 175 words with its mix-up card**: the card sits in the step whose plays refute it.
 - **The quick check, 181 words, and the recall, 157**: three answers a question with a line of
   feedback for each, as MASTER-PLAN § 4.2 item 8 asks; the recall is Lessons 18's and 26's, word for
@@ -601,44 +601,44 @@ stills when WebGL fails.
 
 ## Practice links: what exists and what needs engineering
 
-- **Today, Karaoke Night**: the link is `/karaoke-night?lesson=28`, printed
-  mercurypitch.com/karaoke-night (`KARAOKE_PATHS`, `src/worker.ts:92`), as Lesson 14 links it. The
-  card is Lesson 14's, read again in the app: it draws every note sung against the one aimed for and
-  plays the singer's take back, keeping it in memory; it scores the singing in any octave, comparing
-  pitch class; its example song is free; its key chip moves a song up or down by up to six semitones
-  and Find my key picks a key from the singer's range, so a song can sit in the comfortable middle
-  of every preset; its care lines are Lesson 10's. It reads no lesson marker and shows no intro, so
-  the card has no first-visit line (FACTS 70, 71). Lesson 14's "Ten minutes, gently, most days" is
-  left out for length (Length).
-- **The second drill, Ear Lab's Cadence**: `/ear-lab?lesson=28`, printed mercurypitch.com/ear-lab,
-  then tap Cadence (`/ear-lab`, `src/lib/sw-runtime.ts:123`). The card opens on Lesson 12's line and
-  says what the drill does to a learner: it strums a progression of three or four chords on the
-  guitar voices in a roved key and asks for it in numerals from four pads; it names progressions,
-  not cadences; five of its eight stop on V, as an imperfect cadence does; it asks for no voice,
-  writes no staff and plays nothing a learner must sing (FACTS 72, 73). It asks for no voice, so it
-  stays on offer under the rest card.
+- **Since 17 November 2026, Sing It in Time**: the link is `/exercises/sing-it-in-time?lesson=28`,
+  printed mercurypitch.com/exercises/sing-it-in-time (`src/features/exercises/slug-map.ts:211-219`).
+  It carries the page's sung skill, a part read from the staff in time, where Karaoke Night sings a
+  song by ear. The card says what it does to a learner at the address's level 5: Merc gives do, the
+  click counts one bar in, and the singer sings two bars of 4/4 as the beat goes on, three tunes at
+  60 BPM; then each note is shown, in tune or not and on the beat or not. Pitch is scored in any
+  octave, timing never. Its care lines are Lesson 10's, word for word, and its other lines are new,
+  for the coach (FACTS 70a).
+- **Karaoke Night, the season's close**: until 17 November 2026 the card's first drill, in Lesson
+  14's card's words, at `/karaoke-night?lesson=28` (`KARAOKE_PATHS`, `src/worker.ts:92`). The close
+  still links it, "Now sing a whole song.", so the card keeps to two links (FACTS 70, 71).
+- **The second drill, since 17 November 2026 Name the Cadence**, in Ear Lab's Cadence's place (FACTS
+  72, 73): `/exercises/name-the-cadence?lesson=28`, printed
+  mercurypitch.com/exercises/name-the-cadence (`src/features/exercises/slug-map.ts:202-210`). The
+  card says what it plays and asks: the key's own chord, then an ending's two chords, named on four
+  pads, Perfect, Imperfect, Plagal and Interrupted, all four at the address's level 7; nothing
+  listens, so it stays under the rest card (FACTS 72a).
 - **Left out: Jam's Harmony Stack**, which the plan links, as SEASON-2 § 5.1's row did until the
   shared entries: it needs two singers in a room, its parts are the room's tune moved up a third or
   a fifth in the key, not a written part, and its card is Lesson 26's, whose two app items have
   shipped (FACTS 74; SEASON-2 § 5.1, row 28,
   `docs/plans/find-your-pitch/SEASON-2.md:848` at `85ccd03dd`).
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
-  Lesson 14's rest line, headed "Rest today", and is no longer a link, naming Karaoke Night; the
+  Lesson 14's rest line, headed "Rest today", and is no longer a link, naming Sing It in Time; the
   second drill stays (`mountPractiseCard`, `src/features/lessons/kit/comfort.ts:126-149`).
 - **The first visit and the marker.** Nothing reads `?lesson=28` until SEASON-2 § 5.2 item 21
   widens the marker, and until then the quiz's answers are refused whole; the page is not built
   before that (FACTS 75).
 - **Shipped on 15 November 2026: the cadence-type ear drill** (SEASON-2 § 5.2 item 19,
   `docs/plans/find-your-pitch/SEASON-2.md:1064-1075`), as Name the Cadence, a drill in the Exercises
-  tab (`src/features/exercises/cadence/`): the key's own chord, then an ending's two chords, and
-  the names perfect, imperfect, plagal and interrupted to choose from. Still needed: its slug, and
-  this page's card, where it takes the second drill's place and says what it plays and asks.
+  tab (`src/features/exercises/cadence/`): the key's own chord, then an ending's two chords, and the
+  names perfect, imperfect, plagal and interrupted to choose from. Its slug and this page's card
+  followed (FACTS 72a).
 - **Needed: the harmony-line drill** (SEASON-2 § 5.2 item 17,
-  `docs/plans/find-your-pitch/SEASON-2.md:1030-1032`), the app's work, which Lesson 26's card takes
-  first when it ships; this page's card can add it then, as a drill for singing a part alone. The
-  native app's Harmony room is not linked: it sings short lines a third apart, not a written part,
-  and no web page can open it (SEASON-2 § 7 item 14; FACTS 74).
-- No premium exercise is linked: Karaoke Night's example song and Ear Lab are free (FACTS 76).
+  `docs/plans/find-your-pitch/SEASON-2.md:1030-1032`), which the Harmony room meets in part and
+  Lesson 26's card links. This card does not add it as a third link: the room sings lines a third
+  above Merc's, not a written part (FACTS 74).
+- No premium exercise is linked: Sing It in Time and Name the Cadence are free (FACTS 76).
 
 ## Explorer and season data
 
@@ -649,10 +649,10 @@ Lesson 14's is (`src/features/lessons/kit/season.ts:427-444`):
   `topics: ['T22', 'T31']`, with their names as SEASON-2 § 4.1 gives them, "Phrases and cadences"
   and "Song form"; the hook word for word (FACTS 1); `minutes: 19`, which the lab may move (FACTS
   3), and `page: '/learn/28'` once the page is built, under the drafts' comment.
-- `pr.link`: `href` `/karaoke-night?lesson=28`, `addr` `mercurypitch.com/karaoke-night`, `label`
-  "Karaoke Night"; `pr.needs`, "A cadence-type ear drill (SEASON-2 § 5.2 item 19); the harmony-line
-  drill (item 17)", is the team's only: the field is "Admin only, never drawn on a lesson page"
-  (`src/features/lessons/kit/season.ts:102-103`).
+- `pr.link`: `href` `/exercises/sing-it-in-time?lesson=28`, `label` "Sing It in Time", `note`
+  "three tunes at 60 BPM" (until 17 November 2026 Karaoke Night's); `pr.needs`, the coach's look and
+  the harmony-line drill (item 17), is the team's only: the field is "Admin only, never drawn on a
+  lesson page" (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [18, 28] and [26, 28], as SEASON-2 § 4.3 gives them (FACTS 2); Lesson 28's
   prerequisite list is then [18, 26] (`PREREQ`, `src/features/lessons/kit/season.ts:475-479` at `ad0a099f7`).
 - The tease on Lesson 27's card is this lesson's, set on Lesson 28 in the lesson copy
@@ -767,16 +767,16 @@ Found in the kit and the app as they stand on main at `c60f0fdcb`. Every item is
     marker's range (`src/lib/lesson-marker.ts:11-19`) and the lesson-answer bounds
     (`workers/db-worker/src/mirror-metrics.ts:57-62`), which refuse Lesson 28's answers whole today
     (FACTS 75).
-14. **The harmony-line drill** (SEASON-2 § 5.2 item 17), the app's work, and **the card for the
-    cadence-type drill**, which shipped on 15 November 2026 as Name the Cadence (item 19) and
-    still wants a slug (Practice links).
+14. **The harmony-line drill** (SEASON-2 § 5.2 item 17), the app's work. **The card for the
+    cadence-type drill**, Name the Cadence (item 19), is done since 17 November 2026, with its slug
+    (Practice links).
 15. **At release, the rooms' links back**, optional: in SEARCH § 8 the shared row for
     `/karaoke-night` and `/jam`, Lesson 14 alone, splits into `/karaoke-night` with 14 and 28 and
     `/jam` with 14 (and 26, once Lesson 26's entry lands, which touches the same row), and the
-    `/ear-lab` row gains 28 (`docs/plans/find-your-pitch/SEARCH.md:370`, `:373`). The entry pages
+    `/ear-lab` row stays (`docs/plans/find-your-pitch/SEARCH.md:370`, `:373`). The entry pages
     follow, since the entry test holds that table equal to the entry pages' lessons, room by room
     (`src/tests/entry-page-model.test.ts:497-529`): Karaoke Night's list gains 28 beside 14
-    (`lessonsPractised`, `src/seo/entry-pages.ts:272`), Ear Lab's gains 28 beside 2, 6, 10 and 12
+    (`lessonsPractised`, `src/seo/entry-pages.ts:272`), Ear Lab's stays 2, 6, 10 and 12
     (`lessonsPractised`, `src/seo/entry-pages.ts:503`), and Jam's stays 14
     (`lessonsPractised`, `src/seo/entry-pages.ts:537`).
 
@@ -847,8 +847,8 @@ Open:
 - **Leaving the page**: the recording goes with it; nothing is stored.
 - **A narrow phone**: the two staffs and the form strip fit 344 px, with every target at least 44
   px; a tag sits above its bar, never over a note.
-- **The card's drills, off this page.** Karaoke Night asks for the voice, so the rest version names
-  it for another day; Cadence asks for none, so it stays.
+- **The card's drills, off this page.** Sing It in Time asks for the voice, so the rest version names
+  it for another day; Name the Cadence asks for none, so it stays.
 
 ## Tests
 

@@ -419,7 +419,7 @@ describe("Lesson 18's page", () => {
     )
   })
 
-  it('links Sight-Singing and The Chart with the lesson; its rest version names Sight-Singing for another day with no link, since it asks for the voice, and keeps The Chart', () => {
+  it('links Sing It in Time and The Chart with the lesson; its rest version names Sing It in Time for another day with no link, since it asks for the voice, and keeps The Chart', () => {
     // Arrange
     const d = doc()
     const card = d.getElementById('practiseCard')
@@ -427,25 +427,25 @@ describe("Lesson 18's page", () => {
 
     // Assert: LESSON.md, Wrap; FACTS 60
     expect(words(card?.querySelector('[data-ending="rest"]'))).toBe(
-      'Rest today. Sight-Singing will be here when your voice feels comfortable: mercurypitch.com/pitch-training, then tap Sight-Singing.',
+      'Rest today. Sing It in Time will be here when your voice feels comfortable: mercurypitch.com/exercises/sing-it-in-time',
     )
     expect(card?.querySelectorAll('[data-ending="rest"] a')).toHaveLength(0)
     expect(second?.closest('[data-ending]')).toBeNull()
     expect(second?.querySelector('a')?.getAttribute('href')).toBe(
-      '/ear-lab?lesson=18',
+      '/exercises/quarters-halves-and-eighths?lesson=18',
     )
     expect(prose(second)).toBe(
-      "For the beat, Ear Lab's The Chart writes a bar of rhythm on one line, and you tap it at sight. Some of its bars hold triplets, which come later. Free: mercurypitch.com/ear-lab, then tap The Chart.",
+      "For the beat, Ear Lab's The Chart writes a bar of rhythm on one line, and you tap it at sight, here on quarters and eighths only, as its Begin pad says. Free: mercurypitch.com/exercises/quarters-halves-and-eighths",
     )
     expect(
       Array.from(d.querySelectorAll('a[href*="?lesson="]'), (a) =>
         a.getAttribute('href'),
       ),
     ).toEqual([
-      '/pitch-training?lesson=18',
-      '/ear-lab?lesson=18',
-      '/pitch-training?lesson=18',
-      '/ear-lab?lesson=18',
+      '/exercises/sing-it-in-time?lesson=18',
+      '/exercises/quarters-halves-and-eighths?lesson=18',
+      '/exercises/sing-it-in-time?lesson=18',
+      '/exercises/quarters-halves-and-eighths?lesson=18',
     ])
   })
 

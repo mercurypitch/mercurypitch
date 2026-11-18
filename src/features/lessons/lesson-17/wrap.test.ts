@@ -35,7 +35,7 @@ describe('the practice card', () => {
     // Assert
     expect([before, resting, rest.hidden]).toEqual([true, false, true])
     expect(el('#practiseCard a.addr').getAttribute('href')).toBe(
-      '/ear-lab?lesson=17',
+      '/exercises/quarters-halves-and-eighths?lesson=17',
     )
   })
 })

@@ -2,10 +2,10 @@
 // Lesson 18 wrap — the practice card in its version, and the tease still
 // ============================================================
 //
-// The practice card is Sight-Singing's, with The Chart under it for the
+// The practice card is Sing It in Time's, with The Chart under it for the
 // beat (WEB-SPEC, Practice links). After "Effortful", "Uncomfortable" or
 // "Just listen today" in Sing it the card takes Lesson 12's rest form:
-// "Rest today" over the rest line, Sight-Singing no longer a link, since
+// "Rest today" over the rest line, Sing It in Time no longer a link, since
 // it asks for the voice, and The Chart kept, since it asks for none
 // (FACTS 60; kit/comfort.ts `mountPractiseCard`). The ending is held in
 // memory for the visit (`VisitEnding`), never stored, so a new visit opens

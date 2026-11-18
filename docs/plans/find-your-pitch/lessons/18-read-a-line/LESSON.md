@@ -33,10 +33,10 @@ feelings with their gentle and enough-for-today lines, and the doctor lines), it
 current text, which is Lesson 15's and Lesson 3's, word for word, with only the exercise changed:
 "Just listen today" names "the two tunes". The sound gate, the "What this does" box, the reading
 lines, the no-voice line and the no-microphone line are Lesson 16's, with this task's words; the box
-adds a clause on how each note is heard and one sentence, on timing. The practice card's
-Sight-Singing text and care lines are Lesson 16's, with a first sentence on the beat; the rest card
-is Lesson 12's form, naming Sight-Singing, with the second drill kept, since The Chart asks for no
-voice (FACTS 43 to 60). Seven lines about singing are new, and the coach's list carries each: the two
+adds a clause on how each note is heard and one sentence, on timing. The practice card's care
+lines are Lesson 16's, its Sing It in Time lines new since 17 November 2026; the rest card is Lesson
+12's form, naming Sing It in Time, with the second drill kept, since The Chart asks for no
+voice (FACTS 43 to 60, 69a). Seven lines about singing are new, and the coach's list carries each: the two
 after Easy or Workable; Your turn's lines for reading the tune through first, for the cursor that
 won't wait, for a note that slips and for a so that feels high; and the take's status, "Your turn:
 sing in time with the cursor." Syllables follow Lesson 4's spelling, "so"; the page sings only G, A,
@@ -79,9 +79,9 @@ Where this package departs from ARTICLE-PLAN.md, FACTS says why. In short:
   plays on Step 3's tune**, since the cold open's tune sounds only after the choice (FACTS 39, 41).
 - **The quick check asks one question a step.** The plan's question 2 was the recall's question in
   other words, and its "three lines in a row" left out the bass clef's spaces (FACTS 64).
-- **The practice card says what Sight-Singing does today**, as Lesson 16's does, with The Chart as
+- **The practice card says what Sing It in Time does**, since 17 November 2026, with The Chart as
   its second drill; the plan's "practise the patterns here" promised too much, since the drill picks
-  its own notes and never writes the same note twice running (FACTS 65 to 73).
+  its own tunes, not this page's (FACTS 65 to 73, 69a).
 - **The promise drops the plan's "two-bar"**, and nothing above the predict says "two" (FACTS 1a).
 - **No Go deeper drawer**: its three items rest on sources read, and FACTS keeps them, but the page
   runs near the cap (FACTS 3).
@@ -366,33 +366,33 @@ without stopping on every note.
 **Practise it.** The practice card, in the version Sing it's ending picks:
 
 - Eyebrow: Practise in MercuryPitch
-- Title: Sight-Singing
-- Text: Sight-Singing reads pitch, not rhythm: it writes six notes it picks itself, with no note
-  lengths and no beat, and moves on once you've held a note for about half a second, or after eight
-  seconds. It picks them in the key it shows and the voice range saved in Settings: set yours first,
-  under Singing Voice Range. It plays nothing first.
-  It writes only the treble clef, so a lower voice reads below it, on ledger lines, and it wants each
-  note in the octave written. It prints each note's name under it: read the staff, not the names.
+- Title: Sing It in Time
+- Text: Sing It in Time writes two bars on a staff and gives you do; then the click counts one bar
+  in, and you sing them as the beat goes on, three tunes at 60 BPM. Its clef comes from the voice
+  range saved in Settings: set yours first, under Singing Voice Range. A late start is never a wrong
+  note: it times every note from your first one. It scores each note's pitch, in any octave, and
+  shows your timing without scoring it. Names on prints do re mi under the notes: tap it to read the staff
+  alone.
   Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop
   immediately if anything feels uncomfortable.
-- Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Sight-Singing.
+- Address: Practise it free: **mercurypitch.com/exercises/sing-it-in-time**
 - Second drill: For the beat, Ear Lab's The Chart writes a bar of rhythm on one line, and you tap it
-  at sight. Some of its bars hold triplets, which come later. Free: **mercurypitch.com/ear-lab**,
-  then tap The Chart.
-- Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Sight-Singing
-  will be here when your voice feels comfortable: **mercurypitch.com/pitch-training**, then tap
-  Sight-Singing." Then the second drill.
+  at sight, here on quarters and eighths only, as its Begin pad says. Free:
+  **mercurypitch.com/exercises/quarters-halves-and-eighths**
+- Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Sing It in Time
+  will be here when your voice feels comfortable: **mercurypitch.com/exercises/sing-it-in-time**"
+  Then the second drill.
 
-_[Editorial: the links are `/pitch-training?lesson=18`, which opens the Exercises tab, and
-`/ear-lab?lesson=18`. The page is not built before the lesson marker reads Season 2's numbers
-(SEASON-2 § 5.2 item 21), so First Light, the app's intro, steps aside on a first visit and the card
-has no first-visit line (FACTS 69). Sight-Singing's limits are said as the drill stands at
-`c60f0fdcb` (FACTS 65 to 68). When SEASON-2 § 5.2 item 11 ships, sight-singing in time, with a
-count-in, a click and notes that move on the beat, the card's first sentence goes and the card can
-send the learner to one drill for pitch and time; item 10's parts shrink the rest as Lesson 16's card
-says (WEB-SPEC, Practice links). The rest version is Lesson 12's form: Sight-Singing asks for the
-voice, so after those endings the card names it for another day, and The Chart, which asks for no
-voice, stays on offer (FACTS 60).]_
+_[Editorial: since 17 November 2026 the links are `/exercises/sing-it-in-time?lesson=18` and
+`/exercises/quarters-halves-and-eighths?lesson=18`, where they were `/pitch-training` and `/ear-lab`.
+The page is not built before the lesson marker reads Season 2's numbers (SEASON-2 § 5.2 item 21), so
+First Light steps aside on a first visit and the card has no first-visit line (FACTS 69). Sing It in
+Time is item 11, the one drill for pitch and time this note waited for; its lines say what its
+screen shows at the address's level 5, tunes of its own, not this page's two (FACTS 69a).
+Sight-Singing, pitch alone, leaves the card, which keeps to two links. The Chart's address opens it
+on quarters and eighths only, so its triplets line goes (FACTS 71a); the sheet view is not linked,
+since a phone held upright opens the roll (FACTS 72a). Sing It in Time asks for the voice, so the
+rest version, Lesson 12's form, names it for another day, and keeps The Chart (FACTS 60).]_
 
 **Next lesson:** Lesson 19, Threes, offbeats and syncopation. "Six notes in a bar, grouped two ways:
 why does one feel like two beats and the other like three?" One line above it, the tease: "Same six
@@ -411,8 +411,8 @@ and plays nothing, and the card stays one link. Until Lesson 19's page is live, 
 ## Footer
 
 Season 2 · Lesson 18 · Read and sing a whole line. The practice links, printed
-mercurypitch.com/pitch-training and mercurypitch.com/ear-lab and linking `/pitch-training?lesson=18`
-and `/ear-lab?lesson=18`, with "Sight-Singing and The Chart are free." Lesson 1's fonts line, and
+mercurypitch.com/exercises/sing-it-in-time and mercurypitch.com/exercises/quarters-halves-and-eighths,
+each with `?lesson=18`, with "Sing It in Time and The Chart are free." Lesson 1's fonts line, and
 "Every sound on this page is synthesised in your browser." No decorative clef or staff: on a Season
 2 page a staff is always music (SEASON-2 § 1.5 item 7).
 
@@ -569,13 +569,13 @@ above; nothing waits on the coach to be written.
   show, and the rest card (FACTS 56, 60).
 - The no-voice line, Lesson 9's with this task's cue: "We didn't hear you start that time. Come in
   on do after the count-in.", with Start again while takes remain (FACTS 57).
-- The rest card, Lesson 12's form: "Rest today. Sight-Singing will be here when your voice feels
-  comfortable: mercurypitch.com/pitch-training, then tap Sight-Singing.", then The Chart, which asks
+- The rest card, Lesson 12's form: "Rest today. Sing It in Time will be here when your voice feels
+  comfortable: mercurypitch.com/exercises/sing-it-in-time", then The Chart, which asks
   for no voice. The coach confirms its wording (FACTS 60).
-- The practice card: Sight-Singing, which moves on once a note is held for about half a second, or
-  after eight seconds, with no beat, plays nothing first, writes the treble clef only and scores the
-  written octave, said on the card with its care lines. The card asks for no hold: half a second is
-  when the drill moves on (FACTS 65 to 68).
+- The practice card: Sing It in Time, since 17 November 2026, two bars read and sung on the beat at
+  60 BPM after Merc's do and a bar's count-in, the clef from the saved range, pitch scored in any
+  octave and timing shown, never scored, said on the card with its care lines. Its lines are new
+  and wait for the coach's look (FACTS 69a).
 - No warm-up: two tunes of two bars inside every preset need none, as Lesson 16's phrases have none;
   the coach may add Lesson 3's (FACTS 62).
 

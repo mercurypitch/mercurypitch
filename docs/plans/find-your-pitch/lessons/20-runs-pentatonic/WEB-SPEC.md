@@ -485,10 +485,10 @@ Again, faster (FACTS 59). Neither speaks a line the page does not print.
 
 ## Practice links: what exists and what needs engineering
 
-**Today**, both printed as `mercurypitch.com/pitch-training` and linking `/pitch-training?lesson=20`
-(FACTS 69):
+**Today**, since 17 November 2026, Scale Runner printed as `mercurypitch.com/exercises/pentatonic-run`
+and linking `/exercises/pentatonic-run?lesson=20`, and Staccato Precision as before (FACTS 69, 69a):
 
-- **Scale Runner**, then choose Pentatonic: the major pentatonic, six notes up or down from the
+- **Scale Runner**, opened on Pentatonic by its address: the major pentatonic, six notes up or down from the
   preset's anchor, one note at a time, each played, then a window to sing it back, 2 s at its
   starting level, shorter if its level rises and longer if it eases, scored in the octave it plays
   (FACTS 64 to 66). The card says it is an echo, two seconds or more a note and less as its level
@@ -496,12 +496,13 @@ Again, faster (FACTS 59). Neither speaks a line the page does not print.
   from the voice range saved in Settings, under Singing Voice Range (FACTS 66).
 - **Staccato Precision**, the second drill: short notes from the major scale, shuffled, eight at its
   starting level, fewer and longer if it eases and shorter if its level rises, each sung back in
-  the octave it plays (FACTS 67). The rest card drops it, since it asks for the voice (FACTS 72).
+  the octave it plays (FACTS 67), at `mercurypitch.com/pitch-training`, then tap Staccato Precision.
+  The rest card drops it, since it asks for the voice (FACTS 72).
 - Not linked: `/exercises/speed-scales`, Scale Runner at level 8 (FACTS 68).
 
 **SEASON-2 § 5.2 item 13 shipped on 15 November 2026**: Scale Runner's scale launch field and minor
 pentatonic, and the beginner slugs `pentatonic-run` and `minor-pentatonic-run`, which open either
-pentatonic at level 2 (data); when the card links them, it loses "Under Scale, choose Pentatonic."
+pentatonic at level 2 (data); the card links `pentatonic-run` and lost "Under Scale, choose Pentatonic."
 (FACTS 70). **Not planned anywhere**: a drill that
 sings a run continuously and reads it note by note, as this page's take does; § 5.3 should list it.
 
@@ -518,12 +519,12 @@ does not load (SEASON-2 § 6.2 item 1), in Season 1's entry form (Lesson 9's,
   `minutes: 15` and `page: '/learn/20'` once the page is built, under the drafts' comment in Lesson
   9's form: `// A draft until its sign-off (drafts.ts), as Lesson 3 is.` The entry decides nothing
   about being live: the draft list and the console do.
-- `pr.link`: `href` `/pitch-training?lesson=20`, `addr` `mercurypitch.com/pitch-training`, `label`
-  "Exercises" and `note` "then tap Scale Runner", which the explorer's card prints after the address
-  as "Exercises, then tap Scale Runner" (`practiseMarkup`,
-  `src/features/lessons/kit/explorer.ts:191-195`), as Lesson 9's entry links one of its two drills.
-  `pr.needs`, "Scale Runner's Pentatonic by launch, and a drill that sings a run continuously",
-  stays until one ships; it is "Admin only, never drawn on a lesson page"
+- `pr.link`: `href` `/exercises/pentatonic-run?lesson=20`, `addr`
+  `mercurypitch.com/exercises/pentatonic-run`, `label` "Scale Runner" and `note` "the pentatonic"
+  since 17 November 2026, which the explorer's card prints after the address as "Scale Runner, the
+  pentatonic" (`practiseMarkup`, `src/features/lessons/kit/explorer.ts:192-196`), as Lesson 9's entry
+  links one of its two drills. `pr.needs` names the drill that sings a run continuously, which no
+  plan has (SEASON-2 § 5.3); it is "Admin only, never drawn on a lesson page"
   (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [5, 20], [9, 20] and [10, 20], as SEASON-2 § 4.3 gives them (FACTS 2); Lesson 20's
   prerequisite list is then [5, 9, 10].

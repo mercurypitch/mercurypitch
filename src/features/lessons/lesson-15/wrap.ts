@@ -2,8 +2,8 @@
 // Lesson 15 wrap — the practice card's rest line, free play, the tease still
 // ============================================================
 //
-// The practice card is Compose, in Sheet Music, in every version, since
-// Compose asks for no voice (WEB-SPEC, Practice links; Toys 5). After
+// The practice card is Read the Note in every version, since the drill
+// asks for no voice (WEB-SPEC, Practice links; Toys 5). After
 // "Effortful", "Uncomfortable" or "Just listen today" it shows Lesson 8's
 // rest line above its text, which puts off only this page's sung line.
 // Sing it's ending is held in memory for the visit (kit/comfort.ts

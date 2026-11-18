@@ -320,7 +320,7 @@ not half.]_
   opens on First Pocket: press Play First Pocket at 84 BPM.
 - Second drill: For your ear, Ear Lab's Subdivide plays two bars on a drum kit, the kick on beat 1.
   You name the time signature: 3/4, 4/4, 5/4, 6/8 or 7/8. Count from kick to kick; this lesson's
-  bars are 3/4 and 4/4. Free: **mercurypitch.com/ear-lab**, then tap Subdivide.
+  bars are 3/4 and 4/4. Free: **mercurypitch.com/ear-lab**, then tap Time, then Subdivide.
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. This page's sung
   line will be here when your voice feels comfortable." Then both drills, as above, since neither
   asks for your voice.

@@ -362,26 +362,25 @@ to sing from the page.
 
 - Eyebrow: Practise in MercuryPitch
 - Title: Sight-Singing
-- Text: Sight-Singing writes six notes it picks itself, in the key it shows and the voice range
-  saved in Settings: set yours first, under Singing Voice Range. It plays nothing first. It writes
-  only the treble clef, so a lower voice reads below it, on ledger lines, and it wants each note in
-  the octave written. It prints each note's name under it: read the staff, not the names.
+- Text: Sight-Singing writes this page's two phrases, one after the other, on the clef of the voice
+  range saved in Settings: set yours first, under Singing Voice Range. Hear it first plays do, then
+  do, mi, so, mi, do; the line itself it never plays. Then read and sing it, in any octave, holding
+  each note to light the next. Under Names, choose Off to read the staff alone.
   Sore, hoarse or unwell today? Just listen along. Sing at about speaking volume, and stop
   immediately if anything feels uncomfortable.
-- Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Sight-Singing.
+- Address: Practise it free: **mercurypitch.com/exercises/sing-what-you-see**
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Sight-Singing
-  will be here when your voice feels comfortable: **mercurypitch.com/pitch-training**, then tap
-  Sight-Singing."
+  will be here when your voice feels comfortable: **mercurypitch.com/exercises/sing-what-you-see**"
 
-_[Editorial: the link is `/pitch-training?lesson=16`, which opens the Exercises tab. The page is
-not built before the lesson marker reads Season 2's numbers (SEASON-2 § 5.2 item 21), so First
-Light, the app's intro, steps aside on a first visit and the card has no first-visit line (FACTS
-60, 61). Sight-Singing's limits are said as the drill stands at `c60f0fdcb` (FACTS 54 to 59). When
-SEASON-2 § 5.2 item 10 ships, the card shrinks: a fixed-phrase address with this page's two phrases
-(10a) replaces "six notes it picks itself", a "hear do" start (10b) replaces "It plays nothing
-first", the bass clef (10c) and octave folding (10f) replace the clef and octave sentence, and
-names off (10e), once it hides the letters under the notes and the hold bar's name, replaces the
-last sentence (FACTS 63; WEB-SPEC, Practice links). The rest version is Lesson 12's form: Sight-Singing
+_[Editorial: the link is `/exercises/sing-what-you-see?lesson=16` since 17 November 2026, the
+address SEASON-2 § 5.2 item 10 gave this page's two phrases, written as one line in G (FACTS 60a).
+The page is not built before the lesson marker reads Season 2's numbers (SEASON-2 § 5.2 item 21),
+so First Light, the app's intro, steps aside on a first visit and the card has no first-visit line
+(FACTS 60, 61). The card is the shrunk one this page's spec proposed: the two phrases replace "six
+notes it picks itself", Hear it first's do and do, mi, so, mi, do replace "It plays nothing first",
+the clef of the saved range and octave folding replace the clef and octave sentence, and the Names
+picker's Off replaces the last sentence (FACTS 55 to 58, 63). The drill draws no break between the
+phrases, so the card says "one after the other". The rest version is Lesson 12's form: Sight-Singing
 asks for the voice, so after those endings the card names it for another day and is no longer a
 link (FACTS 52).]_
 

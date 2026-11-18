@@ -170,9 +170,9 @@ nothing plays until you press a play button." 30 words.
 - **Linked: Ear Lab's Stack**, `/ear-lab?lesson=27`, then tap Stack: six qualities, the dominant
   seventh among them (R9). No major seventh chord, so the card says "listen for the dominant
   seventh".
-- **Waits:** a chord-type launch field, triads and inversions in Chord Stacker (SEASON-2 § 5 item
-  18); the `ear-drill` subset of major against dominant seventh (§ 5 item 12); `?lesson=27` (§ 5
-  item 21).
+- **Linked since 17 November 2026:** Chord Stacker's triads, `/exercises/triads`, with its Chords
+  and Inversions pickers (SEASON-2 § 5 item 18), and Stack's major against dominant seventh,
+  `/exercises/major-or-dominant-seventh` (§ 5 item 12); FACTS 68a.
 
 ## Closing tease and next card
 

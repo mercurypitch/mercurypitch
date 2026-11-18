@@ -196,7 +196,7 @@ one?" The tease names no sharp's place, Lesson 21's predict answer.
 
 **§ 5 item 13 shipped on 15 November 2026:** a scale launch field and minor pentatonic in Scale
 Runner, and the beginner slugs `pentatonic-run` and `minor-pentatonic-run`, which open either
-pentatonic at level 2. When the card links them, it loses "choose Pentatonic". A drill that sings a run continuously (not echo) is not planned anywhere
+pentatonic at level 2. The card links `pentatonic-run` since 17 November 2026 and lost "choose Pentatonic" (FACTS 69a). A drill that sings a run continuously (not echo) is not planned anywhere
 (SEASON-2 § 5.3 to add).
 
 ## Go deeper

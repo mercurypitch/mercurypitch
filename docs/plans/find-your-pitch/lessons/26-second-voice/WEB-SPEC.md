@@ -19,8 +19,8 @@ sing flow with a take read in time (`docs/plans/find-your-pitch/lessons/18-read-
 its woodblock count-in (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:685-686`) and
 its planning-text test codes (`docs/plans/find-your-pitch/lessons/18-read-a-line/WEB-SPEC.md:739-742`),
 the lead's answer 2; and Lesson 24's headphones check and quiet check
-(`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:751-759`) and its one kept source
-under a take (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:746-750`). This spec
+(`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:749-757`) and its one kept source
+under a take (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:744-748`). This spec
 adds only what a part sung against a played part needs: that kept source widened from a drone to a
 sung line, one line for the reader, the tune line's two-part states, and a lab test. The scored runs
 ship only after that lab test, in which silence with Merc's part from the speakers reads as no
@@ -567,37 +567,38 @@ stills when WebGL fails.
 
 ## Practice links: what exists and what needs engineering
 
-- **Today, Jam's Harmony Stack**, for two or more: the link is `/jam?lesson=26`, printed
+- **Today, first: Merc's Harmony room**, alone, since 17 November 2026: the link is
+  `/exercises/harmony-line?lesson=26`, printed mercurypitch.com/exercises/harmony-line, the room the
+  web opens since 15 November 2026, free (SEASON-2 § 7 item 15; FACTS 68a). The card says what its
+  screen shows: Merc sings a short line, three to five notes of a major key, and the learner sings
+  it a third above him, each note lit as it is held; the Turns chip, taking turns on the speaker or
+  Together in headphones; and the line placed in the saved range, with no octave folded, which the
+  card asks the learner to set first. It claims nothing of the planned drill's three differences
+  (SEASON-2 § 7 item 14). Its words are new and wait for the coach's look; its care line is the
+  card's, word for word.
+- **Second: Jam's Harmony Stack**, for two or more: the link is `/jam?lesson=26`, printed
   mercurypitch.com/jam (`/jam`, `src/lib/sw-runtime.ts:132`). The card says how to reach it and
-  what it does to a learner (FACTS 63, 63a, 63b and 64). The steps: set your Singing Voice Range in
-  Settings first, since the room's octave is the host's range, which reads tenor until it is set;
-  then open a Jam room, then pick Harmony Stack under More controls and share the room's link, in
-  either order, since a friend who joins late is sent the room's drill and its mode. What it
-  does: one singer takes the room's tune and the other a third above it, in the key, each scored on
-  their own part; the room plays nothing, not even a first note; its boxes name their notes, each
-  part its own; and it scores each note in the octave the host's range sets, unfolded, where this
-  page's reader folds. Until items 15 and 16 of What the kit and the app still need shipped, the
-  card had the friend in before the mode was picked and said "on the third, its boxes print the
-  tune's letters". The card gives no advice on which voices
-  to pair: checked against all six presets on the room's first tune, the C major scale on C3 or C4,
-  two lower or two higher voices keep the tune and the third inside every preset, but with no room
-  at the tenor's floor or the soprano's, on the tune's C, under the series' two semitones, and a
-  lower and a higher voice leave a note outside a preset unless a tenor draws the tune in a higher
-  voice's room; the coach's list carries the table (`verify26.py`, section 13). It leaves out the
-  fifth a third singer takes, which runs a semitone past the bass preset's top, and it does not say
-  which friend gets which part, since that follows the room's order, which the room shows. It is the
-  season plan's link for this lesson (SEASON-2 § 5.1, row 26,
-  `docs/plans/find-your-pitch/SEASON-2.md:878`).
-- **The second drill, alone, Drone Intonation's thirds**: `/exercises/thirds-on-a-drone?lesson=26`,
-  printed mercurypitch.com/exercises/thirds-on-a-drone (`src/features/exercises/slug-map.ts:118-127`),
-  with Lesson 24's card lines cut to this page: what it does, now "names a third to sing above it",
-  since it prints the interval and the note's name; the headphones line, "Headphones help: its
-  drone plays while it listens."; and the range line, "It too wants each note in the octave your
-  range sets.", its "too" pointing back to Harmony Stack's octave and its range the one the card's
-  first line sets, with no "so" for "therefore". It writes no staff and plays nothing first; its
-  scoring sentence stays on Lesson 24's card (FACTS 65).
+  what it does to a learner (FACTS 63, 63a, 63b and 64). The steps: set the range first, since the
+  room's octave is the host's range, which reads tenor until it is set; then open a Jam room, then
+  pick Harmony Stack under More controls and share the room's link, in either order, since a friend
+  who joins late is sent the room's drill and its mode. What it does: one singer takes the room's
+  tune and the other a third above it, in the key, each scored on their own part; the room plays
+  nothing, not even a first note; its boxes name their notes, each part its own; and it scores each
+  note in the octave the host's range sets, unfolded, where this page's reader folds. Until items
+  15 and 16 of What the kit and the app still need shipped, the card had the friend in before the
+  mode was picked and said "on the third, its boxes print the tune's letters". The card gives no
+  advice on which voices to pair: checked against all six presets on the room's first tune, the C
+  major scale on C3 or C4, two lower or two higher voices keep the tune and the third inside every
+  preset, but with no room at the tenor's floor or the soprano's, on the tune's C, under the series'
+  two semitones, and a lower and a higher voice leave a note outside a preset unless a tenor draws
+  the tune in a higher voice's room; the coach's list carries the table (`verify26.py`, section 13).
+  It leaves out the fifth a third singer takes, which runs a semitone past the bass preset's top,
+  and does not say which friend gets which part, since that follows the room's order, which the
+  room shows. Until 17 November 2026 it was the card's first link, the season plan's, with
+  Drone Intonation's thirds, `/exercises/thirds-on-a-drone?lesson=26`, second, in Lesson 24's card
+  lines cut to this page (FACTS 65); that second drill left the card when the room came first.
 - **The rest version.** After "Effortful", "Uncomfortable" or "Just listen today" the card shows
-  Lesson 10's form, headed "Rest today", and is no longer a link, naming Harmony Stack; both drills
+  Lesson 10's form, headed "Rest today", and is no longer a link, naming Harmony; both drills
   ask for the voice, so neither stays on offer (`mountPractiseCard`,
   `src/features/lessons/kit/comfort.ts:126-149`; FACTS 66).
 - **The first visit and the marker.** Nothing reads `?lesson=26` until SEASON-2 § 5.2 item 21
@@ -605,11 +606,10 @@ stills when WebGL fails.
   before that, so First Light steps aside and the card has no first-visit line (FACTS 67).
 - **Needed: the harmony-line drill** (SEASON-2 § 5.2 item 17, `docs/plans/find-your-pitch/SEASON-2.md:1030-1032`),
   the app's work: a melody played and a third above or below it sung, scored per note, octave-folded,
-  with a headphones prompt. When it ships it takes the card's first place, as the drill a learner can
-  do alone, with its own care lines and the coach's look, and Harmony Stack moves to second (FACTS
-  68). The native app's Harmony room does it there, but no web page can open it, so the card does
-  not name it (SEASON-2 § 7 item 14).
-- No premium exercise is linked: Jam and Drone Intonation are free (FACTS 69).
+  with a headphones prompt. Merc's Harmony room meets it in part (SEASON-2 § 7 item 14) and opens on
+  the web since 15 November 2026, so it took the card's first place on 17 November 2026, and Harmony
+  Stack moved to second (FACTS 68, 68a).
+- No premium exercise is linked: the Harmony room and Jam are free on the web (FACTS 69).
 
 ## Explorer and season data
 
@@ -621,10 +621,10 @@ Lesson 10's is (`src/features/lessons/kit/season.ts:345-364`):
   a melody" and "Chord tones and non-chord tones"; the hook word for word (FACTS 1); `minutes: 16`,
   which the lab may move (FACTS 3), and `page: '/learn/26'` once the page is built, under the
   drafts' comment, `// A draft until its sign-off (drafts.ts), as Lesson 3 is.`
-- `pr.link`: `href` `/jam?lesson=26`, `addr` `mercurypitch.com/jam`, `label` "Harmony Stack" and
-  `note` "with a friend: the host picks Harmony Stack", as the card has it (FACTS 64); `pr.needs`,
-  "The harmony-line drill (SEASON-2 § 5.2 item 17)", is the team's only: the field is "Admin only,
-  never drawn on a lesson page" (`src/features/lessons/kit/season.ts:102-103`).
+- `pr.link`: `href` `/exercises/harmony-line?lesson=26`, `label` "Harmony" and `note` "a third above
+  Merc" since 17 November 2026 (FACTS 68a), where it was Jam's, "with a friend: the host picks Harmony
+  Stack"; `pr.needs`, the planned drill the room meets in part and the coach's look, is the team's only:
+  the field is "Admin only, never drawn on a lesson page" (`src/features/lessons/kit/season.ts:102-103`).
 - `EDGES` gains [12, 26] and [24, 26], as SEASON-2 § 4.3 gives them (FACTS 2); Lesson 26's
   prerequisite list is then [12, 24].
 - The tease on Lesson 25's card is this lesson's, set on Lesson 26 in the lesson copy: `tease`
@@ -670,12 +670,12 @@ items 15 and 16 and Lesson 18's item 16 (item 4 below), which have shipped.
    flow allows three takes a visit; this page's options give three a set, and a model before each
    run.
 5. **Lesson 24's checks**, its item 6, `kit/headphones.ts` and `kit/quiet-check.ts`
-   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:751-759`), with two options
+   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:749-757`), with two options
    for this page: the check's line names what plays, "Merc's part" or "Tavi's part", where Lesson
    24's names the drone; and the quiet check plays the first 2.0 s of the set's other part, where
    Lesson 24's plays the drone.
 6. **A part under a take**, code with tests, widening Lesson 24's item 5
-   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:746-750`): the hush's one kept
+   (`docs/plans/find-your-pitch/lessons/24-drone-harmony/WEB-SPEC.md:744-748`): the hush's one kept
    source is any one voice built before the hush, a drone or a contour voice, not a drone alone; a
    contour voice can be booked to start later through `at` (`src/features/lessons/kit/sound.ts:80-84`),
    so the other part is built when the take is set up and starts on bar 1's first beat; and a

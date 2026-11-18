@@ -609,7 +609,9 @@ describe("a draft lesson on Lesson 1's map, on a page no worker served (drafts.t
     expect(
       hidden?.querySelector('a.addr[href="/ear-lab?lesson=12"]'),
     ).not.toBeNull()
-    expect(hidden?.textContent).toContain('Ear Lab, then tap Cadence')
+    expect(hidden?.textContent).toContain(
+      'Ear Lab, then tap Color, then Cadence',
+    )
   })
 
   it('treats Lesson 13, a draft too, the same way either side of the switch, its plate and Voice Mirror kept', async () => {

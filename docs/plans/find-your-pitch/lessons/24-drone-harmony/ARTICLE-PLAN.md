@@ -200,10 +200,10 @@ For everyone (S20a needs T14, Lesson 10, and T13, Lesson 23).
   Lesson 10's lines on its sharps and its octave. **[coach]**
 - **Linked: Ear Lab's Beat Hunt**, `/ear-lab?lesson=24`, then tap Beat Hunt: two near-unison pairs,
   which one beats (R12). No voice needed, so it stays on the rest card.
-- **Waits:** the card's swap to `harmony-on-a-drone`, the slug for the fifth, the major third and
-  the octave, which shipped on 15 November 2026 (SEASON-2 § 5 item 15); a pure-tuning scoring option
-  (code with tests, item 15); `?lesson=24` (item 21). Until the
-  pure option ships, the card says the drill scores to the piano.
+- **Swapped on 17 November 2026:** the card links `harmony-on-a-drone`, the slug for the fifth, the
+  major third and the octave, which shipped on 15 November 2026 with its pure-tuning option (SEASON-2
+  § 5 item 15) and opens on Pure, so the card says it scores against the pure interval, no longer
+  that it scores to the piano (FACTS 60a); `?lesson=24` reads (item 21).
 
 ## Closing tease and next card
 
@@ -213,7 +213,7 @@ For everyone (S20a needs T14, Lesson 10, and T13, Lesson 23).
 
 ## Footer
 
-Season 2 · Lesson 24 · Harmony against a drone. The practice links, printed mercurypitch.com/exercises/thirds-on-a-drone and mercurypitch.com/ear-lab, with "Drone Intonation and Beat Hunt are free." Lesson 1's fonts line, and "Every sound on this page is synthesised in your browser." Whether each linked room is free is checked against the app before publishing, as Season 1 did.
+Season 2 · Lesson 24 · Harmony against a drone. The practice links, printed mercurypitch.com/exercises/harmony-on-a-drone and mercurypitch.com/ear-lab, with "Drone Intonation and Beat Hunt are free." Lesson 1's fonts line, and "Every sound on this page is synthesised in your browser." Whether each linked room is free is checked against the app before publishing, as Season 1 did.
 
 ## For the vocal coach
 

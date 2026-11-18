@@ -197,7 +197,7 @@ describe('the explorer, a tab per season', () => {
     expect(card?.querySelector('.ex-actions')).toBeNull()
     expect(card?.innerHTML).not.toContain('/learn/15')
     expect(
-      card?.querySelector('a.addr[href="/?lesson=15#/compose"]'),
+      card?.querySelector('a.addr[href="/exercises/read-the-note?lesson=15"]'),
     ).not.toBeNull()
     vi.unstubAllEnvs()
   })
@@ -247,7 +247,9 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/pitch-training?lesson=16"]'),
+      card?.querySelector(
+        'a.addr[href="/exercises/sing-what-you-see?lesson=16"]',
+      ),
     ).not.toBeNull()
   })
 
@@ -275,7 +277,9 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/pitch-training?lesson=18"]'),
+      card?.querySelector(
+        'a.addr[href="/exercises/sing-it-in-time?lesson=18"]',
+      ),
     ).not.toBeNull()
   })
 
@@ -303,7 +307,7 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/pitch-training?lesson=20"]'),
+      card?.querySelector('a.addr[href="/exercises/pentatonic-run?lesson=20"]'),
     ).not.toBeNull()
   })
 
@@ -331,7 +335,9 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/ear-lab?lesson=17"]'),
+      card?.querySelector(
+        'a.addr[href="/exercises/quarters-halves-and-eighths?lesson=17"]',
+      ),
     ).not.toBeNull()
     expect(card?.querySelector('.ex-fig svg.ex-rhythm')).not.toBeNull()
     expect(card?.querySelector('.ex-fig figcaption')?.textContent).toBe(
@@ -379,7 +385,9 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/ear-lab?lesson=19"]'),
+      card?.querySelector(
+        'a.addr[href="/exercises/three-four-or-six-eight?lesson=19"]',
+      ),
     ).not.toBeNull()
   })
 
@@ -435,7 +443,9 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/ear-lab?lesson=23"]'),
+      card?.querySelector(
+        'a.addr[href="/exercises/perfect-or-tritone?lesson=23"]',
+      ),
     ).not.toBeNull()
   })
 
@@ -492,7 +502,7 @@ describe('the explorer, a tab per season', () => {
     ).toEqual(['#top'])
     expect(
       card?.querySelector(
-        'a.addr[href="/exercises/thirds-on-a-drone?lesson=24"]',
+        'a.addr[href="/exercises/harmony-on-a-drone?lesson=24"]',
       ),
     ).not.toBeNull()
   })
@@ -521,7 +531,7 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/ear-lab?lesson=25"]'),
+      card?.querySelector('a.addr[href="/exercises/te-or-ti?lesson=25"]'),
     ).not.toBeNull()
   })
 
@@ -548,7 +558,9 @@ describe('the explorer, a tab per season', () => {
         a.getAttribute('href'),
       ),
     ).toEqual(['#top'])
-    expect(card?.querySelector('a.addr[href="/jam?lesson=26"]')).not.toBeNull()
+    expect(
+      card?.querySelector('a.addr[href="/exercises/harmony-line?lesson=26"]'),
+    ).not.toBeNull()
   })
 
   it("opens Lesson 27's page on its own card, Ready, with the Exercises link", async () => {
@@ -575,11 +587,11 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/pitch-training?lesson=27"]'),
+      card?.querySelector('a.addr[href="/exercises/triads?lesson=27"]'),
     ).not.toBeNull()
   })
 
-  it("opens Lesson 28's page on its own card, Ready, with the Karaoke Night link", async () => {
+  it("opens Lesson 28's page on its own card, Ready, with the Sing It in Time link", async () => {
     // Arrange: Lesson 28's page carries Season 2 before it draws (main.ts)
     vi.resetModules()
     const { carrySeason } = await import('./page-state')
@@ -603,7 +615,9 @@ describe('the explorer, a tab per season', () => {
       ),
     ).toEqual(['#top'])
     expect(
-      card?.querySelector('a.addr[href="/karaoke-night?lesson=28"]'),
+      card?.querySelector(
+        'a.addr[href="/exercises/sing-it-in-time?lesson=28"]',
+      ),
     ).not.toBeNull()
   })
 

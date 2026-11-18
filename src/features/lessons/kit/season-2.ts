@@ -66,13 +66,10 @@ const ENTRIES_2: readonly Lesson[] = [
     page: '/learn/15',
     hook: 'A piano has 88 keys. How can five lines write down every one of them?',
     pr: {
-      needs:
-        'A practice card for Read the Note, which shipped on 15 November 2026 (mercurypitch.com/exercises/read-the-note)',
       link: {
-        href: '/?lesson=15#/compose',
-        addr: 'mercurypitch.com/#/compose',
-        label: 'Compose',
-        note: 'then choose Sheet Music',
+        href: '/exercises/read-the-note?lesson=15',
+        addr: 'mercurypitch.com/exercises/read-the-note',
+        label: 'Read the Note',
       },
     },
   },
@@ -88,13 +85,11 @@ const ENTRIES_2: readonly Lesson[] = [
     page: '/learn/16',
     hook: "Can you sing a tune you've never heard, just by reading it?",
     pr: {
-      needs:
-        'A practice card for Sight-Singing on the two phrases, which shipped on 16 November 2026 (mercurypitch.com/exercises/sing-what-you-see)',
       link: {
-        href: '/pitch-training?lesson=16',
-        addr: 'mercurypitch.com/pitch-training',
-        label: 'Exercises',
-        note: 'then tap Sight-Singing',
+        href: '/exercises/sing-what-you-see?lesson=16',
+        addr: 'mercurypitch.com/exercises/sing-what-you-see',
+        label: 'Sight-Singing',
+        note: "the lesson's two phrases",
       },
     },
   },
@@ -111,13 +106,11 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Why is a quarter note not a quarter of a second?',
     fig: 'rhythm',
     pr: {
-      needs:
-        'A practice card for The Chart on quarters, halves and eighths, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/quarters-halves-and-eighths)',
       link: {
-        href: '/ear-lab?lesson=17',
-        addr: 'mercurypitch.com/ear-lab',
-        label: 'Ear Lab',
-        note: 'then tap The Chart',
+        href: '/exercises/quarters-halves-and-eighths?lesson=17',
+        addr: 'mercurypitch.com/exercises/quarters-halves-and-eighths',
+        label: 'The Chart',
+        note: 'quarters and eighths only',
       },
     },
   },
@@ -133,13 +126,12 @@ const ENTRIES_2: readonly Lesson[] = [
     page: '/learn/18',
     hook: "How do singers read a tune they've never heard without stopping on every note?",
     pr: {
-      needs:
-        'A practice card for Sing It in Time, which shipped on 15 November 2026 (mercurypitch.com/exercises/sing-it-in-time), with Sight-Singing as it is since 16 November 2026',
+      needs: "The vocal coach's look at the card's lines for Sing It in Time",
       link: {
-        href: '/pitch-training?lesson=18',
-        addr: 'mercurypitch.com/pitch-training',
-        label: 'Exercises',
-        note: 'then tap Sight-Singing',
+        href: '/exercises/sing-it-in-time?lesson=18',
+        addr: 'mercurypitch.com/exercises/sing-it-in-time',
+        label: 'Sing It in Time',
+        note: 'three tunes at 60 BPM',
       },
     },
   },
@@ -157,13 +149,11 @@ const ENTRIES_2: readonly Lesson[] = [
     fig: 'pads',
     hook: 'Six notes in a bar, grouped two ways: why does one feel like two beats and the other like three?',
     pr: {
-      needs:
-        'A practice card for Subdivide on 3/4 and 6/8, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/three-four-or-six-eight)',
       link: {
-        href: '/ear-lab?lesson=19',
-        addr: 'mercurypitch.com/ear-lab',
-        label: 'Ear Lab',
-        note: 'then tap Subdivide',
+        href: '/exercises/three-four-or-six-eight?lesson=19',
+        addr: 'mercurypitch.com/exercises/three-four-or-six-eight',
+        label: 'Subdivide',
+        note: '3/4 and 6/8',
       },
     },
   },
@@ -180,12 +170,12 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'How do singers sing a fast run without the notes smudging together?',
     pr: {
       needs:
-        "Scale Runner's Pentatonic by launch, and a drill that sings a run continuously",
+        'A drill that sings a run continuously and reads it note by note, which no plan has yet (SEASON-2 § 5.3)',
       link: {
-        href: '/pitch-training?lesson=20',
-        addr: 'mercurypitch.com/pitch-training',
-        label: 'Exercises',
-        note: 'then tap Scale Runner',
+        href: '/exercises/pentatonic-run?lesson=20',
+        addr: 'mercurypitch.com/exercises/pentatonic-run',
+        label: 'Scale Runner',
+        note: 'the pentatonic',
       },
     },
   },
@@ -202,7 +192,7 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'G major needs one sharp and D major two. Why does each key a fifth up keep its sharps and add one?',
     pr: {
       needs:
-        'A note-reading drill that reads key signatures, and a practice card for Sight-Singing, which spells by key since 16 November 2026',
+        "A note-reading drill that reads key signatures (Read the Note writes naturals only), and an address for Sight-Singing in the lesson's keys: it spells by key since 16 November 2026, but from the Exercises tab it takes the Singing tab's key",
       link: {
         href: '/?lesson=21#/compose',
         addr: 'mercurypitch.com/#/compose',
@@ -245,12 +235,12 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Which interval splits the octave exactly in half, and why does it want to move?',
     pr: {
       needs:
-        'A practice card for Leap on the perfect intervals and the tritone, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/perfect-or-tritone)',
+        "A sung card for Interval Trainer's perfect intervals (mercurypitch.com/exercises/perfect-intervals), with the care lines and the vocal coach's look",
       link: {
-        href: '/ear-lab?lesson=23',
-        addr: 'mercurypitch.com/ear-lab',
-        label: 'Ear Lab',
-        note: 'then tap Leap',
+        href: '/exercises/perfect-or-tritone?lesson=23',
+        addr: 'mercurypitch.com/exercises/perfect-or-tritone',
+        label: 'Leap',
+        note: 'P4, TT, P5 and P8',
       },
     },
   },
@@ -266,13 +256,11 @@ const ENTRIES_2: readonly Lesson[] = [
     page: '/learn/24',
     hook: 'Hold a note against a drone: how can you hear when the two are in tune?',
     pr: {
-      needs:
-        'The fifth, third and octave slug and a pure-tuning option (SEASON-2 § 5.2 item 15); a drone with harmonics',
       link: {
-        href: '/exercises/thirds-on-a-drone?lesson=24',
-        addr: 'mercurypitch.com/exercises/thirds-on-a-drone',
+        href: '/exercises/harmony-on-a-drone?lesson=24',
+        addr: 'mercurypitch.com/exercises/harmony-on-a-drone',
         label: 'Drone Intonation',
-        note: 'the two thirds',
+        note: 'the fifth, major third and octave, in pure tuning',
       },
     },
   },
@@ -289,12 +277,12 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Why does a minor key often raise one note just before it comes home?',
     pr: {
       needs:
-        "A practice card for Gravity on Te and Ti, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/te-or-ti); Scale Runner's harmonic and melodic minor; a practice card for Sight-Singing in A harmonic minor, which shipped on 16 November 2026 (mercurypitch.com/exercises/sight-sing-harmonic-minor)",
+        "Scale Runner's harmonic and melodic minor runs (mercurypitch.com/exercises/harmonic-minor-run, melodic-minor-run) are not linked: a card for them could take Sight-Singing's place, with its care lines and the vocal coach's look",
       link: {
-        href: '/ear-lab?lesson=25',
-        addr: 'mercurypitch.com/ear-lab',
-        label: 'Ear Lab',
-        note: 'then tap Gravity',
+        href: '/exercises/te-or-ti?lesson=25',
+        addr: 'mercurypitch.com/exercises/te-or-ti',
+        label: 'Gravity',
+        note: 'Te and Ti',
       },
     },
   },
@@ -311,12 +299,12 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Can you make a harmony by singing the tune a third higher?',
     pr: {
       needs:
-        'A practice card for the Harmony room (mercurypitch.com/exercises/harmony-line), which differs from the planned harmony-line drill in three ways (SEASON-2 § 7 item 14)',
+        "The planned harmony-line drill, which the Harmony room meets in part: its lines are random, its third below comes only at Professional, and it folds no octave (SEASON-2 § 7 item 14); the vocal coach's look at the room's card",
       link: {
-        href: '/jam?lesson=26',
-        addr: 'mercurypitch.com/jam',
-        label: 'Harmony Stack',
-        note: 'with a friend: the host picks Harmony Stack',
+        href: '/exercises/harmony-line?lesson=26',
+        addr: 'mercurypitch.com/exercises/harmony-line',
+        label: 'Harmony',
+        note: 'a third above Merc',
       },
     },
   },
@@ -333,12 +321,12 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: 'Add one note to the V chord and it pulls towards home. Which note, and why?',
     pr: {
       needs:
-        'Chord Stacker opening on the dominant seventh, with triads and inversions (today it shuffles maj7, min7, dom7, dim7 and maj6); a practice card for Stack on major against dominant seventh, whose address shipped on 16 November 2026 (mercurypitch.com/exercises/major-or-dominant-seventh)',
+        'An address that opens Chord Stacker on the dominant seventh and its inversions, one registry line (SEASON-2 § 5.2 item 18); its card links the triads in root position meanwhile',
       link: {
-        href: '/pitch-training?lesson=27',
-        addr: 'mercurypitch.com/pitch-training',
-        label: 'Exercises',
-        note: 'then tap Chord Stacker',
+        href: '/exercises/triads?lesson=27',
+        addr: 'mercurypitch.com/exercises/triads',
+        label: 'Chord Stacker',
+        note: 'the four triads',
       },
     },
   },
@@ -355,11 +343,12 @@ const ENTRIES_2: readonly Lesson[] = [
     hook: "How can a song sound as if it's ending, then keep going?",
     pr: {
       needs:
-        'A practice card for Name the Cadence, which shipped on 15 November 2026 (mercurypitch.com/exercises/name-the-cadence), and one for Sing It in Time (mercurypitch.com/exercises/sing-it-in-time); the harmony-line drill (SEASON-2 § 5.2 item 17)',
+        "The vocal coach's look at the card's lines for Sing It in Time; the harmony-line drill as SEASON-2 § 5.2 item 17 plans it, a part sung alone, which the Harmony room meets only in part",
       link: {
-        href: '/karaoke-night?lesson=28',
-        addr: 'mercurypitch.com/karaoke-night',
-        label: 'Karaoke Night',
+        href: '/exercises/sing-it-in-time?lesson=28',
+        addr: 'mercurypitch.com/exercises/sing-it-in-time',
+        label: 'Sing It in Time',
+        note: 'three tunes at 60 BPM',
       },
     },
   },

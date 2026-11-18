@@ -172,9 +172,9 @@ sound on: nothing plays until you press a play button." 35 words.
   root, one the third."
 - **Linked, alone: Drone Intonation's thirds**, `/exercises/thirds-on-a-drone` (`slug-map.ts:118-127`),
   with Lesson 24's card lines. **[coach]**
-- **Waits:** the harmony-line drill (SEASON-2 § 5 item 17: a melody played, a diatonic third sung
-  above or below, scored per note, octave-folded, computed with `diatonicStepUp`,
-  `jam-modes.ts:108`, with a headphones prompt); `?lesson=26` (item 21).
+- **Linked first since 17 November 2026:** Merc's Harmony room, `/exercises/harmony-line`, which
+  meets the harmony-line drill (SEASON-2 § 5 item 17) in part, Harmony Stack second and Drone
+  Intonation off the card (FACTS 68a). **[coach]** for the room's lines.
 
 ## Closing tease and next card
 
@@ -185,7 +185,7 @@ sound on: nothing plays until you press a play button." 35 words.
 
 ## Footer
 
-Season 2 · Lesson 26 · A second voice. The practice links, printed mercurypitch.com/jam and mercurypitch.com/exercises/thirds-on-a-drone, with "Harmony Stack and Drone Intonation are free." Lesson 1's fonts line, and "Every sound on this page is synthesised in your browser." Whether each linked room is free is checked against the app before publishing, as Season 1 did.
+Season 2 · Lesson 26 · A second voice. The practice links, printed mercurypitch.com/exercises/harmony-line and mercurypitch.com/jam, with "Harmony and Harmony Stack are free." Lesson 1's fonts line, and "Every sound on this page is synthesised in your browser." Whether each linked room is free is checked against the app before publishing, as Season 1 did.
 
 ## For the vocal coach
 

@@ -380,14 +380,17 @@ describe("Lesson 16's page", () => {
 
     // Assert: LESSON.md, Wrap; FACTS 52
     expect(words(card?.querySelector('[data-ending="rest"]'))).toBe(
-      'Rest today. Sight-Singing will be here when your voice feels comfortable: mercurypitch.com/pitch-training, then tap Sight-Singing.',
+      'Rest today. Sight-Singing will be here when your voice feels comfortable: mercurypitch.com/exercises/sing-what-you-see',
     )
     expect(card?.querySelectorAll('[data-ending="rest"] a')).toHaveLength(0)
     expect(
       Array.from(d.querySelectorAll('a[href*="?lesson="]'), (a) =>
         a.getAttribute('href'),
       ),
-    ).toEqual(['/pitch-training?lesson=16', '/pitch-training?lesson=16'])
+    ).toEqual([
+      '/exercises/sing-what-you-see?lesson=16',
+      '/exercises/sing-what-you-see?lesson=16',
+    ])
   })
 
   it('names a share card that is in public/, at its size', () => {

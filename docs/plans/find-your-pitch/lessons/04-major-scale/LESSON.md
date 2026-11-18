@@ -266,7 +266,8 @@ don't sound like do-re-mi.
 - Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Scale Runner.
 - Second drill: For your ear, Ear Lab's Home plays a few chords that set home, then one note: name
   its scale degree, 1 to 7. The pads show do to ti, with so written Sol, and you can tap your
-  answer or sing it, in any octave. Free: **mercurypitch.com/ear-lab**, then tap Home.
+  answer or sing it, in any octave. Free: **mercurypitch.com/ear-lab**, then tap Function, then
+  Home.
 - Figure: the staircase on C beside a house-style drawing of a short pitch line with the notes
   still to come drawn as rungs ahead of it. Caption: "Illustration: Scale Runner draws the notes
   still to come as a ladder."

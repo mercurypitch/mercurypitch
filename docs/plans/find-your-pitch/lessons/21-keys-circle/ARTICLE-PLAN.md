@@ -208,14 +208,14 @@ planner owns Lesson 22's predict; check the tease against it.
   A, E, B, F and B♭ only (R21-14), and the staff spells a flat key all in flats and a sharp key all in
   sharps (R21-15). No address opens the sheet view (R18-12), so the card says "open the Singing tab, pick
   a key, then switch to the sheet view".
-- Ear Lab's Home, `mercurypitch.com/ear-lab?lesson=21`, then tap Home: a cadence sets a key and you name
-  the degree you hear (R21-17).
+- Ear Lab's Home, `mercurypitch.com/ear-lab?lesson=21`, then tap Function, then Home (since 17
+  November 2026): a cadence sets a key and you name the degree you hear (R21-17).
 - Not linked: Sight-Singing for flat keys, since it writes B♭ as A♯ (R21-16). `?lesson=21` is not a
   marker yet (R21-18).
 
-**Waiting for:** a circle-of-fifths toy (kit, SEASON-2 § 6.2 item 4), all twelve keys with flat names in
-the picker (§ 5 item 20), key-aware Sight-Singing (§ 5 item 10d), and the note-reading drill with key
-signatures (§ 5 item 9), which would be this lesson's best link once it reads signatures.
+**Waiting for:** a circle-of-fifths toy (kit, SEASON-2 § 6.2 item 4), and the note-reading drill with
+key signatures (§ 5 item 9), which would be this lesson's best link once it reads signatures. The
+twelve keys (item 20) and key-aware Sight-Singing (item 10d) shipped on 17 and 16 November 2026.
 
 ## Go deeper
 

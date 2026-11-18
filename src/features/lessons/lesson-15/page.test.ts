@@ -14,8 +14,8 @@
 // the stage, and the five lines wait for a choice; no section head carries
 // the faint staff and its clef, and the body drops the background's, since
 // on this page a staff is always music (WEB-SPEC, Look; Tests 16); the
-// practice link carries the lesson before its hash, and the practice card's
-// rest line keeps Compose; the share card its head names is in public/, at
+// practice link carries the lesson, and the practice card's rest line keeps
+// Read the Note; the share card its head names is in public/, at
 // its size; and every line of its copy says only what the claims check
 // passes (WEB-SPEC, Tests 14).
 
@@ -244,26 +244,26 @@ describe("Lesson 15's page", () => {
     for (const m of modules) expect(m).not.toMatch(/engraveClefs\(/)
   })
 
-  it('links the practice drill with the lesson, before its hash, each in a tab of its own', () => {
+  it('links the practice drill with the lesson, each in a tab of its own', () => {
     // Act
     const links = Array.from(
       doc().querySelectorAll<HTMLAnchorElement>('a[href*="lesson="]'),
     )
 
-    // Assert: Compose, on the card and in the footer (FACTS 45)
+    // Assert: Read the Note, on the card and in the footer (FACTS 44a)
     expect(links.map((a) => a.getAttribute('href'))).toEqual([
-      '/?lesson=15#/compose',
-      '/?lesson=15#/compose',
+      '/exercises/read-the-note?lesson=15',
+      '/exercises/read-the-note?lesson=15',
     ])
     for (const a of links)
       expect([a.target, a.rel, words(a)]).toEqual([
         '_blank',
         'noopener',
-        'mercurypitch.com/#/compose',
+        'mercurypitch.com/exercises/read-the-note',
       ])
   })
 
-  it("holds the practice card's rest line, hidden at first, above a text that keeps Compose after every ending", () => {
+  it("holds the practice card's rest line, hidden at first, above a text that keeps Read the Note after every ending", () => {
     // Arrange
     const card = doc().querySelector('#practiseCard')
 
@@ -272,7 +272,7 @@ describe("Lesson 15's page", () => {
     const link = card?.querySelector('a.addr')
 
     // Assert: Lesson 8's rest line, word for word (FACTS 59)
-    expect(words(card?.querySelector('h3'))).toBe('Compose, in Sheet Music')
+    expect(words(card?.querySelector('h3'))).toBe('Read the Note')
     expect(rest?.hasAttribute('hidden')).toBe(true)
     expect(words(rest)).toBe(
       "Rest today. This page's sung line will be here when your voice feels comfortable.",

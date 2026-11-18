@@ -339,7 +339,7 @@ four chords and still be two songs.
 - Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Arpeggio Jumper.
 - Second drill: For your ear, Ear Lab's Cadence strums three or four chords on a guitar, and you
   name the progression in numerals from four choices. I–V–vi–IV is one of the eight it knows. Free:
-  **mercurypitch.com/ear-lab**, then tap Cadence.
+  **mercurypitch.com/ear-lab**, then tap Color, then Cadence.
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Arpeggio Jumper
   will be here when your voice feels comfortable: **mercurypitch.com/pitch-training**, then tap
   Arpeggio Jumper." Then the second drill.

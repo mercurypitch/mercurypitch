@@ -333,7 +333,7 @@ minor, and why "minor means sad" isn't the whole story.
 - Address: Practise it free: **mercurypitch.com/pitch-training**, then tap Drone Intonation.
 - Second drill: For your ear, Ear Lab's Stack plays one chord and you name its quality. It mixes
   six; listen for this lesson's two, major and minor. Free: **mercurypitch.com/ear-lab**, then tap
-  Stack.
+  Color, then Stack.
 - Instead, after "Effortful", "Uncomfortable" or "Just listen today": "Rest today. Drone Intonation
   will be here when your voice feels comfortable: **mercurypitch.com/pitch-training**, then tap
   Drone Intonation." Then the second drill.
