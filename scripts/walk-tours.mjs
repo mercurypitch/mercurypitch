@@ -22,6 +22,9 @@
 // Env vars:
 //   BASE_URL     app URL (default http://localhost:3005)
 //   MOBILE=1     390x844 touch viewport instead of 1280x800
+//   VIEWPORT     WIDTHxHEIGHT to walk at instead of either, a touch screen
+//                with MOBILE=1: MOBILE=1 VIEWPORT=844x390 walks a phone on
+//                its side, which has the phone's layout and the top tab bar
 //   APP_VERSION  version used to mark the welcome screen as seen
 //                (default: read from package.json)
 //   CHROMIUM     chromium executable path (default: Playwright's own
@@ -101,9 +104,16 @@ try {
   })
 }
 
-const VIEWPORT = MOBILE
-  ? { width: 390, height: 844 }
-  : { width: 1280, height: 800 }
+const [sizeW, sizeH] = (process.env.VIEWPORT ?? '').split('x').map(Number)
+const VIEWPORT =
+  sizeW > 0 && sizeH > 0
+    ? { width: sizeW, height: sizeH }
+    : MOBILE
+      ? { width: 390, height: 844 }
+      : { width: 1280, height: 800 }
+// The bottom tab bar is narrow screens' alone (BottomTabBar.tsx): a phone on
+// its side wider than 768 px keeps the top bar, as a desk does.
+const NARROW = VIEWPORT.width <= 768
 const ctx = await browser.newContext({ viewport: VIEWPORT, hasTouch: MOBILE })
 const page = await ctx.newPage()
 await page.addInitScript((v) => {
@@ -142,15 +152,17 @@ await page.goto(BASE)
 // Nav differs by viewport: desktop has the top #app-tabs bar; mobile
 // (<=768px) unmounts it and shows the floating BottomTabBar instead.
 await page.waitForSelector(
-  MOBILE ? '[data-tour="mobile-tabbar"]' : '#app-tabs',
+  NARROW ? '[data-tour="mobile-tabbar"]' : '#app-tabs',
   { timeout: 30000 },
 )
 await page.waitForTimeout(1500)
 
 const openGuide = async () => {
-  // The Guide button lives in the sidebar; on mobile open the drawer first.
-  if (MOBILE) {
-    await page.locator('.sidebar-toggle-btn').click()
+  // The Guide button lives in the sidebar; where the sidebar is the drawer
+  // behind the header's menu (a phone, upright or on its side), open it first.
+  const menu = page.locator('.sidebar-toggle-btn')
+  if (MOBILE && (await menu.isVisible())) {
+    await menu.click()
     await page.waitForTimeout(400)
   }
   await page

@@ -1154,6 +1154,13 @@ import handler, issue #813.
 **Rule:** a phone's layout asks `isPhoneStage()` (narrow, or a coarse pointer in landscape at most 500 px tall, one media query list), and a stylesheet that decides the same thing writes both conditions with a comma, with a test that reads the file and holds it to `SHORT_TOUCH_LANDSCAPE_QUERY`. Check a screen at 844x390 and 740x360 with touch and a phone's user agent; a mouse at the same size is a desk, and keeps the desk's layout.
 **See:** `src/lib/use-viewport.ts`, `src/lib/use-viewport.test.ts` (the sidebar drawer, in the stylesheets), `src/e2e/singing-phone-sideways.spec.ts`
 
+### Pick a phone's or a desk's version by the switch its target follows, not by one query for all
+
+**Symptom:** walked at 844x390, a phone on its side, the Guide's Singing and Toolbar tours showed 14 bubbles in the middle of the screen with nothing lit. Asking `isPhoneStage()` for every step instead would have lit those and broken others: the step for the bottom tab bar, and the Guitar and Piano tours.
+**Cause:** a tour step's phone or desk version was picked by `isNarrow()`, while the Singing stage it points at swaps by `isPhoneStage()`. A phone on its side wider than 768 px has the phone's stages and the drawer, but keeps the top tab bar, and the Guitar and Piano pages still swap at the width alone. The two answers differ on exactly that screen.
+**Rule:** a step (or any phone/desk pair: a fold behind Options, a toast's place) asks the same question its target's component asks. `WalkthroughStep.viewport` names it: `mobile`/`desktop` for `isPhoneStage`, `narrow`/`wide` for `isNarrow`. Walk the tours at 844x390 too (`MOBILE=1 VIEWPORT=844x390 node scripts/walk-tours.mjs`).
+**See:** `src/stores/app-store.ts` (`showsLayout`), `src/stores/app-store.tour-layout.test.ts`, `scripts/walk-tours.mjs`
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry

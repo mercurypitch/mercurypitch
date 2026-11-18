@@ -50,14 +50,21 @@ beforeAll(() => {
 // The signpost renders only on a phone-shaped viewport that is not a TV,
 // so both gates need a hand on them. Spread-the-actual keeps every other
 // export (BREAKPOINTS, device tiers) real; only the two booleans move.
+// The header's fold asks for a phone's layout (isPhoneStage), which is a
+// narrow window or a phone on its side, so `sideways` stands for the second.
 const viewportMocks = vi.hoisted(() => ({
   narrow: false,
+  sideways: false,
   tv: false,
 }))
 
 vi.mock('@/lib/use-viewport', async (importOriginal) => {
   const actual = (await importOriginal()) as object
-  return { ...actual, isNarrow: () => viewportMocks.narrow }
+  return {
+    ...actual,
+    isNarrow: () => viewportMocks.narrow,
+    isPhoneStage: () => viewportMocks.narrow || viewportMocks.sideways,
+  }
 })
 
 vi.mock('@/lib/device-tier', async (importOriginal) => {
@@ -85,6 +92,7 @@ vi.mock('@/stores/sync-ui-store', () => ({
 // (mode selector, CPU/GPU pills) do not exist.
 beforeEach(() => {
   viewportMocks.narrow = false
+  viewportMocks.sideways = false
   viewportMocks.tv = false
   syncMocks.code = null
   syncUi.openSyncModal.mockClear()
@@ -291,6 +299,38 @@ describe('UvrPanel Component', () => {
       viewportMocks.tv = true
       render(() => <UvrPanel />)
       expect(screen.queryByTestId('uvr-stage-lead')).toBeNull()
+    })
+  })
+
+  // The header's nine separation controls, Guide, Settings and Karaoke
+  // Night ran 61 px past an 844 px window on a phone on its side, wider
+  // than the breakpoint, and cut off Settings. They fold behind Options
+  // there, as they do on a phone held upright.
+  describe("the header's controls", () => {
+    it.each([
+      ['a phone upright', { narrow: true, sideways: false }],
+      [
+        'a phone on its side, wider than the breakpoint',
+        { narrow: false, sideways: true },
+      ],
+    ])('fold behind one Options button on %s', (_name, screen_) => {
+      Object.assign(viewportMocks, screen_)
+
+      render(() => <UvrPanel />)
+
+      expect({
+        options: screen.queryByTestId('uvr-mobile-options') !== null,
+        settings: screen.queryByTestId('uvr-open-settings') !== null,
+      }).toEqual({ options: true, settings: false })
+    })
+
+    it('stay in the row at a desk', () => {
+      render(() => <UvrPanel />)
+
+      expect({
+        options: screen.queryByTestId('uvr-mobile-options') !== null,
+        settings: screen.queryByTestId('uvr-open-settings') !== null,
+      }).toEqual({ options: false, settings: true })
     })
   })
 

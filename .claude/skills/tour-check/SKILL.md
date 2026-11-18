@@ -40,7 +40,12 @@ does exactly that and exits non-zero if any step's spotlight misses.
 
    Env: `BASE_URL` (default `http://localhost:3005`), `CHROMIUM`
    (custom chromium path; sandboxes often need
-   `CHROMIUM=/opt/pw-browsers/chromium`).
+   `CHROMIUM=/opt/pw-browsers/chromium`), `VIEWPORT=WIDTHxHEIGHT` for any
+   other size. `MOBILE=1 VIEWPORT=844x390` walks a phone on its side: the
+   phone's layout (the drawer, the phone stages) with the top tab bar. A
+   step's `viewport` says which switch its target follows: `mobile` and
+   `desktop` the phone's layout (`isPhoneStage`), `narrow` and `wide` the
+   768 px breakpoint alone (the bottom tab bar, Guitar, Piano).
 
 3. **Read the output.** Every step prints `ok` or `MISS` with its title and
    spotlight size. A `MISS` means the step's `targetSelector` didn't resolve

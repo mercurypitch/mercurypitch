@@ -7,15 +7,25 @@
 // "-4 vs last"), and the stored level is 7: none of it may reach the screen.
 // The run is still recorded, because the history is what ticks off Today's
 // Session's warm-up and credits practice time; it no longer moves the level.
+//
+// And its setup: on a phone's layout (isPhoneStage, which a phone on its side
+// has too) the routine and the comfort-note dial wait behind one button.
 
 import { cleanup, render } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { ExerciseResult } from '@/features/exercises/types'
+import type * as Viewport from '@/lib/use-viewport'
 
-const { recordMock, levelMock, runRef } = vi.hoisted(() => ({
+const { recordMock, levelMock, runRef, viewport } = vi.hoisted(() => ({
   recordMock: vi.fn(),
   levelMock: vi.fn(),
   runRef: { result: null as ExerciseResult | null },
+  viewport: { phoneStage: false },
+}))
+
+vi.mock('@/lib/use-viewport', async (importOriginal) => ({
+  ...(await importOriginal<typeof Viewport>()),
+  isPhoneStage: () => viewport.phoneStage,
 }))
 
 vi.mock('@/features/zen/useZenPitchSession', () => ({
@@ -145,5 +155,49 @@ describe('the Guided Warmup end screen', () => {
       completedAt: 5,
     })
     expect(levelMock).not.toHaveBeenCalled()
+  })
+})
+
+describe("the Guided Warmup's setup", () => {
+  afterEach(() => {
+    cleanup()
+    viewport.phoneStage = false
+  })
+
+  /** What the idle card holds, on a phone's layout or a desk's. */
+  function setupOn(phoneStage: boolean) {
+    viewport.phoneStage = phoneStage
+    runRef.result = null
+    const { container: view } = render(() => (
+      <WarmupExercise
+        audioEngine={{} as never}
+        practiceEngine={{} as never}
+        subscribeFrames={() => () => {}}
+        onBack={() => {}}
+      />
+    ))
+    return {
+      sheetButton: view.querySelector('.exercise-settings-trigger') !== null,
+      dial: view.querySelector('.warmup-comfort-note') !== null,
+      summary: view.querySelector('.exercise-idle-target-note') !== null,
+    }
+  }
+
+  // A phone on its side, wider than the breakpoint: the routine and the dial
+  // stood beside Start and the card scrolled 37 px at 844x390.
+  it("waits behind one button on a phone's layout, upright or on its side", () => {
+    expect(setupOn(true)).toEqual({
+      sheetButton: true,
+      dial: false,
+      summary: true,
+    })
+  })
+
+  it('stands in the card at a desk', () => {
+    expect(setupOn(false)).toEqual({
+      sheetButton: false,
+      dial: true,
+      summary: false,
+    })
   })
 })

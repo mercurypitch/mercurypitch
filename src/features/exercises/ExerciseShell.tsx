@@ -26,7 +26,7 @@ import { holdMicForRoutine, releaseRoutineMicHold, } from '@/features/routines/r
 import { RoutineRibbon } from '@/features/routines/RoutineRibbon'
 import { segmentRunsExercise, useDailyRoutine, } from '@/features/routines/use-daily-routine'
 import { haptics } from '@/lib/haptics'
-import { isNarrow } from '@/lib/use-viewport'
+import { isPhoneStage } from '@/lib/use-viewport'
 import { getExerciseStats } from '@/stores/exercise-history-store'
 import { EXERCISE_HELP } from './exercise-help'
 import { exerciseReplayNote } from './exercise-replay-note'
@@ -245,10 +245,13 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   })
   let guidedResultFocusTimer: ReturnType<typeof setTimeout> | undefined
 
-  // Heavy idle settings → mobile bottom sheet (opt-in via settingsSheetLabel).
+  // Heavy idle settings → mobile bottom sheet (opt-in via settingsSheetLabel),
+  // on a phone's layout: narrow, or a phone on its side, whose 390 px held
+  // the warmup's routine and dial only by scrolling the card, the dial cut
+  // at its foot.
   const [settingsSheetOpen, setSettingsSheetOpen] = createSignal(false)
   const useSettingsSheet = () =>
-    props.settingsSheetLabel !== undefined && isNarrow()
+    props.settingsSheetLabel !== undefined && isPhoneStage()
 
   const help = () => EXERCISE_HELP[props.type]
   // Memoize the status string. props.status() reads base.state(), which is

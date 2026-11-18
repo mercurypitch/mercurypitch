@@ -275,6 +275,25 @@ describe('the sidebar drawer, in the stylesheets', () => {
     )
   })
 
+  it("stands the notices at a phone's foot on its side too", async () => {
+    const { SHORT_TOUCH_LANDSCAPE_QUERY } = await loadFor(devices[0])
+
+    // The toast stack's own place there: the foot's right end, clear of the
+    // Singing stage's column, not the desk's corner over the header.
+    expect(queries('src/styles/Notifications.module.css')).toContain(
+      SHORT_TOUCH_LANDSCAPE_QUERY,
+    )
+  })
+
+  it("dresses the warmup's settings button as a phone's on its side too", async () => {
+    const { SHORT_TOUCH_LANDSCAPE_QUERY } = await loadFor(devices[0])
+
+    // ExerciseShell puts a heavy setup behind it by isPhoneStage.
+    expect(queries('src/styles/mobile-polish.css')).toContain(
+      `(max-width: 768px), ${SHORT_TOUCH_LANDSCAPE_QUERY}`,
+    )
+  })
+
   it('gives the voice pill docked in that header its mic box there too', async () => {
     const { SHORT_TOUCH_LANDSCAPE_QUERY } = await loadFor(devices[0])
 

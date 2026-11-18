@@ -16,6 +16,7 @@ const { useDryVoiceCaptureMock } = vi.hoisted(() => ({
 
 vi.mock('@/lib/use-viewport', () => ({
   isNarrow: () => false,
+  isPhoneStage: () => false,
 }))
 vi.mock('@/lib/reference-tone', () => ({
   playReferenceTone: vi.fn(async () => undefined),

@@ -76,7 +76,7 @@ describe('tour progress row', () => {
           title: 'Open Piano Night',
           targetSelector: '[data-tour="piano-night-launch"]',
           requiredTab: TAB_PIANO,
-          viewport: 'desktop',
+          viewport: 'wide',
         }),
       ]),
     )

@@ -43,7 +43,7 @@
 import { createEffect, createRoot, createSignal, on, untrack } from 'solid-js'
 import type { UnlockItem } from '@/lib/unlock-copy'
 import { unlockSummary } from '@/lib/unlock-copy'
-import { isNarrow } from '@/lib/use-viewport'
+import { isPhoneStage } from '@/lib/use-viewport'
 import type { ClaimedUnlock } from './unlock-claims'
 import { currentClaim, resetUnlockClaims } from './unlock-claims'
 
@@ -160,7 +160,8 @@ const DEFAULT_DURATION_MS: Record<Notification['type'], number> = {
   error: 10000,
 }
 
-/** A phone shows this many toasts at once; the rest wait their turn. */
+/** A phone shows this many toasts at once, upright or on its side (its
+ *  layout, isPhoneStage); the rest wait their turn. */
 const MAX_VISIBLE_NARROW = 2
 
 /**
@@ -196,7 +197,7 @@ export const UNLOCK_MOMENT_MS = 3000
 /** How many notices may be on screen at once, where they are drawn now. */
 function visibleCap(): number {
   if (presenter() !== 'toast') return 1
-  return isNarrow() ? MAX_VISIBLE_NARROW : Number.POSITIVE_INFINITY
+  return isPhoneStage() ? MAX_VISIBLE_NARROW : Number.POSITIVE_INFINITY
 }
 
 /** The presenter the shell chose; under the toasts, the holds decide. */
@@ -315,11 +316,13 @@ export function setStageQuiet(quiet: boolean): void {
   admitWaiting()
 }
 
-// The cap has to hold across a rotation, in BOTH directions. Widening past
-// the phone breakpoint has room for everything that was waiting; narrowing
-// back has to take back the slots it no longer has, or a landscape phone's
-// four toasts all stay on screen in portrait — which is what it did, since
-// the cap was only ever applied as a toast arrived.
+// The cap has to hold across a change of layout, in BOTH directions.
+// Widening past a phone's layout has room for everything that was waiting;
+// narrowing back has to take back the slots it no longer has, or a wide
+// window's four toasts all stay on screen on a phone's — which is what a
+// phone did as it turned upright, since the cap was only ever applied as a
+// toast arrived. A phone on its side has the phone's layout and keeps the
+// cap, so turning it changes nothing.
 //
 // Both calls are guarded, so the order below is the whole logic: give the
 // slots back first, then fill whatever is free.
@@ -327,7 +330,7 @@ export function setStageQuiet(quiet: boolean): void {
 createRoot(() => {
   createEffect(
     on(
-      isNarrow,
+      isPhoneStage,
       () => {
         evictOverflow()
         admitWaiting()

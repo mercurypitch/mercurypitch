@@ -20,7 +20,8 @@ vi.mock('@/lib/use-viewport', async () => {
   const { createSignal } = await import('solid-js')
   const [narrow, setNarrow] = createSignal(true)
   viewport.setNarrow = setNarrow
-  return { isNarrow: narrow }
+  // The store asks for a phone's layout (isPhoneStage) about its cap.
+  return { isNarrow: narrow, isPhoneStage: narrow }
 })
 
 const FIRST_NOTE: UnlockItem = {

@@ -115,6 +115,14 @@
   gap: 0.25rem;
 }
 
+/* On a phone's layout the row holds one Options button (UvrPanel.tsx), and
+   the options sheet's anchor follows it as the header's last item, so
+   `space-between` stood the button in the middle of a phone on its side's
+   header (496-583 px of 844). At the row's end, where Settings was. */
+.panel-header .header-actions:has(> .uvr-more-btn) {
+  margin-left: auto;
+}
+
 .header-btn {
   display: flex;
   align-items: center;

@@ -21,9 +21,9 @@
 .notificationContainer {
   position: fixed;
   top: calc(env(safe-area-inset-top) + 0.6rem);
-  /* A phone on its side is wider than the phone rule below, and has its
-     notch, or its island, at this end: the toast and its close button sat
-     inside the inset. */
+  /* A notch, or an island, can be at this end of a wide screen: the toast
+     and its close button sat inside the inset on a phone on its side, which
+     has a place of its own now (at the foot, below). */
   right: max(0.6rem, var(--safe-right, 0px));
   z-index: var(--z-toast, 20000);
   display: flex;
@@ -398,6 +398,50 @@
 
   /* Except the parts meant to be pressed. Dismiss and the action buttons stay
      tappable, so a toast that offers something can still be taken up. */
+  .notification button {
+    pointer-events: auto;
+  }
+}
+
+/* A phone on its side: at the foot, where a phone's notices go, but at its
+   right end and at most 60% of its width. The desk's corner above put the
+   stack over the header's voice mic and heart (at 844x390, wider than the
+   phone rule), and the phone's full-width banner lay over the Singing
+   stage's transport (at 740x360), which on its side stands at the foot of
+   the stage's left column, 28% of the width at most
+   (SingingMobileStage.module.css). The floor is the tab bar's own room,
+   --tabbar-space, which it publishes only while it is drawn: wider than
+   768 px a phone on its side keeps the top tab bar, and nothing stands at
+   its foot but the home indicator. The stack stops short of the header,
+   which is 48 px here (AppHeader.css), and scrolls past that. The
+   condition is SHORT_TOUCH_LANDSCAPE_QUERY (use-viewport.ts). */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
+  .notificationContainer {
+    --toast-floor: max(
+      var(--tabbar-space, 0px),
+      var(--safe-bottom, 0px),
+      var(--page-dock-space, 0px),
+      var(--consent-banner-space, 0px),
+      var(--verify-banner-space, 0px)
+    );
+
+    top: auto;
+    bottom: calc(var(--toast-floor) + 0.6rem);
+    right: max(0.5rem, var(--safe-right, 0px));
+    left: auto;
+    width: min(480px, 60vw);
+    max-height: calc(100dvh - 48px - var(--toast-floor) - 1.2rem);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+  }
+
+  /* Over the stage's notes, as the phone's stack is over its page: the
+     body hands a tap to what is under it, and only its buttons take one. */
+  .notification {
+    animation-name: mobileNotificationIn;
+    pointer-events: none;
+  }
+
   .notification button {
     pointer-events: auto;
   }

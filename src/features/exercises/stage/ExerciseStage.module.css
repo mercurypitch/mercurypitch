@@ -831,6 +831,14 @@
     margin-top: 0;
     margin-left: 0.7em;
   }
+
+  /* A paragraph after the brief keeps the same gap. Under 720 px of height
+     short-viewport.css zeroes a placeholder paragraph's margins, which
+     outranked the rule above, and the warmup's summary ran into the
+     brief's full stop: "...the voice moving.Full warmup". */
+  .bubble :global(.exercise-idle-placeholder) > p + p {
+    margin-left: 0.7em;
+  }
 }
 
 /* ── A short window ───────────────────────────────────────── */

@@ -1,16 +1,23 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { notifications, removeNotification, resetNotifications, setNotifications, showActionNotification, showDecisionNotification, showNotification, } from '@/stores/notifications-store'
 
-// The store asks the app's viewport module one question. A real signal
-// stands in for it so a phone can widen mid-test.
+// The store asks the app's viewport module one question: is this a phone's
+// layout (isPhoneStage), a narrow window or a phone on its side? Real
+// signals stand in for the two, so a phone can widen or turn mid-test.
 const viewport = vi.hoisted(() => ({
   setNarrow: (_narrow: boolean): void => undefined,
+  setSideways: (_sideways: boolean): void => undefined,
 }))
 vi.mock('@/lib/use-viewport', async () => {
   const { createSignal } = await import('solid-js')
   const [narrow, setNarrow] = createSignal(false)
+  const [sideways, setSideways] = createSignal(false)
   viewport.setNarrow = setNarrow
-  return { isNarrow: narrow }
+  viewport.setSideways = setSideways
+  return {
+    isNarrow: narrow,
+    isPhoneStage: () => narrow() || sideways(),
+  }
 })
 
 describe('notifications store visibility windows', () => {
@@ -260,6 +267,23 @@ describe('notifications store across a rotation', () => {
     expect(notifications()).toHaveLength(1)
     vi.advanceTimersByTime(1)
     expect(notifications()).toHaveLength(0)
+  })
+
+  // A phone on its side is wider than the breakpoint and has the phone's
+  // layout, its notices at the foot among them (Notifications.module.css).
+  // Turned, it keeps the phone's two: it has less height for them, not
+  // more.
+  it('keeps the two a phone shows as the phone turns on its side', () => {
+    showNotification('One', 'info')
+    showNotification('Two', 'info')
+    showNotification('Three', 'info')
+
+    viewport.setSideways(true)
+    viewport.setNarrow(false)
+    const sideways = notifications().map((item) => item.message)
+    viewport.setSideways(false)
+
+    expect(sideways).toEqual(['One', 'Two'])
   })
 
   // The other direction still works: widening has room for everything.

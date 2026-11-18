@@ -561,3 +561,108 @@ test.describe('the warmup routine select', () => {
     await expect(summary).toContainText('Cool-down')
   })
 })
+
+// ============================================================
+// The warmup on a phone on its side
+// ============================================================
+//
+// Wider than the breakpoint, its routine and its comfort-note dial stood
+// beside Start in the card, which scrolled 37 px at 844x390 and 932x430, and
+// the dial's foot was below the window. On a phone's layout (isPhoneStage)
+// they wait behind the sheet's button, as upright: the card holds the button
+// and Start, and nothing in it scrolls. Narrower than the breakpoint a phone
+// on its side had the button already, under a Start that stays in view.
+
+test.describe('the warmup on a phone on its side', () => {
+  test.use({ hasTouch: true, isMobile: true })
+
+  /** The warmup's setup, as the card holds it. */
+  async function openWarmup(
+    page: import('@playwright/test').Page,
+    size: { width: number; height: number },
+  ) {
+    await page.setViewportSize(size)
+    await page.addInitScript(() => {
+      ;(window as unknown as { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+      localStorage.setItem('pitchperfect_advanced_features', 'true')
+      localStorage.setItem('pitchperfect_page_tour_offered_exercises', 'true')
+    })
+    await page.goto('/#/exercises')
+    // Spent in storage, and read by a fresh load: the welcome's dialog,
+    // hidden, still takes the taps it covers.
+    await dismissOverlays(page)
+    await page.reload()
+    await page
+      .locator('.exercise-card', { hasText: 'Guided Warmup' })
+      .first()
+      .click()
+    await expect(page.locator('.exercise-idle-start')).toBeVisible({
+      timeout: 10000,
+    })
+  }
+
+  for (const size of [
+    { width: 844, height: 390 },
+    { width: 932, height: 430 },
+  ]) {
+    test(`at ${size.width}x${size.height}, holds its setup behind one button, and the card does not scroll`, async ({
+      page,
+    }) => {
+      await openWarmup(page, size)
+
+      const card = await page.evaluate(() => {
+        const area = document.querySelector('.exercise-canvas-area')
+        const inView = (selector: string): boolean => {
+          const r = document.querySelector(selector)?.getBoundingClientRect()
+          return (
+            r !== undefined &&
+            r.height > 0 &&
+            r.top >= 0 &&
+            r.bottom <= innerHeight
+          )
+        }
+        return {
+          scrolls: (area?.scrollHeight ?? 0) - (area?.clientHeight ?? 0),
+          startInView: inView('.exercise-idle-start'),
+          buttonInView: inView('.exercise-settings-trigger'),
+          dialInTheCard:
+            (area?.querySelector('.warmup-comfort-note') ?? null) !== null,
+        }
+      })
+
+      expect(card).toEqual({
+        scrolls: 0,
+        startInView: true,
+        buttonInView: true,
+        dialInTheCard: false,
+      })
+      await page.locator('.exercise-settings-trigger').tap()
+      await expect(
+        page
+          .getByRole('dialog', { name: 'Routine & comfort note' })
+          .locator('.warmup-comfort-note'),
+      ).toBeVisible()
+    })
+  }
+
+  for (const size of [
+    { width: 740, height: 360 },
+    { width: 667, height: 375 },
+  ]) {
+    test(`at ${size.width}x${size.height}, keeps Start in view and the setup one tap away`, async ({
+      page,
+    }) => {
+      await openWarmup(page, size)
+
+      await expect(page.locator('.exercise-idle-start')).toBeInViewport({
+        ratio: 1,
+      })
+      await page.locator('.exercise-settings-trigger').tap()
+      await expect(
+        page
+          .getByRole('dialog', { name: 'Routine & comfort note' })
+          .locator('.warmup-comfort-note'),
+      ).toBeVisible()
+    })
+  }
+})
