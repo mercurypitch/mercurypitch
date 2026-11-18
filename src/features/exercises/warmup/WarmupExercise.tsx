@@ -14,7 +14,7 @@ import { midiToFrequency, noteToMidi } from '@/lib/frequency-to-note'
 import type { PracticeEngine } from '@/lib/practice-engine'
 import { midiToNote } from '@/lib/scale-data'
 import { createPersistedSignal } from '@/lib/storage'
-import { isNarrow } from '@/lib/use-viewport'
+import { isPhoneStage } from '@/lib/use-viewport'
 import { getDefaultNote, getNoteOptions } from '@/lib/vocal-range'
 import { recordExerciseResult } from '@/stores/exercise-history-store'
 import { vocalRangePreset } from '@/stores/settings-store'
@@ -380,10 +380,11 @@ const WarmupExercise: Component<WarmupExerciseProps> = (props) => {
             A coached warmup — breathing, hums, lip trills, sirens, a light
             scale. No grades, just get the voice moving.
           </p>
-          {/* Only where the settings are behind the sheet button. Beside a
-              routine picker and a dial that both say the same thing, this
-              line was a row spent restating the two rows under it. */}
-          <Show when={isNarrow()}>
+          {/* Only where the settings are behind the sheet button
+              (ExerciseShell's useSettingsSheet). Beside a routine picker
+              and a dial that both say the same thing, this line was a row
+              spent restating the two rows under it. */}
+          <Show when={isPhoneStage()}>
             <p class="exercise-idle-target-note">
               {WARMUP_PATTERN_LABELS[pattern()]} · ~
               {Math.round(warmupTotalSeconds(steps()) / 60)} min · around{' '}

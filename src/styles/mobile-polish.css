@@ -457,8 +457,12 @@
    Guided Warmup routes its routine + 36-note comfort grid into a
    bottom sheet (ExerciseShell settingsSheetLabel) so Start stays
    above the fold; the trigger reads as a full-width secondary row.
+   The sheet is a phone's, upright or on its side (isPhoneStage), so the
+   trigger's rule names both: the second condition is
+   SHORT_TOUCH_LANDSCAPE_QUERY (use-viewport.ts).
    ============================================================ */
-@media (max-width: 768px) {
+@media (max-width: 768px),
+  (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
   .exercise-settings-trigger {
     width: 100%;
     min-height: 46px;
