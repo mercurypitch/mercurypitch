@@ -11,10 +11,11 @@
 //
 // A feature is on by default where the build says so (dev.mercurypitch.com,
 // PR previews, `pnpm dev`, the e2e bundle) and off in the production web
-// build and the native app (tools/experimental-features.ts). A switch the
-// owner sets for an environment wins over that default either way, so the
-// toggle is a real on and off; clearing it hands the feature back to the
-// build.
+// build and the native app (tools/experimental-features.ts), unless it is on
+// in production (src/lib/experimental-feature-defaults.ts: Studio, on in
+// every web build). A switch the owner sets for an environment wins over
+// that default either way, so the toggle is a real on and off; clearing it
+// hands the feature back to the build.
 //
 // Two readers, as lesson-state.ts has them: parseFeatureOverrides is tolerant
 // (a page keeps working when the API answers a name it does not know), and
