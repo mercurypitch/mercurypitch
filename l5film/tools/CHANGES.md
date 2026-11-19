@@ -324,3 +324,57 @@ scratchpad's heavy helper on this shared machine, one at a time.
   empty ("Skipping sub-composition ... the file is empty"). Tested on `kit:hook` (a 60 fps clip) and
   every kit page's stills: the message is gone, and the stills and clips are as before. The old file
   is kept as `lab/kit-src/lab.before-kit01.mjs.txt`. Nothing else in the tool changed.
+
+## 19 November: integration, part 1 (the kit's fixes every scene sees)
+
+The kit's fixes from the scene rounds, applied when no builder was editing, each file by an atomic
+rename; proofs in `lab/integration/` (the copies before: `lab/integration/base/`). Line numbers are the
+files' after the change.
+
+- **assets/lib/hosts.js, `L.mercGate`: Merc's root read on the pass frame the renderer shows**
+  (DECISIONS 214). Before (old line 146): `const i = Math.floor((S0 + t - root.t0) * (root.fps || 30) + 1e-6)`,
+  the table's t0 about 1.4 frames behind the shown frame. After (lines 134, 150 to 151):
+  `const ms = parseFloat(vid.getAttribute('data-media-start') || '0'), rootFromTag = timed && Number.isFinite(ms)`
+  and `const i = Math.floor((rootFromTag ? t - ds + ms : S0 + t - root.t0) * (root.fps || 30) + 1e-6)`
+  (t0 only for an untimed tag); the header's `root` entry says so (lines 39 to 45). Only m-blue-s13's
+  root x moves (frames 842 to 897); every other chunk's x is 0, so no other scene's host moves.
+  **compositions/s13-recap.html**: its local `rootFromTag` (old lines 223 to 232) and the
+  `root: rootFromTag(...)` argument are gone; Merc's gate takes the default root (line 214).
+  Proof: `lab/integration/item1-root/` (both hops frame by frame at 30 and 60 fps).
+- **assets/lib/marks.js, `L.chapterCard`: the card in its own composited layer** (DECISIONS 202).
+  Before (old line 177): the rise and breathing were an SVG transform on the glyphs' group
+  (`inner.setAttribute('transform', 'translate(0 dy) translate(960 b-60) scale(s) translate(-960 -(b-60))')`),
+  so the glyphs were laid out again at each frame's scale and Chrome snapped their baseline to the
+  pixel grid (one jump each time it crossed a row: s11 at 0.800 and 1.467, S8, S9 and S10 at 1.467).
+  After (lines 144 to 151, 184): the card's svg sits in a div (`.chapter-card-layer`, `will-change:
+  transform`, its origin (960, baseline - 60)) in the hud's layer, and draw sets
+  `wrap.style.transform = translate(0px, dy px) scale(s)`; `g` keeps its opacity attribute and class,
+  `fit()` and the 1680 px cap are unchanged. The card now draws over the hud's svg (it was inside it):
+  no scene shows hud marks over a card. Proof: `lab/integration/item2-card/` and `lab/kit-src/card.html`.
+- **assets/lib/folds.js, `L.TRACE.STACK`: the "h" glyph's key is `hGlyph`** (DECISIONS 191). Before
+  (old line 112): `h: { text: 'h', x: 760, y: 690, size: 120 }`, which overwrote `h: 70` (the rows'
+  half-height). After (line 113): `hGlyph: { ... }`, so `STACK.h` is 70; the header says so (lines 21
+  to 23). `L.TRACE.RECAP` is unchanged. **compositions/s09-onset.html**: `const ROW_H = 70` and its
+  comment (old lines 198 to 199) become `const ROW_H = ST.h` (line 198); the glyph reads `ST.hGlyph`
+  (line 214).
+- **assets/lib/lesson.js and frames.js: the bokeh's and staves' lift, once for the film** (DECISIONS
+  200). Before: `L.BOKEH_LIFT = 3`, `L.STAVE_LIFT = 2.5` (old lines 239 to 240); the bokeh's lift ramp
+  `clamp((v - 10) / 150)` (frames.js old line 225). After: `L.BOKEH_LIFT = 5`, `L.STAVE_LIFT = 4`
+  (lesson.js lines 242 to 243, its header lines 60 to 64), the ramp `clamp((v - 10) / 240)` (frames.js
+  line 227, its comments lines 31 to 34 and 222 to 225). At rest the room is unchanged (shown at
+  1 / LIFT); moving, the bokeh shows at up to 5 times its rest alpha (was 3) and lifts over a fast
+  push's ease-in. Proof: `lab/integration/moves/` (every camera move, `MOVES.md` and its sheets).
+- **assets/lib/chart.js: `L.settled(contour, { step = 0.016, band = 35, hold = 0.5 })`** (the page's
+  "settled" rule as one kit function, lines 123 to 135; header lines 17 to 19) -> `{ entry, settled }`,
+  the same loops s10 and s13 each held. **compositions/s10-steady.html** and **s13-recap.html**: their
+  local `ENTRY` loops (old lines 52 to 61 and 65 to 74) become
+  `const { entry: ENTRY, settled: SETTLED } = L.settled(DC)` (s10 line 52, s13 line 65). The
+  flags hold: S10 entry 0.704 s, flag 1.204, world x 478.8 (screen 334.5); S13 x 334.50 at the entry.
+- **assets/lib/tease.js: `L.TEASE.LINE.y` 170** (was 150; DECISIONS 220, 223; header line 8).
+  **compositions/s14-next.html**: `const LINE_Y = 170` becomes `const LINE_Y = L.TEASE.LINE.y` (line
+  51); the line's baseline stays 170 (s14's probe).
+- **Not changed**: `L.RECAP.VM` (recap.js) is as group E left it (the card's last foot 777, `VM.ten` one
+  line at baseline 820; DECISIONS 216, 223); `L.label`'s `backPad` default (DECISIONS 182); s10's own
+  `ROW_H = 70` (not one of the named swaps; it can read `ST.h` now).
+- **Kit labs**: `lab/kit-src/card.html` (new: a chapter card on S11's times, with its probe);
+  `lab/kit-src/recap.html`'s Voice Mirror foot check follows group E's 777.

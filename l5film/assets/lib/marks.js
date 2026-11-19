@@ -141,7 +141,14 @@
   }
 
   L.chapterCard = (hud, { num = null, title = '', baseline = 480, tIn = 0, tOut = 1 } = {}) => {
-    const svg = L.stageOf(hud)
+    // The card is drawn in its own composited layer (DECISIONS 202): its rise and its breathing are a CSS transform on
+    // that layer, so the glyphs are rastered once and move at sub-pixel positions, instead of being laid out again at
+    // each frame's scale, where Chrome snaps their baseline to the pixel grid (one jump each time it crosses a row).
+    const svgHost = hud instanceof SVGElement ? (hud.ownerSVGElement || hud) : null
+    const layerEl = svgHost ? svgHost.parentNode : hud
+    const wrap = L.el('div', { class: 'chapter-card-layer', 'data-layout-allow-overflow': '' }, layerEl)
+    Object.assign(wrap.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', pointerEvents: 'none', willChange: 'transform', transformOrigin: `960px ${baseline - 60}px` })
+    const svg = L.stage(wrap)
     const id = L.uid('card')
     const g = L.svg('g', { opacity: 0, class: 'chapter-card' }, svg)
     const defs = L.svg('defs', {}, g)
@@ -174,7 +181,7 @@
         const dy = 40 * (1 - inU) - 90 * L.prog(t, tOut, 0.38, 'power3.in')
         const s = fit * (1 + (BREATH - 1) * L.prog(t, tIn, Math.max(0.01, tOut - tIn), 'sine.inOut'))
         g.setAttribute('opacity', a.toFixed(3))
-        inner.setAttribute('transform', `translate(0 ${f2(dy)}) translate(960 ${baseline - 60}) scale(${s.toFixed(4)}) translate(-960 ${-(baseline - 60)})`)
+        wrap.style.transform = `translate(0px, ${dy.toFixed(3)}px) scale(${s.toFixed(5)})`
       },
     }
   }

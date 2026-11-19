@@ -37,7 +37,7 @@
  {
   "t": 1.3500000000000056,
   "name": "6a: the card within 1680 px wide",
-  "got": 1664.95,
+  "got": 1665.49,
   "want": "<= 1680",
   "pass": true
  },

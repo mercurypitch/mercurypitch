@@ -18,10 +18,11 @@
      L.TRACE            the strip (x 700 to 1600, x(t) = 700 + 562.5 t over 1.6 s, centre y 430, half-height
                         up to 110), its title (Outfit 600 44, x 700, baseline 280), its tag (right-aligned
                         1600, centred y 270), the chips (centred y 680 from x 700, 920, 1140), the mark labels
-                        (Outfit 600 30, baseline 580); STACK (rows centred y 250, 450, 650, half-height 70; names
+                        (Outfit 600 30, baseline 580); STACK (rows centred y 250, 450, 650, half-height h 70; names
                         Outfit 600 36 right-aligned 670, baselines 262, 462, 662; the circles' labels; the
-                        two tags); RECAP (card 2: x 1180 to 1640, x(t) = 1180 + 287.5 t, centres 200, 320,
-                        440, half-height 45, names Outfit 600 30 right-aligned 1160, baselines 210, 330, 450);
+                        "h" glyph as hGlyph and its line; the two tags); RECAP (card 2: x 1180 to 1640,
+                        x(t) = 1180 + 287.5 t, centres 200, 320, 440, half-height 45, names Outfit 600 30
+                        right-aligned 1160, baselines 210, 330, 450);
                         ONSET (each start's onset in its own time: air's tone from 0.25 s, the catch's click
                         at 0.15 s, together's tone at 0, provisional until the sound round)
      L.TRACE.level(kind, t)   0..1 the tone's level (air: rising 0.25 to 0.5 s; catch: full from 0.15 s;
@@ -109,7 +110,7 @@
       rows: [250, 450, 650], h: 70, names: { x: 670, y: [262, 462, 662], size: 36, texts: ['Air first', 'A catch', 'Together'] },
       puff: { text: 'the puff', x: 720, y: 165, size: 30 }, click: { text: 'the click', x: 800, y: 368, size: 30 }, neither: { text: 'neither', x: 720, y: 568, size: 30 },
       easy: { text: 'the easy start', x: 1000, y: 568, size: 40 },
-      h: { text: 'h', x: 760, y: 690, size: 120 }, hLine: { text: 'the h, only in your mind', x: 720, y: 770, size: 30, weight: 500 },
+      hGlyph: { text: 'h', x: 760, y: 690, size: 120 }, hLine: { text: 'the h, only in your mind', x: 720, y: 770, size: 30, weight: 500 },
       tag: { x: 1600, y: 150, anchor: 'end' }, listen: { x: 1600, y: 350, anchor: 'end' },
     },
     RECAP: { x0: 1180, x1: 1640, rows: [200, 320, 440], h: 45, names: { x: 1160, y: [210, 330, 450], size: 30 } },

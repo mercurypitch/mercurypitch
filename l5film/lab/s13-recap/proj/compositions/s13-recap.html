@@ -62,16 +62,7 @@
           // from which the line stays within 35 cents for 0.5 s; the mint edge and "in the band" light at the entry, and the
           // flag stands at the entry's x once the line has stayed in for 0.5 s
           const DC = L.CONTOUR.demo
-          const ENTRY = (() => {
-            const inBand = (tt) => Math.abs(DC.c(tt)) <= 35
-            for (let i = 0; i * 0.016 <= DC.len - 0.5; i++) {
-              let ok = true
-              for (let j = 0; j * 0.016 <= 0.5; j++) if (!inBand(i * 0.016 + j * 0.016)) { ok = false; break }
-              if (ok) return i * 0.016
-            }
-            return null
-          })()
-          const SETTLED = ENTRY + 0.5
+          const { entry: ENTRY, settled: SETTLED } = L.settled(DC)      // the page's rule, the kit's (entry 0.704, settled 1.204)
           // 13e: the clean break on `break` (DECISIONS 190, 215): the recap leaves up fast in turn from the beat's start + 0.2,
           // 0.07 s apart, each over 0.3 s, the last gone at + 0.71, before hop 1's apex (+ 0.93)
           const BREAK = at('break')
@@ -220,17 +211,7 @@
             { at: HOP1 + L.HOP.crouch, dur: L.HOP.air, x: HOP_X[0], ease: 'power1.in' },
             { at: HOP2 + L.HOP.crouch, dur: L.HOP.air, x: HOP_X[1], ease: 'power1.in' },
           ]
-          // the root is cancelled on the pass frame the renderer shows: video time is the tag's data-media-start plus the
-          // scene time past its data-start, so the shown frame runs about 1.4 frames ahead of the frame index mercGate counts
-          // from the root table's t0 (lab/s13-recap/events: at hop 2's start, where the root snaps from 0.38 back to 0, that
-          // put Merc 50 px left for 3 film frames). Reading the tag keeps the two on one frame.
-          const rootFromTag = (tag, key) => {
-            const v = document.getElementById(tag), r = window.MERC_ROOTS && window.MERC_ROOTS[key]
-            if (!v || !r) return undefined
-            const ds = parseFloat(v.getAttribute('data-start')), ms = parseFloat(v.getAttribute('data-media-start'))
-            return { frames: r.frames, fps: r.fps || 30, t0: T0 + ds - ms }
-          }
-          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hc.merc, moves: mercMoves, root: rootFromTag(SID + '-m-blue', 'm-blue-' + SID.slice(0, 3)) })
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hc.merc, moves: mercMoves })                    // its root from MERC_ROOTS, read on the shown pass frame (L.mercGate, DECISIONS 214)
           const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hc.tavi })
 
           const probe = { cam, ch, cardsLayer, bandRects, anyOct, inBand, tag, flag, fig, traces, traceNames, trTag, kicker, panel, ring, Qs, ans1, ans3, ans4,

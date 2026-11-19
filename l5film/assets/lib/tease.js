@@ -5,8 +5,8 @@
                         1500; black-key rows ink 6 %, the others ink 2.5 %, lines ink 6 %), BEADS (r 20 at x = 420 +
                         160 i: C4 C4 G4 G4 A4 A4 G4; .onset(i) its onset in `twinkle`'s own time, 0.5 s apart, the
                         last held 1.0 s), COPY (six rows up: y - 180), Q ("?" Outfit 600 64 ink-2, x 1430, baseline
-                        375), LINE (the tease line, Outfit 600 44, centred, baseline 150), HOOK (serif italic 60,
-                        centred, baselines 130 and 200), END (the end card: the tease figure's place
+                        375), LINE (the tease line, Outfit 600 44, centred, baseline 170: DECISIONS 220, 223),
+                        HOOK (serif italic 60, centred, baselines 130 and 200), END (the end card: the tease figure's place
                         { s 0.45, dx 1030, dy 35.25 }: x' = 1210 + 0.45 (x - 400), y' = 150 + 0.45 (y - 255); the
                         lockup at x 120, y 80 to 180; the address Outfit 600 72 x 120 baseline 320; "Voice Mirror
                         is free, with no account" Outfit 500 44 baseline 395; CLEAR, the zone kept empty, x 80 to
@@ -44,7 +44,7 @@
     onset: (i) => 0.5 * i,
     COPY: { dy: -180 },
     Q: { text: '?', x: 1430, y: 375, size: 64 },
-    LINE: { text: 'Merc moves every single note of ‘Twinkle, Twinkle’ up.', x: 960, y: 150, size: 44 },
+    LINE: { text: 'Merc moves every single note of ‘Twinkle, Twinkle’ up.', x: 960, y: 170, size: 44 },
     HOOK: [{ text: 'Why can you start “Twinkle, Twinkle” on any note', y: 130 }, { text: 'and it is still the same tune?', y: 200 }], hookSize: 60,
     END: {
       place: { s: 0.45, dx: 1210 - 0.45 * 400, dy: 150 - 0.45 * 255 },

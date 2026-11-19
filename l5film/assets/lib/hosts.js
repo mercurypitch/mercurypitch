@@ -39,7 +39,10 @@
         root            by default window.MERC_ROOTS['<pass>-sNN'] (assets/merc/roots.js, from sid) when it
                         exists; else { frames: [[x, y], ...], t0, fps = 30 }: the chunk's renderer root (its sidecar's
                         `root`, `t0` the film time of frames[0]); its x is cancelled (0.4353 x size px
-                        a world unit, PASSES.md), so a carried hop lands exactly where the scene puts it
+                        a world unit, PASSES.md), so a carried hop lands exactly where the scene puts it.
+                        The frame it reads is the pass frame the renderer shows: video time from the tag
+                        (data-media-start + t - data-start), so `t0` is used only for a tag with no timing
+                        (DECISIONS 214: t0 ran about 1.4 frames behind the shown frame)
         glow            { rgb: '88,166,255', a = 1 } a soft key glow behind the host (S1)
         floor           ignored: the floor is the room's, full width (room.setFloor); no local patch
      L.HOP              { crouch: 0.12, air: 0.41 } Merc's hop (PASSES.md: air from 0.12 s after the hop's
@@ -128,6 +131,7 @@
     m.box.style.opacity = '0'
     const ds = parseFloat(vid.getAttribute('data-start')), dd = parseFloat(vid.getAttribute('data-duration'))
     const timed = ds >= 0 && dd > 0
+    const ms = parseFloat(vid.getAttribute('data-media-start') || '0'), rootFromTag = timed && Number.isFinite(ms)
     if (!timed) console.warn(`[L.mercGate ${sid || start}] #${tag} has no timing yet (run tools/merc-tags.py)`)
     const sizeMoves = moves.filter((mv) => mv.size != null).map((mv) => ({ at: mv.at, dur: mv.dur, to: mv.size, ease: mv.ease || 'power2.inOut' }))
     const xMoves = moves.filter((mv) => mv.x != null).map((mv) => ({ at: mv.at, dur: mv.dur, to: mv.x, ease: mv.ease || 'power2.inOut' }))
@@ -143,7 +147,8 @@
         lift = (leap.lift ?? 70) * 4 * u * (1 - u)
       }
       if (root && root.frames && root.frames.length) {
-        const i = Math.floor((S0 + t - root.t0) * (root.fps || 30) + 1e-6)
+        // the pass frame the renderer shows: video time from the tag; the table's t0 only for an untimed tag
+        const i = Math.floor((rootFromTag ? t - ds + ms : S0 + t - root.t0) * (root.fps || 30) + 1e-6)
         const fr = root.frames[Math.max(0, Math.min(root.frames.length - 1, i))]
         if (i >= 0 && fr) X -= (mirror ? -1 : 1) * fr[0] * L.ROOT_PX * S
       }

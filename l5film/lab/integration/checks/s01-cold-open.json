@@ -1,0 +1,130 @@
+[hyperframes] media proxy pre-resolve: 2/2 ready, 0 failed (1540ms)
+{
+  "ok": true,
+  "strict": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 1,
+    "infoCount": 0,
+    "findings": [
+      {
+        "code": "duplicate_media_discovery_risk",
+        "severity": "warning",
+        "message": "Detected 2 matching video entries with the same source/start/duration.",
+        "selector": "[data-composition-id]",
+        "dataAttributes": {},
+        "sourceFile": "/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/lab/s01-cold-open/proj/compositions/s01-cold-open.html",
+        "bbox": {
+          "x": 0,
+          "y": 0,
+          "width": 0,
+          "height": 0
+        },
+        "time": 0,
+        "fixHint": "Avoid duplicated media nodes that can be discovered twice during compilation."
+      }
+    ],
+    "filesScanned": 2
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 1,
+    "findings": [
+      {
+        "code": "text_occluded",
+        "severity": "info",
+        "time": 31.8,
+        "selector": "g.labels > text:nth-of-type(5)",
+        "message": "Text is hidden beneath an opaque element.",
+        "rect": {
+          "left": 1451.62,
+          "top": 471.37,
+          "right": 1602.25,
+          "bottom": 509.78,
+          "width": 150.63,
+          "height": 38.41
+        },
+        "containerSelector": "#s01-cold-open-m01-orange",
+        "text": "sung easily",
+        "fixHint": "Give the text its own zone, raise its stacking order above the covering element, or mark intentional layering with data-layout-allow-occlusion.",
+        "coveredFraction": 0.52,
+        "dataAttributes": {},
+        "sourceFile": "compositions/s01-cold-open.html",
+        "bbox": {
+          "x": 1451.62,
+          "y": 471.37,
+          "width": 150.63,
+          "height": 38.41
+        },
+        "firstSeen": 31.8,
+        "lastSeen": 31.8,
+        "occurrences": 1,
+        "heldMs": 0
+      }
+    ],
+    "duration": 38.81,
+    "samples": [
+      31.8,
+      32.05,
+      32.2,
+      33,
+      36.9
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 1,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "samples": [
+      31.8,
+      32.05,
+      32.2,
+      33,
+      36.9
+    ],
+    "checked": 12,
+    "passed": 12
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  },
+  "_meta": {
+    "version": "0.8.97",
+    "latestVersion": "0.9.67",
+    "updateAvailable": true
+  }
+}

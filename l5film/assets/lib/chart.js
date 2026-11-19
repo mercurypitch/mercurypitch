@@ -14,6 +14,9 @@
      L.CONTOUR.pushAt(t)        the Push note's slider value: 50 to 0.6 s, to 100 by 2.1, held to 3.6, back
                                 to 50 by 4.8, held to 5.6
      L.CONTOUR.from(cents, db, vib0)   a contour of the scene's own (10h's silent line: from its slider)
+     L.settled(contour, { step = 0.016, band = 35, hold = 0.5 }) -> { entry, settled }   the page's rule: read every
+                                16 ms, settled from the first reading from which the line stays within 35 cents for
+                                0.5 s (the demo: entry 0.704 s, settled 1.204 s; S10's flag and S13's card 3)
    The wave rule: L.waveK(W, L = 1120) = 10 L / (1120 W) px a cent, so a cycle is 203.6 / W world px and
    the wave 280 / W tall on the 1120 px plot, ratio 1.375 in every framing.
 
@@ -117,6 +120,19 @@
     from: (cents, db = () => 0, vib0 = 0) => make(Infinity, cents, db, vib0),
   }
   const contourOf = (c) => (typeof c === 'string' ? L.CONTOUR[c] : c)
+  // The page's "settled" rule (FACTS 80; DECISIONS 191, 214): read the drawn line every 16 ms; it has settled from the
+  // first reading from which it stays within 35 cents for 0.5 s. Returns the entry (the take's own time of that reading)
+  // and the moment it has settled (entry + 0.5), or nulls if it never does.
+  L.settled = (contour, { step = 0.016, band = 35, hold = 0.5 } = {}) => {
+    const c = contourOf(contour)
+    const inBand = (tt) => Math.abs(c.c(tt)) <= band
+    for (let i = 0; i * step <= c.len - hold; i++) {
+      let ok = true
+      for (let j = 0; j * step <= hold; j++) if (!inBand(i * step + j * step)) { ok = false; break }
+      if (ok) return { entry: i * step, settled: i * step + hold }
+    }
+    return { entry: null, settled: null }
+  }
   L.waveK = (W, Lpx = 1120) => (10 * Lpx) / (1120 * W)
 
   /* ---------------------------------------------------------------- places and labels */

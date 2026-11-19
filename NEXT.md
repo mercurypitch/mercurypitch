@@ -4547,3 +4547,16 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Heavy now: the kit builder only. NEXT: its hand-back -> lead checks -> integration part 2 (the
   production builder resumed with briefs/l5-integration.md part 2: render film-draft-01, measure,
   cuts table) -> critic F-01 (briefs/l5-critic-F-01.md).
+
+## 16:33 UTC, 19 Nov
+- INTEGRATION PART 1 HANDED BACK and ACCEPTED (DECISIONS 224; lead read item1-root/README and
+  moves/MOVES.md): mercGate root from the tag (s13's local copy gone), card in a composited layer
+  (no snaps), STACK.h 70 / hGlyph, L.settled(), TEASE.LINE.y 170, BOKEH_LIFT 5 / STAVE_LIFT 4,
+  ramp to 250 px/s. Probes 1481/1481, kit labs 382/382, check 0 errors everywhere. For the final
+  60 fps passes: no film frame on a pass-frame boundary (two 9 px frames after hop 2 at 60 fps).
+  For critic F-01's reading: S4 crane brightening mid-move; S10 truck parallax at CU-wave.
+  Scratch copy lab/integration/proj-copy (256 MB) may be deleted later (literal path).
+- INTEGRATION PART 2 STARTED (the production builder resumed: film-draft-01.mp4, measure, cuts
+  table, contact sheet). NEXT: lead checks -> critic F-01 (briefs/l5-critic-F-01.md) -> calls ->
+  full-film fix round -> sound step (pad through `break`, hop landings, tune and end chimes,
+  examples, act sounds, ticks, room tone, the model note in S12) -> final voices and passes.

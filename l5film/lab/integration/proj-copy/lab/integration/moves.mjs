@@ -13,7 +13,7 @@ import { createRequire } from 'node:module'
 
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '../..')
-const OUT = join(HERE, 'moves')
+const OUT = join(HERE, process.env.OUT || 'moves')
 mkdirSync(OUT, { recursive: true })
 const require = createRequire(import.meta.url)
 const { chromium } = require(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright')
@@ -33,16 +33,23 @@ const scripts = readFileSync(join(ROOT, 'assets/lib/scripts.txt'), 'utf8').split
 const fonts = readFileSync(join(ROOT, 'assets/lib/fonts.css.txt'), 'utf8').replace(/url\('assets\//g, "url('/assets/")
 const browser = await chromium.launch({ executablePath: process.env.PW_CHROMIUM || '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome' })
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 })
+const cdp = await page.context().newCDPSession(page)
+// a screenshot through CDP directly: Playwright's own waits on the page's videos, which never play here
+const race = (p, what) => Promise.race([p, new Promise((r) => setTimeout(() => r('TIMEOUT ' + what), 20000))])
+const shot = async (path) => { const r = await race(cdp.send('Page.captureScreenshot', { format: 'png' }), path); if (typeof r === 'string') { console.log(r); return } writeFileSync(path, Buffer.from(r.data, 'base64')) }
+const seek = async (sid, t) => { const r = await race(page.evaluate(({ sid, t }) => { window.__timelines[sid].seek(t, false); return 'ok' }, { sid, t }), 'seek ' + t); if (r !== 'ok') console.log(r) }
 const errors = []
 page.on('pageerror', (e) => errors.push(e.message))
+page.on('crash', () => console.log('PAGE CRASHED'))
+
 const report = {}
 for (const sid of sids) {
   const src = readFileSync(join(ROOT, 'compositions', `${sid}.html`), 'utf8')
   const body = src.slice(src.indexOf('<body>') + 6, src.lastIndexOf('</body>')).replace(/src="assets\//g, 'src="/assets/')
   writeFileSync(join(OUT, `${sid}.html`), `<!doctype html><html lang="en"><head><meta charset="UTF-8" />\n${scripts}\n<link rel="stylesheet" href="/assets/lib/lesson.css" />\n<style>\n${fonts}\nhtml,body{margin:0;background:#0d1117}</style></head><body><div id="root">${body}</div></body></html>\n`)
-  await page.goto(`http://127.0.0.1:${port}/lab/integration/moves/${sid}.html`, { waitUntil: 'load' })
-  await page.evaluate(async () => { await document.fonts.ready; for (const f of ["600 30px 'Outfit'", "500 26px 'JetBrains Mono'", "italic 400 60px 'Instrument Serif'", "400 30px 'Inter'"]) await document.fonts.load(f) })
-  await page.waitForTimeout(300)
+  console.log(sid, 'loading'); await page.goto(`http://127.0.0.1:${port}/lab/integration/moves/${sid}.html`, { waitUntil: 'load', timeout: 60000 }); console.log(sid, 'loaded')
+  await page.evaluate(async () => { await document.fonts.ready })
+  await page.waitForTimeout(300); console.log(sid, 'fonts')
   const moves = await page.evaluate((sid) => {
     const cam = window.__sceneProbe[sid].cam, tl = window.__timelines[sid]
     const room = document.querySelector('#' + sid + ' .layer.under') ? null : null
@@ -58,22 +65,20 @@ for (const sid of sids) {
       return { at: m.at, dur: m.dur, to: m.to, ease: typeof m.ease === 'string' ? m.ease : 'fn', prof }
     })
   }, sid)
-  report[sid] = moves
+  report[sid] = moves; console.log(sid, 'profiles', moves.length)
   let n = 0
   for (const m of moves) {
     n++
     for (const [tag, u] of [['start', 0.12], ['mid', 0.5], ['end', 0.86]]) {
       for (const [k, dt] of [['a', 0], ['b', 0.1]]) {
         const t = m.at + m.dur * u + dt
-        await page.evaluate(({ sid, t }) => window.__timelines[sid].seek(t, false), { sid, t })
-        await page.waitForTimeout(30)
-        await page.screenshot({ path: join(OUT, `${sid}-${n}-${tag}-${k}.png`) })
+        await seek(sid, t)
+        await shot(join(OUT, `${sid}-${n}-${tag}-${k}.png`))
       }
     }
     for (const t of [m.at - 0.3, m.at + m.dur + 0.3]) {
-      await page.evaluate(({ sid, t }) => window.__timelines[sid].seek(t, false), { sid, t })
-      await page.waitForTimeout(30)
-      await page.screenshot({ path: join(OUT, `${sid}-${n}-${t < m.at ? 'before' : 'after'}.png`) })
+      await seek(sid, t)
+      await shot(join(OUT, `${sid}-${n}-${t < m.at ? 'before' : 'after'}.png`))
     }
   }
   console.log(sid, moves.map((m) => `${m.at.toFixed(2)}+${m.dur.toFixed(2)} peak v ${Math.max(...m.prof.map((p) => p.v)).toFixed(0)} px/s, bokeh shown ${Math.max(...m.prof.map((p) => p.bokeh || 0)).toFixed(3)}`).join('; '))

@@ -17,6 +17,18 @@
           L.clock(tl, D, (t) => { card.draw(t) })
           window.__timelines = window.__timelines || {}
           window.__timelines[ID] = tl
+          // the card is drawn in its own composited layer, its rise and breathing a CSS transform on it (DECISIONS 202)
+          const wrap = card.g.ownerSVGElement.parentNode
+          window.__kitProbe = window.__kitProbe || {}
+          window.__kitProbe[ID] = {
+            times: [0.8, 1.5, 3.3],
+            check(t) {
+              const b = card.g.getBoundingClientRect()
+              return [{ name: 'the card in its own composited layer (will-change: transform)', got: `${wrap.className} ${getComputedStyle(wrap).willChange}`, want: 'chapter-card-layer transform', pass: wrap.className === 'chapter-card-layer' && getComputedStyle(wrap).willChange === 'transform' },
+                { name: 'its rise and breathing on that layer, not on the glyphs (inner group untransformed)', got: card.titleEl.parentNode.getAttribute('transform') || 'none', want: 'none', pass: !card.titleEl.parentNode.getAttribute('transform') },
+                { name: 'centred on x 960', got: b.x + b.width / 2, want: 960, tol: 3 }, { name: 'within 1680 px', got: b.width, want: '<= 1680', pass: b.width <= 1680 }]
+            },
+          }
         })()
       </script>
     </div>

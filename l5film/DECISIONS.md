@@ -1719,3 +1719,24 @@ numbered 132 to 135 too, are 160 to 163 now, so no number appears twice).
      come within 8 px of the panel); the tease line's 170 is local to s14 (the kit's
      `L.TEASE.LINE.y` moves to 170 at integration, and s14 drops its local value). HANDOFFS
      follows ([E-01 fix: 223]).
+
+## The lead's call on integration part 1 (the kit's fixes), 19 November
+
+224. **Integration part 1 is accepted** (the lead read the root proof and the moves table). Every
+     scene's probe passes (1481 of 1481), the kit labs' 382 of 382, `check` 0 errors on all fifteen
+     scenes and the root, clock-lint silent. In the kit now:
+     - `L.mercGate` reads the root on the pass frame the renderer shows (`data-media-start`), so
+       s13's local copy is gone; Merc's hops track evenly and land on 700 and 1290 at 30 fps. At
+       60 fps two single frames after hop 2 sit 9 px off (a pass-frame boundary that only 60 fps
+       hits): **the final 60 fps passes must offset or align their frames so no film frame falls on
+       a boundary** (a check for that step).
+     - The chapter card draws in its own composited layer, its breathing a CSS transform: no glyph
+       snaps on any card (the text about 7 % softer); cards now draw above every other hud mark.
+     - `L.TRACE.STACK.h` is 70 (the glyph's key is `hGlyph`); `L.settled()` is the page's rule, used
+       by s10 and s13 (flags unmoved); `L.TEASE.LINE.y` is 170.
+     - The room lifts on camera moves: `BOKEH_LIFT` 5 and `STAVE_LIFT` 4 (were 3 and 2.5), the
+       bokeh's ramp full at 250 px a second (was 160); frames at rest unchanged. The fastest lift
+       change is 5.7 a second (was 7.6); S4's crane down brightens the room's mean from 25.3 to 29.7
+       mid-move, which the full-film critic reads with the film in view. S10's truck at CU-wave
+       still has only 1 to 3 discs in frame; more discs for the close framings (134) wait for that
+       critic's reading.

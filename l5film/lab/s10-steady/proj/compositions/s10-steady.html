@@ -49,16 +49,7 @@
           // 10c: demo, in the take's own time. The page's rule (FACTS 80): read every 16 ms, settled from the first
           // reading from which the line stays within 35 cents for 0.5 s
           const DEMO = at('demo'), DC = L.CONTOUR.demo
-          const ENTRY = (() => {
-            const inBand = (tt) => Math.abs(DC.c(tt)) <= 35
-            for (let i = 0; i * 0.016 <= DC.len - 0.5; i++) {
-              let ok = true
-              for (let j = 0; j * 0.016 <= 0.5; j++) if (!inBand(i * 0.016 + j * 0.016)) { ok = false; break }
-              if (ok) return i * 0.016
-            }
-            return null
-          })()
-          const SETTLED = ENTRY + 0.5
+          const { entry: ENTRY, settled: SETTLED } = L.settled(DC)      // the page's rule, the kit's (entry 0.704, settled 1.204)
           const LIT = DEMO + ENTRY, FLAG = DEMO + SETTLED              // the edge and "in the band"; the flag and "settled"
           const GUESS_OUT = DEMO + 2.0, GUESS_OUT_D = 0.5              // the guess fades as her line passes 2 s; Merc's returns
           // 10d: o12, b30

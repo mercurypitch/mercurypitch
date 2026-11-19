@@ -57,8 +57,11 @@
 //       `floor` true shows the floor (whenever a host is on screen); room.setFloor(a) fades it.
 //       L.frameRig moves far, under, mid and near and lifts the bokeh and staves while they slide.
 //       Do not set the opacity of room.bokeh or room.staves (the rig does), nor hide room.near.
-//   L.BOKEH_LIFT, L.STAVE_LIFT   how much brighter than at rest the bokeh (3) and staves (2.5) are
-//                                drawn; at rest they show at 1 / LIFT (Lesson 4 DECISIONS 93)
+//   L.BOKEH_LIFT, L.STAVE_LIFT   how much brighter than at rest the bokeh (5) and staves (4) are
+//                                drawn; at rest they show at 1 / LIFT (Lesson 4 DECISIONS 93). Set once for the
+//                                whole film at integration (DECISIONS 200; were 3 and 2.5): at 3 the layers
+//                                parted only with the shadows lifted, so S1's pull and S10's and S12's pushes
+//                                read as zooms; at rest nothing changes
 //   L.filmDust(layer, { n = 200, seed = 7 }) -> draw(T)
 //       the near layer's dust motes, T in FILM time (L.scene(SID).start + t), so every scene meets
 //       the same motes at a cut; spread over x -900 to 2800, y -700 to 1400, so no framing from
@@ -236,8 +239,8 @@
   L.uid = (p = 'k') => `kit-${p}-${++uid}`
 
   /* ---------------------------------------------------------------- the room */
-  L.BOKEH_LIFT = 3
-  L.STAVE_LIFT = 2.5
+  L.BOKEH_LIFT = 5
+  L.STAVE_LIFT = 4
   // The three glows (DECISIONS 132): soft radial gradients over the ground, screen space.
   const GLOWS = [
     { x: 260, y: 150, r: 900, rgb: '88,166,255', a: 0.085 },     // blue, top left

@@ -1,6 +1,114 @@
 {
  "rows": [
   {
+   "page": "card",
+   "t": 0.8,
+   "name": "the card in its own composited layer (will-change: transform)",
+   "got": "chapter-card-layer transform",
+   "want": "chapter-card-layer transform",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "card",
+   "t": 0.8,
+   "name": "its rise and breathing on that layer, not on the glyphs (inner group untransformed)",
+   "got": "none",
+   "want": "none",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "card",
+   "t": 0.8,
+   "name": "centred on x 960",
+   "got": 961.8724975585938,
+   "want": 960,
+   "tol": 3,
+   "pass": true
+  },
+  {
+   "page": "card",
+   "t": 0.8,
+   "name": "within 1680 px",
+   "got": 403.7803955078125,
+   "want": "<= 1680",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "card",
+   "t": 1.5,
+   "name": "the card in its own composited layer (will-change: transform)",
+   "got": "chapter-card-layer transform",
+   "want": "chapter-card-layer transform",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "card",
+   "t": 1.5,
+   "name": "its rise and breathing on that layer, not on the glyphs (inner group untransformed)",
+   "got": "none",
+   "want": "none",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "card",
+   "t": 1.5,
+   "name": "centred on x 960",
+   "got": 961.8853454589844,
+   "want": 960,
+   "tol": 3,
+   "pass": true
+  },
+  {
+   "page": "card",
+   "t": 1.5,
+   "name": "within 1680 px",
+   "got": 406.55889892578125,
+   "want": "<= 1680",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "card",
+   "t": 3.3,
+   "name": "the card in its own composited layer (will-change: transform)",
+   "got": "chapter-card-layer transform",
+   "want": "chapter-card-layer transform",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "card",
+   "t": 3.3,
+   "name": "its rise and breathing on that layer, not on the glyphs (inner group untransformed)",
+   "got": "none",
+   "want": "none",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "card",
+   "t": 3.3,
+   "name": "centred on x 960",
+   "got": 961.925048828125,
+   "want": 960,
+   "tol": 3,
+   "pass": true
+  },
+  {
+   "page": "card",
+   "t": 3.3,
+   "name": "within 1680 px",
+   "got": 415.10400390625,
+   "want": "<= 1680",
+   "pass": true,
+   "tol": 2
+  },
+  {
    "page": "chart",
    "t": 2,
    "name": "the line's tail clear of the axis \"0\" (right-aligned 388, baseline 523)",
@@ -1794,9 +1902,9 @@
   {
    "page": "recap",
    "t": 9.4,
-   "name": "foot at full 790",
-   "got": 790,
-   "want": 790,
+   "name": "foot at full 777 (group E closed the card up 13 px: DECISIONS 216, 223)",
+   "got": 777,
+   "want": 777,
    "tol": 2,
    "pass": true
   },
@@ -2992,7 +3100,7 @@
    "page": "type",
    "t": 1.2,
    "name": "chapter card centred on x 960",
-   "got": 960.5254821777344,
+   "got": 960.6243286132812,
    "want": 960,
    "tol": 3,
    "pass": true
@@ -3001,7 +3109,7 @@
    "page": "type",
    "t": 1.2,
    "name": "chapter card at most 1680 px wide (t 1.2, breathing)",
-   "got": 1659.3076171875,
+   "got": 1659.563232421875,
    "want": "<= 1680",
    "pass": true,
    "tol": 2
@@ -3010,7 +3118,7 @@
    "page": "type",
    "t": 1.95,
    "name": "chapter card centred on x 960",
-   "got": 960.7225189208984,
+   "got": 960.6311798095703,
    "want": 960,
    "tol": 3,
    "pass": true
@@ -3019,7 +3127,7 @@
    "page": "type",
    "t": 1.95,
    "name": "chapter card at most 1680 px wide (t 1.95, its breathing at its peak)",
-   "got": 1678.02001953125,
+   "got": 1677.912841796875,
    "want": "<= 1680",
    "pass": true,
    "tol": 2

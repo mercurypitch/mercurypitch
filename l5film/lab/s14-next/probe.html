@@ -74,9 +74,9 @@
           const LIGHT_D = 0.2                                         // the light comes up linearly (a 0.06 s light flagged as a pop)
           // 14b: b60
           const LINE = word('b60', 'I move')                          // the tease line
-          // its baseline 170, not the kit's 150 (DECISIONS 220): its cap top 24 px or more under "NEXT TIME"'s foot (110),
+          // its baseline, the kit's 170 (DECISIONS 220, 223): its cap top 24 px or more under "NEXT TIME"'s foot (110),
           // still centred over the tune (x 960); the kicker keeps the frame's left margin
-          const LINE_Y = 170
+          const LINE_Y = L.TEASE.LINE.y
           const ARROWS = word('b60', 'every'), ARROW_STEP = 0.08, ARROW_D = 0.4   // the arrows rise, one after another
           const COPY = ARROWS + 0.3, COPY_D = 7 * ARROW_STEP          // the dashed copy draws bead by bead as each arrow arrives
           const QM = COPY + COPY_D + 0.1                              // its "?" once the copy is drawn

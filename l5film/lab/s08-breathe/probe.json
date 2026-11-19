@@ -54,7 +54,7 @@
  {
   "t": 1.2700000000000058,
   "name": "8a: the card \"03 Breathing in\" within 1680 px",
-  "got": 1091.1,
+  "got": 1091.14,
   "want": "<= 1680",
   "pass": true
  },

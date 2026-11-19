@@ -1,0 +1,125 @@
+<!doctype html><html lang="en"><head><meta charset="UTF-8" />
+<script src="/assets/vendor/gsap-3.14.2.min.js"></script>
+<script src="/assets/cues.js"></script>
+<script src="/assets/scenes.js"></script>
+<script src="/assets/merc/roots.js"></script>
+<script src="/assets/lib/lesson.js"></script>
+<script src="/assets/lib/motion.js"></script>
+<script src="/assets/lib/marks.js"></script>
+<script src="/assets/lib/frames.js"></script>
+<script src="/assets/lib/chart.js"></script>
+<script src="/assets/lib/figure.js"></script>
+<script src="/assets/lib/gauge.js"></script>
+<script src="/assets/lib/mixup.js"></script>
+<script src="/assets/lib/folds.js"></script>
+<script src="/assets/lib/turn.js"></script>
+<script src="/assets/lib/recap.js"></script>
+<script src="/assets/lib/tease.js"></script>
+<script src="/assets/lib/hosts.js"></script>
+<link rel="stylesheet" href="/assets/lib/lesson.css" />
+<style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('/assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('/assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('/assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+html,body{margin:0;background:#0d1117}</style></head><body><div id="root">
+    <div id="s15-end" data-composition-id="s15-end" data-start="0" data-duration="6.200" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s15-end -->
+      <video id="s15-end-m-orange" data-merc="m-orange" class="clip" muted playsinline src="/assets/merc/m-orange-s15-merc.webm" data-start="0.000" data-duration="6.218" data-media-start="0.050"></video>
+      <video id="s15-end-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="/assets/merc/m-orange-s15-merc.webm" data-start="0.000" data-duration="6.218" data-media-start="0.050"></video>
+      <video id="s15-end-m-blue" data-merc="m-blue" class="clip" muted playsinline src="/assets/merc/m-blue-s15-merc.webm" data-start="0.000" data-duration="6.218" data-media-start="0.050"></video>
+      <video id="s15-end-m-blue-refl" data-merc="m-blue" data-merc-refl class="clip" muted playsinline src="/assets/merc/m-blue-s15-merc.webm" data-start="0.000" data-duration="6.218" data-media-start="0.050"></video>
+      <div class="scene" id="s15-end-scene"></div>
+      <script>
+        ;(function () {
+          // S15, the end card (STORYBOARD 15; HANDOFFS § The tease and the end card, § The cuts S14 to S15; DECISIONS 83,
+          // 106). The tease figure, in flight on its shrink across the cut (L.TEASE.shrink, film time, as s14-next draws it),
+          // settles small at the top right; the lockup is revealed top left by a feathered wipe, the address and "Voice
+          // Mirror is free, with no account" land under it, 0.4 s apart; the hosts on the right at 400 (Merc grows in place
+          // at (1290, 840), Tavi hops 190 px left to (1610, 840)); a slow 3 % push to the last frame. The lower left (x 80 to
+          // 1100, y 460 to 880) stays clear for YouTube's end-screen elements. Every time is a cue or a duration.
+          const SID = 's15-end'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const C = L.C, P = L.prog
+          const TE = L.TEASE, E = TE.END
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
+          const world = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+          const cam = L.frameRig(room, { from: 'F0' })
+
+          /* ---------------------------------------------------------------- anchors (from the end sting) */
+          const SHRINK0 = at('end', 'start', -0.31)                   // the shrink's start in S14 (L.TEASE.shrink's own): settled at + 1.2
+          const ROWS_OUT_D = 0.4                                      // the rows' fade from it, ending just after the cut
+          const GROW = at('end', 'start', 0.04), GROW_D = 0.7         // Merc grows to 400 in place; Tavi grows as she hops (PASSES.md)
+          const WIPE = at('end', 'start', 0.14), WIPE_D = 0.5         // the lockup's feathered wipe (board 556.15 to 556.65)
+          const ADDR = at('end', 'start', 0.54)                       // "mercurypitch.com/mirror" (board 556.55)
+          const FREE = at('end', 'start', 0.94)                       // "Voice Mirror is free, with no account" (board 556.95)
+          const LAND_D = 0.2                                          // each lands over 0.2 s (linear): the card at rest by end + 1.14
+
+          // the push: F0 to F-end (3 % about (960, 540)), sine.inOut, from the cut to the last frame
+          cam.to(0, D, 'F-end', 'sine.inOut')
+
+          /* ---------------------------------------------------------------- the tease figure (world: it rides the push) */
+          const te = L.tease(world)
+          const arrowsG = te.beads[0].arrow.g.parentNode               // the arrows leave with the rows (as s14-next)
+
+          /* ---------------------------------------------------------------- the type (hud, frame-fixed) */
+          const lockup = L.lockup(hud, E.lockup)
+          const addr = L.label(hud, E.address.text, { x: E.address.x, y: E.address.y, size: E.address.size })
+          const free = L.label(hud, E.free.text, { x: E.free.x, y: E.free.y, size: E.free.size, weight: E.free.weight })
+
+          /* ---------------------------------------------------------------- the hosts: from 300 to 400 on the right; Tavi's
+             hop is the pass's celebrate (crouch, then 0.43 s in the air), carried 190 px left through the air, power1.in */
+          const HE = L.HOSTS.end, HR = L.HOSTS.mercRight
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...HR.merc, base: HE.merc.size,
+            moves: [{ at: GROW, dur: GROW_D, size: HE.merc.size }] })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...HR.tavi, base: HE.tavi.size,
+            moves: [{ at: GROW, dur: GROW_D, size: HE.tavi.size }, { at: GROW + L.LEAP.crouch, dur: L.LEAP.air, x: HE.tavi.x, ease: 'power1.in' }] })
+
+          const probe = { cam, te, arrowsG, lockup, addr, free, A: { SHRINK0, ROWS_OUT_D, GROW, GROW_D, WIPE, WIPE_D, ADDR, FREE, LAND_D, D, T0 }, boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            dust(T)
+            const mb = merc(t), tb = tavi(t)
+            probe.boxes = { merc: mb, tavi: tb }
+
+            /* the tease figure as S14 left it (the beads lit, the copy and its "?" drawn), on its shrink to the end card's
+               box, the rows fading out over the shrink's first 0.4 s */
+            te.draw({
+              rowsA: 1 - P(t, SHRINK0, ROWS_OUT_D, 'none'),
+              keep: [mb, tb].filter(Boolean),
+              beads: () => ({ a: 1, lit: 1 }),
+              arrows: () => 1,
+              copy: 1,
+              qA: 1,
+              place: TE.place(L.TEASE.shrink(T, T0 + SHRINK0)),
+            })
+
+            arrowsG.setAttribute('opacity', (1 - P(t, SHRINK0, ROWS_OUT_D, 'none')).toFixed(3))
+
+            /* the end card's type: the lockup's wipe, then the address and the free line, 0.4 s apart */
+            lockup.draw({ wipe: P(t, WIPE, WIPE_D, 'power1.inOut'), a: t >= WIPE ? 1 : 0 })
+            addr.draw({ a: P(t, ADDR, LAND_D, 'none') })
+            free.draw({ a: P(t, FREE, LAND_D, 'none') })
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </div></body></html>

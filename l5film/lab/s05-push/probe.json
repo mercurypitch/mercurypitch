@@ -58,7 +58,7 @@
  {
   "t": 3.0499999999999945,
   "name": "[B-01: 184] \"level\" at the strip's left (right edge 366), its glyphs centred on the strip (690)",
-  "got": "366.0, 612.0",
+  "got": "366.0, 689.0",
   "want": "366, 690 +- 4",
   "pass": true
  },

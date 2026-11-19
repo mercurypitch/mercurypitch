@@ -223,8 +223,7 @@
           /* ---------------------------------------------------------------- the stack (9f, 9g): the block s10-steady
              draws again at its first frame */
           const ST = TR.STACK
-          // the rows' half-height: L.TRACE.STACK names two keys `h` (70, then the "h" glyph's place), so its 70 is lost
-          const ROW_H = 70
+          const ROW_H = ST.h                                          // the rows' half-height, 70 (the glyph's place is ST.hGlyph)
           const stackG = L.svg('g', { class: 'stack' }, world)
           const rowTr = ST.rows.map((y, i) => L.trace(stackG, { y, h: ROW_H, seed: 75 + i }))
           const KINDS = ['air', 'catch', 'together']
@@ -240,7 +239,7 @@
           // (12 px or more under the name's "g"); on "neither"'s line it read "neither the easy start"
           const EASY_L = { ...ST.easy, x: NAME_X, y: 714, anchor: 'end' }
           const easy = L.label(stackG, EASY_L.text, EASY_L)
-          const hGlyph = L.label(stackG, ST.h.text, { x: ST.h.x, y: 732, size: ST.h.size, family: 'serif', anchor: 'middle', fill: C.ink2 })   // centred (760, 690)
+          const hGlyph = L.label(stackG, ST.hGlyph.text, { x: ST.hGlyph.x, y: 732, size: ST.hGlyph.size, family: 'serif', anchor: 'middle', fill: C.ink2 })   // centred (760, 690)
           const hLine = L.label(stackG, ST.hLine.text, ST.hLine)
           // the "h" reads (DECISIONS 195): while it shows, row 3's first 200 px (x 704 to 900, past the gold tick) dim to
           // 25 % through a mask with a soft edge (880 to 920), and the "h" stands at 70 %

@@ -1,0 +1,63 @@
+<!doctype html>
+<!-- The probe's harness for lab/kit-src/card.html (lab/kit-src/probe.mjs): the kit, the fonts, the page. -->
+<html lang="en"><head><meta charset="UTF-8" />
+<script src="/assets/vendor/gsap-3.14.2.min.js"></script>
+<script src="/assets/cues.js"></script>
+<script src="/assets/scenes.js"></script>
+<script src="/assets/merc/roots.js"></script>
+<script src="/assets/lib/lesson.js"></script>
+<script src="/assets/lib/motion.js"></script>
+<script src="/assets/lib/marks.js"></script>
+<script src="/assets/lib/frames.js"></script>
+<script src="/assets/lib/chart.js"></script>
+<script src="/assets/lib/figure.js"></script>
+<script src="/assets/lib/gauge.js"></script>
+<script src="/assets/lib/mixup.js"></script>
+<script src="/assets/lib/folds.js"></script>
+<script src="/assets/lib/turn.js"></script>
+<script src="/assets/lib/recap.js"></script>
+<script src="/assets/lib/tease.js"></script>
+<script src="/assets/lib/hosts.js"></script>
+<link rel="stylesheet" href="/assets/lib/lesson.css" />
+<style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('/assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('/assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('/assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+</style></head><body><div id="root">
+    <!-- Integration lab: the chapter card's breathing (DECISIONS 202). "Sing it" on S11's own times (the card in at
+         0.37, out at 3.6), over the room at rest, so measure.py's single-frame events can only be the card's. -->
+    <div id="kit-card" data-composition-id="kit-card" data-start="0" data-duration="4.2" data-width="1920" data-height="1080">
+      <div class="scene" id="kit-card-root"></div>
+      <script>
+        ;(function () {
+          const ID = 'kit-card', D = 4.2
+          const root = document.getElementById(ID + '-root')
+          const room = L.room(root, { bokeh: false, staves: false })
+          const hud = L.stage(room.hud)
+          const card = L.chapterCard(hud, { num: null, title: 'Sing it', tIn: 0.37, tOut: 3.6 })
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => { card.draw(t) })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+          // the card is drawn in its own composited layer, its rise and breathing a CSS transform on it (DECISIONS 202)
+          const wrap = card.g.ownerSVGElement.parentNode
+          window.__kitProbe = window.__kitProbe || {}
+          window.__kitProbe[ID] = {
+            times: [0.8, 1.5, 3.3],
+            check(t) {
+              const b = card.g.getBoundingClientRect()
+              return [{ name: 'the card in its own composited layer (will-change: transform)', got: `${wrap.className} ${getComputedStyle(wrap).willChange}`, want: 'chapter-card-layer transform', pass: wrap.className === 'chapter-card-layer' && getComputedStyle(wrap).willChange === 'transform' },
+                { name: 'its rise and breathing on that layer, not on the glyphs (inner group untransformed)', got: card.titleEl.parentNode.getAttribute('transform') || 'none', want: 'none', pass: !card.titleEl.parentNode.getAttribute('transform') },
+                { name: 'centred on x 960', got: b.x + b.width / 2, want: 960, tol: 3 }, { name: 'within 1680 px', got: b.width, want: '<= 1680', pass: b.width <= 1680 }]
+            },
+          }
+        })()
+      </script>
+    </div>
+  </div></body></html>

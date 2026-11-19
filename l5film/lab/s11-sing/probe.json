@@ -61,7 +61,7 @@
  {
   "t": 1.2699999999999774,
   "name": "11a: \"Sing it\" centred on x 960 (no numeral)",
-  "got": 961.9,
+  "got": 961.91,
   "want": 960,
   "tol": 6,
   "pass": true
@@ -69,7 +69,7 @@
  {
   "t": 1.2699999999999774,
   "name": "11a: the card clears the dimmed frame (card top under the band's foot 280)",
-  "got": 309.2,
+  "got": 309.84,
   "want": "> 280",
   "pass": true
  },

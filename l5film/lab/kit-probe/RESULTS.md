@@ -2,10 +2,22 @@
 
 Written by `lab/kit-src/probe.mjs` (Chromium with the film's fonts). Each row is a lab page seeked to a time, a value read from the DOM (screen px, after every layer's transform), and the HANDOFFS value it must match within the tolerance (2 px unless given).
 
-**370 of 370 pass.**
+**382 of 382 pass.**
 
 | Page | t | Check | Measured | HANDOFFS | Tol | Pass |
 | - | - | - | - | - | - | - |
+| card | 0.8 | the card in its own composited layer (will-change: transform) | chapter-card-layer transform | chapter-card-layer transform | 2 | yes |
+| card | 0.8 | its rise and breathing on that layer, not on the glyphs (inner group untransformed) | none | none | 2 | yes |
+| card | 0.8 | centred on x 960 | 961.87 | 960 | 3 | yes |
+| card | 0.8 | within 1680 px | 403.78 | <= 1680 | 2 | yes |
+| card | 1.5 | the card in its own composited layer (will-change: transform) | chapter-card-layer transform | chapter-card-layer transform | 2 | yes |
+| card | 1.5 | its rise and breathing on that layer, not on the glyphs (inner group untransformed) | none | none | 2 | yes |
+| card | 1.5 | centred on x 960 | 961.89 | 960 | 3 | yes |
+| card | 1.5 | within 1680 px | 406.56 | <= 1680 | 2 | yes |
+| card | 3.3 | the card in its own composited layer (will-change: transform) | chapter-card-layer transform | chapter-card-layer transform | 2 | yes |
+| card | 3.3 | its rise and breathing on that layer, not on the glyphs (inner group untransformed) | none | none | 2 | yes |
+| card | 3.3 | centred on x 960 | 961.93 | 960 | 3 | yes |
+| card | 3.3 | within 1680 px | 415.1 | <= 1680 | 2 | yes |
 | chart | 2 | the line's tail clear of the axis "0" (right-aligned 388, baseline 523) | 12 | >= 12 | 2 | yes |
 | chart | 4.5 | S1 band x 400 to 1520 (left) | 400 | 400 | 2 | yes |
 | chart | 4.5 | S1 band right | 1520 | 1520 | 2 | yes |
@@ -205,7 +217,7 @@ Written by `lab/kit-src/probe.mjs` (Chromium with the film's fonts). Each row is
 | recap | 9.4 | Voice Mirror card x 230 to 1110 (left) | 230 | 230 | 2 | yes |
 | recap | 9.4 | right | 1110 | 1110 | 2 | yes |
 | recap | 9.4 | top 90 | 90 | 90 | 2 | yes |
-| recap | 9.4 | foot at full 790 | 790 | 790 | 2 | yes |
+| recap | 9.4 | foot at full 777 (group E closed the card up 13 px: DECISIONS 216, 223) | 777 | 777 | 2 | yes |
 | recap | 9.4 | rest card x 1130 to 1690 (left) | 1130 | 1130 | 2 | yes |
 | recap | 9.4 | rest card y 250 to 600 (foot) | 600 | 600 | 2 | yes |
 | recap | 9.4 | "five notes" glyph's first dot (272, 448) before the drift | 272 | 272 | 2 | yes |
@@ -338,10 +350,10 @@ Written by `lab/kit-src/probe.mjs` (Chromium with the film's fonts). Each row is
 | turn | 7.6 | care block holds still through the push ("Your turn." box left) | 260 | 260 | 1 | yes |
 | turn | 7.6 | the phase row and its lines are gone before the push lands | 0 | 0 | 0.001 | yes |
 | turn | 7.6 | nothing of the turn visible under y 880 (the caption band) at F-turn | 867 | <= 880 | 2 | yes |
-| type | 1.2 | chapter card centred on x 960 | 960.53 | 960 | 3 | yes |
-| type | 1.2 | chapter card at most 1680 px wide (t 1.2, breathing) | 1659.31 | <= 1680 | 2 | yes |
-| type | 1.95 | chapter card centred on x 960 | 960.72 | 960 | 3 | yes |
-| type | 1.95 | chapter card at most 1680 px wide (t 1.95, its breathing at its peak) | 1678.02 | <= 1680 | 2 | yes |
+| type | 1.2 | chapter card centred on x 960 | 960.62 | 960 | 3 | yes |
+| type | 1.2 | chapter card at most 1680 px wide (t 1.2, breathing) | 1659.56 | <= 1680 | 2 | yes |
+| type | 1.95 | chapter card centred on x 960 | 960.63 | 960 | 3 | yes |
+| type | 1.95 | chapter card at most 1680 px wide (t 1.95, its breathing at its peak) | 1677.91 | <= 1680 | 2 | yes |
 | type | 3.9 | pill 1: text pad left (24) | 24.3 | 24 | 1.5 | yes |
 | type | 3.9 | pill 1: text pad right (24) | 24.29 | 24 | 1.5 | yes |
 | type | 3.9 | pill 1 left | 462 | 462 | 2 | yes |
