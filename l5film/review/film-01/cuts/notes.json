@@ -1,0 +1,16 @@
+{
+ "01": "The field on both sides (centre 150.4 then 148.9); S2's shrink into the title bead starts on the cut: the corners darken from the first frame after (top left 82 to 41, then 23), mean step 10.3 then 23.1, against 0.1 before. No hosts, no type. As the board says, but the motion starts at full rate on the cut.",
+ "02": "Only the bead moves: (-6.3, +2.2), (-6.7, +1.7) across the cut, (-8.4, +1.0) after. Continuous. As the board says.",
+ "03": "Nothing outside Tavi's box changes. Tavi: chunk join, moving as before and after.",
+ "04": "Nothing outside the hosts changes. As the board says.",
+ "05": "Nothing outside the hosts changes; the ghost envelope fades later, with the split. As the board says.",
+ "06": "Matched. Gauge, band, chips and labels on the same pixels (0.02 luma). The figure's torso is redrawn 0.24 px right and 0.09 px down (anti-aliasing, max 178 on one edge pixel): within 2 px. The room has not begun to change on the first frame.",
+ "07": "Nothing outside the hosts changes. Hosts: chunk join, encoder noise only (centroid steps under 0.05 px).",
+ "08": "Nothing outside the hosts changes. Hosts: chunk join, encoder noise only.",
+ "09": "Nothing outside the hosts changes. Hosts: chunk join, encoder noise only.",
+ "10": "Matched. The hold frame on the same pixels: the line's ends at x 1000 and 1639 and its centre (244.56 then 244.54) on both sides, the band unchanged. S11 draws the line's core a little flatter (rows 243 to 246 even, not peaked at 244; 3.6 % more light), so 0.7 % of the box's pixels change by over 24. The centroid's x move (-0.66) is that light along the line, not a shift.",
+ "11": "Nothing outside the hosts changes. As the board says.",
+ "12": "Matched. Band and Merc's line on the same pixels (0.01 luma, centroid 0.03 px). Hosts: chunk join (they stood still before it).",
+ "13": "Only the bead moves: (8.3, 17.6), (9.4, 18.9) across the cut, (10.4, 19.8) after. Continuous. As the board says.",
+ "14": "The tease figure keeps shrinking: a dot moves 12.7, 16.1 across the cut, 20.0 after; the hook's type fades as before. Both hosts change pass resolution here (s14's chunks are 225 px, s15's 300 px for the grow to 400): 2 % fewer bright pixels, outline 1 to 2 px tighter, centroid 0.36 px or less. A slight sharpening on the cut."
+}

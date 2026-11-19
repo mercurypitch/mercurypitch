@@ -1740,3 +1740,22 @@ numbered 132 to 135 too, are 160 to 163 now, so no number appears twice).
        mid-move, which the full-film critic reads with the film in view. S10's truck at CU-wave
        still has only 1 to 3 discs in frame; more discs for the close framings (134) wait for that
        critic's reading.
+
+## The lead's call on integration part 2 (film-draft-01), 19 November
+
+225. **film-draft-01 goes to the full-film critic as it is** (9:09.47, 16,484 frames at 30 fps, the
+     scratch voices; the lead read the hand-back, the hop proof and the contact sheet). All fourteen
+     cuts hold (no cut registers as an event; the three matched cuts carry their objects to under
+     0.3 px). Holds 1.9 s per 30 s, the longest 0.6 s at 160.90; they go to the final passes (189).
+     - **Merc's one-frame jump at 490.933** (49.6 px; 4 px behind in the air) is the kit's: in the
+       film a scene starts on a fraction of a frame, and `L.mercGate` (hosts.js line 151) reads the
+       root one pass frame after the one the renderer shows (`floor(ms * fps) + floor((t - ds) *
+       fps)`). The kit builder fixes the index to the renderer's and proves it on the film's own
+       frames at 30 and 60 fps; it rides into the next draft. It is also 224's 60 fps fault.
+     - **For the full-film fix round, with the critic's findings**: the type that steps a whole
+       pixel in slow moves (19 events: s01's "in the band" and chip, s02's title, s04's swatch
+       labels, s12's ring and "Breathe", s13's drift, s14's hook); S5's band edges turning green and
+       back in 3 frames (87.27, 88.33); S8's kicker leaving in 0.1 s (219.93).
+     - **For the final passes**: S14's hosts come from 225 px chunks and S15's from 300 px ones, so
+       both sharpen slightly on the cut; render S14's chunks at S15's resolution.
+     - Loudness is the scratch mix's (-21.0 LUFS); the sound step sets the film's.

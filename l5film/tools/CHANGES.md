@@ -20,6 +20,25 @@ rest (mix.py reads only Echo samples there, which this film does not use).
 Every heavy run (a render, a Chromium pass, the Merc bundle, the Kokoro run) goes through the
 scratchpad's heavy helper on this shared machine, one at a time.
 
+## 2026-11-19 (Lesson 5, integration part 2: the whole film, film-draft-01)
+
+Part 1's log is at the end of this file. No existing tool changed; `gen-root.py` was not run (no
+scene's length changed). Two new read-only tools, both reading a whole-film render and writing only
+under `review/`:
+
+- **tools/film-cuts.py** (new). Every cut in `assets/scenes.js`: the last frame before and the first
+  after (film frame `ceil(t * 30)`), with the frames either side, picked by their own timestamps after
+  a seek (checked against a sequential decode: identical). Their luma change outside the hosts' boxes
+  (HANDOFFS § Hosts: body box, 20 px keep-out, down to the frame's foot) and inside each box, against
+  the step before and the step after; the 16 px cells that change only at the cut; and, for the
+  three matched cuts (and the figure S6 carries into S7), the carried object's best whole-pixel
+  shift, the move of its drawn centroid and its luma change in place. Writes `cut-NN.png`,
+  `cuts.json` and `cuts.md` (with `notes.json`'s notes, when present).
+- **tools/film-events.py** (new). After `measure.py render`: the hard holds summed per 30 s with
+  their scenes (`holds-30s.md`), and every single-frame event in `events.csv` with its frame, scene,
+  the cut it is or the cue edges and words within 0.2 s, the boxes that change, and a still strip
+  (`events.md`, `events/NN.png`, `events/sheet-NN.png`). Uses film-cuts.py's frame picking.
+
 ## 2026-11-19 (Lesson 5, group E's fix round E-01: the kit's Voice Mirror card, DECISIONS 216)
 
 - **assets/lib/recap.js, `L.RECAP.VM`: the card closes up 13 px under its rows, and the ten line

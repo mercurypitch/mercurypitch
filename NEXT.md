@@ -4560,3 +4560,16 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   table, contact sheet). NEXT: lead checks -> critic F-01 (briefs/l5-critic-F-01.md) -> calls ->
   full-film fix round -> sound step (pad through `break`, hop landings, tune and end chimes,
   examples, act sounds, ticks, room tone, the model note in S12) -> final voices and passes.
+
+## 17:13 UTC, 19 Nov
+- INTEGRATION PART 2 HANDED BACK: renders/film-draft-01.mp4 (9:09.47, 16,484 frames, 30 fps,
+  scratch voices; render 21 min 42 s). All 14 cuts hold. Holds 1.9 s per 30 s, longest 0.6 s.
+  One real glitch: Merc 49.6 px for one frame at 490.933 (hosts.js line 151 reads the root one
+  pass frame late when a scene starts on a fraction of a frame). DECISIONS 225 (lead read the
+  hand-back, the hop proof and the contact sheet review/film-01/contact-sheet.jpg).
+- CRITIC F-01 LAUNCHED (fresh motion-critic, xhigh) on film-draft-01 -> review/critic-F-01/REPORT.md.
+- KIT BUILDER resumed for the root index fix (prove on the film's timing at 30/60 fps, every
+  probe and check again).
+- NEXT: critic F-01's report -> lead's calls (226 on) -> the full-film fix round (with 225's list:
+  whole-pixel type steps in slow moves, S5's 3-frame green edges, S8's 0.1 s kicker fade) ->
+  film-draft-02 -> the owner's look. Then the sound step and final voices/passes.
