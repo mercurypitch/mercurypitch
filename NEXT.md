@@ -4295,3 +4295,8 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   clean). Its 09:40 check-in deleted. Polish-2 builder told: item 8 may start after it rebases
   onto origin/main. Dev check queued ($S/dev/earwide/{desktop,phone}.log via earlab-dev.mjs once
   dev serves 3b120f1f1). Hourly check-in's prompt updated (no open PRs; agents listed).
+- 09:08: #1467 VERIFIED ON DEV 3b120f1f1 ($S/dev/earwide/): desktop 1440x900 bench 300..1430 wide,
+  Merc's desk beside the Index and Today, Ear rooms and stations three to a row, 6 stations, 3
+  rooms; phone 390x844 the column (bench 0..390); no errors, no sideways scroll, production none.
+  Both of this session's PRs are merged and verified. Open work: polish-2 builder, film group A fix
+  round (group B paused), hourly check-in at :50.
