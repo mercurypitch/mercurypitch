@@ -36,7 +36,9 @@ moves and leaves (not landings):
    27.540  the clean break (DECISIONS 215): kicker +0.20, panel +0.27, answer +0.34, frame +0.41 (leaves, up fast, 0.3 s each)
    27.940  hop 1 (the pass's crouch, then the air 0.41 s)
    28.590  hop 2
-   62.475  both cards drift up 14 px over `card`
+   39.000  the readout's lines light ink-2 to ink in turn, (Keep - plays) / 3 apart, 0.3 s each (DECISIONS 228; a light, not a landing)
+   55.815  the rest body's line 1 lights; line 2 lights on "your voice" (0.3 s each; DECISIONS 228)
+   62.955  both cards drift up 14 px, 1.2 s sine.inOut, ending as the lines leave (fix F-01: the board's 2 s drift stepped)
    64.155  the cards' lines leave in turn, 0.03 s apart, 0.2 s each
 
 29 landings, 2 closer than 0.4 s, each the board's own or not:

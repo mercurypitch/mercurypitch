@@ -31,7 +31,7 @@ Runs where the mean change is below 0.35. Not an automatic fail: a critic looks 
 | --- | --- | --- | --- |
 | 0.60 s | 5.4 s | 174 | small element moving |
 | 6.20 s | 3.4 s | 169 | small element moving |
-| 10.20 s | 5.4 s | 161 | small element moving |
+| 10.20 s | 5.4 s | 162 | small element moving |
 
 0 shorter run(s) totalling 0.0 s are not listed; `motion.csv` has every sample.
 
@@ -42,11 +42,11 @@ From every frame at the film's own rate, by the share of pixels that change by m
 | Time | Kind | Mean change | Pixels changed |
 | --- | --- | --- | --- |
 | 7.233 s | pop | 0.07 | 0.06% |
-| 12.500 s | pop | 0.07 | 0.05% |
+| 12.500 s | pop | 0.08 | 0.05% |
 
 ## Loop seam
 
-From the last frame back to the first: 1.67 on the scale of `frames.csv`, against a median frame change of 0.047, a 95th percentile of 0.25 and a largest of 1.45 at 15.800 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
+From the last frame back to the first: 1.66 on the scale of `frames.csv`, against a median frame change of 0.047, a 95th percentile of 0.25 and a largest of 1.44 at 15.800 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
 
 ## Loudness
 

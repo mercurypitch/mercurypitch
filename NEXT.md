@@ -4636,3 +4636,6 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Only GROUP E in flight now (it was rendering s14-next). NEXT when E is accepted: resume the
   production builder (builder) with briefs/l5-film-draft-02.md; fill LEDGER's critic-F-01
   "After" from draft-02's numbers; then the owner's look.
+- 19:50 UTC check-in: rate limit "allowed_warning" (seven-day window; resets Thu 26 Nov 01:00 UTC).
+  Still allowed: carry on, but lean (no extra agents beyond E and the draft-02 render). Group E
+  active (transcript written 35 s before; no heavy job at that moment). Nothing due.

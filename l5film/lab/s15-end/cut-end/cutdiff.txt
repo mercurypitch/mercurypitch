@@ -1,4 +1,6 @@
+# pair 
 figure         best shift (+0, +0) residual 0.22; at (0, 0) 0.22; bright pixels 1.9 %
 qmark          best shift (+0, +0) residual 0.04; at (0, 0) 0.04; bright pixels 11.0 %
+# pair 60
 figure         best shift (+3, -1) residual 1.96; at (0, 0) 2.32; bright pixels 2.0 %
 qmark          best shift (+2, -2) residual 1.97; at (0, 0) 9.84; bright pixels 11.3 %

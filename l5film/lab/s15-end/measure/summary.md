@@ -12,14 +12,13 @@ File: `lab/s15-end/clip.mp4`
 
 A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes by 16 or more. Target: at most about 1 s per 30 s in total and none longer than about 0.5 s; a hold that runs to the end (the final call to action) is reported separately and exempt.
 
-**Inside the film:** 0.8 s (3.9 s per 30 s), longest 0.4 s.
+**Inside the film:** 0.6 s (2.9 s per 30 s), longest 0.3 s.
 **Final hold:** none.
 
 | Starts | Length | Note |
 | --- | --- | --- |
 | 1.60 s | 0.3 s |  |
-| 3.30 s | 0.1 s |  |
-| 4.20 s | 0.4 s |  |
+| 4.30 s | 0.3 s |  |
 
 ## Low motion
 
@@ -39,7 +38,7 @@ None found.
 
 ## Loop seam
 
-From the last frame back to the first: 9.90 on the scale of `frames.csv`, against a median frame change of 0.038, a 95th percentile of 1.78 and a largest of 2.11 at 0.600 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
+From the last frame back to the first: 9.90 on the scale of `frames.csv`, against a median frame change of 0.039, a 95th percentile of 1.77 and a largest of 2.11 at 0.600 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
 
 ## Loudness
 

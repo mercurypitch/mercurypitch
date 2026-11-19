@@ -1,0 +1,14 @@
+  9.400 ink  1.00 drawn   0.00 step +0.00
+  9.433 ink  1.00 drawn   0.00 step +0.00
+  9.467 ink  1.00 drawn   0.00 step +0.00
+  9.500 ink  1.00 drawn   0.00 step +0.00
+  9.533 ink  1.00 drawn   0.00 step +0.00
+  9.567 ink  0.99 drawn   0.00 step +0.00
+  9.600 ink  0.96 drawn   0.99 step +0.99
+  9.633 ink  0.89 drawn   2.00 step +1.01
+  9.667 ink  0.76 drawn   4.00 step +2.00
+  9.700 ink  0.57 drawn   7.00 step +3.00
+  9.733 ink  0.25 drawn  11.93 step +4.93
+  9.767 ink  0.00 drawn   8.43 step -3.50
+  9.800 ink  0.00 drawn  22.53 step +14.10
+  9.833 ink  0.00 drawn   8.66 step -13.87

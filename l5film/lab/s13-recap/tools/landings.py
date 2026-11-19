@@ -90,7 +90,9 @@ def s13():
         (SETTLES + REDRAW, 'card 3\'s redraw complete; the answer holds 0.5 s to the cascade'),
         (at('break', 'start', 0.6), 'hop 1 (the pass\'s crouch, then the air 0.41 s)'),
         (at('break', 'start', 1.25), 'hop 2'),
-        (at('card'), 'both cards drift up 14 px over `card`'),
+        (word('b55', 'plays'), 'the readout\'s lines light ink-2 to ink in turn, (Keep - plays) / 3 apart, 0.3 s each (DECISIONS 228; a light, not a landing)'),
+        (word('b58', 'Voice'), 'the rest body\'s line 1 lights; line 2 lights on "your voice" (0.3 s each; DECISIONS 228)'),
+        (at('card', 'end', -0.32) - 1.2, 'both cards drift up 14 px, 1.2 s sine.inOut, ending as the lines leave (fix F-01: the board\'s 2 s drift stepped)'),
         (at('card', 'end', -0.32), 'the cards\' lines leave in turn, 0.03 s apart, 0.2 s each'),
     ]
     return LAND, MOVES

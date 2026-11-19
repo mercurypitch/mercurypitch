@@ -29,13 +29,11 @@ Runs where the mean change is below 0.35. Not an automatic fail: a critic looks 
 
 From every frame at the film's own rate, by the share of pixels that change by more than 24 (at 960 px wide) against the changes either side. A jump changes once and stays: a large one is a cut, a small one is usually a whole-pixel snap in a slow move, and equal snaps come out as equal jumps. A pop differs from both of its neighbours: a flash, a missing element or a one-frame glitch. Look at each on a frame-exact sheet.
 
-| Time | Kind | Mean change | Pixels changed |
-| --- | --- | --- | --- |
-| 0.267 s | jump | 0.51 | 0.80% |
+None found.
 
 ## Loop seam
 
-From the last frame back to the first: 5.78 on the scale of `frames.csv`, against a median frame change of 0.929, a 95th percentile of 1.35 and a largest of 1.41 at 0.433 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
+From the last frame back to the first: 5.77 on the scale of `frames.csv`, against a median frame change of 0.931, a 95th percentile of 1.31 and a largest of 1.40 at 0.433 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
 
 ## Loudness
 

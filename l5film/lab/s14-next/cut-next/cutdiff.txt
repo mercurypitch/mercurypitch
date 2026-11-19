@@ -1,2 +1,4 @@
+# pair 
 bead           best shift (+0, +0) residual 1.41; at (0, 0) 1.41; bright pixels 19.6 %
+# pair 60
 bead           best shift (+3, +3) residual 29.85; at (0, 0) 44.96; bright pixels 18.8 %

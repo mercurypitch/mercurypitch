@@ -1,6 +1,8 @@
+# pair 
 band           best shift (+0, +0) residual 0.00; at (0, 0) 0.00; bright pixels 6.1 %
 line           best shift (+0, +0) residual 0.00; at (0, 0) 0.00; bright pixels 50.0 %
 edges          best shift (+0, +0) residual 0.00; at (0, 0) 0.00; bright pixels 0.0 %
-band           best shift (+0, +0) residual 0.03; at (0, 0) 0.03; bright pixels 6.1 %
-line           best shift (+0, +0) residual 0.08; at (0, 0) 0.08; bright pixels 50.0 %
+# pair 60
+band           best shift (+0, +0) residual 0.02; at (0, 0) 0.02; bright pixels 6.1 %
+line           best shift (+0, +0) residual 0.06; at (0, 0) 0.06; bright pixels 50.0 %
 edges          best shift (+0, +0) residual 0.00; at (0, 0) 0.00; bright pixels 0.0 %
