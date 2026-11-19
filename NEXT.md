@@ -4325,3 +4325,14 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - GROUP C LAUNCHED (brief $S/briefs/l5-film-scenes-C.md; s08-breathe, s09-onset, s10-steady;
   last frame carries 10h's frame across the matched cut on sing).
 - Heavy agents now: polish-2 builder + group C. Queue: B's fix round, then group D, then E.
+
+## 10:25 UTC, 19 Nov
+- CRITIC B-01 RETURNED: ONE MORE PASS (S5 REVISE, S6 REVISE close to KEEP, S7 REVISE). Saved to
+  l5film/review/critic-B-01/REPORT.md. Lead's calls DECISIONS 180-189 (hold 0.5 s on every clock;
+  thesis on "in a voice,"; plates text+4 px via backPadX/Y per label, kit default untouched; readout
+  swap, "added" 0.45 s after the switch (settles 6f vs Build checks); ghost resting envelope S5/S7;
+  S7 payoff large lower right, rows 0-3 dim; hosts continue across the S6/S7 cut; chip on evidence 2;
+  minors; holds -> final passes with host idle in pauses). Board rows 5c 5g 6f 6i 7a 7b 7e, Build
+  checks and HANDOFFS amended with [B-01: n]. LEDGER B-01 row (after-numbers pending).
+- FIX BRIEF WRITTEN: $S/briefs/l5-fix-B-01.md. Send to the group B builder (resume) when a heavy
+  slot frees (polish-2 and group C hold both now). Then the lead checks stills; no second critic.
