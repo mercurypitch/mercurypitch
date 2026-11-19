@@ -4371,3 +4371,23 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Heavy now: polish-2 + group B fix. Next free slot -> group D (briefs/l5-film-scenes-D.md). Then
   the passes step (briefs/l5-passes-hops.md, resume the passes builder), C's fix round (critic
   C-01 + S8 out-breath), then group E.
+
+## 12:05 UTC, 19 Nov
+- POLISH-2 HANDED BACK (8 fixes, 10 commits, rebased on main 3b120f1f1, gates green locally:
+  check 0 errors/11 warnings, vitest 2,598, e2e 306/306, walks clean bar 9/7 WIDE explained).
+  Lead reviewed the diff (foot-space inFlow gap, TransportBar dock, dark pill, uvr wrap, drill foot
+  from 769 px, tooltip beside tall targets, inline scroll only when not whole) and checked the
+  drill foot on dist-final at 1440x900, 1024x768, 390x844 in both themes (booth to the foot at
+  desk, phone unchanged; shots $S/polish2/lead/). Added the desk numbers to the body.
+  PUSHED feat/phone-polish-2; PR #1473 opened (no attribution), subscribed. Next: CI green -> merge
+  (squash, owner's standing go) -> verify on dev.
+- GROUP D LAUNCHED (new builder, briefs/l5-film-scenes-D.md) in the slot polish-2 freed.
+- CRITIC C-01 RETURNED: ONE MORE PASS (S8 KEEP, S9 and S10 REVISE). Saved to
+  l5film/review/critic-C-01/REPORT.md. DECISIONS 192-201 (lit lane + traces at 30 % + folds 1.3-1.4x;
+  10h one push, label on "because" 2 s; labels re-placed incl. LISTEN ONLY under A catch; openings
+  overlap the card exit, folds grow 0.5 s; stack in order; strike on the guess on "No."; ink
+  brackets; chart full before the push; sound -> sound step; holds + talk cycle at 240 -> final
+  passes; bokeh lift -> integration; frame fill -> full-film critic). HANDOFFS, LAB-CHECKS 13 marked.
+  LEDGER C-01 row. Fix brief $S/briefs/l5-fix-C-01.md (resume the group C builder when a slot frees).
+- Heavy now: group B fix + group D. Queue: the passes step for 190 (blocks E), group C's fix
+  round, then group E.

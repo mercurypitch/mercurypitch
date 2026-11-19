@@ -719,58 +719,261 @@
  },
  {
   "t": 26.16,
-  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
-  "got": 375.32,
+  "name": "keep-out: nearest visible text to tavi's body box (\"Now: holding back\")",
+  "got": 320.16,
   "want": ">= 20",
   "pass": true
  },
  {
-  "t": 29.609999999999996,
+  "t": 26.16,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1040.2, 293.0 to 339.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "[B-01: 182] the plate of heldBack (world 782.4 to 937.6, 502.0 to 553.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "[B-01: 182] the plate of readout (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 29.559999999999995,
+  "name": "[B-01: 183] \"added\" not yet shown 0.3 s after the switch",
+  "got": "0.00",
+  "want": "0.00",
+  "pass": true
+ },
+ {
+  "t": 29.559999999999995,
+  "name": "[B-01: 183] the readout: frames with both wordings shown (every switch)",
+  "got": 0,
+  "want": 0,
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
   "name": "6f: after the crossing the readout says \"Now: adding\"",
   "got": "0.00 1.00",
   "want": "0.00 1.00",
   "pass": true
  },
  {
-  "t": 29.609999999999996,
-  "name": "6f: \"added\" landed at the crossing",
-  "got": "1.00",
-  "want": "1.00",
+  "t": 30.059999999999995,
+  "name": "[B-01: 183] \"added\" landed 0.45 s after the switch",
+  "got": "1.00; 0.45 s",
+  "want": "1.00; 0.45 s",
   "pass": true
  },
  {
-  "t": 29.609999999999996,
+  "t": 30.059999999999995,
   "name": "6f: \"added\" glyphs under the gold line (607.5)",
   "got": 15.5,
   "want": ">= 12",
   "pass": true
  },
  {
-  "t": 29.609999999999996,
+  "t": 30.059999999999995,
   "name": "6f: \"added\" over the lungs' line at its left end",
   "got": 20.71,
   "want": ">= 12",
   "pass": true
  },
  {
-  "t": 29.609999999999996,
+  "t": 30.059999999999995,
   "name": "the push under way: scale",
   "got": 1.04,
   "want": "info",
   "pass": true
  },
  {
-  "t": 29.609999999999996,
+  "t": 30.059999999999995,
   "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
-  "got": 32.06,
+  "got": 31.72,
   "want": ">= 20",
   "pass": true
  },
  {
-  "t": 29.609999999999996,
+  "t": 30.059999999999995,
   "name": "keep-out: nearest visible text to tavi's body box (\"added\")",
-  "got": 140.83,
+  "got": 139.84,
   "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1040.2, 293.0 to 339.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the plate of heldBack (world 782.4 to 937.6, 502.0 to 553.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the plate of added (world 1512.6 to 1607.4, 611.0 to 657.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the plate of readoutAdding (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1040.2, 293.0 to 339.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the plate of heldBack (world 782.4 to 937.6, 502.0 to 553.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the plate of added (world 1512.6 to 1607.4, 611.0 to 657.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the plate of readout (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1040.2, 293.0 to 339.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] the plate of heldBack (world 782.4 to 937.6, 502.0 to 553.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] the plate of added (world 1512.6 to 1607.4, 611.0 to 657.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] the plate of readoutAdding (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
   "pass": true
  },
  {
@@ -834,6 +1037,13 @@
  },
  {
   "t": 35.36500000000001,
+  "name": "[B-01: 188] the legs' lowest visible point (alpha 0.1) 12 px or more above \"with your breathing muscles,\" (ink top)",
+  "got": 20.8,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 35.36500000000001,
   "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
   "got": 30.2,
   "want": ">= 20",
@@ -844,6 +1054,55 @@
   "name": "keep-out: nearest visible text to tavi's body box (\"added\")",
   "got": 135.35,
   "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1040.2, 293.0 to 339.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] the plate of heldBack (world 782.4 to 937.6, 502.0 to 553.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] the plate of added (world 1512.6 to 1607.4, 611.0 to 657.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] the plate of readoutAdding (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
   "pass": true
  },
  {

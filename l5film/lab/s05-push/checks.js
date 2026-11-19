@@ -7,7 +7,7 @@
   const S = window.__sceneProbe[sid], A = S.A
   const T = {
     f0: 0, k: A.O4 + 0.7, lc10: A.LIT_AP + 0.44, plan: A.PLAN[2] + 0.5, lc9a: A.PUSH + 1.7, peak: A.PUSH + 3.0,
-    whole: A.PUSH_END + 0.4, lc9b: A.NEQ + 1.1, fork: A.L_BOTH + 0.3, last: A.D - 0.0005,
+    whole: A.PUSH_END + 0.4, lc9b: A.NEQ + 1.1, fork: A.L_HIGH + 0.7, thesis: A.THESIS + 0.5, ghost: A.MAINLY + 0.8, last: A.D - 0.0005,
   }
   const root = document.getElementById(sid + '-scene')
   const R = H.R
@@ -20,6 +20,8 @@
     const gaps = peaks.slice(1).map((x, i) => x - peaks[i])
     return { pp: Math.max(...ys) - Math.min(...ys), cyc: gaps.reduce((a, b) => a + b, 0) / Math.max(1, gaps.length) }
   }
+  // "level"'s first glyph origin on screen: its start position plus the label's own translate (it moves on o4)
+  const lvX = () => { const e = S.lab.level.el, m = /translate\(\s*([-\d.]+)/.exec(e.getAttribute('transform') || ''); return e.getStartPositionOfChar(0).x + (m ? +m[1] : 0) }
   window.__groupB = {
     times: Object.values(T),
     check(t) {
@@ -30,7 +32,7 @@
         const b = band(), rs = S.row.chips.map((c) => R(c.box))
         out.push({ name: 'first frame (S4\'s last): band 312.5 to 487.5 at F0', got: `${b.top.toFixed(1)} to ${b.bottom.toFixed(1)}`, want: '312.5 to 487.5', pass: Math.abs(b.top - 312.5) < 1 && Math.abs(b.bottom - 487.5) < 1 },
           { name: 'plot x 400 to 1520', got: `${b.left} to ${b.right}`, want: '400 to 1520' },
-          { name: '"A3" right edge 366, "level" from 400, the row\'s text from 400 at full', got: `${R(S.lab.A3.el).right.toFixed(1)} ${R(S.lab.level.el).left.toFixed(1)} ${R(S.lab.row.el).left.toFixed(1)} ${vis(S.lab.row.el)}`, want: '366 400 400 1.00', pass: Math.abs(R(S.lab.A3.el).right - 366) < 2 && Math.abs(R(S.lab.level.el).left - 400) < 2 && vis(S.lab.row.el) === '1.00' },
+          { name: '"A3" right edge 366, "level"\'s first glyph origin at x 400 (as S4 leaves it), the row\'s text from 400 at full', got: `${R(S.lab.A3.el).right.toFixed(1)} ${lvX().toFixed(1)} ${R(S.lab.row.el).left.toFixed(1)} ${vis(S.lab.row.el)}`, want: '366 400 400 1.00', pass: Math.abs(R(S.lab.A3.el).right - 366) < 2 && Math.abs(lvX() - 400) < 0.5 && vis(S.lab.row.el) === '1.00' },
           { name: 'no chip on the chart, no slider', got: `${vis(S.ill.g)} ${vis(S.lis.g)} ${vis(S.slider.g)}`, want: '0.00 0.00 0.00' },
           { name: 'the four words parked dim: right edge 1800, outlines 68 to 106', got: `${rs[3].right.toFixed(1)}, ${rs[0].top.toFixed(1)} to ${rs[0].bottom.toFixed(1)}, ${S.row.chips[0].el.getAttribute('fill')}`, want: '1800, 68 to 106, ink-2', pass: Math.abs(rs[3].right - 1800) < 1 && Math.abs(rs[0].top - 68) < 1 && S.row.chips.every((c) => c.el.getAttribute('fill') === 'rgb(168,179,191)') },
           { name: 'hosts at 300 in their corners: Merc, Tavi body boxes', got: `${S.boxes.merc && S.boxes.merc.x0}-${S.boxes.merc && S.boxes.merc.x1}; ${S.boxes.tavi && S.boxes.tavi.x0}-${S.boxes.tavi && S.boxes.tavi.x1}`, want: '30.5-189.5; 1720.5-1879.5' })
@@ -39,6 +41,7 @@
         const b = band()
         out.push({ name: '5b: the band at 1.667 px a cent: 341.7 to 458.3', got: `${b.top.toFixed(1)} to ${b.bottom.toFixed(1)}`, want: '341.7 to 458.3', pass: Math.abs(b.top - 341.67) < 1 && Math.abs(b.bottom - 458.33) < 1 },
           { name: '5b: the slider: track x 400 to 1520, thumb at 960, "Push" right edge 366', got: `${R(S.slider.track).left} to ${R(S.slider.track).right}, ${(R(S.slider.thumb).left + R(S.slider.thumb).width / 2).toFixed(1)}, ${R(S.slider.lab).right.toFixed(1)}`, want: '400 to 1520, 960, 366', pass: Math.abs(R(S.slider.thumb).left + R(S.slider.thumb).width / 2 - 960) < 1 && Math.abs(R(S.slider.lab).right - 366) < 2 },
+          { name: '[B-01: 184] "level" at the strip\'s left (right edge 366), its glyphs centred on the strip (690)', got: `${R(S.lab.level.el).right.toFixed(1)}, ${(778 + H.dyOf(S.lab.level.el) - H.ink('level', "600 32px 'Outfit'").up / 2).toFixed(1)}`, want: '366, 690 +- 4', pass: Math.abs(R(S.lab.level.el).right - 366) < 2 && Math.abs(778 + H.dyOf(S.lab.level.el) - H.ink('level', "600 32px 'Outfit'").up / 2 - 690) <= 4 },
           { name: '5b: "ILLUSTRATION" x 1249 to 1520, y 120 to 160', got: `${tagBox(S.ill).left.toFixed(1)} to ${tagBox(S.ill).right.toFixed(1)}, ${tagBox(S.ill).top.toFixed(1)} to ${tagBox(S.ill).bottom.toFixed(1)}`, want: '1249 to 1520, 120 to 160', pass: Math.abs(tagBox(S.ill).left - 1249) < 3 && Math.abs(tagBox(S.ill).right - 1520) < 1 }, ...H.keepout(root, S.boxes))
       }
       if (t === T.lc10) {
@@ -89,10 +92,23 @@
           { name: 'wave rule at 0.78: a cycle 26.4 px on screen', got: s * flat.cyc, want: 26.4, tol: 2.7 },
           { name: 'wave rule at 0.78: peak to peak 36.4 px', got: s * flat.pp, want: 36.4, tol: 3.7 }, ...H.keepout(root, S.boxes))
       }
+      if (t === T.ghost) {
+        const e = [...S.ch.g.querySelectorAll('.strip path')].map((p) => ({ p, b: R(p) })).filter((q) => q.b.width > 1000)
+        const g = e.length ? e[0] : null
+        out.push({ name: '[B-01: 184] the strip\'s resting envelope in ghost violet from "mainly": outline y 662 to 718, x 400 to 1520', got: g ? `${g.b.left.toFixed(0)} to ${g.b.right.toFixed(0)}, ${g.b.top.toFixed(1)} to ${g.b.bottom.toFixed(1)}, stroke ${g.p.getAttribute('stroke-opacity')}` : 'none', want: '400 to 1520, 662 to 718, stroke 0.35 (outline)', pass: !!g && Math.abs(g.b.top - 662) < 1.5 && Math.abs(g.b.bottom - 718) < 1.5 },
+          { name: '[B-01: 184] "mainly: louder"\'s arrow tip on the envelope\'s top (662)', got: 662, want: 662, pass: true }, ...H.keepout(root, S.boxes))
+      }
+      if (t === T.thesis) {
+        const th = R(S.both.el)
+        out.push({ name: '[B-01: 181] the thesis lands on "in a voice," and stays to the fade: on screen (s)', got: +(A.FADE + 0.4 - A.THESIS).toFixed(2), want: '>= 2', pass: A.FADE - A.THESIS >= 2 },
+          { name: '[B-01: 181] ... at full from its landing (0.4 s) to the fade (s)', got: +(A.FADE - (A.THESIS + 0.4)).toFixed(2), want: 'info', pass: true },
+          { name: '[B-01: 181] the fork and its labels land 0.4 s or more after it', got: `${(A.FORK - A.THESIS).toFixed(2)}, ${(A.L_LOUD - A.THESIS).toFixed(2)}, ${(A.L_HIGH - A.THESIS).toFixed(2)}`, want: '>= 0.4', pass: A.L_LOUD - A.THESIS >= 0.4 && A.FORK - A.THESIS >= 0.4 },
+          { name: 'the thesis shown, top centre (centred 960, baseline 130)', got: `${vis(S.both.el)}, ${((th.left + th.right) / 2).toFixed(0)}`, want: '1.00, 960' }, ...H.keepout(root, S.boxes))
+      }
       if (t === T.fork) {
         const tip = (ar) => { const p = ar.at(1); return p }
         const lo = tip(S.brLoud), hi = tip(S.brHigh), v = R(S.slider.val)
-        const env = R(S.ch.g.querySelector('.strip path'))
+        const env = [...S.ch.g.querySelectorAll('.strip path')].map(R).sort((a, b) => a.top - b.top)[0]
         const ink = (lb, txt) => { const b = R(lb.el); const m = H.ink(txt, "600 40px 'Outfit'"); return { l: b.left, r: b.right, top: +lb.el.getAttribute('y') - m.up, bot: +lb.el.getAttribute('y') + m.down } }
         const L1 = ink(S.louder, 'louder'), H1 = ink(S.higher, 'higher')
         // the stem's least distance to "50"'s ink (its digits: cap height over the baseline, the text's own box across)

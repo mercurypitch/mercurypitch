@@ -40,14 +40,16 @@
           const PARK = FOLD, PARK_D = 1.0                              // the figure dims and shrinks to its parked place
           const KICK = word('o8', 'support')                           // "COMMON MIX-UP"
           const ROW0 = word('o8', 'pushing'), SQZ = word('o8', 'squeezing')   // row 0; its last word and "?" on "squeezing?"
-          // 7b: b17, evidence 1 large, then into row 1. The take redraws at 2.5 times its speed; it holds whole up to
-          // 0.5 s and shrinks so that row 1 lands 0.56 s before row 2 (the board's spacing), on any clock
+          // 7b: b17, evidence 1 large, then into row 1. The take holds whole 0.5 s on every clock: where the clock is
+          // shorter it redraws faster (2.5 times its speed or more), never the hold shorter; the shrink takes 0.4 to 0.6 s,
+          // and row 1 lands as the miniature arrives, or 0.45 s before row 2's first line if that is sooner [B-01: 180]
           const MIXUP = word('b17', 'mix-up'), PUSHING = word('b17', 'pushing')
-          const REDRAW = PUSHING + 0.1, SPEED = 2.5, REDRAW_D = L.CONTOUR.pushed.len / SPEED
           const SQZ2 = word('b18', 'squeezing')
-          const HOLD_D = clamp(SQZ2 - 0.56 - 0.6 - (REDRAW + REDRAW_D), 0, 0.5)
-          const SHRINK1 = REDRAW + REDRAW_D + HOLD_D, SHRINK_D = 0.6
-          const ROW1 = SHRINK1 + SHRINK_D
+          const REDRAW = PUSHING + 0.1, HOLD_D = 0.5, SHRINK_MIN = 0.4
+          const SPEED = Math.max(2.5, L.CONTOUR.pushed.len / (SQZ2 - 0.2 - SHRINK_MIN - HOLD_D - REDRAW))
+          const REDRAW_D = L.CONTOUR.pushed.len / SPEED
+          const SHRINK1 = REDRAW + REDRAW_D + HOLD_D, SHRINK1_D = clamp(SQZ2 - 0.2 - SHRINK1, SHRINK_MIN, 0.6), SHRINK_D = 0.6
+          const ROW1 = Math.min(SHRINK1 + SHRINK1_D, SQZ2 - 0.45)
           // 7c: b18, evidence 2
           const ROW2A = Math.max(SQZ2, ROW1 + 0.4)
           const PAIR = word('b18', 'pressed'), PAIR_D = 0.8, HEAVY = word('b18', 'heavy'), MORE_P = word('b18', 'more')
@@ -58,7 +60,8 @@
           const NOONE = word('b19', 'no'), SHRINK3 = word('b19', 'meaning', 'start', -0.19)
           // 7e: b20, the better idea
           const BETTER = at('b20')
-          const PH = [word('b20', 'steady#2'), word('b20', 'breathe'), word('b20', 'start'), word('b20', 'flow')]
+          const PH = [word('b20', 'steady#2'), word('b20', 'breathe'), word('b20', 'start'), word('b20', 'let')]   // each on its first word [B-01: 188]
+          const DIM = BETTER, DIM_D = 0.6                              // rows 0 to 3 dim to ink-2 as row 4 lands [B-01: 185]
           const BREATHE = PH[1], BREATHE_D = 1.5, EASE = BREATHE + 1.57, EASE_D = 0.8
           // the rows leave up fast, top to bottom, 0.05 s apart where the scene's end allows; the miniatures fade
           const OUT = at('b20', 'end', 0.05)
@@ -75,7 +78,10 @@
           const gFrame = ga.g.children[3], goldEl = gFrame.children[6]
           const GL = G.LABELS
           const gl = {}
-          for (const n of ['unchanged', 'pushOfAir', 'lungsPush', 'needsLoud', 'lessHolding', 'moreAdding']) gl[n] = L.label(carry, GL[n].text, { ...GL[n], back: G.BACKS.includes(n) })
+          // as S6 leaves them: plates trimmed to the text box + 4 px, "push of air" and "the lungs' own push" centred in
+          // their gaps [B-01: 182]
+          const PLACE = { pushOfAir: { y: 276 }, lungsPush: { y: 327 } }
+          for (const n of ['unchanged', 'pushOfAir', 'lungsPush', 'needsLoud', 'lessHolding', 'moreAdding']) gl[n] = L.label(carry, GL[n].text, { ...GL[n], ...(PLACE[n] || {}), back: G.BACKS.includes(n), backPadX: 4, backPadY: 4 })
           const upArrow = L.arrow(carry, { x1: G.LEADERS.upArrow.x, y1: G.LEADERS.upArrow.y + 1, x2: G.LEADERS.upArrow.x, y2: G.LEADERS.upArrow.y - 23, color: C.ink, width: 2.5, head: 9 })
           const lessLeader = L.leader(carry, G.LEADERS.lessHolding)
           const moreLeader = L.leader(carry, G.LEADERS.moreAdding)
@@ -91,7 +97,8 @@
           const tag = L.tag(carry, L.TAGS.illustration, G.TAG)
           // the figure: S6's torso at rest on F-gauge's pixels (L.FIGURE.CUT), to its parked place
           const fig = L.figure(world)
-          const FC = L.FIGURE.CUT, FS = L.FIGURE.S7
+          // S6's legs fade 20 px higher than the kit's [B-01: 188]: its [730, 760] on F-gauge's pixels
+          const FC = { ...L.FIGURE.CUT, fade: [730, 760].map((y) => M.CUT.s * y + M.CUT.dy) }, FS = L.FIGURE.S7
 
           /* ---------------------------------------------------------------- the reassembled chart (7a) and evidence 1 (7b) */
           const ch = L.bandChart(world, M.CHART)
@@ -106,6 +113,8 @@
 
           /* ---------------------------------------------------------------- evidence 2: the press pair (7c) */
           const pr = L.pressPair(world)
+          // its "ILLUSTRATION" chip while large, over the pair's right end clear of "one push of air" [B-01: 187]
+          const pairTag = L.tag(world, L.TAGS.illustration, { x: M.PAIR.pressed.x1, y: 470, anchor: 'end' })
 
           /* ---------------------------------------------------------------- the card (frame-fixed) */
           const R = M.ROWS
@@ -126,8 +135,11 @@
           }
           L.afterFonts(() => { try { layoutRow0() } catch (e) { /* measured once the font is in */ } })
           const rows = {}
-          for (const n of ['row1', 'row2a', 'row2b', 'row2c', 'row4']) rows[n] = L.label(hud, R[n].text, R[n])
+          for (const n of ['row1', 'row2a', 'row2b', 'row2c']) rows[n] = L.label(hud, R[n].text, R[n])
           const row1Tag = L.tag(hud, L.TAGS.illustration, M.ROW1.tag)
+          // row 2's own chip, right of its first line (under the row, row 3 leaves no room) [B-01: 187]
+          const row2Tag = L.tag(hud, L.TAGS.illustration, { x: R.row2a.x, y: R.row2a.y - 14, anchor: 'start' })
+          let row2TagDx = 500
           // row 3: '"support":' and its phrase, so the large phrase lands exactly on its place in the row
           const W = M.WORD
           const supRow = L.label(hud, '“support”:', { x: R.row3a.x, y: R.row3a.y, size: 40 })
@@ -136,25 +148,26 @@
           const large = L.label(hud, W.large.text, { x: W.large.x, y: W.large.y, size: W.large.size, family: 'serif' })
           // the large word gives way to the row's '"support":' on the same place in the shrink's last 0.25 s
           for (const e of [large.el, supRow.el]) e.setAttribute('data-layout-allow-overlap', '')
-          // row 4's four phrases, separated by middots, each landing as said
-          const phrases = [
-            L.label(hud, 'steady air, not more of it', { x: 360, y: 810, size: 40 }), L.label(hud, '· breathe in low', { x: 360, y: 810, size: 40 }),
-            L.label(hud, 'start easily', { x: 360, y: 855, size: 40 }), L.label(hud, '· let it flow out unforced', { x: 360, y: 855, size: 40 }),
-          ]
+          // row 4, the payoff, set in the empty lower right under the miniatures: "The better idea:" and its four phrases,
+          // one to a line, each landing as said; the last line's glyphs 14 px over the floor horizon (840) [B-01: 185, 188]
+          const R4 = { x: 1180, head: 648, lines: [694, 738, 782, 826] }
+          rows.row4 = L.label(hud, R.row4.text, { ...R.row4, x: R4.x, y: R4.head })
+          const phrases = ['steady air, not more of it', 'breathe in low', 'start easily', 'let it flow out unforced'].map((s, i) => L.label(hud, s, { x: R4.x, y: R4.lines[i], size: 40 }))
+          // rows 0 to 3 dim to ink-2 as row 4 lands [B-01: 185]
+          const dimEls = () => [belief.label.el, rows.row1.el, rows.row2a.el, rows.row2b.el, rows.row2c.el, supRow.el, how.el, noOne.el]   // their ink words
           const measure = (str, size) => { const e = L.text(hud, str, { x: -2000, y: -2000, size, opacity: 0 }); const w = e.getComputedTextLength(); e.remove(); return w }
           let howX = 600, supW = 180, largeW = 520
           const layout = () => {
             howX = R.row3a.x + measure('“support”: ', 40)
             supW = measure('“support”', 40); largeW = large.el.getComputedTextLength() || largeW
-            phrases[1].el.setAttribute('x', f2(360 + measure('steady air, not more of it ', 40)))
-            phrases[3].el.setAttribute('x', f2(360 + measure('start easily ', 40)))
+            row2TagDx = measure(R.row2a.text, R.row2a.size) + 24
           }
           L.afterFonts(layout)
           const WORDS = ['air pressure', 'diaphragm', 'onset', '“support”']
           const row = L.chipRow(hud, WORDS, { right: 1800, y: 87, gap: 12 })
 
-          const probe = { cam, cut, ch, inBand, chTag, ga, gl, fl, tag, quietChip, loudChip, fig, pr, kicker, belief, rows, row1Tag, supRow, how, noOne, large, phrases, row, carry,
-            A: { O8, FADE_G, FOLD, FOLD_END, PARK, KICK, ROW0, SQZ, MIXUP, PUSHING, REDRAW, REDRAW_D, HOLD_D, SHRINK1, ROW1, ROW2A, PAIR, HEAVY, MORE_P, SHRINK2, NAMES, ROW_IN, SUP, HOW, ROW_OUT, NOONE, SHRINK3, BETTER, PH, BREATHE, EASE, OUT, STEP, LIT_ON, LIT_OFF, D }, boxes: {} }
+          const probe = { cam, cut, ch, inBand, chTag, ga, gl, fl, tag, quietChip, loudChip, fig, pr, pairTag, row2Tag, R4, dimEls, kicker, belief, rows, row1Tag, supRow, how, noOne, large, phrases, row, carry,
+            A: { SPEED, SHRINK1_D, SQZ2, DIM, DIM_D, O8, FADE_G, FOLD, FOLD_END, PARK, KICK, ROW0, SQZ, MIXUP, PUSHING, REDRAW, REDRAW_D, HOLD_D, SHRINK1, ROW1, ROW2A, PAIR, HEAVY, MORE_P, SHRINK2, NAMES, ROW_IN, SUP, HOW, ROW_OUT, NOONE, SHRINK3, BETTER, PH, BREATHE, EASE, OUT, STEP, LIT_ON, LIT_OFF, D }, boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
           const lerpPlace = (a, b, u) => ({ s: lerp(a.s, b.s, u), dx: lerp(a.dx, b.dx, u), dy: lerp(a.dy, b.dy, u) })
@@ -194,16 +207,17 @@
             fig.draw({ k: lerp(FC.k, FS.k, pu), x0: lerp(FC.x0, FS.x0, pu), y0: lerp(FC.y0, FS.y0, pu), a: lerp(1, 0.35, pu) + 0.65 * full, legs: 0,
               fade: [lerp(FC.fade[0], FS.fade[0], pu), lerp(FC.fade[1], FS.fade[1], pu)], breath: fb, lungFill: fb })
 
-            /* the chart, reassembled (bare), then evidence 1: the pushed take redrawn silent at 2.5 times its speed,
-               held, and shrunk into row 1 */
+            /* the chart, reassembled (Merc's band and line, the strip's resting envelope in ghost violet [B-01: 184]),
+               then evidence 1: the pushed take redrawn silent (2.5 times its speed or faster), held 0.5 s, and shrunk
+               into row 1 */
             const tk = clamp((t - REDRAW) * SPEED, 0, PC.len)
-            const su = P(t, SHRINK1, SHRINK_D)
+            const su = P(t, SHRINK1, SHRINK1_D)
             ch.place(lerpPlace(ID, M.ROW1, su))
             // lit linearly over 0.4 s (an eased 0.2 s ramp put the edges' and the label's change into two frames: a pop)
             const lit = P(t, LIT_ON, 0.4, 'none') * (1 - P(t, LIT_OFF, 0.2))
             ch.draw({ a: handOver * miniA, band: { lit }, merc: { a: 1 },
               lines: [{ id: 'pushed', contour: 'pushed', t: tk, a: t >= REDRAW ? 1 : 0, head: 1 - P(t, REDRAW + REDRAW_D, 0.3) }],
-              strip: { envs: [{ id: 'pushed', contour: 'pushed', t: tk, a: t >= REDRAW ? 1 : 0 }] } })
+              strip: { envs: [{ id: 'rest', contour: 'demo', t: M.CHART.W, ghost: true }, { id: 'pushed', contour: 'pushed', t: tk, a: t >= REDRAW ? 1 : 0 }] } })
             inBand.draw({ a: lit })
             chTag.draw({ alpha: P(t, PUSHING, 0.2) * (1 - P(t, SHRINK1, 0.2)) })
 
@@ -211,6 +225,7 @@
             const pu2 = P(t, SHRINK2, SHRINK_D)
             pr.draw({ a: P(t, PAIR, 0.2) * miniA, draw: P(t, PAIR, PAIR_D, 'none'), place: t >= SHRINK2 ? lerpPlace(ID, M.ROW2, pu2) : null, pressed: L.pulse(t, [HEAVY], 'chip'),
               pushA: 1 - P(t, SHRINK2, 0.3), namesA: 1 - P(t, SHRINK2, 0.2), smallA: P(t, NAMES, 0.2) * miniA })
+            pairTag.draw({ alpha: P(t, PAIR, 0.2) * (1 - P(t, SHRINK2, 0.2)) })
 
             /* the card's rows */
             const ko = out(0)
@@ -227,6 +242,7 @@
             rows.row2a.draw({ a: P(t, ROW2A, 0.2) * o2.a, dy: o2.dy })
             rows.row2c.draw({ a: P(t, PAIR, 0.2) * o2.a, dy: o2.dy })
             rows.row2b.draw({ a: P(t, MORE_P, 0.2) * o2.a, dy: o2.dy })
+            row2Tag.draw({ alpha: P(t, NAMES, 0.2) * o2.a, dx: row2TagDx, dy: o2.dy })
 
             /* 7d: the word large, its phrases, then into row 3 (the serif word gives way to the row's own as it lands) */
             const s3 = P(t, SHRINK3, SHRINK_D)
@@ -238,9 +254,11 @@
             how.draw({ a: P(t, HOW, 0.2) * o3.a, dx: lerp(W.how.x, howX, s3) - R.row3a.x, dy: lerp(W.how.y - R.row3a.y, 0, s3) + o3.dy, scale: hk })
             noOne.draw({ a: P(t, NOONE, 0.2) * o3.a, dx: lerp(W.noOne.x - R.row3b.x, 0, s3), dy: lerp(W.noOne.y - R.row3b.y, 0, s3) + o3.dy })
 
-            /* 7e: the better idea, phrase by phrase */
+            /* 7e: the better idea, phrase by phrase, in the lower right; rows 0 to 3 dim to ink-2 as it lands */
             rows.row4.draw({ a: P(t, BETTER, 0.3, 'none') * o4.a, dy: o4.dy })      // linear: no two-frame pop
             phrases.forEach((p, i) => p.draw({ a: P(t, PH[i], 0.2) * o4.a, dy: o4.dy }))
+            const dimFill = L.mixHex(C.ink, C.ink2, P(t, DIM, DIM_D))
+            for (const e of dimEls()) if (e.getAttribute('fill') !== dimFill) e.setAttribute('fill', dimFill)
 
             /* the four words: back for '"support"', the two lit before staying lit (DECISIONS 75) */
             const wf = L.fade(t, ROW_IN, ROW_OUT)

@@ -131,7 +131,9 @@ the turn's small frame (it fades at 353.90, before 10h's slide).
   centre, ink 10 %, when empty. Ghosted: outline only, 35 %. S10 has no strip.
 - **Labels** (world px): "A3" Outfit 600 48, ink, right-aligned x 366, baseline 417; "in the band"
   Outfit 600 30, ink, right-aligned 366, baseline 470, shown only with the mint edge; "level" Outfit
-  600 32, ink-2, left-aligned x 400, baseline 778. **Label row**, baseline 150: its text Outfit 500
+  600 32, ink-2, left-aligned x 400, baseline 778 (in S5 it moves on `o4` with the axis's ease to the
+  strip's left at its height, right-aligned 366, baseline 701, and stays there in S6, so it labels the
+  strip, not the slider **[B-01: 184]**). **Label row**, baseline 150: its text Outfit 500
   34, ink, from x 400 ("in the band: within 35 cents (Lesson 3)" in S1 and S5, to about x 1063).
   **S5's definition** "pressure: how hard your breath pushes on your vocal folds" (Outfit 600 34,
   ink) has its own line under the row, x 400, baseline 200, to about x 1370 (73.60 to 85.02), and
@@ -225,7 +227,8 @@ Drawn in figure units `(u, v)`: u 0 to 400 back to front (it faces right), v 0 (
 - **S6 (torso)**: `k` 1.15, `x0` 200, `y0` 120 (v1's y0 60 put the head on the kicker): head
   centre (464, 218), r 75, so y 143 to 293, 33 px under the kicker's foot (y 110); throat (488,
   339); lungs centre (476, 505), x 390 to 562; dome apex (476, 620), dome ends (378, 661) and (574,
-  661); hips y 764; the legs masked out from y 750 to 780 (a soft fade). Labels: "lungs"
+  661); hips y 764; the legs masked out from y 730 to 760 (a soft fade; v3 750 to 780, whose strokes
+  ran to 7 px over "with your breathing muscles," at F-gauge) **[B-01: 188]**. Labels: "lungs"
   right-aligned x 350, baseline 470; "breathing in" (6c, 6d; Outfit 600 36) and "can't push air
   out" (6i; **Outfit 600 30**, about 270 px, so x 80 to 350, at F-gauge screen x 24 to 308, where
   36 px would start at about x -20 **[v3: 9]**) at the same place, never together, right-aligned
@@ -269,13 +272,17 @@ Drawn in figure units `(u, v)`: u 0 to 400 back to front (it faces right), v 0 (
   gold, over the lungs' line) the same at 135 degrees. Cursor: 3 px chrome with a soft glow, y 160
   to 720 (through both).
 - **Labels** (v2 places in bold):
-  - "push of air (not pitch)" Outfit 600 30, ink, x 790, baseline 275, after a 12 x 24 px up arrow
-    at x 768 (128.85).
+  - Every label's plate (`back`) is its text box plus 4 px (`backPadX: 4, backPadY: 4`) and covers no
+    stroke **[B-01: 182]**.
+  - "push of air (not pitch)" Outfit 600 30, ink, x 790, baseline 276 (v3 275; its plate y 242 to 288,
+    clear of the band's edge, 241, and the frame's top, 289) **[B-01: 182]**, after a 12 x 24 px up
+    arrow at x 768 (128.85).
   - "one 10-second note" Outfit 500 30, ink-2, x 760, baseline 760 (128.40; **leaves 170.34 to
     170.54**).
-  - "the lungs' own push" Outfit 600 30, ink, x 776, baseline 325 (130.45).
-  - "what the note needs" Outfit 600 30, ink, **x 776, baseline 640 (Quiet), under the gold line's
-    left end** (131.55). Where it sits the falling line runs at y 347 to 470 (148 px clear above the
+  - "the lungs' own push" Outfit 600 30, ink, x 776, baseline 327 (v3 325; its plate y 293 to 339, 2 px
+    under the frame's top stroke) **[B-01: 182]** (130.45).
+  - "what the note needs" Outfit 600 30, ink, **x 776, baseline 646 (Quiet; v3 640), under the gold
+    line's left end, its plate 4.5 px under the line's stroke** **[B-01: 182]** (131.55). Where it sits the falling line runs at y 347 to 470 (148 px clear above the
     label). **In Loud (v3) it does not ride up with the line**: it fades with "held back" and
     "added" on "loud note" (171.63 to 171.83) and lands again on "back" (173.79) above the gold
     line's right end, right-aligned 1630, baseline 440 (about x 1345 to 1630, y 418 to 440): 12 px
@@ -289,8 +296,10 @@ Drawn in figure units `(u, v)`: u 0 to 400 back to front (it faces right), v 0 (
     15.5 px under the gold line and 20.7 px over the lungs' line; it lands 0.45 s after the
     crossing (the readout's switch to "Now: adding", when the lungs' line passes under the gold
     line), once its region shows **[kit-01: 2]** (DECISIONS 144) **[B-01: 183]**.
-  - The readout "Now: holding back" / "Now: adding" Outfit 600 34, ink, right-aligned 1640, baseline
-    275 (132.75; the switch at 137.25, a swap: the old words leave in 0.1 s, then the new land
+  - The readout "Now: holding back" / "Now: adding" Outfit 600 34, ink, **right-aligned 1630, baseline
+    382, inside the frame's top right under the chip** (its plate y 344 to 395, 4 px under the chip:
+    at v3's place, right-aligned 1640, baseline 275, a 34 px label's plate cannot fit between the
+    band's edge and the frame's top) **[B-01: 182]** (132.75; the switch at 137.25, a swap: the old words leave in 0.1 s, then the new land
     in 0.15 s **[B-01: 183]**).
   - Loud: **"less holding back at first" Outfit 600 30, ink, x 760, baseline 765 (about x 760 to
     1150, y 743 to 771), under the frame's left end in v1's slot, with a 1.5 px leader straight up
@@ -344,15 +353,18 @@ miniatures; the lower half for each piece of evidence while it is large.
 | kicker | "COMMON MIX-UP" (mono 30, ink-2, at (120, 110)) | 179.48 | - |
 | 0 | "'support' means pushing hard, or squeezing" 44 px, baseline 180, dashed ink-2 underline at y 194, its "?" (Outfit 600 64, ink-2) after its last word | 180.77 | - |
 | 1 | "push harder: louder, and higher" 40 px, baseline 300; "ILLUSTRATION" chip under it, x 360, centred y 345 | 186.80 | the pushed chart at 0.41: x 1180 to 1640, y 212 to 427 |
-| 2 | "squeeze: a pressed sound," / "more pressure, not less" 40 px, baselines 490 and 535; "same push: much quieter" 30 px, baseline 580 | "squeeze" 187.36; "same push" with the strips, 189.52; "more pressure, not less" when said, 195.55 **[v3: 11]** | the two strips at 0.5: easy x 1180 to 1350, pressed 1380 to 1550, y 452 to 575; "easy" and "pressed" Outfit 600 26 centred under each, baseline 605 |
+| 2 | "squeeze: a pressed sound," / "more pressure, not less" 40 px, baselines 490 and 535; "same push: much quieter" 30 px, baseline 580; its own "ILLUSTRATION" chip right of its first line (24 px after it, centred y 476), landing with the miniature's names **[B-01: 187]** | "squeeze" 187.36; "same push" with the strips, 189.52; "more pressure, not less" when said, 195.55 **[v3: 11]** | the two strips at 0.5: easy x 1180 to 1350, pressed 1380 to 1550, y 452 to 575; "easy" and "pressed" Outfit 600 26 centred under each, baseline 605 |
 | 3 | '"support": how singers manage the breath' 40 px, baseline 655; "no one agreed meaning" 36 px, baseline 700 | 205.80 (shrunk in) | - |
-| 4 | "The better idea:" 30 px ink-2, baseline 760; "steady air, not more of it · breathe in low" and "start easily · let it flow out unforced" 40 px, baselines 810 and 855 | 206.32 to 214.51 | - |
+| 4 | in the lower right, x 1180 (to 1620 at most): "The better idea:" 30 px ink-2, baseline 648; one phrase to a line, 40 px, baselines 694, 738, 782 and 826 ("steady air, not more of it", "breathe in low", "start easily", "let it flow out unforced"; the last line's glyphs 13 px over the floor horizon, 840), each on its first word; rows 0 to 3 dim to ink-2 as it lands (0.6 s) **[B-01: 185, 188]** | 206.32 to "let" (v3 put the last phrase at 214.51, on "flow") | - |
 
 - **The chart reassembled** (7a, 179.00 to 180.40): the gauge folds back onto its floor and becomes
   the strip; the small band and the strip glide to plot x 400 to 1520, band centre 470 (k 2.5,
   382.5 to 557.5), strip centre 700. **Evidence 1, large** (7b): the pushed take redrawn over the
-  plot at 2.5 times its speed (184.10 to 185.70), silent; "ILLUSTRATION" right-aligned 1520, centred
-  y 790 (184.00); its highest peak y 285, 91 px under row 0's foot (194) **[B-01: 179]**. **Into row 1** (186.20 to
+  plot at 2.5 times its speed (184.10 to 185.70), silent, then held whole 0.5 s on every clock (where
+  the clock is shorter it redraws faster, never the hold shorter; on the scratch clock 3.02 times,
+  a 0.4 s shrink, and row 1 0.45 s before row 2's first line) **[B-01: 180]**; "ILLUSTRATION" right-aligned 1520, centred
+  y 790 (184.00); the strip shows its resting envelope in ghost violet from the reassembly
+  **[B-01: 184]**; its highest peak y 285, 91 px under row 0's foot (194) **[B-01: 179]**. **Into row 1** (186.20 to
   186.80, power2.inOut): `x' = 1180 + 0.41 (x - 400)`, `y' = 310 + 0.41 (y - 470)`; the chart's chip fades
   as the chart shrinks and row 1's own chip lands with row 1, rather than one chip crossing the
   shrinking chart and row 1's words **[B-01: 179]**.
@@ -362,6 +374,8 @@ miniatures; the lower half for each piece of evidence while it is large.
   Outfit 500 28, ink-2, centred x 1230, baseline 530; "easy" and "pressed" Outfit 600 30 centred x
   1030 and 1430, baseline 830. **Into row 2** (196.50 to 197.10): `x' = 1180 + 0.5 (x - 860)`,
   `y' = 520 + 0.5 (y - 680)`; "one push of air" fades, the names land again at 26 px (197.10).
+  While large it carries its own "ILLUSTRATION" chip, right-aligned 1600, centred y 470 (over the
+  pair's right end, 19 px over "one push of air"), fading as the pair shrinks **[B-01: 187]**.
 - **The word, large** (7d): '"support"' serif italic 160, ink, x 360, baseline 800 (198.06); "how
   singers manage the breath" Outfit 600 44, x 980, baseline 800 (199.35); "no one agreed meaning"
   Outfit 600 36, x 980, baseline 850 (204.09). **Into row 3** (205.20 to 205.80): the word to 40 px
@@ -394,10 +408,10 @@ miniatures; the lower half for each piece of evidence while it is large.
   at x 184, Tavi's starts at 1736. **Chips in the stack** **[v3: 3]**: the strip's "ILLUSTRATION"
   rides the move from centred y 270 (which would sit on row 1, y 180 to 320) to centred y 150,
   right-aligned 1600 (x 1329 to 1600, y 130 to 170): 10 px over row 1's envelope, clear of "the
-  puff" (x 720) and the small folds (to x 330). "LISTEN ONLY" for the catch in `starts`,
-  right-aligned 1600, centred y 350 (x 1350 to 1600, y 330 to 370), lands as `starts` begins
-  (281.37): in the 60 px between rows 1 and 2 at their right ends, 10 px from each envelope, beside
-  row 2's; "the click" (x 800 to about 935) is far to its left. Both dim with the stack (hidden
+  puff" (x 720) and the small folds (to x 330). "LISTEN ONLY" for the catch in `starts`
+  lands as `starts` begins (281.37) under row 2's name, "A catch": right-aligned 660, centred y
+  about 495, 12 px or more from the name and the row, so it reads as row 2's tag **[C-01: 195]**
+  (v3 had it right-aligned 1600, centred y 350, between rows 1 and 2, where it read as no row's); "the click" (x 800 to about 935) is far to its left. Both dim with the stack (hidden
   while dim, 301.13) and leave with it, from dim, 303.10 to 303.40.
 - **Onsets** within each start (FACTS 80): air first's noise from 0, its tone from 0.25 s; the
   catch's click at 0.15 s; together's tone at the sound's own onset as the mixer's stem puts it,
@@ -676,8 +690,11 @@ camera plan, in brackets.
 - **S5 to S6 (106.28).** F0. The bare chart at 0.78 (plot x 466 to 1340, band 365.5 to 456.5 on
   screen; no line, no labels inside the plot), the slider at 50 (thumb (903, 723)) with "Push" and
   "50"; the label row's text and its "ILLUSTRATION" chip (x 1128 to 1340, centred y 208), which tags
-  the toy and stays (v2 faded it at 105.80) **[v3: 3]**; "LISTEN ONLY", Lesson 1's panels, the fork
-  and the type gone (106.20). Hosts at 300 in the corners.
+  the toy and stays (v2 faded it at 105.80) **[v3: 3]**; the strip's resting envelope in ghost violet
+  (y 615.4 to 659.0 on screen) and "level" at its left (right-aligned 439.5, baseline 645.8 on screen)
+  **[B-01: 184]**; "LISTEN ONLY", Lesson 1's panels, the fork and the type gone (106.20). Hosts at 300
+  in the corners. S6 fades the ghost envelope as the split begins (0.3 s), when the strip leaves for
+  the gauge.
 - **S6 to S7 (178.83), a matched cut.** S6 ends at F-gauge; S7 starts at F0. On the same screen
   pixels: the Loud gauge (frame x 738 to 1662, y 279 to 731; gold at world y 454; both hatches; the
   "ILLUSTRATION" chip inside its top right (screen x 1367 to 1652, y 290 to 332); the chips "Quiet"
@@ -687,7 +704,9 @@ camera plan, in brackets.
   first" under the frame's left end (world (760, 765); screen from x 738, baseline 778) with its
   leader; "more adding as the air runs low") **[v3: 1, 3, 9]**; the small band with Merc's line whole
   (x 738 to 1662, y 143 to 227); the figure's torso at rest (`k` 1.2075, `x0` 150, `y0` 100.75 on
-  screen). No cursor, no readout. Only the room changes: it crossfades from F-gauge's layers to rest over 0.3 s (`L.roomCut`: the
+  screen; its legs masked from world y 741.25 to 772.75 at F-gauge **[B-01: 188]**); "push of air (not
+  pitch)" and "the lungs' own push" at their B-01 places with trimmed plates **[B-01: 182]**. No cursor,
+  no readout. Only the room changes: it crossfades from F-gauge's layers to rest over 0.3 s (`L.roomCut`: the
   incoming scene draws the room at the outgoing framing, at rest, fading out over its own room at F0,
   so the room never snaps; the carried object holds its pixels throughout) **[kit-01: 6]**. Hosts at 240 at
   (100, 840) and (1820, 840).
@@ -695,8 +714,8 @@ camera plan, in brackets.
   `y0` 180, 35 %); every row and miniature of the card gone (216.25); hosts at 240.
 - **S8 to S9 (237.37).** F0. The whole figure at S8's placement with its cue labels; hosts at 240.
 - **S9 to S10 (300.98).** F0. The stack, its names, circles, "the easy start" and "the h, only in
-  your mind", its two chips ("ILLUSTRATION" centred y 150, "LISTEN ONLY" centred y 350, both
-  right-aligned 1600) **[v3: 3]**, the folds small; hosts at 240. S10 dims them all at 301.13 and
+  your mind", its two chips ("ILLUSTRATION" centred y 150, right-aligned 1600; "LISTEN ONLY" under
+  "A catch", right-aligned 660, centred y about 495 **[C-01: 195]**) **[v3: 3]**, the folds small; hosts at 240. S10 dims them all at 301.13 and
   they leave from dim at 303.10 to 303.40 **[v3: 5]**.
 - **S10 to S11 (364.73, group C to D), a matched cut.** S10 ends at F-hold; S11 starts at F0. The
   empty hold frame on the same screen pixels: x 1000 to 1640, band 210 to 280, Merc's line y 245,
@@ -724,7 +743,7 @@ camera plan, in brackets.
 ## Provisional values (each confirmed in a lab still, then unmarked)
 
 Confirmed by group C (DECISIONS 191): the folds' growth from the throat (9b: a ring r 20 at 0.5
-from (1005, 273), growing over 0.9 s, sliding from + 0.4 s over 1.0 s to (390, 430) at 1, landing
+from (1005, 273), growing over 0.5 s (0.9 s before **[C-01: 196]**), sliding from + 0.4 s over 1.0 s to (390, 430) at 1, landing
 in x 220 to 560, y 260 to 600); the "settled" flag by the page's rule (stays within 35 c for 0.5 s)
 at its own 16 ms readings: entry 0.704 s into the take, the flag at 1.204 s, world x 478.8.
 

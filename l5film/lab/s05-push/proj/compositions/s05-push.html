@@ -74,8 +74,9 @@
           const THEY = word('b9', 'they')
           const FORK = word('b9', 'one'), FORK_D = 0.6
           const L_LOUD = FORK + 0.3, L_HIGH = L_LOUD + 0.45            // the board's 0.45; the 0.4 s rule kept on any clock
-          const L_BOTH = Math.max(word('b9', 'both'), L_HIGH + 0.4)
-          const FADE = Math.max(at('b9', 'end'), L_BOTH + 0.4), FADE_D = 0.4
+          // the thesis lands with its sentence, on "in a voice," (before the fork), and stays to the fade [B-01: 181]
+          const THESIS = word('b9', 'in')
+          const FADE = Math.max(at('b9', 'end'), L_HIGH + 0.4), FADE_D = 0.4
 
           /* ---------------------------------------------------------------- the hosts at 300 in their corners */
           const Hc = L.HOSTS.corners
@@ -86,15 +87,18 @@
           const ch = L.bandChart(world, L.CHART.S5)                  // W 6; k starts at S4's 2.5 and eases to the rule's
           const K0 = 2.5, K1 = L.waveK(6)
           const lab = {}
+          // "level" labels the strip: right-aligned at the strip's left, at its height (as "A3" labels the band), not on the
+          // slider's row; it moves there from S4's place as the axis eases on o4 [B-01: 184]
+          // It stays S4's label (from x 400, baseline 778) and moves by its own width, read as drawn, so the first frame
+          // needs no measure and its right end lands on x 366 once the font is in.
+          const LEVEL = { right: 366, y: 701 }
           for (const k of ['A3', 'inBand', 'level', 'row', 'def', 'aboveBand5', 'alsoHigher', 'mainlyLouder']) lab[k] = ch.label(k)
+          const LEVEL_FROM = L.CHART.LABELS.level
           const ill = ch.tag('illustration'), lis = ch.tag('listen')
           const slider = L.pushSlider(ch.g, {})
           // the two short chrome arrows of 5c: up to the band's top edge, down to the strip's top
           const upArrow = L.arrow(ch.gLabels, { x1: 440, y1: 372, x2: 440, y2: 342, color: C.chrome, width: 3, head: 9 })
           const dnArrow = L.arrow(ch.gLabels, { x1: 440, y1: 632, x2: 440, y2: 662, color: C.chrome, width: 3, head: 9 })
-          // the strip brightening under "mainly: louder": a chrome light along its centre (an accent over the hairline)
-          const stripGlow = L.svg('rect', { x: 400, width: 1120, y: 688.5, height: 3, rx: 1.5, fill: C.chrome, opacity: 0 }, ch.g)
-          ch.g.insertBefore(stripGlow, ch.g.querySelector('.strip').nextSibling)
           // 5d: the push's plan, over the slider (chrome 40 %), clear of the thumb's "50": out to 100, a hold, back to 50
           const planG = L.svg('g', { opacity: 0 }, ch.g)
           const planUp = L.arrow(planG, { x1: 1002, y1: 774, x2: 1514, y2: 774, color: C.chrome, width: 3, head: 10, opacity: 0.4 })
@@ -163,7 +167,7 @@
           const both = L.label(hud, 'in a voice, one push moves both', { x: 960, y: 130, size: 56, family: 'serif', anchor: 'middle' })
 
           const probe = { cam, ch, lab, ill, lis, slider, row, panels, neqG, louder, higher, both, stem, brLoud, brHigh,
-            A: { ACT, CARD_IN, CARD_OUT, BACK, O4, SLIDER, ILL, DEF, ROW_IN, LIT_AP, ROW_OUT, MAINLY, ALSO, B8, RING, PLAN, PUSH, PUSH_END, C_OUT, C_IN, A_OUT, A_IN, LIT_ON, SHRINK, SHRINK_D, PANELS, PLAY_L, PLAY_H, NEQ, THEY, FORK, L_LOUD, L_HIGH, L_BOTH, FADE, D }, boxes: {} }
+            A: { ACT, CARD_IN, CARD_OUT, BACK, O4, SLIDER, ILL, DEF, ROW_IN, LIT_AP, ROW_OUT, MAINLY, ALSO, B8, RING, PLAN, PUSH, PUSH_END, C_OUT, C_IN, A_OUT, A_IN, LIT_ON, SHRINK, SHRINK_D, PANELS, PLAY_L, PLAY_H, NEQ, THEY, FORK, L_LOUD, L_HIGH, THESIS, FADE, D, LEVEL_MOVE: O4 }, boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
 
@@ -197,9 +201,10 @@
               band: { lit },
               merc: { a: 1 },
               lines: [{ id: 'push', contour: 'push', t: tk, a: noteA, head: 1 - P(t, PUSH_END, 0.3), glow: backGlow, glowFrom: PEAK1, glowTo: CON.len }],
-              strip: { envs: [{ id: 'push', contour: 'push', t: tk, a: noteA }] },
+              // from "mainly" the strip shows its resting envelope in ghost violet (drawn left to right, its edge
+              // brightening once), so "louder" points at a level; it stays to the scene's end [B-01: 184]
+              strip: { envs: [{ id: 'rest', contour: 'demo', t: L.CHART.S5.W * P(t, MAINLY, 0.5), ghost: true, edge: L.glow(t, [MAINLY], { up: 0.25, hold: 0.5, down: 0.6 }) }, { id: 'push', contour: 'push', t: tk, a: noteA }] },
             })
-            stripGlow.setAttribute('opacity', (0.5 * L.glow(t, [MAINLY], { up: 0.25, hold: 0.5, down: 0.6 })).toFixed(3))
             rings.draw(t, [{ t: RING, x: 400, y: 400, r: 8 }])
 
             /* the slider: draws on "If I ease off", its thumb pulses on "ease off," and "that push", follows the
@@ -212,7 +217,10 @@
             planBack.draw(P(t, PLAN[2], 0.4), 1)
 
             /* the chart's labels (world): hidden while it is dim */
-            lab.A3.draw({ a: labA }); lab.level.draw({ a: labA }); lab.row.draw({ a: labA })
+            const lvU = 1 - P(t, O4, 0.6)
+            lab.A3.draw({ a: labA }); lab.row.draw({ a: labA })
+            const lvW = lvU < 1 ? lab.level.el.getComputedTextLength() : 0
+            lab.level.draw({ a: labA, dx: (1 - lvU) * (LEVEL.right - lvW - LEVEL_FROM.x), dy: (1 - lvU) * (LEVEL.y - LEVEL_FROM.y) })
             lab.def.life(t, DEF, B8, { dOut: 0.3 })
             lab.mainlyLouder.life(t, MAINLY, B8, { dOut: 0.3 })
             dnArrow.draw(P(t, MAINLY, 0.4), L.fade(t, MAINLY, B8, { dOut: 0.3 }).a)
@@ -246,7 +254,7 @@
             brHigh.draw(L.ease('power2.out')(clamp((fu - 0.5) / 0.5)), fadeOut)
             louder.life(t, L_LOUD, FADE, { dOut: FADE_D })
             higher.life(t, L_HIGH, FADE, { dOut: FADE_D })
-            both.life(t, L_BOTH, FADE, { dOut: FADE_D })
+            both.life(t, THESIS, FADE, { dOut: FADE_D })
 
             /* the four words: parked dim through the card, up fast on o4; back for "pressure", which lights */
             const wOut = L.fade(t, null, O4, { upFast: true })

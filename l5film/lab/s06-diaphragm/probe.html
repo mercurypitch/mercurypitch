@@ -96,6 +96,7 @@
           const gs = (sec) => GAUGE + (sec * GAUGE_D) / 10             // the note's second `sec`
           const LUNGS_L = gs(0.2), GOLD = gs(1.0), NEEDS = gs(1.3), HATCH = gs(2.0), READOUT = gs(2.5)
           const CHECK = gs(3.5), PRED_OUT = gs(4.0), UNCHANGED = gs(5.0), CROSS1 = gs(G.cross(G.GOLD.quiet))
+          const ADDED = CROSS1 + 0.45                                  // "added", 0.45 s after the readout's switch [B-01: 183]
           // 6g: b13
           const HOLD = word('b13', 'hold'), BM = word('b13', 'breathing'), NEVER = word('b13', 'never')
           // 6h: b14
@@ -123,7 +124,8 @@
           /* ---------------------------------------------------------------- the chart at 0.78, as S5 left it (until the split) */
           const ch = L.bandChart(world, L.CHART.S5)
           ch.place(L.CHART.AT078)
-          const lab = { A3: ch.label('A3'), level: ch.label('level'), row: ch.label('row') }
+          // "level" labels the strip at its left, at its height, as S5 leaves it [B-01: 184]
+          const lab = { A3: ch.label('A3'), level: ch.label('level', null, { x: 366, y: 701, anchor: 'end' }), row: ch.label('row') }
           const slider = L.pushSlider(ch.g, {})
 
           /* ---------------------------------------------------------------- the split (6b): the settled curves */
@@ -146,7 +148,9 @@
           }
 
           /* ---------------------------------------------------------------- the breath figure (S6's torso) and its labels */
-          const F6 = L.FIGURE.S6
+          // the legs fade out 20 px higher than L.FIGURE.S6's [750, 780], so their strokes end 12 px or more above "with your
+          // breathing muscles," at F-gauge [B-01: 188]
+          const F6 = { ...L.FIGURE.S6, fade: [730, 760] }
           const fig = L.figure(world)
           const guess = L.guess(world, { points: [[476, 620], [476, 460]], q: { x: 600, y: 470 }, head: 14 })
           const struck = L.arrow(world, { x1: 476, y1: 620, x2: 476, y2: 460, color: C.chrome, width: 3, head: 14 })
@@ -172,8 +176,15 @@
           // 6j: the falling line's first stretch glows (an accent over the lungs' line, 0 to 3.5 s)
           const firstGlow = L.svg('path', { d: `M${G.x(0)} ${G.lungs(0)}L${G.x(3.5)} ${G.lungs(3.5)}`, fill: 'none', stroke: '#ffffff', 'stroke-width': 9, 'stroke-opacity': 0.35, 'stroke-linecap': 'round', opacity: 0 }, gFrame)
           const GL = G.LABELS
+          const GP = { pushOfAir: 276, lungsPush: 327, needs: 646, readout: { x: 1630, y: 382 } }   // [B-01: 182]
           const gl = {}
-          for (const n of ['unchanged', 'pushOfAir', 'oneNote', 'lungsPush', 'needs', 'heldBack', 'added', 'readout', 'readoutAdding', 'needsLoud', 'lessHolding', 'moreAdding']) gl[n] = L.label(world, GL[n].text, { ...GL[n], back: G.BACKS.includes(n) })
+          // The labels' plates are trimmed to the text box + 4 px and cover no stroke [B-01: 182]: "push of air (not pitch)"
+          // and "the lungs' own push" sit centred in their gaps (band edge 241 / frame top 289; frame top 291 / the lungs'
+          // line); "what the note needs" moves down until its plate clears the gold line by 4 px; the readout, whose
+          // plate cannot fit between the band's edge and the frame's top, goes on empty ground inside the frame's top
+          // right, under the chip (right-aligned 1630). The cursor still passes behind every one.
+          const PLACE = { pushOfAir: { y: GP.pushOfAir }, lungsPush: { y: GP.lungsPush }, needs: { y: GP.needs }, readout: GP.readout, readoutAdding: GP.readout }
+          for (const n of ['unchanged', 'pushOfAir', 'oneNote', 'lungsPush', 'needs', 'heldBack', 'added', 'readout', 'readoutAdding', 'needsLoud', 'lessHolding', 'moreAdding']) gl[n] = L.label(world, GL[n].text, { ...GL[n], ...(PLACE[n] || {}), back: G.BACKS.includes(n), backPadX: 4, backPadY: 4 })
           // the readout's two wordings share one place and switch (L.swap): one is shown at a time
           for (const n of ['readout', 'readoutAdding']) gl[n].el.setAttribute('data-layout-allow-overlap', '')
           const upArrow = L.arrow(world, { x1: G.LEADERS.upArrow.x, y1: G.LEADERS.upArrow.y + 1, x2: G.LEADERS.upArrow.x, y2: G.LEADERS.upArrow.y - 23, color: C.ink, width: 2.5, head: 9 })
@@ -212,13 +223,14 @@
           }
           const tc = G.cross(G.GOLD.quiet)
           const crossIn = (a, b) => { let lo = a, hi = b; const s0 = cur(lo) > tc; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if ((cur(m) > tc) === s0) lo = m; else hi = m } return (lo + hi) / 2 }
-          // the readout's switches, each where the cursor crosses the gold line (a label switch, L.swap)
+          // the readout's switches, each where the cursor crosses the gold line: a swap, the old words out (0.1 s), then
+          // the new in (0.15 s), never glyph on glyph [B-01: 183]
           const SWITCHES = [{ t: CROSS1, to: 1 }, { t: crossIn(FULL, FULL + 0.4), to: 0 }, { t: crossIn(RUN, RUN + RUN_D), to: 1 }, { t: crossIn(FULL2, FULL2 + 0.4), to: 0 }]
           const readoutAt = (t) => {
             let last = null
             for (const s of SWITCHES) if (t >= s.t) last = s
             if (!last) return { hold: { a: 1, dy: 0 }, add: { a: 0, dy: 0 } }
-            const [o, n] = L.swap(t, last.t, 0, 'old', 'new')
+            const o = { a: 1 - P(t, last.t, 0.1, 'none'), dy: 0 }, n = { a: P(t, last.t + 0.1, 0.15, 'none'), dy: 0 }
             return last.to === 1 ? { hold: o, add: n } : { hold: n, add: o }
           }
           // the figure's breath follows the cursor while it walks the note: full lungs at 0 s, empty at the crossing,
@@ -234,7 +246,7 @@
           }
 
           const probe = { cam, ch, lab, slider, ga, fig, fl, gl, tag, a3, quietChip, loudChip, guess, struck, strike, kicker, predict, pills, check, row, split, SPLIT_C, lessLeader, moreLeader,
-            A: { ACT, O6, GLIDE, GLIDE_D, SPLIT, SPLIT_D, FIG, FIG_D, GUESS, ROW_IN, LIT_D, DIA, TIGHT, BELLY, BIN, BIG, QUIET, PRED_K, PILL1, PILL2, PRED2, OPEN, OPEN_D, ONE_NOTE, PUSH_AIR, GAUGE, GAUGE_D, LUNGS_L, GOLD, NEEDS, HATCH, READOUT, CHECK, UNCHANGED, CROSS1, HOLD, BM, NEVER, FULL, WALK, WALK_END, B15, RUN, RUN_D, BRM, CANT, STRIKE, O7, FULL2, CUR_OUT, YES, LOUD, RISE, RISE_D, LESS, BACKW, MORE, SWITCHES, D }, boxes: {} }
+            readoutAt, F6, GP, A: { ADDED, ACT, O6, GLIDE, GLIDE_D, SPLIT, SPLIT_D, FIG, FIG_D, GUESS, ROW_IN, LIT_D, DIA, TIGHT, BELLY, BIN, BIG, QUIET, PRED_K, PILL1, PILL2, PRED2, OPEN, OPEN_D, ONE_NOTE, PUSH_AIR, GAUGE, GAUGE_D, LUNGS_L, GOLD, NEEDS, HATCH, READOUT, CHECK, UNCHANGED, CROSS1, HOLD, BM, NEVER, FULL, WALK, WALK_END, B15, RUN, RUN_D, BRM, CANT, STRIKE, O7, FULL2, CUR_OUT, YES, LOUD, RISE, RISE_D, LESS, BACKW, MORE, SWITCHES, D }, boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
 
@@ -257,7 +269,8 @@
             const splitting = t >= SPLIT
             const textOut = 1 - P(t, SPLIT, 0.2)
             const hide = splitting ? 0 : 1                            // the band, line and strip pass to the gauge's
-            ch.draw({ a: lerp(1, 0.25, dimU), band: { a: hide }, merc: { a: hide }, strip: { a: hide, envs: [] } })
+            // the strip's resting envelope in ghost violet, as S5 leaves it; it fades as the strip leaves for the gauge [B-01: 184]
+            ch.draw({ a: lerp(1, 0.25, dimU), band: { a: hide }, merc: { a: hide }, strip: { a: 1, hair: hide, envs: [{ id: 'rest', contour: 'demo', t: L.CHART.S5.W, ghost: true, a: 1 - P(t, SPLIT, 0.3, 'none') }] } })
             slider.draw({ a: textOut, p: 50, thumbScale: L.pulse(t, [THAT], 'label') })
             slider.val.setAttribute('opacity', labA.toFixed(3)); slider.lab.setAttribute('opacity', labA.toFixed(3))
             lab.A3.draw({ a: splitting ? 0 : labA }); lab.level.draw({ a: labA * textOut }); lab.row.draw({ a: labA * textOut })
@@ -327,7 +340,7 @@
             gl.needs.life(t, NEEDS, LOUD)
             gl.heldBack.life(t, HATCH, LOUD, {}, [HOLDING, HOLD2], 'label')
             gl.unchanged.life(t, UNCHANGED, null)
-            gl.added.life(t, CROSS1, LOUD)
+            gl.added.life(t, ADDED, LOUD)
             const ro = readoutAt(t), roA = P(t, READOUT, 0.2) * (1 - P(t, CUR_OUT, 0.2))
             gl.readout.draw({ a: roA * ro.hold.a, dy: ro.hold.dy })
             gl.readoutAdding.draw({ a: roA * ro.add.a, dy: ro.add.dy })

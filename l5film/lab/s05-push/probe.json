@@ -15,7 +15,7 @@
  },
  {
   "t": 0,
-  "name": "\"A3\" right edge 366, \"level\" from 400, the row's text from 400 at full",
+  "name": "\"A3\" right edge 366, \"level\"'s first glyph origin at x 400 (as S4 leaves it), the row's text from 400 at full",
   "got": "366.0 400.0 400.0 1.00",
   "want": "366 400 400 1.00",
   "pass": true
@@ -53,6 +53,13 @@
   "name": "5b: the slider: track x 400 to 1520, thumb at 960, \"Push\" right edge 366",
   "got": "400 to 1520, 960.0, 366.0",
   "want": "400 to 1520, 960, 366",
+  "pass": true
+ },
+ {
+  "t": 3.0499999999999945,
+  "name": "[B-01: 184] \"level\" at the strip's left (right edge 366), its glyphs centred on the strip (690)",
+  "got": "366.0, 612.0",
+  "want": "366, 690 +- 4",
   "pass": true
  },
  {
@@ -334,49 +341,49 @@
   "pass": true
  },
  {
-  "t": 35.54999999999999,
+  "t": 35.55,
   "name": "LAB-CHECKS 4: both arrowheads inside the peak (screen x 772 to 990)",
   "got": "960 and 960",
   "want": "inside",
   "pass": true
  },
  {
-  "t": 35.54999999999999,
+  "t": 35.55,
   "name": "LAB-CHECKS 4: the stem's least distance to \"50\" (ink)",
   "got": 14.67,
   "want": ">= 12",
   "pass": true
  },
  {
-  "t": 35.54999999999999,
+  "t": 35.55,
   "name": "LAB-CHECKS 4: \"louder\" (ink) over the swollen strip's fill",
   "got": 17.6,
   "want": ">= 12 (board 18)",
   "pass": true
  },
  {
-  "t": 35.54999999999999,
+  "t": 35.55,
   "name": "LAB-CHECKS 4: \"higher\" (ink) under the band's foot (456.5)",
   "got": 14.5,
   "want": ">= 12 (board 14)",
   "pass": true
  },
  {
-  "t": 35.54999999999999,
+  "t": 35.55,
   "name": "\"louder\" left of its branch (tip 960)",
   "got": 37.08,
   "want": "info (board 40)",
   "pass": true
  },
  {
-  "t": 35.54999999999999,
+  "t": 35.55,
   "name": "\"louder\" and \"higher\" apart",
   "got": 37,
   "want": "info (board 38)",
   "pass": true
  },
  {
-  "t": 35.54999999999999,
+  "t": 35.55,
   "name": "the strip swollen under the peak: its top (board 593)",
   "got": 593.6,
   "want": 593,
@@ -384,16 +391,86 @@
   "pass": true
  },
  {
-  "t": 35.54999999999999,
+  "t": 35.55,
   "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
   "got": 196.32,
   "want": ">= 20",
   "pass": true
  },
  {
-  "t": 35.54999999999999,
+  "t": 35.55,
   "name": "keep-out: nearest visible text to tavi's body box (\"HIGHER\")",
   "got": 304,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 33.617000000000004,
+  "name": "[B-01: 181] the thesis lands on \"in a voice,\" and stays to the fade: on screen (s)",
+  "got": 2.94,
+  "want": ">= 2",
+  "pass": true
+ },
+ {
+  "t": 33.617000000000004,
+  "name": "[B-01: 181] ... at full from its landing (0.4 s) to the fade (s)",
+  "got": 2.14,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 33.617000000000004,
+  "name": "[B-01: 181] the fork and its labels land 0.4 s or more after it",
+  "got": "0.98, 1.28, 1.73",
+  "want": ">= 0.4",
+  "pass": true
+ },
+ {
+  "t": 33.617000000000004,
+  "name": "the thesis shown, top centre (centred 960, baseline 130)",
+  "got": "1.00, 960",
+  "want": "1.00, 960",
+  "pass": true
+ },
+ {
+  "t": 33.617000000000004,
+  "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
+  "got": 196.32,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 33.617000000000004,
+  "name": "keep-out: nearest visible text to tavi's body box (\"HIGHER\")",
+  "got": 304,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 10.920000000000005,
+  "name": "[B-01: 184] the strip's resting envelope in ghost violet from \"mainly\": outline y 662 to 718, x 400 to 1520",
+  "got": "400 to 1520, 662.0 to 718.0, stroke null",
+  "want": "400 to 1520, 662 to 718, stroke 0.35 (outline)",
+  "pass": true
+ },
+ {
+  "t": 10.920000000000005,
+  "name": "[B-01: 184] \"mainly: louder\"'s arrow tip on the envelope's top (662)",
+  "got": 662,
+  "want": 662,
+  "pass": true
+ },
+ {
+  "t": 10.920000000000005,
+  "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
+  "got": 107.69,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 10.920000000000005,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 534.41,
   "want": ">= 20",
   "pass": true
  },

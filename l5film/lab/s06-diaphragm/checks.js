@@ -12,7 +12,7 @@
     s10: su(0.1), s20: su(0.2), s25: su(0.25), s30: su(0.3), s35: su(0.35), s40: su(0.4), s45: su(0.45), s50: su(0.5), s55: su(0.55), s60: su(0.6), s65: su(0.65), s70: su(0.7), s80: su(0.8), s90: su(0.9),
     split: A.SPLIT + A.SPLIT_D + 0.05, guess: A.GUESS + 0.5, dia: A.DIA + 0.6, bin: A.BIN + 0.4, pills: A.PILL2 + 0.5,
     open1: A.OPEN + 1.02 * A.OPEN_D / 1.4, open2: A.OPEN + 1.23 * A.OPEN_D / 1.4, opened: A.OPEN + A.OPEN_D + 0.05,
-    stage: A.CHECK + 0.4, cross: A.CROSS1 + 0.35, fgauge: A.GAUGE + A.GAUGE_D + 0.05, bm: A.NEVER + 0.5, cant: A.STRIKE + 0.5,
+    stage: A.CHECK + 0.4, preAdd: A.CROSS1 + 0.3, cross: A.ADDED + 0.35, plates45: A.WALK + 2.33, fgauge: A.GAUGE + A.GAUGE_D + 0.05, bm: A.NEVER + 0.5, cant: A.STRIKE + 0.5,
     quiet: A.YES + 0.6, loud: A.MORE + 0.6, last: A.D - 0.0005,
   }
   const root = document.getElementById(sid + '-scene')
@@ -52,6 +52,68 @@
     return b
   }
   void inkBox
+  // [B-01: 182] each shown label's plate against the strokes it could cover, in world px (the plate mapped back
+  // through the camera): the band's lower edge, the frame's strokes, the gold line, the lungs' line, the up arrow
+  const plates = (t) => {
+    const out = []
+    const sh = S.ga.g.children[3], gold = sh.children[6]
+    const gy = +gold.getAttribute('y') + 1.5, gw = +gold.getAttribute('width') || 0, ga = +gold.getAttribute('opacity')
+    const drawnT = 10
+    const strokes = [
+      { n: 'band edge', x0: 760, x1: 1640, y0: 239, y1: 241 },
+      { n: 'frame top', x0: 760, x1: 1640, y0: 289, y1: 291 },
+      { n: 'frame right', x0: 1639, x1: 1641, y0: 290, y1: 720 },
+      { n: 'frame left', x0: 759, x1: 761, y0: 290, y1: 720 },
+      { n: 'up arrow', x0: 763, x1: 773, y0: 252, y1: 277 },
+    ]
+    if (ga > 0 && gw > 0) strokes.push({ n: 'gold line', x0: 760, x1: 760 + gw, y0: gy - 1.5, y1: gy + 1.5 })
+    for (const n of ['pushOfAir', 'lungsPush', 'needs', 'heldBack', 'added', 'readout', 'readoutAdding']) {
+      const lb = S.gl[n]
+      if (!lb.back || H.alpha(lb.el) < 0.5) continue
+      const r = R(lb.back), [ax, ay] = S.cam.inv(r.left, r.top, t), [bx, by] = S.cam.inv(r.right, r.bottom, t)
+      const cov = []
+      for (const k of strokes) {
+        const ox = Math.min(bx, k.x1) - Math.max(ax, k.x0), oy = Math.min(by, k.y1) - Math.max(ay, k.y0)
+        if (ox > 0 && oy > 0) cov.push(`${k.n} ${ox.toFixed(0)} px`)
+      }
+      // the lungs' line (3 px) under the plate
+      let lc = 0
+      for (let x = Math.max(ax, 760); x <= Math.min(bx, 760 + 88 * drawnT); x += 1) { const y = L.GAUGE.lungs((x - 760) / 88); if (y + 1.5 > ay && y - 1.5 < by) lc++ }
+      if (lc) cov.push(`lungs' line ${lc} px`)
+      const gc = ga > 0 && gw > 0 ? Math.min(ay - (gy + 1.5), (gy - 1.5) - by) : null
+      out.push({ name: `[B-01: 182] the plate of ${n} (world ${ax.toFixed(1)} to ${bx.toFixed(1)}, ${ay.toFixed(1)} to ${by.toFixed(1)}) covers no stroke`, got: cov.length ? cov.join('; ') : 'none', want: 'none', pass: !cov.length })
+      if (n === 'needs' && gc != null) out.push({ name: '[B-01: 182] "what the note needs": its plate under the gold line', got: +(ay - (gy + 1.5)).toFixed(1), want: '>= 4', pass: ay - (gy + 1.5) >= 4 })
+    }
+    return out
+  }
+  // [B-01: 183] the readout's swaps: frames (30 fps, the clip's grid) where both wordings show
+  const swaps = () => {
+    const out = []
+    let both = 0
+    const list = []
+    for (let f = Math.floor(A.READOUT * 30); f <= Math.ceil(A.CUR_OUT * 30); f++) {
+      const r = S.readoutAt(f / 30)
+      if (r.hold.a > 0.02 && r.add.a > 0.02) { both++; list.push((f / 30).toFixed(3)) }
+    }
+    out.push({ name: '[B-01: 183] the readout: frames with both wordings shown (every switch)', got: both ? list.join(' ') : 0, want: 0, pass: both === 0 })
+    return out
+  }
+  // the lowest visible point of the figure's outline on screen (the legs' fade applied) against a label's ink top
+  const legsLow = (t) => {
+    const paths = [...S.fig.g.querySelectorAll('path[pathLength="1"][stroke-dasharray="1 1"]')].slice(-2)
+    const [f0, fe] = S.F6.fade
+    const yEnd = S.cam.map(0, fe, t)[1], yStart = S.cam.map(0, f0, t)[1]
+    let low = -1
+    for (const p of paths) {
+      const L0 = p.getTotalLength(), M = p.getScreenCTM()
+      for (let i = 0; i <= 600; i++) {
+        const q = p.getPointAtLength((L0 * i) / 600), Y = M.b * q.x + M.d * q.y + M.f
+        const a = Y <= yStart ? 1 : 1 - (Y - yStart) / (yEnd - yStart)
+        if (a >= 0.1) low = Math.max(low, Y)
+      }
+    }
+    return low
+  }
   window.__groupB = {
     times: Object.values(T),
     check(t) {
@@ -141,11 +203,13 @@
         const [wl] = S.cam.inv(bx.left, 0, t), top = 645 - mm.actualBoundingBoxAscent, bot = 645 + mm.actualBoundingBoxDescent
         const lungsAt = (x) => L.GAUGE.lungs((x - 760) / 88)
         out.push({ name: '6f: after the crossing the readout says "Now: adding"', got: `${vis(S.gl.readout.el)} ${vis(S.gl.readoutAdding.el)}`, want: '0.00 1.00' },
-          { name: '6f: "added" landed at the crossing', got: vis(S.gl.added.el), want: '1.00' },
+          { name: '[B-01: 183] "added" landed 0.45 s after the switch', got: `${vis(S.gl.added.el)}; ${(A.ADDED - A.CROSS1).toFixed(2)} s`, want: '1.00; 0.45 s' },
           { name: '6f: "added" glyphs under the gold line (607.5)', got: top - 607.5, want: '>= 12', pass: top - 607.5 >= 12 },
           { name: '6f: "added" over the lungs\' line at its left end', got: lungsAt(wl) - bot, want: '>= 12', pass: lungsAt(wl) - bot >= 12 },
           { name: 'the push under way: scale', got: s, want: 'info', pass: true }, ...H.keepout(root, S.boxes))
       }
+      if (t === T.preAdd) out.push({ name: '[B-01: 183] "added" not yet shown 0.3 s after the switch', got: vis(S.gl.added.el), want: '0.00' }, ...swaps())
+      if (t === T.stage || t === T.cross || t === T.fgauge || t === T.plates45 || t === T.cant) out.push(...plates(t))
       if (t === T.fgauge) {
         const f = R(frameEl())
         out.push({ name: 'F-gauge: the frame on screen x 738 to 1662, y 279 to 731 (outer stroke edges +-1)', got: `${f.left.toFixed(1)} to ${f.right.toFixed(1)}, ${f.top.toFixed(1)} to ${f.bottom.toFixed(1)}`, want: '737 to 1663, 278 to 732', pass: Math.abs(f.left - 737) < 2 && Math.abs(f.right - 1663) < 2 && Math.abs(f.top - 278) < 2 && Math.abs(f.bottom - 732) < 2 },
@@ -156,7 +220,8 @@
         const a = R(S.fl.muscles.el), b = R(S.fl.throat.el)
         out.push({ name: '6g: "with your breathing muscles," on screen from x 213', got: a.left, want: 213, tol: 2 },
           { name: '6g: "never your throat" baseline 855 on screen (font box foot)', got: b.bottom, want: 'info', pass: true },
-          { name: '6g: their screen baselines 815 and 855', got: `${m(0, 800)[1].toFixed(1)}, ${m(0, 838)[1].toFixed(1)}`, want: '814.8, 854.7' }, ...H.keepout(root, S.boxes))
+          { name: '6g: their screen baselines 815 and 855', got: `${m(0, 800)[1].toFixed(1)}, ${m(0, 838)[1].toFixed(1)}`, want: '814.8, 854.7' },
+          { name: '[B-01: 188] the legs\' lowest visible point (alpha 0.1) 12 px or more above "with your breathing muscles," (ink top)', got: +(m(0, 800)[1] - S.cam.scale(t) * H.ink('with your breathing muscles,', "600 32px 'Outfit'").up - legsLow(t)).toFixed(1), want: '>= 12', pass: m(0, 800)[1] - S.cam.scale(t) * H.ink('with your breathing muscles,', "600 32px 'Outfit'").up - legsLow(t) >= 12 }, ...H.keepout(root, S.boxes))
       }
       if (t === T.cant) {
         const c = R(S.fl.cant.el), d = R(S.fl.dia.el)

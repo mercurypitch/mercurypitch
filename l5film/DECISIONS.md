@@ -1437,3 +1437,49 @@ numbered 132 to 135 too, are 160 to 163 now, so no number appears twice).
        which S13 uses, is not affected). Group C's other kit offers (a trace whose geometry moves,
        the folds' state machine, a ramp on `cam.edgeAlpha`, the axis "0", a settled-time helper,
        its cut probe) are looked at then.
+
+## The lead's calls on critic C-01 (group C's fix round), 19 November
+
+192. **S9's long middle gets a subject** (item 1): the trace strip becomes a lit lane (chrome at
+     about 6 %, x 700 to 1600, y 320 to 540, like the stack rows' boxes); each finished trace stays
+     at 30 % until the next one draws over it; the folds box grows to about 1.3 to 1.4 times about
+     its centre, 60 px or more clear of the lane. The waits between the examples stay (the voice
+     explains in them), but the frame holds the folds, the lane and the last trace, not one box.
+193. **10h's demonstration reads** (item 2): the slider starts on "needs"; one push, 50 to 75 to
+     50, each leg 0.8 s or more, its bump in the line at least twice the vibrato's peak to peak;
+     "a change in the air moves it" lands on "because" and is at full strength for 2 s or more,
+     then fades linearly over 0.4 s so that it is gone when the matched cut's rule says (nothing
+     but the empty frame from 364.60, HANDOFFS § The cuts).
+194. **Sound** (item 3) goes to the sound step: the examples, the act sounds and the pad come with
+     this film's mix (LAB-CHECKS 16), and the picture's sync with the starts is judged then. The
+     lab clips stay voice-only until that step; nothing in group C's fix round.
+195. **S9's labels say what the board means** (items 4, 5, 9): "the easy start" leaves "neither"'s
+     line and reads as row 3's own name (under the "Together" name, right-aligned 660, baseline
+     about 700, or wherever it reads so, 12 px or more from everything); the "h" reads: row 3's
+     first 200 px dim to 25 % while it shows and the "h" rises to about 70 %; "LISTEN ONLY" is row
+     2's tag, under "A catch" (right-aligned 660, centred y about 495), 12 px or more from the name
+     and the row. LAB-CHECKS 13 and HANDOFFS § S9 to S10 change with it (S10's first frame).
+196. **Chapter openings never go empty** (item 6): the carried object's move starts as the card
+     starts to leave, overlapping its exit; S8's figure is at full strength from its move's start;
+     S9's folds grow in 0.5 s (the 9b value confirmed in 191 changes from 0.9 s). 8a's "nothing
+     changes shape under the card" still holds while the card is up.
+197. **S9's stack assembles in order** (item 7): the folds shrink first, trace 3 settles, then the
+     three names land from about 34.4 (clip), 0.4 s apart.
+198. **"No." answers the guess, not the chart** (item 8): on "No." the guess takes an ink strike
+     (0.3 s) and holds 0.4 s, then the rest clears in turn, 0.05 s apart (the chart's labels
+     first, Tavi's line last), never all within 0.2 s.
+199. **S10's marks read** (item 10): the vibrato bracket becomes two ink hairlines at the crest and
+     trough heights across about 240 px with end ticks; the "stays" bracket stands 16 px or more
+     above the mint edge.
+200. **S10's push lands on a chart that is there** (item 12, in part): the hold chart is at full
+     strength before the push starts, so the push reads as the camera moving over a present world,
+     not a fade with a zoom. The bokeh's lift on slow moves (`L.BOKEH_LIFT` and its ramp by slide
+     speed, frames.js; the push and the truck read as zoom and pan at normal exposure) is a kit
+     setting: it is looked at once at integration with every move in the film, not per group.
+201. **Holds** (item 11) go to the final passes as 189 says, with one addition: the talking host's
+     mouth and arcs must change visibly at 240 px (at 7.7 to 8.1 s in S8 no pixel changes by 16 or
+     more while Merc talks), so the passes step checks the talk cycle at the hosts' smallest size.
+     Item 13 (signature 3's band 91 px tall; 10h's empty lower right) goes to the full-film
+     critic, to be read against the references' frame fill with the whole film in view.
+     Group C's fix round also carries 191's out-breath (S8 ends at rest) and fresh renders of S8
+     and S9 (the critic judged clips older than their last edits).
