@@ -3,6 +3,7 @@ import { createSignal, onCleanup, onMount, Show, untrack } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { installStudioAudioWorker } from '@/lib/studio/audio/studio-audio-client'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
+import { showNotification } from '@/stores/notifications-store'
 import { createStudioClock, StudioClockContext } from './audio/studio-clock'
 import type { StudioBackupTarget } from './backup/backup-target'
 import { downloadStudioBackup, openStudioBackupTarget, studioBackupFileName, sweepStudioBackupCopies, } from './backup/backup-target'
@@ -12,6 +13,11 @@ import styles from './StudioPage.module.css'
 import { StudioProjectList } from './StudioProjectList'
 import { StudioWorkspace } from './StudioWorkspace'
 import { useStudioController } from './useStudioController'
+
+// A backup reports in the app's notifications, as a save or an export does
+// everywhere else. One channel, so a second backup's notice replaces the
+// first's rather than stacking under it.
+const BACKUP_NOTICE = { channel: 'studio-backup' }
 
 export function StudioPage() {
   // Takes are read, checked and turned into waveform peaks off the page's
@@ -30,8 +36,6 @@ export function StudioPage() {
     studio.hasUnsavedChanges() ||
     studio.importing() ||
     studio.saveState() === 'saving'
-  const [downloadError, setDownloadError] = createSignal<string | null>(null)
-  const [savedAs, setSavedAs] = createSignal<string | null>(null)
   const [library, setLibrary] = createSignal(true)
   const [startPanel, setStartPanel] = createSignal<'sources' | 'export' | null>(
     null,
@@ -68,8 +72,6 @@ export function StudioPage() {
   function chooseBackupTarget(
     title: string | undefined,
   ): Promise<StudioBackupTarget | null> {
-    setDownloadError(null)
-    setSavedAs(null)
     return openStudioBackupTarget(studioBackupFileName(title, new Date()))
   }
 
@@ -98,13 +100,21 @@ export function StudioPage() {
     try {
       const file = await target.close()
       if (file) downloadStudioBackup(target, file)
-      else setSavedAs(target.name)
+      showNotification(
+        file
+          ? `Backup downloading as "${target.name}".`
+          : `Backup saved as "${target.name}".`,
+        'success',
+        BACKUP_NOTICE,
+      )
     } catch {
       await target.discard()
-      setDownloadError(
+      showNotification(
         target.kind === 'file'
           ? 'The backup could not be saved. Try Save project backup again.'
           : 'The backup could not download. Try Save project backup again.',
+        'error',
+        BACKUP_NOTICE,
       )
     }
   }
@@ -114,18 +124,6 @@ export function StudioPage() {
     // beside the sidebar from top to foot, so the floating voice pill keeps
     // to the sidebar's empty foot (VoiceControlHud.module.css).
     <section class={styles.page} aria-label="Studio" data-voice-pill-in-sidebar>
-      <Show when={downloadError()}>
-        <p role="alert" class={styles.help}>
-          {downloadError()}
-        </p>
-      </Show>
-      <Show when={savedAs()}>
-        {(name) => (
-          <p role="status" class={styles.help}>
-            Backup saved as {name()}.
-          </p>
-        )}
-      </Show>
       <input
         ref={backupInput}
         hidden

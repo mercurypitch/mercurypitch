@@ -73,16 +73,26 @@ async function pickedBytes(page: Page, name: string): Promise<Uint8Array> {
   return Uint8Array.from(bytes)
 }
 
-/** A backup's file is named after the song and the minute it was made. */
-const WINDOW_SEAT_FILE = /^Window seat \d{4}-\d{2}-\d{2} \d{4}\.mpstudio$/
+/** A backup's file is named after the song and the minute it was made, with no spaces. */
+const WINDOW_SEAT_FILE = /^Window-seat-\d{4}-\d{2}-\d{2}-\d{4}\.mpstudio$/
 const WINDOW_SEAT_SAVED =
-  /^Backup saved as (Window seat \d{4}-\d{2}-\d{2} \d{4}\.mpstudio)\.$/
+  /^Backup saved as "(Window-seat-\d{4}-\d{2}-\d{2}-\d{4}\.mpstudio)"\.$/
+const WINDOW_SEAT_DOWNLOADING =
+  /^Backup downloading as "(Window-seat-\d{4}-\d{2}-\d{2}-\d{4}\.mpstudio)"\.$/
 
-/** The file a "Backup saved as" status names. */
-function savedFile(status: string | null): string {
-  const name = WINDOW_SEAT_SAVED.exec(status ?? '')?.[1]
-  if (name === undefined) throw new Error(`No backup file in: ${status}`)
+/** The file a backup's notice names, in quotes. */
+function savedFile(
+  notice: string | null,
+  pattern: RegExp = WINDOW_SEAT_SAVED,
+): string {
+  const name = pattern.exec(notice ?? '')?.[1]
+  if (name === undefined) throw new Error(`No backup file in: ${notice}`)
   return name
+}
+
+/** The app's notifications, where a backup reports, as an export does. */
+function notices(page: Page) {
+  return page.getByRole('region', { name: 'Notifications' })
 }
 
 /** A backup holds the song and its one take: original and canonical audio. */
@@ -127,15 +137,22 @@ test.describe('Studio backup files', () => {
     await namedSong(page, 'Window seat')
     const studio = studioRegion(page)
 
-    const saved = studio
-      .getByRole('status')
-      .filter({ hasText: 'Backup saved as' })
+    const saved = notices(page).getByText(WINDOW_SEAT_SAVED)
     await studio
       .getByRole('button', { name: 'Save project backup', exact: true })
       .click()
-    await expect(saved).toHaveText(WINDOW_SEAT_SAVED)
+    await expect(saved).toHaveCount(1)
     const first = savedFile(await saved.textContent())
     expectBackup(await pickedBytes(page, first), 'Window seat')
+    // The notice is the app's notification, not a line in the Studio.
+    await expect(studio.getByText(/^Backup saved as/)).toHaveCount(0)
+    // Dismissed, so the next notice read is the next backup's.
+    await notices(page)
+      .getByRole('status')
+      .filter({ has: page.getByText(WINDOW_SEAT_SAVED) })
+      .getByRole('button', { name: 'Dismiss notification' })
+      .click()
+    await expect(saved).toHaveCount(0)
 
     await studio.getByRole('button', { name: 'All songs' }).click()
     await studio
@@ -151,7 +168,7 @@ test.describe('Studio backup files', () => {
         ),
       )
       .toBe(2)
-    await expect(saved).toHaveText(WINDOW_SEAT_SAVED)
+    await expect(saved).toHaveCount(1)
     const second = savedFile(await saved.textContent())
     expectBackup(await pickedBytes(page, second), 'Window seat')
     // Nothing went through downloads, and no private copy was made: only the
@@ -188,7 +205,8 @@ test.describe('Studio backup files', () => {
       .toBe(1)
     await expect(save).toBeEnabled()
     await expect(studio.getByRole('alert')).toHaveCount(0)
-    await expect(studio.getByText(/^Backup saved as/)).toHaveCount(0)
+    await expect(notices(page).getByRole('alert')).toHaveCount(0)
+    await expect(notices(page).getByText(/^Backup /)).toHaveCount(0)
     expect(await privateFiles(page)).toEqual({})
     expect(downloads).toEqual([])
   })
@@ -211,6 +229,11 @@ test.describe('Studio backup files', () => {
       .click()
     const download = await downloading
     expect(download.suggestedFilename()).toMatch(WINDOW_SEAT_FILE)
+    const downloadingNotice = notices(page).getByText(WINDOW_SEAT_DOWNLOADING)
+    await expect(downloadingNotice).toHaveCount(1)
+    expect(
+      savedFile(await downloadingNotice.textContent(), WINDOW_SEAT_DOWNLOADING),
+    ).toBe(download.suggestedFilename())
     const path = testInfo.outputPath('window-seat.mpstudio')
     await download.saveAs(path)
     expectBackup(new Uint8Array(await readFile(path)), 'Window seat')

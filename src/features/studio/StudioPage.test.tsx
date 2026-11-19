@@ -130,8 +130,8 @@ describe('Studio page backups', () => {
     await Promise.resolve()
 
     expect(picker.open.mock.calls).toEqual([
-      ['Window seat 2026-10-29 1142.mpstudio'],
-      ['Sketch 2026-10-29 1142.mpstudio'],
+      ['Window-seat-2026-10-29-1142.mpstudio'],
+      ['Sketch-2026-10-29-1142.mpstudio'],
     ])
   })
 

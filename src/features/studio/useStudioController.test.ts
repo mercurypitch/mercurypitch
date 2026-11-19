@@ -1112,7 +1112,7 @@ describe('Studio controller', () => {
   describe('a backup asked about before its file is picked', () => {
     const target = (): StudioBackupTarget => ({
       kind: 'file',
-      name: 'Window seat 2026-10-29 1142.mpstudio',
+      name: 'Window-seat-2026-10-29-1142.mpstudio',
       keepMs: 0,
       reserve: vi.fn(),
       write: vi.fn(),
@@ -1432,7 +1432,7 @@ describe('Studio controller', () => {
       await controller.open('one')
       const running = controller.backup({
         kind: 'file',
-        name: 'Window seat 2026-10-29 1142.mpstudio',
+        name: 'Window-seat-2026-10-29-1142.mpstudio',
         keepMs: 0,
         reserve: vi.fn(),
         write: vi.fn(),
