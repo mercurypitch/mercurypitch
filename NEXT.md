@@ -4440,7 +4440,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Heavy now: passes step + group C fix. Queue: group E (after the passes step), group D's fix
   round, leftovers (A + B), integration.
 
-## 13:00 UTC, 19 Nov
+## 12:55 UTC, 19 Nov
 - GROUP B's hand-back arrived a second time at 12:51 (the harness re-sent it after the agent's
   monitor timed out): same report as 12:31, already accepted (DECISIONS 203). Nothing to do.
 - PASSES STEP FOR 190 HANDED BACK and ACCEPTED (DECISIONS 211). Lead checked: 97 cues before b55
