@@ -200,6 +200,75 @@ for (const phone of PHONES) {
       expect(under44(await controlsIn(page, STAGE))).toEqual([])
     })
 
+    // A notice stood on the tab bar's room, which the stage covers, and
+    // lay over the bar's play button upright (722 to 780 against a bar from
+    // 766, at 390x844); on its side it stood at the foot's right end, 60%
+    // of the window wide, over the key at 780x360. The bar is the page's
+    // dock upright and says how wide its column is on its side.
+    test("raises a notice clear of the bar's controls", async ({ page }) => {
+      await page.evaluate(() => {
+        const pp = (
+          window as unknown as {
+            __pp: {
+              appStore: {
+                showNotification: (
+                  message: string,
+                  type: string,
+                  options: { durationMs: number },
+                ) => void
+              }
+            }
+          }
+        ).__pp
+        pp.appStore.showNotification(
+          'Your mic is off. Turn it on to be heard and scored.',
+          'info',
+          { durationMs: 60_000 },
+        )
+      })
+      const notice = page
+        .getByRole('region', { name: 'Notifications' })
+        .locator('> div')
+        .first()
+      await expect(notice).toBeVisible()
+      await notice.evaluate((el) =>
+        Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)),
+      )
+
+      const covered = await notice.evaluate((el, sel) => {
+        const n = el.getBoundingClientRect()
+        // The bar holds the times, the scrubber and the transport.
+        const bar = document.querySelector(
+          `${sel} [class*="times"]`,
+        )?.parentElement
+        const controls = [
+          ...(bar?.querySelectorAll<HTMLElement>('button, [role="slider"]') ??
+            []),
+        ]
+        if (controls.length < 5) throw new Error('the bar has no controls')
+        return controls
+          .filter((control) => {
+            const r = control.getBoundingClientRect()
+            return (
+              r.width > 0 &&
+              r.left < n.right &&
+              n.left < r.right &&
+              r.top < n.bottom &&
+              n.top < r.bottom
+            )
+          })
+          .map(
+            (control) =>
+              control.getAttribute('aria-label') ??
+              control.textContent?.trim() ??
+              '',
+          )
+      }, STAGE)
+
+      expect(covered).toEqual([])
+      await expect(notice).toBeInViewport({ ratio: 1 })
+    })
+
     test('does not offer the mixer tour on the stage, and keeps the offer', async ({
       page,
     }) => {
@@ -380,15 +449,23 @@ test.describe('with no song loaded', () => {
     await page.reload()
     const header = page.locator('.panel-header')
     await expect(header).toBeVisible()
-    return header.evaluate((row) => ({
-      scrolls: row.scrollWidth - row.clientWidth,
-      pastTheEdge: [...row.querySelectorAll<HTMLElement>('button, a')]
-        .filter((control) => {
-          const r = control.getBoundingClientRect()
-          return r.width > 0 && (r.left < 0 || r.right > innerWidth)
-        })
-        .map((control) => control.textContent?.trim() ?? ''),
-    }))
+    return header.evaluate((row) => {
+      const controls = [
+        ...row.querySelectorAll<HTMLElement>('button, a'),
+      ].filter((control) => control.getBoundingClientRect().width > 0)
+      const tops = controls.map((c) => c.getBoundingClientRect().top)
+      return {
+        scrolls: row.scrollWidth - row.clientWidth,
+        pastTheEdge: controls
+          .filter((control) => {
+            const r = control.getBoundingClientRect()
+            return r.left < 0 || r.right > innerWidth
+          })
+          .map((control) => control.textContent?.trim() ?? ''),
+        /** Every control on one line: a second would be a row lower. */
+        oneLine: Math.max(...tops) - Math.min(...tops) < 24,
+      }
+    })
   }
 
   for (const size of [
@@ -401,7 +478,7 @@ test.describe('with no song loaded', () => {
     test(`at ${size.width}x${size.height}, keeps the header's row in the window, and Settings behind Options`, async ({
       page,
     }) => {
-      const row = await openHeader(page, size)
+      const { oneLine: _oneLine, ...row } = await openHeader(page, size)
 
       expect(row).toEqual({ scrolls: 0, pastTheEdge: [] })
       await page.getByTestId('uvr-mobile-options').tap()
@@ -413,16 +490,44 @@ test.describe('with no song loaded', () => {
     })
   }
 
+  // A tablet keeps the desk's header, beside the sidebar, and its row was
+  // 181 px wider than the 724 px it had at 1024 wide: Guide and Settings
+  // were past the window's edge. The actions go under the title and the
+  // tabs, at the row's end.
+  for (const size of [
+    { width: 1024, height: 768 },
+    { width: 1024, height: 1366 },
+  ]) {
+    test(`on a tablet at ${size.width}x${size.height}, keeps every control in the window`, async ({
+      page,
+    }) => {
+      const { oneLine: _oneLine, ...row } = await openHeader(page, size)
+
+      expect(row).toEqual({ scrolls: 0, pastTheEdge: [] })
+      await expect(page.getByTestId('uvr-mobile-options')).toHaveCount(0)
+      await expect(page.getByTestId('uvr-open-settings')).toBeInViewport({
+        ratio: 1,
+      })
+    })
+  }
+
   test.describe('at a desk', () => {
     test.use({ hasTouch: false, isMobile: false })
 
-    test('keeps every control in the row', async ({ page }) => {
-      const row = await openHeader(page, { width: 1440, height: 900 })
+    for (const size of [
+      { width: 1440, height: 900 },
+      { width: 1280, height: 800 },
+    ]) {
+      test(`at ${size.width}x${size.height}, keeps every control in the one row`, async ({
+        page,
+      }) => {
+        const row = await openHeader(page, size)
 
-      await expect(page.getByTestId('uvr-open-settings')).toBeInViewport()
-      await expect(page.getByTestId('uvr-mobile-options')).toHaveCount(0)
-      expect(row).toEqual({ scrolls: 0, pastTheEdge: [] })
-    })
+        await expect(page.getByTestId('uvr-open-settings')).toBeInViewport()
+        await expect(page.getByTestId('uvr-mobile-options')).toHaveCount(0)
+        expect(row).toEqual({ scrolls: 0, pastTheEdge: [], oneLine: true })
+      })
+    }
   })
 })
 

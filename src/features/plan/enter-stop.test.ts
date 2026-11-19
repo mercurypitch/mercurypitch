@@ -186,7 +186,10 @@ describe('a stop that is a tab', () => {
     expect(activeTab()).toBe('guitar')
     expect(coachActive()).toBe('sing')
     await vi.waitFor(() => {
-      expect(mocks.startCoachTour).toHaveBeenCalledWith(tour, { phone: false })
+      expect(mocks.startCoachTour).toHaveBeenCalledWith(tour, {
+        phone: false,
+        narrow: false,
+      })
     })
     expect(mocks.startGuideRoomTour).not.toHaveBeenCalled()
   })

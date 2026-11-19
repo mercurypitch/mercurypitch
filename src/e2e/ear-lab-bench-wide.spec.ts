@@ -258,3 +258,76 @@ test.describe('on a phone', () => {
     expect(bench.sideways, 'the page scrolls sideways').toBe(0)
   })
 })
+
+// A phone on its side: the column's hero, drawn to the column's width,
+// was 459 px of a 390 px window at 844x390, the Index under it and the
+// stations from 1,226 px. The art stands on the left now, whole, and stays
+// there while the column scrolls beside it. A phone's touch and its user
+// agent, since a coarse pointer is half of what makes a phone on its side.
+test.describe('on a phone on its side', () => {
+  test.use({
+    hasTouch: true,
+    isMobile: true,
+    userAgent:
+      'Mozilla/5.0 (Linux; Android 14; Pixel 7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/140.0.0.0 Mobile Safari/537.36',
+  })
+
+  for (const size of [
+    { width: 844, height: 390 },
+    { width: 667, height: 375 },
+  ]) {
+    test(`stands Merc beside the Index and the stations at ${size.width}x${size.height}`, async ({
+      page,
+    }) => {
+      await page.setViewportSize(size)
+      await openBench(page)
+      const bench = await measureBench(page)
+      const { hero, index, today, stations } = bench.parts
+      if (!hero || !index || !today || !stations) {
+        throw new Error(
+          `a part of the bench is missing: ${JSON.stringify(bench.parts)}`,
+        )
+      }
+      // A floating tab bar takes the window's foot where one is drawn.
+      const foot = await page.evaluate(() => {
+        const bar = document.querySelector('[data-tour="mobile-tabbar"]')
+        const box = bar?.getBoundingClientRect()
+        return box === undefined || box.height === 0
+          ? window.innerHeight
+          : Math.min(box.top, window.innerHeight)
+      })
+
+      // The art whole on the first screen, and the Index beside it there.
+      expect(hero.y, 'the art starts above the window').toBeGreaterThanOrEqual(
+        0,
+      )
+      expect(
+        hero.y + hero.h,
+        'the art runs off the window',
+      ).toBeLessThanOrEqual(foot + 1)
+      expect(index.x, 'the Index is not beside Merc').toBeGreaterThanOrEqual(
+        hero.x + hero.w,
+      )
+      expect(index.y, 'the Index is off the first screen').toBeLessThan(foot)
+      expect(Math.abs(today.x - index.x)).toBeLessThanOrEqual(1)
+      expect(stations.x).toBeGreaterThanOrEqual(hero.x + hero.w)
+      expect(bench.stations).toEqual({ count: 6, rows: 3 })
+      expect(bench.overlaps, 'parts of the bench lie over each other').toEqual(
+        [],
+      )
+      expect(bench.sideways, 'the page scrolls sideways').toBe(0)
+
+      // Scrolled to the stations, the art is still beside them.
+      await page
+        .locator('[data-tour="ear.faculties"]')
+        .evaluate((el) => el.scrollIntoView({ block: 'start' }))
+      const scrolled = await measureBench(page)
+      const art = scrolled.parts.hero
+      const six = scrolled.parts.stations
+      if (!art || !six) throw new Error('the bench lost a part on the scroll')
+      expect(six.y).toBeLessThan(foot)
+      expect(art.y, 'the art scrolled away').toBeGreaterThanOrEqual(0)
+      expect(art.y + art.h).toBeLessThanOrEqual(foot + 1)
+    })
+  }
+})

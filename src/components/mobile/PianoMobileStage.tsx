@@ -156,7 +156,9 @@ export const PianoMobileStage: Component<PianoMobileStageProps> = (props) => {
       </div>
 
       {/* ── Transport ────────────────────────────────────── */}
-      <TransportBar class={stageStyles.transport}>
+      {/* Across the foot upright and on its side alike (the Piano stage
+          keeps its one column), so the notices always stand on it. */}
+      <TransportBar class={stageStyles.transport} dock={() => true}>
         <button
           classList={{
             [stageStyles.roundBtn]: true,

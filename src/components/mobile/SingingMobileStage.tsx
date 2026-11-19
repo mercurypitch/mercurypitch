@@ -307,8 +307,13 @@ export const SingingMobileStage: Component<SingingMobileStageProps> = (
           left the room with no Stop, no pause and no mic for the whole of a
           run in any moment the shell had not taken it — counting in, or a
           build with no shell mounted at all. */}
+      {/* Upright the bar spans the foot and the notices stand on it; on
+          its side it is in the left column and they stand beside it. */}
       <Show when={!IS_NATIVE_BUILD || !shellOwnsTransport()}>
-        <TransportBar class={styles.transport}>
+        <TransportBar
+          class={styles.transport}
+          dock={() => !isShortTouchLandscape()}
+        >
           <button
             classList={{
               [styles.roundBtn]: true,

@@ -4,7 +4,7 @@
 
 import assert from 'node:assert/strict'
 import test from 'node:test'
-import { barOnTop, targetFits } from './tour-rules.mjs'
+import { barOnTop, standsClear, targetFits } from './tour-rules.mjs'
 
 const PHONE = { width: 390, height: 844 }
 const DESKTOP = { width: 1440, height: 900 }
@@ -37,4 +37,27 @@ test('every button hit inside the bar passes', () => {
 
 test('a bar with no button hit-tested proves nothing', () => {
   assert.equal(barOnTop([]), false)
+})
+
+// A phone on its side, 844x390: the drawer's Load a Melody section, 253 x
+// 342 from the left edge, with the tooltip beside it, and a settings section
+// as wide as the page with the tooltip over its top.
+test('a tooltip beside a tall target stands clear of it', () => {
+  const section = { x: 8, y: -6, width: 253, height: 342 }
+  assert.equal(
+    standsClear(section, { x: 267, y: 21, width: 340, height: 288 }),
+    true,
+  )
+})
+
+test('a tooltip over any of the target does not', () => {
+  const section = { x: 116, y: 42, width: 612, height: 377 }
+  assert.equal(
+    standsClear(section, { x: 252, y: 130, width: 340, height: 248 }),
+    false,
+  )
+})
+
+test('no tooltip proves nothing', () => {
+  assert.equal(standsClear({ x: 0, y: 0, width: 10, height: 10 }, null), false)
 })

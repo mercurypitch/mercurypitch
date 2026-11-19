@@ -33,8 +33,9 @@
 //                as they are printed here (e.g. ONLY="Jam,Jam (inside a room)")
 //
 // Every step is also held to the two rules in tour-rules.mjs: its spotlight
-// takes at most 70% of the window's height (WIDE otherwise), and a consent
-// bar put up beside it stays on top (BAR otherwise). Merc's tours are walked
+// takes at most 70% of the window's height, or the tooltip stands clear of
+// it, beside it (WIDE otherwise; `tall` marks one that passes beside), and a
+// consent bar put up beside it stays on top (BAR otherwise). Merc's tours are walked
 // by src/e2e/coach-tours.spec.ts, under the same rules: this walker drives
 // the Guide's spotlight tooltip.
 //
@@ -47,7 +48,7 @@
 // ============================================================
 import { chromium } from '@playwright/test'
 import { readFileSync } from 'node:fs'
-import { barOnTop, probeConsentBar, targetFits } from './tour-rules.mjs'
+import { barOnTop, probeConsentBar, standsClear, targetFits, } from './tour-rules.mjs'
 
 const BASE = process.env.BASE_URL || 'http://localhost:3005'
 const MOBILE = process.env.MOBILE === '1'
@@ -260,8 +261,11 @@ async function walkTour(name, label = name) {
     const box = hlVisible ? await hl.boundingBox() : null
     const ok = !!box && box.width > 14 && box.height > 14
     const excused = !ok && NEEDS_CLOUD_DATA.has(`${name}::${title}`)
-    // The two rules: a spotlight that fits, and the consent bar on top.
-    const fits = box === null || targetFits(box, VIEWPORT)
+    // The two rules: a spotlight that fits, or the tooltip clear of it
+    // beside it, and the consent bar on top.
+    const tall = box !== null && !targetFits(box, VIEWPORT)
+    const tip = await tooltip.boundingBox().catch(() => null)
+    const fits = !tall || standsClear(box, tip)
     const knownWide = !fits && WIDE_TARGETS.has(`${name}::${title}`)
     const onTop = barOnTop(await page.evaluate(probeConsentBar))
     totalSteps++
@@ -279,7 +283,9 @@ async function walkTour(name, label = name) {
           ? knownWide
             ? 'wide'
             : 'WIDE'
-          : 'ok  '
+          : tall
+            ? 'tall'
+            : 'ok  '
     console.log(
       `  ${verdict}  step ${i + 1}: ${title}  ${box ? `${Math.round(box.width)}x${Math.round(box.height)}` : excused ? 'needs a cloud board' : 'no-highlight'}`,
     )

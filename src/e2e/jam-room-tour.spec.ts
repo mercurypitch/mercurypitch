@@ -166,3 +166,43 @@ test.describe('the room’s tour on a phone', () => {
     }
   })
 })
+
+// The header folds its actions behind a menu button at 640 px, its own
+// width, not at the 768 px breakpoint. Between the two (a tablet's narrow
+// window, a large phone on its side) the screen is narrow and the header has
+// its whole row, and the step for the header said "The menu button holds
+// the rest" about a button that was not there. The words follow the header.
+for (const size of [
+  { width: 700, height: 900, menu: false },
+  { width: 600, height: 900, menu: true },
+]) {
+  test.describe(`the room's tour at ${size.width} px wide`, () => {
+    test.use({
+      viewport: { width: size.width, height: size.height },
+      hasTouch: true,
+      isMobile: true,
+    })
+
+    test(`names the menu button ${size.menu ? 'where' : 'only where'} the header has one`, async ({
+      page,
+    }) => {
+      await openRoom(page)
+      const menu = page.getByRole('button', { name: 'Room controls' })
+      await expect(menu).toBeVisible({ visible: size.menu })
+      await pressTour(page, true)
+      await expect(title(page)).toBeVisible()
+      for (let guard = 0; guard < 4; guard += 1) {
+        const name = ((await title(page).textContent()) ?? '').trim()
+        if (name === 'Your side of the room') break
+        await page.getByRole('button', { name: 'Next', exact: true }).click()
+        await expect(title(page)).not.toHaveText(name)
+      }
+      await expect(title(page)).toHaveText('Your side of the room')
+
+      const words =
+        (await page.locator('[class*="walkthroughStepDesc"]').textContent()) ??
+        ''
+      expect(/menu button/.test(words), words).toBe(size.menu)
+    })
+  })
+}

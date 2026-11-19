@@ -457,6 +457,27 @@ test.describe('a phone on its side', () => {
     await expect(page.locator(`${STAGE}[data-was-upright]`)).toBeVisible()
     expect((await measureStage(page)).besideTheControls).toBe(true)
   })
+
+  // Upright the transport is the page's dock and the notices stand on it;
+  // on its side it is in the left column, and the notices, beside it, keep
+  // their place at the foot.
+  test('takes the dock back from the notices as the phone turns, and gives it again', async ({
+    page,
+  }) => {
+    const dock = (): Promise<string> =>
+      page.evaluate(() =>
+        document.documentElement.style.getPropertyValue('--page-dock-space'),
+      )
+    await openSinging(page, { width: 390, height: 844 })
+    await expect(page.locator(STAGE)).toBeVisible()
+    await expect.poll(dock).toMatch(/^\d+px$/)
+
+    await page.setViewportSize(SIDEWAYS[0])
+    await expect.poll(dock).toBe('')
+
+    await page.setViewportSize({ width: 390, height: 844 })
+    await expect.poll(dock).toMatch(/^\d+px$/)
+  })
 })
 
 test.describe('everywhere else, nothing changes', () => {
@@ -490,7 +511,11 @@ test.describe('everywhere else, nothing changes', () => {
       })
     })
 
-    test("keeps the notices at the foot, the window's width, on the tab bar", async ({
+    // The transport spans the foot here, on the tab bar, and the mic notice
+    // stood on the tab bar too: over the transport (8, 679, 382, 780 against
+    // a bar at 706 to 782). The bar publishes its room as the page's dock,
+    // and the notices stand on it, the window's width.
+    test("stands the notices on the transport, the window's width", async ({
       page,
     }) => {
       await openSinging(page, { width: 390, height: 844 })
@@ -500,11 +525,17 @@ test.describe('everywhere else, nothing changes', () => {
         .tap()
 
       const place = await noticePlace(page)
+      const bar = await page
+        .locator(`${STAGE} [data-testid="mobile-transport-bar"]`)
+        .boundingBox()
 
       expect({
-        atTheFoot: place.atTheFoot,
+        onTheTransport:
+          bar !== null &&
+          place.box[3] <= Math.round(bar.y) &&
+          place.box[3] >= Math.round(bar.y) - 24,
         edges: [place.box[0], 390 - place.box[2]],
-      }).toEqual({ atTheFoot: true, edges: [8, 8] })
+      }).toEqual({ onTheTransport: true, edges: [8, 8] })
     })
   })
 

@@ -23,7 +23,11 @@ vi.mock('@/stores', () => ({
   hasGuideRoomTour: (tab: string) => fakes.hasGuideRoomTour(tab),
   startGuideRoomTour: (tab: string) => fakes.startGuideRoomTour(tab),
 }))
-vi.mock('@/lib/use-viewport', () => ({ isNarrow: () => true }))
+const screen = vi.hoisted(() => ({ narrow: true, phoneStage: true }))
+vi.mock('@/lib/use-viewport', () => ({
+  isNarrow: () => screen.narrow,
+  isPhoneStage: () => screen.phoneStage,
+}))
 vi.mock('@/components/coach/start', () => ({
   startCoachTour: fakes.startCoachTour,
 }))
@@ -56,6 +60,8 @@ beforeEach(() => {
   fakes.hasPageTour.mockReturnValue(false)
   fakes.hasGuideRoomTour.mockReturnValue(false)
   registry.COACH_TOURS = {}
+  screen.narrow = true
+  screen.phoneStage = true
   setCoachActive(null)
   provideTourHandoff(null)
   localStorage.clear()
@@ -80,9 +86,36 @@ describe('startRoomTour', () => {
 
     expect(fakes.startCoachTour).toHaveBeenCalledExactlyOnceWith(TOUR, {
       phone: true,
+      narrow: true,
     })
     expect(fakes.startGuideRoomTour).not.toHaveBeenCalled()
   })
+
+  // A phone on its side wider than the breakpoint (844x390) shows the
+  // phone's stages and keeps the top tab bar. By width alone it got the
+  // desk's steps, and Show me more pointed at the desk's Spaced rest.
+  it.each([
+    ['a phone on its side, wider than the breakpoint', true, false],
+    ['a desk', false, false],
+  ])(
+    'starts it on the layout the screen shows, on %s',
+    async (_name, phoneStage, narrow) => {
+      screen.phoneStage = phoneStage
+      screen.narrow = narrow
+      const tour = singTour()
+
+      startRoomTour('singing')
+      tour.arrive()
+      await vi.waitFor(() => {
+        expect(fakes.startCoachTour).toHaveBeenCalled()
+      })
+
+      expect(fakes.startCoachTour).toHaveBeenCalledExactlyOnceWith(TOUR, {
+        phone: phoneStage,
+        narrow,
+      })
+    },
+  )
 
   it('starts nothing for a tour ended while it loaded', async () => {
     const tour = singTour()
@@ -268,6 +301,7 @@ describe('what a finished Merc tour offers next', () => {
 
     expect(fakes.startCoachTour).toHaveBeenCalledExactlyOnceWith(TOUR, {
       phone: true,
+      narrow: true,
     })
   })
 })

@@ -18,10 +18,9 @@ import { activeTab, setActiveTab, setSidebarCollapsed, setSidebarOpen, sidebarCo
 import styles from './Walkthrough.module.css'
 import { scrollTargetIntoView, shutToggle } from './walkthrough-dom'
 import { IconCheck, IconClose, IconSkipForward } from './walkthrough-icons'
+import type { Placement } from './walkthrough-place'
+import { placeTooltip } from './walkthrough-place'
 
-type Placement = 'top' | 'bottom' | 'left' | 'right'
-
-const TOOLTIP_GAP = 12
 const getTooltipWidth = () => Math.min(340, window.innerWidth - 24)
 const getTooltipHeight = () => Math.min(200, window.innerHeight - 48)
 const wait = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
@@ -317,58 +316,14 @@ export const Walkthrough: Component = () => {
     const tW = tooltipRect.width > 0 ? tooltipRect.width : getTooltipWidth()
     const tH = tooltipRect.height > 0 ? tooltipRect.height : getTooltipHeight()
 
-    let placement: Placement = getPlacement()
-
-    // On narrow viewports, prefer bottom placement to avoid horizontal overflow
-    if (vw < 480 && (placement === 'left' || placement === 'right')) {
-      placement = 'bottom'
-    }
-
-    const targetCenterX = targetRect.left + targetRect.width / 2
-    const targetCenterY = targetRect.top + targetRect.height / 2
-
-    if (placement === 'right') {
-      if (targetRect.right + TOOLTIP_GAP + tW > vw) placement = 'left'
-    } else if (placement === 'left') {
-      if (targetRect.left - TOOLTIP_GAP - tW < 0) placement = 'right'
-    }
-
-    if (placement === 'bottom') {
-      if (targetRect.bottom + TOOLTIP_GAP + tH > vh) placement = 'top'
-    } else if (placement === 'top') {
-      if (targetRect.top - TOOLTIP_GAP - tH < 0) placement = 'bottom'
-    }
-
-    if (placement === 'right' && targetRect.right > vw - tW * 0.5) {
-      placement = 'bottom'
-    } else if (placement === 'left' && targetRect.left < tW * 0.5) {
-      placement = 'bottom'
-    }
-
-    let left: number
-    let top: number
-
-    switch (placement) {
-      case 'bottom':
-        left = targetCenterX - tW / 2
-        top = targetRect.bottom + TOOLTIP_GAP
-        break
-      case 'top':
-        left = targetCenterX - tW / 2
-        top = targetRect.top - tH - TOOLTIP_GAP
-        break
-      case 'right':
-        left = targetRect.right + TOOLTIP_GAP
-        top = targetCenterY - tH / 2
-        break
-      case 'left':
-        left = targetRect.left - tW - TOOLTIP_GAP
-        top = targetCenterY - tH / 2
-        break
-    }
-
-    left = Math.max(12, Math.min(left, vw - tW - 12))
-    top = Math.max(12, Math.min(top, vh - tH - 12))
+    const { placement, left, top } = placeTooltip(
+      targetRect,
+      tW,
+      tH,
+      vw,
+      vh,
+      getPlacement(),
+    )
 
     tooltipRef.style.left = `${left}px`
     tooltipRef.style.top = `${top}px`

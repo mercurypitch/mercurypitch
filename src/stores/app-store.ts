@@ -27,6 +27,7 @@ import { AudioEngine } from '@/lib/audio-engine'
 import { IS_DEV } from '@/lib/defaults'
 import { GLASSWORKS_LISTED } from '@/lib/glassworks-listing'
 import { trackTour } from '@/lib/guide-funnel'
+import { jamPhoneLayout } from '@/lib/jam/jam-phone-layout'
 import { jamRoomIsOpen } from '@/lib/jam/jam-room-presence'
 import { keyNameFor } from '@/lib/key-names'
 import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD } from '@/lib/native-build'
@@ -112,11 +113,13 @@ export interface WalkthroughStep {
    * narrow, or a phone on its side, as the Singing tab and the header's
    * voice pill ask it. A target that changes at the width breakpoint alone
    * names that instead, 'narrow' or 'wide' against `isNarrow()`: the bottom
-   * tab bar, the Guitar and Piano pages, the jam room's header. A phone on
-   * its side wider than 768 px has the phone stages and the top tab bar, so
-   * there the two answers differ.
+   * tab bar, the Guitar and Piano pages. A phone on its side wider than
+   * 768 px has the phone stages and the top tab bar, so there the two
+   * answers differ. The jam room's header folds its actions behind a menu
+   * at its own width, 640 px (`jamPhoneLayout()`): 'jam-phone' or
+   * 'jam-wide'. Between 641 and 768 px it is narrow and has the whole row.
    */
-  viewport?: 'mobile' | 'desktop' | 'narrow' | 'wide'
+  viewport?: 'mobile' | 'desktop' | 'narrow' | 'wide' | 'jam-phone' | 'jam-wide'
   /**
    * A control some hosts leave out (the mixer's Open in Karaoke Night is
    * not drawn in the native app, the Karaoke room or Karaoke Night itself).
@@ -1054,6 +1057,10 @@ function showsLayout(viewport: WalkthroughStep['viewport']): boolean {
       return isNarrow()
     case 'wide':
       return !isNarrow()
+    case 'jam-phone':
+      return jamPhoneLayout()
+    case 'jam-wide':
+      return !jamPhoneLayout()
   }
 }
 
@@ -1687,10 +1694,11 @@ export const JAM_ROOM_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="jam.room-actions"]',
     placement: 'bottom',
     requiredTab: TAB_JAM,
-    // The room's header folds its actions behind a menu by its own width
-    // (JamPanel.module.css), not by a phone's layout: on its side, wider
-    // than 768 px, a phone has the whole row.
-    viewport: 'wide',
+    // The room's header folds its actions behind a menu at its own width,
+    // 640 px (JamPanel.module.css), not at the breakpoint nor by a phone's
+    // layout: from 641 px up, a tablet upright or a phone on its side, it
+    // has the whole row, and no menu button.
+    viewport: 'jam-wide',
   },
   {
     title: 'Your side of the room',
@@ -1699,7 +1707,7 @@ export const JAM_ROOM_TOUR_STEPS: WalkthroughStep[] = [
     targetSelector: '[data-tour="jam.room-actions"]',
     placement: 'bottom',
     requiredTab: TAB_JAM,
-    viewport: 'narrow',
+    viewport: 'jam-phone',
   },
   {
     title: 'Who is here',

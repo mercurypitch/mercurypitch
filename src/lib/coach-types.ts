@@ -104,8 +104,15 @@ interface CoachStepBase {
   lesson?: { href: string; title: string }
   /** A sound the singer can tap to hear: the note to copy. Never autoplayed. */
   sound?: 'hold-tone'
-  /** Only on this kind of screen; the other one never sees the step. */
-  viewport?: 'phone' | 'desktop'
+  /**
+   * Only on this kind of screen; the other one never sees the step. 'phone'
+   * and 'desktop' follow the layout the tour was started for (a phone's,
+   * `isPhoneStage()`: narrow, or a phone on its side, which has the phone
+   * stages). 'narrow' and 'wide' follow the width alone (`isNarrow()`), for
+   * a target that switches there: the bottom tab bar, which a phone on its
+   * side wider than 768 px does not have (it keeps the top one).
+   */
+  viewport?: 'phone' | 'desktop' | 'narrow' | 'wide'
   /** A line under the body, read when the step shows; null shows nothing. */
   aside?: () => CoachAside | null
   /** Run while the step shows, from its first moment (see CoachStepRun). */

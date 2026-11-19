@@ -56,6 +56,9 @@ export interface CoachHandle {
 export interface CoachStartOptions {
   /** A phone's layout: a sheet above the tab bar, and the phone's steps. */
   phone?: boolean
+  /** Narrower than the breakpoint: the steps for the bottom tab bar's
+   *  screens ('narrow'). The same as `phone` when not said. */
+  narrow?: boolean
   /** What the bubble offers once the tour is done. */
   handoff?: () => CoachHandoff | null
   onEnd?: (result: CoachEnd) => void
@@ -243,7 +246,10 @@ async function runTour(
   }
   const [{ createCoachRunner }, { mountCoachLayer }] = modules
 
-  const runner = createCoachRunner(tour, { phone: opts.phone })
+  const runner = createCoachRunner(tour, {
+    phone: opts.phone,
+    narrow: opts.narrow,
+  })
   if (runner.ended() !== null) {
     setCoachActive(null)
     undoTourSettings(settings)

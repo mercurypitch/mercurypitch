@@ -10,13 +10,22 @@ const BASE_STYLE: JSX.CSSProperties = {
   padding: '0.2rem 0.8rem',
   'max-width': '90%',
   'border-radius': '999px',
-  background: 'var(--bg-elevated, rgba(20, 20, 24, 0.92))',
+  // A fixed fill, with the dark stage's ink (DARK_PILL below).
+  background: 'rgba(20, 20, 24, 0.92)',
   color: 'var(--text-primary, #eee)',
   'font-size': '0.78rem',
   'pointer-events': 'none',
   border: '1px solid var(--warning, rgba(220, 160, 0, 0.7))',
   'box-shadow': '0 1px 8px rgba(0, 0, 0, 0.35)',
 }
+
+/**
+ * The pill is dark in every app theme, so it takes the dark stage's palette
+ * (`mp-dark-stage`, dark-stage.css) for its words and its link: it sits on
+ * the notes canvas, which stays dark in the light theme too, and the light
+ * theme's ink on its fill read 1.04:1 (Singing, at 1440x900 and 390x844).
+ */
+const DARK_PILL = 'mic-insight-hint mp-dark-stage'
 
 /**
  * Subtle mic-feedback pill, shown when `message()` is non-empty. Tab-agnostic:
@@ -37,7 +46,7 @@ export function MicInsightHint(props: {
   return (
     <Show when={props.message() !== ''}>
       <div
-        class={`mic-insight-hint ${props.class ?? ''}`}
+        class={`${DARK_PILL} ${props.class ?? ''}`}
         role="status"
         aria-live="polite"
         style={{

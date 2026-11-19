@@ -9,6 +9,12 @@ export declare function targetFits(
   viewport: { height: number },
 ): boolean
 
+/** Whether a tooltip takes none of a spotlight: their boxes meet nowhere. */
+export declare function standsClear(
+  spot: { x: number; y: number; width: number; height: number },
+  tooltip: { x: number; y: number; width: number; height: number } | null,
+): boolean
+
 /** Whether every hit-test of the consent bar's buttons landed inside the bar. */
 export declare function barOnTop(hits: readonly boolean[]): boolean
 

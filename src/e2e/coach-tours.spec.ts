@@ -62,11 +62,30 @@ const version = (
   ) as { version: string }
 ).version
 
-const SCREENS = [
-  { name: 'phone', width: 390, height: 844, phone: true },
-  { name: 'wide', width: 1440, height: 900, phone: false },
-] as const
-type Screen = (typeof SCREENS)[number]
+interface Screen {
+  name: string
+  width: number
+  height: number
+  /** The phone's layout (isPhoneStage): its stages, and its stops. */
+  phone: boolean
+  /** Narrower than the breakpoint: the bottom tab bar. */
+  narrow: boolean
+}
+
+const SCREENS: readonly Screen[] = [
+  { name: 'phone', width: 390, height: 844, phone: true, narrow: true },
+  { name: 'wide', width: 1440, height: 900, phone: false, narrow: false },
+]
+
+/** A phone on its side, wider than the breakpoint: the phone's stages and
+ *  the top tab bar. Walked with touch, as a phone is. */
+const SIDEWAYS: Screen = {
+  name: 'sideways',
+  width: 844,
+  height: 390,
+  phone: true,
+  narrow: false,
+}
 
 interface Stop {
   /** What the stop rings on this screen, as the tour names it; none stands free. */
@@ -108,7 +127,7 @@ const SING: Tour = {
     { target: STAGE_LINE },
     { target: STAGE_LINE },
     {
-      target: screen.phone
+      target: screen.narrow
         ? '[data-tour="mobile-tabbar-more"]'
         : '[data-tab-group="you"]',
     },
@@ -151,9 +170,12 @@ const KARAOKE: Tour = {
  * clear; each is a target to point at something smaller.
  */
 const OVERSIZE = new Set([
-  // The Sing stage's canvas: 704 px of 900 on a wide screen.
+  // The Sing stage's canvas: 704 px of 900 on a wide screen, and the full
+  // height beside the controls on a phone on its side.
   'sing:2:wide',
   'sing:3:wide',
+  'sing:2:sideways',
+  'sing:3:sideways',
 ])
 
 interface Box {
@@ -210,139 +232,154 @@ async function seedFirstVisit(page: Page): Promise<void> {
   }, version)
 }
 
-for (const tour of [SING, KARAOKE]) {
-  for (const screen of SCREENS) {
-    test(`${tour.name}: every stop of Merc's tour keeps the walk's rules, at ${screen.width}x${screen.height} @smoke`, async ({
-      page,
-    }) => {
-      test.setTimeout(90_000)
-      const errors: string[] = []
-      page.on('pageerror', (error) => errors.push(error.message))
-      await page.setViewportSize({ width: screen.width, height: screen.height })
-      await seedFirstVisit(page)
-      await tour.open(page)
+/** Walks `tour` on `screen`, stop by stop, under the walk's rules. */
+function walkTour(tour: Tour, screen: Screen, tag = ' @smoke'): void {
+  test(`${tour.name}: every stop of Merc's tour keeps the walk's rules, at ${screen.width}x${screen.height}${tag}`, async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    const errors: string[] = []
+    page.on('pageerror', (error) => errors.push(error.message))
+    await page.setViewportSize({ width: screen.width, height: screen.height })
+    await seedFirstVisit(page)
+    await tour.open(page)
 
-      // A first visit: the chip offers the tour.
-      const chip = page.getByTestId('tour-chip')
-      await expect(chip).toBeVisible({ timeout: 20_000 })
-      await chip.getByRole('button', { name: tour.chip }).click()
+    // A first visit: the chip offers the tour.
+    const chip = page.getByTestId('tour-chip')
+    await expect(chip).toBeVisible({ timeout: 20_000 })
+    await chip.getByRole('button', { name: tour.chip }).click()
 
-      const bubble = page.getByTestId('coach-bubble')
-      const ring = page.getByTestId('coach-ring')
-      const stops = tour.stops(screen)
-      const counted = stops.filter((stop) => stop.quiet === undefined).length
-      let n = 0
-      for (const stop of stops) {
-        if (stop.quiet !== undefined) {
-          const at = `${tour.name}:quiet after ${n}:${screen.name}`
-          await expect(bubble, `${at}: a bubble`).toHaveCount(0)
-          await expect(ring, `${at}: a ring`).toHaveCount(0)
-          await expect(
-            page.getByTestId('coach-layer').locator('*'),
-            `${at}: something drawn`,
-          ).toHaveCount(0)
-          await page.evaluate((detail) => {
-            window.dispatchEvent(new CustomEvent('mp:coach', { detail }))
-          }, stop.quiet)
-          continue
+    const bubble = page.getByTestId('coach-bubble')
+    const ring = page.getByTestId('coach-ring')
+    const stops = tour.stops(screen)
+    const counted = stops.filter((stop) => stop.quiet === undefined).length
+    let n = 0
+    for (const stop of stops) {
+      if (stop.quiet !== undefined) {
+        const at = `${tour.name}:quiet after ${n}:${screen.name}`
+        await expect(bubble, `${at}: a bubble`).toHaveCount(0)
+        await expect(ring, `${at}: a ring`).toHaveCount(0)
+        await expect(
+          page.getByTestId('coach-layer').locator('*'),
+          `${at}: something drawn`,
+        ).toHaveCount(0)
+        await page.evaluate((detail) => {
+          window.dispatchEvent(new CustomEvent('mp:coach', { detail }))
+        }, stop.quiet)
+        continue
+      }
+      n += 1
+      const at = `${tour.name}:${n}:${screen.name}`
+      await expect(bubble).toContainText(`${n} of ${counted}`, {
+        timeout: 15_000,
+      })
+      // Where the bubble stands for this stop, once it has got there.
+      const shown = await settledBox(bubble)
+      expect(shown, `${at}: no bubble`).not.toBeNull()
+      if (shown !== null) {
+        const frame = {
+          x: 0,
+          y: 0,
+          width: screen.width,
+          height: screen.height,
         }
-        n += 1
-        const at = `${tour.name}:${n}:${screen.name}`
-        await expect(bubble).toContainText(`${n} of ${counted}`, {
-          timeout: 15_000,
-        })
-        // Where the bubble stands for this stop, once it has got there.
-        const shown = await settledBox(bubble)
-        expect(shown, `${at}: no bubble`).not.toBeNull()
-        if (shown !== null) {
-          const frame = {
-            x: 0,
-            y: 0,
-            width: screen.width,
-            height: screen.height,
-          }
-          expect(
-            inside(shown, frame),
-            `${at}: bubble ${JSON.stringify(shown)}`,
-          ).toBe(true)
-        }
-
-        if (stop.target === undefined) {
-          await expect(ring, `${at}: a free stop rings nothing`).toHaveCount(0)
-        } else {
-          const target = await targetBox(page, stop.target)
-          expect(target, `${at}: ${stop.target} is not laid out`).not.toBeNull()
-          if (target !== null) {
-            const fits = targetFits(target, screen)
-            const why = `${at}: target ${Math.round(target.height)} px of ${screen.height}`
-            expect(fits || OVERSIZE.has(at), `${why}, over 70%`).toBe(true)
-            expect(
-              fits && OVERSIZE.has(at),
-              `${why} fits now: drop it from OVERSIZE`,
-            ).toBe(false)
-            if (fits) {
-              await expect(ring, why).toBeVisible()
-              // The ring follows its target (the coach looks again every
-              // 300 ms), so it is read until it holds it.
-              await expect
-                .poll(
-                  async () => {
-                    const held = await ring.boundingBox()
-                    const now = await targetBox(page, stop.target ?? '')
-                    return held !== null && now !== null && inside(now, held)
-                  },
-                  { message: `${why}: the ring misses it` },
-                )
-                .toBe(true)
-            } else {
-              await expect(ring, `${why}: rung anyway`).toHaveCount(0)
-            }
-          }
-        }
-
-        // A consent bar stays on top of whatever the stop puts up.
         expect(
-          barOnTop(await page.evaluate(probeConsentBar)),
-          `${at}: the bar is covered`,
+          inside(shown, frame),
+          `${at}: bubble ${JSON.stringify(shown)}`,
         ).toBe(true)
-
-        if (stop.doIt === true && stop.target !== undefined) {
-          await page.locator(stop.target).first().click()
-          continue
-        }
-        await bubble
-          .getByRole('button', { name: /^(Skip this step|Next|Done)$/ })
-          .click()
       }
 
-      // Done leaves nothing behind, and the chip does not come back.
-      await expect(page.locator('#coach-root')).toHaveCount(0)
-      await expect(chip).toHaveCount(0)
-      // Focus comes back to the page: the chip that had it has gone, so to
-      // the page's main heading the singer can see (start.ts), on top at its
-      // own middle.
-      await expect
-        .poll(() =>
-          page.evaluate(() => {
-            const el = document.activeElement
-            if (!(el instanceof HTMLElement)) return null
-            if (!el.matches('h1, h2, h3, [role="heading"]')) return null
-            const r = el.getBoundingClientRect()
-            const top = document.elementFromPoint(
-              r.left + r.width / 2,
-              r.top + r.height / 2,
-            )
-            return {
-              text: (el.textContent ?? '').replace(/\s+/g, ' ').trim(),
-              onTop: top !== null && el.contains(top),
-            }
-          }),
-        )
-        .toEqual({ text: tour.focus(screen), onTop: true })
-      expect(errors).toEqual([])
-    })
-  }
+      if (stop.target === undefined) {
+        await expect(ring, `${at}: a free stop rings nothing`).toHaveCount(0)
+      } else {
+        const target = await targetBox(page, stop.target)
+        expect(target, `${at}: ${stop.target} is not laid out`).not.toBeNull()
+        if (target !== null) {
+          const fits = targetFits(target, screen)
+          const why = `${at}: target ${Math.round(target.height)} px of ${screen.height}`
+          expect(fits || OVERSIZE.has(at), `${why}, over 70%`).toBe(true)
+          expect(
+            fits && OVERSIZE.has(at),
+            `${why} fits now: drop it from OVERSIZE`,
+          ).toBe(false)
+          if (fits) {
+            await expect(ring, why).toBeVisible()
+            // The ring follows its target (the coach looks again every
+            // 300 ms), so it is read until it holds it.
+            await expect
+              .poll(
+                async () => {
+                  const held = await ring.boundingBox()
+                  const now = await targetBox(page, stop.target ?? '')
+                  return held !== null && now !== null && inside(now, held)
+                },
+                { message: `${why}: the ring misses it` },
+              )
+              .toBe(true)
+          } else {
+            await expect(ring, `${why}: rung anyway`).toHaveCount(0)
+          }
+        }
+      }
+
+      // A consent bar stays on top of whatever the stop puts up.
+      expect(
+        barOnTop(await page.evaluate(probeConsentBar)),
+        `${at}: the bar is covered`,
+      ).toBe(true)
+
+      if (stop.doIt === true && stop.target !== undefined) {
+        await page.locator(stop.target).first().click()
+        continue
+      }
+      await bubble
+        .getByRole('button', { name: /^(Skip this step|Next|Done)$/ })
+        .click()
+    }
+
+    // Done leaves nothing behind, and the chip does not come back.
+    await expect(page.locator('#coach-root')).toHaveCount(0)
+    await expect(chip).toHaveCount(0)
+    // Focus comes back to the page: the chip that had it has gone, so to
+    // the page's main heading the singer can see (start.ts), on top at its
+    // own middle. On a touch screen the header's wordmark is in the logo
+    // button, whose 44 px touch box (a clear ::after, AppHeader.css) takes
+    // the hit over it: the button that holds the heading counts as it.
+    await expect
+      .poll(() =>
+        page.evaluate(() => {
+          const el = document.activeElement
+          if (!(el instanceof HTMLElement)) return null
+          if (!el.matches('h1, h2, h3, [role="heading"]')) return null
+          const r = el.getBoundingClientRect()
+          const top = document.elementFromPoint(
+            r.left + r.width / 2,
+            r.top + r.height / 2,
+          )
+          return {
+            text: (el.textContent ?? '').replace(/\s+/g, ' ').trim(),
+            onTop:
+              top !== null &&
+              (el.contains(top) || (top.matches('button') && top.contains(el))),
+          }
+        }),
+      )
+      .toEqual({ text: tour.focus(screen), onTop: true })
+    expect(errors).toEqual([])
+  })
 }
+
+for (const tour of [SING, KARAOKE]) {
+  for (const screen of SCREENS) walkTour(tour, screen)
+}
+
+// Merc's Sing tour on a phone on its side picks its stops by the layout on
+// screen: the phone stage's, and the top tab bar's, which it keeps wider
+// than 768 px. By width alone it got the desk's stops for the stage.
+test.describe('a phone on its side', () => {
+  test.use({ hasTouch: true, isMobile: true })
+  walkTour(SING, SIDEWAYS, '')
+})
 
 test("the Sing tour's Play the note shows the note playing after a tap, at 1440x900", async ({
   page,

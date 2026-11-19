@@ -46,8 +46,10 @@ import { useBackgroundSurfaceController } from '@/lib/backgrounds/background-sur
 import { getRestDotCount, leadInProgress } from '@/lib/canonical-lrc'
 import { yourDevice } from '@/lib/device-noun'
 import { formatBytes } from '@/lib/fetch-progress'
+import { PAGE_COLUMN_SPACE, PAGE_DOCK_SPACE, publishFootSpace, } from '@/lib/foot-space'
 import { formatKeyShift } from '@/lib/key-shift/key-shift'
 import type { LyricsSearchMatch } from '@/lib/lyrics-service'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import type { DetectedPitch } from '@/lib/pitch-detector'
 import type { AlignedWord } from '@/lib/pitch-word-alignment'
 import { createPersistedSignal } from '@/lib/storage'
@@ -1114,7 +1116,31 @@ export const KaraokeMobileStage: Component<KaraokeMobileStageProps> = (
       </PillControl>
 
       {/* ── Bottom bar ─────────────────────────────────────── */}
-      <div class={styles.bottomBar}>
+      {/* The notices stand on the bar while it spans the foot, upright: they
+          lay over its play button (722-780 against a bar from 766, at
+          390x844). On its side the bar is in the left column, 320 px, wider
+          than the room their stack leaves it below 836 px, so the column
+          says how wide it is and the stack stands beside it: at 780x360 it
+          lay over the key. The web's stage only: the native room says its
+          notices in its own pill. */}
+      <div
+        class={styles.bottomBar}
+        ref={(el) => {
+          if (IS_NATIVE_BUILD || hosting !== undefined) return
+          publishFootSpace(
+            el,
+            PAGE_DOCK_SPACE,
+            'self',
+            () => !isShortTouchLandscape(),
+          )
+          publishFootSpace(
+            el,
+            PAGE_COLUMN_SPACE,
+            'beside',
+            isShortTouchLandscape,
+          )
+        }}
+      >
         <Scrubber
           value={props.elapsed()}
           duration={props.duration()}

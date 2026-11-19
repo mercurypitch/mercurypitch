@@ -468,4 +468,36 @@ describe('createCoachRunner', () => {
     expect(track).toHaveBeenCalledWith('tour_start', 'sing', { of: 2 })
     expect(track).toHaveBeenCalledWith('tour_done', 'sing', { step: 2, of: 2 })
   })
+
+  it('picks a step for the tab bar by width, and one for the stage by layout', () => {
+    // A phone on its side wider than 768 px has the phone's stage and the
+    // top tab bar: the phone's stop for the stage, the desk's for the bar.
+    const tour: CoachTour = {
+      key: 'sing',
+      steps: [
+        show('phone-stage', { viewport: 'phone' }),
+        show('desk-stage', { viewport: 'desktop' }),
+        show('bottom-bar', { viewport: 'narrow' }),
+        show('top-bar', { viewport: 'wide' }),
+      ],
+    }
+    const ids = (phone: boolean, narrow?: boolean): string[] => {
+      const runner = start(
+        tour,
+        narrow === undefined ? { phone } : { phone, narrow },
+      )
+      const seen: string[] = []
+      for (let at = runner.snapshot(); at !== null; at = runner.snapshot()) {
+        seen.push(at.step.id)
+        runner.next()
+      }
+      return seen
+    }
+
+    expect(ids(true, false)).toEqual(['phone-stage', 'top-bar'])
+    expect(ids(true, true)).toEqual(['phone-stage', 'bottom-bar'])
+    expect(ids(false, false)).toEqual(['desk-stage', 'top-bar'])
+    // Not said, the width follows the layout.
+    expect(ids(true)).toEqual(['phone-stage', 'bottom-bar'])
+  })
 })

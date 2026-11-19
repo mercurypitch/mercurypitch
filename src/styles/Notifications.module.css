@@ -413,8 +413,11 @@
    --tabbar-space, which it publishes only while it is drawn: wider than
    768 px a phone on its side keeps the top tab bar, and nothing stands at
    its foot but the home indicator. The stack stops short of the header,
-   which is 48 px here (AppHeader.css), and scrolls past that. The
-   condition is SHORT_TOUCH_LANDSCAPE_QUERY (use-viewport.ts). */
+   which is 48 px here (AppHeader.css), and scrolls past that. A stage
+   whose column is wider than the stack leaves it (Karaoke's, 320 px)
+   publishes its width, --page-column-space (lib/foot-space.ts), and the
+   stack narrows to stand beside it: at 780x360 it lay over Karaoke's key.
+   The condition is SHORT_TOUCH_LANDSCAPE_QUERY (use-viewport.ts). */
 @media (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
   .notificationContainer {
     --toast-floor: max(
@@ -429,7 +432,14 @@
     bottom: calc(var(--toast-floor) + 0.6rem);
     right: max(0.5rem, var(--safe-right, 0px));
     left: auto;
-    width: min(480px, 60vw);
+    width: min(
+      480px,
+      60vw,
+      calc(
+        100vw - var(--page-column-space, 0px) - 0.5rem -
+          max(0.5rem, var(--safe-right, 0px))
+      )
+    );
     max-height: calc(100dvh - 48px - var(--toast-floor) - 1.2rem);
     overflow-y: auto;
     overscroll-behavior: contain;

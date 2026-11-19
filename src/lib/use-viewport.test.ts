@@ -294,6 +294,15 @@ describe('the sidebar drawer, in the stylesheets', () => {
     )
   })
 
+  it("stands the Ear Lab bench's art beside its column on a phone on its side", async () => {
+    const { SHORT_TOUCH_LANDSCAPE_QUERY } = await loadFor(devices[0])
+
+    // The header the bench scrolls under is the phone stage's there too.
+    expect(queries('src/features/ear-lab/merc/bench.module.css')).toContain(
+      SHORT_TOUCH_LANDSCAPE_QUERY,
+    )
+  })
+
   it('gives the voice pill docked in that header its mic box there too', async () => {
     const { SHORT_TOUCH_LANDSCAPE_QUERY } = await loadFor(devices[0])
 

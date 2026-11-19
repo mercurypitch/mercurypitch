@@ -1451,6 +1451,88 @@
   }
 }
 
+/* ── A phone on its side: the art beside the bench ────────────
+   The column's hero is drawn to the column's width, 82% of it tall: on a
+   phone on its side 459 px of a 390 px window, and the stations stood
+   three screens down, from 1,226 px at 844x390. Here the painting stands
+   on the left from the app's bar down, as wide as the window's height
+   lets it stand whole over a tab bar where one floats, and stays there
+   (sticky) while the column scrolls beside it under the tab's title:
+   Merc's line, the Index, Today, the Ear rooms, the stations two to a
+   row, the Path and the Report, in the same order of reading. The
+   window's sides are a phone's insets, so nothing stands under a camera.
+   The condition is SHORT_TOUCH_LANDSCAPE_QUERY (use-viewport.ts). */
+@media (pointer: coarse) and (orientation: landscape) and (max-height: 500px) {
+  .column {
+    /* The art's width: the window's height less the app's bar (48 px)
+       and 8 px over and under, at the hero's 100:82, and never more than
+       half the window. */
+    --side-art: min(
+      46%,
+      calc((100dvh - var(--tabbar-space, 0px) - 64px) * 100 / 82)
+    );
+
+    max-width: none;
+    display: grid;
+    grid-template-columns: var(--side-art) minmax(0, 1fr);
+    grid-template-rows: auto 1fr;
+    column-gap: 12px;
+    align-items: start;
+    box-sizing: border-box;
+    padding: 0 max(12px, var(--safe-right, 0px)) 0
+      max(12px, var(--safe-left, 0px));
+  }
+
+  .topBar {
+    position: static;
+    grid-column: 2;
+    grid-row: 1;
+    margin-top: 4px;
+  }
+
+  /* Drawn to its own width, as on the desk: the painting, Merc and his
+     line keep their places. */
+  .hero {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    position: sticky;
+    top: 8px;
+    margin-top: 8px;
+    container: merc-hero / inline-size;
+    height: auto;
+    aspect-ratio: 100 / 82;
+  }
+
+  .sections {
+    grid-column: 2;
+    grid-row: 2;
+    padding: 0;
+  }
+
+  /* Its top fades into the night as its sides do, as on the desk. */
+  .painting,
+  .heroNight,
+  .heroShade {
+    --hero-sides: linear-gradient(
+      90deg,
+      transparent 0,
+      #000 14%,
+      #000 86%,
+      transparent 100%
+    );
+    --hero-top: linear-gradient(180deg, transparent 0, #000 18%);
+
+    -webkit-mask-image: var(--hero-sides), var(--hero-top);
+    -webkit-mask-composite: source-in;
+    mask-image: var(--hero-sides), var(--hero-top);
+    mask-composite: intersect;
+  }
+
+  .painting {
+    --hero-top: linear-gradient(180deg, transparent 43.6cqw, #000 58.4cqw);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .sheet {
     animation: fade 160ms ease both;

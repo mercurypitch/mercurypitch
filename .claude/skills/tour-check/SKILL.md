@@ -56,8 +56,10 @@ does exactly that and exits non-zero if any step's spotlight misses.
    `requiredTab`?
 
    Every step is also held to the two rules in `scripts/tour-rules.mjs`.
-   `WIDE` means its spotlight is taller than 70% of the window (point the
-   step at something smaller); the steps that already were when the rule
+   `WIDE` means its spotlight is taller than 70% of the window and the
+   tooltip covers part of it (point the step at something smaller); a tall
+   spotlight the tooltip stands clear of, beside it, passes and prints
+   `tall` (`standsClear`). The steps that already were WIDE when the rule
    came in are named in `WIDE_TARGETS` and print `wide` instead. `BAR` means
    something the tour put up covers the consent bar, which the walk stands
    in for at every step (the walk's build shows no real banner).

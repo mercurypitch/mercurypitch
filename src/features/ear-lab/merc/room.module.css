@@ -1744,6 +1744,11 @@
     grid-column: 1;
   }
 
+  /* Its right edge is the window's, where a phone on its side has its
+     rounded corner and, one way round, its camera: the console keeps the
+     inset the room's header keeps. Without it the pads, Merc's line and
+     the pinned row's words ran 31 px into a 47 px inset at 844x390,
+     "Your call" 16 px from the glass. */
   .console {
     grid-row: 3;
     grid-column: 2;
@@ -1751,6 +1756,7 @@
     max-height: 100%;
     overflow-y: auto;
     overscroll-behavior: contain;
+    padding-right: max(16px, var(--safe-right, 0px));
   }
 }
 

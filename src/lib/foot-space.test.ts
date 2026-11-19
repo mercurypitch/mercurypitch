@@ -1,4 +1,4 @@
-import { createRoot } from 'solid-js'
+import { createRoot, createSignal } from 'solid-js'
 import { afterEach, describe, expect, it } from 'vitest'
 import { publishFootSpace } from './foot-space'
 
@@ -82,5 +82,60 @@ describe('publishFootSpace', () => {
 
     expect(read()).toBe('182px')
     dispose()
+  })
+
+  it('counts what lies under a bar in the page flow, a relative one too', () => {
+    // A phone stage's transport is `position: relative` (the count-in badge
+    // hangs from it), which reads `bottom: 0px`; the tab bar under it, 62 px
+    // of the window's foot, is its gap all the same.
+    const el = document.createElement('div')
+    el.style.position = 'relative'
+    // As a browser resolves a relative box's `bottom: auto`.
+    el.style.bottom = '0px'
+    document.body.appendChild(el)
+    el.getBoundingClientRect = () =>
+      ({ bottom: window.innerHeight - 62 }) as DOMRect
+    const dispose = createRoot((done) => {
+      publishFootSpace(el, VAR)
+      return done
+    })
+    expect(read()).toBe('62px')
+    dispose()
+  })
+
+  it('publishes only while its condition holds, and follows it as it turns', () => {
+    // The Singing stage's transport spans the foot upright, and the notices
+    // stand on it; on its side it is in the stage's left column, beside
+    // them, and must not lift them.
+    const el = pinned('20px')
+    const [upright, setUpright] = createSignal(true)
+    const dispose = createRoot((done) => {
+      publishFootSpace(el, VAR, 'self', upright)
+      return done
+    })
+    expect(read()).toBe('20px')
+
+    setUpright(false)
+    expect(read()).toBe('')
+
+    setUpright(true)
+    expect(read()).toBe('20px')
+    dispose()
+    expect(read()).toBe('')
+  })
+
+  it('publishes how far a column reaches across the foot, when asked for what is beside it', () => {
+    // Karaoke's stage on its side: its bar is in a 320 px column, and the
+    // notices stand to the right of it.
+    const el = pinned('0px')
+    el.getBoundingClientRect = () => ({ right: 335.5 }) as DOMRect
+    const dispose = createRoot((done) => {
+      publishFootSpace(el, VAR, 'beside')
+      return done
+    })
+    expect(read()).toBe('336px')
+
+    dispose()
+    expect(read()).toBe('')
   })
 })

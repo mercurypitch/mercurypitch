@@ -54,7 +54,13 @@
   min-height: 0;
   flex-shrink: 0;
   overflow-x: auto;
-  gap: 1rem;
+  /* Where the row will not fit, the actions go under the title and the
+     tabs, at the row's end, and break between their own two groups if they
+     must. On a tablet (1024 wide, the sidebar beside it) the one row was
+     181 px wider than its 724 px and Guide and Settings were past the
+     edge; at a desk, 1280 and wider, it fits and stays one row. */
+  flex-wrap: wrap;
+  gap: 0.5rem 1rem;
 }
 
 .uvr-header-divider {
@@ -112,14 +118,16 @@
   /* Top-align so the two-row mode stack (toggle + credits pill) doesn't
      stretch its siblings */
   align-items: flex-start;
+  flex-wrap: wrap;
+  justify-content: flex-end;
   gap: 0.25rem;
 }
 
-/* On a phone's layout the row holds one Options button (UvrPanel.tsx), and
-   the options sheet's anchor follows it as the header's last item, so
-   `space-between` stood the button in the middle of a phone on its side's
-   header (496-583 px of 844). At the row's end, where Settings was. */
-.panel-header .header-actions:has(> .uvr-more-btn) {
+/* At the row's end, on its own line too. On a phone's layout the row holds
+   one Options button (UvrPanel.tsx), and the options sheet's anchor follows
+   it as the header's last item, so `space-between` stood the button in the
+   middle of a phone on its side's header (496-583 px of 844). */
+.panel-header .header-actions {
   margin-left: auto;
 }
 

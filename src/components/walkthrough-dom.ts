@@ -161,10 +161,17 @@ export function scrollTargetIntoView(el: Element): boolean {
       style.scrollMarginBottom = `${view.bottom - open.bottom + CLEAR}px`
     }
   }
+  // Centred across only when it is not whole across the window: one that is
+  // keeps its place sideways. Centring it anyway scrolled every box that can
+  // scroll sideways, a hidden one too: the Ear Lab's shell, wider than the
+  // window by the instrument rack parked past its right edge, slid 208 px
+  // and the bench with it when Six stations stood right of the middle
+  // (932x430, the bench's art beside its column).
+  const across = r.left >= 0 && r.right <= window.innerWidth
   el.scrollIntoView({
     behavior: 'auto',
     block: tall ? 'start' : needsScrollV ? 'center' : 'nearest',
-    inline: 'center',
+    inline: across ? 'nearest' : 'center',
   })
   if (style !== null) {
     style.scrollMarginTop = kept[0]
