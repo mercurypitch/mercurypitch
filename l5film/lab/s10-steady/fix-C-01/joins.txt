@@ -1,0 +1,3 @@
+S7 to S8: outside the hosts' squares (their passes are not seeked in the probe) largest change 22 of 255, mean 0.091, pixels over 24: 0
+S8 to S9: outside the hosts' squares (their passes are not seeked in the probe) largest change 5 of 255, mean 0.000, pixels over 24: 0
+S9 to S10: outside the hosts' squares (their passes are not seeked in the probe) largest change 8 of 255, mean 0.000, pixels over 24: 0

@@ -320,7 +320,8 @@
             listen2.draw({ alpha: L.fade(t, STARTS, null).a })
             puff.life(t, CIRC[0], null); click.life(t, CIRC[1], null); neither.life(t, NEITHER, null)
             easy.life(t, EASY, null)
-            const hShow = P(t, SOFT, 0.3) * (1 - P(t, ONLY, 1.2, 'sine.inOut'))
+            // linear over 0.5 s: the "h" and the row's dim eased over 0.3 s measured as a pop (0.28 % at 52.800)
+            const hShow = P(t, SOFT, 0.5, 'none') * (1 - P(t, ONLY, 1.2, 'sine.inOut'))
             hGlyph.draw({ a: 0.7 * hShow })
             const hm = 1 - 0.75 * hShow
             hStops[0].setAttribute('stop-opacity', hm.toFixed(3)); hStops[1].setAttribute('stop-opacity', hm.toFixed(3))

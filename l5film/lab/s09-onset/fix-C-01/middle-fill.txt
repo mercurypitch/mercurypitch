@@ -1,0 +1,5 @@
+S9 9.50 before (critic): right two-thirds (x 640 to 1680, y 200 to 700): 3.6 % of pixels over the ground by 8 levels, 2.6 % by 25; mean lift 1.4; whole frame (no hosts) 3.7 % / 1.7 %
+S9 9.50 after: right two-thirds (x 640 to 1680, y 200 to 700): 5.5 % of pixels over the ground by 8 levels, 2.7 % by 25; mean lift 3.3; whole frame (no hosts) 3.3 % / 2.0 %
+S9 21.00 before (critic): right two-thirds (x 640 to 1680, y 200 to 700): 3.2 % of pixels over the ground by 8 levels, 2.3 % by 25; mean lift 0.4; whole frame (no hosts) 3.0 % / 1.0 %
+S9 21.00 after: right two-thirds (x 640 to 1680, y 200 to 700): 15.0 % of pixels over the ground by 8 levels, 9.8 % by 25; mean lift 5.8; whole frame (no hosts) 5.0 % / 3.2 %
+S9 25.00 before (critic): right two-thirds (x 640 to 1680, y 200 to 700): 5.0 % of pixels over the ground by 8 levels, 4.1 % by 25; mean lift 2.9; whole frame (no hosts) 3.5 % / 1.5 %

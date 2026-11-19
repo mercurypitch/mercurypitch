@@ -1,0 +1,11 @@
+when each element is half gone in the clip (first frame under 50 % of its ink at 51.90)
+  guess (and strike)             52.233
+  steady: ...                    52.300  (+0.067)
+  A, any octave                  52.367  (+0.067)
+  in the band                    52.400  (+0.033)
+  settled                        52.467  (+0.067)
+  a comfortable, fixed length    52.500  (+0.033)
+  chip ILLUSTRATION              52.533  (+0.033)
+  axis "10 s"                    52.500  (+-0.033)
+  stays bracket                  52.600  (+0.100)
+  her line (violet)              52.600  (+0.000)

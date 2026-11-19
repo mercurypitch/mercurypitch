@@ -1,0 +1,6 @@
+S8 before (critic d08): 26 frames 2.23 to 3.07: mean 0.213 %, min 0.033 % of the frame lit (excluding the hosts)
+S8 after: 26 frames 2.23 to 3.07: mean 0.653 %, min 0.376 % of the frame lit (excluding the hosts)
+S9 before (critic d09): 35 frames 2.23 to 3.40: mean 0.135 %, min 0.047 % of the frame lit (excluding the hosts)
+S9 after: 36 frames 2.23 to 3.40: mean 0.440 %, min 0.141 % of the frame lit (excluding the hosts)
+S10 before (critic d10): 12 frames 2.23 to 2.60: mean 0.683 %, min 0.033 % of the frame lit (excluding the hosts)
+S10 after: 12 frames 2.23 to 2.60: mean 1.099 %, min 0.280 % of the frame lit (excluding the hosts)

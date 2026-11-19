@@ -4458,3 +4458,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   amber line, 178; part 2 to group B's builder for S6/S7's "never your throat", 203). Both builders
   can be resumed by SendMessage; run the two parts one after the other in one heavy slot, after
   group D's fix round has started.
+- 13:0x: BOTH BUILDERS STOPPED ON THE 5-HOUR LIMIT (resets 13:40 UTC): group C's fix round (last
+  step: writing S9's notes) and group E's build (last step: checking merc-tags before writing
+  S13). Their work is saved. RESUME BOTH with SendMessage once requests are accepted again (a
+  one-shot check-in is set for 13:42; the hourly one at 13:50 covers it too).

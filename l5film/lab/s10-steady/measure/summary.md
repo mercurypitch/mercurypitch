@@ -12,14 +12,13 @@ File: `lab/s10-steady/clip.mp4`
 
 A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes by 16 or more. Target: at most about 1 s per 30 s in total and none longer than about 0.5 s; a hold that runs to the end (the final call to action) is reported separately and exempt.
 
-**Inside the film:** 2.3 s (1.1 s per 30 s), longest 0.2 s.
+**Inside the film:** 1.7 s (0.8 s per 30 s), longest 0.2 s.
 **Final hold:** none.
 
 | Starts | Length | Note |
 | --- | --- | --- |
 | 0.00 s | 0.1 s |  |
 | 4.40 s | 0.1 s |  |
-| 7.90 s | 0.1 s |  |
 | 33.00 s | 0.1 s |  |
 | 35.30 s | 0.1 s |  |
 | 35.50 s | 0.1 s |  |
@@ -29,14 +28,9 @@ A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes
 | 43.00 s | 0.2 s |  |
 | 44.60 s | 0.1 s |  |
 | 45.40 s | 0.2 s |  |
-| 46.80 s | 0.1 s |  |
+| 46.70 s | 0.2 s |  |
 | 49.40 s | 0.1 s |  |
 | 50.90 s | 0.1 s |  |
-| 52.70 s | 0.1 s |  |
-| 56.20 s | 0.1 s |  |
-| 56.70 s | 0.1 s |  |
-| 57.50 s | 0.1 s |  |
-| 57.90 s | 0.2 s |  |
 
 ## Low motion
 
@@ -53,19 +47,18 @@ Runs where the mean change is below 0.35. Not an automatic fail: a critic looks 
 | 25.10 s | 1.3 s | 158 | small element moving |
 | 26.50 s | 4.1 s | 174 | small element moving |
 | 32.70 s | 0.7 s | 71 | small element moving |
-| 33.70 s | 4.5 s | 168 | small element moving |
-| 38.40 s | 0.6 s | 181 | small element moving |
+| 33.70 s | 4.5 s | 166 | small element moving |
+| 38.40 s | 0.6 s | 182 | small element moving |
 | 40.50 s | 1.6 s | 118 | small element moving |
-| 42.30 s | 1.4 s | 171 | small element moving |
-| 43.80 s | 7.5 s | 174 | small element moving |
-| 52.60 s | 1.1 s | 129 | small element moving |
-| 53.80 s | 0.5 s | 145 | small element moving |
+| 42.30 s | 1.4 s | 172 | small element moving |
+| 43.80 s | 7.5 s | 169 | small element moving |
+| 51.50 s | 0.6 s | 168 | small element moving |
+| 53.80 s | 0.5 s | 144 | small element moving |
 | 54.40 s | 1.7 s | 167 | small element moving |
-| 56.20 s | 2.1 s | 168 | small element moving |
-| 58.40 s | 1.5 s | 207 | small element moving |
-| 60.00 s | 0.6 s | 205 | small element moving |
+| 56.20 s | 1.9 s | 168 | small element moving |
+| 58.40 s | 2.1 s | 207 | small element moving |
 
-1 shorter run(s) totalling 0.1 s are not listed; `motion.csv` has every sample.
+3 shorter run(s) totalling 0.3 s are not listed; `motion.csv` has every sample.
 
 ## Single-frame events
 
@@ -81,7 +74,7 @@ From every frame at the film's own rate, by the share of pixels that change by m
 
 ## Loop seam
 
-From the last frame back to the first: 9.49 on the scale of `frames.csv`, against a median frame change of 0.045, a 95th percentile of 2.09 and a largest of 3.60 at 24.600 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
+From the last frame back to the first: 9.47 on the scale of `frames.csv`, against a median frame change of 0.045, a 95th percentile of 2.11 and a largest of 3.60 at 24.600 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
 
 ## Loudness
 

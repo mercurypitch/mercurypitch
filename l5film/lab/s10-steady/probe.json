@@ -507,7 +507,7 @@
  },
  {
   "t": 33.952,
-  "name": "199: at the crest and trough heights (the line's outer edges), ticks 8 px in at the ends",
+  "name": "199: at the crest and trough heights (the line's outer edges), ticks 10 px across the ends",
   "got": "top line y 491.2 (crest edge 491.2), bottom line y 548.8 (trough edge 548.8); ticks 10.0, 10.0",
   "want": "within 1.5 px; ticks 10 across",
   "pass": true
