@@ -27,11 +27,13 @@
 //   and the Monitor's status line. The top right clears all three.
 // - The web's Sing tab keeps no takes of its own: a run's score shows when it
 //   ends, and the takes kept to play back are Hear Yourself's. So the last
-//   stop points there: on a phone at More, which always holds it, and on a
-//   wide screen at the You group, which holds it beside Home and Progress
-//   (at 1440 px the bar folds Hear Yourself's own tab into the group's menu,
-//   so the tab itself is not always there to ring). No line says "here",
-//   which would point at nothing if the bubble stood centred.
+//   stop points there: on the bottom tab bar at More, which always holds it,
+//   and on the top bar at the You group, which holds it beside Home and
+//   Progress (at 1440 px the bar folds Hear Yourself's own tab into the
+//   group's menu, so the tab itself is not always there to ring). The two
+//   bars switch by width alone, so the stop asks for 'narrow' and 'wide': a
+//   phone on its side wider than 768 px keeps the top bar. No line says
+//   "here", which would point at nothing if the bubble stood centred.
 // - The last stop offers "Show me more" beside Done: a second tour, where
 //   Merc sings through the tab (sing-more-tour.ts), loaded only on the tap.
 //   Done on the last stop of either gives the same hand-over.
@@ -101,7 +103,7 @@ export const SING_TOUR: CoachTour = {
     {
       id: 'takes',
       kind: 'watch',
-      viewport: 'phone',
+      viewport: 'narrow',
       target: '[data-tour="mobile-tabbar-more"]',
       merc: 'idle',
       title: 'Keep a take',
@@ -111,7 +113,7 @@ export const SING_TOUR: CoachTour = {
     {
       id: 'takes',
       kind: 'watch',
-      viewport: 'desktop',
+      viewport: 'wide',
       target: '[data-tab-group="you"]',
       merc: 'idle',
       title: 'Keep a take',

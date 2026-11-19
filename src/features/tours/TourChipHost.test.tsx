@@ -51,7 +51,10 @@ vi.mock('@/stores', async () => {
 vi.mock('@/lib/guide-funnel', () => ({
   trackTour: (...args: unknown[]) => store.trackTour(...args),
 }))
-vi.mock('@/lib/use-viewport', () => ({ isNarrow: () => false }))
+vi.mock('@/lib/use-viewport', () => ({
+  isNarrow: () => false,
+  isPhoneStage: () => false,
+}))
 
 const coach = vi.hoisted(() => ({
   startCoachTour: vi.fn(async () => ({
@@ -240,6 +243,7 @@ describe('TourChipHost: the chip', () => {
 
     expect(coach.startCoachTour).toHaveBeenCalledWith(SING_TOUR, {
       phone: false,
+      narrow: false,
     })
     expect(chip()).toBeNull()
     expect(store.startPageTour).not.toHaveBeenCalled()

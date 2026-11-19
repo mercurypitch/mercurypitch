@@ -39,7 +39,7 @@
 import { coachActive, setCoachActive } from '@/lib/coach-state'
 import type { CoachHandoff } from '@/lib/coach-types'
 import { startWhenClear } from '@/lib/tour-screen'
-import { isNarrow } from '@/lib/use-viewport'
+import { isNarrow, isPhoneStage } from '@/lib/use-viewport'
 import { hasGuideRoomTour, hasPageTour, startGuideRoomTour } from '@/stores'
 import type { ActiveTab } from '@/types'
 import type { CoachTourEntry } from './coach-tours'
@@ -161,11 +161,15 @@ function startMercTour(
         return
       }
       pending = null
+      // The layout the screen shows, as the Guide's tours ask it
+      // (showsLayout in the app store): a phone on its side has the phone's
+      // stages, so their steps, and keeps the top tab bar wider than 768 px,
+      // which the steps for the tab bar ask by width. By width alone, at
+      // 844x390 Show me more's Spaced rest stop pointed at the desk's bar.
+      const screen = { phone: isPhoneStage(), narrow: isNarrow() }
       await start.startCoachTour(
         tour,
-        handoff === null
-          ? { phone: isNarrow() }
-          : { phone: isNarrow(), handoff },
+        handoff === null ? screen : { ...screen, handoff },
       )
       // Spent once the tour is on screen: a coach that did not load leaves
       // the offer for the next visit (start.ts lets go of coachActive).

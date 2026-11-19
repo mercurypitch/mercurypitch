@@ -78,14 +78,30 @@ export interface CoachRunner {
 export type CoachEnd = 'done' | 'exit'
 
 export interface CoachRunnerDeps {
+  /** The phone's layout: its steps ('phone'), not the desk's. */
   phone?: boolean
+  /** Narrower than the breakpoint ('narrow' steps); `phone` when not said. */
+  narrow?: boolean
   track?: typeof trackTour
   on?: typeof onCoachEvent
   onEnd?: (result: CoachEnd) => void
 }
 
-const forScreen = (step: CoachStep, phone: boolean): boolean =>
-  step.viewport === undefined || step.viewport === (phone ? 'phone' : 'desktop')
+/** Whether a step is for this screen (CoachStep.viewport). */
+function forScreen(step: CoachStep, phone: boolean, narrow: boolean): boolean {
+  switch (step.viewport) {
+    case undefined:
+      return true
+    case 'phone':
+      return phone
+    case 'desktop':
+      return !phone
+    case 'narrow':
+      return narrow
+    case 'wide':
+      return !narrow
+  }
+}
 
 /** A wait that draws nothing and is not counted (coach-types.ts). */
 export const isQuiet = (step: CoachStep | undefined): boolean =>
@@ -97,9 +113,9 @@ export function createCoachRunner(
 ): CoachRunner {
   const track = deps.track ?? trackTour
   const on = deps.on ?? onCoachEvent
-  const steps = tour.steps.filter((step) =>
-    forScreen(step, deps.phone === true),
-  )
+  const phone = deps.phone === true
+  const narrow = deps.narrow ?? phone
+  const steps = tour.steps.filter((step) => forScreen(step, phone, narrow))
   // Each step's place in "N of M": a quiet step keeps its predecessor's.
   const places: number[] = []
   for (const step of steps) {

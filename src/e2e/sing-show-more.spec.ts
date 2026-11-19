@@ -35,11 +35,18 @@ const version = (
   ) as { version: string }
 ).version
 
-const SCREENS = [
+interface Screen {
+  name: string
+  width: number
+  height: number
+  /** The phone's layout: its stage, and the phone's stops. */
+  phone: boolean
+}
+
+const SCREENS: readonly Screen[] = [
   { name: 'phone', width: 390, height: 844, phone: true },
   { name: 'wide', width: 1440, height: 900, phone: false },
-] as const
-type Screen = (typeof SCREENS)[number]
+]
 
 /** Where each screen draws the Sing tab's line. */
 const canvasOf = (screen: Screen): string =>
@@ -292,52 +299,55 @@ async function checkPutBack(
   await expect(page.locator('#score-pct')).toHaveCount(0)
 }
 
+/** Show me more, each stop through to Done mid-song on the last. */
+async function doneMidSong(page: Page, screen: Screen): Promise<void> {
+  const errors: string[] = []
+  page.on('pageerror', (error) => errors.push(error.message))
+  await toLastSingStop(page, screen)
+  const bubble = page.getByTestId('coach-bubble')
+  await expect(bubble.getByRole('button', { name: 'Done' })).toBeVisible()
+  const before = {
+    controls: await controls(page, screen),
+    storage: await storage(page),
+  }
+  const asked = await gumCalls(page)
+
+  await bubble.getByRole('button', { name: 'Show me more' }).click()
+
+  const stops = stopsFor(screen)
+  for (const [i, stop] of stops.entries()) {
+    await checkStop(page, screen, stop, `${i + 1} of ${stops.length}`)
+    if (i === 0) {
+      // Repeat comes round again, and his notes are scored by no one: the
+      // phone stage's live score never shows
+      await expect(page.getByTestId('coach-said')).toContainText(
+        'Round 2 of 2',
+        { timeout: 15_000 },
+      )
+      if (screen.phone) {
+        await expect(page.locator('[data-stage-canvas]')).not.toContainText('%')
+      }
+    }
+    if (i < stops.length - 1) {
+      await bubble.getByRole('button', { name: 'Next' }).click()
+    }
+  }
+  // Done mid-song, on the last stop: the tour is over (a first visit has
+  // no plan to hand over to)
+  await bubble.getByRole('button', { name: 'Done' }).click()
+  await expect(page.locator('#coach-root')).toHaveCount(0)
+
+  await checkPutBack(page, screen, before)
+  expect(await gumCalls(page)).toBe(asked)
+  expect(errors).toEqual([])
+}
+
 for (const screen of SCREENS) {
   test(`Show me more: Merc sings each stop through the Sing tab, and Done mid-song puts it all back, at ${screen.width}x${screen.height}`, async ({
     page,
   }) => {
     test.setTimeout(120_000)
-    const errors: string[] = []
-    page.on('pageerror', (error) => errors.push(error.message))
-    await toLastSingStop(page, screen)
-    const bubble = page.getByTestId('coach-bubble')
-    await expect(bubble.getByRole('button', { name: 'Done' })).toBeVisible()
-    const before = {
-      controls: await controls(page, screen),
-      storage: await storage(page),
-    }
-    const asked = await gumCalls(page)
-
-    await bubble.getByRole('button', { name: 'Show me more' }).click()
-
-    const stops = stopsFor(screen)
-    for (const [i, stop] of stops.entries()) {
-      await checkStop(page, screen, stop, `${i + 1} of ${stops.length}`)
-      if (i === 0) {
-        // Repeat comes round again, and his notes are scored by no one: the
-        // phone stage's live score never shows
-        await expect(page.getByTestId('coach-said')).toContainText(
-          'Round 2 of 2',
-          { timeout: 15_000 },
-        )
-        if (screen.phone) {
-          await expect(page.locator('[data-stage-canvas]')).not.toContainText(
-            '%',
-          )
-        }
-      }
-      if (i < stops.length - 1) {
-        await bubble.getByRole('button', { name: 'Next' }).click()
-      }
-    }
-    // Done mid-song, on the last stop: the tour is over (a first visit has
-    // no plan to hand over to)
-    await bubble.getByRole('button', { name: 'Done' }).click()
-    await expect(page.locator('#coach-root')).toHaveCount(0)
-
-    await checkPutBack(page, screen, before)
-    expect(await gumCalls(page)).toBe(asked)
-    expect(errors).toEqual([])
+    await doneMidSong(page, screen)
   })
 
   test(`Show me more: End tour mid-song stops the sound and puts it all back, at ${screen.width}x${screen.height}`, async ({
@@ -362,6 +372,25 @@ for (const screen of SCREENS) {
     expect(await gumCalls(page)).toBe(asked)
   })
 }
+
+// A phone on its side wider than the breakpoint has the phone's stage, and
+// gets the phone's one stop. By width alone it got the desk's two, and the
+// second, Spaced rest, pointed at a bar the phone's stage does not have.
+test.describe('a phone on its side', () => {
+  test.use({ hasTouch: true, isMobile: true })
+
+  test("Show me more: Merc sings the phone stage's stop, and Done mid-song puts it all back, at 844x390", async ({
+    page,
+  }) => {
+    test.setTimeout(120_000)
+    await doneMidSong(page, {
+      name: 'sideways',
+      width: 844,
+      height: 390,
+      phone: true,
+    })
+  })
+})
 
 test('Show me more: leaving the Sing tab mid-song stops Merc and puts it all back, at 1440x900', async ({
   page,
