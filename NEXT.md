@@ -4312,3 +4312,16 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - GROUP B RESUMED (S5-S7), told about DECISIONS 164-178 and to re-check host stills.
 - Heavy agents now: polish-2 builder + group B. Next film after B: groups C and D (two at a time,
   only when the polish builder is done), then E (E's brief: 13f lines vs Merc's hop path).
+
+## 09:57 UTC, 19 Nov
+- GROUP B HANDED BACK (s05-push, s06-diaphragm, s07-support): probes 64/157/95 pass, root check 0
+  errors, clock-lint silent, merc-tags 0 stale; clips re-rendered after the passes; three own pops
+  cleared with linear fades; matched cut S6/S7 clean (cut-s06-s07.mp4). Lead looked at S6's sheet.
+  DECISIONS 179 (departures accepted; no chapter-1 kicker; HANDOFFS mix-up card peak y 285 + chip
+  fade; STORYBOARD 6f "added" at the crossing). Holds 2.0/2.5 s per 30 s in S6/S7 -> the critic.
+- CRITIC B-01 LAUNCHED (fresh motion-critic, xhigh) -> l5film/review/critic-B-01/REPORT.md (save its
+  text if it cannot write). Then the lead's calls -> group B builder (resumable) for the fix round
+  (when a heavy slot frees: polish-2 + group C hold the two).
+- GROUP C LAUNCHED (brief $S/briefs/l5-film-scenes-C.md; s08-breathe, s09-onset, s10-steady;
+  last frame carries 10h's frame across the matched cut on sing).
+- Heavy agents now: polish-2 builder + group C. Queue: B's fix round, then group D, then E.
