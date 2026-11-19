@@ -4536,7 +4536,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   F-01.
 - Heavy now: group E fix + kit builder (staged).
 
-## 15:31 UTC, 19 Nov
+## 15:27 UTC, 19 Nov
 - GROUP E FIX ROUND HANDED BACK and ACCEPTED (DECISIONS 223; lead looked at item3-fill and
   item2-card-whole): answer held 0.50 s, "Voice Mirror" panel + 0.4, ten line one line inside the
   card (L.RECAP.VM closed up 13 px), recap fill 4.3 % / 10.5 % with the traces' chip, carried bead
