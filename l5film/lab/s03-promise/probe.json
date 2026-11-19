@@ -86,8 +86,44 @@
  {
   "t": 1.9920000000000044,
   "name": "  \"what your diaphragm does\" box (x, y) and its gap under \"level\"",
-  "got": "474.2 to 957.5, 796.0 to 846.0; 10.0 px",
+  "got": "474.2 to 957.5, 834.0 to 884.0; 6.0 px",
   "want": "info",
+  "pass": true
+ },
+ {
+  "t": 2.2920000000000043,
+  "name": "F-01, DECISIONS 226 (t 2.29): the strip's hairline on screen y / its outline y (stroke centres) / \"level\" baseline / \"what your diaphragm does\" baseline",
+  "got": "720.0 / 660.0 to 780.0 / 820.0 / 874.0",
+  "want": "720.0 / 660.0 to 780.0 / 820.0 / 874.0",
+  "pass": true
+ },
+ {
+  "t": 2.2920000000000043,
+  "name": "  the outline's stroke (outer edge) to \"level\"'s ink",
+  "got": 15,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.2920000000000043,
+  "name": "  \"level\"'s ink to \"what your diaphragm does\"'s ink",
+  "got": 24,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.2920000000000043,
+  "name": "  the lowest ink (its descenders) above the captions' 896",
+  "got": 883,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 2.2920000000000043,
+  "name": "  the outline 1.5 times its old 80 px (stroke centres)",
+  "got": 1.5,
+  "want": 1.5,
+  "tol": 0.001,
   "pass": true
  },
  {
@@ -107,7 +143,7 @@
  {
   "t": 9.470000000000002,
   "name": "  \"what your diaphragm does\" box (x, y) and its gap under \"level\"",
-  "got": "321.8 to 805.0, 796.0 to 846.0; 10.0 px",
+  "got": "321.8 to 805.0, 834.0 to 884.0; 6.0 px",
   "want": "info",
   "pass": true
  },
@@ -116,6 +152,42 @@
   "name": "keep-out: nearest visible text to tavi's body box (\"a comfortable note · 10 s\")",
   "got": 502.14,
   "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 9.470000000000002,
+  "name": "F-01, DECISIONS 226 (t 9.47): the strip's hairline on screen y / its outline y (stroke centres) / \"level\" baseline / \"what your diaphragm does\" baseline",
+  "got": "720.0 / 660.0 to 780.0 / 820.0 / 874.0",
+  "want": "720.0 / 660.0 to 780.0 / 820.0 / 874.0",
+  "pass": true
+ },
+ {
+  "t": 9.470000000000002,
+  "name": "  the outline's stroke (outer edge) to \"level\"'s ink",
+  "got": 15,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 9.470000000000002,
+  "name": "  \"level\"'s ink to \"what your diaphragm does\"'s ink",
+  "got": 24,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 9.470000000000002,
+  "name": "  the lowest ink (its descenders) above the captions' 896",
+  "got": 883,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 9.470000000000002,
+  "name": "  the outline 1.5 times its old 80 px (stroke centres)",
+  "got": 1.5,
+  "want": 1.5,
+  "tol": 0.001,
   "pass": true
  },
  {
@@ -144,6 +216,13 @@
   "name": "F-promise-b: plot x 320 to 1440, line y 400",
   "got": "320 to 1440, 400",
   "want": "320 to 1440, 400",
+  "pass": true
+ },
+ {
+  "t": 10.4695,
+  "name": "F-01: the last frame's strip at 720 and \"level\" at 820 (s04's first frame draws the same)",
+  "got": "720 / 820",
+  "want": "720 / 820",
   "pass": true
  },
  {

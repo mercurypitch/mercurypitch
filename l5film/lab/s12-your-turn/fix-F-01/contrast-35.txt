@@ -1,0 +1,14 @@
+== 70.00
+  question  glyph L 0.1157  ground L 0.0066  contrast 2.93:1  (5796 glyph px)
+  line1     glyph L 0.1157  ground L 0.0067  contrast 2.92:1  (3121 glyph px)
+  line2     glyph L 0.1132  ground L 0.0065  contrast 2.89:1  (3159 glyph px)
+  line3     glyph L 0.1206  ground L 0.0064  contrast 3.03:1  (3112 glyph px)
+  cap1      glyph L 0.1107  ground L 0.0096  contrast 2.70:1  (719 glyph px)
+  cap4      glyph L 0.1175  ground L 0.0090  contrast 2.84:1  (2141 glyph px)
+== 64.72
+  question  glyph L 0.1157  ground L 0.0066  contrast 2.93:1  (5796 glyph px)
+  line1     glyph L 0.1157  ground L 0.0067  contrast 2.92:1  (3121 glyph px)
+  line2     glyph L 0.1132  ground L 0.0065  contrast 2.89:1  (3159 glyph px)
+  line3     glyph L 0.1206  ground L 0.0064  contrast 3.03:1  (3112 glyph px)
+  cap1      glyph L 0.1107  ground L 0.0096  contrast 2.70:1  (719 glyph px)
+  cap4      glyph L 0.1175  ground L 0.0090  contrast 2.84:1  (2140 glyph px)

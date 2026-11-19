@@ -9,7 +9,7 @@
     f0: 0, ghost: 0.15, gone: 0.34, dim: A.DIM + A.DIM_D + 0.05, card: A.CARD_IN + 0.9, full: A.UNDIM + A.UNDIM_D + 0.02,
     yt: A.YT + 0.4, br: A.BR + A.BR_D + 0.3, noth: A.NOTH + 0.3, doc: A.DOC + 0.4, sore: A.SORE + 0.3, just: A.JUST + 0.3,
     r1: A.RS[0] + 0.3, r2: A.RS[1] + 0.3, r3: A.RS[2] + 0.3, r4: A.RS[3] + 0.3, r5: A.RS[4] + 0.3,
-    ringOn: A.RING + 0.02, ring: A.RING + A.RING_D + 0.1, listening: A.LISTENING + 0.3, pulse: A.RING_P + 0.15, last: A.D - 0.0005,
+    ringOn: A.RING + 0.02, ring: A.RING + A.RING_D + 0.1, listening: A.LISTENING + 0.3, pulse: A.RING_P + 0.15, settle: A.SETTLE + 0.15, settled: A.SETTLE + 0.8, last: A.D - 0.0005,
   }
   const root = document.getElementById(sid + '-scene')
   const R = H.R
@@ -119,6 +119,10 @@
           { name: 'no counter, no word inside', got: [...S.ring.g.querySelectorAll('text')].filter((e) => H.alpha(e) > 0.01).length, want: 0 },
           { name: 'its stroke under "Nothing listens" (stroke top 431 against its ink foot)', got: tr.top - 5 - inkOf(S.nothing.el).bottom, want: '>= 12', pass: tr.top - 5 - inkOf(S.nothing.el).bottom >= 12 },
           { name: 'its stroke above the floor horizon (y 840)', got: 840 - (tr.bottom + 5), want: '>= 8', pass: 840 - (tr.bottom + 5) >= 8 })
+      }
+      if (t === T.settle || t === T.settled) {
+        const d = S.reasons[0].lab.el.ownerSVGElement.parentNode, sc = +((d.style.transform || '').match(/scale\(([\d.]+)/)?.[1] || 1)
+        out.push({ name: t === T.settle ? '11d (DECISIONS 227): "hurts or uncomfortable" settles on "singing" (its composited layer, about its left baseline)' : 'and is back at rest 0.75 s later', got: `${sc.toFixed(4)} / ${d.style.willChange} / origin ${d.style.transformOrigin}`, want: t === T.settle ? '1.0600 / transform / 310px 352px' : '1.0000', pass: t === T.settle ? Math.abs(sc - 1.06) < 0.001 && d.style.willChange === 'transform' && d.style.transformOrigin === '310px 352px' : Math.abs(sc - 1) < 0.0005 })
       }
       if (t === T.listening) { const r = inkOf(S.listening.el); out.push({ name: '11e: the listening line x 260, baseline 486, within 960', got: fmt(r), want: 'x 261 to 912', pass: Math.abs(r.left - 261) < 3 && r.right <= 960 }) }
       if (t === T.pulse) out.push({ name: '11e: the ring scales about 1.05 on "the ring."', got: S.ring.g.querySelector('g').getAttribute('transform') || 'none', want: 'scale about (1320, 572)', pass: /scale\(1\.0[2-5]/.test(S.ring.g.querySelector('g').getAttribute('transform') || '') })

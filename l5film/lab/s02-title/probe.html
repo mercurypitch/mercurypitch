@@ -55,22 +55,30 @@
           const CRISP = 0.1, CRISP_SOFT = 0.95, CRISP_R = 1200       // its rim closes from the field's to Lesson 2's disc over the first 0.1 s
           const TITLE_IN = at('title', 'start', 0.26)               // the title and its kicker land as the light settles
           const FYP_IN = at('title', 'start', 0.76)                 // "Find Your Pitch" under the title
-          const EXIT = at('title', 'start', 2.42)                   // the type and the notes exit up
           const LIFT_F = L.cue('title', 'start', TT.LIFT)            // film time: the bead lifts off, the staff fades
           const BACK = LIFT_F - T0
           const FADE_UP = L.cue('title', 'start', TT.LIFT - 0.2)
+          // the type and the notes exit up (the title over 0.38 s), the title gone 0.04 s before the chart starts to fade
+          // up under it (DECISIONS 229: "A3" and the band never share a frame with it; it left at title + 2.42, 0.28 s
+          // into the fade-up)
+          const EXIT = FADE_UP - T0 - 0.38 - 0.04
           const CHIME = (k) => TT.CHIME(k) - T0
 
           /* ---------------------------------------------------------------- the world: the band chart at F-promise-a */
           const cam = L.frameRig(room, { from: 'F-promise-a' })
           const world = L.stage(room.mid)
-          const ch = L.bandChart(world, L.CHART.S1)
-          const lab = { A3: ch.label('A3'), level: ch.label('level') }
+          // the strip 30 px lower than S1's, at 720, with "level" at 820 (fix round F-01, DECISIONS 226: S3 sets its strip
+          // lower, and this fade-up is S3's first frames; s03 and s04 carry the same two numbers)
+          const STRIP_Y = 720, LEVEL_Y = 820
+          const ch = L.bandChart(world, { ...L.CHART.S1, strip: STRIP_Y })
+          const lab = { A3: ch.label('A3'), level: ch.label('level', null, { y: LEVEL_Y }) }
 
           /* ---------------------------------------------------------------- the type layer: staff, notes, type (4 % zoom) */
           const typeLayer = L.el('div', { class: 'layer', 'data-layout-allow-overflow': '' })
           root.insertBefore(typeLayer, room.near)
-          Object.assign(typeLayer.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', transformOrigin: '0 0' })
+          // a composited layer (DECISIONS 233, as the kit's chapter card): its 4 % zoom is a CSS transform on rastered
+          // glyphs, so the title, the clef and the staff move sub-pixel instead of stepping a pixel (40.17, 40.70)
+          Object.assign(typeLayer.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', transformOrigin: '0 0', willChange: 'transform' })
           const svg = L.stage(typeLayer)
           const defs = L.svg('defs', {}, svg)
           const YB = TT.YB, S = TT.S
@@ -103,7 +111,7 @@
           // baseline 380) with Lesson 2's sheen, and "Find Your Pitch" (Outfit 48 px) under it
           const typeBox = () => {
             const d = L.el('div', { class: 'layer', 'data-layout-allow-overflow': '' }, typeLayer)
-            Object.assign(d.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', opacity: '0' })
+            Object.assign(d.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', opacity: '0', willChange: 'transform' })
             return d
           }
           const kickBox = typeBox(), titleBox = typeBox(), lockBox = typeBox()
@@ -145,7 +153,7 @@
           bead.halo.setAttribute('r', 38)
 
           window.__sceneProbe = window.__sceneProbe || {}
-          window.__sceneProbe[SID] = { cam, ch, lab, bead, field, staff, A: { BACK, D } }
+          window.__sceneProbe[SID] = { cam, ch, lab, bead, field, staff, typeLayer, titleBox, kickBox, lockBox, title, A: { BACK, D, EXIT, FADE_UP: FADE_UP - T0, STRIP_Y, LEVEL_Y } }
 
           const tl = gsap.timeline({ paused: true })
           L.clock(tl, D, (t) => {
@@ -153,7 +161,7 @@
             cam.apply(t)
             dust(T)
             const z = TT.zoom(T)
-            typeLayer.style.transform = `matrix(${z.toFixed(5)}, 0, 0, ${z.toFixed(5)}, ${f2(960 * (1 - z))}, ${f2(540 * (1 - z))})`
+            typeLayer.style.transform = `matrix(${z.toFixed(6)}, 0, 0, ${z.toFixed(6)}, ${(960 * (1 - z)).toFixed(3)}, ${(540 * (1 - z)).toFixed(3)})`
 
             /* the band chart fades up under the staff at F-promise-a (band, "A3", the strip's hairline, "level"; Merc's
                line not drawn yet), from film time on the same curve s03 continues */
@@ -206,18 +214,18 @@
             /* the type: in as the light settles, a chrome sheen, out up fast */
             const tIn = P(t, TITLE_IN, 0.7, 'power3.out'), tOut = P(t, EXIT, 0.38, 'power3.in')
             titleBox.style.opacity = (tIn * (1 - tOut)).toFixed(3)
-            titleBox.style.transform = `translateY(${(28 * (1 - tIn) - 90 * tOut).toFixed(2)}px)`
+            titleBox.style.transform = `translateY(${(28 * (1 - tIn) - 90 * tOut).toFixed(3)}px)`
             titleBox.style.filter = tIn < 0.999 ? `blur(${(10 * (1 - tIn)).toFixed(2)}px)` : 'none'
-            const SH = at('title', 'start', 1.2)
+            const SH = at('title', 'start', 1.1)                     // the sheen crosses (0.9 s) and is gone before the exit
             const sx0 = lerp(titleBB.x - 400, titleBB.x + titleBB.w, P(t, SH, 0.9, 'power2.inOut'))
             sheenG.setAttribute('x1', f2(sx0)); sheenG.setAttribute('x2', f2(sx0 + 400))
             sheen.setAttribute('opacity', (smooth(-0.02, 0.05, t - SH) * (1 - smooth(0.85, 0.9, t - SH))).toFixed(3))
             const kIn = P(t, TITLE_IN + 0.1, 0.6, 'power3.out'), kOut = P(t, EXIT - 0.02, 0.34, 'power3.in')
             kickBox.style.opacity = (kIn * (1 - kOut)).toFixed(3)
-            kickBox.style.transform = `translateY(${(18 * (1 - kIn) - 60 * kOut).toFixed(2)}px)`
+            kickBox.style.transform = `translateY(${(18 * (1 - kIn) - 60 * kOut).toFixed(3)}px)`
             const fIn = P(t, FYP_IN, 0.6, 'power3.out'), fOut = P(t, EXIT - 0.04, 0.34, 'power3.in')
             lockBox.style.opacity = (fIn * (1 - fOut)).toFixed(3)
-            lockBox.style.transform = `translateY(${(22 * (1 - fIn) - 60 * fOut).toFixed(2)}px)`
+            lockBox.style.transform = `translateY(${(22 * (1 - fIn) - 60 * fOut).toFixed(3)}px)`
 
             /* the field: S1's last frame, shrinking into the chrome bead on the staff's middle line; the vignette comes
                back as it goes; from the lift the bead flies to A3 on L.TITLE.flight (film time), turning amber as it

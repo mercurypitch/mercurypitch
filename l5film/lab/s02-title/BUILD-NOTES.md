@@ -8,6 +8,20 @@ displacement, the zoom, the chimes, the bead's flight), `L.staff`, `L.note`, `L.
 note colours kept (A3 blue, A4 orange, the rest chrome); its kicker rules, chrome title gradient, sheen and the
 "Find Your **Pitch**" spectrum kept.
 
+## Fix round F-01 (DECISIONS 229, 233; 226 for S3)
+
+| Item | Before (film-draft-01) | Now |
+| ---- | ---------------------- | --- |
+| 229, the title gone before "A3" and the band | `EXIT` title + 2.42: the title left over 0.38 s to + 2.80 while the chart faded up from + 2.52, 0.28 s together (the critic's 41.5 to 41.6) | `EXIT = FADE_UP - T0 - 0.38 - 0.04` (line 36), title + 2.10: the title, kicker and lockup's last frame 2.467, the chart's first 2.567 (film 41.277 and 41.377), no frame with both over the 46 swept; the clef and notes exit with the type as before; the sheen moved to title + 1.1 (line 191) so it has crossed before the exit. `fix-F-01/exit-sheet.png` (1.89, 2.30, 2.45, 2.60) |
+| 233, the title and staff stepping | jumps 1.367, 1.867, 1.967 (0.73, 0.69, 0.20 % of pixels; film 40.17, 40.68, 40.78) | the type layer composited (line 53, `will-change: transform`), its 4 % zoom a CSS matrix at full precision; the kicker, title and lockup boxes composited too (line 86), their rises translated to 1/1000 px. measure.py: no single-frame events |
+| 226, S3's lower strip | the fade-up drew S1's strip (690) and "level" (778) | the strip at 720 and "level" at 820 (line 44), as S3 draws them |
+
+- Probe: 54 lines, all pass; new: the four layers composited, the type against the chart's fade-up on every frame from the exit to the cut, the strip and "level" on the last frame.
+- Clip `clip.mp4` (scratch voice mix), stills `fix-F-01/still-{1.36,1.89,2.30,2.45,2.60,3.30}.png`; `fix-F-01/measure/summary.md`: no holds, no events. `check lab/s02-title/proj --at=1.4,1.9,2.3,3.3`: layout 0, contrast 22/22.
+- Join S2 to S3: mean abs difference 0.25 of 255, 0.03 % of pixels over 24, all in the bead (x 400 to 600, y 300 to 500), one frame further along its flight; the strip's and "level"'s rows 0.42 and 0.14.
+- HANDOFFS should carry: S2's type exits at the fade-up - 0.42 (title + `LIFT` - 0.62), gone 0.04 s before the chart starts; the chart fades up with the strip at 720 and "level" at 820.
+
+
 ## Fix round (critic A-01): the chart fades up 0.2 s earlier (DECISIONS 176)
 
 - The chart (band, strip, "A3", "level") fades up from `title` + LIFT - 0.2 over TT.FLY (1.0 s, sine.inOut), in s02

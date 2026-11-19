@@ -4600,3 +4600,12 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   ([F-01 fix: 235]; backup $S/handoffs-pre235.md).
 - GROUP D F-01 ROUND STARTED. Heavy now: groups A and D. Queue: group B, group E; then
   film-draft-02, the lead's check, the owner's look.
+
+## 19:09 UTC, 19 Nov
+- GROUP A F-01 ROUND HANDED BACK and ACCEPTED (DECISIONS 236; lead looked at the guess at 9.60 and
+  S4 at 57.5): guess reads (dash 4 px, take 50 %), the three collisions gone, S3/S4 lower half
+  filled (1.5x), type steps gone (composited layers); probes 85/54/35/52. HANDOFFS ([F-01 fix: 236];
+  backup $S/handoffs-pre236.md).
+- GROUP B F-01 ROUND STARTED. Heavy now: groups D and B. Queue: group E; then film-draft-02 (the
+  production builder resumed as part 2 of briefs/l5-integration.md -> renders/film-draft-02.mp4),
+  the lead's check (measure, contact sheet, a look), and the owner's look.

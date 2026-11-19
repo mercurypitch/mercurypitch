@@ -22,8 +22,9 @@ S10 to S11 (matched) and S11 to S12. F0 throughout; the room crossfades from F-h
 | 11c | the care icon (`L.icon` 'leaf' at (260, 236), 36 px) and "Sore, hoarse or unwell today?" | `word('b36', 'Sore')` | 12.87 |
 | 11c | "Just listen along." | `word('b36', 'Just')` | 15.40 |
 | 11d | "hurts or uncomfortable" | `word('b37', 'hurts')` | 18.78 |
+| 11d | it settles (scale 1.06 about its left baseline, 0.15 s up, 0.6 s back, on its own composited layer) as Merc says its second half **[F-01: 227]** | `word('b37', 'singing')` | 19.55 |
 | 11d | "· unusually hoarse or tired" | `word('b37', 'unusually')` | 23.21 |
-| 11d | "usual notes suddenly gone" | `word('b37', 'suddenly')` | 28.05 |
+| 11d | "usual notes suddenly gone" (on "have suddenly gone": the hold inside "have") **[F-01: 227]** | `word('b37', 'have')` | 27.75 |
 | 11d | "· ill" | `word('b37', 'ill')` | 29.80 |
 | 11d | "talking or singing is hard work" | `word('b37', 'talking')` | 31.43 |
 | 11e | "listening along: rest your voice and watch the ring" | `word('b37a', 'Rest')` | 36.83 |

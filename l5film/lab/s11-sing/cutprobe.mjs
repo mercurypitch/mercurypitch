@@ -6,6 +6,7 @@
 //          cuts gives S13 and the kit defines (lab/kit-src/cuts.html): its room at F0 under L.roomCut(room, { from:
 //          'F-turn' }), the dust from film time, the frame from L.RECAP.FROM with Merc's line at L.RECAP.mercW(0).
 //          s13-recap is group E's; the stand-in only proves S12's last frame against the frame the kit defines.
+//          REAL=1 runs the recap cut against group E's compositions/s13-recap.html instead (out to cut-recap-real/).
 // Writes lab/<scene>/cut-<which>/frame-NNN.png (30 fps, frame 15 the first after the cut), out.png and in.png (the
 // last frame before the cut and the first after it, scene times D - 0.0005 and 0), out60.png and in60.png (the true
 // 60 fps film frames either side), rects.json (the carried object's boxes either side) and cut-<which>.mp4.
@@ -25,7 +26,9 @@ if (!['sing', 'b38', 'recap'].includes(which)) { console.error('usage: cutprobe.
 const A = { sing: 's10-steady', b38: 's11-sing', recap: 's12-your-turn' }[which]
 const B = { sing: 's11-sing', b38: 's12-your-turn', recap: 's13-recap' }[which]
 const LABDIR = which === 'sing' ? 's11-sing' : 's12-your-turn'
-const OUT = join(ROOT, 'lab', LABDIR, `cut-${which}`)
+const REAL = which === 'recap' && process.env.REAL === '1'
+const STAND = which === 'recap' && !REAL
+const OUT = join(ROOT, 'lab', LABDIR, `cut-${which}${REAL ? '-real' : ''}`)
 const require = createRequire(import.meta.url)
 const { chromium } = require(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright')
 
@@ -65,7 +68,7 @@ const standIn = `<div class="scene" id="s13-standin-scene" style="position:absol
 rmSync(OUT, { recursive: true, force: true })
 mkdirSync(OUT, { recursive: true })
 writeFileSync(join(OUT, 'cut.html'), `<!doctype html>
-<!-- lab/s11-sing/cutprobe.mjs's harness (${which}): ${A}, then ${which === 'recap' ? 'a stand-in for S13 (the kit\'s RECAP.FROM at F0)' : B}. -->
+<!-- lab/s11-sing/cutprobe.mjs's harness (${which}): ${A}, then ${STAND ? 'a stand-in for S13 (the kit\'s RECAP.FROM at F0)' : B}. -->
 <html lang="en"><head><meta charset="UTF-8" />
 ${scripts}
 <link rel="stylesheet" href="/assets/lib/lesson.css" />
@@ -75,14 +78,14 @@ ${fonts}
 #a, #b { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
 </style></head><body>
 <div id="a">${bodyOf(A)}</div>
-<div id="b">${which === 'recap' ? standIn : bodyOf(B)}</div>
+<div id="b">${STAND ? standIn : bodyOf(B)}</div>
 </body></html>
 `)
 const browser = await chromium.launch({ executablePath: process.env.PW_CHROMIUM || '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome' })
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 })
 const errors = []
 page.on('pageerror', (e) => errors.push(e.message))
-await page.goto(`http://127.0.0.1:${port}/lab/${LABDIR}/cut-${which}/cut.html`, { waitUntil: 'load' })
+await page.goto(`http://127.0.0.1:${port}/lab/${LABDIR}/cut-${which}${REAL ? '-real' : ''}/cut.html`, { waitUntil: 'load' })
 await page.evaluate(async () => {
   await document.fonts.ready
   for (const f of ["600 30px 'Outfit'", "500 26px 'JetBrains Mono'", "italic 400 60px 'Instrument Serif'", "400 30px 'Inter'"]) await document.fonts.load(f)
@@ -125,7 +128,7 @@ const box = async (side, t) => {
 const rects = { out: await box('a', DA - 0.0005), in: await box('b', 0) }
 writeFileSync(join(OUT, 'rects.json'), JSON.stringify(rects, null, 1) + '\n')
 console.log(`${A} last frame: band ${rects.out.band.join(' ')} | Merc's line y ${rects.out.line.y}, x ${rects.out.line.x0} to ${rects.out.line.x1}, ${rects.out.line.px} px | labels: ${rects.out.texts.join(', ') || 'none'}`)
-console.log(`${which === 'recap' ? 'S13 stand-in' : B} first frame: band ${rects.in.band.join(' ')} | Merc's line y ${rects.in.line.y}, x ${rects.in.line.x0} to ${rects.in.line.x1}, ${rects.in.line.px} px | labels: ${rects.in.texts.join(', ') || 'none'}`)
+console.log(`${STAND ? 'S13 stand-in' : B} first frame: band ${rects.in.band.join(' ')} | Merc's line y ${rects.in.line.y}, x ${rects.in.line.x0} to ${rects.in.line.x1}, ${rects.in.line.px} px | labels: ${rects.in.texts.join(', ') || 'none'}`)
 await browser.close()
 server.close()
 const r = spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-framerate', '30', '-i', join(OUT, 'frame-%03d.png'), '-c:v', 'libx264', '-crf', '16', '-pix_fmt', 'yuv420p', join(OUT, `cut-${which}.mp4`)], { stdio: 'inherit' })

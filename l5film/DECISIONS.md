@@ -1829,3 +1829,13 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      kicker leaves over 0.3 s; S10's type step is gone. Two holds of 0.3 to 0.4 s stay, mostly in
      pauses (S8 8.80, S9 45.60), for the final passes. Probes 66, 88 and 209; root check 0 errors; the
      joins and the cut on `sing` hold. HANDOFFS § The hold chart follows ([F-01 fix: 235]).
+
+## The lead's call on group A's full-film fix round, 19 November
+
+236. **Group A's F-01 round is accepted** (the lead looked at the guess at 9.60 and S4 at 57.5). The
+     guess's 4 px dash reads over the take at 50 %; '"support"' and the band, S2's title and the
+     chart, S4's chips and the band's lines never share a frame or come within 12 px (26.1 px at
+     the nearest); S3's strip and S4's swatches fill the lower half (1.5 times; S3's lowest ink at 883,
+     above the captions' 896, which with the bead's fixed landing bounds it); the type steps in S1, S2
+     and S4 are gone (composited layers). No hold reaches 0.3 s in S1 to S4. Probes 85, 54, 35, 52;
+     root check 0 errors; the joins S1 to S5 hold. HANDOFFS follows ([F-01 fix: 236]).

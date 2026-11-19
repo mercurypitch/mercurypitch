@@ -7,11 +7,11 @@
   const H = window.__H, sid = 's12-your-turn'
   const S = window.__sceneProbe[sid], A = S.A
   const T = {
-    f0: 0, reasons: A.REASONS_OUT + A.REASONS_OUT_D + 0.02, mya: A.MYA + 0.3, oct: A.OCT + 0.3, row: A.ROW + 0.3, lit2: A.LIT[1] + 0.4, vol: A.VOL + 0.3, tick: A.TICK + 0.4, sooner: A.SOONER + 0.3, stop: A.STOP + 0.4,
+    f0: 0, reasons: A.REASONS_OUT + A.REASONS_OUT_D + 0.02, mya: A.MYA + 0.3, oct: A.OCT + 0.3, row: A.ROW + 0.3, lit2: A.LIT[1] + 0.4, vol: A.VOL + 0.3, tick: A.TICK + 0.4, sooner: A.SOONER + 0.3, stop: A.STOP + 0.4, stop2: A.STOP2 + 0.35,
     thin: A.THIN + A.THIN_D + 0.05, pushmid: A.PUSH + A.PUSH_D / 2, landed: A.PUSH + A.PUSH_D, listen: A.LISTEN + 0.3, breathe: A.BREATHE_IN + 0.3,
     breath: (A.BREATH0 + A.TICKIN) / 2, sing: A.TICKIN + 0.3, zero: A.COUNT0 + 0.25, h48: A.HOLD + 4.8, closed: A.HOLD_END + 0.12,
     ringOut: A.RING_OUT + A.RING_OUT_D + 0.01, q: A.Q + 0.4, a4: A.ANS[3] + 0.3, feel: A.FEEL + A.FEEL_D / 2, l1: A.LINE1 + 0.5,
-    l2: A.LINE2 + 0.3, l3: A.LINE3 + 0.3, all: A.ALL + 0.3, full: A.DOCX + 0.85, dim: A.FEEL_DIM + A.FEEL_DIM_D + 0.05, u1: A.U1 + 0.6, u2: A.U2 + 0.8, end: A.END + A.END_D + 0.01, last: A.D - 0.0005,
+    l2: A.LINE2 + 0.3, l3: A.LINE3 + 0.3, all: A.ALL + 0.3, full: A.DOCX + 0.85, dim: A.FEEL_DIM + A.FEEL_DIM_D + 0.05, lit3: A.DOC_LIT[2] + 0.35, lit6: A.DOC_LIT[5] + 0.35, u1: A.U1 + 0.6, u2: A.U2 + 0.8, bandUp: A.END + A.BAND_UP_D + 0.005, end: A.END + A.END_D + 0.01, last: A.D - 0.0005,
   }
   const root = document.getElementById(sid + '-scene')
   const R = H.R
@@ -36,6 +36,10 @@
     return { name: 'no two visible texts overlap', got: bad.length ? bad.join('; ') : 'none', want: 'none', pass: !bad.length }
   }
   const visTexts = (min = 0.05) => H.texts(root, min).map((x) => x.text)
+  // the computed opacity through the ancestors (H.alpha counts an SVG opacity attribute twice: as CSS and as attribute)
+  const alphaOf = (el) => { let a = 1; for (let e = el; e && e.nodeType === 1; e = e.parentNode) a *= parseFloat(getComputedStyle(e).opacity || '1'); return a }
+  const INK = L.mixHex(L.C.ink2, L.C.ink, 1), INK2 = L.mixHex(L.C.ink2, L.C.ink, 0)
+  const ringScaleOf = () => +((S.ringLayer.style.transform || '').match(/scale\(([\d.]+)/)?.[1] || 1)
   const footOf = (min = 0.05) => Math.max(...[...root.querySelectorAll('text')].filter((e) => H.alpha(e) >= min && e.textContent.trim()).map((e) => inkOf(e).bottom))
   const ringBox = () => R(S.ring.g.querySelector('circle'))
   const shown = (els) => els.filter((e) => H.alpha(e) > 0.5).map((e) => e.textContent.trim()).join(', ')
@@ -83,13 +87,16 @@
       if (t === T.sooner) {
         const r = inkOf(S.rowLines[1].el)
         out.push({ name: '12b: "stop sooner if you need to" baseline 820: its ink 12 px or more above the floor horizon (DECISIONS 203)', got: fmt(r), want: 'foot <= 828', pass: r.bottom <= 828 && Math.abs(r.base - 820) < 0.5 },
-          { name: 'only "Sing" lit', got: S.rowWords.map((e) => e.getAttribute('opacity')).join(' '), want: '0.600 0.600 1.000' }, ...common())
+          { name: 'only "Sing" lit', got: S.rowWords.map((e) => e.getAttribute('opacity')).join(' '), want: '0.600 0.600 1.000' },
+          { name: 'the ring\'s layer not yet composited (F0; DECISIONS 233)', got: S.ringLayer.style.willChange || 'none', want: 'auto' }, ...common())
       }
       if (t === T.stop) {
         const a = inkOf(S.stop[0].el), b = inkOf(S.stop[1].el)
         out.push({ name: '12c: the stop line x 260, baselines 548 and 590 (ink)', got: `${fmt(a)}; ${fmt(b)}`, want: 'x 260 to 726 / 596, within 960', pass: Math.abs(a.left - 260) < 2 && a.right <= 960 && Math.abs(b.bottom - 591) < 2 },
+          { name: '(DECISIONS 228) its first line lit (ink), its second at ink-2 until "feels"', got: `${S.stop[0].el.getAttribute('fill') || 'ink'} / ${S.stop[1].el.getAttribute('fill')}`, want: `ink / ${INK2}`, pass: S.stop[1].el.getAttribute('fill') === INK2 && (S.stop[0].el.getAttribute('fill') || '').replace(/\s/g, '') !== INK2 },
           { name: 'between the listening line and the doctor lines (gaps)', got: `${(a.top - inkOf(S.listening.el).bottom).toFixed(1)}, ${(inkOf(S.doc[0]).top - b.bottom).toFixed(1)}`, want: '>= 12 each', pass: a.top - inkOf(S.listening.el).bottom >= 12 && inkOf(S.doc[0]).top - b.bottom >= 12 }, ...common())
       }
+      if (t === T.stop2) out.push({ name: '12c (DECISIONS 228): the stop line\'s second line lit on "feels"', got: S.stop[1].el.getAttribute('fill'), want: INK })
       if (t === T.thin) {
         const st = S.cam.state(t)
         out.push({ name: '12c: thinned before the push: the icon, comfort line, reasons and listening line at 0', got: shown([...S.comfort.map((l) => l.el), ...S.reasons.map((p) => p.lab.el), S.listening.el]) || 'none', want: 'none', pass: !shown([...S.comfort.map((l) => l.el), ...S.reasons.map((p) => p.lab.el), S.listening.el]) && H.alpha(S.icon) < 0.01 },
@@ -131,7 +138,7 @@
           { name: '"Breathe" in the ring, "Listen" gone', got: shown([...S.ring.g.querySelectorAll('text')]), want: 'Breathe' }, ...common())
       }
       if (t === T.breath) {
-        const tr = ringBox(), sc = +((S.ring.g.querySelector('g').getAttribute('transform') || '').match(/scale\(([\d.]+)/)?.[1] || 1)
+        const tr = ringBox(), sc = ringScaleOf()
         const cx = (tr.left + tr.right) / 2, cy = (tr.top + tr.bottom) / 2, Ro = tr.width / 2 + 7 * sc, tickTop = cy - (tr.width / 2 + 16.8 * sc)
         // the label's ink in two boxes (canvas metrics on its own baseline, on screen): "Breathe " (no descender), over the
         // ring's top, and "in, low and quiet" (the comma's and the q's descenders), far right of it
@@ -142,7 +149,7 @@
         const dCircle = (b) => Math.hypot(Math.max(0, b.left - cx, cx - b.right), Math.max(0, cy - b.bottom)) - Ro
         const dTickTo = (b) => Math.hypot(Math.max(0, b.left - (cx + 2.8 * sc)), Math.max(0, tickTop - b.bottom))
         const dB = Math.min(...boxes.map(dCircle)), dTick = Math.min(...boxes.map(dTickTo))
-        out.push({ name: '12d: the ring breathes to 1.08 (its largest)', got: sc, want: 1.08, tol: 0.0005 },
+        out.push({ name: '12d: the ring breathes to 1.08 (its largest), on its own composited layer (DECISIONS 233)', got: `${sc} / ${S.ringLayer.style.willChange} / inner ${S.ring.g.querySelector('g').getAttribute('transform') || 'none'}`, want: '1.08 / transform / none', pass: Math.abs(sc - 1.08) < 0.0005 && S.ringLayer.style.willChange === 'transform' && !S.ring.g.querySelector('g').getAttribute('transform') },
           { name: 'at its largest the stroke above the floor horizon (y 840)', got: 840 - (cy + Ro), want: '> 0', pass: cy + Ro < 840 },
           { name: 'at its largest 12 px or more from "Breathe in, low and quiet" (its circle; its tick)', got: `${dB.toFixed(1)}; ${dTick.toFixed(1)}`, want: '>= 12 each', pass: dB >= 12 && dTick >= 12 },
           { name: 'at its largest its tick\'s top 12 px or more under the foot of "Breathe" (no tick tucked under the label)', got: tickTop - boxes[0].bottom, want: '>= 12', pass: tickTop - boxes[0].bottom >= 12 },
@@ -164,7 +171,7 @@
         { name: 'one chrome echo ring', got: [...S.echo.g.querySelectorAll('circle')].filter((c) => +c.getAttribute('opacity') > 0).length, want: 1 })
       if (t === T.ringOut) out.push({ name: '12f: the ring, its word, the counter, the playhead and "Your turn." gone', got: `${S.ring.g.getAttribute('opacity')} ${S.playhead.g.getAttribute('opacity')} ${H.alpha(S.title.el).toFixed(3)}`, want: '0.000 0.000 0.000' },
         { name: '12f (DECISIONS 206): the bracket, "0", "10 s", "A3 · Merc", "A4 · Tavi, an octave up" gone with it', got: [S.br.path, S.br0.el, S.br10.el, ...S.voices.map((v) => v.el)].map((e) => H.alpha(e).toFixed(3)).join(' '), want: '0.000 0.000 0.000 0.000 0.000' },
-        { name: 'the band, Merc\'s line and "Nothing listens" stay', got: `${S.ch.g.getAttribute('opacity') || '1'} ${H.alpha(S.nothing.el).toFixed(3)}`, want: '1 1.000', pass: H.alpha(S.ch.g) > 0.99 && H.alpha(S.nothing.el) > 0.99 })
+        { name: 'the band and Merc\'s line stay, dimmed to 50 % (DECISIONS 226); "Nothing listens" stays at full', got: `${alphaOf(S.ch.g).toFixed(3)} ${alphaOf(S.nothing.el).toFixed(3)}`, want: '0.500 1.000', pass: Math.abs(alphaOf(S.ch.g) - 0.5) < 0.002 && alphaOf(S.nothing.el) > 0.999 })
       if (t === T.q) {
         const r = inkOf(S.question.el)
         out.push({ name: '12f: "How did that feel?" x 1000, baseline 480 (frame-fixed)', got: fmt(r), want: 'x 997 to 1407, y 431 to 481', pass: Math.abs(r.left - 997) < 3 && Math.abs(r.bottom - 481) < 2 },
@@ -195,6 +202,7 @@
         out.push({ name: '12h (DECISIONS 205): the doctor lines full size (Inter 40, ink), broken by hand at phrase ends', got: lines.map((e) => e.textContent).join(' | '), want: '7 lines, none ending "(a", the last not "away." alone', pass: lines.length === 7 && lines.every((e) => !/\(a$/.test(e.textContent)) && lines[6].textContent !== 'away.' },
           { name: 'within x 260 to 960 (ink), baselines from 430, 50 apart', got: `${Math.min(...r.map((x) => x.left)).toFixed(1)} to ${Math.max(...r.map((x) => x.right)).toFixed(1)}; ${lines.map((e) => e.getAttribute('y')).join(', ')}`, want: '>= 258, <= 960; 430 to 730', pass: Math.min(...r.map((x) => x.left)) >= 258 && Math.max(...r.map((x) => x.right)) <= 960 && lines.map((e) => e.getAttribute('y')).join(',') === '430,480,530,580,630,680,730' },
           { name: 'word for word', got: lines.map((e) => e.textContent).join(' ') === L.TURN.CARE.doctor ? 'same' : 'differs', want: 'same' },
+          { name: '(DECISIONS 228) risen whole, every line at ink-2 before its words are said', got: lines.map((e) => e.getAttribute('fill') === INK2 ? '2' : 'x').join(''), want: '2222222' },
           { name: 'the small lines and the stop line gone', got: `${H.alpha(S.doc[0]).toFixed(2)} ${H.alpha(S.stop[0].el).toFixed(2)}`, want: '0.00 0.00' },
           { name: 'clear of the frame\'s labels ("Nothing listens" at screen x 928, foot)', got: Math.min(...r.map((x) => x.top)) - inkOf(S.nothing.el).bottom, want: '>= 12 (or left of 928)', pass: Math.min(...r.map((x) => x.top)) - inkOf(S.nothing.el).bottom >= 12 || Math.max(...r.map((x) => x.right)) < 916 },
           { name: 'clear of the answers (x 1000)', got: 1000 - Math.max(...r.map((x) => x.right)), want: '>= 12', pass: 1000 - Math.max(...r.map((x) => x.right)) >= 12 }, ...common())
@@ -203,14 +211,21 @@
         // the computed opacity through the ancestors (H.alpha counts an SVG opacity attribute twice: as CSS and as attribute)
         const alphaOf = (el) => { let a = 1; for (let e = el; e && e.nodeType === 1; e = e.parentNode) a *= parseFloat(getComputedStyle(e).opacity || '1'); return a }
         const fa = [S.question.el, ...S.caps.map((c) => c.el), ...S.caps.map((c) => c.box), ...S.feelLines.map((l) => l.el), S.feelBr.path].map(alphaOf)
-        out.push({ name: '12h (DECISIONS 205): the feel block dimmed to 35 % (question, capsules, lines, bracket)', got: `${Math.min(...fa).toFixed(3)} to ${Math.max(...fa).toFixed(3)}`, want: '0.350', pass: fa.every((a) => Math.abs(a - 0.35) < 0.002) },
+        out.push({ name: '12h (DECISIONS 205, 231): the feel block dimmed to 55 % (question, capsules, lines, bracket; 4.5:1 measured in fix-F-01/contrast.py)', got: `${Math.min(...fa).toFixed(3)} to ${Math.max(...fa).toFixed(3)}`, want: '0.550', pass: fa.every((a) => Math.abs(a - 0.55) < 0.002) },
+          { name: 'the band dimmed to 50 % (DECISIONS 226)', got: alphaOf(S.ch.g).toFixed(3), want: '0.500' },
           { name: 'all four still lit (dimmed with the block, not unlit)', got: S.caps.map((c) => c.box.getAttribute('stroke-opacity')).join(' '), want: '1.000 1.000 1.000 1.000' },
           { name: 'the doctor lines at full', got: H.alpha(S.docFull[0]).toFixed(3), want: '1.000' })
+      }
+      if (t === T.lit3 || t === T.lit6) {
+        const n = t === T.lit3 ? 3 : 6, want = '1'.repeat(n) + '2'.repeat(7 - n)
+        out.push({ name: `12h (DECISIONS 228): the doctor lines lit line by line as said, ${n} lit, the rest at ink-2`, got: S.docFull.map((e) => e.getAttribute('fill') === INK ? '1' : e.getAttribute('fill') === INK2 ? '2' : '?').join(''), want })
       }
       if (t === T.u1 || t === T.u2) {
         const U = S.ULS[t === T.u1 ? 0 : 1]
         out.push({ name: `12h: "${t === T.u1 ? 'see a doctor' : 'get help straight away'}" underlined (segments)`, got: U.segs.map((s) => `${s.x0.toFixed(1)}-${s.x1.toFixed(1)} @${s.y}`).join('; '), want: 'under its words', pass: U.segs.length > 0 && U.rects.every((r, i) => Math.abs(+r.getAttribute('width') - (U.segs[i].x1 - U.segs[i].x0)) < 0.5) })
       }
+      if (t === T.u2) out.push({ name: '12h: all seven doctor lines lit by "get help"', got: S.docFull.map((e) => e.getAttribute('fill') === INK ? '1' : '2').join(''), want: '1111111' })
+      if (t === T.bandUp) out.push({ name: '12h (DECISIONS 226): the band back at full before the matched cut on `recap`', got: `${alphaOf(S.ch.g).toFixed(3)} at ${t.toFixed(2)}, ${(A.D - (A.END + A.BAND_UP_D)).toFixed(2)} s before the cut`, want: '1.000, >= 0.5 s', pass: alphaOf(S.ch.g) > 0.999 && A.D - (A.END + A.BAND_UP_D) >= 0.5 })
       if (t === T.end) out.push({ name: '12h: every mark of the turn gone but the band and Merc\'s line', got: visTexts(0.01).join(', ') || 'none', want: 'none', pass: !visTexts(0.01).length })
       if (t === T.last) {
         const b = R(bandEl()), m = R(S.ch.merc.path)

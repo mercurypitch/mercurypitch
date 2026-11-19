@@ -88,7 +88,16 @@
             // at its largest breath (1.08) it touches neither and its tick stays 12 px or more under the foot of
             // "Breathe in, low and quiet"; at F0 the phase row keeps 12 px or more under it
             o.RING = { cx: 1320, cy: 572, r: 136 }
-            o.ring = L.ring(world, o.RING)
+            // the ring in its own layer over the world's (DECISIONS 233): a div in the world's layer, so the camera carries
+            // it; from the push's landing it is a composited layer and the breath a CSS transform on it, so the ring and
+            // its word move sub-pixel instead of stepping a whole pixel at the breath's slow ends
+            o.ringLayer = L.el('div', { class: 'turn-ring-layer', 'data-layout-allow-overflow': '' }, world.parentNode)
+            Object.assign(o.ringLayer.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', pointerEvents: 'none', transformOrigin: `${o.RING.cx}px ${o.RING.cy}px` })
+            o.ring = L.ring(L.stage(o.ringLayer), o.RING)
+            o.ringScale = (s, composited) => {
+              o.ringLayer.style.willChange = composited ? 'transform' : 'auto'
+              o.ringLayer.style.transform = composited || Math.abs(s - 1) > 1e-6 ? `scale(${s.toFixed(5)})` : ''
+            }
             // the phase row (mono 28, as the kit's lab sets it: uppercase, tracking .18em) under the ring, each word its
             // own text, laid out from the whole row's measured advance, centred x 1320; the unlit words ink-2 at 60 %, the
             // lit one ink with a small chrome mark under it (DECISIONS 209). Its two lines under it, the last one's ink
@@ -126,12 +135,23 @@
             o.icon = L.icon(hud, K.icon.name, K.icon)
             o.comfort = K.comfort.map((c) => L.label(hud, c.text, c))
             // the reasons: five phrases on three lines, each landing on its own word; a phrase after a middot carries
-            // the middot, and stands where the whole line would set it (measured once the fonts are in)
+            // the middot, and stands where the whole line would set it (measured once the fonts are in). The first,
+            // "hurts or uncomfortable", settles on "singing" (DECISIONS 227: a hold inside the word); it is drawn in its
+            // own composited layer, so the settle's scale moves its glyphs sub-pixel (as the kit's chapter card, 224)
             const rFont = { size: K.reasonSize, weight: K.reasonWeight }
             o.reasons = []
-            K.reasons.forEach((r) => {
+            K.reasons.forEach((r, i) => {
               const parts = r.text.split(' · ')
-              parts.forEach((s, j) => o.reasons.push({ line: r, j, lab: L.label(hud, j ? '· ' + s : s, { ...rFont, x: K.comfort[0].x, y: r.y }), prefix: parts.slice(0, j).join(' · ') + (j ? ' ' : '') }))
+              parts.forEach((s, j) => {
+                let host = hud, settle = null
+                if (i === 0 && j === 0) {
+                  const d = L.el('div', { class: 'turn-settle-layer', 'data-layout-allow-overflow': '' }, hud.parentNode)
+                  Object.assign(d.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', pointerEvents: 'none', willChange: 'transform', transformOrigin: `${K.comfort[0].x}px ${r.y}px` })
+                  host = L.stage(d)
+                  settle = (sc) => { d.style.transform = `scale(${sc.toFixed(5)})` }
+                }
+                o.reasons.push({ line: r, j, settle, lab: L.label(host, j ? '· ' + s : s, { ...rFont, x: K.comfort[0].x, y: r.y }), prefix: parts.slice(0, j).join(' · ') + (j ? ' ' : '') })
+              })
             })
             const reasonLayout = () => {
               const probe = L.text(hud, '', { ...rFont, opacity: 0 })
@@ -171,8 +191,10 @@
           // 11c: b35, b36
           const DOC = word('b35', 'care lines')                         // the doctor lines, small
           const SORE = word('b36', 'Sore'), JUST = word('b36', 'Just')  // the comfort line, its two halves; the icon with the first
-          // 11d: b37, each reason on its word
-          const RS = [word('b37', 'hurts'), word('b37', 'unusually'), word('b37', 'suddenly'), word('b37', 'ill'), word('b37', 'talking')]
+          // 11d: b37, each reason on its word; "usual notes suddenly gone" lands on "have suddenly gone" and "hurts or
+          // uncomfortable" settles (0.15 s up, 0.6 s back) on "singing": each fills a hold inside the word (DECISIONS 227)
+          const RS = [word('b37', 'hurts'), word('b37', 'unusually'), word('b37', 'have'), word('b37', 'ill'), word('b37', 'talking')]
+          const SETTLE = word('b37', 'singing'), SETTLE_AMP = 0.06
           // 11e: b37a
           const LISTENING = word('b37a', 'Rest')                        // "listening along: rest your voice and watch the ring"
           const RING_P = word('b37a', 'the ring')                       // the ring scales 1.05 once
@@ -186,7 +208,7 @@
           const card = L.chapterCard(hud, { num: null, title: 'Sing it', tIn: CARD_IN, tOut: CARD_OUT })
 
           const probe = { cam, cut, card, ...O,
-            A: { SING, DIM, DIM_D, CARD_IN, CARD_OUT, UNDIM, UNDIM_D, YT, COMF, BR, BR_D, NOTH, DOC, SORE, JUST, RS, RING, RING_D, LISTENING, RING_P, D }, boxes: {} }
+            A: { SING, DIM, DIM_D, CARD_IN, CARD_OUT, UNDIM, UNDIM_D, YT, COMF, BR, BR_D, NOTH, DOC, SORE, JUST, RS, SETTLE, SETTLE_AMP, RING, RING_D, LISTENING, RING_P, D }, boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
 
@@ -219,8 +241,9 @@
             O.icon.setAttribute('opacity', soreA.toFixed(3))
             O.comfort[1].life(t, JUST, null)
 
-            /* 11d: the reasons, each on its word */
+            /* 11d: the reasons, each on its word; the first settles on "singing" */
             O.reasons.forEach((p, i) => p.lab.life(t, RS[i], null))
+            O.reasons[0].settle(L.pulse(t, [SETTLE], 'label', { amp: SETTLE_AMP }))
 
             /* 11e: the listening line */
             O.listening.life(t, LISTENING, null)
@@ -294,7 +317,16 @@
             // at its largest breath (1.08) it touches neither and its tick stays 12 px or more under the foot of
             // "Breathe in, low and quiet"; at F0 the phase row keeps 12 px or more under it
             o.RING = { cx: 1320, cy: 572, r: 136 }
-            o.ring = L.ring(world, o.RING)
+            // the ring in its own layer over the world's (DECISIONS 233): a div in the world's layer, so the camera carries
+            // it; from the push's landing it is a composited layer and the breath a CSS transform on it, so the ring and
+            // its word move sub-pixel instead of stepping a whole pixel at the breath's slow ends
+            o.ringLayer = L.el('div', { class: 'turn-ring-layer', 'data-layout-allow-overflow': '' }, world.parentNode)
+            Object.assign(o.ringLayer.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', pointerEvents: 'none', transformOrigin: `${o.RING.cx}px ${o.RING.cy}px` })
+            o.ring = L.ring(L.stage(o.ringLayer), o.RING)
+            o.ringScale = (s, composited) => {
+              o.ringLayer.style.willChange = composited ? 'transform' : 'auto'
+              o.ringLayer.style.transform = composited || Math.abs(s - 1) > 1e-6 ? `scale(${s.toFixed(5)})` : ''
+            }
             // the phase row (mono 28, as the kit's lab sets it: uppercase, tracking .18em) under the ring, each word its
             // own text, laid out from the whole row's measured advance, centred x 1320; the unlit words ink-2 at 60 %, the
             // lit one ink with a small chrome mark under it (DECISIONS 209). Its two lines under it, the last one's ink
@@ -332,12 +364,23 @@
             o.icon = L.icon(hud, K.icon.name, K.icon)
             o.comfort = K.comfort.map((c) => L.label(hud, c.text, c))
             // the reasons: five phrases on three lines, each landing on its own word; a phrase after a middot carries
-            // the middot, and stands where the whole line would set it (measured once the fonts are in)
+            // the middot, and stands where the whole line would set it (measured once the fonts are in). The first,
+            // "hurts or uncomfortable", settles on "singing" (DECISIONS 227: a hold inside the word); it is drawn in its
+            // own composited layer, so the settle's scale moves its glyphs sub-pixel (as the kit's chapter card, 224)
             const rFont = { size: K.reasonSize, weight: K.reasonWeight }
             o.reasons = []
-            K.reasons.forEach((r) => {
+            K.reasons.forEach((r, i) => {
               const parts = r.text.split(' · ')
-              parts.forEach((s, j) => o.reasons.push({ line: r, j, lab: L.label(hud, j ? '· ' + s : s, { ...rFont, x: K.comfort[0].x, y: r.y }), prefix: parts.slice(0, j).join(' · ') + (j ? ' ' : '') }))
+              parts.forEach((s, j) => {
+                let host = hud, settle = null
+                if (i === 0 && j === 0) {
+                  const d = L.el('div', { class: 'turn-settle-layer', 'data-layout-allow-overflow': '' }, hud.parentNode)
+                  Object.assign(d.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', pointerEvents: 'none', willChange: 'transform', transformOrigin: `${K.comfort[0].x}px ${r.y}px` })
+                  host = L.stage(d)
+                  settle = (sc) => { d.style.transform = `scale(${sc.toFixed(5)})` }
+                }
+                o.reasons.push({ line: r, j, settle, lab: L.label(host, j ? '· ' + s : s, { ...rFont, x: K.comfort[0].x, y: r.y }), prefix: parts.slice(0, j).join(' · ') + (j ? ' ' : '') })
+              })
             })
             const reasonLayout = () => {
               const probe = L.text(hud, '', { ...rFont, opacity: 0 })
@@ -374,7 +417,8 @@
           const TICK = word('b40', 'ring closes')                       // the ring's 12 o'clock tick brightens
           const SOONER = word('b40', 'stop sooner')                     // "stop sooner if you need to"
           // 12c: b41; the push lands 0.14 s before `listen` (DECISIONS 112), the block thins 0.5 s before it starts
-          const STOP = at('b41')                                        // the stop line
+          const STOP = at('b41')                                        // the stop line, its first line lit
+          const STOP2 = word('b41', 'feels')                            // its second line lights as said (DECISIONS 228)
           const LISTEN = at('listen'), LISTEN_END = at('listen', 'end')
           const PUSH_D = 1.1, PUSH = LISTEN - 0.14 - PUSH_D             // F0 to F-turn, power2.inOut
           const THIN = PUSH - 0.5, THIN_D = 0.3                         // the care block thins; the phase row leaves up fast
@@ -401,9 +445,14 @@
           const ALL = at('b46a')                                        // all four light together
           const STOP_OUT = ALL + 0.05, STOP_OUT_D = 0.4                 // the stop line fades
           const DOCX = ALL + 0.2                                        // the doctor lines to full size (0.8 s): small out, full in rising 12 px
-          const FEEL_DIM = DOCX + 0.3, FEEL_DIM_D = 0.6                 // the feel block dims to 35 % as they rise (DECISIONS 205)
+          const FEEL_DIM = DOCX + 0.3, FEEL_DIM_D = 0.6                 // the feel block dims to 55 % as they rise (DECISIONS 205, 231)
+          // the full lines stand at ink-2 and light line by line to ink as each is said, on its first word (DECISIONS 228)
+          const DOC_LIT = [word('b46a', 'if hoarseness'), word('b46a', 'more than'), word('b46a', 'see a doctor'), word('b46a', 'nose and'), word('b46a', "If it's"), word('b46a', 'or breathing'), word('b46a', 'get help')]
           const U1 = word('b46a', 'see a doctor'), U2 = word('b46a', 'get help')   // their words underline
           const END = at('b46a', 'end', 0.06), END_D = 0.5              // every mark but the band and Merc's line
+          // the band dims to 50 % with the ring after the close, while the feel block and the doctor lines are the subject,
+          // and is back at full with the end fade, 0.5 s or more before the matched cut on `recap` (DECISIONS 226)
+          const BAND_UP_D = 0.4
 
           /* ---------------------------------------------------------------- the camera: the push to F-turn does not
              come back; the scene ends on it, at the matched cut on `recap` */
@@ -495,7 +544,7 @@
 
           const probe = { cam, ...O, question, feelRing, caps, feelLines, feelBr, docFull, docFullG, ULS, DOC_LINES,
             A: { REASONS_OUT, REASONS_OUT_D, MYA, OCT, ROW, LIT, VOL, TICK, SOONER, STOP, LISTEN, LISTEN_END, PUSH, PUSH_D, THIN, THIN_D, BREATHE, BREATHE_IN, TICKIN, BREATH0, HOLD, HOLD_END, COUNT0,
-              RING_OUT, RING_OUT_D, Q, ANS, FEEL, FEEL_D, L1, LINE1, L2, LINE2, L3, LINE3, ALL, STOP_OUT, DOCX, FEEL_DIM, FEEL_DIM_D, U1, U2, END, END_D, D }, boxes: {} }
+              RING_OUT, RING_OUT_D, Q, ANS, FEEL, FEEL_D, L1, LINE1, L2, LINE2, L3, LINE3, ALL, STOP_OUT, STOP2, DOCX, FEEL_DIM, FEEL_DIM_D, DOC_LIT, U1, U2, END, END_D, BAND_UP_D, D }, boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
 
@@ -511,7 +560,8 @@
             /* the frame: Merc's line glows on "my A,"; its band brightens while both hosts sing their A (12d) */
             const lineGlow = L.glow(t, [MYA], { up: 0.3, hold: 0.6, down: 0.8 })
             const bright = L.env(t, LISTEN, 0.3, Math.max(0, LISTEN_END - LISTEN - 0.7), 0.4)
-            O.ch.draw({ a: 1, band: { fill: 0.12 + 0.1 * bright }, merc: { a: 1, w: 4, glow: lineGlow } })
+            const bandA = 1 - 0.5 * P(t, RING_OUT, RING_OUT_D, 'none') + 0.5 * P(t, END, BAND_UP_D, 'none')
+            O.ch.draw({ a: bandA, band: { fill: 0.12 + 0.1 * bright }, merc: { a: 1, w: 4, glow: lineGlow } })
             // the bracket with "0" and "10 s" (one object) leaves with the ring after the close; "Nothing listens" stays
             // to the end of the turn (DECISIONS 206)
             O.br.draw(1, ringA)
@@ -549,10 +599,12 @@
               a: ringA, draw: 1, trackA: 0.35,
               arc: P(t, HOLD, HOLD_END - HOLD, 'none'),
               tick: L.glow(t, [TICK], { up: 0.25, hold: 0.8, down: 0.6 }),
-              scale: 1 + 0.08 * breath,
+              scale: 1,
               words: t >= LISTEN ? ringWords(t) : [],
               counts: counts(t),
             })
+            // the breath on the ring's own layer, composited from the push's landing (DECISIONS 233)
+            O.ringScale(1 + 0.08 * breath, t >= PUSH + PUSH_D)
             O.echo.draw(t, [{ t: HOLD_END, x: O.RING.cx, y: O.RING.cy, r: O.RING.r }])
             // the playhead sweeps the frame's ten seconds in step with the arc (64 world px a second)
             const band = O.ch.band()
@@ -574,6 +626,7 @@
             O.listening.draw({ a: thinA })
             const stopA = L.fade(t, STOP, STOP_OUT, { dIn: 0.3, easeIn: 'none', dOut: STOP_OUT_D, easeOut: 'none' }).a
             O.stop.forEach((l) => l.draw({ a: stopA }))
+            O.stop[1].el.setAttribute('fill', L.mixHex(C.ink2, C.ink, P(t, STOP2, 0.3, 'none')))
             // the doctor lines: small from S11; to full size on "Whatever you chose:" (small out, then full in, rising 12 px).
             // The rise is linear over its first 0.2 s, a pixel a 60 fps frame: eased to rest over 0.5 s, the type stepped a
             // whole pixel every other frame near the end, which measure.py flagged as jumps (1.2 % of the frame each)
@@ -581,11 +634,13 @@
             const fullA = P(t, DOCX + 0.3, 0.5, 'none'), fullRise = P(t, DOCX + 0.3, 0.2, 'none')
             docFullG.setAttribute('opacity', (fullA * endA).toFixed(3))
             docFullG.setAttribute('transform', `translate(0 ${f2(12 * (1 - fullRise))})`)
+            docFull.forEach((el, i) => el.setAttribute('fill', L.mixHex(C.ink2, C.ink, P(t, DOC_LIT[i], 0.3, 'none'))))
             underlineDraw(ULS[0], P(t, U1, 0.5, 'power2.out'), endA)
             underlineDraw(ULS[1], P(t, U2, 0.6, 'power2.out'), endA)
 
-            /* 12f to 12h: the feel block; it dims to 35 % as the doctor lines rise, and stays so to the end fade (12h) */
-            const feelA = (1 - 0.65 * P(t, FEEL_DIM, FEEL_DIM_D, 'none')) * endA
+            /* 12f to 12h: the feel block; it dims to 55 % as the doctor lines rise (every one of its texts 4.5:1 or better,
+               measured: at 50 % the capsules' labels on their lit tint read 4.2 and 4.4:1), and stays so to the end fade */
+            const feelA = (1 - 0.45 * P(t, FEEL_DIM, FEEL_DIM_D, 'none')) * endA
             question.draw({ a: L.fade(t, Q, null, { dIn: 0.3, easeIn: 'none' }).a * feelA })
             feelRing.draw(t, FEEL, FEEL_D)
             caps.forEach((c, i) => {

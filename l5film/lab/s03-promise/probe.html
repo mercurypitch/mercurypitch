@@ -80,8 +80,12 @@
           const top = L.stage(room.top)
 
           /* ---------------------------------------------------------------- the band chart (world, S1's place) */
-          const ch = L.bandChart(world, L.CHART.S1)
-          const lab = { A3: ch.label('A3'), level: ch.label('level') }
+          // Fix round F-01 (DECISIONS 226, S3 fills its lower half): the strip 30 px lower than S1's, at 720, its rounded
+          // outline 1.5 times as tall (120 px, y 660 to 780), "level" under it at 820 and "what your diaphragm does" at 874
+          // (its descenders to about 883, above the captions' 896). s02's fade-up and s04's first frames carry the same.
+          const STRIP_Y = 720, LEVEL_Y = 820, DIA_Y = LEVEL_Y + 54
+          const ch = L.bandChart(world, { ...L.CHART.S1, strip: STRIP_Y })
+          const lab = { A3: ch.label('A3'), level: ch.label('level', null, { y: LEVEL_Y }) }
           const band = ch.band()
           const PX0 = ch.G.x0, PX1 = ch.G.x1
           const pre = (el) => ch.g.insertBefore(el, ch.merc.g)          // under Merc's line, over the band
@@ -100,12 +104,12 @@
           const tick = L.svg('rect', { x: PX0 - 2, y: f2(band.top), width: 4, height: f2(band.bot - band.top), fill: C.chrome, opacity: 0 }, ch.g)
           const playhead = L.svg('rect', { y: f2(band.top), width: 3, height: f2(band.bot - band.top), fill: C.chrome, opacity: 0 }, ch.g)
           // the strip's rounded outline, drawn round in chrome on "what your diaphragm does" and dimmed back
-          const SO = { x: PX0 - 10, y: ch.G.strip - 40, w: PX1 - PX0 + 20, h: 80 }
-          const stripOutline = L.svg('rect', { x: SO.x, y: SO.y, width: SO.w, height: SO.h, rx: 40, fill: 'none', stroke: C.chrome, 'stroke-width': 2, pathLength: 1, 'stroke-dasharray': '0 1', opacity: 0 }, ch.g)
+          const SO = { x: PX0 - 10, y: ch.G.strip - 60, w: PX1 - PX0 + 20, h: 120 }
+          const stripOutline = L.svg('rect', { x: SO.x, y: SO.y, width: SO.w, height: SO.h, rx: 60, fill: 'none', stroke: C.chrome, 'stroke-width': 2, pathLength: 1, 'stroke-dasharray': '0 1', opacity: 0 }, ch.g)
           // the promise's three labels (world: they ride the truck)
           const LBL = { size: 40, weight: 600 }
-          // under "level" (its baseline 778), left-aligned with it at the plot's left end (DECISIONS 174): baseline 836
-          const diaphragm = L.label(ch.gLabels, 'what your diaphragm does', { ...LBL, x: PX0, y: ch.G.strip + 146 })
+          // under "level", left-aligned with it at the plot's left end (DECISIONS 174): baseline 874 (836 before F-01)
+          const diaphragm = L.label(ch.gLabels, 'what your diaphragm does', { ...LBL, x: PX0, y: DIA_Y })
           const breathe = L.label(ch.gLabels, 'breathe in low · start easily', { ...LBL, x: PX0, y: band.top - 22 })
           const comfortable = L.label(ch.gLabels, 'a comfortable note · 10 s', { ...LBL, x: PX1, y: band.top - 22, anchor: 'end' })
           const rings = L.echoRings(top, {})
@@ -114,7 +118,7 @@
           const bead = L.bead(top, { r: 22, color: C.chrome })
           bead.halo.setAttribute('r', 38)
 
-          const probe = { cam, ch, lab, bead, diaphragm, breathe, comfortable, A: { LAND, TRUCK, TRUCK_END, LEAVE, DIA, D }, boxes: {} }
+          const probe = { cam, ch, lab, bead, diaphragm, breathe, comfortable, stripOutline, SO, A: { LAND, TRUCK, TRUCK_END, LEAVE, DIA, D, STRIP_Y, LEVEL_Y, DIA_Y }, boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
 

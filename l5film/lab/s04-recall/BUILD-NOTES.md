@@ -4,6 +4,21 @@
 `act1`). STORYBOARD 4a to 4d; HANDOFFS § The band chart (the swatches), § Framings (F-strip), § Camera moves
 (push-and-return 1), § The cuts S3 to S4 and S4 to S5.
 
+## Fix round F-01 (DECISIONS 226, 229, 233)
+
+| Item | Before (film-draft-01) | Now |
+| ---- | ---------------------- | --- |
+| 226, the lower half | at F-strip: the strip centred y 266 (world 690), its envelope 227 to 305 (half-height 28 world); swatches 224 px wide, 14 / 39 / 78 px half-heights, centred y 490; names' baseline 630; heading 716; the introduced row's baseline 790; ring (1580.9, 490) | S3's strip at 720 carries in (screen 308; `STRIP_Y`, line 75), its even envelope at +3.5 dB, half-height 42 (1.5 times; line 79): 249.2 to 366.8; swatches 1.5 times (240 world wide, half-heights 15 / 42 / 84; line 80) at world y 890: centred (512 / 960 / 1408, 546), 336 wide, 42 / 117.6 / 235.2 tall, the middle one still exactly the envelope; names' baseline 730.8 at 50.4 px; heading 790 (line 124); the row's baseline 862 (line 127), outlines 818.7 to 874.5; ring (1636.9, 546), still 40 px clear of the third swatch. Gaps: tall swatch to the names 15.8, names to the heading 19.2, heading to the row 28.7; the lowest ink 874.7 (captions 896). The strip and "level" glide home to 690 and 778 through the crane up (lines 144, 151), so S5's first frame is unchanged. `fix-F-01/before-after-57.5.png`, `fix-F-01/still-11.49.png` |
+| 229, the chips clear of the band's line through the crane up | the band's edges and Merc's line passed through the parked chips (65.43 to 65.57) | each line hidden until its whole stroke is 12 px under the row (its outlines end at 106), found on the camera's curve (`clearAt`, line 110), then up over 0.3 s, linear: the bottom edge from 12.547, Merc's line (with its 10 px glow) 12.680, the top edge 12.778 (film 65.427, 65.560, 65.658); nearest line to a chip over the 45 frames: 26.1 px. The fill passes under the row (DECISIONS 168). `fix-F-01/crop-crane-up-12.56-12.69.png` |
+| 233, the names stepping | the names rose in whole-pixel steps: "whisper" 32.53 to 31.53 at 55.267, "about speaking volume" 33.00 to 31.99 at 55.667 after held frames (`fix-F-01/name-trace.txt`, from the film draft) | each name in its own composited layer (lines 88 to 96), drawn at its size on screen, the layer translated to its anchor to 1/1000 px (line 170), shown only while seen (so its first raster is at F-strip's scale): the same trace now eases 31.59, 31.36, 31.23 and 32.04, 31.79, 31.65 with no held step. Tool `fix-F-01/name_trace.py` |
+| 172, the flight | heading and names left at FLY - 0.2 (gone FLY + 0.1) | the row starts lower and reaches the heading 0.08 s into the flight, so they leave at FLY - 0.32 (line 53), gone 0.02 s before it; the flight crosses no type on screen (`flight-cross.mjs`: the heading's box crossed at 11.933 and 11.967, at 0) |
+
+- Probe: 52 lines, all pass; new: F-strip's places at the new scale, the names' layers on their anchors over the landing (33 frames), the lower half's gaps and the captions' line, the band's lines against the parked chips on every crane-up frame, the first frame's strip and "level" (S3's) and the last frame's (S5's). Keep-out: 188.8 px at the closest ("level" to Merc).
+- Clip `clip.mp4` (scratch voice mix), stills `fix-F-01/still-{0.00,2.39,2.79,3.30,6.05,8.30,11.49,12.56,12.69,13.63}.png`; `fix-F-01/measure/summary.md`: holds 0.5 s (1.1 s per 30 s), longest 0.1 s, none inside a word; one pop, 9.60 (the hosts' blink, as before). `check lab/s04-recall/proj --at=2.8,3.3,6.05,8.3,11.49,12.6`: layout 0, contrast 23/23.
+- Join S4 to S5: S4's last clip frame against S5's clip still at 0 (group B's of 19 November, 11:44): mean abs difference 0.47 of 255, 0.009 % of pixels over 24 (Merc and the label row's antialiasing).
+- HANDOFFS should carry (§ Framings F-strip, § The swatches): the numbers in the 226 row above; the strip and "level" glide 720 to 690 and 820 to 778 over the crane up (power2.inOut); the band's lines come in 12 px under the parked row, 0.3 s linear each.
+
+
 ## Fix round (critic A-01): DECISIONS 172 and 175
 
 - **175, the q0 ring** stands right of the third swatch ("shout"), centred on the swatch row: centre (1580.9, 490.0)

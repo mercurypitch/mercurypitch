@@ -12,7 +12,7 @@ File: `lab/s12-your-turn/clip.mp4`
 
 A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes by 16 or more. Target: at most about 1 s per 30 s in total and none longer than about 0.5 s; a hold that runs to the end (the final call to action) is reported separately and exempt.
 
-**Inside the film:** 4.5 s (1.8 s per 30 s), longest 0.2 s.
+**Inside the film:** 3.8 s (1.5 s per 30 s), longest 0.2 s.
 **Final hold:** 0.3 s.
 
 | Starts | Length | Note |
@@ -25,21 +25,17 @@ A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes
 | 7.80 s | 0.1 s |  |
 | 8.60 s | 0.1 s |  |
 | 9.90 s | 0.2 s |  |
-| 10.50 s | 0.1 s |  |
-| 12.20 s | 0.1 s |  |
 | 13.30 s | 0.1 s |  |
 | 13.50 s | 0.1 s |  |
-| 13.70 s | 0.2 s |  |
-| 14.80 s | 0.2 s |  |
+| 13.70 s | 0.1 s |  |
+| 14.90 s | 0.1 s |  |
 | 18.30 s | 0.1 s |  |
 | 18.50 s | 0.1 s |  |
 | 19.40 s | 0.1 s |  |
 | 37.90 s | 0.2 s |  |
-| 38.60 s | 0.1 s |  |
 | 41.50 s | 0.1 s |  |
 | 43.30 s | 0.1 s |  |
 | 45.30 s | 0.1 s |  |
-| 47.60 s | 0.1 s |  |
 | 49.70 s | 0.2 s |  |
 | 51.80 s | 0.1 s |  |
 | 53.40 s | 0.1 s |  |
@@ -47,14 +43,14 @@ A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes
 | 53.90 s | 0.1 s |  |
 | 54.60 s | 0.1 s |  |
 | 55.80 s | 0.1 s |  |
-| 57.80 s | 0.1 s |  |
+| 57.70 s | 0.1 s |  |
 | 62.60 s | 0.1 s |  |
 | 63.10 s | 0.1 s |  |
 | 65.60 s | 0.1 s |  |
 | 66.10 s | 0.1 s |  |
 | 69.60 s | 0.2 s |  |
 | 74.20 s | 0.1 s |  |
-| 75.20 s | 0.2 s |  |
+| 75.20 s | 0.1 s |  |
 | 76.40 s | 0.3 s | final hold |
 
 ## Low motion
@@ -63,34 +59,33 @@ Runs where the mean change is below 0.35. Not an automatic fail: a critic looks 
 
 | Starts | Length | Largest change | Note |
 | --- | --- | --- | --- |
-| 0.50 s | 2.5 s | 173 | small element moving |
-| 3.20 s | 12.1 s | 171 | small element moving |
-| 15.50 s | 2.0 s | 174 | small element moving |
-| 17.80 s | 2.0 s | 122 | small element moving |
-| 20.10 s | 0.3 s | 60 | small element moving |
+| 0.50 s | 2.5 s | 174 | small element moving |
+| 3.20 s | 12.1 s | 170 | small element moving |
+| 15.50 s | 2.0 s | 171 | small element moving |
+| 17.80 s | 2.0 s | 123 | small element moving |
+| 20.10 s | 0.3 s | 59 | small element moving |
 | 22.20 s | 1.3 s | 75 | small element moving |
-| 24.30 s | 0.3 s | 126 | small element moving |
-| 25.00 s | 0.7 s | 97 | small element moving |
-| 25.90 s | 0.8 s | 128 | small element moving |
-| 26.90 s | 0.8 s | 123 | small element moving |
-| 27.90 s | 0.8 s | 165 | small element moving |
+| 25.10 s | 0.6 s | 97 | small element moving |
+| 25.90 s | 0.8 s | 127 | small element moving |
+| 26.90 s | 0.8 s | 125 | small element moving |
+| 27.90 s | 0.8 s | 164 | small element moving |
 | 28.90 s | 0.8 s | 165 | small element moving |
-| 29.80 s | 1.0 s | 239 | small element moving |
+| 29.80 s | 1.0 s | 240 | small element moving |
 | 30.90 s | 0.8 s | 163 | small element moving |
-| 31.80 s | 0.9 s | 240 | small element moving |
+| 31.90 s | 0.8 s | 123 | small element moving |
 | 32.80 s | 0.9 s | 240 | small element moving |
-| 33.90 s | 0.8 s | 123 | small element moving |
-| 34.90 s | 0.8 s | 124 | small element moving |
+| 33.90 s | 0.8 s | 126 | small element moving |
+| 34.90 s | 0.8 s | 126 | small element moving |
 | 36.90 s | 2.7 s | 198 | small element moving |
-| 39.80 s | 4.0 s | 164 | small element moving |
+| 39.80 s | 4.0 s | 165 | small element moving |
 | 43.90 s | 4.0 s | 170 | small element moving |
 | 48.10 s | 3.9 s | 157 | small element moving |
-| 52.30 s | 2.7 s | 124 | small element moving |
-| 55.20 s | 2.8 s | 166 | small element moving |
-| 59.00 s | 16.8 s | 184 | small element moving |
+| 52.30 s | 2.7 s | 120 | small element moving |
+| 55.10 s | 2.9 s | 165 | small element moving |
+| 59.00 s | 16.8 s | 185 | small element moving |
 | 76.30 s | 0.4 s | 18 | runs to the end |
 
-6 shorter run(s) totalling 0.9 s are not listed; `motion.csv` has every sample.
+8 shorter run(s) totalling 1.1 s are not listed; `motion.csv` has every sample.
 
 ## Single-frame events
 
@@ -99,16 +94,15 @@ From every frame at the film's own rate, by the share of pixels that change by m
 | Time | Kind | Mean change | Pixels changed |
 | --- | --- | --- | --- |
 | 15.067 s | pop | 0.07 | 0.07% |
-| 24.533 s | jump | 0.14 | 0.12% |
-| 25.467 s | jump | 0.10 | 0.10% |
 | 39.267 s | pop | 0.08 | 0.06% |
 | 42.467 s | pop | 0.06 | 0.05% |
+| 54.867 s | jump | 0.03 | 0.03% |
 | 69.900 s | jump | 0.04 | 0.04% |
-| 73.133 s | pop | 0.08 | 0.06% |
+| 73.133 s | pop | 0.08 | 0.05% |
 
 ## Loop seam
 
-From the last frame back to the first: 7.87 on the scale of `frames.csv`, against a median frame change of 0.036, a 95th percentile of 0.25 and a largest of 2.60 at 20.900 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
+From the last frame back to the first: 7.86 on the scale of `frames.csv`, against a median frame change of 0.037, a 95th percentile of 0.24 and a largest of 2.83 at 20.900 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
 
 ## Loudness
 

@@ -30,7 +30,7 @@ const out = await page.evaluate(async () => {
     S.SWATCH.forEach((s) => { m['swatch ' + s.name] = H.R(s.box); m['name ' + s.name] = H.R(s.label) })
     if (S.hair) m.hairline = H.R(S.hair)
     m.heading = H.R(S.heading)
-    const a = S.cam.map(400, 690 - 28, tl.time()), b = S.cam.map(1520, 690 + 28, tl.time())
+    const a = S.cam.map(400, S.ch.G.strip - A.LEVEL, tl.time()), b = S.cam.map(1520, S.ch.G.strip + A.LEVEL, tl.time())
     m['strip envelope'] = { left: a[0], top: a[1], right: b[0], bottom: b[1] }
     return m
   }

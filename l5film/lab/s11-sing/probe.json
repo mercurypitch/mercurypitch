@@ -222,7 +222,7 @@
   "pass": true
  },
  {
-  "t": 28.350000000000012,
+  "t": 28.05,
   "name": "11d: reason 3 \"usual notes suddenly gone\" lands on its word (baseline 390)",
   "got": "311.0 to 654.0, 368.0 to 397.0",
   "want": "right <= 960",
@@ -373,6 +373,20 @@
   "name": "11e: the ring scales about 1.05 on \"the ring.\"",
   "got": "translate(1320 572) scale(1.0500) translate(-1320 -572)",
   "want": "scale about (1320, 572)",
+  "pass": true
+ },
+ {
+  "t": 19.70000000000001,
+  "name": "11d (DECISIONS 227): \"hurts or uncomfortable\" settles on \"singing\" (its composited layer, about its left baseline)",
+  "got": "1.0600 / transform / origin 310px 352px",
+  "want": "1.0600 / transform / 310px 352px",
+  "pass": true
+ },
+ {
+  "t": 20.350000000000012,
+  "name": "and is back at rest 0.75 s later",
+  "got": "1.0000 / transform / origin 310px 352px",
+  "want": "1.0000",
   "pass": true
  },
  {

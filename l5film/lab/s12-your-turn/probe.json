@@ -204,6 +204,13 @@
  },
  {
   "t": 15.635000000000037,
+  "name": "the ring's layer not yet composited (F0; DECISIONS 233)",
+  "got": "auto",
+  "want": "auto",
+  "pass": true
+ },
+ {
+  "t": 15.635000000000037,
   "name": "no two visible texts overlap",
   "got": "none",
   "want": "none",
@@ -239,6 +246,13 @@
  },
  {
   "t": 17.835,
+  "name": "(DECISIONS 228) its first line lit (ink), its second at ink-2 until \"feels\"",
+  "got": "#e6edf3 / rgb(168,179,191)",
+  "want": "ink / rgb(168,179,191)",
+  "pass": true
+ },
+ {
+  "t": 17.835,
   "name": "between the listening line and the doctor lines (gaps)",
   "got": "28.0, 37.0",
   "want": ">= 12 each",
@@ -270,6 +284,13 @@
   "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
   "got": 826,
   "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 19.898000000000003,
+  "name": "12c (DECISIONS 228): the stop line's second line lit on \"feels\"",
+  "got": "rgb(230,237,243)",
+  "want": "rgb(230,237,243)",
   "pass": true
  },
  {
@@ -502,10 +523,9 @@
  },
  {
   "t": 24.650000000000006,
-  "name": "12d: the ring breathes to 1.08 (its largest)",
-  "got": 1.08,
-  "want": 1.08,
-  "tol": 0.0005,
+  "name": "12d: the ring breathes to 1.08 (its largest), on its own composited layer (DECISIONS 233)",
+  "got": "1.08 / transform / inner none",
+  "want": "1.08 / transform / none",
   "pass": true
  },
  {
@@ -644,9 +664,9 @@
  },
  {
   "t": 36.60000000000005,
-  "name": "the band, Merc's line and \"Nothing listens\" stay",
-  "got": "1.000 1.000",
-  "want": "1 1.000",
+  "name": "the band and Merc's line stay, dimmed to 50 % (DECISIONS 226); \"Nothing listens\" stays at full",
+  "got": "0.500 1.000",
+  "want": "0.500 1.000",
   "pass": true
  },
  {
@@ -854,6 +874,13 @@
  },
  {
   "t": 58.975000000000016,
+  "name": "(DECISIONS 228) risen whole, every line at ink-2 before its words are said",
+  "got": "2222222",
+  "want": "2222222",
+  "pass": true
+ },
+ {
+  "t": 58.975000000000016,
   "name": "the small lines and the stop line gone",
   "got": "0.00 0.00",
   "want": "0.00 0.00",
@@ -889,8 +916,8 @@
  },
  {
   "t": 58.975000000000016,
-  "name": "keep-out: nearest visible text to tavi's body box (\"Nothing listens\")",
-  "got": 575.92,
+  "name": "keep-out: nearest visible text to tavi's body box (\"rest before you sing again\")",
+  "got": 118.8,
   "want": ">= 20",
   "pass": true
  },
@@ -903,9 +930,16 @@
  },
  {
   "t": 59.07500000000001,
-  "name": "12h (DECISIONS 205): the feel block dimmed to 35 % (question, capsules, lines, bracket)",
-  "got": "0.350 to 0.350",
-  "want": "0.350",
+  "name": "12h (DECISIONS 205, 231): the feel block dimmed to 55 % (question, capsules, lines, bracket; 4.5:1 measured in fix-F-01/contrast.py)",
+  "got": "0.550 to 0.550",
+  "want": "0.550",
+  "pass": true
+ },
+ {
+  "t": 59.07500000000001,
+  "name": "the band dimmed to 50 % (DECISIONS 226)",
+  "got": "0.500",
+  "want": "0.500",
   "pass": true
  },
  {
@@ -923,6 +957,20 @@
   "pass": true
  },
  {
+  "t": 64.47,
+  "name": "12h (DECISIONS 228): the doctor lines lit line by line as said, 3 lit, the rest at ink-2",
+  "got": "1112222",
+  "want": "1112222",
+  "pass": true
+ },
+ {
+  "t": 71.69300000000001,
+  "name": "12h (DECISIONS 228): the doctor lines lit line by line as said, 6 lit, the rest at ink-2",
+  "got": "1111112",
+  "want": "1111112",
+  "pass": true
+ },
+ {
   "t": 64.72,
   "name": "12h: \"see a doctor\" underlined (segments)",
   "got": "260.0-475.0 @540",
@@ -934,6 +982,20 @@
   "name": "12h: \"get help straight away\" underlined (segments)",
   "got": "260.0-638.9 @740",
   "want": "under its words",
+  "pass": true
+ },
+ {
+  "t": 75.15500000000002,
+  "name": "12h: all seven doctor lines lit by \"get help\"",
+  "got": "1111111",
+  "want": "1111111",
+  "pass": true
+ },
+ {
+  "t": 76.19500000000002,
+  "name": "12h (DECISIONS 226): the band back at full before the matched cut on `recap`",
+  "got": "1.000 at 76.20, 0.59 s before the cut",
+  "want": "1.000, >= 0.5 s",
   "pass": true
  },
  {

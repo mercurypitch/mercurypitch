@@ -7,6 +7,13 @@
   "pass": true
  },
  {
+  "t": 1.6000000000000032,
+  "name": "DECISIONS 233: the type layer and its three boxes composited (will-change), the zoom a CSS matrix",
+  "got": "transform transform transform transform",
+  "want": "transform x 4",
+  "pass": true
+ },
+ {
   "t": 2.719999999999999,
   "name": "flight t 2.720: bead (1060.2, 639.2) r 22.1; to \"A3\" ink (alpha 0.01)",
   "got": 632.11,
@@ -79,7 +86,7 @@
  {
   "t": 2.884999999999999,
   "name": "  staff alpha 0.72, bead foot over the top staff line by",
-  "got": 116.11,
+  "got": 116.1,
   "want": "info",
   "pass": true
  },
@@ -170,7 +177,7 @@
  {
   "t": 3.1599999999999993,
   "name": "  staff alpha 0.02, bead foot over the top staff line by",
-  "got": 209.17,
+  "got": 209.16,
   "want": "info",
   "pass": true
  },
@@ -184,7 +191,7 @@
  {
   "t": 3.2149999999999994,
   "name": "  staff alpha 0.00, bead foot over the top staff line by",
-  "got": 207.66,
+  "got": 207.67,
   "want": "info",
   "pass": true
  },
@@ -198,7 +205,7 @@
  {
   "t": 3.2699999999999996,
   "name": "  staff alpha 0.00, bead foot over the top staff line by",
-  "got": 203.07,
+  "got": 203.06,
   "want": "info",
   "pass": true
  },
@@ -233,7 +240,7 @@
  {
   "t": 3.3249999999999997,
   "name": "  staff alpha 0.00, bead foot over the top staff line by",
-  "got": 196.51,
+  "got": 196.52,
   "want": "info",
   "pass": true
  },
@@ -275,7 +282,7 @@
  {
   "t": 3.49,
   "name": "  staff alpha 0.00, bead foot over the top staff line by",
-  "got": 174.84,
+  "got": 174.83,
   "want": "info",
   "pass": true
  },
@@ -289,7 +296,7 @@
  {
   "t": 3.545,
   "name": "  staff alpha 0.00, bead foot over the top staff line by",
-  "got": 170.08,
+  "got": 170.09,
   "want": "info",
   "pass": true
  },
@@ -309,6 +316,13 @@
  },
  {
   "t": 3.5995,
+  "name": "F-01: the strip at 720 and \"level\" at 820 (s03 draws the same)",
+  "got": "720 / 820",
+  "want": "720 / 820",
+  "pass": true
+ },
+ {
+  "t": 3.5995,
   "name": "last frame: bead centre and radius (s03 draws the same at its 0)",
   "got": "487.78, 395.77, r 17.76",
   "want": "see s03 t 0",
@@ -323,6 +337,13 @@
  },
  {
   "t": 3.6,
+  "name": "DECISIONS 229: the title, its kicker and lockup against the band, \"A3\" and \"level\", every frame from the exit (2.10) to the cut: frames with both / the type's last frame / the chart's first",
+  "got": "0 / 2.467 / 2.567",
+  "want": "0, the type gone first",
+  "pass": true
+ },
+ {
+  "t": 3.6,
   "name": "flight t 3.600: bead (487.7, 395.8) r 17.7; to \"A3\" ink (alpha 1.00)",
   "got": 25.4,
   "want": ">= 12",
@@ -333,6 +354,13 @@
   "name": "  staff alpha 0.00, bead foot over the top staff line by",
   "got": 168.41,
   "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.6,
+  "name": "F-01: the strip at 720 and \"level\" at 820 (s03 draws the same)",
+  "got": "720 / 820",
+  "want": "720 / 820",
   "pass": true
  },
  {

@@ -4,6 +4,24 @@
 § The band chart, § The wave rule, § Framings (F-cold, F-cold end, F-hook, F-bead), § Camera moves, § Carried (the
 hook's frame), § The cuts S1 to S2. LAB-CHECKS 1, 7 and 9 (and 18's 1a and 1e).
 
+## Fix round F-01 (DECISIONS 229, 230, 233; 227)
+
+The full-film critic's items for the cold open. Times are film times (scene time here). Proof under `fix-F-01/`.
+
+| Item | Before (film-draft-01) | Now |
+| ---- | ---------------------- | --- |
+| 230, the guess reads | the easy take dimmed to 50 % from the guess (8.26) only to o1's end, back to full over 9.06 to 9.56; the dash 3 world px (2.7 on screen) | `easyDim = 0.5 * P(t, GUESS, 0.3) * (1 - guessOut)` (line 213): 0.500 on every frame from 8.33 to the ghost (21.03); take and ghost together at most 0.5 to the reveal (26.22); back with Merc's line as the guess leaves (`higher` + 0.06, 0.5 s). `guess.path` stroke 4 / scale (line 259): 3.995 to 4.005 px on screen over its 537 frames. `fix-F-01/crop-9.60-guess.png` (before: `review/critic-F-01/crops/c009.6-guess.png`) |
+| 229, '"support"' clear of the band | the fill rode the pull at full to 32.65 and faded to 33.65, under the word from its landing (32.07) | `bandA = 1 - P(t, BAND_OUT, BAND_D)` (line 201): the fill leaves with its edges and the label row (`BAND_OUT` = min(told + 0.3, support - 0.45), 0.4 s), as the board's 1g has it; the band's last frame 31.933, the word's first 32.067, no frame with both over the 62 swept (31.60 to 33.63). "A3" still rides the pull. `fix-F-01/crop-32.60-support.png` (before: `c032.6-support.png`) |
+| 233, type stepping a pixel | measure.py jumps at 6.267, 10.800, 13.933, 17.800, 17.867, 19.733, 24.267, 27.867, 33.033 (0.03 to 0.64 % of pixels) | the chart's labels group (every label, both chips) in a composited layer (`floatLayer`, line 116; `will-change: transform`) over the mid layer, its CSS matrix the camera's mid matrix to 1/1000 px each frame (line 192); the bead back in the chart (line 143); '"support"' in its own composited layer, its ease a CSS translate (line 289). measure.py on the new clip: none of the nine. Left: 9.233 pop, 28.100 pop, 29.267 jump, 36.733 pop, all inside Merc's body (x 0 to 400, y 500 to 800, the pass) |
+| 227, holds inside words | longest 0.3 s at 34.10 | longest 0.2 s at 34.20, in the pause between "note." (33.80) and "If" (34.43); no hold of 0.3 s, so nothing to settle |
+
+- Probe: 85 lines, all pass; new: the guess (every frame of its showing, the dash), the band against '"support"' (every frame 31.60 to 33.63), the two composited layers (at 10.41 and 31.84, and '"support"' mid-ease); `pull50` and `pull80` now want the fill at 0.
+- Clip `clip.mp4` (scratch voice mix), stills `fix-F-01/still-{6.27,9.60,17.80,26.20,32.60,33.03,34.25}.png`; `fix-F-01/measure/summary.md`: holds 1.0 s (0.8 s per 30 s), longest 0.2 s; four events, the host's. `check lab/s01-cold-open/proj --at=6.3,9.6,17.8,26.2,32.6,34.3`: layout 0, contrast 34/34.
+- Join S1 to S2 (the bead's field): S1's last clip frame against S2's first, mean abs difference 0.26 of 255, 0 % of pixels over 24 (largest 5); the probe has the field at (960, 540), r 1500, opaque on both sides.
+- Chrome keeps a composited layer's raster scale from its first raster (a lab test: a layer rastered at 1.0 and shown at 1.4 is a little softer than one rastered at 1.4). The labels' layer is rastered at 0.90 to 0.85 and only shrinks after (the pull to 0.71), so it never enlarges a raster.
+- HANDOFFS should carry: S1's band fill leaves with its edges and the label row (`BAND_OUT`, 0.4 s), no longer riding the pull; the easy take at 50 % from `holds` (0.3 s) until the guess leaves (`higher` + 0.06, 0.5 s sine.inOut); the guess's dash 4 px on screen at every framing.
+
+
 ## Leftovers round (DECISIONS 178): Merc's amber line through the softening bead
 
 | Item | Before (round 3) | Now |

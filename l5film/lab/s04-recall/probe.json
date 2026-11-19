@@ -7,37 +7,65 @@
   "pass": true
  },
  {
-  "t": 3.2799999999999985,
-  "name": "F-strip: the strip x 176 to 1744",
-  "got": "176 to 1744",
-  "want": "176 to 1744",
+  "t": 0,
+  "name": "F-01: the first frame's strip at 720 and \"level\" at 820 (S3's last frame)",
+  "got": "720.00 / 820.00",
+  "want": "720.00 / 820.00",
+  "pass": true
+ },
+ {
+  "t": 3.1666666666666665,
+  "name": "DECISIONS 233: the names' layers on their anchors over the landing (33 frames, 63 name-frames): worst offset",
+  "got": 0,
+  "want": "< 0.001",
   "pass": true
  },
  {
   "t": 3.2799999999999985,
-  "name": "its envelope y 227 to 305",
-  "got": "226.8 to 305.2",
-  "want": "226.8 to 305.2",
+  "name": "F-strip: the strip x 176 to 1744 (world 720, F-01)",
+  "got": "176 to 1744, y 308.0",
+  "want": "176 to 1744, y 308.0",
   "pass": true
  },
  {
   "t": 3.2799999999999985,
-  "name": "the swatches centred (512, 490), (960, 490), (1408, 490)",
-  "got": "(512.0, 490.0) (960.0, 490.0) (1408.0, 490.0)",
-  "want": "(512.0, 490.0) (960.0, 490.0) (1408.0, 490.0)",
+  "name": "F-01 (DECISIONS 226): its envelope 1.5 times (half-height 42 world): y 249.2 to 366.8",
+  "got": "249.2 to 366.8",
+  "want": "249.2 to 366.8",
   "pass": true
  },
  {
   "t": 3.2799999999999985,
-  "name": "their names' baseline 630 at 50 px",
-  "got": "630, 50.4 px",
-  "want": "630, 50.4 px",
+  "name": "the swatches centred (512, 546), (960, 546), (1408, 546)",
+  "got": "(512.0, 546.0) (960.0, 546.0) (1408.0, 546.0)",
+  "want": "(512.0, 546.0) (960.0, 546.0) (1408.0, 546.0)",
+  "pass": true
+ },
+ {
+  "t": 3.2799999999999985,
+  "name": "their boxes on screen (1.5 times: 336 wide; 42, 117.6, 235.2 tall)",
+  "got": "336.0x42.0 336.0x117.6 336.0x235.2",
+  "want": "336.0x42.0 336.0x117.6 336.0x235.2",
+  "pass": true
+ },
+ {
+  "t": 3.2799999999999985,
+  "name": "the middle swatch exactly the strip's envelope (half-heights, world)",
+  "got": "42 / 42",
+  "want": "42 / 42",
+  "pass": true
+ },
+ {
+  "t": 3.2799999999999985,
+  "name": "their names' baseline 730.8 at 50.4 px, in composited layers (will-change), translated",
+  "got": "730.8, 50.4px, transform",
+  "want": "730.8, 50.4px, transform",
   "pass": true
  },
  {
   "t": 3.2799999999999985,
   "name": "keep-out: nearest visible text to tavi's body box (\"shout\")",
-  "got": 249.76,
+  "got": 249.71,
   "want": ">= 20",
   "pass": true
  },
@@ -52,8 +80,8 @@
  {
   "t": 6.049999999999997,
   "name": "centred on the swatch row (y)",
-  "got": 490,
-  "want": 490.00001525878906,
+  "got": 546,
+  "want": 545.9999847412109,
   "tol": 0.5,
   "pass": true
  },
@@ -68,21 +96,21 @@
  {
   "t": 6.049999999999997,
   "name": "the ring on screen at (x, y)",
-  "got": "1580.9, 490.0",
+  "got": "1636.9, 546.0",
   "want": "info",
   "pass": true
  },
  {
   "t": 6.049999999999997,
   "name": "keep-out: nearest visible text to tavi's body box (\"shout\")",
-  "got": 249.76,
+  "got": 249.71,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 6.049999999999997,
   "name": "keep-out: nearest visible text to merc's body box (\"level\")",
-  "got": 378.67,
+  "got": 343.11,
   "want": ">= 20",
   "pass": true
  },
@@ -96,14 +124,49 @@
  {
   "t": 8.24,
   "name": "keep-out: nearest visible text to tavi's body box (\"shout\")",
-  "got": 249.76,
+  "got": 249.71,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 8.24,
-  "name": "keep-out: nearest visible text to merc's body box (\"whisper\")",
-  "got": 232.19,
+  "name": "keep-out: nearest visible text to merc's body box (\"level\")",
+  "got": 188.8,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 11.489999999999984,
+  "name": "F-01 (DECISIONS 226, t 11.49): the lower half: the tall swatch (outer stroke) to the names' font box / names to the heading / heading's baseline to the row's outlines",
+  "got": "15.8 / 19.2 / 28.7",
+  "want": ">= 12 each",
+  "pass": true
+ },
+ {
+  "t": 11.489999999999984,
+  "name": "  the heading's baseline / the row's outlines y",
+  "got": "790 / 818.7 to 874.5",
+  "want": "790 / about 819 to 875",
+  "pass": true
+ },
+ {
+  "t": 11.489999999999984,
+  "name": "  the lowest ink above the captions' 896 (the row's outlines)",
+  "got": 874.66,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 11.489999999999984,
+  "name": "keep-out: nearest visible text to tavi's body box (\"shout\")",
+  "got": 249.71,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 11.489999999999984,
+  "name": "keep-out: nearest visible text to merc's body box (\"level\")",
+  "got": 188.8,
   "want": ">= 20",
   "pass": true
  },
@@ -132,21 +195,21 @@
  {
   "t": 11.489999999999984,
   "name": "row from x .. to ..",
-  "got": "470.5 to 1449.5, y 746.7 to 802.5",
+  "got": "470.5 to 1449.5, y 818.7 to 874.5",
   "want": "info",
   "pass": true
  },
  {
   "t": 11.489999999999984,
   "name": "keep-out: nearest visible text to tavi's body box (\"shout\")",
-  "got": 249.76,
+  "got": 249.71,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 11.489999999999984,
-  "name": "keep-out: nearest visible text to merc's body box (\"whisper\")",
-  "got": 232.19,
+  "name": "keep-out: nearest visible text to merc's body box (\"level\")",
+  "got": 188.8,
   "want": ">= 20",
   "pass": true
  },
@@ -160,7 +223,7 @@
  {
   "t": 12.366666666666667,
   "name": "DECISIONS 172: the flight (18 frames) crosses no type still on screen: the nearest visible type's gap to a chip",
-  "got": 17.07,
+  "got": "none on screen",
   "want": "> 0",
   "pass": true
  },
@@ -198,6 +261,20 @@
   "name": "dim: ink-2 text",
   "got": "rgb(168,179,191) rgb(168,179,191) rgb(168,179,191) rgb(168,179,191)",
   "want": "rgb(168,179,191) x 4",
+  "pass": true
+ },
+ {
+  "t": 13.433333333333334,
+  "name": "DECISIONS 229: the band's lines to the parked chips over the crane up (45 frames, 70 line-frames on screen): the nearest",
+  "got": 26.07,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 13.433333333333334,
+  "name": "  where",
+  "got": "the band's bottom edge at 12.567; each line in from 12.778 / 12.680 / 12.547 (0.3 s)",
+  "want": "info",
   "pass": true
  },
  {
@@ -248,6 +325,13 @@
   "name": "last frame F0: band 312.5 to 487.5, line y 400",
   "got": "312.5 to 487.5, 400",
   "want": "312.5 to 487.5, 400",
+  "pass": true
+ },
+ {
+  "t": 13.6345,
+  "name": "F-01: the strip home at S1's 690 and \"level\" at 778 (S5's first frame); the band's lines at full",
+  "got": "690.00 / 778.00 / 0.450 0.450 1.00",
+  "want": "690.00 / 778.00 / 0.450 0.450 1.00",
   "pass": true
  },
  {

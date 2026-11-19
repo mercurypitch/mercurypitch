@@ -19,7 +19,6 @@
    "Your turn.",
    "Sore, hoarse or unwell today?",
    "Just listen along.",
-   "hurts or uncomfortable",
    "· unusually hoarse or tired",
    "usual notes suddenly gone",
    "· ill",
@@ -28,7 +27,8 @@
    "If hoarseness or discomfort lasts more than a couple",
    "of weeks, see a doctor (a GP or an ear, nose and",
    "throat specialist). If it’s very painful, or breathing or",
-   "swallowing is hard, get help straight away."
+   "swallowing is hard, get help straight away.",
+   "hurts or uncomfortable"
   ]
  },
  "in": {
@@ -51,7 +51,6 @@
    "Your turn.",
    "Sore, hoarse or unwell today?",
    "Just listen along.",
-   "hurts or uncomfortable",
    "· unusually hoarse or tired",
    "usual notes suddenly gone",
    "· ill",
@@ -60,7 +59,8 @@
    "If hoarseness or discomfort lasts more than a couple",
    "of weeks, see a doctor (a GP or an ear, nose and",
    "throat specialist). If it’s very painful, or breathing or",
-   "swallowing is hard, get help straight away."
+   "swallowing is hard, get help straight away.",
+   "hurts or uncomfortable"
   ]
  }
 }

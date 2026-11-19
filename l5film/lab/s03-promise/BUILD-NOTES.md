@@ -3,6 +3,19 @@
 `compositions/s03-promise.html`, 10.47 s on the scratch clock (film 42.41 to 52.88). STORYBOARD 3a to 3c; HANDOFFS
 § Framings (F-promise-a, F-promise-b), § Camera moves (the truck), § The cuts S2 to S3 and S3 to S4.
 
+## Fix round F-01 (DECISIONS 226)
+
+| Item | Before (film-draft-01) | Now |
+| ---- | ---------------------- | --- |
+| 226, the lower half | the strip's hairline at 690; its outline x 390 to 1530, y 650 to 730 (80 tall, rx 40); "level" 778; "what your diaphragm does" 836; nothing below about 846 | the strip at 720 (line 58), its outline y 660 to 780 (120 tall, 1.5 times; rx 60; line 79), "level" 820 and "what your diaphragm does" 874 (line 84): the outline's stroke to "level"'s ink 15 px, "level" to the label 24 px, the lowest ink 883 (the captions keep 896 and below). The band, its labels and the bead's landing on A3 (480, 400) unchanged. `fix-F-01/before-after-47.0.png` |
+| 227, holds | 0.1 s | 0.1 s (0.3 s per 30 s), none inside a word |
+
+- Probe: 35 lines, all pass; new: the strip, outline and labels' places and gaps at 2.29 and 9.47, the captions' line, the last frame's strip and "level" (s04's first frame draws the same). Keep-out: 449 px at the closest.
+- Clip `clip.mp4` (scratch voice mix), stills `fix-F-01/still-{0.00,2.30,6.00,9.60,10.46}.png`; `fix-F-01/measure/summary.md`: holds 0.1 s, no events. `check lab/s03-promise/proj --at=2.3,5,8.4,9.7`: contrast 17/17.
+- Join S3 to S4: mean abs difference 0.29 of 255, 0.013 % of pixels over 24, all in Tavi (x 1700 to 1900, the pass); the strip's and "level"'s rows 0.36 and 0.30.
+- HANDOFFS should carry (S3's places): the strip at 720; its rounded outline x 390 to 1530, y 660 to 780, rx 60; "level" (400, 820); "what your diaphragm does" (400, 874); s02's fade-up and s04's first frames the same.
+
+
 ## Fix round (critic A-01): DECISIONS 174 and 176
 
 - **174**: "what your diaphragm does" now starts at x 400 world (anchor start), left-aligned with "level", baseline

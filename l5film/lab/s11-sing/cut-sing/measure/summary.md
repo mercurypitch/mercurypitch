@@ -33,7 +33,7 @@ None found.
 
 ## Loop seam
 
-From the last frame back to the first: 5.14 on the scale of `frames.csv`, against a median frame change of 0.265, a 95th percentile of 0.43 and a largest of 0.49 at 0.967 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
+From the last frame back to the first: 5.15 on the scale of `frames.csv`, against a median frame change of 0.263, a 95th percentile of 0.45 and a largest of 0.47 at 0.967 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
 
 ## Loudness
 

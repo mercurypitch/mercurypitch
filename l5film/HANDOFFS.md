@@ -208,6 +208,18 @@ the turn's small frame (it fades at 353.90, before 10h's slide).
 - **S1's arrow** (1f): ink 3 px from the pushed line's last in-band centre point (t 2.75 s, x 1170)
   to its end (1520, 250), curving above the line, 20 px clear of it.
 
+- **Group A's full-film fix round** **[F-01 fix: 236]**: S1, the band's fill leaves with its edges and
+  the label row (0.4 s) and no longer rides the pull under '"support"'; the take stays at 50 % from
+  "holds" until the guess leaves; the guess's dash is 4 px on screen. S2, the type exits at the
+  fade-up - 0.42 s (title + 2.10), and the chart fades up with the strip at 720 and "level" at 820.
+  S3, the strip at 720, its outline x 390 to 1530, y 660 to 780, rx 60; "level" at (400, 820), "what
+  your diaphragm does" at (400, 874). S4 at F-strip, the strip at world 720 (screen 308), its
+  envelope half-height 42 (screen 249.2 to 366.8); swatches at world x 640, 960, 1280, 240 wide,
+  half-heights 15, 42, 84, at world y 890 (screen 546); names at world baseline 1022 (screen 730.8);
+  heading 790, row baseline 862, ring (1636.9, 546) r 18; over the crane up the strip glides 720 to
+  690 and "level" 820 to 778 (S5's first frame unchanged), and the band's lines come in 12 px under
+  the parked row, 0.3 s linear each. Moving type in S1, S2 and S4 is drawn in composited layers.
+
 ### The breath figure
 
 Drawn in figure units `(u, v)`: u 0 to 400 back to front (it faces right), v 0 (crown) to 1000
