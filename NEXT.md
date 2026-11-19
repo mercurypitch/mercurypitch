@@ -4284,3 +4284,10 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - RESUMED group A (fix round). POLISH-2 BUILDER LAUNCHED (brief $S/briefs/polish-2.md; worktree
   modes, branch feat/phone-polish-2; items 1-7 now, 8 after #1467). Group B PAUSED until group A
   ends (two heavy agents max), then resume it with SendMessage.
+- 08:50: OWNER asked (19 Nov): "add now back that periodic checkup to continue on limit hit". DONE:
+  trig_01JGQdH9F56vCzkd9UvFFRJv re-enabled, renamed "Work check-in, hourly (resume after a usage
+  limit)", cron 50 * * * * (hourly at :50 UTC, next 09:50), prompt rewritten for the current work
+  (restore notes if empty; act only if rate limit "allowed"; resume agents stopped by a limit or
+  restart, two heavy max, polish first then film A, B, C+D, E; continue the lead's half-done step;
+  re-check #1467; push-notes; silent if nothing is due). Keep the prompt's agent list current
+  (update_trigger) as agents start and finish.
