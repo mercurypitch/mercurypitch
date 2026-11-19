@@ -15,6 +15,10 @@
     stage: A.CHECK + 0.4, preAdd: A.CROSS1 + 0.3, midSwap: A.CROSS1 + 0.12, cross: A.ADDED + 0.35, plates45: A.WALK + 2.33, fgauge: A.GAUGE + A.GAUGE_D + 0.05, bm: A.NEVER + 0.5, cant: A.STRIKE + 0.5,
     quiet: A.YES + 0.6, loud: A.MORE + 0.6, last: A.D - 0.0005,
   }
+  // [B-01: 183] every frame of every swap (30 fps from the switch, 0.3 s): the cursor behind the readout's plate or
+  // clear of the words still drawn
+  const SWT = new Set()
+  ;(S.SWITCHES || []).forEach((s, i) => { for (let k = 0; k <= 9; k++) { const tt = s.t + k / 30; T[`sw${i}_${k}`] = tt; SWT.add(tt) } })
   const root = document.getElementById(sid + '-scene')
   const R = H.R
   const vis = (e) => H.alpha(e).toFixed(2)
@@ -211,10 +215,29 @@
       }
       if (t === T.midSwap) {
         const cur = S.ga.g.children[4], cr = R(cur), pr = R(S.roPlate)
-        out.push({ name: '[B-01: 183] mid-swap (both wordings faint): the readout\'s plate stays, the cursor behind it', got: `plate ${(+S.roPlate.getAttribute('opacity')).toFixed(2)}; wordings ${vis(S.gl.readout.el)} ${vis(S.gl.readoutAdding.el)}; cursor x ${((cr.left + cr.right) / 2).toFixed(0)} in plate ${pr.left.toFixed(0)} to ${pr.right.toFixed(0)}; plate after cursor in the document ${!!(cur.compareDocumentPosition(S.roPlate) & Node.DOCUMENT_POSITION_FOLLOWING)}`, want: 'plate 1.00, behind', pass: +S.roPlate.getAttribute('opacity') > 0.99 && !!(cur.compareDocumentPosition(S.roPlate) & Node.DOCUMENT_POSITION_FOLLOWING) })
+        // the cursor is behind the plate, or clear of every wording still drawn (the plate goes from the old wording's
+        // box to the new's, so the cursor at the crossing leaves it as the old words go)
+        const cx = (cr.left + cr.right) / 2, inPlate = cx > pr.left && cx < pr.right
+        const onWords = [S.gl.readout.el, S.gl.readoutAdding.el].filter((e) => H.alpha(e) > 0.01).some((e) => { const b = R(e); return cx > b.left && cx < b.right })
+        out.push({ name: '[B-01: 183] mid-swap (both wordings faint): the readout\'s plate stays, the cursor behind it or clear of the words', got: `plate ${(+S.roPlate.getAttribute('opacity')).toFixed(2)}; wordings ${vis(S.gl.readout.el)} ${vis(S.gl.readoutAdding.el)}; cursor x ${cx.toFixed(0)}, plate ${pr.left.toFixed(0)} to ${pr.right.toFixed(0)}: ${inPlate ? 'behind it' : onWords ? 'ON THE WORDS' : 'clear of the words'}; plate after cursor in the document ${!!(cur.compareDocumentPosition(S.roPlate) & Node.DOCUMENT_POSITION_FOLLOWING)}`, want: 'plate 1.00, behind or clear', pass: +S.roPlate.getAttribute('opacity') > 0.99 && (inPlate || !onWords) && !!(cur.compareDocumentPosition(S.roPlate) & Node.DOCUMENT_POSITION_FOLLOWING) })
+      }
+      if (SWT.has(t)) {
+        const cur = S.ga.g.children[4], cr = R(cur), pr = R(S.roPlate), ca = +cur.getAttribute('opacity')
+        const cx = (cr.left + cr.right) / 2, inPlate = cx > pr.left && cx < pr.right && cr.top < pr.bottom && cr.bottom > pr.top
+        const drawn = [S.gl.readout.el, S.gl.readoutAdding.el].filter((e) => H.alpha(e) > 0.01)
+        const onWords = drawn.some((e) => { const b = R(e); return cx > b.left && cx < b.right })
+        const both = drawn.length > 1
+        const offPlate = drawn.filter((e) => { const b = R(e); return b.left < pr.left - 0.5 || b.right > pr.right + 0.5 }).map((e) => e.textContent)
+        out.push({ name: '[B-01: 183] a swap\'s frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words', got: `${vis(S.gl.readout.el)} ${vis(S.gl.readoutAdding.el)}${offPlate.length ? ' OFF THE PLATE: ' + offPlate.join(', ') : ''}; cursor ${ca.toFixed(2)} x ${cx.toFixed(0)}, plate ${pr.left.toFixed(0)} to ${pr.right.toFixed(0)}: ${ca < 0.01 ? 'no cursor' : inPlate ? 'behind it' : onWords ? 'ON THE WORDS' : 'clear of the words'}`, want: 'one wording, on its plate; behind or clear', pass: !both && !offPlate.length && (ca < 0.01 || inPlate || !onWords) })
       }
       if (t === T.preAdd) out.push({ name: '[B-01: 183] "added" not yet shown 0.3 s after the switch', got: vis(S.gl.added.el), want: '0.00' }, ...swaps())
       if (t === T.stage || t === T.cross || t === T.fgauge || t === T.plates45 || t === T.cant) out.push(...plates(t))
+      if (t === T.cross || t === T.plates45) {
+        // [B-01: 182] outside a swap the readout's plate is the shown wording's box + 4 px, no wider
+        const shown = vis(S.gl.readoutAdding.el) === '1.00' ? S.gl.readoutAdding.el : S.gl.readout.el, wb = R(shown), pb = R(S.roPlate), k = S.cam.scale(t)
+        const dl = (wb.left - pb.left) / k, dr = (pb.right - wb.right) / k
+        out.push({ name: `[B-01: 182] the readout's plate fits "${shown.textContent}" (world px each side of its box)`, got: `${dl.toFixed(1)} ${dr.toFixed(1)}`, want: '4 4 (+-1)', pass: Math.abs(dl - 4) < 1 && Math.abs(dr - 4) < 1 })
+      }
       if (t === T.fgauge) {
         const f = R(frameEl())
         out.push({ name: 'F-gauge: the frame on screen x 738 to 1662, y 279 to 731 (outer stroke edges +-1)', got: `${f.left.toFixed(1)} to ${f.right.toFixed(1)}, ${f.top.toFixed(1)} to ${f.bottom.toFixed(1)}`, want: '737 to 1663, 278 to 732', pass: Math.abs(f.left - 737) < 2 && Math.abs(f.right - 1663) < 2 && Math.abs(f.top - 278) < 2 && Math.abs(f.bottom - 732) < 2 },

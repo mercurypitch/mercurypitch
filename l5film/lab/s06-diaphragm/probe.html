@@ -229,9 +229,9 @@
           // the readout's switches, each where the cursor crosses the gold line: a swap, the old words out (0.1 s), then
           // the new in (0.15 s), never glyph on glyph [B-01: 183]
           const SWITCHES = [{ t: CROSS1, to: 1 }, { t: crossIn(FULL, FULL + 0.4), to: 0 }, { t: crossIn(RUN, RUN + RUN_D), to: 1 }, { t: crossIn(FULL2, FULL2 + 0.4), to: 0 }]
+          const switchAt = (t) => { let last = null; for (const s of SWITCHES) if (t >= s.t) last = s; return last }
           const readoutAt = (t) => {
-            let last = null
-            for (const s of SWITCHES) if (t >= s.t) last = s
+            const last = switchAt(t)
             if (!last) return { hold: { a: 1, dy: 0 }, add: { a: 0, dy: 0 } }
             const o = { a: 1 - P(t, last.t, 0.1, 'none'), dy: 0 }, n = { a: P(t, last.t + 0.1, 0.15, 'none'), dy: 0 }
             return last.to === 1 ? { hold: o, add: n } : { hold: n, add: o }
@@ -249,7 +249,7 @@
           }
 
           const probe = { cam, ch, lab, slider, ga, fig, fl, gl, tag, a3, quietChip, loudChip, guess, struck, strike, kicker, predict, pills, check, row, split, SPLIT_C, lessLeader, moreLeader,
-            readoutAt, roPlate, F6, GP, A: { ADDED, ACT, O6, GLIDE, GLIDE_D, SPLIT, SPLIT_D, FIG, FIG_D, GUESS, ROW_IN, LIT_D, DIA, TIGHT, BELLY, BIN, BIG, QUIET, PRED_K, PILL1, PILL2, PRED2, OPEN, OPEN_D, ONE_NOTE, PUSH_AIR, GAUGE, GAUGE_D, LUNGS_L, GOLD, NEEDS, HATCH, READOUT, CHECK, UNCHANGED, CROSS1, HOLD, BM, NEVER, FULL, WALK, WALK_END, B15, RUN, RUN_D, BRM, CANT, STRIKE, O7, FULL2, CUR_OUT, YES, LOUD, RISE, RISE_D, LESS, BACKW, MORE, SWITCHES, D }, boxes: {} }
+            readoutAt, roPlate, SWITCHES, F6, GP, A: { ADDED, ACT, O6, GLIDE, GLIDE_D, SPLIT, SPLIT_D, FIG, FIG_D, GUESS, ROW_IN, LIT_D, DIA, TIGHT, BELLY, BIN, BIG, QUIET, PRED_K, PILL1, PILL2, PRED2, OPEN, OPEN_D, ONE_NOTE, PUSH_AIR, GAUGE, GAUGE_D, LUNGS_L, GOLD, NEEDS, HATCH, READOUT, CHECK, UNCHANGED, CROSS1, HOLD, BM, NEVER, FULL, WALK, WALK_END, B15, RUN, RUN_D, BRM, CANT, STRIKE, O7, FULL2, CUR_OUT, YES, LOUD, RISE, RISE_D, LESS, BACKW, MORE, SWITCHES, D }, boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
 
@@ -346,8 +346,16 @@
             gl.added.life(t, ADDED, LOUD)
             const ro = readoutAt(t), roA = P(t, READOUT, 0.2) * (1 - P(t, CUR_OUT, 0.2))
             if (roA > 0) {
-              const b = gl.readout.el.getBBox()                       // read as drawn, so the font is the one in use
-              roPlate.setAttribute('x', f2(b.x - 4)); roPlate.setAttribute('y', f2(b.y - 4)); roPlate.setAttribute('width', f2(b.width + 8)); roPlate.setAttribute('height', f2(b.height + 8))
+              // the plate fits the wording shown, + 4 px; across a swap it goes from the old wording's box to the new's:
+              // it grows as the old words leave (0.1 s), before the new land, or shrinks as the new land (0.15 s), after
+              // the old have gone, so every glyph drawn stays on it and the cursor at the crossing behind it [B-01: 182, 183]
+              const bh = gl.readout.el.getBBox(), bd = gl.readoutAdding.el.getBBox()   // read as drawn, so the font is the one in use
+              const sw = switchAt(t)
+              const [b0, b1] = !sw ? [bh, bh] : sw.to === 1 ? [bh, bd] : [bd, bh]
+              const u = !sw ? 0 : b1.width > b0.width ? P(t, sw.t, 0.1, 'none') : P(t, sw.t + 0.1, 0.15, 'none')
+              const x0 = lerp(b0.x, b1.x, u), x1 = lerp(b0.x + b0.width, b1.x + b1.width, u)
+              const y0 = lerp(b0.y, b1.y, u), y1 = lerp(b0.y + b0.height, b1.y + b1.height, u)
+              roPlate.setAttribute('x', f2(x0 - 4)); roPlate.setAttribute('y', f2(y0 - 4)); roPlate.setAttribute('width', f2(x1 - x0 + 8)); roPlate.setAttribute('height', f2(y1 - y0 + 8))
             }
             roPlate.setAttribute('opacity', roA.toFixed(3))
             gl.readout.draw({ a: roA * ro.hold.a, dy: ro.hold.dy })

@@ -332,11 +332,13 @@
             O.listening.draw({ a: thinA })
             const stopA = L.fade(t, STOP, STOP_OUT, { dIn: 0.3, easeIn: 'none', dOut: STOP_OUT_D, easeOut: 'none' }).a
             O.stop.forEach((l) => l.draw({ a: stopA }))
-            // the doctor lines: small from S11; to full size on "Whatever you chose:" (small out, then full in, rising 12 px)
+            // the doctor lines: small from S11; to full size on "Whatever you chose:" (small out, then full in, rising 12 px).
+            // The rise is linear over its first 0.2 s, a pixel a 60 fps frame: eased to rest over 0.5 s, the type stepped a
+            // whole pixel every other frame near the end, which measure.py flagged as jumps (1.2 % of the frame each)
             O.docG.setAttribute('opacity', (1 - P(t, DOCX, 0.3, 'none')).toFixed(3))
-            const fullU = P(t, DOCX + 0.3, 0.5, 'power2.out')
-            docFullG.setAttribute('opacity', (fullU * endA).toFixed(3))
-            docFullG.setAttribute('transform', `translate(0 ${f2(12 * (1 - fullU))})`)
+            const fullA = P(t, DOCX + 0.3, 0.5, 'none'), fullRise = P(t, DOCX + 0.3, 0.2, 'none')
+            docFullG.setAttribute('opacity', (fullA * endA).toFixed(3))
+            docFullG.setAttribute('transform', `translate(0 ${f2(12 * (1 - fullRise))})`)
             underlineDraw(ULS[0], P(t, U1, 0.5, 'power2.out'), endA)
             underlineDraw(ULS[1], P(t, U2, 0.6, 'power2.out'), endA)
 

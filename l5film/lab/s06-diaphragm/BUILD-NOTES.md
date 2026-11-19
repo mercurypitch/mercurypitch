@@ -16,7 +16,7 @@ to F-gauge (`cam.to(GAUGE, 10, 'F-gauge', L.steady(10))`), held to the cut. Host
 | 6b | the hosts shrink in place to 240 (0.8 s, power2.inOut) | `o6 + 0.07` | 2.42 |
 | 6b | the chip glides down, then right, to the gauge's place, growing to full size (0.6 s) | `o6 + 0.17` | 2.52 |
 | 6b | the thumb scales 1.2 | `word('o6', 'that')` | 3.18 |
-| 6b | the split (1.5 s, the settled curves below); the slider and the label row's text fade (0.2 s) | `word('o6', "isn't")` | 4.94 |
+| 6b | the split (1.5 s, the settled curves below); the slider and the label row's text fade (0.2 s); the strip's ghost resting envelope, carried from S5 with "level" at the strip's left, fades (0.3 s, linear) **[B-01: 184]** | `word('o6', "isn't")` | 4.94 |
 | 6b | the figure draws on (1.0 s, power2.in) | split + 0.1 | 5.04 |
 | 6b | her guess (dashed arrow, "?") | `max(word('o6', 'diaphragm') + 0.13, figure's end)` | 6.04 |
 | 6c | the four words return ("air pressure" still lit) | `at('b11', 'start', -0.15)` | 6.62 |
@@ -32,7 +32,8 @@ to F-gauge (`cam.to(GAUGE, 10, 'F-gauge', L.steady(10))`), held to the cut. Host
 | 6e | "one 10-second note"; "push of air (not pitch)" with its up arrow | predict2 + 0.5; + 0.45 | 20.41; 20.86 |
 | 6f | the push to F-gauge, the cursor, Merc's line and the falling line, all on the note's own clock (10 s) | `at('gauge')` to its end | 22.26 to 32.26 |
 | 6f | the stages, at the note's own seconds 0.2, 1.0 (gold line, 0.6 s), 1.3, 2.0, 2.5, 3.5 (check), 4.0 (predict out), 5.0 | `gauge + s` | 22.46, 23.26, 23.56, 24.26, 24.76, 25.76, 26.26, 27.26 |
-| 6f | the crossing: readout switch to "Now: adding", "added", the other hatch | `L.GAUGE.cross(606)` of the note (7.0 s) | 29.26 |
+| 6f | the crossing: the readout swaps to "Now: adding" (the old out 0.1 s, then the new in 0.15 s, linear) **[B-01: 183]**, the other hatch | `L.GAUGE.cross(606)` of the note (7.0 s) | 29.26 to 29.51 |
+| 6f | "added" lands, once its region shows **[B-01: 183]** | the crossing + 0.45 | 29.71 |
 | 6g | the held-back hatch lights; ribs and dome glow + "with your breathing muscles,"; "never your throat" | `word('b13', 'hold' / 'breathing' / 'never')` | 32.48; 33.77; 34.87 |
 | 6h | the cursor back (0.4 s), the lungs fill; a light down the falling line (1.0 s), the lungs pull in; held back lights | `word('b14', 'full' / 'spring' / 'harder')` | 36.17; 37.10; 39.73 |
 | 6h | the cursor walks 0 to 3.5 s (sine.inOut), the readout switching back at the crossing; dome glow; "held back" 1.2 | `word('b14', 'so')` to `word('b14', 'back#2')`; `'breathing-in'`; `'holding'` | 42.67 to 47.47; 43.73; 46.04 |
@@ -65,13 +66,14 @@ and `clip-still-5.46.png`, `clip-still-5.76.png`, `clip-still-6.14.png` from the
 
 ## Departures from the board, with numbers
 
-1. **"added" lands at the crossing** (29.26), with the readout switch (DECISIONS 144, HANDOFFS [kit-01: 2]): the
-   board's v3 row still names 7.45 s. Its glyphs 15.5 px under the gold line, 20.7 px over the lungs' line (probe).
+1. **"added" lands 0.45 s after the readout's switch** (29.71; B-01, DECISIONS 183; it had landed at the crossing).
+   Its glyphs 15.5 px under the gold line, 20.7 px over the lungs' line (probe).
 2. **"Hold it back"'s check** stands right of its capsule at x 1446: the 30 px between the two pills cannot hold a 22 px
    check 12 px from both. The ring timer has gone by then (it ends at 21.91, the check lands at 25.76). S1's
    check now sits the same way (DECISIONS 166), so this is the shared rule.
 3. **The readout switches at every crossing of the gold line by the cursor** (four: 29.26, and three found by
-   bisection on the cursor's own walk in 6h, 6i and 6j), each an `L.swap`, so the words never disagree with the cursor.
+   bisection on the cursor's own walk in 6h, 6i and 6j), each a swap (the old out in 0.1 s, then the new in 0.15 s,
+   B-01), so the words never disagree with the cursor and never sit glyph on glyph.
 4. **The figure's breath follows the cursor** through the gauge and the walks (full at 0 s, empty at the crossing,
    the belly wall in by 0.6 of a breath after it, FACTS 17 and Q27); after "Yes." it eases back to rest over 1.5 s so
    the last frame has the figure at rest, as HANDOFFS § S6 to S7 fixes it (breath 0.000).
@@ -83,7 +85,12 @@ and `clip-still-5.46.png`, `clip-still-5.76.png`, `clip-still-6.14.png` from the
 ## Built locally (the kit might offer)
 
 - The split itself (`split(u)`, the curves above) and "A3" riding the band.
-- The readout's switch scheduler (`SWITCHES`, crossings by bisection, `L.swap`) and the cursor's piecewise walk.
+- The readout's switch scheduler (`SWITCHES`, crossings by bisection; `readoutAt`, the swap in two steps) and the
+  cursor's piecewise walk.
+- The readout's own plate (`roPlate`, the shown wording's box + 4 px, measured each frame): it stays at full while
+  both wordings are faint mid-swap; it grows to the wider wording's box while the old words leave (0.1 s) or shrinks
+  to the narrower once they have gone (0.15 s), so every glyph drawn sits on it and the cursor at the crossing is
+  behind it or clear of the words on every frame (B-01).
 - The figure's breath as a function of the cursor (`breathOf`).
 - 6j's "first stretch glows": a 9 px white path at 35 % over the lungs' line from 0 to 3.5 s.
 - The struck arrow and strike (two `L.arrow`s) for 6i.
@@ -94,7 +101,28 @@ and `clip-still-5.46.png`, `clip-still-5.76.png`, `clip-still-6.14.png` from the
    F-gauge, transparent there and 30 px from his drawn body (`data-layout-allow-occlusion`); the readout's two
    wordings share one place and switch (`data-layout-allow-overlap`).
 
-## Proof
+## Fix round B-01 (critic B-01, DECISIONS 180 to 189)
+
+| Item | Change (file, line) | Before | After | Proof (`fix-B-01/`) |
+| --- | --- | --- | --- | --- |
+| 3, plates (182) | `backPadX: 4, backPadY: 4` on every backed label (s06-diaphragm.html line 162); places `GP` (line 151): "push of air (not pitch)" baseline 275 to 276, "the lungs' own push" 325 to 327, "what the note needs" 640 to 646, the readout from (1640, 275) to right-aligned 1630, baseline 382, under the chip; the readout's own plate `roPlate` (line 161, drawn lines 320 to 330) | at 45.0 (critic's frame): the gold line hidden x 748 to 1047, the small band's lower edge 765 to 1073 and 1359 to 1660, the frame's top stroke 751 to 1031 (screen px) | at 32.31, 45.00, 55.50, 68.75: the band's edge and the frame's top shown on all 921 columns, the gold line on 912 or 913 (its only gap, 7 to 8 px, is where the lungs' line crosses it, a stroke over a stroke); every plate covers no stroke (probe at 26.16, 30.06, 32.31, 45.00, 55.50); "what the note needs"'s plate 4.5 px under the gold line; the readout's plate fits the shown wording, 4.0 px each side | `plates-45.0.png` (before and after), `strokes-before.txt`, `strokes.txt`, `gold-gaps-are-the-crossing.png` |
+| 4, the readout's swaps (183) | `switchAt`, `readoutAt` (lines 204 to 211): the old wording out in 0.1 s, then the new in 0.15 s, linear; `ADDED = CROSS1 + 0.45` (line 71); the readout's plate (lines 320 to 331) grows to the wider box while the old words leave, or shrinks to the narrower once they have gone | glyph on glyph for 2 to 3 frames at 29.37 to 29.43, about 36.45 and about 49.4; "added" at 29.27, before the switch | 0 frames with both wordings at any of the four switches (29.26, 36.34, 49.20, 56.73; the probe walks every frame at 30 fps for 0.3 s from each); on every one of those 40 frames the wording drawn sits on its plate and the cursor is behind the plate or clear of the words; "added" lands at 29.71, 0.45 s after the switch | `readout-swaps.png` (every frame of the four swaps), `../dense-swaps/` |
+| 5, the ghost envelope and "level" (184) | the strip's `rest` envelope in `ch.draw` (line 248), "level" at S5's last place (line 99 on) | the strip a hairline, "level" on the slider's row | the first frame carries S5's last: the resting envelope in ghost violet and "level" right-aligned 366 at the strip's height; the envelope fades as the split begins (4.94, 0.3 s, linear) | `clip-still-0.00.png`, `clip-still-3.22.png` |
+| 7, the hosts at the cut (186) | none: tags and offsets are right | see `../s07-support/BUILD-NOTES.md` § Fix round B-01: Merc's own eye turn in the pass (pass frames 3375 to 3377), for the passes step | - | `../s07-support/fix-B-01/cut-hosts-frames.png` |
+| 9, the legs (188) | `F6 = { ...L.FIGURE.S6, fade: [730, 760] }` (line 125; the kit's [750, 780]) | the legs' strokes about 7 px over "with your breathing muscles," | the legs' lowest visible point 20.8 px over its ink | `legs-36.5.png` (before and after) |
+| 10, holds (189) | no motion added | 4.6 s inside the film (2.0 s per 30 s), longest 0.5 s | HOLDS_AFTER | `measure/summary.md` |
+
+Seen, not fixed: "never your throat" (world baseline 838, the board's place, STORYBOARD 6g and HANDOFFS § The breath
+figure) sits on the room's floor horizon at F-gauge (screen y 840 runs through its x-height, 34.87 to 48.20;
+`throat-on-horizon-36.5.png`). DECISIONS 188 names only S7's row 4 for the horizon. Clearing it by 12 px means
+moving both lines up 27 px and shortening the legs a further 18 px in S6 and in S7's first frame; left for the
+director.
+
+## Proof (after the fix round, 19 November)
+
+PROOF_AFTER
+
+## Proof (round 1, kept for the record)
 
 - Probe (`probe.json`, `probe-*.png`, `sheet-*.png`, `sheet-split.png`; checks in `checks.js`): 157 of 157 pass
   (19 November). Its numbers: the card 1665 px wide (cap 1680); the chip at x 1359 to 1630, y 300 to 340, 19.9 px right

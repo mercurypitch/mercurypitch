@@ -4405,3 +4405,16 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   runner to 900 at 1440x900, to 390 at 844x390, phone 390x844 unchanged (782, pad 62); Ear Lab
   stations from 937 at x 401 (844x390) and 815 at x 442 (932x430), art beside; no errors; production
   none. Follow-up polish round 2 DONE. Open: the film queue only.
+
+## 12:40 UTC, 19 Nov
+- GROUP D HANDED BACK (s11-sing 39.2 s, s12-your-turn 76.8 s): probes 55/55 and 122/122, root
+  check 0 errors, clock-lint silent, merc-tags clean; sing cut best shift (0,0); recap cut proven
+  against a stand-in; push lands 5 frames before "Listen"; hold silent; arcs reach x 229.3 (care
+  block keeps 30.7 px). Lead looked at s12's sheet. DECISIONS 202 (departures accepted; arc reach
+  confirmed in HANDOFFS; recap cut's band edges 2.8 px -> E eases to 2 px in the slide (E's brief
+  updated); card glyph snaps -> kit at integration; doctor lines vs feel block -> critic).
+- PASSES STEP STARTED (resumed the passes builder, briefs/l5-passes-hops.md, plus: gen-root and
+  chapters outputs written aside and renamed in) in the slot D freed.
+- CRITIC D-01 LAUNCHED (fresh motion-critic, xhigh) -> l5film/review/critic-D-01/REPORT.md.
+- Heavy now: group B fix + passes step. Queue: group C's fix round, then group E (after the passes
+  step), then D's fix round after its critic.

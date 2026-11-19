@@ -1483,3 +1483,32 @@ numbered 132 to 135 too, are 160 to 163 now, so no number appears twice).
      critic, to be read against the references' frame fill with the whole film in view.
      Group C's fix round also carries 191's out-breath (S8 ends at rest) and fresh renders of S8
      and S9 (the critic judged clips older than their last edits).
+
+## Group D's hand-back (s11, s12), 19 November
+
+202. **Group D's departures are accepted, and its questions answered** (before critic D-01):
+     - Measured type stands where HANDOFFS estimated it: the small doctor lines in 4 lines
+       (baselines 650 to 764), the full ones in 6 with "get help straight away" broken and its
+       underline in two segments, "Breathe in, low and quiet" 182.7 px right of "Nothing listens"
+       (estimated 74; still one baseline, never one over the other), each reasons middot landing
+       with the phrase after it. The words are unchanged, so none of this needs the coach.
+     - The doctor lines' change of size is sequential (the small out in 0.3 s, then the full in
+       0.5 s, inside the board's 0.8 s), as 183 asks: a cross-fade put glyph on glyph.
+     - The close's echo grows to 1.25 times the ring's radius (r 280 on screen, 44 px clear of
+       Tavi), not 3 times, which would cross the labels and Tavi's corner.
+     - The phase row is set in capitals, as the kit's mono rows are ("03 · BREATHING IN"), and
+       lights word by word, each staying lit.
+     - **Merc's arc reach beside the care block is confirmed** (HANDOFFS § Provisional values):
+       x 229.3 at most, measured on every frame of m-blue-s12 (alpha over 8), so the block at x 260
+       keeps 30.7 px against the 12 px bar.
+     - **The recap cut's band edges** go to group E: at the cut S13 draws the frame's edges as F-turn
+       showed them (2.8 px on screen, 2 px at 1.4x) and eases them to 2 px through the frame's slide
+       (478.20 to 479.40), so the carried frame matches to the fringe rows. The sing cut's residual
+       (S10's 1.3x raster) stays accepted (191).
+     - **The chapter card's glyph snaps** (s11 0.800 and 1.467, the same in S8 and S10) come from the
+       kit card's breathing scale: one kit fix at integration (draw the card's breathing at
+       sub-pixel positions or with a transform the raster does not step), not per group.
+     - s12's length warning (337 lines) stands; holds inside words (1.8 s in s11, 2.0 s in s12) go
+       to the final passes (189, 201); LAB-CHECKS 19 with the sound on goes to the sound round.
+     - The full doctor lines and the feel block standing 62 px apart (45 px to the capsules) are
+       left to the critic, who reads them as one frame or two columns.

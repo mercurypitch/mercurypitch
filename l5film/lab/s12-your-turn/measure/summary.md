@@ -12,7 +12,7 @@ File: `lab/s12-your-turn/clip.mp4`
 
 A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes by 16 or more. Target: at most about 1 s per 30 s in total and none longer than about 0.5 s; a hold that runs to the end (the final call to action) is reported separately and exempt.
 
-**Inside the film:** 4.2 s (1.6 s per 30 s), longest 0.2 s.
+**Inside the film:** 4.3 s (1.7 s per 30 s), longest 0.2 s.
 **Final hold:** 0.3 s.
 
 | Starts | Length | Note |
@@ -46,6 +46,7 @@ A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes
 | 53.90 s | 0.1 s |  |
 | 54.60 s | 0.1 s |  |
 | 55.80 s | 0.1 s |  |
+| 59.30 s | 0.1 s |  |
 | 62.60 s | 0.1 s |  |
 | 63.10 s | 0.1 s |  |
 | 65.60 s | 0.1 s |  |
@@ -84,7 +85,7 @@ Runs where the mean change is below 0.35. Not an automatic fail: a critic looks 
 | 48.10 s | 3.9 s | 156 | small element moving |
 | 52.30 s | 2.7 s | 121 | small element moving |
 | 55.10 s | 2.9 s | 165 | small element moving |
-| 58.80 s | 17.0 s | 184 | small element moving |
+| 58.90 s | 16.9 s | 183 | small element moving |
 | 76.30 s | 0.4 s | 20 | runs to the end |
 
 5 shorter run(s) totalling 0.7 s are not listed; `motion.csv` has every sample.
@@ -99,10 +100,8 @@ From every frame at the film's own rate, by the share of pixels that change by m
 | 39.267 s | pop | 0.08 | 0.06% |
 | 42.467 s | pop | 0.06 | 0.05% |
 | 54.867 s | jump | 0.03 | 0.03% |
-| 58.700 s | jump | 0.45 | 1.24% |
-| 58.767 s | jump | 0.47 | 1.29% |
 | 69.900 s | jump | 0.04 | 0.04% |
-| 73.133 s | pop | 0.08 | 0.05% |
+| 73.133 s | pop | 0.08 | 0.06% |
 
 ## Loop seam
 

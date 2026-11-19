@@ -775,6 +775,13 @@
  },
  {
   "t": 29.559999999999995,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 1.00; cursor 1.00 x 1410, plate 1441 to 1650: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.559999999999995,
   "name": "[B-01: 183] \"added\" not yet shown 0.3 s after the switch",
   "got": "0.00",
   "want": "0.00",
@@ -789,9 +796,9 @@
  },
  {
   "t": 29.379999999999995,
-  "name": "[B-01: 183] mid-swap (both wordings faint): the readout's plate stays, the cursor behind it",
-  "got": "plate 1.00; wordings 0.00 0.02; cursor x 1393 in plate 1350 to 1650; plate after cursor in the document true",
-  "want": "plate 1.00, behind",
+  "name": "[B-01: 183] mid-swap (both wordings faint): the readout's plate stays, the cursor behind it or clear of the words",
+  "got": "plate 1.00; wordings 0.00 0.02; cursor x 1393, plate 1362 to 1650: behind it; plate after cursor in the document true",
+  "want": "plate 1.00, behind or clear",
   "pass": true
  },
  {
@@ -894,9 +901,16 @@
  },
  {
   "t": 30.059999999999995,
-  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
   "got": "none",
   "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the readout's plate fits \"Now: adding\" (world px each side of its box)",
+  "got": "4.0 4.0",
+  "want": "4 4 (+-1)",
   "pass": true
  },
  {
@@ -956,6 +970,13 @@
   "pass": true
  },
  {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the readout's plate fits \"Now: holding back\" (world px each side of its box)",
+  "got": "4.0 4.0",
+  "want": "4 4 (+-1)",
+  "pass": true
+ },
+ {
   "t": 32.30999999999999,
   "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
   "got": "none",
@@ -1006,7 +1027,7 @@
  },
  {
   "t": 32.30999999999999,
-  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
   "got": "none",
   "want": "none",
   "pass": true
@@ -1142,7 +1163,7 @@
  },
  {
   "t": 55.49700000000001,
-  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
   "got": "none",
   "want": "none",
   "pass": true
@@ -1391,6 +1412,300 @@
   "name": "keep-out: nearest visible text to tavi's body box (\"more adding as the air runs low\")",
   "got": 93.62,
   "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 29.259999999999994,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "1.00 0.00; cursor 1.00 x 1382, plate 1350 to 1649: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.29333333333333,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.44 0.00; cursor 1.00 x 1385, plate 1350 to 1649: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.32666666666666,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.11 0.00; cursor 1.00 x 1388, plate 1350 to 1650: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.359999999999996,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.00; cursor 1.00 x 1391, plate 1350 to 1650: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.393333333333327,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.05; cursor 1.00 x 1394, plate 1370 to 1650: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.426666666666662,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.20; cursor 1.00 x 1398, plate 1390 to 1650: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.459999999999994,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.44; cursor 1.00 x 1401, plate 1411 to 1650: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.49333333333333,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.79; cursor 1.00 x 1404, plate 1431 to 1650: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.52666666666666,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 1.00; cursor 1.00 x 1407, plate 1441 to 1650: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.559999999999995,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 1.00; cursor 1.00 x 1410, plate 1441 to 1650: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.559999999999995,
+  "name": "[B-01: 183] \"added\" not yet shown 0.3 s after the switch",
+  "got": "0.00",
+  "want": "0.00",
+  "pass": true
+ },
+ {
+  "t": 29.559999999999995,
+  "name": "[B-01: 183] the readout: frames with both wordings shown (every switch)",
+  "got": 0,
+  "want": 0,
+  "pass": true
+ },
+ {
+  "t": 36.338686533060255,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 1.00; cursor 1.00 x 1385, plate 1444 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.372019866393586,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.44; cursor 1.00 x 1186, plate 1414 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.405353199726925,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.11; cursor 1.00 x 996, plate 1383 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.438686533060256,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.00; cursor 1.00 x 869, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.47201986639359,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.05 0.00; cursor 1.00 x 792, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.50535319972692,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.20 0.00; cursor 1.00 x 754, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.53868653306026,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.44 0.00; cursor 1.00 x 740, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.57201986639359,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.79 0.00; cursor 1.00 x 738, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.60535319972692,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "1.00 0.00; cursor 1.00 x 738, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.63868653306025,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "1.00 0.00; cursor 1.00 x 738, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.20242025753359,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "1.00 0.00; cursor 1.00 x 1385, plate 1352 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.23575359086692,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.44 0.00; cursor 1.00 x 1409, plate 1352 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.26908692420026,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.11 0.00; cursor 1.00 x 1430, plate 1352 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.30242025753359,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.00; cursor 1.00 x 1449, plate 1352 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.33575359086692,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.05; cursor 1.00 x 1465, plate 1372 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.36908692420025,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.20; cursor 1.00 x 1478, plate 1393 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.40242025753359,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.44; cursor 1.00 x 1489, plate 1414 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.43575359086692,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.79; cursor 1.00 x 1498, plate 1434 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.469086924200255,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 1.00; cursor 1.00 x 1506, plate 1444 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.502420257533586,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 1.00; cursor 1.00 x 1512, plate 1444 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.73133968052612,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 1.00; cursor 1.00 x 1385, plate 1444 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.76467301385945,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.44; cursor 1.00 x 1262, plate 1414 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.79800634719279,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.11; cursor 1.00 x 1085, plate 1383 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.83133968052612,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.00; cursor 1.00 x 934, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.86467301385945,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.05 0.00; cursor 1.00 x 835, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.89800634719278,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.20 0.00; cursor 1.00 x 776, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.93133968052612,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.44 0.00; cursor 1.00 x 748, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.96467301385945,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.79 0.00; cursor 1.00 x 739, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.998006347192785,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "1.00 0.00; cursor 1.00 x 738, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 57.031339680526116,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "1.00 0.00; cursor 1.00 x 738, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
   "pass": true
  }
 ]

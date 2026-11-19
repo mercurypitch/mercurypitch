@@ -746,10 +746,11 @@ Confirmed by group C (DECISIONS 191): the folds' growth from the throat (9b: a r
 from (1005, 273), growing over 0.5 s (0.9 s before **[C-01: 196]**), sliding from + 0.4 s over 1.0 s to (390, 430) at 1, landing
 in x 220 to 560, y 260 to 600); the "settled" flag by the page's rule (stays within 35 c for 0.5 s)
 at its own 16 ms readings: entry 0.704 s into the take, the flag at 1.204 s, world x 478.8.
+Confirmed by group D (DECISIONS 202): Merc's arc reach beside the care block, x 229.3 at most on
+every frame of m-blue-s12, so the block at x 260 keeps 30.7 px.
 
 Still provisional: the bead's flight S2 to S3; the chart's split from 0.78 (6b) and the strip's
-opening (6e); the together start's onset (sound round); Merc's arc reach beside the care block
-(m-blue at 300); the hop height of Merc's two hops (at the clean break the floor is empty,
+opening (6e); the together start's onset (sound round); the hop height of Merc's two hops (at the clean break the floor is empty,
 DECISIONS 190). Since v3 the
 split's curve carries one constraint (the band passes 12 px or more above the gauge's
 "ILLUSTRATION" chip), and every v3 clearance that rests on a type width is an estimate until the

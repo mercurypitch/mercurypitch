@@ -1,0 +1,66 @@
+{
+ "out": {
+  "band": [
+   1000,
+   210,
+   1640,
+   280
+  ],
+  "line": {
+   "y": 245,
+   "x0": 1000,
+   "x1": 1640,
+   "px": 4
+  },
+  "texts": [
+   "0",
+   "10 s",
+   "Nothing listens",
+   "Your turn.",
+   "Sore, hoarse or unwell today?",
+   "Just listen along.",
+   "hurts or uncomfortable",
+   "· unusually hoarse or tired",
+   "usual notes suddenly gone",
+   "· ill",
+   "talking or singing is hard work",
+   "listening along: rest your voice and watch the ring",
+   "If hoarseness or discomfort lasts more than a couple",
+   "of weeks, see a doctor (a GP or an ear, nose and",
+   "throat specialist). If it’s very painful, or breathing or",
+   "swallowing is hard, get help straight away."
+  ]
+ },
+ "in": {
+  "band": [
+   1000,
+   210,
+   1640,
+   280
+  ],
+  "line": {
+   "y": 245,
+   "x0": 1000,
+   "x1": 1640,
+   "px": 4
+  },
+  "texts": [
+   "0",
+   "10 s",
+   "Nothing listens",
+   "Your turn.",
+   "Sore, hoarse or unwell today?",
+   "Just listen along.",
+   "hurts or uncomfortable",
+   "· unusually hoarse or tired",
+   "usual notes suddenly gone",
+   "· ill",
+   "talking or singing is hard work",
+   "listening along: rest your voice and watch the ring",
+   "If hoarseness or discomfort lasts more than a couple",
+   "of weeks, see a doctor (a GP or an ear, nose and",
+   "throat specialist). If it’s very painful, or breathing or",
+   "swallowing is hard, get help straight away."
+  ]
+ }
+}

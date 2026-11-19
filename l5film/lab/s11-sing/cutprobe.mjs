@@ -1,6 +1,7 @@
 // LAB-CHECKS 2 for group D's two matched cuts, each frame seeked in Chromium with the real kit and fonts (the hosts
 // hidden on both sides: their passes are not seeked here; the lab clips show them):
 //   sing   S10's last 0.5 s (compositions/s10-steady.html, group C's) and S11's first 0.5 s (compositions/s11-sing.html)
+//   b38    S11's last 0.5 s and S12's first 0.5 s (the plain cut at F0: every object of the turn on the same pixels)
 //   recap  S12's last 0.5 s (compositions/s12-your-turn.html) and a stand-in for S13's first 0.5 s: what HANDOFFS § The
 //          cuts gives S13 and the kit defines (lab/kit-src/cuts.html): its room at F0 under L.roomCut(room, { from:
 //          'F-turn' }), the dust from film time, the frame from L.RECAP.FROM with Merc's line at L.RECAP.mercW(0).
@@ -9,7 +10,7 @@
 // last frame before the cut and the first after it, scene times D - 0.0005 and 0), out60.png and in60.png (the true
 // 60 fps film frames either side), rects.json (the carried object's boxes either side) and cut-<which>.mp4.
 //
-//   $S/bin/heavy node lab/s11-sing/cutprobe.mjs sing|recap
+//   $S/bin/heavy node lab/s11-sing/cutprobe.mjs sing|b38|recap
 import { createServer } from 'node:http'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, extname, join, normalize } from 'node:path'
@@ -20,10 +21,11 @@ import { spawnSync } from 'node:child_process'
 const HERE = dirname(fileURLToPath(import.meta.url))
 const ROOT = join(HERE, '../..')
 const which = process.argv[2]
-if (!['sing', 'recap'].includes(which)) { console.error('usage: cutprobe.mjs sing|recap'); process.exit(2) }
-const A = which === 'sing' ? 's10-steady' : 's12-your-turn'
-const B = which === 'sing' ? 's11-sing' : 's13-recap'
-const OUT = join(ROOT, 'lab', which === 'sing' ? 's11-sing' : 's12-your-turn', `cut-${which}`)
+if (!['sing', 'b38', 'recap'].includes(which)) { console.error('usage: cutprobe.mjs sing|b38|recap'); process.exit(2) }
+const A = { sing: 's10-steady', b38: 's11-sing', recap: 's12-your-turn' }[which]
+const B = { sing: 's11-sing', b38: 's12-your-turn', recap: 's13-recap' }[which]
+const LABDIR = which === 'sing' ? 's11-sing' : 's12-your-turn'
+const OUT = join(ROOT, 'lab', LABDIR, `cut-${which}`)
 const require = createRequire(import.meta.url)
 const { chromium } = require(process.env.PW_MODULE || '/opt/node-tools/node_modules/playwright')
 
@@ -63,7 +65,7 @@ const standIn = `<div class="scene" id="s13-standin-scene" style="position:absol
 rmSync(OUT, { recursive: true, force: true })
 mkdirSync(OUT, { recursive: true })
 writeFileSync(join(OUT, 'cut.html'), `<!doctype html>
-<!-- lab/s11-sing/cutprobe.mjs's harness (${which}): ${A}, then ${which === 'sing' ? B : 'a stand-in for S13 (the kit\'s RECAP.FROM at F0)'}. -->
+<!-- lab/s11-sing/cutprobe.mjs's harness (${which}): ${A}, then ${which === 'recap' ? 'a stand-in for S13 (the kit\'s RECAP.FROM at F0)' : B}. -->
 <html lang="en"><head><meta charset="UTF-8" />
 ${scripts}
 <link rel="stylesheet" href="/assets/lib/lesson.css" />
@@ -73,14 +75,14 @@ ${fonts}
 #a, #b { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
 </style></head><body>
 <div id="a">${bodyOf(A)}</div>
-<div id="b">${which === 'sing' ? bodyOf(B) : standIn}</div>
+<div id="b">${which === 'recap' ? standIn : bodyOf(B)}</div>
 </body></html>
 `)
 const browser = await chromium.launch({ executablePath: process.env.PW_CHROMIUM || '/opt/pw-browsers/chromium-1243/chrome-linux64/chrome' })
 const page = await browser.newPage({ viewport: { width: 1920, height: 1080 }, deviceScaleFactor: 1 })
 const errors = []
 page.on('pageerror', (e) => errors.push(e.message))
-await page.goto(`http://127.0.0.1:${port}/lab/${which === 'sing' ? 's11-sing' : 's12-your-turn'}/cut-${which}/cut.html`, { waitUntil: 'load' })
+await page.goto(`http://127.0.0.1:${port}/lab/${LABDIR}/cut-${which}/cut.html`, { waitUntil: 'load' })
 await page.evaluate(async () => {
   await document.fonts.ready
   for (const f of ["600 30px 'Outfit'", "500 26px 'JetBrains Mono'", "italic 400 60px 'Instrument Serif'", "400 30px 'Inter'"]) await document.fonts.load(f)
@@ -109,21 +111,21 @@ await shot('b', nB / 60 - startB, 'in60.png')
 // the carried object's boxes on both sides
 const box = async (side, t) => {
   await shot(side, t, null)
-  return page.evaluate(({ side, A }) => {
+  return page.evaluate(({ side, A, B }) => {
     const root = document.getElementById(side)
     const band = root.querySelector('.band-chart .band rect').getBoundingClientRect()
-    const chart = side === 'a' ? (window.__sceneProbe[A].ch) : (window.__sceneProbe && window.__sceneProbe['s11-sing'] ? window.__sceneProbe['s11-sing'].ch : window.__standIn.ch)
+    const chart = side === 'a' ? window.__sceneProbe[A].ch : window.__sceneProbe[B] ? window.__sceneProbe[B].ch : window.__standIn.ch
     const m = chart.merc.path.getBoundingClientRect()
     const sw = +chart.merc.path.getAttribute('stroke-width')
     const ctm = chart.merc.path.getScreenCTM()
     const texts = [...root.querySelectorAll('text')].filter((e) => { let a = 1; for (let x = e; x && x.nodeType === 1; x = x.parentNode) { const cs = getComputedStyle(x); if (cs.display === 'none') return false; a *= parseFloat(cs.opacity || '1'); if (x.hasAttribute('opacity')) a *= parseFloat(x.getAttribute('opacity')) } return a > 0.01 && e.textContent.trim() }).map((e) => e.textContent.trim())
     return { band: [band.left, band.top, band.right, band.bottom].map((v) => +v.toFixed(2)), line: { y: +((m.top + m.bottom) / 2).toFixed(2), x0: +m.left.toFixed(2), x1: +m.right.toFixed(2), px: +(sw * ctm.a).toFixed(2) }, texts }
-  }, { side, A })
+  }, { side, A, B })
 }
 const rects = { out: await box('a', DA - 0.0005), in: await box('b', 0) }
 writeFileSync(join(OUT, 'rects.json'), JSON.stringify(rects, null, 1) + '\n')
 console.log(`${A} last frame: band ${rects.out.band.join(' ')} | Merc's line y ${rects.out.line.y}, x ${rects.out.line.x0} to ${rects.out.line.x1}, ${rects.out.line.px} px | labels: ${rects.out.texts.join(', ') || 'none'}`)
-console.log(`${which === 'sing' ? B : 'S13 stand-in'} first frame: band ${rects.in.band.join(' ')} | Merc's line y ${rects.in.line.y}, x ${rects.in.line.x0} to ${rects.in.line.x1}, ${rects.in.line.px} px | labels: ${rects.in.texts.join(', ') || 'none'}`)
+console.log(`${which === 'recap' ? 'S13 stand-in' : B} first frame: band ${rects.in.band.join(' ')} | Merc's line y ${rects.in.line.y}, x ${rects.in.line.x0} to ${rects.in.line.x1}, ${rects.in.line.px} px | labels: ${rects.in.texts.join(', ') || 'none'}`)
 await browser.close()
 server.close()
 const r = spawnSync('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-framerate', '30', '-i', join(OUT, 'frame-%03d.png'), '-c:v', 'libx264', '-crf', '16', '-pix_fmt', 'yuv420p', join(OUT, `cut-${which}.mp4`)], { stdio: 'inherit' })

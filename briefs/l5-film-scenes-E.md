@@ -10,7 +10,10 @@ its rules, reading list, build, proof and hand-back hold. This brief adds only y
 - **Your first frame** carries the frame on F-turn's pixels (x 928 to 1824, band 104 to 202,
   Merc's line 153, no labels) across the matched cut on `recap` from group D, with `L.roomCut` for
   the room's 0.3 s crossfade. Draw it from the kit's one definition and HANDOFFS § The cuts; do not
-  wait for group D. Then **the frame moves, not the camera** (13a).
+  wait for group D. Group D has finished: its last frame is `lab/s12-your-turn/clip-still-76.75.png`,
+  and its cut probe is `lab/s11-sing/cutprobe.mjs recap`. At the cut draw the frame's edges as
+  F-turn showed them (2.8 px on screen) and ease them to 2 px through the slide (DECISIONS 202),
+  so the frame matches to its fringe rows. Then **the frame moves, not the camera** (13a).
 - **Merc's hops are back at the recap's clean break** (DECISIONS 190, which amends 160; read both):
   a silent beat, `break`, now stands between b54 and b55. The recap leaves up fast on the beat's
   start (not on "Practise it."), Merc hops twice across the empty floor in it, and the Voice
