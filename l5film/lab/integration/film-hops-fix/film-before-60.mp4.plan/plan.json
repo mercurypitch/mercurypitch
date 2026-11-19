@@ -1,0 +1,22 @@
+{
+  "protocol": {
+    "schemaVersion": 1,
+    "artifactLayout": "plan-dir-v1",
+    "hashSchema": "hyperframes-plan-hash-v1"
+  },
+  "planHash": "bc11c99d3cf5a8a9c77e6d8ed6f0c101e7852b7e2cd8f53f7571d611d73e7c37",
+  "producerVersion": "0.0.0-unknown",
+  "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers",
+  "fontSnapshotSha": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+  "dimensions": {
+    "fpsNum": 60,
+    "fpsDen": 1,
+    "width": 1920,
+    "height": 1080,
+    "format": "mp4"
+  },
+  "chunkCount": 69,
+  "totalFrames": 32968,
+  "duration": 549.465,
+  "hasAudio": true
+}

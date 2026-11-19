@@ -1,0 +1,347 @@
+[
+  {
+    "index": 0,
+    "startFrame": 0,
+    "endFrame": 480
+  },
+  {
+    "index": 1,
+    "startFrame": 480,
+    "endFrame": 960
+  },
+  {
+    "index": 2,
+    "startFrame": 960,
+    "endFrame": 1440
+  },
+  {
+    "index": 3,
+    "startFrame": 1440,
+    "endFrame": 1920
+  },
+  {
+    "index": 4,
+    "startFrame": 1920,
+    "endFrame": 2400
+  },
+  {
+    "index": 5,
+    "startFrame": 2400,
+    "endFrame": 2880
+  },
+  {
+    "index": 6,
+    "startFrame": 2880,
+    "endFrame": 3360
+  },
+  {
+    "index": 7,
+    "startFrame": 3360,
+    "endFrame": 3840
+  },
+  {
+    "index": 8,
+    "startFrame": 3840,
+    "endFrame": 4320
+  },
+  {
+    "index": 9,
+    "startFrame": 4320,
+    "endFrame": 4800
+  },
+  {
+    "index": 10,
+    "startFrame": 4800,
+    "endFrame": 5280
+  },
+  {
+    "index": 11,
+    "startFrame": 5280,
+    "endFrame": 5760
+  },
+  {
+    "index": 12,
+    "startFrame": 5760,
+    "endFrame": 6240
+  },
+  {
+    "index": 13,
+    "startFrame": 6240,
+    "endFrame": 6720
+  },
+  {
+    "index": 14,
+    "startFrame": 6720,
+    "endFrame": 7200
+  },
+  {
+    "index": 15,
+    "startFrame": 7200,
+    "endFrame": 7680
+  },
+  {
+    "index": 16,
+    "startFrame": 7680,
+    "endFrame": 8160
+  },
+  {
+    "index": 17,
+    "startFrame": 8160,
+    "endFrame": 8640
+  },
+  {
+    "index": 18,
+    "startFrame": 8640,
+    "endFrame": 9120
+  },
+  {
+    "index": 19,
+    "startFrame": 9120,
+    "endFrame": 9600
+  },
+  {
+    "index": 20,
+    "startFrame": 9600,
+    "endFrame": 10080
+  },
+  {
+    "index": 21,
+    "startFrame": 10080,
+    "endFrame": 10560
+  },
+  {
+    "index": 22,
+    "startFrame": 10560,
+    "endFrame": 11040
+  },
+  {
+    "index": 23,
+    "startFrame": 11040,
+    "endFrame": 11520
+  },
+  {
+    "index": 24,
+    "startFrame": 11520,
+    "endFrame": 12000
+  },
+  {
+    "index": 25,
+    "startFrame": 12000,
+    "endFrame": 12480
+  },
+  {
+    "index": 26,
+    "startFrame": 12480,
+    "endFrame": 12960
+  },
+  {
+    "index": 27,
+    "startFrame": 12960,
+    "endFrame": 13440
+  },
+  {
+    "index": 28,
+    "startFrame": 13440,
+    "endFrame": 13920
+  },
+  {
+    "index": 29,
+    "startFrame": 13920,
+    "endFrame": 14400
+  },
+  {
+    "index": 30,
+    "startFrame": 14400,
+    "endFrame": 14880
+  },
+  {
+    "index": 31,
+    "startFrame": 14880,
+    "endFrame": 15360
+  },
+  {
+    "index": 32,
+    "startFrame": 15360,
+    "endFrame": 15840
+  },
+  {
+    "index": 33,
+    "startFrame": 15840,
+    "endFrame": 16320
+  },
+  {
+    "index": 34,
+    "startFrame": 16320,
+    "endFrame": 16800
+  },
+  {
+    "index": 35,
+    "startFrame": 16800,
+    "endFrame": 17280
+  },
+  {
+    "index": 36,
+    "startFrame": 17280,
+    "endFrame": 17760
+  },
+  {
+    "index": 37,
+    "startFrame": 17760,
+    "endFrame": 18240
+  },
+  {
+    "index": 38,
+    "startFrame": 18240,
+    "endFrame": 18720
+  },
+  {
+    "index": 39,
+    "startFrame": 18720,
+    "endFrame": 19200
+  },
+  {
+    "index": 40,
+    "startFrame": 19200,
+    "endFrame": 19680
+  },
+  {
+    "index": 41,
+    "startFrame": 19680,
+    "endFrame": 20160
+  },
+  {
+    "index": 42,
+    "startFrame": 20160,
+    "endFrame": 20640
+  },
+  {
+    "index": 43,
+    "startFrame": 20640,
+    "endFrame": 21120
+  },
+  {
+    "index": 44,
+    "startFrame": 21120,
+    "endFrame": 21600
+  },
+  {
+    "index": 45,
+    "startFrame": 21600,
+    "endFrame": 22080
+  },
+  {
+    "index": 46,
+    "startFrame": 22080,
+    "endFrame": 22560
+  },
+  {
+    "index": 47,
+    "startFrame": 22560,
+    "endFrame": 23040
+  },
+  {
+    "index": 48,
+    "startFrame": 23040,
+    "endFrame": 23520
+  },
+  {
+    "index": 49,
+    "startFrame": 23520,
+    "endFrame": 24000
+  },
+  {
+    "index": 50,
+    "startFrame": 24000,
+    "endFrame": 24480
+  },
+  {
+    "index": 51,
+    "startFrame": 24480,
+    "endFrame": 24960
+  },
+  {
+    "index": 52,
+    "startFrame": 24960,
+    "endFrame": 25440
+  },
+  {
+    "index": 53,
+    "startFrame": 25440,
+    "endFrame": 25920
+  },
+  {
+    "index": 54,
+    "startFrame": 25920,
+    "endFrame": 26400
+  },
+  {
+    "index": 55,
+    "startFrame": 26400,
+    "endFrame": 26880
+  },
+  {
+    "index": 56,
+    "startFrame": 26880,
+    "endFrame": 27360
+  },
+  {
+    "index": 57,
+    "startFrame": 27360,
+    "endFrame": 27840
+  },
+  {
+    "index": 58,
+    "startFrame": 27840,
+    "endFrame": 28320
+  },
+  {
+    "index": 59,
+    "startFrame": 28320,
+    "endFrame": 28800
+  },
+  {
+    "index": 60,
+    "startFrame": 28800,
+    "endFrame": 29280
+  },
+  {
+    "index": 61,
+    "startFrame": 29280,
+    "endFrame": 29760
+  },
+  {
+    "index": 62,
+    "startFrame": 29760,
+    "endFrame": 30240
+  },
+  {
+    "index": 63,
+    "startFrame": 30240,
+    "endFrame": 30720
+  },
+  {
+    "index": 64,
+    "startFrame": 30720,
+    "endFrame": 31200
+  },
+  {
+    "index": 65,
+    "startFrame": 31200,
+    "endFrame": 31680
+  },
+  {
+    "index": 66,
+    "startFrame": 31680,
+    "endFrame": 32160
+  },
+  {
+    "index": 67,
+    "startFrame": 32160,
+    "endFrame": 32640
+  },
+  {
+    "index": 68,
+    "startFrame": 32640,
+    "endFrame": 32968
+  }
+]

@@ -4573,3 +4573,15 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - NEXT: critic F-01's report -> lead's calls (226 on) -> the full-film fix round (with 225's list:
   whole-pixel type steps in slow moves, S5's 3-frame green edges, S8's 0.1 s kicker fade) ->
   film-draft-02 -> the owner's look. Then the sound step and final voices/passes.
+
+## 17:31 UTC, 19 Nov
+- CRITIC F-01 RETURNED: ONE MORE PASS. Saved to l5film/review/critic-F-01/REPORT.md. Lead looked at
+  its crops (guess, support, dim feel). DECISIONS 226-233; LEDGER F-01 row. Fix brief (all groups,
+  one section each): $S/briefs/l5-fix-F-01.md. The film's LAST critic round (owner's rule): after the
+  fix round the lead checks, renders film-draft-02, then the OWNER LOOKS.
+- FULL-FILM FIX ROUND: GROUP C STARTED (resumed with the brief's Group C section: S10's chart is the
+  big item). Kit builder still on the root fix. QUEUE (two heavy at a time): group A ((builder)),
+  group D ((builder)), group B ((builder)), group E ((builder)), each resumed
+  with "do Group X of briefs/l5-fix-F-01.md". Then film-draft-02 (production builder (builder),
+  same as part 2 of briefs/l5-integration.md, to renders/film-draft-02.mp4), the lead's check, the
+  owner's look.

@@ -1759,3 +1759,48 @@ numbered 132 to 135 too, are 160 to 163 now, so no number appears twice).
      - **For the final passes**: S14's hosts come from 225 px chunks and S15's from 300 px ones, so
        both sharpen slightly on the cut; render S14's chunks at S15's resolution.
      - Loudness is the scratch mix's (-21.0 LUFS); the sound step sets the film's.
+
+## The lead's calls on critic F-01 (the full-film fix round), 19 November
+
+The owner's rule holds: this is the film's last critic round; one fix round follows, the lead checks
+it, and then the owner looks. Each scene group fixes its own scenes; the lead's calls are below.
+
+226. **The lead subject fills the long beats** (item 1):
+     - **S10's hold chart** (10b to 10g, the push in to "No."): the band stands 220 px or more tall
+       on screen and the plot spans 1150 px or more (60 % of the width) at F-hold; the close-ups
+       keep the band's edges in frame. The chart's cents scale may grow for this (the take, its
+       vibrato and its scoop grow with it), and every label re-places around it, 12 px from every
+       stroke. 10h's slide shrinks the frame into the hold frame at the right half, so the cut on
+       `sing` is unchanged. (This also answers C-01's item 13.)
+     - **S3 and S4** fill their lower half: the strip and the swatches at about 1.5 times, the
+       content set lower, clear of the hosts' keep-outs; the joins S2 to S3 to S4 to S5 re-proved.
+     - **S9's trace box** appears with its first trace (about 243.6), not before.
+     - **S11 and S12's ring stays its size** (not taken): at F0 the hold frame and its labels stand
+       above it, and at F-turn's 1.4 times the floor below; 213 measured r 141 as the most that
+       fits both. The care block's staging (228) is the fill there.
+     - **The band after the hold** (422 to 462) dims to 50 % while the feel block and the doctor
+       lines are the subject, and returns to full 0.5 s or more before the matched cut on `recap`,
+       which carries it at full.
+227. **Holds** (item 2): the hosts' stillness in pauses and their talk cycle at 240 px go to the
+     final passes, after the owner's voices (189, 201): rendering every pass twice is not worth it.
+     Now, where a hold of 0.3 s or more falls inside a word, the scene gives the label that word
+     names the board's settle (0.15 s up, 0.6 s back) or lets the thing it shows move on; never a
+     pulse with no reason.
+228. **Blocks shown whole light as they are said** (item 3): a block of lines that is on screen
+     whole before the voice reads it (the full doctor lines, the practise card's readout, the
+     care block's reasons, the mix-up's rows) stands at ink-2 and lights line by line to ink as
+     each line is said (a 0.3 s linear change on the line's first word, staying lit), never word by
+     word and never dimming a line once lit; a block that lands line by line on its words needs
+     nothing more. The gauge (S6) pulses each label when the voice names it again.
+229. **Collisions** (item 4), each to 12 px or more on every frame: '"support"' (S1) clears the
+     band's fill and edge through the pull; S2's title is gone before "A3" and the band land; S4's
+     chips are clear of the band's line through the crane up; S8's "03" clears the parked figure.
+230. **The cold open's guess reads** (item 5): the take dims to 50 % while the guess shows, as the
+     board says, and the dash is drawn at 4 px.
+231. **The dimmed feel block keeps 4.5:1** (item 6): about 50 % (was 35 %), measured.
+232. **The pop at 490.933** (item 7) is the kit's root fix (225), in hand. **60 fps** (item 8) is the
+     final render's, after the final voices.
+233. **Also in this round** (225): the type that steps a whole pixel in slow moves moves sub-pixel
+     (a composited layer or a transform, as the chapter card now does) in each scene that has it;
+     S8's kicker leaves over 0.2 s or more, linear. S5's mint edge (87.27, 88.33) stays (the
+     critic read it as fine).

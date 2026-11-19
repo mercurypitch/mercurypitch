@@ -1,0 +1,5 @@
+film 488-493 s at 30 fps (151 frames): L.passFrame differs from the renderer on 0; floor(30 ms) + floor(30 (t - ds)) on 0; floor(30 (t - ds + ms)) (before) on 151
+s13 alone, 0-65 s at 30 fps: L.passFrame differs from the renderer on 0 frames
+film 488-493 s at 60 fps (301 frames): L.passFrame differs from the renderer on 0; floor(30 ms) + floor(30 (t - ds)) on 151; floor(30 (t - ds + ms)) (before) on 0
+s13 alone, 0-65 s at 60 fps: L.passFrame differs from the renderer on 0 frames
+no render config (probe, preview), s13 alone at 30 fps: differs from the old reading on 0 frames
