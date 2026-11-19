@@ -4454,3 +4454,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   the hop sheet and C's settled rule).
 - Heavy now: group C fix + group E. Queue: group D's fix round (when C hands back), leftovers
   (A amber line + B throat line), critic E-01 after E, then integration.
+- 13:00: LEFTOVERS BRIEF WRITTEN: $S/briefs/l5-leftovers.md (part 1 to group A's builder for S1's
+  amber line, 178; part 2 to group B's builder for S6/S7's "never your throat", 203). Both builders
+  can be resumed by SendMessage; run the two parts one after the other in one heavy slot, after
+  group D's fix round has started.
