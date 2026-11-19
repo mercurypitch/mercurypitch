@@ -1536,3 +1536,38 @@ numbered 132 to 135 too, are 160 to 163 now, so no number appears twice).
        lines move up 27 px and the legs shorten 18 px more, in S6 and in S7's first frame. This
        goes into a short leftovers round before integration with group A's amber line through
        the softening bead (178), so S1, S6 and S7 render again once, together.
+
+## The lead's calls on critic D-01 (group D's fix round), 19 November
+
+204. **The turn's first minute gets a picture** (item 1): the ring draws on at 35 % on "ten
+     seconds," in 11b, under the bracket, as the ten seconds' clock (no counter yet), and on "the
+     ring." in 11e it scales 1.05 once, as the board has it. On b38 (12a) the six reasons fade
+     (the comfort line, "Your turn.", the listening line and the small doctor lines stay to the
+     board's thinning before the push): they have been said whole in 11d, and the voice choice
+     and the phases take the block's place. Nothing of the care block's words is cut; the page's
+     order holds.
+205. **The doctor lines own the end** (item 2): on "Whatever you chose:" all four answers light
+     together (the board's beat), then the feel block (question, capsules, their lines and
+     bracket) dims to 35 % as the doctor lines rise to full size, and stays so to the end fade.
+     The full lines are broken by hand at phrase ends (never inside "(a GP", never a lone
+     "away."); the words are b46a's, unchanged.
+206. **The chart's labels leave with the hold** (item 3): "0", "10 s", "A3 · Merc" and "A4 · Tavi,
+     an octave up" fade with the ring after the close; the band, Merc's line and "Nothing listens"
+     (FACTS 87) stay to the end of the turn.
+207. **"Breathe in, low and quiet" keeps 12 px from the ring at its largest breath** (item 4):
+     raise it or start it further right; it still shares the line of "Nothing listens", never one
+     over the other.
+208. **The ring stands clear of the floor and the labels** (item 8): at rest its stroke clears the
+     floor horizon (y 840) by 8 px or more and "Nothing listens" by 12 px; at its largest breath
+     it touches neither. The builder sets its radius and centre inside those bounds (signature 3's
+     "448 px across" may come down to about 420) and records them; HANDOFFS § The turn follows.
+209. **The feel lines are the page's words** (item 8): "rest for a few easy breaths", as the page
+     and b44 say (the board and HANDOFFS had dropped "for"), fitting left of x 1630 (two lines, or
+     28 px, if the measured width needs it). The phase row's lit word reads as lit: the unlit
+     words at ink-2 at 60 %, the lit one at ink, with a small chrome mark under it.
+210. **Holds, the push and the sound** (items 5, 6, 7): the holds while Merc talks go to the
+     final passes (189, 201: the talk cycle visible at 300); no extra underlines in the doctor
+     lines (the two actions, "see a doctor" and "get help straight away", stay the only marks, so
+     the safety lines do not read as karaoke). The push's parallax is the kit's bokeh lift,
+     looked at once at integration (200). The model note, the ticks and the room tone come with
+     the sound step (194, LAB-CHECKS 16).

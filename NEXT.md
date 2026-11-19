@@ -4428,3 +4428,14 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - GROUP C FIX ROUND STARTED (resumed the group C builder, briefs/l5-fix-C-01.md) in B's slot.
 - Heavy now: passes step + group C fix. Queue: group E (after the passes step), group D's fix
   round (after critic D-01 + calls), the leftovers round (A + B), then integration.
+
+## 13:00 UTC, 19 Nov
+- CRITIC D-01 RETURNED: ONE MORE PASS (keep the hold). Saved to l5film/review/critic-D-01/REPORT.md.
+  DECISIONS 204-210 (ring at 35 % from "ten seconds", reasons fade on b38; answers light then the
+  feel block dims as the doctor lines rise, hand-set breaks; chart labels leave with the hold;
+  label 12 px from the ring; ring inside floor + labels; "rest for a few easy breaths" (page's
+  words; board/HANDOFFS fixed); phase lighting readable; holds/push/sound -> passes, integration,
+  sound step). LEDGER D-01 row. Fix brief $S/briefs/l5-fix-D-01.md (resume the group D builder when
+  a slot frees).
+- Heavy now: passes step + group C fix. Queue: group E (after the passes step), group D's fix
+  round, leftovers (A + B), integration.

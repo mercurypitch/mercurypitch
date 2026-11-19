@@ -539,7 +539,7 @@ F-turn starts at x 1700 (the ring ends at 1600) and y 628 (the frame's labels en
   reach about x 225 (to be measured on m-blue at 300: **provisional**), so x 260 keeps 35 px.
 - **Feel** (12f to 12h, at F-turn): "How did that feel?" serif italic 64, ink, x 1000, baseline
   480; a ring timer at (1660, 458), r 16; capsules x 1000 to 1230, 44 high, centred y 540, 596, 652,
-  708 (Outfit 600 30); lines Outfit 500 30, ink, x 1260: "rest a few easy breaths" baseline 579 (a
+  708 (Outfit 600 30); lines Outfit 500 30, ink, x 1260: "rest for a few easy breaths" (the page's words **[D-01: 209]**) baseline 579 (a
   2 px chrome bracket from the first two capsules at x 1240), "rest before you sing again" 663,
   "enough singing for today" 719. All of it left of x 1630 and above y 730.
 
