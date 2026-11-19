@@ -4639,3 +4639,17 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - 19:50 UTC check-in: rate limit "allowed_warning" (seven-day window; resets Thu 26 Nov 01:00 UTC).
   Still allowed: carry on, but lean (no extra agents beyond E and the draft-02 render). Group E
   active (transcript written 35 s before; no heavy job at that moment). Nothing due.
+
+## 19:54 UTC, 19 Nov
+- GROUP E F-01 ROUND HANDED BACK. Lead looked at item1-readout.png, item1-rest-body.png and pulled
+  frames: all good EXCEPT the Voice Mirror card's foot steps (s13 FEET, line 107) start on the frame
+  their type lands (READ, KEEP, SORE, FREE), so the panel's bottom edge sweeps through each new
+  line as it fades in (~5 frames; readout 39.033-39.15 scene = film 501.40-501.52; draft-01 the same).
+  Lead's calls sent with it: drift 1.2 s sine accepted (board said 2 s); readout lights through the
+  silence before "Keep" accepted; answers 3 and 4 left (under 1 s lead); 467.633 pop and 477.467
+  jump stand for now.
+- FOLLOW-UP SENT to group E ((builder)): foot 12 px under each new line before it shows;
+  check all box/card edges moving through visible type in s13-s15; re-render changed part(s).
+  When it hands back and is accepted: DECISIONS 239 (E's round + follow-up, the calls above),
+  HANDOFFS (drift 1.2 s from card end -0.32 -1.2; readout lights at plays + i(Keep-plays)/3;
+  rest body lights on "Voice" and "your voice"; subLayers), then film-draft-02.

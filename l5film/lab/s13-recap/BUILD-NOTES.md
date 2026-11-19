@@ -70,12 +70,12 @@ Group D's S12 now dims the band after the hold, then brings it back to full 0.59
 The type now moves in composited HTML layers: a div with its own `L.stage` SVG, moved by a CSS transform, as the chapter card does. `subLayer` is at s13 line 127 and s14 line 76. Each move is measured on the clip's frames by `fix-F-01/track.py` and `track-fade.py`. The before and after charts are `lab/s13-recap/fix-F-01/item2-type-steps-s13.png` and `lab/s14-next/fix-F-01/item2-type-steps-s14.png`.
 
 **s13's trace names** (film 471.27, s13 8.90; lines 145, 146 and 302): each name sits in its own layer.
-- The third name's last frames, drawn offset in px:
+- The third name's drawn offset in px, frame by frame from 8.767 to 9.000:
 
-  | | Last frames |
+  | | 8.767 to 9.000 |
   | --- | --- |
-  | Before | -2.95, -1.97, -0.97, -0.97, 0.00 (the 1 px step at 8.90) |
-  | After | -0.79, -0.48, -0.21, -0.14, -0.08, 0 |
+  | Before | -2.93, -1.98, -0.99, -1.02, +0.02, +0.01, +0.02, +0.01: a 1 px stair, its last step on 8.90 |
+  | After | -2.50, -1.69, -1.14, -0.79, -0.48, -0.21, -0.14, -0.08, settling to 0 by 9.07 |
 
 - measure.py's jump at 8.900 (0.05 %) is gone. Files: `names-track/`.
 - Probe: the layers sit at 0.112, 0.896 and 3.024 px at 8.75, with no SVG rise.
@@ -95,7 +95,7 @@ The type now moves in composited HTML layers: a div with its own `L.stage` SVG, 
   | A growing scale | 1 |
   | 1.4 s | 1 |
 
-- What worked: 1.0 s or 1.2 s sine.inOut is clean at every frame phase tried. 1.2 s was clean at three, including the film's.
+- What worked: 1.0 s sine.inOut was clean at two frame phases, and 1.2 s at three (0, 0.5 and 0.9 of a frame; the film's s13 starts 0.1 of a frame in). 1.2 s is the longer of the two.
 - Now the drift is 1.2 s sine.inOut and ends as the lines start to leave: `DRIFT = LEAVE - 1.2`, where LEAVE is `at('card','end',-0.32)`. That is 62.955 to 64.155, peaking at 0.61 px a frame. The cards stand still for the first 0.48 s of `card`.
 - The clip's drawn drift rises smoothly from 0.07 to 13.94 px. Files: `drift-track/`.
 - measure.py: no event from 23.4 s to the end.
