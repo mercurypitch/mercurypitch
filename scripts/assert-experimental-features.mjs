@@ -1,13 +1,15 @@
 // ============================================================
-// assert-experimental-features — prove a build lists, or keeps unlisted, its experimental pages
+// assert-experimental-features — prove a build lists, or keeps unlisted, each experimental page
 // ============================================================
 //
-// Every web build serves each experimental feature's page (Studio first), but
-// lists it only where the build's default turns the features on
+// Every web build serves each experimental feature's page (Studio first). It
+// lists the page where the feature is on by default: in every web build for
+// a feature on in production (Studio, src/lib/experimental-feature-
+// defaults.ts), and for the rest only where the build's switch turns them on
 // (tools/experimental-features.ts): the dev deploy, PR previews and the e2e
 // bundle, not mercurypitch.com. This reads a finished dist and checks every
-// discovery surface against the state the caller expects, independently of
-// the plugin that produced it:
+// discovery surface, page by page, against the state the build's switch
+// gives it, independently of the plugin that produced it:
 //
 // - served, always: the page's document and the service-worker rule for its
 //   clean path, so the owner's runtime switch has an address to open;
@@ -16,15 +18,16 @@
 // - sitemap.xml, llms.txt, and every other document's prelude nav.
 //
 // The room's code ships either way, because the owner's switch can turn it
-// on without a release, so there is no bundle fingerprint to check here; the
-// default the bundle starts from is covered by the store's tests and
-// src/e2e/experimental-features.spec.ts.
+// on or off without a release, so there is no bundle fingerprint to check
+// here; the default the bundle starts from is covered by the store's tests
+// and src/e2e/experimental-features.spec.ts.
 //
 // Usage: node scripts/assert-experimental-features.mjs <dist-dir> --on|--off
+// (the build's VITE_EXPERIMENTAL_FEATURES)
 
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join } from 'node:path'
-import { EXPERIMENTAL_ENTRY_SLUGS } from '../tools/experimental-features.ts'
+import { EXPERIMENTAL_ENTRY_SLUGS, unlistedExperimentSlugs, } from '../tools/experimental-features.ts'
 
 const root = process.argv[2] ?? 'dist'
 const mode = process.argv[3]
@@ -38,12 +41,15 @@ const on = mode === '--on'
 
 /** Every experimental feature's pages. */
 const SLUGS = Object.values(EXPERIMENTAL_ENTRY_SLUGS).flat()
+/** The pages this build keeps unlisted: those of every feature off by default in it. */
+const UNLISTED = new Set(unlistedExperimentSlugs(on))
 
 const failures = []
 const read = (file) => readFileSync(join(root, file), 'utf8')
 const documents = readdirSync(root).filter((file) => file.endsWith('.html'))
 
 for (const slug of SLUGS) {
+  const listed = !UNLISTED.has(slug)
   const page = `${slug}.html`
   const link = new RegExp(`(?:href="|mercurypitch\\.com)/${slug}(?![\\w-])`)
 
@@ -53,7 +59,7 @@ for (const slug of SLUGS) {
     failures.push(`${page} is missing: /${slug} would not be served`)
   else {
     const robots = /<meta name="robots" content="([^"]*)"/.exec(read(page))?.[1]
-    const expected = on
+    const expected = listed
       ? 'index, follow, max-image-preview:large'
       : 'noindex, follow'
     if (robots !== expected)
@@ -66,14 +72,14 @@ for (const slug of SLUGS) {
 
   for (const file of ['sitemap.xml', 'llms.txt']) {
     const has = link.test(read(file))
-    if (has !== on)
+    if (has !== listed)
       failures.push(`${file} ${has ? 'lists' : 'does not list'} /${slug}`)
   }
 
   const linking = documents.filter(
     (file) => file !== page && link.test(read(file)),
   )
-  if (on) {
+  if (listed) {
     for (const file of ['index.html', '404.html', 'mirror.html'])
       if (!linking.includes(file))
         failures.push(`${file} does not link /${slug}`)
@@ -84,16 +90,19 @@ for (const slug of SLUGS) {
 
 if (failures.length > 0) {
   console.error(
-    `Experimental features should be ${on ? 'ON' : 'OFF'} in ${root}, but:\n\n` +
+    `Experimental pages are not listed as the switch ${on ? 'ON' : 'OFF'} has them in ${root}:\n\n` +
       failures.map((line) => `  ${line}`).join('\n') +
       '\n\nThe switch is VITE_EXPERIMENTAL_FEATURES, set per mode in\n' +
       '.env.development and .env.production; tools/experimental-features.ts\n' +
       'applies it to the build and src/stores/experimental-features-store.ts\n' +
-      'to the bundle.',
+      'to the bundle. A feature on in production\n' +
+      '(src/lib/experimental-feature-defaults.ts) is listed whatever it says.',
   )
   process.exit(1)
 }
 
+const pages = (slugs) =>
+  slugs.length === 0 ? 'none' : slugs.map((slug) => `/${slug}`).join(', ')
 console.log(
-  `assert-experimental-features: ${on ? 'on, listed' : 'off, unlisted'}, still served (${root})`,
+  `assert-experimental-features: switch ${on ? 'on' : 'off'}; listed ${pages(SLUGS.filter((slug) => !UNLISTED.has(slug)))}; unlisted ${pages([...UNLISTED])}; every page served (${root})`,
 )

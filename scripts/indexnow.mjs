@@ -32,9 +32,17 @@
 // It sends the sitemap as production lists it. public/sitemap.xml names
 // /glass-game, but the production build leaves it out of dist/sitemap.xml
 // while VITE_GLASSWORKS_LISTED is off (tools/glassworks-listing.ts), so a
-// release must not announce it either. The same goes for every experimental
-// feature's page (/studio-night first) while VITE_EXPERIMENTAL_FEATURES is
-// off (tools/experimental-features.ts).
+// release must not announce it either. The same goes for the page of every
+// experimental feature still being built while VITE_EXPERIMENTAL_FEATURES is
+// off (tools/experimental-features.ts). A feature on in production
+// (/studio-night, src/lib/experimental-feature-defaults.ts) is listed, and
+// announced, as any room is.
+//
+// That list is code, not .env.production, so --since reads it as it is now
+// at the earlier ref too. The release that first lists a page is therefore
+// not told by the listing that it changed. Its <lastmod> tells it: the page
+// itself changed with its listing (its robots line and its links, as
+// scripts/sitemap-lastmod.mjs reads them), so that check gave it a new date.
 //
 // Usage: node scripts/indexnow.mjs [--dry-run] (--since <git-ref> | --all | <url> ...)
 
@@ -42,7 +50,7 @@ import { execFileSync } from 'node:child_process'
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { EXPERIMENTAL_ENTRY_SLUGS } from '../tools/experimental-features.ts'
+import { unlistedExperimentSlugs } from '../tools/experimental-features.ts'
 
 export const SITE = 'https://mercurypitch.com'
 const HOST = new URL(SITE).host
@@ -51,10 +59,6 @@ const KEY_FILE = /^([a-f0-9]{32})\.txt$/
 const SITEMAP = 'public/sitemap.xml'
 const ENV_PRODUCTION = '.env.production'
 const GLASSWORKS_URL = `${SITE}/glass-game`
-/** Every experimental feature's page. */
-const EXPERIMENTAL_URLS = Object.values(EXPERIMENTAL_ENTRY_SLUGS)
-  .flat()
-  .map((slug) => `${SITE}/${slug}`)
 
 const repoRoot = resolve(fileURLToPath(new URL('..', import.meta.url)))
 
@@ -106,14 +110,15 @@ function switchOn(envProduction, name) {
 
 /** The sitemap URLs production serves but does not list, from the contents
  *  of .env.production: the museum unless VITE_GLASSWORKS_LISTED lists it,
- *  and the experimental features' pages unless VITE_EXPERIMENTAL_FEATURES
- *  turns them on. */
+ *  and the pages of every experimental feature not on in production unless
+ *  VITE_EXPERIMENTAL_FEATURES turns them on. */
 export function unlistedUrls(envProduction) {
   const unlisted = new Set()
   if (!switchOn(envProduction, 'VITE_GLASSWORKS_LISTED'))
     unlisted.add(GLASSWORKS_URL)
-  if (!switchOn(envProduction, 'VITE_EXPERIMENTAL_FEATURES'))
-    for (const url of EXPERIMENTAL_URLS) unlisted.add(url)
+  const experiments = switchOn(envProduction, 'VITE_EXPERIMENTAL_FEATURES')
+  for (const slug of unlistedExperimentSlugs(experiments))
+    unlisted.add(`${SITE}/${slug}`)
   return unlisted
 }
 

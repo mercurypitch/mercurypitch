@@ -1,9 +1,12 @@
 // ============================================================
-// Experimental features tests — the production web build serves Studio and lists it nowhere
+// Experimental features tests — production lists Studio, and keeps a feature still being built unlisted
 // ============================================================
 //
 // Run against the real public/ files and the hand-written index.html, so a
-// format change there fails here before it fails a release build.
+// format change there fails here before it fails a release build. Studio is
+// on in production (src/lib/experimental-feature-defaults.ts), so no build
+// strips its entries today; they stay the sample for the strip helpers,
+// because they are the real format a feature still being built will have.
 
 import { readFileSync } from 'node:fs'
 import { resolve } from 'node:path'
@@ -12,12 +15,15 @@ import { renderErrorPage } from '../src/error-kit/render-error-page'
 import { EXPERIMENTAL_FEATURES } from '../src/lib/experimental-features'
 import { ENTRY_PAGES, navLinksFor } from '../src/seo/entry-pages'
 import { renderEntryPage } from '../src/seo/render-entry-page'
-import { EXPERIMENTAL_ENTRY_SLUGS, isExperimentalFeaturesOn, pointsAt, stripLlmsEntry, stripNavLink, stripSitemapEntry, unlistedExperimentSlugs, } from './experimental-features'
+import { EXPERIMENTAL_ENTRY_SLUGS, isExperimentalFeaturesOn, pointsAt, stripLlmsEntry, stripNavLink, stripSitemapEntry, unlistedExperimentSlugs, unlistedSlugsOf, } from './experimental-features'
 
 const repoFile = (path: string): string =>
   readFileSync(resolve(__dirname, '..', path), 'utf8')
 
 const studio = ENTRY_PAGES.find((page) => page.slug === 'studio-night')!
+
+/** Studio's page, kept unlisted: what a build does with a feature still being built. */
+const STUDIO_UNLISTED = ['studio-night']
 
 describe('the experimental features switch', () => {
   it('turns features on only on an explicit "1" or "true"', () => {
@@ -71,14 +77,15 @@ describe('the experimental features switch', () => {
     )
     for (const owned of Object.values(EXPERIMENTAL_ENTRY_SLUGS))
       for (const slug of owned) expect(slugs).toContain(slug)
-    // The one list: neither script writes the pages out again.
+    // The one list: neither script writes the pages, or which of them a
+    // build lists, out again.
     for (const script of [
       'scripts/assert-experimental-features.mjs',
       'scripts/indexnow.mjs',
     ]) {
       const source = repoFile(script)
-      expect(source).toContain(
-        "import { EXPERIMENTAL_ENTRY_SLUGS } from '../tools/experimental-features.ts'",
+      expect(source).toMatch(
+        /^import \{[^}]*\bunlistedExperimentSlugs\b[^}]*\} from '\.\.\/tools\/experimental-features\.ts'$/m,
       )
       for (const slug of Object.values(EXPERIMENTAL_ENTRY_SLUGS).flat())
         for (const written of [`'${slug}'`, `/${slug}\``])
@@ -86,14 +93,63 @@ describe('the experimental features switch', () => {
     }
   })
 
-  it('keeps every feature page unlisted with the switch off, and none with it on', () => {
-    expect(unlistedExperimentSlugs(false)).toEqual(['studio-night'])
+  it('lists Studio, which is on in production, with the switch on or off', () => {
+    expect(unlistedExperimentSlugs(false)).toEqual([])
     expect(unlistedExperimentSlugs(true)).toEqual([])
+  })
+
+  it('keeps every page of a feature not on in production unlisted with the switch off, and none with it on', () => {
+    const pages = {
+      studio: ['studio-night'],
+      'karaoke-v2': ['karaoke-v2-night', 'karaoke-v2-app'],
+    }
+
+    expect(unlistedSlugsOf(pages, false)).toEqual([
+      'karaoke-v2-night',
+      'karaoke-v2-app',
+    ])
+    expect(unlistedSlugsOf(pages, true)).toEqual([])
   })
 })
 
-describe('a build with experimental features off', () => {
-  it('drops Studio from the sitemap and nothing else', () => {
+describe('the production build, with the switch off', () => {
+  it('renders every entry document exactly as with the switch on, Studio linked and indexed with its app node', () => {
+    const unlisted = unlistedExperimentSlugs(false)
+    for (const page of ENTRY_PAGES) {
+      const document = renderEntryPage(page, { unlisted })
+      expect(document, page.slug).toBe(renderEntryPage(page))
+      if (page !== studio)
+        expect(document, page.slug).toContain('href="/studio-night"')
+    }
+    const studioDocument = renderEntryPage(studio, { unlisted })
+    expect(studioDocument).toContain(
+      '<meta name="robots" content="index, follow, max-image-preview:large" />',
+    )
+    expect(studioDocument).toContain(
+      '<link rel="canonical" href="https://mercurypitch.com/studio-night" />',
+    )
+    expect(studioDocument).toContain('"@type": "WebApplication"')
+    expect(studioDocument).toContain(
+      '"@id": "https://mercurypitch.com/studio-night#app"',
+    )
+    expect(renderErrorPage('not-found', { unlisted })).toContain(
+      'href="/studio-night"',
+    )
+  })
+
+  it('strips nothing from the sitemap, llms.txt or the prelude nav', () => {
+    // The plugin rewrites the copied files only for the slugs it is given.
+    expect(unlistedExperimentSlugs(false)).toEqual([])
+    expect(pointsAt(repoFile('public/sitemap.xml'), 'studio-night')).toBe(true)
+    expect(pointsAt(repoFile('public/llms.txt'), 'studio-night')).toBe(true)
+    expect(repoFile('index.html')).toContain(
+      '<a href="/studio-night">Studio</a>',
+    )
+  })
+})
+
+describe("a page a build keeps unlisted, on Studio's entries", () => {
+  it('drops the page from the sitemap and nothing else', () => {
     const source = repoFile('public/sitemap.xml')
     const { text, removed } = stripSitemapEntry(source, 'studio-night')
 
@@ -108,7 +164,7 @@ describe('a build with experimental features off', () => {
     expect(text.trimEnd().endsWith('</urlset>')).toBe(true)
   })
 
-  it('drops Studio from llms.txt and keeps its neighbours whole', () => {
+  it('drops the page from llms.txt and keeps its neighbours whole', () => {
     const source = repoFile('public/llms.txt')
     const { text, removed } = stripLlmsEntry(source, 'studio-night')
 
@@ -121,7 +177,7 @@ describe('a build with experimental features off', () => {
     expect(text).toContain('## Rooms\n\n- [Voice Mirror]')
   })
 
-  it("drops Studio from index.html's prelude nav, one line and nothing else", () => {
+  it("drops the page from index.html's prelude nav, one line and nothing else", () => {
     const source = repoFile('index.html')
     const { text, removed } = stripNavLink(source, 'studio-night')
 
@@ -141,9 +197,8 @@ describe('a build with experimental features off', () => {
     expect(pointsAt(html, 'studio-night')).toBe(false)
   })
 
-  it('still renders the Studio document, marked noindex, booting the app into Studio', () => {
-    const unlisted = unlistedExperimentSlugs(false)
-    const document = renderEntryPage(studio, { unlisted })
+  it('still renders the document, marked noindex, booting the app into its room', () => {
+    const document = renderEntryPage(studio, { unlisted: STUDIO_UNLISTED })
 
     expect(document).toContain(
       '<meta name="robots" content="noindex, follow" />',
@@ -157,17 +212,18 @@ describe('a build with experimental features off', () => {
     expect(document).toContain('href="/karaoke-night"')
   })
 
-  it('links Studio from no other entry document and not from the 404', () => {
-    const unlisted = unlistedExperimentSlugs(false)
+  it('links the page from no other entry document and not from the 404', () => {
     for (const page of ENTRY_PAGES.filter((entry) => entry !== studio)) {
-      const document = renderEntryPage(page, { unlisted })
+      const document = renderEntryPage(page, { unlisted: STUDIO_UNLISTED })
       expect(pointsAt(document, 'studio-night'), page.slug).toBe(false)
       expect(
-        navLinksFor(page, unlisted).map((link) => link.label),
+        navLinksFor(page, STUDIO_UNLISTED).map((link) => link.label),
         page.slug,
       ).not.toContain('Studio')
     }
-    const notFound = renderErrorPage('not-found', { unlisted })
+    const notFound = renderErrorPage('not-found', {
+      unlisted: STUDIO_UNLISTED,
+    })
     expect(pointsAt(notFound, 'studio-night')).toBe(false)
     expect(notFound).toContain('href="/jam"')
   })

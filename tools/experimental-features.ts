@@ -11,13 +11,21 @@
 // apps/mercurypitch/vite.config.ts. Only "1" or "true" turns features on: a
 // build that loses the variable keeps them off rather than shipping them.
 //
+// A feature on in production (src/lib/experimental-feature-defaults.ts:
+// Studio) does not wait for the switch. Every web build has it on and lists
+// it, the production one included, so mercurypitch.com lists Studio as the
+// dev deploy does. Any other feature, a new one included, is off in
+// production until it joins that list.
+//
 // A feature's entry page is written and served either way, because the owner
 // can switch the feature on for an environment from his console without a
 // release, and its address has to boot when he does. What a build with the
-// default off does is keep that page out of discovery: no nav link in
-// index.html, the other entry pages or the 404, no sitemap or llms.txt entry,
-// and the page itself says `noindex`. A switch turned on at runtime changes
-// what the app shows, not these files; graduating the feature lists it.
+// feature off by default does is keep that page out of discovery: no nav link
+// in index.html, the other entry pages or the 404, no sitemap or llms.txt
+// entry, and the page itself says `noindex`. A switch set at runtime changes
+// what the app shows, not these files, either way: Studio switched off in
+// production stays listed, its address sending the visitor Home. Putting a
+// feature on in production, or graduating it, lists it.
 //
 // The client reads the same value through
 // src/stores/experimental-features-store.ts, pinned by a `define` in
@@ -26,6 +34,9 @@
 import { readFileSync, readdirSync, writeFileSync } from 'node:fs'
 import { resolve } from 'node:path'
 import type { Plugin, ResolvedConfig } from 'vite'
+// With its extension: plain Node loads this file for the dist check and
+// IndexNow, and resolves no other spelling.
+import { onInProduction } from '../src/lib/experimental-feature-defaults.ts'
 import type { ExperimentalFeature } from '../src/lib/experimental-features'
 
 export const EXPERIMENTAL_FEATURES_ENV = 'VITE_EXPERIMENTAL_FEATURES'
@@ -35,8 +46,9 @@ export const EXPERIMENTAL_FEATURES_ENV = 'VITE_EXPERIMENTAL_FEATURES'
  * the feature list, so adding a feature without saying which pages it owns,
  * or graduating one and leaving its pages here, does not compile. The one
  * list: scripts/assert-experimental-features.mjs and scripts/indexnow.mjs
- * import it, which Node can do for this file because its only runtime
- * imports are Node's own.
+ * import it, which Node can do for this file because its runtime imports are
+ * Node's own and one module, named with its extension, that imports types
+ * alone.
  */
 export const EXPERIMENTAL_ENTRY_SLUGS: Record<
   ExperimentalFeature,
@@ -51,9 +63,24 @@ export function isExperimentalFeaturesOn(value: string | undefined): boolean {
   return normalized === '1' || normalized === 'true'
 }
 
+/**
+ * The slugs of `pages` (each feature's entry pages) a build keeps out of
+ * every cross-link: none with the switch on, and with it off the pages of
+ * every feature that is not on in production.
+ */
+export function unlistedSlugsOf(
+  pages: Readonly<Record<string, readonly string[]>>,
+  on: boolean,
+): string[] {
+  if (on) return []
+  return Object.entries(pages)
+    .filter(([feature]) => !onInProduction(feature))
+    .flatMap(([, slugs]) => slugs)
+}
+
 /** Entry-page slugs this build serves but keeps out of every cross-link. */
 export function unlistedExperimentSlugs(on: boolean): readonly string[] {
-  return on ? [] : Object.values(EXPERIMENTAL_ENTRY_SLUGS).flat()
+  return unlistedSlugsOf(EXPERIMENTAL_ENTRY_SLUGS, on)
 }
 
 interface Stripped {
@@ -109,12 +136,13 @@ export function pointsAt(text: string, slug: string): boolean {
 }
 
 /**
- * Keeps every experimental feature's pages out of a build's discovery
- * surfaces when `on` is false, and fails the build if any of them still
- * points at one afterwards. The entry and error pages are rendered unlisted
- * upstream, by `writeEntryPages` and `writeErrorPages` with `{ unlisted }`;
- * this covers what they do not: the hand-written index.html and the copied
- * public/ files.
+ * Keeps the pages of every feature off by default in this build out of its
+ * discovery surfaces, and fails the build if any of them still points at
+ * one afterwards: with `on` false, every feature not on in production, none
+ * today. The entry and error pages are rendered unlisted upstream, by
+ * `writeEntryPages` and `writeErrorPages` with `{ unlisted }`; this covers
+ * what they do not: the hand-written index.html and the copied public/
+ * files.
  */
 export function experimentalFeaturesPlugin(on: boolean): Plugin {
   const slugs = unlistedExperimentSlugs(on)
@@ -169,7 +197,7 @@ export function experimentalFeaturesPlugin(on: boolean): Plugin {
       }
       if (leaks.length > 0)
         throw new Error(
-          `Experimental features are off in this build, but these files still point at their pages: ${leaks.join(', ')}`,
+          `These experimental features are off by default in this build, but these files still point at their pages: ${leaks.join(', ')}`,
         )
     },
   }

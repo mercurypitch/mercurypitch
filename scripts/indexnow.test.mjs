@@ -137,29 +137,28 @@ test('production does not list Glassworks, so no release announces it', () => {
   }
 })
 
-// Studio, the first experimental feature, is served in production but listed
-// nowhere until it graduates (tools/experimental-features.ts), while
-// public/sitemap.xml names it for the dev build.
-test('production does not list Studio either, so no release announces it', () => {
+// Studio, the first experimental feature, is on in production
+// (src/lib/experimental-feature-defaults.ts): production lists it whatever
+// VITE_EXPERIMENTAL_FEATURES says, so a release announces it as it does any
+// room. A feature still being built is held back while the switch is off
+// (tools/experimental-features.ts), and none is today.
+test('production lists Studio, which is on there, whatever the switch says', () => {
   const studio = `${SITE}/studio-night`
   const museumListed = 'VITE_GLASSWORKS_LISTED=1\n'
   assert.ok(sitemapEntries(SITEMAP).has(studio))
-  assert.ok(!listedEntries(SITEMAP, ENV_PRODUCTION).has(studio))
-  // The museum and Studio are the only pages production holds back.
+  assert.ok(listedEntries(SITEMAP, ENV_PRODUCTION).has(studio))
+  // The museum is the only page production holds back.
   assert.equal(
     listedEntries(SITEMAP, ENV_PRODUCTION).size,
-    sitemapEntries(SITEMAP).size - 2,
-  )
-  assert.deepEqual(
-    [...unlistedUrls(`${museumListed}VITE_EXPERIMENTAL_FEATURES=1`)],
-    [],
+    sitemapEntries(SITEMAP).size - 1,
   )
   for (const env of [
+    'VITE_EXPERIMENTAL_FEATURES=1',
     'VITE_EXPERIMENTAL_FEATURES=0',
     '',
     'VITE_EXPERIMENTAL_FEATURES=yes',
   ]) {
-    assert.deepEqual([...unlistedUrls(`${museumListed}${env}`)], [studio])
+    assert.deepEqual([...unlistedUrls(`${museumListed}${env}`)], [])
   }
 })
 

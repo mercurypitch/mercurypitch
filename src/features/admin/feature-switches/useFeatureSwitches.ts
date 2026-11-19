@@ -52,8 +52,8 @@ export interface FeatureSwitchesController {
 export interface FeatureSwitchesOptions {
   /** Read at each call, so a changed key is the one sent. */
   readonly adminKey: () => string
-  /** The default a feature with no switch falls back to here, for what a save says. */
-  readonly buildDefault: () => boolean
+  /** The default feature `name` falls back to here with no switch, for what a save says. */
+  readonly buildDefault: (name: string) => boolean
 }
 
 /** The list with `row` in place of the row of its name. */
@@ -122,7 +122,7 @@ export function useFeatureSwitches(
   ): Promise<boolean> => {
     if (saving(name)) return false
     const adminKey = options.adminKey()
-    const buildDefault = options.buildDefault()
+    const buildDefault = options.buildDefault(name)
     const { title } = aboutFeature(name)
     setOutcome(name, { kind: 'saving' })
     const result = await saveFeatureSwitch(adminKey, name, enabledFor(setting))

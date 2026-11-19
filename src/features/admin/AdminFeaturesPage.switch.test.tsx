@@ -14,6 +14,7 @@
 
 import { cleanup, fireEvent, render, screen, waitFor, within, } from '@solidjs/testing-library'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type { AdminEnvironment } from './admin-environment'
 import type { AdminFeaturesPageProps } from './AdminFeaturesPage'
 import { AdminFeaturesPage } from './AdminFeaturesPage'
 import type { FakeFeatureApi } from './feature-switches/feature-switch-api.test-fixtures'
@@ -39,6 +40,21 @@ function renderPage(
   ))
 }
 
+/**
+ * The page on the defaults of the environment it reaches, each feature its
+ * own. No buildDefault prop at all: renderPage's would win, as Solid's props
+ * keep a set value over a later undefined.
+ */
+function renderOnItsDefaults(
+  api: FakeFeatureApi,
+  environment: AdminEnvironment,
+) {
+  stubFeatureApi(api)
+  render(() => (
+    <AdminFeaturesPage adminKey={ADMIN_KEY} environment={environment} />
+  ))
+}
+
 /** Studio's button for `words`: "On", "Off", or "Build default, off here". */
 function studioButton(words: string): HTMLElement {
   return within(featureCard('Studio')).getByRole('button', {
@@ -53,6 +69,9 @@ function studioOutcome(): HTMLElement | null {
 
 const studioOn = () =>
   fakeFeatureApi({ switches: { studio: { enabled: true } } })
+
+const studioOff = () =>
+  fakeFeatureApi({ switches: { studio: { enabled: false } } })
 
 afterEach(() => {
   cleanup()
@@ -229,10 +248,13 @@ describe('switching a feature on the dev site', () => {
   })
 })
 
+// Production on its own defaults: Studio is on there with no switch set
+// (src/lib/experimental-feature-defaults.ts), and the owner's way to take it
+// away is this page's Off.
 describe('switching a feature in production', () => {
   it('asks first, saying whom it reaches, and stores nothing on Cancel', async () => {
     const api = fakeFeatureApi()
-    renderPage(api, { environment: PRODUCTION })
+    renderOnItsDefaults(api, PRODUCTION)
     await settled()
 
     fireEvent.click(studioButton('On'))
@@ -251,7 +273,7 @@ describe('switching a feature in production', () => {
 
   it('switches once the owner confirms', async () => {
     const api = fakeFeatureApi()
-    renderPage(api, { environment: PRODUCTION })
+    renderOnItsDefaults(api, PRODUCTION)
     await settled()
 
     fireEvent.click(studioButton('On'))
@@ -272,23 +294,51 @@ describe('switching a feature in production', () => {
     expect(studioButton('On')).toHaveAttribute('aria-pressed', 'true')
   })
 
+  it('switches Studio off over its default, on, once the owner confirms', async () => {
+    const api = fakeFeatureApi()
+    renderOnItsDefaults(api, PRODUCTION)
+    await settled()
+    const onBefore = featureCard('Studio').textContent
+
+    fireEvent.click(studioButton('Off'))
+    fireEvent.click(
+      within(screen.getByRole('alertdialog')).getByRole('button', {
+        name: 'Switch off',
+      }),
+    )
+
+    await waitFor(() => {
+      expect(liveRegion()).toHaveTextContent(
+        `Studio is switched off here. ${CHANGE_REACHES}`,
+      )
+    })
+    expect(onBefore).toContain('On for visitors here')
+    expect(api.saves).toEqual([
+      { name: 'studio', body: { enabled: false }, key: ADMIN_KEY },
+    ])
+    expect(featureCard('Studio')).toHaveTextContent('Off for visitors here')
+    expect(factOf(featureCard('Studio'), 'Switch')).toBe('Switched off here')
+  })
+
   it.each([
     [
       'Off',
+      studioOn,
       'Switch Studio off in production?',
       "Studio leaves the app for every visitor to mercurypitch.com on their next page load, within about 30 s. A browser that loads offline, or too slowly to hear it, gets it on a later load. Switched off, the tab and its address go; the songs stay in each singer's browser, there again once it is back on.",
       'Switch off',
     ],
     [
-      'Build default, off here',
+      'Build default, on here',
+      studioOff,
       "Hand Studio back to the build's default in production?",
-      "The build's default here is off, so Studio is off for every visitor to mercurypitch.com on their next page load, within about 30 s.",
+      "The build's default here is on, so Studio is on for every visitor to mercurypitch.com on their next page load, within about 30 s.",
       'Use build default',
     ],
-  ])(
+  ] as const)(
     'asks before %s, in words that say what visitors get',
-    async (words, title, message, confirmLabel) => {
-      renderPage(studioOn(), { environment: PRODUCTION })
+    async (words, api, title, message, confirmLabel) => {
+      renderOnItsDefaults(api(), PRODUCTION)
       await settled()
 
       fireEvent.click(studioButton(words))
@@ -322,24 +372,53 @@ describe('switching a feature where the console cannot place the address', () =>
   })
 })
 
+// Each feature has its own default: Studio is on in production, and a
+// feature still being built (here one the worker lists ahead of this build)
+// is off there. The dev site and every PR preview have every feature on.
 describe('the build default the page names', () => {
+  /** What feature `title`'s card says it falls back to with no switch set. */
+  function defaultOf(title: string): string {
+    return factOf(featureCard(title), 'Switch')
+  }
+
   it.each([
-    ['production', PRODUCTION, 'off'],
-    ['development', DEVELOPMENT, 'on'],
+    ['production', PRODUCTION, 'on', 'off'],
+    ['development', DEVELOPMENT, 'on', 'on'],
   ] as const)(
-    'is the %s environment default, whatever this console bundle defaults to',
-    async (_name, environment, word) => {
-      // No buildDefault prop at all: renderPage's would win, as Solid's
-      // props keep a set value over a later undefined.
-      stubFeatureApi(fakeFeatureApi())
-      render(() => (
-        <AdminFeaturesPage adminKey={ADMIN_KEY} environment={environment} />
-      ))
+    "is each feature's own in the %s environment, whatever this console bundle defaults to",
+    async (_name, environment, studio, stillBeingBuilt) => {
+      renderOnItsDefaults(
+        fakeFeatureApi({ listed: ['studio', 'karaoke-v2'] }),
+        environment,
+      )
       await settled()
 
-      expect(screen.getByText(/^Build default here:/)).toHaveTextContent(
-        `Build default here: ${word}`,
+      expect(defaultOf('Studio')).toBe(
+        `No switch set: the build's default, ${studio} here`,
+      )
+      expect(studioButton(`Build default, ${studio} here`)).toHaveAttribute(
+        'aria-pressed',
+        'true',
+      )
+      expect(defaultOf('karaoke-v2')).toBe(
+        `No switch set: the build's default, ${stillBeingBuilt} here`,
       )
     },
   )
+
+  it("is this console bundle's own where it cannot place the address", async () => {
+    renderOnItsDefaults(fakeFeatureApi({ listed: ['studio', 'karaoke-v2'] }), {
+      kind: 'unknown',
+      label: 'api.example.test',
+    })
+    await settled()
+
+    // The test bundle is built as the dev deploy is: every feature on.
+    expect(defaultOf('Studio')).toBe(
+      "No switch set: the build's default, on here",
+    )
+    expect(defaultOf('karaoke-v2')).toBe(
+      "No switch set: the build's default, on here",
+    )
+  })
 })

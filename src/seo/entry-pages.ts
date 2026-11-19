@@ -171,6 +171,12 @@ export const ENTRY_PAGES: readonly EntryPage[] = [
     },
     h1: 'Your takes, together.',
     lede: 'Create a Studio project from your kept recordings and audio files. Projects and their audio stay in this browser. Save a project backup to keep a copy elsewhere.',
+    app: {
+      name: 'Studio',
+      category: 'MultimediaApplication',
+      description:
+        'A browser song workspace: put kept takes and audio files on tracks, record new takes in time with them, mix, and export the song as a WAV. Projects stay in this browser.',
+    },
     noscript:
       'Studio needs JavaScript to read and save projects in this browser.',
   },

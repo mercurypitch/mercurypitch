@@ -2,12 +2,17 @@
 // Experimental features store — what this page shows, and the switches it reads at startup
 // ============================================================
 //
-// The build gives every experimental feature one default
+// The build gives every experimental feature a default
 // (EXPERIMENTAL_FEATURES_BUILD_DEFAULT: on for the dev deploy, PR previews,
 // `pnpm dev` and the e2e bundle, off for mercurypitch.com and the native
-// app). The owner can switch a feature either way per environment from his
-// console; the db-worker serves the switches at GET /api/features, and a
-// switch wins over the default (src/lib/experimental-features.ts).
+// app), and a feature on in production (Studio,
+// src/lib/experimental-feature-defaults.ts) is on in every web build
+// whatever that default says. The native app has every feature off, Studio
+// included: its entry never asks for the switches, so a feature on there
+// could not be switched off. The owner can switch a feature either way per
+// environment from his console; the db-worker serves the switches at GET
+// /api/features, and a switch wins over the default
+// (src/lib/experimental-features.ts).
 //
 // The web entry asks once, at startup (src/index.tsx), and nothing waits for
 // the answer: the page renders at once and follows the answer if it lands
@@ -37,16 +42,27 @@
 // read inline, as src/index.tsx reads its portable-console flag.
 
 import { createSignal } from 'solid-js'
+import { ON_IN_PRODUCTION } from '@/lib/experimental-feature-defaults'
 import type { ExperimentalFeature, FeatureOverrides, } from '@/lib/experimental-features'
 import { FEATURES_PATH, parseFeatureOverrides, resolveExperimentalFeature, } from '@/lib/experimental-features'
+import { IS_NATIVE_BUILD } from '@/lib/native-build'
 
 /**
- * This build's default for every experimental feature. vite.config.ts pins
- * the variable to "1" or "0" with a `define` (tools/experimental-features.ts
- * decides which), so the comparison folds.
+ * This build's default for every experimental feature that is not on in
+ * production. vite.config.ts pins the variable to "1" or "0" with a `define`
+ * (tools/experimental-features.ts decides which), so the comparison folds.
  */
 export const EXPERIMENTAL_FEATURES_BUILD_DEFAULT: boolean =
   import.meta.env.VITE_EXPERIMENTAL_FEATURES === '1'
+
+/**
+ * The features this build has on whatever that default says: those on in
+ * production, in every web build. None in the native app, whose entry never
+ * asks for the owner's switches.
+ */
+const ON_IN_THIS_BUILD: ReadonlySet<string> = new Set(
+  IS_NATIVE_BUILD ? [] : ON_IN_PRODUCTION,
+)
 
 /** How long the page waits on the startup read before it settles on what it has. */
 export const FEATURES_READ_TIMEOUT_MS = 2500
@@ -70,10 +86,11 @@ const LOOPBACK_HOSTS: readonly string[] = ['localhost', '127.0.0.1', '[::1]']
  * What an e2e spec hands the page before it boots, as
  * `window.__MP_E2E_EXPERIMENTS__`. A build with no API has nowhere to read
  * switches from, so on a loopback host the door reads them from the page's
- * own origin, where the spec answers them. `buildDefault` boots the e2e
- * bundle as the production build's default, and `timeoutMs` lets a spec hold
- * the read open for as long as it needs to look at the page meanwhile.
- * Nothing else sets it.
+ * own origin, where the spec answers them. `buildDefault` sets the bundle's
+ * default as the build variable would: `false` boots it as mercurypitch.com
+ * is built, Studio on (it is on in production) and any other feature off.
+ * `timeoutMs` lets a spec hold the read open for as long as it needs to look
+ * at the page meanwhile. Nothing else sets it.
  */
 interface E2EExperimentsDoor {
   buildDefault?: boolean
@@ -103,23 +120,28 @@ let reading: AbortController | null = null
 /** Bumped by every load and reset, so a read from before one lands nowhere after it. */
 let generation = 0
 
+/**
+ * What feature `name` falls back to on this page where no switch is set: on
+ * for a feature on in production, and for the rest this build's default, or
+ * the one an e2e spec boots it with. Any name, as the owner's console lists
+ * what the db-worker does; it says this beside each switch. Reactive.
+ */
+export function experimentalFeatureDefault(name: string): boolean {
+  return buildDefault() || ON_IN_THIS_BUILD.has(name)
+}
+
 /** Whether this page shows `name`. Reactive: it follows the startup read when it lands. */
 export function experimentalFeatureOn(name: ExperimentalFeature): boolean {
-  return resolveExperimentalFeature(name, buildDefault(), overrides())
+  return resolveExperimentalFeature(
+    name,
+    experimentalFeatureDefault(name),
+    overrides(),
+  )
 }
 
 /** True while the page waits on the startup read. Reactive. */
 export function experimentalFeaturesPending(): boolean {
   return pending()
-}
-
-/**
- * The default every experimental feature falls back to on this page where
- * no switch is set: this build's, or the one an e2e spec boots it with.
- * Reactive. The owner's console says it beside each switch.
- */
-export function experimentalFeaturesBuildDefault(): boolean {
-  return buildDefault()
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

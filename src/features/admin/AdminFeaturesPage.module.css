@@ -61,18 +61,6 @@
   color: var(--status-warning-fg, var(--warning, #e0b341));
 }
 
-.badge {
-  display: inline-flex;
-  align-items: center;
-  min-height: 28px;
-  padding: 4px 11px;
-  border: 1px solid var(--border, #2a3446);
-  border-radius: 999px;
-  font-size: 0.78rem;
-  line-height: 1.2;
-  color: var(--text-secondary, #b9c4d4);
-}
-
 .meta {
   font-size: 0.8rem;
   color: var(--text-secondary, #b9c4d4);
