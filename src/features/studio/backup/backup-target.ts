@@ -51,10 +51,11 @@ type PickedHandle = FileSystemFileHandle & { remove?: () => Promise<void> }
 
 /**
  * A file name for a song's backup: its title without characters a file
- * system refuses, then the local date and minute, as `Window seat 2026-10-29
- * 1142.mpstudio`. Chromium empties the file picked as soon as it is picked,
- * so the name the picker suggests must not be the last backup's: picking it
- * and then failing would cost that backup.
+ * system refuses, a hyphen for each run of spaces, then the local date and
+ * minute, as `Window-seat-2026-10-29-1142.mpstudio`. No spaces, so the name
+ * stays one piece wherever it is pasted. Chromium empties the file picked as
+ * soon as it is picked, so the name the picker suggests must not be the last
+ * backup's: picking it and then failing would cost that backup.
  */
 export function studioBackupFileName(
   title: string | undefined,
@@ -62,12 +63,12 @@ export function studioBackupFileName(
 ): string {
   const name = (title ?? '')
     .replace(/[^\p{L}\p{N} ._-]/gu, '')
-    .replace(/ {2,}/g, ' ')
+    .replace(/[ -]+/g, '-')
     .slice(0, 100)
-    .replace(/^[ .]+|[ .]+$/g, '')
+    .replace(/^[-.]+|[-.]+$/g, '')
   const two = (value: number) => String(value).padStart(2, '0')
   const day = `${at.getFullYear()}-${two(at.getMonth() + 1)}-${two(at.getDate())}`
-  return `${name || 'Studio project'} ${day} ${two(at.getHours())}${two(at.getMinutes())}.mpstudio`
+  return `${name || 'Studio-project'}-${day}-${two(at.getHours())}${two(at.getMinutes())}.mpstudio`
 }
 
 function savePicker(): SavePicker | null {
