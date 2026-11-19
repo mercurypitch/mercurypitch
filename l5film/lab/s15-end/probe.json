@@ -177,9 +177,9 @@
  {
   "t": 1.1450000000000544,
   "name": "all at rest (full) by end + 1.14",
-  "got": "1.00 1.00 wipe done false",
-  "want": "1.00 1.00 wipe done true",
-  "pass": false
+  "got": "1.00 1.00; the wipe's edge at x 633.85",
+  "want": "1.00 1.00; the wipe's edge past the lockup (120 + 453.85 + 60)",
+  "pass": true
  },
  {
   "t": 1.1450000000000544,

@@ -31,8 +31,8 @@
   "t": 0,
   "name": "the room crossfading from F-turn (the ghost layers at full on the cut frame)",
   "got": "1 1 1",
-  "want": "1.000 1.000 1.000",
-  "pass": false
+  "want": "1 1 1",
+  "pass": true
  },
  {
   "t": 0,
@@ -171,10 +171,10 @@
  {
   "t": 1.6599999999999568,
   "name": "13a: the frame dimmed to 35 % (its labels hidden)",
-  "got": 0.12,
+  "got": 0.35,
   "want": 0.35,
   "tol": 0.01,
-  "pass": false
+  "pass": true
  },
  {
   "t": 1.6599999999999568,

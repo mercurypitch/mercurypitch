@@ -63,7 +63,7 @@ The critic's report is `review/critic-C-01/REPORT.md`; the calls are DECISIONS 1
   `review/critic-C-01/d08/`): mean 0.213 % before, 0.653 % after; the emptiest frame 0.033 % before, 0.376 % after
   (`../s09-onset/fix-C-01/opening-fill.txt`). Stills: `fix-C-01/probe-sheet-open.png` (1.27, 1.55, 1.85, 2.15, 2.45,
   3.10), `fix-C-01/clip-sheet.png`, `fix-C-01/pair-opening-3.00.png`.
-- **191, the out-breath ends at rest** (line 146): `breath = in - out`, ending at 0 (was `in - 2 out`, ending at -1).
+- **191, the out-breath ends at rest** (line 147): `breath = in - out`, ending at 0 (was `in - 2 out`, ending at -1).
   The last frame's belly front at x 1061.0 (u 330, rest; was 1050.5, u 315). Still: `fix-C-01/pair-rest-19.80.png`.
 - Holds after the fixes: 2.6 s inside the film (3.8 s per 30 s), longest 0.4 s, unchanged; they fall in Merc's pauses
   and go to the passes step (DECISIONS 201: the talk cycle at 240 px).

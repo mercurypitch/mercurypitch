@@ -52,7 +52,7 @@
         out.push({ name: 'the lockup at x 120, y 80 to 180 (its ink from 124.6, its orb\'s margin)', got: fmt(lk), want: '124.6 to 574, 80 to 180', pass: near(lk.left, 124.6, 2) && lk.top >= 79 && lk.bottom <= 181 },
           { name: 'the address Outfit 600 72, x 120, baseline 320', got: `${S.addr.el.textContent}; ${fmt(ad)}; base ${ad.base.toFixed(1)}`, want: 'mercurypitch.com/mirror; x 120; 320', pass: S.addr.el.textContent === 'mercurypitch.com/mirror' && near(ad.left, 124, 4) && near(ad.base, 320, 0.5) },
           { name: '"Voice Mirror is free, with no account" Outfit 500 44, baseline 395', got: `${S.free.el.textContent}; ${fmt(fr)}`, want: 'baseline 395', pass: near(fr.base, 395, 0.5) },
-          { name: 'all at rest (full) by end + 1.14', got: `${H.alpha(S.addr.el).toFixed(2)} ${H.alpha(S.free.el).toFixed(2)} wipe done ${R(S.lockup.g).right > 570}`, want: '1.00 1.00 wipe done true' },
+          { name: 'all at rest (full) by end + 1.14', got: `${H.alpha(S.addr.el).toFixed(2)} ${H.alpha(S.free.el).toFixed(2)}; the wipe's edge at x ${S.lockup.g.querySelector('linearGradient[id$="-wipe"]').getAttribute('x2')}`, want: '1.00 1.00; the wipe\'s edge past the lockup (120 + 453.85 + 60)', pass: H.alpha(S.addr.el) > 0.99 && H.alpha(S.free.el) > 0.99 && +S.lockup.g.querySelector('linearGradient[id$="-wipe"]').getAttribute('x2') >= 633.8 },
           { name: 'the address and the free line over the clear zone (y 460)', got: (460 - fr.bottom).toFixed(1), want: '>= 12', pass: 460 - fr.bottom >= 12 }, ...common())
       }
       if (t === T.hosts) {

@@ -258,6 +258,10 @@ Drawn in figure units `(u, v)`: u 0 to 400 back to front (it faces right), v 0 (
 - **S13 (recap card 1)**: `k` 0.75, `x0` 1150, `y0` 90: x 1262 to 1420, y 105 to 500, legs masked
   from y 480.
 
+- **S8's opening** **[C-01 fix: 212]**: the stand-up starts as the chapter card starts to leave
+  (o9 - 0.5), the figure coming up from 25 % to full while the card is still up, so it is at full
+  through its move; S8's out-breath ends at rest (breath 0) and rests there across the cut to S9.
+
 ### The gauge and Merc's small band (S6)
 
 - **Small band**: x 760 to 1640, y 160 to 240, Merc's line y 200 (amber, 3 px, drawn behind the
@@ -402,8 +406,8 @@ miniatures; the lower half for each piece of evidence while it is large.
 - **Stack** (9f, an object move at F0, 275.50 to 276.70; v1 showed it at F-stack): rows centred y
   250, 450, 650, half-height 70, x 700 to 1600; names Outfit 600 36 right-aligned 660 **[C: 191]**, baselines
   262, 462, 662 (275.50, 275.90, 276.30); "the puff" x 720 baseline 148, "the click" x 812 baseline
-  368, "neither" x 720 baseline 568; "the easy start" Outfit 600 40 x 1000 baseline 564 (the puff, the click and the easy start moved off the circles and the crests **[C: 191]**); the "h"
-  serif italic 120 ink-2 at 40 % centred (760, 690); "the h, only in your mind" Outfit 500 30 x 720
+  368, "neither" x 720 baseline 568; "the easy start" Outfit 600 40 right-aligned 660, baseline 714, under "Together" as row 3's name **[C-01 fix: 212]** (the puff and the click moved off the circles and the crests **[C: 191]**); the "h"
+  serif italic 120 ink-2 at 70 % centred (760, 690), row 3's first 200 px (x 704 to 880, soft to 920) at 25 % while it shows, both over 0.5 s linear **[C-01 fix: 212]**; "the h, only in your mind" Outfit 500 30 x 720
   baseline 770; the folds small in x 160 to 330, y 110 to 280. Hosts at 240: Merc's keep-out ends
   at x 184, Tavi's starts at 1736. **Chips in the stack** **[v3: 3]**: the strip's "ILLUSTRATION"
   rides the move from centred y 270 (which would sit on row 1, y 180 to 320) to centred y 150,
@@ -416,6 +420,14 @@ miniatures; the lower half for each piece of evidence while it is large.
 - **Onsets** within each start (FACTS 80): air first's noise from 0, its tone from 0.25 s; the
   catch's click at 0.15 s; together's tone at the sound's own onset as the mixer's stem puts it,
   measured in the sound round **(provisional)**.
+
+- **Group C's fix round** **[C-01 fix: 212]**: the strip is a lit lane (chrome 6 %, x 700 to 1600, y
+  320 to 540), drawn with the strip and fading as trace 3 settles into row 3; each finished trace
+  drops to 30 % when the next start is named and stays until the next trace's head draws over it
+  (wiped at x 1150 at + 0.8 s). The folds box at 1.35 is 80.5 px clear of the lane. The stack in
+  order, from b27a + 0.09: the folds shrink (0 to + 0.5), trace 3 settles (+ 0.4 to + 1.0), the
+  names at + 1.0, + 1.4 and + 1.8. The chapter opening: the figure's fade and the ring start as the
+  chapter card starts to leave, and the ring grows in 0.5 s.
 
 ### The hold chart (S10; world at F0, shown at F-hold, CU-scoop and CU-wave)
 
@@ -462,13 +474,23 @@ World px (the band chart's plot and formulas above, y0 400), with the screen pla
   stands in frame at CU-wave (x 1408 to 1896, y 268 to 340), 40 px over where it was; "small
   vibrato: inside the band" lands in that place at 334.83, 0.73 s after it has gone.
 - **CU-wave** (s 1.8, ox -840, oy -200): the held wave from x 888 (world 960) to the frame's edge,
-  the band y 457 to 583 (Tavi's keep-out starts at y 628); the vibrato bracket at x 1500, y 495 to
-  545 (world (1300, 386 to 414)); "small vibrato: inside the band" Outfit 600 30 world at (888,
+  the band y 457 to 583 (Tavi's keep-out starts at y 628); the vibrato marks two ink hairlines 1.5 px at
+  the wave's crest and trough, screen y 491.2 and 548.8, x 1124.4 to 1364.4, a 10 px tick across
+  each end (world y 384 and 416, x 1091 to 1224) **[C-01 fix: 212]**; "small vibrato: inside the band" Outfit 600 30 world at (888,
   416) (world (960, 342)); "in the band" at (312, 322); the chart's "ILLUSTRATION" chip at x 1408
   to 1896, centred y 304. "A, any octave" and "settled", which this framing would cut at the left
   edge, are faded from 331.90; after the pull they come back one at a time with the axis, the main
   one first: the axis 342.00 to 342.20, "A, any octave" 342.25 to 342.45, "settled" 342.46 to
   342.66, on "settles into the band", as its flag scales 1.2 **[v3: prev 5]**.
+
+- **Group C's fix round** **[C-01 fix: 212]**: 10b, the chart fades in at F0 from the stack's exit
+  + 0.3 over 0.25 s (linear) and is at full, labels and chip, before the push. 10f, the "stays"
+  bracket line at screen y 457 from x 398 (12 px right of "settled") to 1688, its ticks down to
+  465, 16 px over the mint edge. "No." (b33): an ink strike through the guess and its "?" from
+  b33 + 0.06 over 0.3 s, held to b33 + 0.76, then the rest clears in turn 0.05 s apart over 0.3 s
+  linear each (the guess, the chart's labels, the chip and axis, the brackets, Tavi's line last);
+  the frame's slide starts once her line has gone (about b33 + 1.46) and the voice box draws 0.4 s
+  into it.
 
 ### The hold frame at the right half (S10h to S12; screen px)
 
@@ -481,8 +503,10 @@ to 575.5 to:
   peak). Tavi's line has faded (353.90 to 354.30) before it shrinks.
 - **10h's slider**: track x 1000 to 1640, y 380, thumb r 14, value Outfit 600 26 tabular baseline
   358, "Push" Outfit 600 30 right-aligned 985, baseline 390; the silent line draws at 106.7 px a
-  second from 361.20 and follows FACTS 73's rule (+1.2 c a step: 75 is +30 c, 30 px up; 70 is +24 c,
-  24 px up); "ILLUSTRATION" right-aligned 1640, centred y 176 (361.65; screen px, 271 x 40, so
+  second from 361.20 and follows FACTS 73's rule (+1.2 c a step: 75 is +30 c, 30 px up; 100 is +60 c, 60 px up); the
+  slider from "needs" + 0.4, one push 50 to 100 and back on "because" (two legs of 0.9 s; the bump
+  59 px, 2.1 times the vibrato's 28 px peak to peak), "a change in the air moves it" on "because"
+  **[C-01 fix: 212]**; "ILLUSTRATION" right-aligned 1640, centred y 176 (361.65; screen px, 271 x 40, so
   x 1369 to 1640, y 156 to 196: 14 px over the band's top edge, where v2's y 180 left 10)
   **[v3: 2]**.
 - **The voice box** (10h): a rounded outline x 300 to 640, y 190 to 510, radius 60; the folds at 0.8
@@ -623,7 +647,7 @@ F-turn starts at x 1700 (the ring ends at 1600) and y 628 (the frame's labels en
 | F-gauge | 1.05 | -60 | -25.25 | world (1200, 505) | 140.25 to 178.83 | frame x 738 to 1662, y 279 to 731; figure x 331 to 585, head y 125 to 282; labels under the figure from x 213, baselines 815 and 855 (Merc's keep-out ends at 184). Moves: the world (mid layer) and the staves, dust and bokeh; not the hosts, and not the floor and its reflections, which stay at y 840, screen-space with the hosts (§ Shared formulas) **[v3: 6]** |
 | F-hold (new) | 1.3 | -288 | 10 | world (960, 400) to screen (960, 530) | 304.90 to 324.60, 342.20 to 364.73 | § The hold chart: plot x 232 to 1688, band 484.5 to 575.5 at W 10; label rows 322 and 387; axis 690; bracket 712 |
 | CU-scoop | 1.8 | -360 | -200 | world (400, 400) to screen (360, 520) | 326.10 to 331.90 | the first 1.5 s at x 360 to 662, the wave running right across the frame (to about 7.7 s at its right edge); the band y 457 to 583; "scoop" at (360, 700) **[kit-01: 9]** |
-| CU-wave (new) | 1.8 | -840 | -200 | world (1000, 400) to screen (960, 520) | 333.90 to 340.74 | the held wave from x 888 to the edge, band y 457 to 583; the vibrato bracket at x 1500 |
+| CU-wave (new) | 1.8 | -840 | -200 | world (1000, 400) to screen (960, 520) | 333.90 to 340.74 | the held wave from x 888 to the edge, band y 457 to 583; the vibrato hairlines x 1124 to 1364 **[C-01 fix: 212]** |
 | F-turn (new) | 1.4 | -472 | -190 | world (1180, 475) | 423.90 to 478.09 **[v3: 4]** | § The turn: frame x 928 to 1824, band 104 to 202; ring centre (1376, 636), r 224; labels at baselines 261, 317, 373 |
 | F-end | 1.03 | -28.8 | -16.2 | world (960, 540) | 562.01 | the room and the tease figure 3 % closer |
 
@@ -744,7 +768,8 @@ camera plan, in brackets.
 
 Confirmed by group C (DECISIONS 191): the folds' growth from the throat (9b: a ring r 20 at 0.5
 from (1005, 273), growing over 0.5 s (0.9 s before **[C-01: 196]**), sliding from + 0.4 s over 1.0 s to (390, 430) at 1, landing
-in x 220 to 560, y 260 to 600); the "settled" flag by the page's rule (stays within 35 c for 0.5 s)
+in x 220 to 560, y 260 to 600; since the fix round shown at 1.35 about (390, 430): x 160.5 to 619.5, y 200.5
+to 659.5, its label centred 390, baseline 694 **[C-01 fix: 212]**); the "settled" flag by the page's rule (stays within 35 c for 0.5 s)
 at its own 16 ms readings: entry 0.704 s into the take, the flag at 1.204 s, world x 478.8.
 Confirmed by group D (DECISIONS 202): Merc's arc reach beside the care block, x 229.3 at most on
 every frame of m-blue-s12, so the block at x 260 keeps 30.7 px.

@@ -1,0 +1,336 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s13-recap" data-composition-id="s13-recap" data-start="0" data-duration="65.025" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s13-recap -->
+      <video id="s13-recap-m-orange" data-merc="m-orange" class="clip" muted playsinline src="assets/merc/m-orange-s13-merc.webm" data-start="0.000" data-duration="65.047" data-media-start="0.050"></video>
+      <video id="s13-recap-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m-orange-s13-merc.webm" data-start="0.000" data-duration="65.047" data-media-start="0.050"></video>
+      <video id="s13-recap-m-blue" data-merc="m-blue" class="clip" muted playsinline src="assets/merc/m-blue-s13-merc.webm" data-start="0.000" data-duration="65.047" data-media-start="0.050"></video>
+      <video id="s13-recap-m-blue-refl" data-merc="m-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m-blue-s13-merc.webm" data-start="0.000" data-duration="65.047" data-media-start="0.050"></video>
+      <div class="scene" id="s13-recap-scene"></div>
+      <script>
+        ;(function () {
+          // S13, "Quick check and practise" (STORYBOARD 13a to 13g; HANDOFFS § Recap and practise, § The breath figure
+          // (S13), § The cuts S12 to S13 (matched) and S13 to S14; DECISIONS 82, 99, 100, 122, 153, 190, 202, 211).
+          // F0 from the matched cut on `recap`: the frame on F-turn's pixels while the room crossfades from F-turn to rest
+          // (L.roomCut); then the frame moves, not the camera: it slides down and widens to the recap frame and dims under
+          // the quick check. Three questions in one panel, each answered on the object that taught it (the figure, the
+          // traces, Tavi's own line). The clean break on `break` (the silent beat before b55): the recap leaves up fast in
+          // turn and Merc hops twice across the empty floor to (1290, 840). The Voice Mirror card builds under its own name,
+          // the rest card beside it, both drift in `card`, and a dot of the card's "five notes" glyph grows into the bead
+          // that crosses the cut on `next` (L.TEASE.carry, from film time). Every time is a cue, a word or a duration.
+          const SID = 's13-recap'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const C = L.C, P = L.prog, clamp = L.clamp, lerp = L.lerp, f2 = L.f2
+          const RC = L.RECAP, PN = RC.PANEL, VM = RC.VM, RS = RC.REST
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
+          const cut = L.roomCut(room, { from: 'F-turn' })            // the room as S12 left it, crossfading to rest
+          const world = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+          const cam = L.frameRig(room, { from: 'F0' })               // F0 throughout: every move here is an object's
+
+          /* ---------------------------------------------------------------- anchors */
+          // 13a: recap, b47, b48, q1
+          const SLIDE = at('recap', 'start', -0.04), SLIDE_D = 1.2     // the frame's slide (board 478.20 to 479.40, power2.inOut)
+          const DIM = SLIDE + SLIDE_D, DIM_D = 0.3                    // then its strokes dim to 35 % (linear)
+          const KICK = at('recap')                                    // "QUICK CHECK"
+          const Q1 = word('b48', 'What is')                           // the panel and question 1
+          const FIG = word('b48', "diaphragm's"), FIG_D = 0.8         // the figure's torso draws on, as Merc names it
+          // 13b: b49
+          const ANS1 = word('b49', 'Breathing'), BREATH_D = 1.2       // the dome flattens, the belly moves out; "Breathing in."
+          // 13c: b51, q3, b52
+          const Q3 = at('b51')                                        // question 3 (a swap); the figure fades (0.4 s)
+          const TRACES = word('b51', 'long'), TRACES_D = 0.5          // the traces stack in, 0.1 s apart, with their names
+          const TOG = word('b52', 'together')                         // row 3 lights, its tick scales 1.2; the answer
+          // 13d: o14a, q4, b54
+          const Q4 = at('o14a')                                       // question 4, Tavi's (a swap)
+          const BACK = word('o14a', 'steady'), BACK_D = 0.6           // the traces fade; the frame back to full with its labels
+          const SETTLES = word('b54', 'settles')                      // Tavi's line redraws, silent, at 10 / 2.4 its speed
+          const LINE_K = 10 / 2.4
+          const ANS4 = word('b54', 'band')                            // "It settles into the band / and stays there."
+          // the page's rule (FACTS 80; group C's s10-steady, DECISIONS 191): read every 16 ms, settled from the first reading
+          // from which the line stays within 35 cents for 0.5 s; the mint edge and "in the band" light at the entry, and the
+          // flag stands at the entry's x once the line has stayed in for 0.5 s
+          const DC = L.CONTOUR.demo
+          const ENTRY = (() => {
+            const inBand = (tt) => Math.abs(DC.c(tt)) <= 35
+            for (let i = 0; i * 0.016 <= DC.len - 0.5; i++) {
+              let ok = true
+              for (let j = 0; j * 0.016 <= 0.5; j++) if (!inBand(i * 0.016 + j * 0.016)) { ok = false; break }
+              if (ok) return i * 0.016
+            }
+            return null
+          })()
+          const SETTLED = ENTRY + 0.5
+          const LIT = SETTLES + ENTRY / LINE_K, FLAG = SETTLES + SETTLED / LINE_K
+          // 13e: the clean break on `break` (DECISIONS 190): the recap leaves up fast in turn in the beat's first 0.56 s
+          const BREAK = at('break')
+          const OUT = { kicker: at('break', 'start', 0.06), panel: at('break', 'start', 0.13), answer: at('break', 'start', 0.2), frame: at('break', 'start', 0.26) }
+          // Merc's two hops (the pass's, PASSES.md): carried through the air, power1.in, his root's x cancelled by mercGate
+          const HOP1 = at('break', 'start', 0.6), HOP2 = at('break', 'start', 1.25)
+          // the Voice Mirror card, after he has landed: its panel grows down as its rows land (each 0.3 s, power2.out)
+          const PRACT = word('b55', 'Practise')                       // the panel (foot 300) and "Practise it."
+          const VMT = word('b55', 'Voice Mirror')                     // "Voice Mirror" and the rule under it
+          const ROWS = [word('b55', 'glide'), word('b55', 'hold'), word('b55', 'then')]   // each row after its glyph
+          const GLYPH_LEAD = 0.25                                     // a row's glyph lands this long before its words
+          const READ = word('b55', 'plays')                           // the hold's readout
+          // 13f: b56
+          const KEEP = word('b56', 'Keep'), SORE = word('b56', 'Sore'), FREE = word('b56', 'Free')
+          const UL = word('b56', 'mercurypitch'), UL_D = 0.5          // the address underlined
+          const TEN = at('b56', 'end', -0.3)                          // "Ten minutes, gently, most days. Missed a day? Just come back."
+          // 13g: b58, card
+          const REST = word('b58', 'Felt'), RTITLE = word('b58', 'Rest'), RBODY = word('b58', 'Voice'), RADDR = word('b58', 'mercurypitch')
+          const DRIFT = at('card'), DRIFT_D = at('card', 'end') - at('card')   // both cards up 14 px (sine.inOut)
+          const LEAVE = at('card', 'end', -0.32), LEAVE_STEP = 0.03, LEAVE_D = 0.2   // the lines leave up in turn and fade
+          // S13 to S14: the bead's carry, one curve both scenes draw from film time (L.TEASE.carry's own start)
+          const CARRY0 = at('next', 'start', -0.92)
+          const FEET = [PRACT, ...ROWS.map((r) => r - GLYPH_LEAD), READ, KEEP, SORE, FREE]   // the card's foot steps, VM.panel.feet
+
+          /* ---------------------------------------------------------------- the frame (world): from F-turn's pixels to the
+             recap frame (L.RECAP), only Merc's line on it until it has landed (L.RECAP.voiceOK) */
+          const ch = L.bandChart(world, { ...RC.FROM, strip: null })
+          const bandRects = [...ch.g.querySelectorAll('.band > rect')]   // fill, top edge, bottom edge
+          const anyOct = L.label(ch.gLabels, RC.LABELS.anyOctave.text, RC.LABELS.anyOctave)
+          const inBand = L.label(ch.gLabels, RC.LABELS.inBand.text, RC.LABELS.inBand)
+          const tag = L.tag(ch.gLabels, L.TAGS.illustration, RC.LABELS.tag)
+          const flag = L.settledFlag(ch.gLabels)
+
+          /* ---------------------------------------------------------------- card 1: the breath figure's torso (world) */
+          const fig = L.figure(world)
+          /* ---------------------------------------------------------------- card 2: the three traces, smaller (world) */
+          const TR = L.TRACE.RECAP
+          const KINDS = ['air', 'catch', 'together'], NAMES = L.TRACE.STACK.names.texts
+          const traces = TR.rows.map((y) => L.trace(world, { x0: TR.x0, x1: TR.x1, y, h: TR.h }))
+          const traceNames = NAMES.map((s, i) => L.label(world, s, { x: TR.names.x, y: TR.names.y[i], size: TR.names.size, anchor: 'end' }))
+
+          /* ---------------------------------------------------------------- the quick check (hud, frame-fixed) */
+          const kicker = L.kicker(hud, 'Quick check')
+          const panel = L.panel(hud, PN)
+          const ring = L.ringTimer(hud, { x: PN.ring.x, y: PN.ring.y })
+          // the questions, word for word (b48, b51, o14a), broken at their phrase ends where they fit beside the ring timer
+          // (measured in the font: lab/s13-recap/widths.txt); a one-line question stands on the ring timer's height
+          const ONE_Y = PN.ring.y + 14
+          const qLines = (lines) => lines.map((s, i) => L.label(hud, s, { x: PN.question.x, y: lines.length === 1 ? ONE_Y : PN.question.y[i], size: PN.question.size }))
+          const Qs = [
+            qLines(["What is your diaphragm's main job?"]),
+            qLines(['For a long, easy note, which start', 'do many singing teachers aim for?']),
+            qLines(['What does a steady long note look like', 'on the pitch line?']),
+          ]
+          const ans1 = [L.label(hud, 'Breathing in.', { x: PN.answer1.x, y: PN.answer1.y, size: PN.answer1.size, family: 'serif' })]
+          const ans2 = (a, b) => [a, b].map((s, i) => L.label(hud, s, { x: PN.answer2.x, y: PN.answer2.y[i], size: PN.answer2.size, family: 'serif' }))
+          const ans3 = ans2('Air and sound starting together:', 'the easy start.')
+          const ans4 = ans2('It settles into the band', 'and stays there.')
+
+          /* ---------------------------------------------------------------- the practise cards (hud): each card a group
+             that drifts in `card`; every line the page's (DECISIONS 100; L.RECAP.VM and .REST) */
+          const vmG = L.svg('g', { class: 'vm-card' }, hud)
+          const restG = L.svg('g', { class: 'rest-card' }, hud)
+          const vmPanel = L.panel(vmG, { x0: VM.panel.x0, y0: VM.panel.y0, x1: VM.panel.x1, y1: VM.panel.feet[0] })
+          const practise = L.label(vmG, VM.practise.text, VM.practise)
+          const vmTitle = L.label(vmG, VM.title.text, VM.title)
+          const vmRule = L.underline(vmG, { x1: VM.rule.x0, x2: VM.rule.x1, y: VM.rule.y })
+          const rows = VM.rows.map((r) => ({ lab: L.label(vmG, r.text, { x: r.x, y: r.y, size: VM.rowSize }), glyph: L.glyph(vmG, r.glyph, { x: 270, y: r.gy }), y: r.y }))
+          const readout = VM.readout.y.map((y) => L.label(vmG, '', { x: VM.readout.x, y, size: VM.readout.size, family: VM.readout.family, weight: 400 }))
+          L.afterFonts(() => L.TURN.breakLines(hud, VM.readout.text, { size: VM.readout.size, family: VM.readout.family, width: VM.readout.width }).forEach((s, i) => { if (readout[i]) readout[i].setText(s) }))
+          const keep = L.label(vmG, VM.keep.text, VM.keep)
+          const sore = L.label(vmG, VM.sore.text, VM.sore)
+          const free = L.label(vmG, VM.free.text, VM.free)
+          // the address's underline, under "mercurypitch.com/mirror" only (measured once the fonts are in)
+          const freeUl = L.svg('rect', { y: VM.free.underlineY - 1, height: 2, width: 0, fill: C.chrome, opacity: 0 }, vmG)
+          let ulX = [0, 0]
+          L.afterFonts(() => { const el = free.el, n = VM.free.text.indexOf('mercurypitch'); ulX = [VM.free.x + el.getSubStringLength(0, n), VM.free.x + el.getComputedTextLength()] })
+          // "Ten minutes, gently, most days. Missed a day? Just come back.": the board's two lines at baselines 822 and 862
+          // would put the floor horizon (y 840) through the second line's capitals (DECISIONS 203: no type within 12 px of
+          // it), and two lines cannot fit between the card's foot (790) and 828; so one line, Inter 32, ink-2, baseline 820,
+          // its ink 796 to 827 (lab/s13-recap/widths.txt: x 270 to 1147, 63 px from Merc's body at (1290, 840))
+          const TEN_LINE = { text: VM.ten.map((s) => s.text).join(' '), x: VM.tenX, y: 820, size: 32, family: 'inter', weight: 400, fill: C.ink2 }
+          const ten = L.label(vmG, TEN_LINE.text, TEN_LINE)
+          const restPanel = L.panel(restG, { x0: RS.panel.x0, y0: RS.panel.y0, x1: RS.panel.x1, y1: RS.panel.y1 })
+          const restQ = RS.question.map((s) => L.label(restG, s.text, { x: RS.x, y: s.y, size: RS.qSize, weight: 500, fill: C.ink2 }))
+          const restTitle = L.label(restG, RS.title.text, { x: RS.x, y: RS.title.y, size: RS.title.size, family: 'serif' })
+          const restBody = RS.body.map((s) => L.label(restG, s.text, { x: RS.x, y: s.y, size: RS.bodySize, weight: 500 }))
+          const restAddr = L.label(restG, RS.address.text, { x: RS.x, y: RS.address.y, size: RS.address.size })
+          const restUl = L.svg('rect', { x: RS.x, y: RS.address.underlineY - 1, height: 2, width: 0, fill: C.chrome, opacity: 0 }, restG)
+          let restUlW = 0
+          L.afterFonts(() => { restUlW = restAddr.el.getComputedTextLength() })
+
+          // the leave, in turn down both cards (by baseline), each line 0.03 s after the one above; each panel goes with its
+          // last line, so neither shows empty
+          const leaveItems = [
+            ['practise', VM.practise.y], ['title', VM.title.y], ['row0', VM.rows[0].y], ['row1', VM.rows[1].y], ['row2', VM.rows[2].y],
+            ['read0', VM.readout.y[0]], ['read1', VM.readout.y[1]], ['read2', VM.readout.y[2]], ['keep', VM.keep.y], ['sore', VM.sore.y],
+            ['free', VM.free.y], ['ten', TEN_LINE.y], ['rq0', RS.question[0].y], ['rq1', RS.question[1].y], ['rtitle', RS.title.y],
+            ['rb0', RS.body[0].y], ['rb1', RS.body[1].y], ['raddr', RS.address.y],
+          ].sort((a, b) => a[1] - b[1])
+          const RANK = {}
+          leaveItems.forEach(([k], i) => { RANK[k] = i })
+          const leaveOf = (t, k) => P(t, LEAVE + LEAVE_STEP * RANK[k], LEAVE_D, 'none')
+          // a card's panel fades over its lines' whole sweep, from its first line's leave to its last's end, so it dissolves
+          // with them top down and never stands empty
+          const panelLeave = (t, k0, k1) => P(t, LEAVE + LEAVE_STEP * RANK[k0], LEAVE_STEP * (RANK[k1] - RANK[k0]) + LEAVE_D, 'none')
+
+          /* ---------------------------------------------------------------- the carried bead (world, film time): the "five
+             notes" glyph's first dot grows into the tease's first bead across the cut on `next` (s14-next draws the same) */
+          const bead = L.bead(world, { r: 20, color: C.chrome })
+          L.bead4.place(bead, null)
+
+          /* ---------------------------------------------------------------- the hosts at 300 in the corners; Merc's hops in
+             `break` carry him to (1290, 840), where he stays to the end (DECISIONS 190) */
+          const Hc = L.HOSTS.corners, HR = L.HOSTS.mercRight
+          const HOP_X = [700, HR.merc.x]                              // HANDOFFS § Shared formulas: (110, 840) to (700, 840) to (1290, 840)
+          const mercMoves = [
+            { at: HOP1 + L.HOP.crouch, dur: L.HOP.air, x: HOP_X[0], ease: 'power1.in' },
+            { at: HOP2 + L.HOP.crouch, dur: L.HOP.air, x: HOP_X[1], ease: 'power1.in' },
+          ]
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hc.merc, moves: mercMoves })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hc.tavi })
+
+          const probe = { cam, ch, bandRects, anyOct, inBand, tag, flag, fig, traces, traceNames, kicker, panel, ring, Qs, ans1, ans3, ans4,
+            vmG, restG, vmPanel, practise, vmTitle, vmRule, rows, readout, keep, sore, free, freeUl, ten, restPanel, restQ, restTitle, restBody, restAddr, restUl, bead,
+            A: { SLIDE, SLIDE_D, DIM, DIM_D, KICK, Q1, FIG, FIG_D, ANS1, BREATH_D, Q3, TRACES, TRACES_D, TOG, Q4, BACK, BACK_D, SETTLES, LINE_K, ENTRY, SETTLED, LIT, FLAG, ANS4,
+              BREAK, OUT, HOP1, HOP2, PRACT, VMT, ROWS, GLYPH_LEAD, READ, KEEP, SORE, FREE, UL, TEN, REST, RTITLE, RBODY, RADDR, DRIFT, DRIFT_D, LEAVE, LEAVE_STEP, LEAVE_D, CARRY0, D, T0 },
+            boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+
+          const fadeIn = (t, tIn, d = 0.25) => P(t, tIn, d, 'none')
+          // a swap in place (DECISIONS 183): the old lines out (0.12 s, linear, sliding up 12), then the new in (0.2 s, from
+          // 12 below), never glyph on glyph
+          const SW_OUT = 0.12, SW_IN = 0.2
+          const swOut = (t, t0) => { const u = P(t, t0, SW_OUT, 'none'); return { a: 1 - u, dy: -12 * u } }
+          const swIn = (t, t0) => { const u = P(t, t0 + SW_OUT, SW_IN, 'none'); return { a: u, dy: 12 * (1 - P(t, t0 + SW_OUT, SW_IN, 'power2.out')) } }
+          const upFast = (t, t0) => { const u = P(t, t0, 0.3, 'power3.in'); return { a: 1 - u, dy: -16 * u } }
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            cut.draw(t, T)
+            dust(T)
+            probe.boxes = { merc: merc(t), tavi: tavi(t) }
+
+            /* 13a: the frame slides down and widens (an object move, the room still), then dims under the quick check;
+               13d brings it back to full with its labels; 13e: it leaves up fast, last of the recap */
+            const u = P(t, SLIDE, SLIDE_D, 'power2.inOut')
+            ch.geo(RC.frameAt(u))
+            const fOut = upFast(t, OUT.frame)
+            const frameA = (1 - 0.65 * P(t, DIM, DIM_D, 'none') + 0.65 * P(t, BACK, BACK_D, 'none')) * fOut.a
+            ch.place({ s: 1, dx: 0, dy: fOut.dy })
+            const lineT = RC.voiceOK(u) ? clamp((t - SETTLES) * LINE_K, 0, DC.len) : 0
+            const litA = P(t, LIT, 0.2, 'none')
+            ch.draw({
+              a: frameA,
+              band: { lit: litA },
+              merc: { a: 1, w: RC.mercW(u) },
+              lines: lineT > 0 ? [{ id: 'hold', contour: 'demo', t: lineT, head: 1 - P(t, SETTLES + DC.len / LINE_K, 0.3, 'none') }] : [],
+            })
+            // the band's edges as F-turn showed them at the cut (2 world px at 1.4x: 2.8 px), easing to 2 px through the slide
+            // (DECISIONS 202), so the carried frame matches S12's last frame to its fringe rows
+            const top = ch.band().top, bot = ch.band().bot, ew = lerp(2.8, 2, u)
+            bandRects[1].setAttribute('y', f2(top - ew / 2)); bandRects[1].setAttribute('height', f2(ew))
+            bandRects[2].setAttribute('y', f2(bot - ew / 2)); bandRects[2].setAttribute('height', f2(ew))
+            const labA = P(t, BACK, BACK_D, 'none')
+            anyOct.draw({ a: labA })
+            tag.draw({ alpha: labA })
+            inBand.draw({ a: litA })
+            flag.draw({ x: ch.x(ENTRY), y: top, a: P(t, FLAG, 0.25, 'none'), labelA: 0 })
+
+            /* 13a, 13b, 13c: card 1's figure draws on as Merc names the diaphragm, breathes in on "Breathing", fades at q3 */
+            const S13F = L.FIGURE.S13
+            fig.draw({ k: S13F.k, x0: S13F.x0, y0: S13F.y0, fade: S13F.fade, legs: 0, a: 1 - P(t, Q3, 0.4, 'none'),
+              draw: P(t, FIG, FIG_D, 'power1.inOut'), breath: P(t, ANS1, BREATH_D, 'sine.inOut') })
+
+            /* 13c, 13d: card 2's traces stack in, rising 14 px, 0.1 s apart; on "together:" row 3 lights and its gold tick
+               scales 1.2, rows 1 and 2 dim their strokes (their names stay ink); they fade as the frame comes back */
+            const trOut = 1 - P(t, BACK, BACK_D, 'none')
+            traces.forEach((tr, i) => {
+              const t0 = TRACES + 0.1 * i
+              const a = P(t, t0, TRACES_D, 'none') * trOut, dy = 14 * (1 - P(t, t0, TRACES_D, 'power2.out'))
+              tr.draw({ kind: KINDS[i], t: L.TRACE.len, a, dim: i < 2 ? P(t, TOG, 0.3, 'none') : 0, lit: i === 2 ? L.lit(t, [TOG], { long: true }) : 0,
+                tickScale: i === 2 ? L.pulse(t, [TOG], 'bead') : 1, place: { s: 1, dx: 0, dy } })
+              traceNames[i].draw({ a, dy })
+            })
+
+            /* the quick check: the kicker, the panel with its question (each a swap) and its ring timer beside the question,
+               the answers under it; 13e: each leaves up fast in turn on the beat's start */
+            kicker.draw(t, KICK, OUT.kicker, { upFast: true })
+            const pOut = upFast(t, OUT.panel)
+            panel.draw({ a: fadeIn(t, Q1, 0.3) * pOut.a, dy: pOut.dy })
+            const q = [
+              t < Q3 ? { a: fadeIn(t, Q1, 0.3), dy: 0 } : swOut(t, Q3),
+              t < Q3 ? { a: 0, dy: 0 } : t < Q4 ? swIn(t, Q3) : swOut(t, Q4),
+              t < Q4 ? { a: 0, dy: 0 } : swIn(t, Q4),
+            ]
+            Qs.forEach((ls, k) => ls.forEach((l) => l.draw({ a: q[k].a * pOut.a, dy: q[k].dy + pOut.dy })))
+            const win = t < Q3 ? 'q1' : t < Q4 ? 'q3' : 'q4'
+            ring.draw(t, at(win), at(win, 'end') - at(win))
+            ring.g.setAttribute('transform', `translate(${PN.ring.x} ${f2(PN.ring.y + pOut.dy)})`)
+            const aOut = upFast(t, OUT.answer)
+            const a1 = t < Q3 ? { a: fadeIn(t, ANS1), dy: 0 } : swOut(t, Q3)
+            ans1.forEach((l) => l.draw(a1))
+            const a3 = t < Q4 ? { a: fadeIn(t, TOG), dy: 0 } : swOut(t, Q4)
+            ans3.forEach((l) => l.draw(a3))
+            ans4.forEach((l) => l.draw({ a: fadeIn(t, ANS4) * aOut.a, dy: aOut.dy }))
+
+            /* 13e, 13f: the Voice Mirror card under its own name, its foot easing down as its rows land */
+            const drift = -RC.DRIFT * P(t, DRIFT, DRIFT_D, 'sine.inOut')
+            vmG.setAttribute('transform', `translate(0 ${drift.toFixed(3)})`)
+            restG.setAttribute('transform', `translate(0 ${drift.toFixed(3)})`)
+            const foot = L.track(t, VM.panel.feet[0], FEET.slice(1).map((tf, i) => ({ at: tf, dur: 0.3, to: VM.panel.feet[i + 1], ease: 'power2.out' })))
+            const lv = (k) => { const o = leaveOf(t, k); return { a: 1 - o, dy: -12 * o } }
+            const live = (tIn, k, d = 0.25) => { const o = lv(k); return { a: fadeIn(t, tIn, d) * o.a, dy: o.dy } }
+            const vmOut = panelLeave(t, 'practise', 'ten')
+            vmPanel.draw({ a: fadeIn(t, PRACT, 0.3) * (1 - vmOut), y1: foot, dy: -12 * vmOut })
+            practise.draw(live(PRACT, 'practise'))
+            const ti = live(VMT, 'title')
+            vmTitle.draw(ti)
+            vmRule.draw(P(t, VMT, 0.4, 'power2.out'), ti.a)
+            vmRule.g.setAttribute('transform', `translate(0 ${f2(ti.dy)})`)
+            rows.forEach((r, i) => {
+              const o = live(ROWS[i], 'row' + i), g = live(ROWS[i] - GLYPH_LEAD, 'row' + i)
+              r.lab.draw(o)
+              r.glyph.draw(g)
+            })
+            readout.forEach((l, i) => l.draw(live(READ, 'read' + i)))
+            keep.draw(live(KEEP, 'keep'))
+            sore.draw(live(SORE, 'sore'))
+            const fr = live(FREE, 'free')
+            free.draw(fr)
+            const ulU = P(t, UL, UL_D, 'power2.out')
+            freeUl.setAttribute('x', f2(ulX[0])); freeUl.setAttribute('width', f2((ulX[1] - ulX[0]) * ulU))
+            freeUl.setAttribute('opacity', (ulU > 0 ? fr.a : 0).toFixed(3)); freeUl.setAttribute('transform', `translate(0 ${f2(fr.dy)})`)
+            ten.draw(live(TEN, 'ten'))
+
+            /* 13g: the rest card beside it, b58's words; then both drift in `card` and leave in turn */
+            const restOut = panelLeave(t, 'rq0', 'raddr')
+            restPanel.draw({ a: fadeIn(t, REST, 0.3) * (1 - restOut), dy: -12 * restOut })
+            restQ.forEach((l, i) => l.draw(live(REST, 'rq' + i)))
+            restTitle.draw(live(RTITLE, 'rtitle'))
+            restBody.forEach((l, i) => l.draw(live(RBODY, 'rb' + i)))
+            const ra = live(RADDR, 'raddr')
+            restAddr.draw(ra)
+            const rulU = P(t, RADDR + 0.2, UL_D, 'power2.out')
+            restUl.setAttribute('width', f2(restUlW * rulU)); restUl.setAttribute('opacity', (rulU > 0 ? ra.a : 0).toFixed(3))
+            restUl.setAttribute('transform', `translate(0 ${f2(ra.dy)})`)
+
+            /* the carry: from its start the glyph's first dot gives way to the bead (0.1 s), which grows to r 20 and glides to
+               the tease's first place, across the cut (L.TEASE.carry, film time) */
+            const c = L.TEASE.carry(T, T0 + CARRY0)
+            const hand = P(t, CARRY0, 0.1, 'none')
+            rows[2].glyph.dots[0].setAttribute('opacity', (1 - hand).toFixed(3))
+            L.bead4.place(bead, c ? { x: c.x, y: c.y, scale: c.r / 20, a: hand } : null)
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

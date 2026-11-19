@@ -120,10 +120,17 @@
  },
  {
   "t": 0.8350000000000183,
-  "name": "14a: the bead lands on C4's place (420, 745), r 20 (its squash about its foot)",
-  "got": "420.00, 749.17, r 24.17",
-  "want": "420, 745, 20",
-  "pass": false
+  "name": "14a: the bead lands on C4's place (420, 745) at r 20",
+  "got": "420.00, 745.00, r 20.00",
+  "want": "420.00, 745.00, r 20.00",
+  "pass": true
+ },
+ {
+  "t": 0.8350000000000183,
+  "name": "with a squash about its foot (y 765 held)",
+  "got": "foot 765.00, 48.3 x 31.7",
+  "want": "foot 765, wider than tall",
+  "pass": true
  },
  {
   "t": 0.8350000000000183,

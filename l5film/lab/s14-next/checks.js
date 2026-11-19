@@ -63,8 +63,10 @@
       }
       if (t === T.kick) out.push({ name: '14a: the kicker "NEXT TIME" at (120, 110)', got: `${inkOf(S.kicker.el).left.toFixed(1)}, ${inkOf(S.kicker.el).base.toFixed(1)}`, want: '122, 110', pass: near(inkOf(S.kicker.el).base, 110, 0.5) }, ...common())
       if (t === T.land) {
-        const b = beadSeen()
-        out.push({ name: '14a: the bead lands on C4\'s place (420, 745), r 20 (its squash about its foot)', got: `${b[0].toFixed(2)}, ${b[1].toFixed(2)}, r ${b[2].toFixed(2)}`, want: '420, 745, 20', pass: near(b[0], 420, 0.5) && near(b[1], 745, 2) && near(b[2], 20, 2) }, ...common())
+        // the bead's place (its group's translate) and its squash about its foot (a landing squash moves the centre down)
+        const m = /translate\(([-\d.]+) ([-\d.]+)\) scale\(([-\d.]+)\)/.exec(S.bead.g.getAttribute('transform')), b = R(S.bead.core)
+        out.push({ name: '14a: the bead lands on C4\'s place (420, 745) at r 20', got: `${m[1]}, ${m[2]}, r ${(20 * m[3]).toFixed(2)}`, want: '420.00, 745.00, r 20.00', pass: near(+m[1], 420, 0.5) && near(+m[2], 745, 0.5) && near(20 * m[3], 20, 0.1) },
+          { name: 'with a squash about its foot (y 765 held)', got: `foot ${b.bottom.toFixed(2)}, ${b.width.toFixed(1)} x ${b.height.toFixed(1)}`, want: 'foot 765, wider than tall', pass: near(b.bottom, 765, 0.6) && b.width > b.height }, ...common())
       }
       if (t === T.beads) {
         const c = S.te.beads.map((B) => cen(B.outline))

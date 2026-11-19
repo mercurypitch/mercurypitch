@@ -52,7 +52,9 @@
   const common = () => [overlaps(), ...H.keepout(root, S.boxes), { name: 'nothing visible below y 896 (ink)', got: footOf(), want: '<= 896', pass: footOf() <= 896 }]
   const band = () => R(bandEl())
   const line = () => { const m = R(S.ch.merc.path); return { y: (m.top + m.bottom) / 2, x0: m.left, x1: m.right, px: +S.ch.merc.path.getAttribute('stroke-width') } }
-  const chartA = () => H.alpha(S.ch.g)
+  // the chart group's own opacity attribute (H.alpha multiplies an SVG element's opacity attribute and its computed
+  // CSS opacity, which reflects the same attribute, so it squares a partial value)
+  const chartA = () => +S.ch.g.getAttribute('opacity')
   const panelBox = (p) => R(p.g)
   const ringBox = () => { const c = S.ring.g.querySelector('circle'); return R(c) }
   window.__groupB = {
@@ -65,7 +67,7 @@
           { name: 'Merc\'s line y 153, x 928 to 1824, 5.6 px (F-turn\'s 4 x 1.4)', got: `${l.y.toFixed(2)}, ${l.x0.toFixed(1)} to ${l.x1.toFixed(1)}, ${l.px}`, want: '153, 928 to 1824, 5.6', pass: near(l.y, 153, 0.5) && near(l.x0, 928, 0.5) && near(l.x1, 1824, 0.5) && near(l.px, 5.6, 0.01) },
           { name: 'the band\'s edges 2.8 px, centred on its top and foot (DECISIONS 202)', got: `${e[1].getAttribute('height')} at ${e[1].getAttribute('y')}; ${e[2].getAttribute('height')} at ${e[2].getAttribute('y')}`, want: '2.80 at 102.60; 2.80 at 200.60' },
           { name: 'no labels, no voice line, the chart at full', got: `${visTexts().length} texts, ${S.ch.lastLine('hold').length} line points, a ${chartA().toFixed(2)}`, want: '0 texts, 0 line points, a 1.00' },
-          { name: 'the room crossfading from F-turn (the ghost layers at full on the cut frame)', got: [...root.querySelectorAll('.ghost')].map((g) => g.style.opacity).join(' '), want: '1.000 1.000 1.000' },
+          { name: 'the room crossfading from F-turn (the ghost layers at full on the cut frame)', got: [...root.querySelectorAll('.ghost')].map((g) => g.style.opacity).join(' '), want: '1 1 1' },
           { name: 'hosts at 300 in the corners', got: `${S.boxes.merc && S.boxes.merc.x0}-${S.boxes.merc && S.boxes.merc.x1}; ${S.boxes.tavi && S.boxes.tavi.x0}-${S.boxes.tavi && S.boxes.tavi.x1}`, want: '30.5-189.5; 1720.5-1879.5' }, ...common())
       }
       if (t === T.slideMid) {
