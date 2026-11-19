@@ -4508,7 +4508,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   leftovers part 2) and $S/briefs/l5-critic-F-01.md (the first full-film critic, on
   renders/film-draft-01.mp4).
 
-## 15:12 UTC, 19 Nov
+## 14:58 UTC, 19 Nov
 - CRITIC E-01 RETURNED: ONE MORE PASS (S13 REVISE, S14 KEEP minor, S15 KEEP). Saved to
   l5film/review/critic-E-01/REPORT.md. DECISIONS 215-221 (the answer holds 0.5 s, cascade from
   break + 0.2, "Voice Mirror" 0.4 s after the panel, silent beat kept with pad + landing sounds;
