@@ -1890,3 +1890,18 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
        hosts' boxes and the timer's row) stand for the film's measure.
      - Probes 283, 123 and 48; root check 0 errors; the cuts on `recap`, `next` and `end` hold.
        HANDOFFS § Recap and practise follows ([F-01 fix: 239]).
+
+## The lead's check of film-draft-02, 19 November
+
+240. **film-draft-02 goes to the owner** (the lead read COMPARE.md and the cuts table, looked at the
+     contact sheet, and compared frame 0 in both drafts and in S1's lab clip). Holds 1.67 s per 30 s
+     (1.85 in draft-01), the longest 0.5 s; 47 events (64); the critic's four collisions gone; Merc's
+     hops with no jump; every cut holds. Three things stay as they are for now:
+     - **Frame 0 is blank** (the page's background only; frame 1 is whole). It is the render's
+       first capture: draft-01, rendered with the same settings, is whole; S1's lab render is whole
+       at 0; a snapshot of the root at 0 draws S1 whole. The final render's check names frame 0
+       and any near-whole-frame jump; if frame 0 is blank, render again. No scene changes for it.
+     - **S4's label landings at 55.27 and 55.67** still end on a whole-pixel step (each label and
+       its swatch rise 12 px over 0.27 s): to the owner's polish list.
+     - **S10's hold at 320.70** (0.3 s, 0.12 s of it inside "regular") goes to the final passes, with
+       S8's and S9's (235).

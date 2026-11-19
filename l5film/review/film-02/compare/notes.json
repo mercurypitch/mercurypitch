@@ -1,0 +1,7 @@
+{
+ "0.033": "Frame 0 is the bare room: no hosts, no chart, no type; frame 1 is whole. A snapshot of the root at 0 s (lab/integration/frame0/) draws S1 whole, so this is the render's first capture, not S1's timeline. Draft-01's frame 0 was whole. Crop: compare/frame0-draft-01.png and compare/frame0-draft-02.png.",
+ "295.933": "S10's band edges and \"in the band\" light mint as the line settles in the band (about 0.2 s, ending on this frame), on the rebuilt hold chart (DECISIONS 235); the same kind of change as S5's 87.27 and 88.33, which stay (233).",
+ "423.800": "S12's \"Easy\" capsule lands on its word (\"Easy,\" 423.77): the first frame of its fade-in.",
+ "a:55.267": "Not a drift step: \"whisper\" rises 12 px over 0.27 s as it lands (frames 1650 to 1658, its ink's centre 729.5 to 717.3) and the rise ends on this whole-pixel step; the same landing in both drafts",
+ "a:55.667": "The same for \"about speaking volume\" (frames 1662 to 1670, 729.8 to 717.7)"
+}

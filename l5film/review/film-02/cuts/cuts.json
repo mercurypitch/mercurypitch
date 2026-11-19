@@ -1,0 +1,1343 @@
+[
+ {
+  "from": "s01-cold-open",
+  "to": "s02-title",
+  "t": 38.81,
+  "first": 1165,
+  "n": 1,
+  "last_before": 1164,
+  "t_last": 38.8,
+  "t_first": 38.8333,
+  "hosts": [],
+  "outside": {
+   "mean": 10.308,
+   "share": 0.01307,
+   "max": 48
+  },
+  "outside_baseline": {
+   "mean": 0.102,
+   "share": 0.0,
+   "max": 5
+  },
+  "outside_after": {
+   "mean": 23.058,
+   "share": 0.28926,
+   "max": 120
+  },
+  "outside_new_cells": 6,
+  "inside": {},
+  "inside_baseline": {},
+  "inside_after": {},
+  "regions": [
+   {
+    "box": [
+     0,
+     0,
+     128,
+     240
+    ],
+    "cells": 59,
+    "new_at_cut": true
+   },
+   {
+    "box": [
+     0,
+     848,
+     96,
+     1072
+    ],
+    "cells": 40,
+    "new_at_cut": false
+   },
+   {
+    "box": [
+     1840,
+     0,
+     1920,
+     144
+    ],
+    "cells": 25,
+    "new_at_cut": false
+   },
+   {
+    "box": [
+     1872,
+     1024,
+     1920,
+     1072
+    ],
+    "cells": 5,
+    "new_at_cut": false
+   },
+   {
+    "box": [
+     1904,
+     976,
+     1920,
+     1008
+    ],
+    "cells": 2,
+    "new_at_cut": false
+   }
+  ],
+  "note": "As in draft-01: the field on both sides (centre 150.5 then 149.0); S2's shrink into the title bead starts on the cut at full rate (top left 82 to 41, then 23; mean step 10.3 then 23.1, against 0.1 before). No hosts, no type."
+ },
+ {
+  "from": "s02-title",
+  "to": "s03-promise",
+  "t": 42.41,
+  "first": 1273,
+  "n": 2,
+  "last_before": 1272,
+  "t_last": 42.4,
+  "t_first": 42.4333,
+  "hosts": [],
+  "outside": {
+   "mean": 0.041,
+   "share": 0.00026,
+   "max": 173
+  },
+  "outside_baseline": {
+   "mean": 0.052,
+   "share": 0.00032,
+   "max": 169
+  },
+  "outside_after": {
+   "mean": 0.037,
+   "share": 0.00023,
+   "max": 180
+  },
+  "outside_new_cells": 0,
+  "inside": {},
+  "inside_baseline": {},
+  "inside_after": {},
+  "regions": [
+   {
+    "box": [
+     464,
+     368,
+     512,
+     416
+    ],
+    "cells": 9,
+    "new_at_cut": false
+   }
+  ],
+  "note": "Only the bead moves: (-6.4, +2.2), (-6.7, +1.8) across the cut, (-8.4, +1.0) after. Continuous. As the board says."
+ },
+ {
+  "from": "s03-promise",
+  "to": "s04-recall",
+  "t": 52.88,
+  "first": 1587,
+  "n": 3,
+  "last_before": 1586,
+  "t_last": 52.8667,
+  "t_first": 52.9,
+  "hosts": [
+   {
+    "name": "Tavi",
+    "box": [
+     1700,
+     628,
+     1899,
+     1080
+    ]
+   }
+  ],
+  "outside": {
+   "mean": 0.005,
+   "share": 0.0,
+   "max": 24
+  },
+  "outside_baseline": {
+   "mean": 0.005,
+   "share": 0.0,
+   "max": 26
+  },
+  "outside_after": {
+   "mean": 0.011,
+   "share": 0.0,
+   "max": 16
+  },
+  "outside_new_cells": 0,
+  "inside": {
+   "Tavi": {
+    "mean": 0.704,
+    "share": 0.00263,
+    "max": 82
+   }
+  },
+  "inside_baseline": {
+   "Tavi": {
+    "mean": 0.339,
+    "share": 0.00044,
+    "max": 42
+   }
+  },
+  "inside_after": {
+   "Tavi": {
+    "mean": 0.774,
+    "share": 0.00226,
+    "max": 89
+   }
+  },
+  "regions": [],
+  "note": "Nothing outside Tavi's box changes (S3 and S4 now fill their lower half, joined as before). Tavi: chunk join, moving as before and after."
+ },
+ {
+  "from": "s04-recall",
+  "to": "s05-push",
+  "t": 66.515,
+  "first": 1996,
+  "n": 4,
+  "last_before": 1995,
+  "t_last": 66.5,
+  "t_first": 66.5333,
+  "hosts": [
+   {
+    "name": "Merc",
+    "box": [
+     10,
+     628,
+     209,
+     1080
+    ]
+   },
+   {
+    "name": "Tavi",
+    "box": [
+     1700,
+     628,
+     1899,
+     1080
+    ]
+   }
+  ],
+  "outside": {
+   "mean": 0.007,
+   "share": 0.0,
+   "max": 27
+  },
+  "outside_baseline": {
+   "mean": 0.009,
+   "share": 0.0,
+   "max": 22
+  },
+  "outside_after": {
+   "mean": 0.005,
+   "share": 0.0,
+   "max": 21
+  },
+  "outside_new_cells": 0,
+  "inside": {
+   "Merc": {
+    "mean": 0.278,
+    "share": 0.00034,
+    "max": 52
+   },
+   "Tavi": {
+    "mean": 0.238,
+    "share": 0.00017,
+    "max": 41
+   }
+  },
+  "inside_baseline": {
+   "Merc": {
+    "mean": 0.139,
+    "share": 0.00011,
+    "max": 60
+   },
+   "Tavi": {
+    "mean": 0.159,
+    "share": 8e-05,
+    "max": 65
+   }
+  },
+  "inside_after": {
+   "Merc": {
+    "mean": 0.141,
+    "share": 0.00011,
+    "max": 38
+   },
+   "Tavi": {
+    "mean": 0.17,
+    "share": 0.00021,
+    "max": 40
+   }
+  },
+  "regions": [],
+  "note": "Nothing outside the hosts changes. As the board says."
+ },
+ {
+  "from": "s05-push",
+  "to": "s06-diaphragm",
+  "t": 102.72,
+  "first": 3082,
+  "n": 5,
+  "last_before": 3081,
+  "t_last": 102.7,
+  "t_first": 102.7333,
+  "hosts": [
+   {
+    "name": "Merc",
+    "box": [
+     10,
+     628,
+     209,
+     1080
+    ]
+   },
+   {
+    "name": "Tavi",
+    "box": [
+     1700,
+     628,
+     1899,
+     1080
+    ]
+   }
+  ],
+  "outside": {
+   "mean": 0.005,
+   "share": 0.0,
+   "max": 21
+  },
+  "outside_baseline": {
+   "mean": 0.008,
+   "share": 0.0,
+   "max": 21
+  },
+  "outside_after": {
+   "mean": 0.006,
+   "share": 0.0,
+   "max": 21
+  },
+  "outside_new_cells": 0,
+  "inside": {
+   "Merc": {
+    "mean": 0.168,
+    "share": 7e-05,
+    "max": 52
+   },
+   "Tavi": {
+    "mean": 0.15,
+    "share": 1e-05,
+    "max": 25
+   }
+  },
+  "inside_baseline": {
+   "Merc": {
+    "mean": 0.171,
+    "share": 0.00024,
+    "max": 57
+   },
+   "Tavi": {
+    "mean": 0.141,
+    "share": 4e-05,
+    "max": 47
+   }
+  },
+  "inside_after": {
+   "Merc": {
+    "mean": 0.102,
+    "share": 4e-05,
+    "max": 29
+   },
+   "Tavi": {
+    "mean": 0.1,
+    "share": 1e-05,
+    "max": 34
+   }
+  },
+  "regions": [],
+  "note": "Nothing outside the hosts changes. As the board says."
+ },
+ {
+  "from": "s06-diaphragm",
+  "to": "s07-support",
+  "t": 171.495,
+  "first": 5145,
+  "n": 6,
+  "last_before": 5144,
+  "t_last": 171.4667,
+  "t_first": 171.5,
+  "hosts": [
+   {
+    "name": "Merc",
+    "box": [
+     16,
+     666,
+     183,
+     1080
+    ]
+   },
+   {
+    "name": "Tavi",
+    "box": [
+     1736,
+     666,
+     1903,
+     1080
+    ]
+   }
+  ],
+  "outside": {
+   "mean": 0.15,
+   "share": 0.00088,
+   "max": 178
+  },
+  "outside_baseline": {
+   "mean": 0.004,
+   "share": 0.0,
+   "max": 24
+  },
+  "outside_after": {
+   "mean": 0.017,
+   "share": 0.0,
+   "max": 28
+  },
+  "outside_new_cells": 134,
+  "inside": {
+   "Merc": {
+    "mean": 0.791,
+    "share": 0.00505,
+    "max": 196
+   },
+   "Tavi": {
+    "mean": 0.576,
+    "share": 0.00175,
+    "max": 82
+   }
+  },
+  "inside_baseline": {
+   "Merc": {
+    "mean": 0.528,
+    "share": 0.00522,
+    "max": 188
+   },
+   "Tavi": {
+    "mean": 0.159,
+    "share": 0.00042,
+    "max": 40
+   }
+  },
+  "inside_after": {
+   "Merc": {
+    "mean": 0.331,
+    "share": 0.00132,
+    "max": 108
+   },
+   "Tavi": {
+    "mean": 0.847,
+    "share": 0.00513,
+    "max": 121
+   }
+  },
+  "regions": [
+   {
+    "box": [
+     320,
+     352,
+     560,
+     720
+    ],
+    "cells": 81,
+    "new_at_cut": true
+   },
+   {
+    "box": [
+     336,
+     112,
+     544,
+     336
+    ],
+    "cells": 49,
+    "new_at_cut": true
+   },
+   {
+    "box": [
+     352,
+     416,
+     384,
+     448
+    ],
+    "cells": 2,
+    "new_at_cut": true
+   },
+   {
+    "box": [
+     352,
+     512,
+     368,
+     544
+    ],
+    "cells": 2,
+    "new_at_cut": true
+   }
+  ],
+  "note": "Matched, as draft-01: gauge, band, chips and labels on the same pixels (0.02 luma); the figure's torso redrawn 0.24 px right and 0.09 px down (anti-aliasing). Within 2 px.",
+  "matched": [
+   {
+    "object": "the Loud gauge, the small band, chips and labels",
+    "box": [
+     730,
+     135,
+     1790,
+     790
+    ],
+    "shift": [
+     0,
+     0
+    ],
+    "centroid_shift": [
+     -0.04,
+     0.0
+    ],
+    "edge_residual": 0.028,
+    "edge_residual_at_0": 0.028,
+    "edge_next_best": 6.142,
+    "luma_mean_at_0": 0.022,
+    "luma_share_at_0": 0.0,
+    "luma_max_at_0": 23
+   },
+   {
+    "object": "the figure's torso",
+    "box": [
+     300,
+     180,
+     570,
+     820
+    ],
+    "shift": [
+     0,
+     0
+    ],
+    "centroid_shift": [
+     0.24,
+     0.09
+    ],
+    "edge_residual": 1.885,
+    "edge_residual_at_0": 1.885,
+    "edge_next_best": 4.92,
+    "luma_mean_at_0": 1.154,
+    "luma_share_at_0": 0.00869,
+    "luma_max_at_0": 178
+   }
+  ]
+ },
+ {
+  "from": "s07-support",
+  "to": "s08-breathe",
+  "t": 207.885,
+  "first": 6237,
+  "n": 7,
+  "last_before": 6236,
+  "t_last": 207.8667,
+  "t_first": 207.9,
+  "hosts": [
+   {
+    "name": "Merc",
+    "box": [
+     16,
+     666,
+     183,
+     1080
+    ]
+   },
+   {
+    "name": "Tavi",
+    "box": [
+     1736,
+     666,
+     1903,
+     1080
+    ]
+   }
+  ],
+  "outside": {
+   "mean": 0.192,
+   "share": 0.0,
+   "max": 21
+  },
+  "outside_baseline": {
+   "mean": 0.05,
+   "share": 0.0,
+   "max": 24
+  },
+  "outside_after": {
+   "mean": 0.015,
+   "share": 0.0,
+   "max": 33
+  },
+  "outside_new_cells": 0,
+  "inside": {
+   "Merc": {
+    "mean": 0.51,
+    "share": 6e-05,
+    "max": 59
+   },
+   "Tavi": {
+    "mean": 0.488,
+    "share": 0.0,
+    "max": 24
+   }
+  },
+  "inside_baseline": {
+   "Merc": {
+    "mean": 0.2,
+    "share": 0.0,
+    "max": 23
+   },
+   "Tavi": {
+    "mean": 0.159,
+    "share": 0.0,
+    "max": 18
+   }
+  },
+  "inside_after": {
+   "Merc": {
+    "mean": 0.153,
+    "share": 0.0,
+    "max": 24
+   },
+   "Tavi": {
+    "mean": 0.19,
+    "share": 0.00013,
+    "max": 52
+   }
+  },
+  "regions": [],
+  "note": "Nothing outside the hosts changes. Hosts: chunk join, encoder noise only."
+ },
+ {
+  "from": "s08-breathe",
+  "to": "s09-onset",
+  "t": 228.27,
+  "first": 6849,
+  "n": 8,
+  "last_before": 6848,
+  "t_last": 228.2667,
+  "t_first": 228.3,
+  "hosts": [
+   {
+    "name": "Merc",
+    "box": [
+     16,
+     666,
+     183,
+     1080
+    ]
+   },
+   {
+    "name": "Tavi",
+    "box": [
+     1736,
+     666,
+     1903,
+     1080
+    ]
+   }
+  ],
+  "outside": {
+   "mean": 0.15,
+   "share": 0.0,
+   "max": 18
+  },
+  "outside_baseline": {
+   "mean": 0.004,
+   "share": 0.0,
+   "max": 18
+  },
+  "outside_after": {
+   "mean": 0.008,
+   "share": 0.0,
+   "max": 24
+  },
+  "outside_new_cells": 0,
+  "inside": {
+   "Merc": {
+    "mean": 0.501,
+    "share": 0.0003,
+    "max": 37
+   },
+   "Tavi": {
+    "mean": 0.401,
+    "share": 0.00042,
+    "max": 64
+   }
+  },
+  "inside_baseline": {
+   "Merc": {
+    "mean": 0.218,
+    "share": 0.00033,
+    "max": 56
+   },
+   "Tavi": {
+    "mean": 0.281,
+    "share": 0.00113,
+    "max": 117
+   }
+  },
+  "inside_after": {
+   "Merc": {
+    "mean": 0.208,
+    "share": 0.0002,
+    "max": 53
+   },
+   "Tavi": {
+    "mean": 0.152,
+    "share": 0.00019,
+    "max": 68
+   }
+  },
+  "regions": [],
+  "note": "Nothing outside the hosts changes. Hosts: chunk join, encoder noise only."
+ },
+ {
+  "from": "s09-onset",
+  "to": "s10-steady",
+  "t": 285.34,
+  "first": 8561,
+  "n": 9,
+  "last_before": 8560,
+  "t_last": 285.3333,
+  "t_first": 285.3667,
+  "hosts": [
+   {
+    "name": "Merc",
+    "box": [
+     16,
+     666,
+     183,
+     1080
+    ]
+   },
+   {
+    "name": "Tavi",
+    "box": [
+     1736,
+     666,
+     1903,
+     1080
+    ]
+   }
+  ],
+  "outside": {
+   "mean": 0.138,
+   "share": 0.0,
+   "max": 15
+  },
+  "outside_baseline": {
+   "mean": 0.004,
+   "share": 0.0,
+   "max": 22
+  },
+  "outside_after": {
+   "mean": 0.007,
+   "share": 0.0,
+   "max": 21
+  },
+  "outside_new_cells": 0,
+  "inside": {
+   "Merc": {
+    "mean": 0.386,
+    "share": 9e-05,
+    "max": 38
+   },
+   "Tavi": {
+    "mean": 0.431,
+    "share": 0.0001,
+    "max": 41
+   }
+  },
+  "inside_baseline": {
+   "Merc": {
+    "mean": 0.212,
+    "share": 0.00039,
+    "max": 61
+   },
+   "Tavi": {
+    "mean": 0.151,
+    "share": 9e-05,
+    "max": 29
+   }
+  },
+  "inside_after": {
+   "Merc": {
+    "mean": 0.17,
+    "share": 0.00029,
+    "max": 51
+   },
+   "Tavi": {
+    "mean": 0.093,
+    "share": 0.0,
+    "max": 24
+   }
+  },
+  "regions": [],
+  "note": "Nothing outside the hosts changes. Hosts: chunk join, encoder noise only."
+ },
+ {
+  "from": "s10-steady",
+  "to": "s11-sing",
+  "t": 346.42,
+  "first": 10393,
+  "n": 10,
+  "last_before": 10392,
+  "t_last": 346.4,
+  "t_first": 346.4333,
+  "hosts": [
+   {
+    "name": "Merc",
+    "box": [
+     10,
+     628,
+     209,
+     1080
+    ]
+   },
+   {
+    "name": "Tavi",
+    "box": [
+     1700,
+     628,
+     1899,
+     1080
+    ]
+   }
+  ],
+  "outside": {
+   "mean": 0.099,
+   "share": 0.0,
+   "max": 31
+  },
+  "outside_baseline": {
+   "mean": 0.003,
+   "share": 0.0,
+   "max": 26
+  },
+  "outside_after": {
+   "mean": 0.035,
+   "share": 0.0,
+   "max": 22
+  },
+  "outside_new_cells": 0,
+  "inside": {
+   "Merc": {
+    "mean": 0.169,
+    "share": 7e-05,
+    "max": 51
+   },
+   "Tavi": {
+    "mean": 1.003,
+    "share": 0.00828,
+    "max": 239
+   }
+  },
+  "inside_baseline": {
+   "Merc": {
+    "mean": 0.228,
+    "share": 9e-05,
+    "max": 52
+   },
+   "Tavi": {
+    "mean": 0.886,
+    "share": 0.00703,
+    "max": 155
+   }
+  },
+  "inside_after": {
+   "Merc": {
+    "mean": 0.137,
+    "share": 4e-05,
+    "max": 36
+   },
+   "Tavi": {
+    "mean": 0.958,
+    "share": 0.00842,
+    "max": 213
+   }
+  },
+  "regions": [],
+  "note": "Matched. The hold frame on the same pixels: Merc's line centre 244.51 on both sides, its ends at x 1000 and 1639, its light equal; no pixel in the box changes by 24 (max 20). Draft-01's flatter core on S11's side is gone.",
+  "matched": [
+   {
+    "object": "the empty hold frame",
+    "box": [
+     990,
+     200,
+     1650,
+     290
+    ],
+    "shift": [
+     0,
+     0
+    ],
+    "centroid_shift": [
+     -0.15,
+     0.11
+    ],
+    "edge_residual": 1.749,
+    "edge_residual_at_0": 1.749,
+    "edge_next_best": 1.935,
+    "luma_mean_at_0": 1.19,
+    "luma_share_at_0": 0.0,
+    "luma_max_at_0": 20
+   }
+  ]
+ },
+ {
+  "from": "s11-sing",
+  "to": "s12-your-turn",
+  "t": 385.59,
+  "first": 11568,
+  "n": 11,
+  "last_before": 11567,
+  "t_last": 385.5667,
+  "t_first": 385.6,
+  "hosts": [
+   {
+    "name": "Merc",
+    "box": [
+     10,
+     628,
+     209,
+     1080
+    ]
+   },
+   {
+    "name": "Tavi",
+    "box": [
+     1700,
+     628,
+     1899,
+     1080
+    ]
+   }
+  ],
+  "outside": {
+   "mean": 0.036,
+   "share": 0.0,
+   "max": 26
+  },
+  "outside_baseline": {
+   "mean": 0.005,
+   "share": 0.0,
+   "max": 36
+  },
+  "outside_after": {
+   "mean": 0.052,
+   "share": 0.0,
+   "max": 23
+  },
+  "outside_new_cells": 0,
+  "inside": {
+   "Merc": {
+    "mean": 0.27,
+    "share": 6e-05,
+    "max": 38
+   },
+   "Tavi": {
+    "mean": 0.168,
+    "share": 6e-05,
+    "max": 31
+   }
+  },
+  "inside_baseline": {
+   "Merc": {
+    "mean": 0.158,
+    "share": 0.00018,
+    "max": 52
+   },
+   "Tavi": {
+    "mean": 0.035,
+    "share": 0.0,
+    "max": 23
+   }
+  },
+  "inside_after": {
+   "Merc": {
+    "mean": 0.338,
+    "share": 0.00378,
+    "max": 111
+   },
+   "Tavi": {
+    "mean": 0.755,
+    "share": 0.00424,
+    "max": 122
+   }
+  },
+  "regions": [],
+  "note": "Nothing outside the hosts changes. As the board says."
+ },
+ {
+  "from": "s12-your-turn",
+  "to": "s13-recap",
+  "t": 462.37,
+  "first": 13872,
+  "n": 12,
+  "last_before": 13871,
+  "t_last": 462.3667,
+  "t_first": 462.4,
+  "hosts": [
+   {
+    "name": "Merc",
+    "box": [
+     10,
+     628,
+     209,
+     1080
+    ]
+   },
+   {
+    "name": "Tavi",
+    "box": [
+     1700,
+     628,
+     1899,
+     1080
+    ]
+   }
+  ],
+  "outside": {
+   "mean": 0.031,
+   "share": 0.0,
+   "max": 32
+  },
+  "outside_baseline": {
+   "mean": 0.005,
+   "share": 0.0,
+   "max": 25
+  },
+  "outside_after": {
+   "mean": 0.036,
+   "share": 0.0,
+   "max": 21
+  },
+  "outside_new_cells": 0,
+  "inside": {
+   "Merc": {
+    "mean": 0.248,
+    "share": 0.00013,
+    "max": 56
+   },
+   "Tavi": {
+    "mean": 0.255,
+    "share": 0.00024,
+    "max": 64
+   }
+  },
+  "inside_baseline": {
+   "Merc": {
+    "mean": 0.021,
+    "share": 0.0,
+    "max": 10
+   },
+   "Tavi": {
+    "mean": 0.021,
+    "share": 0.0,
+    "max": 12
+   }
+  },
+  "inside_after": {
+   "Merc": {
+    "mean": 0.154,
+    "share": 0.00023,
+    "max": 57
+   },
+   "Tavi": {
+    "mean": 0.118,
+    "share": 3e-05,
+    "max": 28
+   }
+  },
+  "regions": [],
+  "note": "Matched. Band and Merc's line on the same pixels (0.03 luma, centroid 0.02 px). Hosts: chunk join.",
+  "matched": [
+   {
+    "object": "the frame's band and Merc's line",
+    "box": [
+     920,
+     95,
+     1830,
+     210
+    ],
+    "shift": [
+     0,
+     0
+    ],
+    "centroid_shift": [
+     -0.02,
+     0.01
+    ],
+    "edge_residual": 0.039,
+    "edge_residual_at_0": 0.039,
+    "edge_next_best": 0.187,
+    "luma_mean_at_0": 0.028,
+    "luma_share_at_0": 0.0,
+    "luma_max_at_0": 19
+   }
+  ]
+ },
+ {
+  "from": "s13-recap",
+  "to": "s14-next",
+  "t": 527.395,
+  "first": 15822,
+  "n": 13,
+  "last_before": 15821,
+  "t_last": 527.3667,
+  "t_first": 527.4,
+  "hosts": [
+   {
+    "name": "Merc",
+    "box": [
+     1190,
+     628,
+     1389,
+     1080
+    ]
+   },
+   {
+    "name": "Tavi",
+    "box": [
+     1700,
+     628,
+     1899,
+     1080
+    ]
+   }
+  ],
+  "outside": {
+   "mean": 0.282,
+   "share": 0.00053,
+   "max": 214
+  },
+  "outside_baseline": {
+   "mean": 0.077,
+   "share": 0.00045,
+   "max": 216
+  },
+  "outside_after": {
+   "mean": 0.115,
+   "share": 0.00063,
+   "max": 213
+  },
+  "outside_new_cells": 0,
+  "inside": {
+   "Merc": {
+    "mean": 0.495,
+    "share": 0.00014,
+    "max": 50
+   },
+   "Tavi": {
+    "mean": 0.748,
+    "share": 0.00255,
+    "max": 114
+   }
+  },
+  "inside_baseline": {
+   "Merc": {
+    "mean": 0.238,
+    "share": 0.00036,
+    "max": 48
+   },
+   "Tavi": {
+    "mean": 0.643,
+    "share": 0.00398,
+    "max": 126
+   }
+  },
+  "inside_after": {
+   "Merc": {
+    "mean": 0.149,
+    "share": 9e-05,
+    "max": 32
+   },
+   "Tavi": {
+    "mean": 0.295,
+    "share": 0.00063,
+    "max": 113
+   }
+  },
+  "regions": [
+   {
+    "box": [
+     304,
+     560,
+     352,
+     624
+    ],
+    "cells": 11,
+    "new_at_cut": false
+   }
+  ],
+  "note": "Only the bead changes by 24 or more: (8.2, 17.6), (9.4, 18.9) across the cut, (10.3, 19.8) after. Continuous. The rest of the frame moves under the encoder's noise (the room at most 17)."
+ },
+ {
+  "from": "s14-next",
+  "to": "s15-end",
+  "t": 543.265,
+  "first": 16298,
+  "n": 14,
+  "last_before": 16297,
+  "t_last": 543.2333,
+  "t_first": 543.2667,
+  "hosts": [
+   {
+    "name": "Merc",
+    "box": [
+     1190,
+     628,
+     1389,
+     1080
+    ]
+   },
+   {
+    "name": "Tavi",
+    "box": [
+     1700,
+     628,
+     1899,
+     1080
+    ]
+   }
+  ],
+  "outside": {
+   "mean": 1.104,
+   "share": 0.00823,
+   "max": 183
+  },
+  "outside_baseline": {
+   "mean": 1.238,
+   "share": 0.00727,
+   "max": 185
+  },
+  "outside_after": {
+   "mean": 1.192,
+   "share": 0.0097,
+   "max": 185
+  },
+  "outside_new_cells": 6,
+  "inside": {
+   "Merc": {
+    "mean": 1.222,
+    "share": 0.00464,
+    "max": 136
+   },
+   "Tavi": {
+    "mean": 1.349,
+    "share": 0.00517,
+    "max": 125
+   }
+  },
+  "inside_baseline": {
+   "Merc": {
+    "mean": 0.255,
+    "share": 0.00061,
+    "max": 66
+   },
+   "Tavi": {
+    "mean": 0.099,
+    "share": 0.0,
+    "max": 15
+   }
+  },
+  "inside_after": {
+   "Merc": {
+    "mean": 0.189,
+    "share": 0.00039,
+    "max": 55
+   },
+   "Tavi": {
+    "mean": 0.057,
+    "share": 2e-05,
+    "max": 43
+   }
+  },
+  "regions": [
+   {
+    "box": [
+     576,
+     672,
+     672,
+     768
+    ],
+    "cells": 28,
+    "new_at_cut": false
+   },
+   {
+    "box": [
+     416,
+     672,
+     512,
+     768
+    ],
+    "cells": 27,
+    "new_at_cut": true
+   },
+   {
+    "box": [
+     1040,
+     416,
+     1136,
+     512
+    ],
+    "cells": 26,
+    "new_at_cut": true
+   },
+   {
+    "box": [
+     736,
+     448,
+     832,
+     560
+    ],
+    "cells": 26,
+    "new_at_cut": true
+   },
+   {
+    "box": [
+     880,
+     480,
+     976,
+     560
+    ],
+    "cells": 23,
+    "new_at_cut": true
+   },
+   {
+    "box": [
+     1200,
+     416,
+     1280,
+     512
+    ],
+    "cells": 22,
+    "new_at_cut": false
+   },
+   {
+    "box": [
+     1344,
+     480,
+     1440,
+     560
+    ],
+    "cells": 22,
+    "new_at_cut": false
+   },
+   {
+    "box": [
+     1056,
+     256,
+     1120,
+     368
+    ],
+    "cells": 16,
+    "new_at_cut": false
+   }
+  ],
+  "note": "The tease figure keeps shrinking (a dot moves 12.7, 16.1, 20.0). Both hosts still sharpen slightly on the cut (s14's 225 px chunks, s15's 300 px), for the final passes (DECISIONS 225)."
+ }
+]

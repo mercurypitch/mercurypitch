@@ -57,6 +57,29 @@ No tool changed. One kit file changed, by an atomic rename; proofs and the copy 
     - Debug renders of the page's time and the frame read.
     - Every scene's probe, the kit probe and every `check` again.
 
+## 2026-11-19 (Lesson 5, film-draft-02 and its comparison with draft-01)
+
+No existing tool's output changed; `gen-root.py` was not run (no scene's length changed, and the
+root is byte for byte what it would write with `MIX=voice`). film-cuts.py and film-events.py ran
+as they are on draft-02. One new read-only tool:
+
+- **tools/film-compare.py** (new). One whole-film draft against another, into `OUT/COMPARE.md` and
+  `OUT/compare/`:
+  - holds (measure.py's rule) for the film, per 30 s and per scene, both drafts side by side, and
+    every hold of 0.3 s or more in the second draft with the words around it (inside a word when
+    0.1 s or more of the hold lies in it);
+  - single-frame events from each draft's `events.md`: each first-draft event still there (within a
+    frame), moved (an unclaimed event within 1 s whose boxes meet its main box) or gone; the type
+    steps of DECISIONS 233 by time; every new event, described from `compare/notes.json`;
+  - the critic's four collisions (F-01 item 4): two inks picked by colour and place, specks and the
+    room's dust left out, their nearest distance on every frame of the critic's window and of a
+    window widened only where nothing else takes those colours and places; crops of the same frame
+    from both drafts;
+  - Merc's box through the clean break's hops (490.31 to 491.62, on to 491.95 for hop 2's settle):
+    his body's pixels below the recap's chart, the box's centre and foot on every frame, the largest
+    step, and any frame that steps out and back;
+  - loudness from each `summary.md`.
+
 ## 2026-11-19 (Lesson 5, integration part 2: the whole film, film-draft-01)
 
 Part 1's log is at the end of this file. No existing tool changed; `gen-root.py` was not run (no

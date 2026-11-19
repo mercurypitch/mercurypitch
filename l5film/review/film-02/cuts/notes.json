@@ -1,0 +1,16 @@
+{
+ "01": "As in draft-01: the field on both sides (centre 150.5 then 149.0); S2's shrink into the title bead starts on the cut at full rate (top left 82 to 41, then 23; mean step 10.3 then 23.1, against 0.1 before). No hosts, no type.",
+ "02": "Only the bead moves: (-6.4, +2.2), (-6.7, +1.8) across the cut, (-8.4, +1.0) after. Continuous. As the board says.",
+ "03": "Nothing outside Tavi's box changes (S3 and S4 now fill their lower half, joined as before). Tavi: chunk join, moving as before and after.",
+ "04": "Nothing outside the hosts changes. As the board says.",
+ "05": "Nothing outside the hosts changes. As the board says.",
+ "06": "Matched, as draft-01: gauge, band, chips and labels on the same pixels (0.02 luma); the figure's torso redrawn 0.24 px right and 0.09 px down (anti-aliasing). Within 2 px.",
+ "07": "Nothing outside the hosts changes. Hosts: chunk join, encoder noise only.",
+ "08": "Nothing outside the hosts changes. Hosts: chunk join, encoder noise only.",
+ "09": "Nothing outside the hosts changes. Hosts: chunk join, encoder noise only.",
+ "10": "Matched. The hold frame on the same pixels: Merc's line centre 244.51 on both sides, its ends at x 1000 and 1639, its light equal; no pixel in the box changes by 24 (max 20). Draft-01's flatter core on S11's side is gone.",
+ "11": "Nothing outside the hosts changes. As the board says.",
+ "12": "Matched. Band and Merc's line on the same pixels (0.03 luma, centroid 0.02 px). Hosts: chunk join.",
+ "13": "Only the bead changes by 24 or more: (8.2, 17.6), (9.4, 18.9) across the cut, (10.3, 19.8) after. Continuous. The rest of the frame moves under the encoder's noise (the room at most 17).",
+ "14": "The tease figure keeps shrinking (a dot moves 12.7, 16.1, 20.0). Both hosts still sharpen slightly on the cut (s14's 225 px chunks, s15's 300 px), for the final passes (DECISIONS 225)."
+}

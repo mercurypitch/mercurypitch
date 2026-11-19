@@ -4665,3 +4665,22 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   back: the lead's check (COMPARE.md, the contact sheet, the cuts, a look at a few spots), fill
   LEDGER's critic-F-01 "After", then the owner's look: send a small contact sheet + the mp4 path,
   say what changed since draft-01 and what still waits (sound step, final voices and passes, 60 fps).
+
+## 21:06 UTC, 19 Nov
+- FILM-DRAFT-02 HANDED BACK (production builder): renders/film-draft-02.mp4, 549.467 s, 16,484
+  frames, render 23 min 21 s; check 0 errors; holds 1.67 s per 30 s (1.85), longest 0.5 s at
+  144.90; events 47 (64), 17 of 233's 19 type steps gone; collisions gone; hops clean; all 14 cuts
+  hold; -21.0 LUFS. COMPARE.md, cuts.md, contact-sheet.jpg under review/film-02/.
+- LEAD'S CHECK DONE (DECISIONS 240; LEDGER F-01 "After" filled; backup $S/ledger-pre240.md):
+  frame 0 BLANK (render's first capture; draft-01 same settings whole; S1 lab whole; snapshot whole)
+  -> final render must check frame 0 and re-render if blank; S4 55.27/55.67 landings' last pixel
+  step -> owner's polish list; S10 320.70 hold -> final passes.
+- OWNER'S LOOK: sent $S/film02-sheet-small.jpg and renders/film-draft-02.mp4. Waiting on the owner.
+  Owner's polish list so far: "the easy start" 36 px; right-align S6's "one 10-second note"; the
+  recap figure on mute; S4's two label landings' last pixel step; frame 0 (render).
+- AFTER THE OWNER'S NOTES: their polish -> sound step (pad through break, hop landings, tune and
+  end chimes, examples, act sounds, ticks, room tone, S12 model note) -> final voices (owner's
+  ElevenLabs voices) -> re-time -> final passes (host idle/talk cycle, S6/S7 eye turn, S14 chunks)
+  -> 60 fps final render (check frame 0) -> deliverables. Weekly usage at "allowed_warning"
+  (resets Thu 26 Nov 01:00 UTC): start nothing big before the owner's notes.
+- Hourly check-in DISABLED while waiting (nothing in flight); re-enable when work resumes.
