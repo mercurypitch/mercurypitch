@@ -8,7 +8,7 @@
   const T = {
     f0: 0, ghost: 0.15, gone: 0.34, chart: A.FOLD_END + 0.35, kick: A.KICK + 0.3, row0: A.SQZ + 0.45, lit: A.LIT_ON + 0.45,
     whole: A.REDRAW + A.REDRAW_D + 0.02, hold: A.SHRINK1 - 0.05, row1: A.ROW1 + 0.3, pair: A.PAIR + 1.0, more: A.MORE_P + 0.3, row2: A.NAMES + 0.3,
-    sup: A.SUP + 0.6, noone: A.NOONE + 0.5, row3: A.SHRINK3 + 0.65, breathe: A.BREATHE + 1.0, row4: A.PH[3] + 0.4, last: A.D - 0.0005,
+    howPk: A.HOW_W + 0.15, sup: A.SUP + 0.6, noone: A.NOONE + 0.5, row3: A.SHRINK3 + 0.65, breathe: A.BREATHE + 1.0, row4: A.PH[3] + 0.4, last: A.D - 0.0005,
   }
   const root = document.getElementById(sid + '-scene')
   const R = H.R
@@ -125,6 +125,11 @@
       if (t === T.sup) {
         out.push({ name: '7d: the four words back, "support" lit with the two before', got: S.row.chips.map((c) => c.el.getAttribute('fill') === 'rgb(230,237,243)' ? 'lit' : 'dim').join(' '), want: 'lit lit dim lit' },
           { name: '7d: the large word at x 360, baseline 800', got: `${R(S.large.el).left.toFixed(0)}`, want: '360', pass: Math.abs(R(S.large.el).left - 360) < 6 }, overlaps(), ...H.keepout(root, S.boxes))
+      }
+      if (t === T.howPk) {
+        const m = /scale\(([\d.]+)\)/.exec(S.how.el.getAttribute('transform') || ''), sc = m ? +m[1] : 1
+        out.push({ name: '[F-01: 227] "how singers manage the breath" settles on "how": its scale at the peak (44 px: 1.1 x 1.08)', got: +sc.toFixed(4), want: +(1.1 * 1.08).toFixed(4), tol: 0.002 },
+          { name: '[F-01: 227] ... its left baseline stays at (980, 800)', got: `${R(S.how.el).left.toFixed(0)}`, want: '980', pass: Math.abs(R(S.how.el).left - 980) < 3 })
       }
       if (t === T.noone) out.push({ name: '7d: "how singers manage the breath" at x 980, baseline 800; "no one agreed meaning" at 980, 850', got: `${R(S.how.el).left.toFixed(0)}, ${R(S.noOne.el).left.toFixed(0)}`, want: '980, 980', pass: Math.abs(R(S.how.el).left - 980) < 2 && Math.abs(R(S.noOne.el).left - 980) < 2 }, overlaps(), ...H.keepout(root, S.boxes))
       if (t === T.row3) {

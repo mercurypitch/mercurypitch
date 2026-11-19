@@ -25,6 +25,16 @@
   for (let tt = A.BM; tt <= A.O7 + 0.35; tt += 0.25) { T['hz' + tt.toFixed(2)] = tt; HZ.add(tt) }
   const UNDER = [['muscles', 766, 'with your breathing muscles,'], ['throat', 804, 'never your throat'], ['bellyRib', 800, 'belly and rib muscles']]
   const hzSeen = {}
+  // [F-01: 228, 227] the named labels' settles: at each peak (0.15 s after its word) the label's scale, no plate on a
+  // stroke, and the line under the figure clear of the legs and of "one 10-second note"
+  const PK = new Map()
+  for (const [n, ts] of Object.entries(S.NAMED || {})) for (const t0 of ts) { const tt = t0 + 0.15; T['pk_' + n + '_' + tt.toFixed(2)] = tt; PK.set(tt, n) }
+  const scaleOf = (el) => { const g = el.parentNode && el.parentNode.getAttribute('class') === 'label-back' ? el.parentNode : el; const m = /scale\(([\d.]+)\)/.exec(g.getAttribute('transform') || ''); return m ? +m[1] : 1 }
+  // a label's fade offset from its transform, the settle's scale translates left out
+  const dyFade = (el) => {
+    const tr = el.getAttribute('transform') || '', ts = [...tr.matchAll(/translate\(\s*([-\d.]+)[ ,]+([-\d.]+)\)/g)]
+    return !ts.length || (/scale\(/.test(tr) && ts.length < 3) ? 0 : +ts[0][2]
+  }
   const root = document.getElementById(sid + '-scene')
   const R = H.R
   const vis = (e) => H.alpha(e).toFixed(2)
@@ -250,13 +260,23 @@
           { name: 'F-gauge: the figure\'s head y 125 to 282 (crown)', got: S.cam.map(...S.fig.at('crown'), t)[1], want: 125.4, tol: 1 },
           { name: 'F-gauge: scale 1.05', got: S.cam.scale(t), want: 1.05, tol: 0.001 }, ...H.keepout(root, S.boxes))
       }
+      if (PK.has(t)) {
+        const n = PK.get(t), lab = S.gl[n] || S.fl[n], sc = scaleOf(lab.el), want = 1 + (n === 'heldBack' ? 0.2 : S.AMP[n])
+        out.push({ name: `[F-01: 228, 227] "${lab.el.textContent}" settles on its word: its scale at the peak`, got: +sc.toFixed(3), want: +want.toFixed(3), tol: 0.002 })
+        if (n === 'muscles') {
+          const k = S.cam.scale(t), im = H.ink('with your breathing muscles,', "600 32px 'Outfit'"), top = m(0, 766)[1] - k * sc * im.up
+          const gapR = R(S.gl.oneNote.el).left - R(lab.el).right
+          out.push({ name: '[F-01: 227] at the settle\'s peak: the legs\' end over the line\'s ink (188: 12 or more)', got: +(top - legsLow(t)).toFixed(1), want: '>= 12', pass: top - legsLow(t) >= 12 },
+            { name: '[F-01: 227] at the settle\'s peak: the line\'s right end to "one 10-second note" (font boxes)', got: +gapR.toFixed(1), want: '>= 12', pass: H.alpha(S.gl.oneNote.el) < 0.01 || gapR >= 12 })
+        } else out.push(...plates(t))
+      }
       if (HZ.has(t)) {
         const floorTop = R(S.room.floor).top, k = S.cam.scale(t)
         for (const [n, y, text] of UNDER) {
           const el = S.fl[n].el
           if (H.alpha(el) < 0.01) continue
-          const ink = H.ink(text, "600 32px 'Outfit'"), base = m(0, y + H.dyOf(el))[1]
-          const gap = floorTop - (base + k * ink.down)
+          const ink = H.ink(text, "600 32px 'Outfit'"), base = m(0, y + dyFade(el))[1]
+          const gap = floorTop - (base + k * scaleOf(el) * ink.down)
           const h = hzSeen[n] || (hzSeen[n] = { n: 0, min: 1e9, minAt: 0, k0: 1e9, k1: 0, floor: new Set() })
           h.n++; h.k0 = Math.min(h.k0, k); h.k1 = Math.max(h.k1, k); h.floor.add(floorTop.toFixed(1))
           if (gap < h.min) { h.min = gap; h.minAt = t }

@@ -4621,3 +4621,8 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   table, contact sheet); then the lead's check (compare with draft-01's numbers; look at the sheet)
   and the owner's look (send the contact sheet and the mp4 path; summarise what changed and what
   still waits: sound step, final voices, final passes for host motion/holds, 60 fps).
+- 19:16 UTC: wrote briefs/l5-film-draft-02.md (part 2 again to renders/film-draft-02.mp4,
+  review/film-02/ and film-02-measure/, plus COMPARE.md: holds per scene, the 19 type-step events
+  of 233 gone or not, the four collisions' crops, Merc through the two hops, loudness). Resume the
+  production builder (builder) with it once B and E are accepted. B was probing S6's named
+  settles; E was measuring s13's card drift.

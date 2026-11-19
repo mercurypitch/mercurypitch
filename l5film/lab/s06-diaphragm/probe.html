@@ -111,6 +111,25 @@
           const YES = at('b16'), LOUD = word('b16', 'loud'), RISE = word('b16', 'note'), LESS = word('b16', 'less')
           const RISE_D = clamp(LESS - RISE, 0.5, 0.8)                  // the gold line has risen before its new label lands
           const BACKW = word('b16', 'back'), MORE = word('b16', 'more')
+          // The gauge's labels pulse when the voice names them again (DECISIONS 228), and a label settles on the word that
+          // names it where the frame would otherwise hold inside that word (227): the board's settle, up 0.15 s and back
+          // 0.6 s, at 1.08 for these 30 to 32 px labels ("held back" keeps its 1.2). The two labels hung under a stroke ("the
+          // lungs' own push" under the frame's top, "what the note needs" under the gold line) settle about their plate's
+          // top-left corner, so the plate keeps its gap above (182); the line under the figure about its left baseline (its
+          // right end then keeps 58 px from "one 10-second note" on its row)
+          const NAMED = {
+            heldBack: [HOLD, HOLDING, HOLD2],                                  // "Hold it back", "holding", "hold some back"
+            needs: [word('b14', 'needs')],                                     // "a quiet note needs"
+            lungsPush: [word('b14', 'themselves'), word('o7', 'themselves')],  // "(full lungs) ... by themselves"; o7's [227]
+            muscles: [word('b13', 'muscles')],                                 // inside "muscles," [227]
+          }
+          const AMP = { needs: 0.08, lungsPush: 0.08, muscles: 0.08 }, TOPLEFT = { needs: true, lungsPush: true }
+          const lifeNamed = (lab, n, t, tIn, tOut) => {
+            const f = L.fade(t, tIn, tOut), sc = L.pulse(t, NAMED[n], 'label', { amp: AMP[n] })
+            if (!TOPLEFT[n]) lab.draw({ a: f.a, dy: f.dy, scale: sc })
+            else L.place(lab.back.parentNode, { a: f.a, dy: f.dy, scale: sc, ox: +lab.back.getAttribute('x'), oy: +lab.back.getAttribute('y') })
+            return f.a
+          }
 
           /* ---------------------------------------------------------------- the camera: the steady 10 s push to F-gauge */
           const cam = L.frameRig(room, { from: 'F0' })
@@ -250,7 +269,7 @@
           }
 
           const probe = { room, cam, ch, lab, slider, ga, fig, fl, gl, tag, a3, quietChip, loudChip, guess, struck, strike, kicker, predict, pills, check, row, split, SPLIT_C, lessLeader, moreLeader,
-            readoutAt, roPlate, SWITCHES, F6, GP, A: { ADDED, ACT, O6, GLIDE, GLIDE_D, SPLIT, SPLIT_D, FIG, FIG_D, GUESS, ROW_IN, LIT_D, DIA, TIGHT, BELLY, BIN, BIG, QUIET, PRED_K, PILL1, PILL2, PRED2, OPEN, OPEN_D, ONE_NOTE, PUSH_AIR, GAUGE, GAUGE_D, LUNGS_L, GOLD, NEEDS, HATCH, READOUT, CHECK, UNCHANGED, CROSS1, HOLD, BM, NEVER, FULL, WALK, WALK_END, B15, RUN, RUN_D, BRM, CANT, STRIKE, O7, FULL2, CUR_OUT, YES, LOUD, RISE, RISE_D, LESS, BACKW, MORE, SWITCHES, D }, boxes: {} }
+            readoutAt, roPlate, SWITCHES, F6, GP, NAMED, AMP, TOPLEFT, A: { ADDED, ACT, O6, GLIDE, GLIDE_D, SPLIT, SPLIT_D, FIG, FIG_D, GUESS, ROW_IN, LIT_D, DIA, TIGHT, BELLY, BIN, BIG, QUIET, PRED_K, PILL1, PILL2, PRED2, OPEN, OPEN_D, ONE_NOTE, PUSH_AIR, GAUGE, GAUGE_D, LUNGS_L, GOLD, NEEDS, HATCH, READOUT, CHECK, UNCHANGED, CROSS1, HOLD, BM, NEVER, FULL, WALK, WALK_END, B15, RUN, RUN_D, BRM, CANT, STRIKE, O7, FULL2, CUR_OUT, YES, LOUD, RISE, RISE_D, LESS, BACKW, MORE, SWITCHES, D }, boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
 
@@ -327,7 +346,7 @@
             diaLeader.set({ x2: dx2, y2: dy2 }); diaLeader.draw(P(t, DIA, 0.3), dl)
             fl.belly.life(t, BELLY, null)
             fl.breathingIn.life(t, BIN, BIG)
-            fl.muscles.life(t, BM, B15)
+            lifeNamed(fl.muscles, 'muscles', t, BM, B15)
             fl.throat.life(t, NEVER, B15)
             fl.bellyRib.life(t, BRM, O7, { dOut: 0.3 })
             const sa = 1 - P(t, O7, 0.3)
@@ -340,9 +359,9 @@
             gl.oneNote.life(t, ONE_NOTE, YES)
             gl.pushOfAir.life(t, PUSH_AIR, null)
             upArrow.draw(P(t, PUSH_AIR, 0.3), P(t, PUSH_AIR, 0.2))
-            gl.lungsPush.life(t, LUNGS_L, null)
-            gl.needs.life(t, NEEDS, LOUD)
-            gl.heldBack.life(t, HATCH, LOUD, {}, [HOLDING, HOLD2], 'label')
+            lifeNamed(gl.lungsPush, 'lungsPush', t, LUNGS_L, null)
+            lifeNamed(gl.needs, 'needs', t, NEEDS, LOUD)
+            gl.heldBack.life(t, HATCH, LOUD, {}, NAMED.heldBack, 'label')
             gl.unchanged.life(t, UNCHANGED, null)
             gl.added.life(t, ADDED, LOUD)
             const ro = readoutAt(t), roA = P(t, READOUT, 0.2) * (1 - P(t, CUR_OUT, 0.2))

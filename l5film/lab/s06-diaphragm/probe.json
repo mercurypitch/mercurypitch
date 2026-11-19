@@ -1725,7 +1725,7 @@
  {
   "t": 56.265000000000015,
   "name": "[DECISIONS 203] \"with your breathing muscles,\": its ink foot over the floor horizon at every sample it shows (count, least gap and when, camera scale, the floor's top)",
-  "got": "58, 53.6 px at 34.02, scale 1.050 to 1.050, floor 840.0",
+  "got": "58, 53.1 px at 34.52, scale 1.050 to 1.050, floor 840.0",
   "want": ">= 12 px",
   "pass": true
  },
@@ -1741,6 +1741,412 @@
   "name": "[DECISIONS 203] \"belly and rib muscles\": its ink foot over the floor horizon at every sample it shows (count, least gap and when, camera scale, the floor's top)",
   "got": "25, 17.9 px at 50.27, scale 1.050 to 1.050, floor 840.0",
   "want": ">= 12 px",
+  "pass": true
+ },
+ {
+  "t": 32.62999999999999,
+  "name": "[F-01: 228, 227] \"held back\" settles on its word: its scale at the peak",
+  "got": 1.2,
+  "want": 1.2,
+  "tol": 0.002,
+  "pass": true
+ },
+ {
+  "t": 32.62999999999999,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.62999999999999,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1040.2, 293.0 to 339.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.62999999999999,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.62999999999999,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 32.62999999999999,
+  "name": "[B-01: 182] the plate of heldBack (world 781.6 to 967.9, 494.4 to 555.6) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.62999999999999,
+  "name": "[B-01: 182] the plate of added (world 1512.6 to 1607.4, 611.0 to 657.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.62999999999999,
+  "name": "[B-01: 182] the plate of readoutAdding (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.62999999999999,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 46.184999999999995,
+  "name": "[F-01: 228, 227] \"held back\" settles on its word: its scale at the peak",
+  "got": 1.2,
+  "want": 1.2,
+  "tol": 0.002,
+  "pass": true
+ },
+ {
+  "t": 46.184999999999995,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 46.184999999999995,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1040.2, 293.0 to 339.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 46.184999999999995,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 46.184999999999995,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 46.184999999999995,
+  "name": "[B-01: 182] the plate of heldBack (world 781.6 to 967.9, 494.4 to 555.6) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 46.184999999999995,
+  "name": "[B-01: 182] the plate of added (world 1512.6 to 1607.4, 611.0 to 657.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 46.184999999999995,
+  "name": "[B-01: 182] the plate of readout (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 46.184999999999995,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 60.615,
+  "name": "[F-01: 228, 227] \"held back\" settles on its word: its scale at the peak",
+  "got": 1.2,
+  "want": 1.2,
+  "tol": 0.002,
+  "pass": true
+ },
+ {
+  "t": 60.615,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 60.615,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1040.2, 293.0 to 339.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 60.615,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 60.615,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 60.615,
+  "name": "[B-01: 182] the plate of heldBack (world 781.6 to 967.9, 494.4 to 555.6) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 60.615,
+  "name": "[B-01: 182] the plate of added (world 1512.6 to 1607.4, 611.0 to 657.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 60.615,
+  "name": "[B-01: 182] the plate of readout (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 60.615,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 41.552000000000014,
+  "name": "[F-01: 228, 227] \"what the note needs\" settles on its word: its scale at the peak",
+  "got": 1.08,
+  "want": 1.08,
+  "tol": 0.002,
+  "pass": true
+ },
+ {
+  "t": 41.552000000000014,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 41.552000000000014,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1040.2, 293.0 to 339.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 41.552000000000014,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1075.4, 612.0 to 661.7) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 41.552000000000014,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 41.552000000000014,
+  "name": "[B-01: 182] the plate of heldBack (world 782.4 to 937.6, 502.0 to 553.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 41.552000000000014,
+  "name": "[B-01: 182] the plate of added (world 1512.6 to 1607.4, 611.0 to 657.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 41.552000000000014,
+  "name": "[B-01: 182] the plate of readout (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 41.552000000000014,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 38.12800000000001,
+  "name": "[F-01: 228, 227] \"the lungs' own push\" settles on its word: its scale at the peak",
+  "got": 1.08,
+  "want": 1.08,
+  "tol": 0.002,
+  "pass": true
+ },
+ {
+  "t": 38.12800000000001,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 38.12800000000001,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1061.6, 293.0 to 342.7) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 38.12800000000001,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 38.12800000000001,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 38.12800000000001,
+  "name": "[B-01: 182] the plate of heldBack (world 782.4 to 937.6, 502.0 to 553.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 38.12800000000001,
+  "name": "[B-01: 182] the plate of added (world 1512.6 to 1607.4, 611.0 to 657.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 38.12800000000001,
+  "name": "[B-01: 182] the plate of readout (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 38.12800000000001,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 58.18999999999999,
+  "name": "[F-01: 228, 227] \"the lungs' own push\" settles on its word: its scale at the peak",
+  "got": 1.08,
+  "want": 1.08,
+  "tol": 0.002,
+  "pass": true
+ },
+ {
+  "t": 58.18999999999999,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 58.18999999999999,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1061.6, 293.0 to 342.7) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 58.18999999999999,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 58.18999999999999,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 58.18999999999999,
+  "name": "[B-01: 182] the plate of heldBack (world 782.4 to 937.6, 502.0 to 553.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 58.18999999999999,
+  "name": "[B-01: 182] the plate of added (world 1512.6 to 1607.4, 611.0 to 657.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 58.18999999999999,
+  "name": "[B-01: 182] the plate of readout (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 58.18999999999999,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 34.339999999999996,
+  "name": "[F-01: 228, 227] \"with your breathing muscles,\" settles on its word: its scale at the peak",
+  "got": 1.08,
+  "want": 1.08,
+  "tol": 0.002,
+  "pass": true
+ },
+ {
+  "t": 34.339999999999996,
+  "name": "[F-01: 227] at the settle's peak: the legs' end over the line's ink (188: 12 or more)",
+  "got": 18.6,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 34.339999999999996,
+  "name": "[F-01: 227] at the settle's peak: the line's right end to \"one 10-second note\" (font boxes)",
+  "got": 57.8,
+  "want": ">= 12",
   "pass": true
  }
 ]
