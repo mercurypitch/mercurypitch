@@ -227,14 +227,15 @@ Drawn in figure units `(u, v)`: u 0 to 400 back to front (it faces right), v 0 (
 - **S6 (torso)**: `k` 1.15, `x0` 200, `y0` 120 (v1's y0 60 put the head on the kicker): head
   centre (464, 218), r 75, so y 143 to 293, 33 px under the kicker's foot (y 110); throat (488,
   339); lungs centre (476, 505), x 390 to 562; dome apex (476, 620), dome ends (378, 661) and (574,
-  661); hips y 764; the legs masked out from y 730 to 760 (a soft fade; v3 750 to 780, whose strokes
-  ran to 7 px over "with your breathing muscles," at F-gauge) **[B-01: 188]**. Labels: "lungs"
+  661); hips y 764; the legs masked out from y 696 to 726 (a soft fade; 730 to 760 before the leftovers
+  round, v3 750 to 780), 20 px over "with your breathing muscles,"'s ink at F-gauge **[leftovers: 222]**. Labels: "lungs"
   right-aligned x 350, baseline 470; "breathing in" (6c, 6d; Outfit 600 36) and "can't push air
   out" (6i; **Outfit 600 30**, about 270 px, so x 80 to 350, at F-gauge screen x 24 to 308, where
   36 px would start at about x -20 **[v3: 9]**) at the same place, never together, right-aligned
   350, baseline 580; "diaphragm" right-aligned 350,
   baseline 640, a 1.5 px chrome leader to (378, 661); "belly" x 640, baseline 700. Under the figure
-  (x 260): "with your breathing muscles," baseline 800 and "never your throat" 838; "belly and rib
+  (x 260): "with your breathing muscles," baseline 766 and "never your throat" 804 (screen 779.1 and
+  819.0 at F-gauge, the ink 13.7 px over the floor horizon; 800 and 838 before) **[leftovers: 222]**; "belly and rib
   muscles" 800. Guess arrow: `L.GUESS` from (476, 620) to (476, 460), arrowhead 14 px, its "?"
   right of the chest at x 600, baseline 470; the struck arrow the same path, chrome 3 px, its
   strike ink 3 px from (446, 560) to (506, 520). At F-gauge all of these ride the push (§ Framings).

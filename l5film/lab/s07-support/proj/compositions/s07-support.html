@@ -93,6 +93,8 @@
             dia: L.label(carry, 'diaphragm', { x: 350, y: 640, size: 34, anchor: 'end' }),
             belly: L.label(carry, 'belly', { x: 640, y: 700, size: 34 }),
           }
+          // "diaphragm" sits inside Merc's video square at F-gauge, transparent there, 30 px from his drawn body (as S6 marks it)
+          fl.dia.el.setAttribute('data-layout-allow-occlusion', '')
           const diaLeader = L.leader(carry, { x1: 356, y1: 631, x2: 378.25, y2: 660.5 })
           const tag = L.tag(carry, L.TAGS.illustration, G.TAG)
           // the figure: S6's torso at rest on F-gauge's pixels (L.FIGURE.CUT), to its parked place

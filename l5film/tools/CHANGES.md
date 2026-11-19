@@ -20,6 +20,25 @@ rest (mix.py reads only Echo samples there, which this film does not use).
 Every heavy run (a render, a Chromium pass, the Merc bundle, the Kokoro run) goes through the
 scratchpad's heavy helper on this shared machine, one at a time.
 
+## 2026-11-19 (Lesson 5, group E's fix round E-01: the kit's Voice Mirror card, DECISIONS 216)
+
+- **assets/lib/recap.js, `L.RECAP.VM`: the card closes up 13 px under its rows, and the ten line
+  is one line.** Checked first that s13-recap is `L.RECAP`'s only user (a grep of `compositions/`,
+  `assets/lib/` and `tools/` finds it only there and in recap.js itself).
+  - The readout's baselines move from 525, 565 and 605 to 523, 560 and 597 (37 px apart, not 40).
+  - "Keep..." moves from 665 to 654, "Sore..." from 710 to 699, and "Free..." from 765 to 752.
+  - The free line's underline moves from 777 to 764.
+  - The panel's feet change from [300, 360, 420, 480, 625, 685, 730, 790] to
+    [300, 360, 420, 480, 617, 674, 719, 777]. Each foot keeps its offset under its line.
+  - The rows, the glyphs and the title do not move. The carried bead still starts at the "five
+    notes" glyph's first dot (272, 434 after the drift), so `L.TEASE.carry` is unchanged.
+  - `VM.ten` is now one line: `{ text, x 270, y 820, size 30, family 'inter', weight 400 }`. It was
+    two lines at 822 and 862 with `tenX` and `tenSize`. The ink runs from about 797 to 827 and ends
+    near x 1100, left of the card's edge at 1110. The panel's last foot (777) stands 20 px over its
+    cap top.
+  - The old file is kept as `lab/s13-recap/fix-E-01/recap.before-E01.js.txt`.
+  - Regenerate s13-recap's stills and clip. No other scene reads `L.RECAP`.
+
 ## 2026-11-19 (Lesson 5, the passes for DECISIONS 190: the hops back at the clean break)
 
 - **script.json: `break`.** `{"id": "break", "type": "pause", "dur": 1.9, "gap": 0.0}` between b54

@@ -100,6 +100,20 @@ toward Tavi as she starts `o8`, and the turn runs over pass frames 3375 to 3377,
 straddling the cut. For the passes step (not re-rendered here): pass frames 3375 to 3377, film frames 5143 to 5145.
 The lab clips are off the film grid, so S6's last lab frame repeats pass frame 3376.
 
+## Leftovers round (DECISIONS 203, the rule of 188), 19 November
+
+| What | Change (file, line) | Before | After | Proof (`leftovers/`) |
+| --- | --- | --- | --- | --- |
+| The first frame's legs | `FC` fade [696, 726] on F-gauge's pixels (s07-support.html line 101), as S6's | [730, 760] (screen [741.25, 772.75]) | [696, 726] (screen [705.55, 737.05]); the first frame differs from before only in the figure's lower torso; it lerps to the parked [450, 465] as before | `cut-s06-s07-figure-frames.png` |
+| The S6 to S7 cut | none beyond the mask | - | S6's last frame against S7's first (frame pairs either side): best shift (0, 0) on the gauge, band, figure, chips and labels, residual 0.86 to 1.48 of 255; the hosts 3.07 and 3.61 (Merc's eye turn in the pass, DECISIONS 203); `measure-cut/`: no single-frame event | `cut-s06-s07-frames.png`, `../dense-cut/` |
+| S7's last frame and the S7 to S8 join (group C's S8 of 12:51) | none | - | S7's last frame identical to before (0 pixels differ); against S8's first: best shift (0, 0), figure 0.48, room 0.25, hosts 2.68 and 2.72; `measure-s08/`: no single-frame event (a 0.3 s still across the join: S7's last frames and S8's first, both at rest) | `join-s07-s08-frames.png`, `join-s07-s08.mp4`, `dense-s08/` |
+| The check's layering note | `data-layout-allow-occlusion` on the carried "diaphragm" (lines 96, 97), as S6 marks it; no pixel changes | an info at 0 (the label inside Merc's transparent video square) | none | `check.log` |
+
+Proof: probe 110 of 110; `check lab/s07-support/proj --at=0,1.92,7.80,12.08,19.05,34.00`: contrast 48/48, layout 0
+issues, 0 errors (warning: the duplicated host video entry); clip `clip.mp4` 14:54; `measure.py`: holds 3.5 s inside
+the film (2.9 s per 30 s), longest 0.5 s (24.40); single-frame events Tavi's two blinks (13.567, 34.167); -19.9 LUFS,
+true peak -2.4 dBTP. Root check: 0 errors, contrast 67/67.
+
 ## Proof (after the fix round, 19 November)
 
 - Probe: 110 of 110 pass (`probe.json`; checks in `checks.js`, the B-01 ones marked). The first frame on F-gauge's

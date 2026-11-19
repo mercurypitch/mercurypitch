@@ -118,6 +118,30 @@ figure) sits on the room's floor horizon at F-gauge (screen y 840 runs through i
 moving both lines up 27 px and shortening the legs a further 18 px in S6 and in S7's first frame; left for the
 director.
 
+## Leftovers round (DECISIONS 203, the rule of 188), 19 November
+
+| What | Change (file, line) | Before | After | Proof (`leftovers/`) |
+| --- | --- | --- | --- | --- |
+| The two lines under the figure | "with your breathing muscles," and "never your throat" up 34 px (s06-diaphragm.html lines 137, 138; x 260, 32 px, unchanged) | world baselines 800 and 838 (screen 814.8 and 854.7 at F-gauge); "never your throat"'s ink rows 831 to 861, the floor horizon (screen 840) through its x-height from 34.87 to 48.20 | world baselines 766 and 804 (screen 779.1 and 819.0); their ink 754 to 826; the least gap to the horizon 13.7 px ("never your throat", the probe at 54 samples 0.25 s apart; 14 clear rows in the stills at 35.37, 36.50, 45.00, 48.10); the first line 53.6 px | `lines-horizon-36.5.png` (before and after, y 840 marked) |
+| Every framing they show in | none | - | both land after the push (33.77, 34.87; the push ends 32.26) and leave at 48.20: shown only at F-gauge, scale 1.050 at every sample, the floor's top 840.0 throughout. "belly and rib muscles" (world 800, unchanged) keeps 17.9 px (25 samples) | probe |
+| The legs | `F6` fade [696, 726] (line 126) | [730, 760] (screen [741.25, 772.75] at F-gauge) | [696, 726] (screen [705.55, 737.05]); the legs' lowest visible point (alpha 0.1) 20.6 px above the first line's ink (before 20.8); at the last frame 733.5 | `legs-68.75.png` (before and after) |
+| The S5 to S6 join | none | - | S6's first frame identical to before (0 pixels differ); S5's last against S6's first best shift (0, 0) in every region, residual 0.43 to 1.35; the joined second has no single-frame event | `join-s05-s06-frames.png`, `join-s05-s06.mp4`, `measure-s05/` |
+| The S6 to S7 cut | S7's first frame carries the same mask (`../s07-support/BUILD-NOTES.md`) | - | S6's last against S7's first best shift (0, 0) on the gauge, band, figure, chips and labels (residual 0.86 to 1.48); the joined second has no single-frame event | `../s07-support/leftovers/cut-s06-s07-figure-frames.png`, `cut-s06-s07-frames.png` |
+
+Why 34 px, not the 27 of my B-01 hand-back: that measure took the baseline, not the descender of "your" (7 px on
+screen); at 27 the ink would end 6 px over the horizon. 34 leaves 13.7 px, and the legs move with the lines.
+
+Seen, not changed: "with your breathing muscles," now shares a row with the gauge's "one 10-second note" (ink y 755 to
+785 and 750 to 772, 96 px apart across, x 213 to 643 and 739 to 1009), so the two may read as one line
+(`lines-vs-one-note-36.5.png`). The rule of 188 leaves no lower place, and "belly" and the dome leave no higher one;
+moving the gauge's axis label (for example right-aligned to the axis's end) is the director's call.
+
+Proof: probe 250 of 250; `check lab/s06-diaphragm/proj --at=26.16,29.38,34.20,35.37,45.00,66.65`: contrast 63/63,
+layout 0 issues, 0 errors (warnings: the duplicated host video entry, the file's length); clip `clip.mp4` 14:51;
+`measure.py`: holds 4.2 s inside the film (1.8 s per 30 s), longest 0.5 s (53.00); single-frame events the same four
+host blinks (38.033, 51.833, 55.400, 58.833); -19.8 LUFS, true peak -1.5 dBTP. clock-lint silent; `merc-tags.py
+s06-diaphragm s07-support --check`: 8 tags, 0 stale, 0 problems.
+
 ## Proof (after the fix round, 19 November)
 
 - Probe: 245 of 245 pass (`probe.json`; checks in `checks.js`, the B-01 ones marked; 40 of them walk the four swaps

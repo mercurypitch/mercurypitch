@@ -1688,3 +1688,19 @@ numbered 132 to 135 too, are 160 to 163 now, so no number appears twice).
      margin, as every kicker does. HANDOFFS § The tease follows.
 221. **Holds** (item 8) go to the final passes (189). The figure's reading on mute (an unlabelled
      dome under a question that names the diaphragm) is for the owner's look.
+
+## The lead's call on the leftovers round, 19 November
+
+222. **The leftovers round is accepted** (the lead looked at both before and after strips).
+     - **S1** (178): Merc's amber line fades linearly from `hook` + 0.35 to + 0.65, gone before the
+       bead's disc softens; no amber pixel inside the disc on any of the 21 frames to the cut; the
+       S1 to S2 join and the bead's flight unchanged (s02's probe 50 of 50).
+     - **S6 and S7** (203): "with your breathing muscles," and "never your throat" rise 34 px
+       (world baselines 766 and 804; 34, not the 27 first measured, because "your"'s descender
+       needs 7 px more), their ink 13.7 px over the floor horizon at F-gauge, the only framing they
+       show in; the legs' mask rises with them (696 to 726), 20 px clear; S7's first frame carries
+       the same pixels (the S6 to S7 cut at best shift (0, 0)), S6's first and S7's last frames are
+       unchanged. HANDOFFS § The breath figure follows ([leftovers: 222]).
+     - The first line now shares a row with the gauge's "one 10-second note" (96 px apart, white
+       against the axis's grey, the axis label under its ticks): accepted as two separate things;
+       the owner's final polish may right-align the axis label to the axis's end.

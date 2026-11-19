@@ -10,8 +10,8 @@
   const T = {
     f0: 0, slideMid: A.SLIDE + A.SLIDE_D / 2, landed: A.SLIDE + A.SLIDE_D + 0.01, dim: A.DIM + A.DIM_D + 0.05, q1: A.Q1 + 0.4,
     fig: A.FIG + A.FIG_D + 0.1, ans1: A.ANS1 + A.BREATH_D + 0.1, q3: A.Q3 + 0.45, traces: A.TRACES + 0.75, tog: A.TOG + 0.3,
-    q4: A.Q4 + 0.45, back: A.BACK + A.BACK_D + 0.05, lit: A.LIT + 0.25, flag: A.FLAG + 0.3, wave: A.SETTLES + 2.05, ans4: A.ANS4 + 0.3,
-    gone: A.BREAK + 0.57, hop1: A.HOP1 + 0.12 + 0.2, hop2: A.HOP2 + 0.12 + 0.2, landed2: A.HOP2 + 0.12 + 0.41 + 0.05,
+    q4: A.Q4 + 0.45, trGone: A.TR_OUT + A.TR_OUT_D + 0.005, back: A.BACK + A.BACK_D + 0.05, lit: A.LIT + 0.25, flag: A.FLAG + 0.3, wave: A.SETTLES + 2.05, ans4: A.ANS4 + 0.3, done: A.DONE + 0.01,
+    gone: A.OUT.frame + 0.3 + 0.005, hop1: A.HOP1 + 0.12 + 0.2, hop2: A.HOP2 + 0.12 + 0.2, landed2: A.HOP2 + 0.12 + 0.41 + 0.05,
     pract: A.PRACT + 0.35, title: A.VMT + 0.45, rows: A.ROWS[2] + 0.35, read: A.READ + 0.4, sore: A.SORE + 0.35, ul: A.UL + 0.6, ten: A.TEN + 0.3,
     rest: A.RADDR + 0.8, drift: A.CARRY0, leave: A.LEAVE + 0.5, last: A.D - 0.0005,
   }
@@ -83,7 +83,7 @@
           { name: 'Merc\'s line y 600 at 4 px; the edges 2 px', got: `${l.y.toFixed(2)}, ${l.px}; ${e[1].getAttribute('height')}`, want: '600.00, 4; 2.00', pass: near(l.y, 600, 0.5) && near(l.px, 4, 0.01) && e[1].getAttribute('height') === '2.00' },
           { name: 'the wave rule holds here (k / rule k)', got: S.ch.waveRule().ratio, want: 1, tol: 0.01 }, ...common())
       }
-      if (t === T.dim) out.push({ name: '13a: the frame dimmed to 35 % (its labels hidden)', got: chartA(), want: 0.35, tol: 0.01 }, { name: 'the kicker "QUICK CHECK" at (120, 110)', got: `${inkOf(S.kicker.el).left.toFixed(1)}, ${inkOf(S.kicker.el).base.toFixed(1)}`, want: '122, 110', pass: near(inkOf(S.kicker.el).base, 110, 0.5) && inkOf(S.kicker.el).left < 125 }, ...common())
+      if (t === T.dim) out.push({ name: '13a: the frame dimmed to 20 % (its labels hidden; DECISIONS 217)', got: chartA(), want: 0.2, tol: 0.01 }, { name: 'the kicker "QUICK CHECK" at (120, 110)', got: `${inkOf(S.kicker.el).left.toFixed(1)}, ${inkOf(S.kicker.el).base.toFixed(1)}`, want: '122, 110', pass: near(inkOf(S.kicker.el).base, 110, 0.5) && inkOf(S.kicker.el).left < 125 }, ...common())
       if (t === T.q1) {
         const p = panelBox(S.panel), q = inkOf(S.Qs[0][0].el), r = ringBox()
         out.push({ name: 'the panel x 120 to 960, y 140 to 330', got: fmt(p), want: '120 to 960, 140 to 330', pass: near(p.left, 120, 0.5) && near(p.right, 960, 0.5) && near(p.top, 140, 0.5) && near(p.bottom, 330, 0.5) },
@@ -92,9 +92,12 @@
       }
       if (t === T.fig) {
         // the figure's own anchors (its bounding box would count the masked legs): the crown, the back, the belly's front
-        const crown = S.fig.at('crown'), back = S.fig.at('back'), belly = S.fig.at('belly'), b = band()
-        out.push({ name: 'card 1\'s figure at L.FIGURE.S13: crown y 105, back x 1262.5, belly front about 1397.5 (x 1262 to 1420 with the head)', got: `crown ${crown[1].toFixed(1)}, back ${back[0].toFixed(1)}, belly ${belly[0].toFixed(1)}`, want: 'crown 105, back 1262.5', pass: near(crown[1], 105, 0.5) && near(back[0], 1262.5, 0.5) },
-          { name: 'masked from y 480 (gone by 495): 54 px or more over the dimmed band', got: (b.top - L.FIGURE.S13.fade[1]).toFixed(1), want: '>= 50', pass: b.top - L.FIGURE.S13.fade[1] >= 50 },
+        const crown = S.fig.at('crown'), back = S.fig.at('back'), belly = S.fig.at('belly'), head = S.fig.at('head'), b = band()
+        const k = A.FIG_K, headL = head[0] - 65 * k
+        out.push({ name: 'card 1\'s figure at 1.2 times L.FIGURE.S13 (k 0.9 for 0.75; DECISIONS 217)', got: (A.FIG_K / L.FIGURE.S13.k).toFixed(3), want: '1.200' },
+          { name: 'within x 1100 to 1690, y 60 to 535: crown, back, head\'s back, belly front (breathing in at u 360), the fade\'s end', got: `crown ${crown[1].toFixed(1)}, back ${back[0].toFixed(1)}, head from ${headL.toFixed(1)}, belly ${belly[0].toFixed(1)} (in: ${(A.FIG_X0 + 360 * k).toFixed(1)}), fade ${A.FIG_FADE.map((v) => v.toFixed(1)).join(' to ')}`, want: 'all inside', pass: crown[1] >= 60 && A.FIG_FADE[1] <= 535 && Math.min(back[0], headL) >= 1100 && A.FIG_X0 + 360 * k <= 1690 },
+          { name: 'the fade at the same figure units as the kit\'s (v 520 to 540)', got: A.FIG_FADE.map((v) => ((v - A.FIG_Y0) / k).toFixed(1)).join(' to '), want: '520.0 to 540.0' },
+          { name: 'its masked foot over the dimmed band (554.5)', got: (b.top - A.FIG_FADE[1]).toFixed(1), want: '>= 12', pass: b.top - A.FIG_FADE[1] >= 12 },
           { name: 'drawn whole', got: H.alpha(S.fig.g), want: 1, tol: 0.01 }, ...common())
       }
       if (t === T.ans1) {
@@ -110,12 +113,16 @@
       }
       if (t === T.traces) {
         // the traces' own geometry (their bounding boxes count the hidden circles and lit lanes)
-        const TRr = L.TRACE.RECAP, names = S.traceNames.map((n) => inkOf(n.el)), b = band()
+        const TRr = L.TRACE.RECAP, names = S.traceNames.map((n) => inkOf(n.el)), b = band(), tg = R(S.trTag.box)
         const rows = S.traces.map((tr, i) => { const p = tr.g.querySelector('path').getBBox(), m = tr.g.getScreenCTM(); return { left: p.x * m.a + m.e, right: (p.x + p.width) * m.a + m.e, top: p.y * m.d + m.f, bottom: (p.y + p.height) * m.d + m.f } })
-        out.push({ name: 'card 2: three traces x 1180 to 1640, centred y 200, 320, 440 (half-height 45; the waves\' own extent)', got: rows.map((r) => `${r.left.toFixed(0)}-${r.right.toFixed(0)} @${((r.top + r.bottom) / 2).toFixed(0)} h${((r.bottom - r.top) / 2).toFixed(0)}`).join('; '), want: '1180-1640 @200; @320; @440, h <= 45', pass: rows.every((r, i) => r.left >= 1179 && near(r.right, 1640, 2) && near((r.top + r.bottom) / 2, TRr.rows[i], 4) && (r.bottom - r.top) / 2 <= 45.5) },
-          { name: 'their names right-aligned 1160, baselines 210, 330, 450', got: names.map((n) => `${n.right.toFixed(1)}/${n.base.toFixed(1)}`).join(' '), want: '1160 / 210 330 450', pass: names.every((n, i) => near(n.right, 1160, 3) && near(n.base, [210, 330, 450][i], 0.5)) },
-          { name: 'the traces\' foot (y 440 + 45) clear of the dimmed band (554.5)', got: (b.top - (TRr.rows[2] + TRr.h)).toFixed(1), want: '>= 60', pass: b.top - (TRr.rows[2] + TRr.h) >= 60 },
-          { name: 'names clear of the panel (x 960)', got: Math.min(...names.map((n) => n.left)).toFixed(1), want: '> 972', pass: Math.min(...names.map((n) => n.left)) > 972 }, ...common())
+        const C3 = [170, 314, 458], HH = 1.2 * TRr.h
+        out.push({ name: 'card 2: the traces at 1.2 times L.TRACE.RECAP: x 1136 to 1688, centred y 170, 314, 458, half-height 54 (the waves\' own extent)', got: rows.map((r) => `${r.left.toFixed(0)}-${r.right.toFixed(0)} @${((r.top + r.bottom) / 2).toFixed(0)} h${((r.bottom - r.top) / 2).toFixed(0)}`).join('; '), want: '1136-1688 @170; @314; @458, h <= 54', pass: rows.every((r, i) => r.left >= 1135 && near(r.right, 1688, 2) && near((r.top + r.bottom) / 2, C3[i], 5) && (r.bottom - r.top) / 2 <= HH + 0.5) },
+          { name: 'the stack (centres +- 54) within y 60 to 535 and x 1100 to 1690', got: `${(C3[0] - HH).toFixed(1)} to ${(C3[2] + HH).toFixed(1)}; x ${Math.min(...rows.map((r) => r.left)).toFixed(1)} to ${Math.max(...rows.map((r) => r.right)).toFixed(1)}`, want: 'inside', pass: C3[0] - HH >= 60 && C3[2] + HH <= 535 && Math.min(...rows.map((r) => r.left)) >= 1100 && Math.max(...rows.map((r) => r.right)) <= 1690 },
+          { name: 'their names right-aligned 1116 (20 px left of the traces), baselines 180, 324, 468', got: names.map((n) => `${n.right.toFixed(1)}/${n.base.toFixed(1)}`).join(' '), want: '1116 / 180 324 468', pass: names.every((n, i) => near(n.right, 1116, 3) && near(n.base, [180, 324, 468][i], 0.5)) },
+          { name: 'the traces\' foot (458 + 54) clear of the dimmed band (554.5)', got: (b.top - (C3[2] + HH)).toFixed(1), want: '>= 12', pass: b.top - (C3[2] + HH) >= 12 },
+          { name: 'names clear of the panel (x 960)', got: Math.min(...names.map((n) => n.left)).toFixed(1), want: '> 972', pass: Math.min(...names.map((n) => n.left)) > 972 },
+          { name: 'their ILLUSTRATION chip (DECISIONS 218): standing, right-aligned with the traces (1688), over the stack', got: `a ${(+S.trTag.g.getAttribute('opacity')).toFixed(2)}; ${fmt(tg)}`, want: 'a 1.00; right 1688', pass: +S.trTag.g.getAttribute('opacity') > 0.99 && near(tg.right, 1688, 1.5) },
+          { name: 'the chip 12 px or more from every trace (the top one\'s crest at 116) and every label', got: `${(C3[0] - HH - tg.bottom).toFixed(1)}; from the names ${Math.min(...names.map((n) => Math.max(tg.left - n.right, n.top - tg.bottom))).toFixed(1)}; top ${tg.top.toFixed(1)}`, want: '>= 12', pass: C3[0] - HH - tg.bottom >= 12 && names.every((n) => tg.left - n.right >= 12 || n.top - tg.bottom >= 12) && tg.top >= 60 }, ...common())
       }
       if (t === T.tog) {
         const a0 = inkOf(S.ans3[0].el), a1 = inkOf(S.ans3[1].el)
@@ -127,6 +134,10 @@
         const l0 = inkOf(S.Qs[2][0].el), l1 = inkOf(S.Qs[2][1].el), r = ringBox()
         out.push({ name: '13d: question 4 (o14a, word for word) in two lines at 220 and 280', got: `${S.Qs[2][0].el.textContent} / ${S.Qs[2][1].el.textContent}`, want: 'What does a steady long note look like / on the pitch line?' },
           { name: 'left of the ring timer by 12 px or more', got: (r.left - Math.max(l0.right, l1.right)).toFixed(1), want: '>= 12', pass: r.left - Math.max(l0.right, l1.right) >= 12 }, ...common())
+      }
+      if (t === T.trGone) {
+        out.push({ name: '13d: the traces and their chip gone with the question\'s swap, before the frame\'s labels (DECISIONS 218)', got: `traces ${S.traces.map((tr) => (+tr.g.getAttribute('opacity')).toFixed(2)).join(' ')}; chip ${(+S.trTag.g.getAttribute('opacity')).toFixed(2)}; card 3\'s chip ${(+S.tag.g.getAttribute('opacity')).toFixed(2)}`, want: 'traces 0.00 0.00 0.00; chip 0.00; card 3\'s chip 0.00' },
+          { name: 'gone before card 3\'s labels start (s)', got: (A.BACK - (A.TR_OUT + A.TR_OUT_D)).toFixed(3), want: '> 0', pass: A.BACK - (A.TR_OUT + A.TR_OUT_D) > 0 }, ...common())
       }
       if (t === T.back) {
         const ao = inkOf(S.anyOct.el), tg = R(S.tag.g)
@@ -157,8 +168,17 @@
         const a0 = inkOf(S.ans4[0].el), a1 = inkOf(S.ans4[1].el)
         out.push({ name: '13d: "It settles into the band / and stays there." baselines 392 and 452', got: `${a0.base.toFixed(1)}, ${a1.base.toFixed(1)}`, want: '392, 452', pass: near(a0.base, 392, 0.5) && near(a1.base, 452, 0.5) }, ...common())
       }
+      if (t === T.done) {
+        const pts = S.ch.lastLine('hold')
+        out.push({ name: '13d: card 3\'s redraw complete (its last point at the frame\'s 10 s, x 1688)', got: pts.length ? pts[pts.length - 1][0].toFixed(1) : 'none', want: '1688.0', pass: !!pts.length && near(pts[pts.length - 1][0], 1688, 1) },
+          { name: 'the redraw 2.4 s or less, from the clock (DECISIONS 215)', got: `${A.REDRAW.toFixed(3)} s (speed 10 / ${A.REDRAW.toFixed(3)})`, want: '<= 2.4', pass: A.REDRAW <= 2.4 + 1e-9 },
+          { name: 'the finished answer holds 0.5 s or more before the cascade starts', got: (A.CASCADE - A.DONE).toFixed(3), want: '>= 0.5', pass: A.CASCADE - A.DONE >= 0.5 - 1e-9 },
+          { name: 'the frame and the answer still up', got: `chart ${chartA().toFixed(2)}; answer ${H.alpha(S.ans4[1].el).toFixed(2)}`, want: 'chart 1.00; answer 1.00' }, ...common())
+      }
       if (t === T.gone) {
-        out.push({ name: '13e: the clean break, the recap gone by the beat\'s start + 0.56', got: `${visTexts(0.01).length} texts; chart ${chartA().toFixed(2)}; panel ${H.alpha(S.panel.g).toFixed(2)}`, want: '0 texts; chart 0.00; panel 0.00' }, ...common())
+        const apex = A.HOP1 + L.HOP.crouch + L.HOP.air / 2
+        out.push({ name: '13e: the clean break from break + 0.2, the recap gone (the last element\'s 0.3 s out)', got: `${visTexts(0.01).length} texts; chart ${chartA().toFixed(2)}; panel ${H.alpha(S.panel.g).toFixed(2)}; cascade from break + ${(A.CASCADE - A.BREAK).toFixed(2)}`, want: '0 texts; chart 0.00; panel 0.00; cascade from break + 0.20' },
+          { name: 'gone before hop 1\'s apex (s to spare)', got: (apex - t).toFixed(3), want: '> 0', pass: apex - t > 0 }, ...common())
       }
       if (t === T.hop1 || t === T.hop2) {
         const drawn = [...root.querySelectorAll('.layer.mid *, .layer.hud *')].filter((e) => e.getBBox && !['g', 'svg', 'defs', 'stop', 'linearGradient', 'radialGradient', 'mask', 'filter', 'feGaussianBlur', 'clipPath'].includes(e.tagName) && H.alpha(e) > 0.01)
@@ -179,6 +199,7 @@
       if (t === T.title) {
         const ti = inkOf(S.vmTitle.el), ru = R(S.vmRule.g)
         out.push({ name: '"Voice Mirror" serif italic 96, baseline 250; the rule y 272, x 270 to 1070', got: `${ti.base.toFixed(1)}; ${fmt(ru)}`, want: '250; 270 to 1070, 271 to 273', pass: near(ti.base, 250, 0.5) && near(ru.left, 270, 0.5) && near(ru.right, 1070, 1) && near(ru.top, 271, 0.5) },
+          { name: '"Voice Mirror" lands 0.4 s after the panel (board; DECISIONS 215)', got: (A.VMT - A.PRACT).toFixed(3), want: '0.400' },
           { name: '"Practise it." and "Voice Mirror" apart (gap)', got: (ti.top - inkOf(S.practise.el).bottom).toFixed(1), want: '>= 12', pass: ti.top - inkOf(S.practise.el).bottom >= 12 }, ...common())
       }
       if (t === T.rows) {
@@ -191,19 +212,23 @@
       }
       if (t === T.read) {
         const l = S.readout.map((x) => inkOf(x.el)), p = panelBox(S.vmPanel)
-        out.push({ name: 'the readout, word for word, Inter 32 in three lines within 800 px (baselines 525, 565, 605)', got: S.readout.map((x) => x.el.textContent).join(' | '), want: 'the brief\'s sentence', pass: S.readout.map((x) => x.el.textContent).join(' ') === L.RECAP.VM.readout.text && l.every((x, i) => near(x.base, [525, 565, 605][i], 0.5) && x.right <= 1071) },
-          { name: 'the foot at 625', got: p.bottom, want: 625, tol: 0.5 }, ...common())
+        out.push({ name: 'the readout, word for word, Inter 32 in three lines within 800 px (baselines 523, 560, 597: closed up, DECISIONS 216)', got: S.readout.map((x) => x.el.textContent).join(' | ') + ' @ ' + l.map((x) => x.base.toFixed(1)).join(' '), want: 'the brief\'s sentence', pass: S.readout.map((x) => x.el.textContent).join(' ') === L.RECAP.VM.readout.text && l.every((x, i) => near(x.base, [523, 560, 597][i], 0.5) && x.right <= 1071) },
+          { name: 'its lines apart (ink gaps)', got: [l[1].top - l[0].bottom, l[2].top - l[1].bottom].map((v) => v.toFixed(1)).join(' '), want: '> 0', pass: l[1].top - l[0].bottom > 0 && l[2].top - l[1].bottom > 0 },
+          { name: 'the foot at 617', got: p.bottom, want: 617, tol: 0.5 }, ...common())
       }
-      if (t === T.sore) out.push({ name: '"Keep the glides comfortable." (665) and "Sore, hoarse or unwell today? Just listen along." (710)', got: `${inkOf(S.keep.el).base.toFixed(1)}, ${inkOf(S.sore.el).base.toFixed(1)}; to x ${inkOf(S.sore.el).right.toFixed(1)}`, want: '665, 710', pass: near(inkOf(S.keep.el).base, 665, 0.5) && near(inkOf(S.sore.el).base, 710, 0.5) }, ...common())
+      if (t === T.sore) out.push({ name: '"Keep the glides comfortable." (654) and "Sore, hoarse or unwell today? Just listen along." (699)', got: `${inkOf(S.keep.el).base.toFixed(1)}, ${inkOf(S.sore.el).base.toFixed(1)}; to x ${inkOf(S.sore.el).right.toFixed(1)}`, want: '654, 699', pass: near(inkOf(S.keep.el).base, 654, 0.5) && near(inkOf(S.sore.el).base, 699, 0.5) },
+        { name: 'the readout\'s foot (597) to "Keep..." (ink gap)', got: (inkOf(S.keep.el).top - inkOf(S.readout[2].el).bottom).toFixed(1), want: '>= 20', pass: inkOf(S.keep.el).top - inkOf(S.readout[2].el).bottom >= 20 }, ...common())
       if (t === T.ul) {
         const u = R(S.freeUl), f = inkOf(S.free.el)
-        out.push({ name: '"Free, no account: mercurypitch.com/mirror" (baseline 765), the address underlined at y 777', got: `${f.base.toFixed(1)}; underline ${fmt(u)}`, want: '765; under the address, y 776 to 778', pass: near(f.base, 765, 0.5) && near(u.top, 776, 0.6) && u.left > 580 && near(u.right, f.right, 3) },
-          { name: 'the foot at 790', got: panelBox(S.vmPanel).bottom, want: 790, tol: 0.5 }, ...common())
+        out.push({ name: '"Free, no account: mercurypitch.com/mirror" (baseline 752), the address underlined at y 764', got: `${f.base.toFixed(1)}; underline ${fmt(u)}`, want: '752; under the address, y 763 to 765', pass: near(f.base, 752, 0.5) && near(u.top, 763, 0.6) && u.left > 580 && near(u.right, f.right, 3) },
+          { name: 'the panel\'s last foot at 777 (778 or higher; DECISIONS 216)', got: panelBox(S.vmPanel).bottom, want: 777, tol: 0.5 }, ...common())
       }
       if (t === T.ten) {
         const l = inkOf(S.ten.el), m = S.boxes.merc
-        out.push({ name: '"Ten minutes, gently, most days. Missed a day? Just come back." under the card, Inter 32, ink-2', got: `${S.ten.el.textContent}; ${fmt(l)}`, want: 'one line from x 270, the brief\'s words', pass: S.ten.el.textContent === 'Ten minutes, gently, most days. Missed a day? Just come back.' && near(l.left, 270, 3) },
-          { name: 'its ink clear of the card\'s foot (790)', got: (l.top - 790).toFixed(1), want: '>= 4', pass: l.top - 790 >= 4 },
+        const pf = panelBox(S.vmPanel).bottom, cs = getComputedStyle(S.ten.el)
+        out.push({ name: '"Ten minutes, gently, most days. Missed a day? Just come back." under the card: one line, Inter 30, ink-2, x 270, baseline 820 (DECISIONS 216)', got: `${S.ten.el.textContent}; ${cs.fontFamily} ${cs.fontSize} ${S.ten.el.getAttribute('fill')}; ${fmt(l)}; base ${l.base.toFixed(1)}`, want: 'one line from x 270, Inter 30px, base 820', pass: S.ten.el.textContent === 'Ten minutes, gently, most days. Missed a day? Just come back.' && near(l.left, 270, 3) && cs.fontSize === '30px' && /Inter/.test(cs.fontFamily) && near(l.base, 820, 0.5) },
+          { name: 'its glyph foot at 828 or higher, its end left of the card\'s edge (1110)', got: `foot ${l.bottom.toFixed(1)}, end ${l.right.toFixed(1)}`, want: 'foot <= 828, end < 1110', pass: l.bottom <= 828 && l.right < 1110 },
+          { name: 'the panel\'s last foot 16 px or more over its cap top', got: `${pf.toFixed(1)}; ${(l.top - pf).toFixed(1)} px`, want: '>= 16', pass: l.top - pf >= 16 },
           { name: 'its ink 12 px or more over the floor horizon (840; DECISIONS 203)', got: (840 - l.bottom).toFixed(1), want: '>= 12', pass: 840 - l.bottom >= 12 },
           { name: 'from Merc\'s body at (1290, 840)', got: m ? (m.x0 - l.right).toFixed(1) : 'none', want: '>= 20', pass: !!m && m.x0 - l.right >= 20 }, ...common())
       }

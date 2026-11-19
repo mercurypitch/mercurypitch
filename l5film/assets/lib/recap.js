@@ -13,7 +13,9 @@
                         220 and 280; its ring timer at (910, 250); answers serif italic from x 150: one line 64 px
                         at 400, two lines 56 px at 392 and 452), TRACES (card 2: L.TRACE.RECAP), FIGURE
                         (card 1: L.FIGURE.S13), VM (the Voice Mirror card: its panel's foot for each row, every
-                        line's text, font, x and baseline, the glyphs), REST (the rest card), DRIFT (14 px)
+                        line's text, font, x and baseline, the glyphs; closed up 13 px under its rows for the
+                        one-line ten line, Inter 30 at baseline 820: DECISIONS 216, the last foot 777), REST
+                        (the rest card), DRIFT (14 px)
      const pn = L.panel(svg, { x0, y0, x1, y1, r = 16 })
      pn.draw({ a = 1, y1 = null (its foot, eased by the scene as rows land), dy = 0 })
                         chrome 25 % stroke, obsidian fill 85 %
@@ -47,7 +49,7 @@
     FIGURE: null,
     TRACES: null,
     VM: {
-      panel: { x0: 230, x1: 1110, y0: 90, feet: [300, 360, 420, 480, 625, 685, 730, 790] },
+      panel: { x0: 230, x1: 1110, y0: 90, feet: [300, 360, 420, 480, 617, 674, 719, 777] },
       practise: { text: 'Practise it.', x: 270, y: 150, size: 40 },
       title: { text: 'Voice Mirror', x: 270, y: 250, size: 96, family: 'serif' }, rule: { x0: 270, x1: 1070, y: 272 },
       rows: [
@@ -56,11 +58,12 @@
         { text: 'then sing back five notes it plays.', x: 326, y: 460, glyph: 'dots', gy: 448 },
       ],
       rowSize: 34,
-      readout: { text: 'For the hold, it shows in cents how fast the note drifted and how much it wobbled, and a vibrato isn’t counted against you.', x: 270, y: [525, 565, 605], size: 32, family: 'inter', width: 800 },
-      keep: { text: 'Keep the glides comfortable.', x: 270, y: 665, size: 34, weight: 500 },
-      sore: { text: 'Sore, hoarse or unwell today? Just listen along.', x: 270, y: 710, size: 34, weight: 500 },
-      free: { text: 'Free, no account: mercurypitch.com/mirror', x: 270, y: 765, size: 40, underlineY: 777 },
-      ten: [{ text: 'Ten minutes, gently, most days.', y: 822 }, { text: 'Missed a day? Just come back.', y: 862 }], tenX: 270, tenSize: 34,
+      readout: { text: 'For the hold, it shows in cents how fast the note drifted and how much it wobbled, and a vibrato isn’t counted against you.', x: 270, y: [523, 560, 597], size: 32, family: 'inter', width: 800 },
+      keep: { text: 'Keep the glides comfortable.', x: 270, y: 654, size: 34, weight: 500 },
+      sore: { text: 'Sore, hoarse or unwell today? Just listen along.', x: 270, y: 699, size: 34, weight: 500 },
+      free: { text: 'Free, no account: mercurypitch.com/mirror', x: 270, y: 752, size: 40, underlineY: 764 },
+      // one line under the card (DECISIONS 216): the board's two lines cannot both clear the floor horizon (203)
+      ten: { text: 'Ten minutes, gently, most days. Missed a day? Just come back.', x: 270, y: 820, size: 30, family: 'inter', weight: 400 },
     },
     REST: {
       panel: { x0: 1130, x1: 1690, y0: 250, y1: 600 },
