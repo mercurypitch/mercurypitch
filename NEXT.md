@@ -4300,3 +4300,15 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   rooms; phone 390x844 the column (bench 0..390); no errors, no sideways scroll, production none.
   Both of this session's PRs are merged and verified. Open work: polish-2 builder, film group A fix
   round (group B paused), hourly check-in at :50.
+
+## 09:23 UTC, 19 Nov
+- GROUP A FIX ROUND DONE and ACCEPTED by the lead (no second critic, owner's 2-turn cap): guess
+  (Merc's line 0, easy take dim, travelling head) reads; pass 0.7 s, peak 13.5/frame, no pop;
+  pull keeps band fill + A3; crane up never empty; S3 label aligned; q0 ring beside the swatches;
+  S2 chart up 0.2 s earlier; voice on every clip; probe 189/189; root check 0 errors. DECISIONS 178
+  (the four "could not do as written" accepted). Board/HANDOFFS amended for 170 and 175 ([A-01: n]).
+  LEDGER A-01 row filled. LEFT FOR GROUP A: Merc's amber line shows through the softening bead
+  (38.30-38.53); fades out by hook + 0.65; with the next s01 render, before integration.
+- GROUP B RESUMED (S5-S7), told about DECISIONS 164-178 and to re-check host stills.
+- Heavy agents now: polish-2 builder + group B. Next film after B: groups C and D (two at a time,
+  only when the polish builder is done), then E (E's brief: 13f lines vs Merc's hop path).
