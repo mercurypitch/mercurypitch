@@ -4626,3 +4626,13 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   of 233 gone or not, the four collisions' crops, Merc through the two hops, loudness). Resume the
   production builder (builder) with it once B and E are accepted. B was probing S6's named
   settles; E was measuring s13's card drift.
+
+## 19:38 UTC, 19 Nov
+- GROUP B F-01 ROUND HANDED BACK and ACCEPTED (DECISIONS 238; lead looked at named-settles.png,
+  how-settle.png and the S6/S7 cut frames): gauge labels settle on their words again (two from the
+  plate's top-left corner, under a stroke); "muscles," and "how" settle; S7's rows already land on
+  their words (228's last clause); holds inside words gone (160.9 with them); pause holds to the
+  final passes. Probes 75/307/112, checks 0. HANDOFFS ([F-01 fix: 238]; backup $S/handoffs-pre238.md).
+- Only GROUP E in flight now (it was rendering s14-next). NEXT when E is accepted: resume the
+  production builder (builder) with briefs/l5-film-draft-02.md; fill LEDGER's critic-F-01
+  "After" from draft-02's numbers; then the owner's look.

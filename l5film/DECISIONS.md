@@ -1851,3 +1851,18 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      care block's reasons need no lighting: each lands on its own word. Probes 64 and 146; checks 0
      errors; the cuts on `sing`, b38 and `recap` (now proved against group E's real S13 too) hold.
      HANDOFFS § The turn follows ([F-01 fix: 237]).
+
+## The lead's call on group B's full-film fix round, 19 November
+
+238. **Group B's F-01 round is accepted** (the lead looked at the four gauge labels at rest and at
+     peak, the "how" settle and the S6 to S7 cut's frames). The gauge's labels settle when the voice
+     names them again: "held back" 1.2 on "Hold" (135.20); "the lungs' own push" 1.08 on both
+     "themselves" (140.70, 160.76); "what the note needs" 1.08 on "needs" (144.12). Those two scale
+     from their plate's top-left corner, not the board's left baseline: they hang under a stroke, and a
+     baseline-anchored scale would push their plates across it. "with your breathing muscles," settles
+     1.08 on "muscles," (136.91), the legs 18.6 px from its ink; S7's "how singers manage the breath"
+     1.08 on "how" (193.50). S7's mix-up rows need no lighting: each lands on its own words (228's last
+     clause). The holds inside words are gone, the film's longest (160.9, 0.6 s) with them; S5 1.2, S6
+     1.5 and S7 2.5 s per 30 s remain, every hold of 0.3 s or more in a pause, for the final passes
+     (227). Probes 75, 307 and 112; checks 0 errors; the joins S5 to S6 and S7 to S8 and the S6 to S7
+     cut hold. HANDOFFS § The gauge and § The mix-up card follow ([F-01 fix: 238]).

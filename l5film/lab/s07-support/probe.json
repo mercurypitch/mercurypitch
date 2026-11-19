@@ -565,6 +565,21 @@
   "pass": true
  },
  {
+  "t": 22.154999999999994,
+  "name": "[F-01: 227] \"how singers manage the breath\" settles on \"how\": its scale at the peak (44 px: 1.1 x 1.08)",
+  "got": 1.19,
+  "want": 1.188,
+  "tol": 0.002,
+  "pass": true
+ },
+ {
+  "t": 22.154999999999994,
+  "name": "[F-01: 227] ... its left baseline stays at (980, 800)",
+  "got": "980",
+  "want": "980",
+  "pass": true
+ },
+ {
   "t": 20.31000000000001,
   "name": "7d: the four words back, \"support\" lit with the two before",
   "got": "lit lit dim lit",

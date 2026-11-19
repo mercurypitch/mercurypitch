@@ -75,6 +75,16 @@ before this lab's renders).
 - The fork (three `L.arrow`s, the stem a quadratic), the 5c arrows, the plan.
 - `L.CONTOUR.push`'s band crossings found by bisection on the contour (no typed seconds).
 
+## Fix round F-01 (the full-film critic, DECISIONS 225 to 236), 19 November
+
+No change to the composition: S5 is not named in the round's items, and its holds keep out of words. Re-rendered on the
+kit's integration (clip 19 November): holds 1.4 s inside the film (1.2 s per 30 s), longest 0.3 s; the two of 0.3 s
+fall in pauses (9.60: "pressure." ends 9.32, "It" 9.99; 31.00: "things." ends 30.81, "Aren't" 31.35); single-frame
+events all in the hosts' faces (pops 7.833, 12.367, 35.033; jumps 10.000, 14.900, 20.167, 31.367); -20.0 LUFS, true
+peak -2.8 dBTP. Its first frame against its B-01 twin: mean 0.01 of 255 without the hosts (S4's glide back keeps it,
+as group A says); the S5 to S6 join holds (0, 0) (`../s06-diaphragm/fix-F-01/`). Probe 75 of 75;
+`check lab/s05-push/proj --at=10.92,21.0,23.25,33.62,35.55`: contrast 56/56, layout 0 issues, 0 errors.
+
 ## Fix round B-01 (critic B-01, DECISIONS 180 to 189)
 
 | Item | Change (file, line) | Before | After | Proof |

@@ -359,6 +359,14 @@ Drawn in figure units `(u, v)`: u 0 to 400 back to front (it faces right), v 0 (
   right end passes x 1347, so it passes 12 px or more above the "ILLUSTRATION" chip (x 1359 to 1630,
   y 300 to 340) **[v3: 3]**. The opening (6e) grows the strip's box (y 630 to 750) to the frame's
   box, 127.95 to 129.35.
+- **Settles when the voice names a label again** (the board's settle, 0.15 s up and 0.6 s back)
+  **[F-01 fix: 238]**: "held back" 1.2 on "Hold" (135.20), as on "holding" and o7's "hold";
+  "the lungs' own push" 1.08 on "themselves" (140.70 and o7's, 160.76); "what the note needs" 1.08
+  on "needs" (144.12). These two scale from their plate's top-left corner (they hang under the
+  frame's top stroke and the gold line, which a baseline-anchored scale would push their plates
+  across); "what the note needs" keeps 4.5 px under the gold line at its peak. "with your breathing
+  muscles," 1.08 on "muscles," (136.91) from its left baseline: the legs stay 18.6 px from its
+  ink, its right end 57.8 px from "one 10-second note".
 
 ### The mix-up card (S7, F0 from the matched cut; frame-fixed)
 
@@ -399,6 +407,9 @@ miniatures; the lower half for each piece of evidence while it is large.
   at x 360, baseline 655, the phrase following it on that baseline, "no one agreed meaning" to
   baseline 700.
 - Every row and miniature leaves up fast from 215.85, 0.05 s apart; the parked figure stays.
+- **Settle** **[F-01 fix: 238]**: "how singers manage the breath" 1.08 on "how" (193.50), from its
+  left baseline (the board's settle). The rows need no lighting (DECISIONS 228): each lands on its
+  own words.
 
 ### The folds and the traces (S9, F0 throughout)
 

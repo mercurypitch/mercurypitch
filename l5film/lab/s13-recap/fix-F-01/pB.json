@@ -1,0 +1,2 @@
+[["transform: 'translate3d(0px, 0px, 0px)' })", "transform: 'translate(0px, 0px)' })"],
+ ["cardsLayer.style.transform = `translate3d(0px, ${drift.toFixed(3)}px, 0px)`", "cardsLayer.style.transform = `translate(0px, ${drift.toFixed(3)}px)`"]]

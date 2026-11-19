@@ -14,6 +14,8 @@
     gone: A.OUT.frame + 0.3 + 0.005, hop1: A.HOP1 + 0.12 + 0.2, hop2: A.HOP2 + 0.12 + 0.2, landed2: A.HOP2 + 0.12 + 0.41 + 0.05,
     pract: A.PRACT + 0.35, title: A.VMT + 0.45, rows: A.ROWS[2] + 0.35, read: A.READ + 0.4, sore: A.SORE + 0.35, ul: A.UL + 0.6, ten: A.TEN + 0.3,
     rest: A.RADDR + 0.8, drift: A.CARRY0, leave: A.LEAVE + 0.5, last: A.D - 0.0005,
+    nameRise: A.TRACES + 0.2 + 0.1 * 2, read1: A.READ + 0.31, readAll: A.READ_LIT[2] + A.LIT_D + 0.005, body1: A.RBODY + 0.35, bodyAll: A.RBODY_LIT[1] + A.LIT_D + 0.005,
+    driftPre: A.DRIFT - 0.005, driftMid: A.DRIFT + A.DRIFT_D / 2, driftEnd: A.LEAVE - 0.0005,
   }
   const root = document.getElementById(sid + '-scene')
   const R = H.R
@@ -41,10 +43,10 @@
   }
   // Merc's body on screen: mercGate's box less the root it cancels (the renderer draws him that far right in the frame)
   const mercSeen = (t) => {
-    // the frame the renderer shows: the tag's data-media-start plus the scene time past its data-start
+    // the pass frame the renderer shows, as the kit reads it (L.passFrame, DECISIONS 234)
     const b = S.boxes.merc, rt = window.MERC_ROOTS && window.MERC_ROOTS['m-blue-s13'], v = document.getElementById('s13-recap-m-blue')
     if (!b || !rt) return b
-    const i = Math.floor((t - parseFloat(v.getAttribute('data-start')) + parseFloat(v.getAttribute('data-media-start'))) * rt.fps + 1e-6), fr = rt.frames[Math.max(0, Math.min(rt.frames.length - 1, i))]
+    const i = L.passFrame(t, parseFloat(v.getAttribute('data-start')), parseFloat(v.getAttribute('data-media-start')), rt.fps || 30), fr = rt.frames[Math.max(0, Math.min(rt.frames.length - 1, i))]
     const dx = fr[0] * L.ROOT_PX * (b.x1 - b.x0) / 0.53
     return { x0: b.x0 + dx, x1: b.x1 + dx, y0: b.y0, y1: b.y1 }
   }
@@ -247,6 +249,34 @@
           { name: 'the bead\'s carry from there (L.TEASE.carry at its start)', got: (() => { const c = L.TEASE.carry(A.T0 + t + 1e-6, A.T0 + A.CARRY0); return c ? `${c.x.toFixed(1)}, ${c.y.toFixed(1)}, r ${c.r.toFixed(2)}` : 'none' })(), want: '272.0, 434.0, r 4.00' }, ...common())
       }
       if (t === T.leave) out.push({ name: 'the cards\' lines leaving in turn (some gone, some not)', got: visTexts(0.5).length, want: 'between', pass: true }, ...common())
+      // a fill as rgb(r,g,b): L.mixHex writes that form, a label's own fill is a hex
+      const rgb = (c) => (/^#/.test(c || '') ? L.mixHex(c, c, 0) : (c || '').replace(/\s+/g, ''))
+      const fillOf = (el) => rgb(el.getAttribute('fill'))
+      const INK = rgb(L.C.ink), INK2 = rgb(L.C.ink2)
+      const layerDy = (el) => +((/translate\(0px, ([-\d.]+)px\)/.exec(el.style.transform) || [0, 'NaN'])[1])
+      if (t === T.nameRise) {
+        const dys = S.nameLayers.map((n) => layerDy(n.el)), own = S.traceNames.map((n) => n.el.closest('.sub-layer') !== null)
+        out.push({ name: '13c: the trace names rise in their own composited layers, at sub-pixel offsets (DECISIONS 233)', got: `${own.join(' ')}; offsets ${dys.map((d) => d.toFixed(3)).join(' ')}`, want: 'true x3; fractional, decreasing to 0', pass: own.every(Boolean) && dys.every((d) => d >= 0 && d <= 14) && dys.some((d) => Math.abs(d - Math.round(d)) > 0.001) },
+          { name: 'each name\'s own SVG transform carries no rise (the layer moves it)', got: S.traceNames.map((n) => n.el.getAttribute('transform') || 'none').join(' | '), want: 'no translate in y', pass: S.traceNames.every((n) => !/translate\([-\d.]+[ ,]+[1-9]/.test(n.el.getAttribute('transform') || '')) }, ...common())
+      }
+      if (t === T.read1) {
+        const f = S.readout.map((l) => fillOf(l.el))
+        out.push({ name: '13e: the readout landed whole at ink-2; its first line lit to ink as it lands, the others still ink-2 (DECISIONS 228)', got: f.join(' '), want: `${INK} ${INK2} ${INK2}`, pass: f[0] === INK && f[1] === INK2 && f[2] === INK2 },
+          { name: 'its lines light in turn between "plays." and "Keep" (type only: no voice reads them)', got: A.READ_LIT.map((v) => v.toFixed(3)).join(' ') + ` (plays ${A.READ.toFixed(3)}, Keep ${A.KEEP.toFixed(3)})`, want: 'evenly from plays, the last lit by Keep', pass: Math.abs(A.READ_LIT[0] - A.READ) < 1e-9 && A.READ_LIT[2] + A.LIT_D <= A.KEEP + 1e-9 }, ...common())
+      }
+      if (t === T.readAll) out.push({ name: 'the readout\'s three lines lit (ink), staying lit', got: S.readout.map((l) => fillOf(l.el)).join(' '), want: `${INK} x3`, pass: S.readout.every((l) => fillOf(l.el) === INK) }, ...common())
+      if (t === T.body1) {
+        const f = S.restBody.map((l) => fillOf(l.el))
+        out.push({ name: '13g: the rest card\'s body landed whole: line 1 lit as said, line 2 ink-2 until "your voice" (DECISIONS 228)', got: f.join(' '), want: `${INK} ${INK2}`, pass: f[0] === INK && f[1] === INK2 },
+          { name: 'the rest card\'s question stays ink-2 (the board\'s)', got: S.restQ.map((l) => fillOf(l.el)).join(' '), want: `${INK2} x2`, pass: S.restQ.every((l) => fillOf(l.el) === INK2) }, ...common())
+      }
+      if (t === T.bodyAll) out.push({ name: 'line 2 lit on its first words, staying lit', got: S.restBody.map((l) => fillOf(l.el)).join(' '), want: `${INK} x2`, pass: S.restBody.every((l) => fillOf(l.el) === INK) }, ...common())
+      if (t === T.driftPre || t === T.driftMid || t === T.driftEnd) {
+        const d = +((/translate3d\(0px, ([-\d.]+)px/.exec(S.cardsLayer.style.transform) || [0, 'NaN'])[1])
+        const want = t === T.driftPre ? 0 : t === T.driftMid ? -7 : -14
+        out.push({ name: `13g: the cards' drift (1.2 s, sine.inOut, ending as the leave starts; DECISIONS 233): ${t === T.driftPre ? 'not yet' : t === T.driftMid ? 'half way' : 'done'}`, got: d.toFixed(3), want: want.toFixed(3), pass: Math.abs(d - want) < 0.05 },
+          { name: 'the drift\'s timing from the clock: from the leave less 1.2 s to the leave', got: `${A.DRIFT.toFixed(3)} to ${(A.DRIFT + A.DRIFT_D).toFixed(3)}; leave ${A.LEAVE.toFixed(3)}`, want: 'ends at the leave', pass: Math.abs(A.DRIFT + A.DRIFT_D - A.LEAVE) < 1e-9 }, ...common())
+      }
       if (t === T.last) {
         const c = L.TEASE.carry(A.T0 + t, A.T0 + A.CARRY0), b = R(S.bead.core)
         out.push({ name: 'last frame: no texts or panels left (HANDOFFS § S13 to S14: the lines gone)', got: `${visTexts(0.01).length} texts; panels ${H.alpha(S.vmPanel.g).toFixed(2)} ${H.alpha(S.restPanel.g).toFixed(2)}`, want: '0 texts; panels 0.00 0.00' },

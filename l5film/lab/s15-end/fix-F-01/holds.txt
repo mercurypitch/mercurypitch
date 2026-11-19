@@ -1,0 +1,9 @@
+s15-end: measure.py's holds against the spoken words (scene time)
+**Inside the film:** 0.8 s (3.9 s per 30 s), longest 0.4 s.
+**Final hold:** none.
+
+    1.60 s  0.3 s  a pause
+    3.30 s  0.1 s  a pause
+    4.20 s  0.4 s  a pause
+
+3 holds; 0 of 0.3 s or more inside a word.

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s14-next" data-composition-id="s14-next" data-start="0" data-duration="0.670" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s14-next -->
+      <div class="scene" id="s14-next-scene"></div>
+      <script>
+        ;(function () {
+          // S14, "Next time" (STORYBOARD 14a to 14c; HANDOFFS § The tease and the end card, § The cuts S13 to S14 and S14
+          // to S15; FACTS 90, 99; DECISIONS 83, 122). F0, static: the bead carried from S13's "five notes" glyph lands on
+          // C4's row with a squash (L.TEASE.carry, from film time, as s13-recap draws it); the faint semitone rows fade in
+          // under it and the other six beads come in as outlines; Merc sings the tune once from C, standing under its right
+          // end, and each bead lights blue on its note's onset with an echo ring; b60: the tease line, the rising arrows
+          // and Tavi's dashed copy six rows up with its "?", never played; o15: Lesson 6's hook; then the figure shrinks
+          // toward the end card's top right across the cut (L.TEASE.shrink, film time). Every time is a cue, a word or a
+          // duration.
+          const SID = 's14-next'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const C = L.C, P = L.prog, clamp = L.clamp, f2 = L.f2
+          const TE = L.TEASE
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
+          const world = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+          const cam = L.frameRig(room, { from: 'F0' })               // F0, static
+
+          /* ---------------------------------------------------------------- anchors */
+          // 14a: next, b59, twinkle
+          const KICK = at('next')                                     // "NEXT TIME"
+          const CARRY0 = at('next', 'start', -0.92), CARRY_D = 1.6    // the carry (L.TEASE.carry's own start and length)
+          const LAND = CARRY0 + CARRY_D                               // the bead lands on C4 with a squash
+          // the faint rows and the six other beads' outlines fade in from S14's first frame (0.6 s), so the join never holds
+          // the carried bead alone (DECISIONS 219)
+          const ROWS_IN = 0, ROWS_D = 0.6
+          const TW = at('twinkle')                                    // each bead lights on its note's onset (L.TEASE.onset)
+          const LIGHT_D = 0.2                                         // the light comes up linearly (a 0.06 s light flagged as a pop)
+          // 14b: b60
+          const LINE = word('b60', 'I move')                          // the tease line
+          // its baseline, the kit's 170 (DECISIONS 220, 223): its cap top 24 px or more under "NEXT TIME"'s foot (110),
+          // still centred over the tune (x 960); the kicker keeps the frame's left margin
+          const LINE_Y = L.TEASE.LINE.y
+          const ARROWS = word('b60', 'every'), ARROW_STEP = 0.08, ARROW_D = 0.4   // the arrows rise, one after another
+          const COPY = ARROWS + 0.3, COPY_D = 7 * ARROW_STEP          // the dashed copy draws bead by bead as each arrow arrives
+          const QM = COPY + COPY_D + 0.1                              // its "?" once the copy is drawn
+          // 14c: o15
+          const LINE_OUT = at('b60', 'end', -0.06)                    // the tease line (and the kicker) leave up fast as b60 ends
+          const HOOK = [word('o15', 'Why'), word('o15', 'and')]       // Lesson 6's hook, two lines, each on its words
+          const HOOK_OUT = at('o15', 'end', 0.04)                     // the hook leaves up fast
+          const SHRINK0 = at('end', 'start', -0.31)                   // the figure's shrink (L.TEASE.shrink's own start), across the cut
+          const ROWS_OUT_D = 0.4                                      // the rows fade from the shrink's start (board 555.70 to 556.10)
+
+          /* ---------------------------------------------------------------- the tease figure (world): rows, beads, arrows,
+             the dashed copy and its "?", masked round the hosts */
+          const te = L.tease(world)
+          const arrowsG = te.beads[0].arrow.g.parentNode
+          const echo = L.echoRings(world, { max: 2 })
+          // the carried bead: the chrome bead S13's glyph dot grew into, on L.TEASE.carry from film time (s13-recap draws the
+          // same); it lands with a squash and stays filled, as it arrived, until its note lights the first bead blue under it
+          // (DECISIONS 219): it never empties to an outline
+          const bead = L.bead(world, { r: 20, color: C.chrome })
+          L.bead4.place(bead, null)
+
+          /* ---------------------------------------------------------------- type (hud, frame-fixed) */
+          const kicker = L.kicker(hud, 'Next time')
+          const line = L.label(hud, TE.LINE.text, { x: TE.LINE.x, y: LINE_Y, size: TE.LINE.size, anchor: 'middle' })
+          const subLayer = (parent) => {
+            const el = L.el('div', { class: 'sub-layer', 'data-layout-allow-overflow': '' }, parent)
+            Object.assign(el.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', pointerEvents: 'none', willChange: 'transform', transform: 'translate(0px, 0px)' })
+            return { el, svg: L.stage(el), move(dy) { el.style.transform = `translate(0px, ${dy.toFixed(3)}px)` } }
+          }
+          const hookLayer = subLayer(room.hud)
+          const hook = TE.HOOK.map((h) => L.label(hookLayer.svg, h.text, { x: 960, y: h.y, size: TE.hookSize, family: 'serif', anchor: 'middle' }))
+
+          /* ---------------------------------------------------------------- the hosts at 300: Merc under the tune's right
+             end since his hops in S13, Tavi in her corner */
+          const HR = L.HOSTS.mercRight
+          const merc = (() => null)
+          const tavi = (() => null)
+
+          const probe = { cam, te, arrowsG, echo, bead, kicker, line, hook,
+            A: { KICK, CARRY0, CARRY_D, LAND, ROWS_IN, ROWS_D, TW, LINE_Y, LIGHT_D, LINE, ARROWS, ARROW_STEP, ARROW_D, COPY, COPY_D, QM, LINE_OUT, HOOK, HOOK_OUT, SHRINK0, ROWS_OUT_D, D, T0 },
+            boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+
+          const upFast = (t, t0) => { const u = P(t, t0, 0.3, 'power3.in'); return { a: 1 - u, dy: -16 * u } }
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, 0.67, (t) => { t = t + 15.2
+            const T = T0 + t
+            cam.apply(t)
+            dust(T)
+            const mb = merc(t), tb = tavi(t)
+            probe.boxes = { merc: mb, tavi: tb }
+
+            /* the carry: in flight from S13, landing on C4 with a squash; it stays filled until its note's onset, where it
+               gives way (LIGHT_D, linear) to the first bead lighting blue under it */
+            const c = L.TEASE.carry(T, T0 + CARRY0)
+            const handed = P(t, TW + TE.onset(0), LIGHT_D, 'none')
+            const [sx, sy] = L.bead4.squash(t, LAND)
+            L.bead4.place(bead, c && handed < 1 ? { x: c.x, y: c.y, scale: c.r / 20, a: 1 - handed, sx, sy } : null)
+
+            /* the figure: the rows fade in under the bead and out as it shrinks; the beads light on the tune's onsets and
+               stay lit (Merc's notes, blue); the arrows, the copy and its "?" (14b); the shrink toward the end card (14c) */
+            const u = L.TEASE.shrink(T, T0 + SHRINK0)
+            const lit = (i) => P(t, TW + TE.onset(i), LIGHT_D, 'none')
+            te.draw({
+              rowsA: P(t, ROWS_IN, ROWS_D, 'none') * (1 - P(t, SHRINK0, ROWS_OUT_D, 'none')),
+              keep: [mb, tb].filter(Boolean),
+              beads: (i) => ({ a: i === 0 ? (handed > 0 ? 1 : 0) : P(t, ROWS_IN, ROWS_D, 'none'), lit: lit(i), scale: L.pulse(t, [TW + TE.onset(i)], 'bead') }),
+              arrows: (i) => P(t, ARROWS + ARROW_STEP * i, ARROW_D, 'power2.out'),
+              copy: P(t, COPY, COPY_D, 'none'),
+              qA: P(t, QM, 0.25, 'none'),
+              place: u > 0 ? TE.place(u) : null,
+            })
+            // the arrows go with the rows as the shrink starts: the end card keeps the beads, the copy and its "?" (HANDOFFS)
+            arrowsG.setAttribute('opacity', (1 - P(t, SHRINK0, ROWS_OUT_D, 'none')).toFixed(3))
+            echo.draw(t, TE.BEADS.map((b, i) => ({ t: TW + TE.onset(i), x: b.x, y: b.y, r: b.r })))
+
+            /* type: the kicker and the tease line leave together as b60 ends; the hook lands line by line and leaves up
+               fast before the shrink */
+            kicker.draw(t, KICK, LINE_OUT, { upFast: true })
+            const lo = upFast(t, LINE_OUT)
+            line.draw({ a: P(t, LINE, 0.25, 'none') * lo.a, dy: lo.dy })
+            const ho = upFast(t, HOOK_OUT)
+            hook.forEach((h, i) => h.draw({ a: P(t, HOOK[i], 0.3, 'none') * ho.a })); hookLayer.move(ho.dy)
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

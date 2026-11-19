@@ -1489,7 +1489,7 @@
  {
   "t": 64.255,
   "name": "the carry starts on the \"five notes\" glyph's first dot: its place now (272, 434 after the drift)",
-  "got": "272, 434.41",
+  "got": "272, 434.00",
   "want": "272, 434",
   "pass": true
  },
@@ -1510,21 +1510,21 @@
  {
   "t": 64.255,
   "name": "keep-out: nearest visible text to merc's body box (\"mercurypitch.com/mirror\")",
-  "got": 86.59,
+  "got": 87,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 64.255,
   "name": "keep-out: nearest visible text to tavi's body box (\"mercurypitch.com/mirror\")",
-  "got": 169.4,
+  "got": 169.61,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 64.255,
   "name": "nothing visible below y 896 (ink)",
-  "got": 813.41,
+  "got": 813,
   "want": "<= 896",
   "pass": true
  },
@@ -1609,6 +1609,328 @@
   "t": 65.0245,
   "name": "nothing visible below y 896 (ink)",
   "got": 0,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 8.750000000000021,
+  "name": "13c: the trace names rise in their own composited layers, at sub-pixel offsets (DECISIONS 233)",
+  "got": "true true true; offsets 0.112 0.896 3.024",
+  "want": "true x3; fractional, decreasing to 0",
+  "pass": true
+ },
+ {
+  "t": 8.750000000000021,
+  "name": "each name's own SVG transform carries no rise (the layer moves it)",
+  "got": "none | none | none",
+  "want": "no translate in y",
+  "pass": true
+ },
+ {
+  "t": 8.750000000000021,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 8.750000000000021,
+  "name": "keep-out: nearest visible text to merc's body box (\"do many singing teachers aim for?\")",
+  "got": 358,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 8.750000000000021,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 550.39,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 8.750000000000021,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 478.02,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 39.31,
+  "name": "13e: the readout landed whole at ink-2; its first line lit to ink as it lands, the others still ink-2 (DECISIONS 228)",
+  "got": "rgb(230,237,243) rgb(168,179,191) rgb(168,179,191)",
+  "want": "rgb(230,237,243) rgb(168,179,191) rgb(168,179,191)",
+  "pass": true
+ },
+ {
+  "t": 39.31,
+  "name": "its lines light in turn between \"plays.\" and \"Keep\" (type only: no voice reads them)",
+  "got": "39.000 39.400 39.800 (plays 39.000, Keep 40.200)",
+  "want": "evenly from plays, the last lit by Keep",
+  "pass": true
+ },
+ {
+  "t": 39.31,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 39.31,
+  "name": "keep-out: nearest visible text to merc's body box (\"For the hold, it shows in cents how fast\")",
+  "got": 218.72,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 39.31,
+  "name": "keep-out: nearest visible text to tavi's body box (\"For the hold, it shows in cents how fast\")",
+  "got": 704.58,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 39.31,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 604,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 40.10499999999999,
+  "name": "the readout's three lines lit (ink), staying lit",
+  "got": "rgb(230,237,243) rgb(230,237,243) rgb(230,237,243)",
+  "want": "rgb(230,237,243) x3",
+  "pass": true
+ },
+ {
+  "t": 40.10499999999999,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 40.10499999999999,
+  "name": "keep-out: nearest visible text to merc's body box (\"For the hold, it shows in cents how fast\")",
+  "got": 218.72,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 40.10499999999999,
+  "name": "keep-out: nearest visible text to tavi's body box (\"For the hold, it shows in cents how fast\")",
+  "got": 704.58,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 40.10499999999999,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 604,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 56.16499999999994,
+  "name": "13g: the rest card's body landed whole: line 1 lit as said, line 2 ink-2 until \"your voice\" (DECISIONS 228)",
+  "got": "rgb(230,237,243) rgb(168,179,191)",
+  "want": "rgb(230,237,243) rgb(168,179,191)",
+  "pass": true
+ },
+ {
+  "t": 56.16499999999994,
+  "name": "the rest card's question stays ink-2 (the board's)",
+  "got": "rgb(168,179,191) rgb(168,179,191)",
+  "want": "rgb(168,179,191) x2",
+  "pass": true
+ },
+ {
+  "t": 56.16499999999994,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 56.16499999999994,
+  "name": "keep-out: nearest visible text to merc's body box (\"Ten minutes, gently, most days. Missed a\")",
+  "got": 109.42,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 56.16499999999994,
+  "name": "keep-out: nearest visible text to tavi's body box (\"your voice feels comfortable:\")",
+  "got": 219.99,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 56.16499999999994,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 827,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 57.91000000000002,
+  "name": "line 2 lit on its first words, staying lit",
+  "got": "rgb(230,237,243) rgb(230,237,243)",
+  "want": "rgb(230,237,243) x2",
+  "pass": true
+ },
+ {
+  "t": 57.91000000000002,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 57.91000000000002,
+  "name": "keep-out: nearest visible text to merc's body box (\"Ten minutes, gently, most days. Missed a\")",
+  "got": 109.42,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 57.91000000000002,
+  "name": "keep-out: nearest visible text to tavi's body box (\"your voice feels comfortable:\")",
+  "got": 219.99,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 57.91000000000002,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 827,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 62.94999999999997,
+  "name": "13g: the cards' drift (1.2 s, sine.inOut, ending as the leave starts; DECISIONS 233): not yet",
+  "got": "0.000",
+  "want": "0.000",
+  "pass": true
+ },
+ {
+  "t": 62.94999999999997,
+  "name": "the drift's timing from the clock: from the leave less 1.2 s to the leave",
+  "got": "62.955 to 64.155; leave 64.155",
+  "want": "ends at the leave",
+  "pass": true
+ },
+ {
+  "t": 62.94999999999997,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 62.94999999999997,
+  "name": "keep-out: nearest visible text to merc's body box (\"mercurypitch.com/mirror\")",
+  "got": 73,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 62.94999999999997,
+  "name": "keep-out: nearest visible text to tavi's body box (\"mercurypitch.com/mirror\")",
+  "got": 162.88,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 62.94999999999997,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 827,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 63.55499999999997,
+  "name": "13g: the cards' drift (1.2 s, sine.inOut, ending as the leave starts; DECISIONS 233): half way",
+  "got": "-7.000",
+  "want": "-7.000",
+  "pass": true
+ },
+ {
+  "t": 63.55499999999997,
+  "name": "the drift's timing from the clock: from the leave less 1.2 s to the leave",
+  "got": "62.955 to 64.155; leave 64.155",
+  "want": "ends at the leave",
+  "pass": true
+ },
+ {
+  "t": 63.55499999999997,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 63.55499999999997,
+  "name": "keep-out: nearest visible text to merc's body box (\"mercurypitch.com/mirror\")",
+  "got": 80,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 63.55499999999997,
+  "name": "keep-out: nearest visible text to tavi's body box (\"mercurypitch.com/mirror\")",
+  "got": 166.13,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 63.55499999999997,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 820,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 64.15449999999997,
+  "name": "13g: the cards' drift (1.2 s, sine.inOut, ending as the leave starts; DECISIONS 233): done",
+  "got": "-14.000",
+  "want": "-14.000",
+  "pass": true
+ },
+ {
+  "t": 64.15449999999997,
+  "name": "the drift's timing from the clock: from the leave less 1.2 s to the leave",
+  "got": "62.955 to 64.155; leave 64.155",
+  "want": "ends at the leave",
+  "pass": true
+ },
+ {
+  "t": 64.15449999999997,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 64.15449999999997,
+  "name": "keep-out: nearest visible text to merc's body box (\"mercurypitch.com/mirror\")",
+  "got": 87,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 64.15449999999997,
+  "name": "keep-out: nearest visible text to tavi's body box (\"mercurypitch.com/mirror\")",
+  "got": 169.61,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 64.15449999999997,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 813,
   "want": "<= 896",
   "pass": true
  }

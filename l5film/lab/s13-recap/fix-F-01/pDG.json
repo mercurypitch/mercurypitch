@@ -1,0 +1,1 @@
+[["const drift = -RC.DRIFT * P(t, DRIFT, DRIFT_D, 'sine.inOut')", "const drift = -RC.DRIFT * P(t, DRIFT + DRIFT_D / 2 - 0.5, 1.0, 'sine.inOut')"]]

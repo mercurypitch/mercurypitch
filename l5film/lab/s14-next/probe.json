@@ -747,5 +747,117 @@
   "got": 364.23,
   "want": "<= 896",
   "pass": true
+ },
+ {
+  "t": 15.62999999999999,
+  "name": "14c: the hook leaves up fast in its own composited layer, at a sub-pixel offset (DECISIONS 233)",
+  "got": "-0.410 px at 0.12 s into its leave",
+  "want": "-0.410",
+  "pass": true
+ },
+ {
+  "t": 15.62999999999999,
+  "name": "its own SVG transform carries no rise",
+  "got": "none | none",
+  "want": "no translate in y",
+  "pass": true
+ },
+ {
+  "t": 15.62999999999999,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 15.62999999999999,
+  "name": "keep-out: nearest visible text to merc's body box (\"?\")",
+  "got": 263.23,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 15.62999999999999,
+  "name": "keep-out: nearest visible text to tavi's body box (\"?\")",
+  "got": 363.64,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 15.62999999999999,
+  "name": "keep-out: the beads and the copy from merc's body box",
+  "got": 94.21,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 15.62999999999999,
+  "name": "keep-out: the beads and the copy from tavi's body box",
+  "got": 334.82,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 15.62999999999999,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 375.86,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 9.57500000000004,
+  "name": "14c: the tease line leaves up fast in its own composited layer, at a sub-pixel offset (DECISIONS 233)",
+  "got": "-0.410 px at 0.12 s into its leave",
+  "want": "-0.410",
+  "pass": true
+ },
+ {
+  "t": 9.57500000000004,
+  "name": "its own SVG transform carries no rise",
+  "got": "none",
+  "want": "no translate in y",
+  "pass": true
+ },
+ {
+  "t": 9.57500000000004,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 9.57500000000004,
+  "name": "keep-out: nearest visible text to merc's body box (\"?\")",
+  "got": 263.05,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 9.57500000000004,
+  "name": "keep-out: nearest visible text to tavi's body box (\"?\")",
+  "got": 363.67,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 9.57500000000004,
+  "name": "keep-out: the beads and the copy from merc's body box",
+  "got": 94,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 9.57500000000004,
+  "name": "keep-out: the beads and the copy from tavi's body box",
+  "got": 334.96,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 9.57500000000004,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 376,
+  "want": "<= 896",
+  "pass": true
  }
 ]

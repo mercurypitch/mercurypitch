@@ -1,0 +1,1 @@
+[["transform: 'translate3d(0px, 0px, 0px)' })", "transform: 'translate(0px, 0px)', transformOrigin: '960px 480px' })"], ["cardsLayer.style.transform = `translate3d(0px, ${drift.toFixed(3)}px, 0px)`", "cardsLayer.style.transform = `translate(0px, ${drift.toFixed(3)}px) scale(${(1 + 0.006 * P(t, DRIFT, DRIFT_D, 'sine.inOut')).toFixed(6)})`"]]

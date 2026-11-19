@@ -7,7 +7,7 @@
   const S = window.__sceneProbe[sid], A = S.A, TE = L.TEASE
   const T = {
     f0: 0, rowsIn: A.ROWS_IN + A.ROWS_D + 0.01, kick: A.KICK + 0.5, land: A.LAND + 0.005, held: A.TW + TE.onset(0) - 0.05, beads: A.TW + TE.onset(0) + A.LIGHT_D + 0.01, lit: A.TW + TE.onset(6) + 0.3, line: A.LINE + 0.3,
-    copy: A.QM + 0.3, hook1: A.HOOK[0] + 0.35, hook2: A.HOOK[1] + 0.35, hookOut: A.HOOK_OUT + 0.31, last: A.D - 0.0005,
+    copy: A.QM + 0.3, hook1: A.HOOK[0] + 0.35, hook2: A.HOOK[1] + 0.35, hookOut: A.HOOK_OUT + 0.31, last: A.D - 0.0005, hookRise: A.HOOK_OUT + 0.12, lineRise: A.LINE_OUT + 0.12,
   }
   const root = document.getElementById(sid + '-scene')
   const R = H.R
@@ -113,6 +113,13 @@
           { name: 'over the copy (gap)', got: (cTop - h.bottom).toFixed(1), want: '>= 12', pass: cTop - h.bottom >= 12 }, ...common())
       }
       if (t === T.hookOut) out.push({ name: '14c: the hook gone before the shrink', got: S.hook.map((h) => H.alpha(h.el).toFixed(2)).join(' '), want: '0.00 0.00' }, ...common())
+      const layerDy = (el) => +((/translate\(0px, ([-\d.]+)px\)/.exec(el.style.transform) || [0, 'NaN'])[1])
+      if (t === T.hookRise || t === T.lineRise) {
+        const L0 = t === T.hookRise ? S.hookLayer : S.lineLayer, els = t === T.hookRise ? S.hook.map((h) => h.el) : [S.line.el], t0 = t === T.hookRise ? A.HOOK_OUT : A.LINE_OUT
+        const want = -16 * L.ease('power3.in')(0.12 / 0.3), d = layerDy(L0.el)
+        out.push({ name: `14c: ${t === T.hookRise ? 'the hook' : 'the tease line'} leaves up fast in its own composited layer, at a sub-pixel offset (DECISIONS 233)`, got: `${d.toFixed(3)} px at ${(t - t0).toFixed(2)} s into its leave`, want: want.toFixed(3), pass: Math.abs(d - want) < 0.01 && Math.abs(d - Math.round(d)) > 0.001 },
+          { name: 'its own SVG transform carries no rise', got: els.map((e) => e.getAttribute('transform') || 'none').join(' | '), want: 'no translate in y', pass: els.every((e) => !/translate\([-\d.]+[ ,]+-?[1-9]/.test(e.getAttribute('transform') || '')) }, ...common())
+      }
       if (t === T.last) {
         const u = L.TEASE.shrink(Tf, A.T0 + A.SHRINK0), p = TE.place(u), c0 = cen(S.te.beads[0].outline)
         out.push({ name: 'last frame: the figure on L.TEASE.shrink from film time (bead 1\'s centre)', got: `u ${u.toFixed(4)}; ${c0[0].toFixed(2)}, ${c0[1].toFixed(2)}`, want: `${(p.s * 420 + p.dx).toFixed(2)}, ${(p.s * 745 + p.dy).toFixed(2)}`, pass: near(c0[0], p.s * 420 + p.dx, 0.5) && near(c0[1], p.s * 745 + p.dy, 0.5) },

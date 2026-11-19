@@ -118,6 +118,25 @@ figure) sits on the room's floor horizon at F-gauge (screen y 840 runs through i
 moving both lines up 27 px and shortening the legs a further 18 px in S6 and in S7's first frame; left for the
 director.
 
+## Fix round F-01 (the full-film critic, DECISIONS 225 to 236), 19 November
+
+| Item | Change (file, line) | Before | After | Proof (`fix-F-01/`) |
+| --- | --- | --- | --- | --- |
+| The gauge's labels pulse when named again (228) | `NAMED`, `AMP`, `TOPLEFT`, `lifeNamed` (s06-diaphragm.html lines 86 to 104), used at lines 321 and 334 to 336 | the gauge held one layout for 46 s; only "held back" pulsed (on "holding" and o7's "hold") | the board's settle (up 0.15 s, back 0.6 s) when the voice names a label again: "held back" 1.2 also on b13's "Hold" (32.48); "the lungs' own push" 1.08 on b14's "themselves" (37.98) and o7's "themselves" (58.04); "what the note needs" 1.08 on b14's "needs" (41.40). The two labels hung under a stroke settle about their plate's top-left, so no plate touches a stroke at any peak and "what the note needs" keeps 4.5 px under the gold line (182) | `named-settles.png` (rest and peak); probe at every peak |
+| Holds inside words (227) | the same: "with your breathing muscles," 1.08 on "muscles," (34.19, about its left baseline); o7's "themselves" above | film 136.90 (0.3 s, inside "muscles,") and 160.90 (0.6 s, the film's longest, inside o7's "themselves,") | neither hold is left (the clip's holds at 34 and 58 s are gone). At the line's peak the legs keep 18.6 px from its ink (188: 12) and its right end 57.8 px from "one 10-second note" | `named-settles.png`, `measure/summary.md` |
+| Holds | no other motion added | the lab clip 4.2 s (1.8 s per 30 s), longest 0.5 s; the film 2.2 s per 30 s | 3.4 s (1.5 s per 30 s), longest 0.4 s. The three of 0.3 s or more fall in pauses: 4.60 (0.3; "from?" ends 4.49, "Isn't" 4.94), 42.20 (0.4; "needs." ends 42.03, "So" 42.67), 53.20 (0.3; "pushing." ends 52.92, "Your" 53.54), for the final passes (189, 227) | `measure/summary.md` |
+| The joins | none | - | S5's last against S6's first: best shift (0, 0), residual 0.43 to 0.69 (hosts 1.25, 1.36); no single-frame event. The S6 to S7 cut: see `../s07-support/BUILD-NOTES.md` § Fix round F-01 | `join-s05-s06-frames.png`, `join-s05-s06.mp4`, `measure-s05/` |
+
+Proof: probe 307 of 307 (the peaks walked: every named label's scale, the plates and the line under the figure);
+`check lab/s06-diaphragm/proj --at=26.16,32.63,34.34,38.13,41.55,58.19`: contrast 64/64, layout 0 issues, 0 errors;
+clip `clip.mp4` (19 November, on the kit's integration: the composited chapter card, the room's lift, `L.passFrame`);
+single-frame events two host blinks (51.833 Merc, 55.400 Tavi); -19.8 LUFS, true peak -1.5 dBTP. clock-lint silent;
+`merc-tags.py --check` 12 tags, 0 stale.
+
+For HANDOFFS § The gauge (S6): "held back" 1.2 on b13 "Hold", b14 "holding", o7 "hold"; "the lungs' own push" 1.08 on
+b14 and o7 "themselves" and "what the note needs" 1.08 on b14 "needs", both about their plate's top-left; "with your
+breathing muscles," 1.08 on "muscles," about its left baseline.
+
 ## Leftovers round (DECISIONS 203, the rule of 188), 19 November
 
 | What | Change (file, line) | Before | After | Proof (`leftovers/`) |

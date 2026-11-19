@@ -1,0 +1,34 @@
+s13-recap: measure.py's holds against the spoken words (scene time)
+**Inside the film:** 3.5 s (1.6 s per 30 s), longest 0.3 s.
+**Final hold:** none.
+
+    6.10 s  0.1 s  a pause
+    7.60 s  0.1 s  a pause
+   11.50 s  0.1 s  "teachers" (b51 11.40 to 11.90)
+   11.70 s  0.1 s  "teachers" (b51 11.40 to 11.90)
+   12.10 s  0.1 s  "aim" (b51 11.95 to 12.20)
+   15.90 s  0.1 s  "sound" (b52 15.67 to 16.02)
+   16.10 s  0.1 s  "starting" (b52 16.07 to 16.44)
+   18.70 s  0.1 s  a pause
+   20.20 s  0.2 s  "long" (o14a 19.95 to 20.25), "note" (o14a 20.33 to 20.61)
+   24.30 s  0.1 s  a pause
+   24.60 s  0.1 s  a pause
+   30.60 s  0.2 s  a pause
+   31.10 s  0.1 s  "Voice" (b55 30.86 to 31.32)
+   31.80 s  0.1 s  "has" (b55 31.82 to 31.98)
+   39.80 s  0.3 s  a pause
+   41.40 s  0.1 s  "comfortable." (b56 41.07 to 41.62)
+   42.40 s  0.1 s  "hoarse" (b56 42.44 to 42.92)
+   46.30 s  0.2 s  a pause
+   49.40 s  0.2 s  "slash" (b56 49.44 to 49.92)
+   50.60 s  0.1 s  a pause
+   52.90 s  0.1 s  "along" (b58 52.86 to 53.25)
+   55.40 s  0.2 s  a pause
+   55.70 s  0.1 s  a pause
+   57.00 s  0.1 s  "be" (b58 56.93 to 57.08)
+   57.40 s  0.1 s  "here" (b58 57.15 to 57.40), "when" (b58 57.46 to 57.55)
+   61.30 s  0.1 s  "com" (b58 60.97 to 61.30)
+   61.50 s  0.1 s  "slash" (b58 61.40 to 61.90)
+   61.80 s  0.1 s  "slash" (b58 61.40 to 61.90)
+
+28 holds; 0 of 0.3 s or more inside a word.

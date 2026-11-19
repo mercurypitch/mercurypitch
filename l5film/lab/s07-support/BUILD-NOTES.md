@@ -100,6 +100,22 @@ toward Tavi as she starts `o8`, and the turn runs over pass frames 3375 to 3377,
 straddling the cut. For the passes step (not re-rendered here): pass frames 3375 to 3377, film frames 5143 to 5145.
 The lab clips are off the film grid, so S6's last lab frame repeats pass frame 3376.
 
+## Fix round F-01 (the full-film critic, DECISIONS 225 to 236), 19 November
+
+| Item | Change (file, line) | Before | After | Proof (`fix-F-01/`) |
+| --- | --- | --- | --- | --- |
+| The mix-up's rows light as said (228) | none: every row lands on its own words, so none is on screen whole before it is said ("a block that lands line by line on its words needs nothing more") | - | row 0 on "pushing" (2.70; its last word and "?" on "squeezing", 4.02); row 1 with evidence 1's shrink (9.01, after "Pushing moves the note", 6.93); row 2's first line on "Squeezing" (9.46), "same push: much quieter" with the pair on "pressed" (11.08, a caption never said), "more pressure, not less" on "more" (17.06); 7d's '"support"' on b19 (19.71), "how singers manage the breath" on "word" (21.41), "no one agreed meaning" on "no" (25.21), both shrinking into row 3 after they are said (26.07); row 4 on b20 (27.24) and its phrases on "steady" (28.40), "breathe" (30.77), "start" (32.00), "let" (33.60) | probe |
+| Holds inside words (227) | "how singers manage the breath" settles on "how" (22.01; the board's settle at 1.08 for its 44 px, about its left baseline): `HOW_W`, `HOW_AMP` (s07-support.html line 63), the draw at line 259 | film 193.30 (0.4 s, inside "for how") | gone: 21.60 and 21.90, 0.1 s each | `how-settle.png`; probe at the peak |
+| Holds | no other motion added | the lab clip 3.5 s (2.9 s per 30 s), longest 0.5 s; the film 2.9 s per 30 s | 3.0 s (2.5 s per 30 s), longest 0.5 s. The three of 0.3 s or more fall in pauses: 6.60 (0.3; "mix-up." ends 6.34, "Pushing" 6.93), 15.40 (0.3; "heavy," ends 15.22, "and" 15.66), 24.40 (0.5; "sing." ends 24.31, "There's" 24.94), for the final passes | `measure/summary.md` |
+| The S6 to S7 cut | none | - | S6's last frame against S7's first: best shift (0, 0) on the gauge, band, figure, chips and labels (residual 0.91 to 1.47); the hosts 3.03 and 3.63 (Merc's eye turn in the pass, DECISIONS 203); no single-frame event | `cut-s06-s07-frames.png`, `../measure-cut/`, `../dense-cut/` |
+| The S7 to S8 join | none | - | S7's last frame against S8's first: best shift (0, 0), figure 0.46, room 0.23 (hosts 2.62, 2.75); no single-frame event. S7's last frame against its leftovers-round twin: mean 0.16 of 255 without the hosts (the kit's room lift) | `join-s07-s08-frames.png`, `join-s07-s08.mp4`, `measure-s08/` |
+
+Proof: probe 112 of 112; `check lab/s07-support/proj --at=0,7.80,12.08,19.05,22.15,34.00`: contrast 58/58, layout 0
+issues, 0 errors; single-frame events Tavi's two blinks (13.567, 34.167); -19.9 LUFS, true peak -2.4 dBTP; root check 0
+errors, contrast 67/67.
+
+For HANDOFFS § The mix-up card: "how singers manage the breath" settles 1.08 on "how" (b19).
+
 ## Leftovers round (DECISIONS 203, the rule of 188), 19 November
 
 | What | Change (file, line) | Before | After | Proof (`leftovers/`) |

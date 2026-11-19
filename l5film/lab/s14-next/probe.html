@@ -99,9 +99,19 @@
           L.bead4.place(bead, null)
 
           /* ---------------------------------------------------------------- type (hud, frame-fixed) */
+          // a composited layer: its own full-frame div and stage, moved by a CSS transform, so its type moves at sub-pixel
+          // positions instead of snapping a pixel row at a time (the chapter card's pattern, DECISIONS 202 and 233)
+          const subLayer = (parent) => {
+            const el = L.el('div', { class: 'sub-layer', 'data-layout-allow-overflow': '' }, parent)
+            Object.assign(el.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', pointerEvents: 'none', willChange: 'transform', transform: 'translate(0px, 0px)' })
+            return { el, svg: L.stage(el), move(dy) { el.style.transform = `translate(0px, ${dy.toFixed(3)}px)` } }
+          }
           const kicker = L.kicker(hud, 'Next time')
-          const line = L.label(hud, TE.LINE.text, { x: TE.LINE.x, y: LINE_Y, size: TE.LINE.size, anchor: 'middle' })
-          const hook = TE.HOOK.map((h) => L.label(hud, h.text, { x: 960, y: h.y, size: TE.hookSize, family: 'serif', anchor: 'middle' }))
+          // the tease line and the hook leave up fast in their own layers: in the hud's SVG their leave snapped a whole
+          // pixel at a time in its slow start (the film's event at 543.03, the hook)
+          const lineLayer = subLayer(room.hud), hookLayer = subLayer(room.hud)
+          const line = L.label(lineLayer.svg, TE.LINE.text, { x: TE.LINE.x, y: LINE_Y, size: TE.LINE.size, anchor: 'middle' })
+          const hook = TE.HOOK.map((h) => L.label(hookLayer.svg, h.text, { x: 960, y: h.y, size: TE.hookSize, family: 'serif', anchor: 'middle' }))
 
           /* ---------------------------------------------------------------- the hosts at 300: Merc under the tune's right
              end since his hops in S13, Tavi in her corner */
@@ -109,7 +119,7 @@
           const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...HR.merc })
           const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...HR.tavi })
 
-          const probe = { cam, te, arrowsG, echo, bead, kicker, line, hook,
+          const probe = { cam, te, arrowsG, echo, bead, kicker, line, hook, lineLayer, hookLayer,
             A: { KICK, CARRY0, CARRY_D, LAND, ROWS_IN, ROWS_D, TW, LINE_Y, LIGHT_D, LINE, ARROWS, ARROW_STEP, ARROW_D, COPY, COPY_D, QM, LINE_OUT, HOOK, HOOK_OUT, SHRINK0, ROWS_OUT_D, D, T0 },
             boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
@@ -153,9 +163,11 @@
                fast before the shrink */
             kicker.draw(t, KICK, LINE_OUT, { upFast: true })
             const lo = upFast(t, LINE_OUT)
-            line.draw({ a: P(t, LINE, 0.25, 'none') * lo.a, dy: lo.dy })
+            line.draw({ a: P(t, LINE, 0.25, 'none') * lo.a })
+            lineLayer.move(lo.dy)
             const ho = upFast(t, HOOK_OUT)
-            hook.forEach((h, i) => h.draw({ a: P(t, HOOK[i], 0.3, 'none') * ho.a, dy: ho.dy }))
+            hook.forEach((h, i) => h.draw({ a: P(t, HOOK[i], 0.3, 'none') * ho.a }))
+            hookLayer.move(ho.dy)
           })
           window.__timelines = window.__timelines || {}
           window.__timelines[SID] = tl

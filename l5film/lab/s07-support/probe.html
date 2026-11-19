@@ -86,6 +86,9 @@
           // 7d: b19, the word
           const ROW_IN = at('b19', 'start', -0.51), SUP = at('b19'), HOW = word('b19', 'word'), ROW_OUT = word('b19', 'as')
           const NOONE = word('b19', 'no'), SHRINK3 = word('b19', 'meaning', 'start', -0.19)
+          // the large phrase settles on "how" (the board's settle, 1.08 for its 44 px), where the frame would otherwise hold
+          // inside "for how" (DECISIONS 227)
+          const HOW_W = word('b19', 'how'), HOW_AMP = 0.08
           // 7e: b20, the better idea
           const BETTER = at('b20')
           const PH = [word('b20', 'steady#2'), word('b20', 'breathe'), word('b20', 'start'), word('b20', 'let')]   // each on its first word [B-01: 188]
@@ -197,7 +200,7 @@
           const row = L.chipRow(hud, WORDS, { right: 1800, y: 87, gap: 12 })
 
           const probe = { cam, cut, ch, inBand, chTag, ga, gl, fl, tag, quietChip, loudChip, fig, pr, pairTag, row2Tag, R4, dimEls, kicker, belief, rows, row1Tag, supRow, how, noOne, large, phrases, row, carry,
-            A: { SPEED, SHRINK1_D, SQZ2, DIM, DIM_D, O8, FADE_G, FOLD, FOLD_END, PARK, KICK, ROW0, SQZ, MIXUP, PUSHING, REDRAW, REDRAW_D, HOLD_D, SHRINK1, ROW1, ROW2A, PAIR, HEAVY, MORE_P, SHRINK2, NAMES, ROW_IN, SUP, HOW, ROW_OUT, NOONE, SHRINK3, BETTER, PH, BREATHE, EASE, OUT, STEP, LIT_ON, LIT_OFF, D }, boxes: {} }
+            A: { HOW_W, HOW_AMP, SPEED, SHRINK1_D, SQZ2, DIM, DIM_D, O8, FADE_G, FOLD, FOLD_END, PARK, KICK, ROW0, SQZ, MIXUP, PUSHING, REDRAW, REDRAW_D, HOLD_D, SHRINK1, ROW1, ROW2A, PAIR, HEAVY, MORE_P, SHRINK2, NAMES, ROW_IN, SUP, HOW, ROW_OUT, NOONE, SHRINK3, BETTER, PH, BREATHE, EASE, OUT, STEP, LIT_ON, LIT_OFF, D }, boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
           const lerpPlace = (a, b, u) => ({ s: lerp(a.s, b.s, u), dx: lerp(a.dx, b.dx, u), dy: lerp(a.dy, b.dy, u) })
@@ -281,7 +284,7 @@
             large.draw({ a: P(t, SUP, 0.2) * (1 - swap3), dx: lerp(0, R.row3a.x - W.large.x, s3), dy: lerp(0, R.row3a.y - W.large.y, s3), scale: lk })
             supRow.draw({ a: swap3 * o3.a, dy: o3.dy })
             const hk = lerp(W.how.size / 40, 1, s3)
-            how.draw({ a: P(t, HOW, 0.2) * o3.a, dx: lerp(W.how.x, howX, s3) - R.row3a.x, dy: lerp(W.how.y - R.row3a.y, 0, s3) + o3.dy, scale: hk })
+            how.draw({ a: P(t, HOW, 0.2) * o3.a, dx: lerp(W.how.x, howX, s3) - R.row3a.x, dy: lerp(W.how.y - R.row3a.y, 0, s3) + o3.dy, scale: hk * L.pulse(t, [HOW_W], 'label', { amp: HOW_AMP }) })
             noOne.draw({ a: P(t, NOONE, 0.2) * o3.a, dx: lerp(W.noOne.x - R.row3b.x, 0, s3), dy: lerp(W.noOne.y - R.row3b.y, 0, s3) + o3.dy })
 
             /* 7e: the better idea, phrase by phrase, in the lower right; rows 0 to 3 dim to ink-2 as it lands */

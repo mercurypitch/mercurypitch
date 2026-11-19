@@ -113,12 +113,23 @@
           const READ = word('b55', 'plays')                           // the hold's readout
           // 13f: b56
           const KEEP = word('b56', 'Keep'), SORE = word('b56', 'Sore'), FREE = word('b56', 'Free')
+          // the readout lands whole at ink-2 and lights line by line to ink (DECISIONS 228). It is type only (the board's
+          // 13e: no voice reads it), so its lines light in turn through the silence between "plays." and "Keep", the first
+          // as it lands, the last done as the voice goes on (0.4 s apart on the scratch voice), each over 0.3 s, linear
+          const READ_LIT = [0, 1, 2].map((i) => READ + (i * (KEEP - READ)) / 3), LIT_D = 0.3
           const UL = word('b56', 'mercurypitch'), UL_D = 0.5          // the address underlined
           const TEN = at('b56', 'end', -0.3)                          // "Ten minutes, gently, most days. Missed a day? Just come back."
           // 13g: b58, card
           const REST = word('b58', 'Felt'), RTITLE = word('b58', 'Rest'), RBODY = word('b58', 'Voice'), RADDR = word('b58', 'mercurypitch')
-          const DRIFT = at('card'), DRIFT_D = at('card', 'end') - at('card')   // both cards up 14 px (sine.inOut)
+          // the rest card's body lands whole on "Voice": its second line stands at ink-2 until it is said (DECISIONS 228); its
+          // question stays ink-2 throughout, as the board sets it
+          const RBODY_LIT = [RBODY, word('b58', 'your voice')]
           const LEAVE = at('card', 'end', -0.32), LEAVE_STEP = 0.03, LEAVE_D = 0.2   // the lines leave up in turn and fade
+          // both cards drift up 14 px (sine.inOut) in `card`, over 1.2 s ending as their lines start to leave (DECISIONS 233):
+          // the composited layer places the type on a 1/16 px grid, and a drift slower than about 0.4 px a frame flickers
+          // its edges about measure.py's threshold (the board's 2 s drift peaks at 0.37 px a frame; lab/s13-recap/fix-F-01/
+          // exp: 3 events at 2 s, none at 1.2 s at three frame phases)
+          const DRIFT_D = 1.2, DRIFT = LEAVE - DRIFT_D
           // S13 to S14: the bead's carry, one curve both scenes draw from film time (L.TEASE.carry's own start)
           const CARRY0 = at('next', 'start', -0.92)
           const FEET = [PRACT, ...ROWS.map((r) => r - GLYPH_LEAD), READ, KEEP, SORE, FREE]   // the card's foot steps, VM.panel.feet
@@ -139,6 +150,13 @@
           const S13F = L.FIGURE.S13, FIG_S = 1.2
           const FIG_K = S13F.k * FIG_S, FIG_X0 = 1395 - FIG_K * 255, FIG_Y0 = 45
           const FIG_FADE = S13F.fade.map((y) => FIG_Y0 + ((y - S13F.y0) / S13F.k) * FIG_K)
+          // a composited layer: its own full-frame div and stage, moved by a CSS transform, so its type moves at sub-pixel
+          // positions instead of snapping a pixel row at a time (the chapter card's pattern, DECISIONS 202 and 233)
+          const subLayer = (parent) => {
+            const el = L.el('div', { class: 'sub-layer', 'data-layout-allow-overflow': '' }, parent)
+            Object.assign(el.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', pointerEvents: 'none', willChange: 'transform', transform: 'translate(0px, 0px)' })
+            return { el, svg: L.stage(el), move(dy) { el.style.transform = `translate(0px, ${dy.toFixed(3)}px)` } }
+          }
           /* ---------------------------------------------------------------- card 2: the three traces (world), the kit's
              L.TRACE.RECAP drawn at 1.2 times (DECISIONS 217): x 1136 to 1688, centres 170, 314 and 458, half-height 54, so the
              stack runs y 116 to 512; their names (Outfit 30, as chapter 4's type) right-aligned 20 px left of them; their
@@ -150,7 +168,10 @@
           const trX = (x) => TR_S * x + TR_DX, trY = (y) => TR_S * y + TR_DY
           const traces = TR.rows.map((y) => L.trace(world, { x0: TR.x0, x1: TR.x1, y, h: TR.h }))
           const NAME_GAP = 20
-          const traceNames = NAMES.map((s, i) => L.label(world, s, { x: trX(TR.x0) - NAME_GAP, y: trY(TR.rows[i]) + 10, size: TR.names.size, anchor: 'end' }))
+          // the names rise with their traces in their own composited layers (DECISIONS 233): SVG text snaps its baseline to
+          // the pixel row, so a 14 px rise stepped a whole pixel at a time in its slow end (the film's event at 471.27)
+          const nameLayers = NAMES.map(() => subLayer(room.mid))
+          const traceNames = NAMES.map((s, i) => L.label(nameLayers[i].svg, s, { x: trX(TR.x0) - NAME_GAP, y: trY(TR.rows[i]) + 10, size: TR.names.size, anchor: 'end' }))
           const TR_TAG_GAP = 14, TAG_H = 40
           const trTag = L.tag(world, L.TAGS.illustration, { x: TR_X1, y: trY(TR.rows[0]) - TR_S * TR.h - TR_TAG_GAP - TAG_H / 2, anchor: 'end' })
 
@@ -243,9 +264,9 @@
           const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hc.tavi })
 
           const probe = { cam, ch, cardsLayer, bandRects, anyOct, inBand, tag, flag, fig, traces, traceNames, trTag, kicker, panel, ring, Qs, ans1, ans3, ans4,
-            vmG, restG, vmPanel, practise, vmTitle, vmRule, rows, readout, keep, sore, free, freeUl, ten, restPanel, restQ, restTitle, restBody, restAddr, restUl, bead,
+            nameLayers, vmG, restG, vmPanel, practise, vmTitle, vmRule, rows, readout, keep, sore, free, freeUl, ten, restPanel, restQ, restTitle, restBody, restAddr, restUl, bead,
             A: { SLIDE, SLIDE_D, DIM, DIM_D, KICK, Q1, FIG, FIG_D, ANS1, BREATH_D, Q3, TRACES, TRACES_D, TOG, Q4, BACK, BACK_D, SETTLES, LINE_K, ENTRY, SETTLED, LIT, FLAG, ANS4,
-              BREAK, CASCADE, REDRAW, DONE, HOLD_MIN, DIM_TO, TR_OUT, TR_OUT_D, FIG_K, FIG_X0, FIG_Y0, FIG_FADE, TR_S, TR_DX, TR_DY, OUT, HOP1, HOP2, PRACT, VMT, ROWS, GLYPH_LEAD, READ, KEEP, SORE, FREE, UL, TEN, REST, RTITLE, RBODY, RADDR, DRIFT, DRIFT_D, LEAVE, LEAVE_STEP, LEAVE_D, CARRY0, D, T0 },
+              BREAK, CASCADE, REDRAW, DONE, HOLD_MIN, DIM_TO, TR_OUT, TR_OUT_D, FIG_K, FIG_X0, FIG_Y0, FIG_FADE, TR_S, TR_DX, TR_DY, OUT, HOP1, HOP2, PRACT, VMT, ROWS, GLYPH_LEAD, READ, READ_LIT, LIT_D, KEEP, SORE, FREE, UL, TEN, REST, RTITLE, RBODY, RBODY_LIT, RADDR, DRIFT, DRIFT_D, LEAVE, LEAVE_STEP, LEAVE_D, CARRY0, D, T0 },
             boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
@@ -305,7 +326,8 @@
               const a = P(t, t0, TRACES_D, 'none') * trOut, dy = 14 * (1 - P(t, t0, TRACES_D, 'power2.out'))
               tr.draw({ kind: KINDS[i], t: L.TRACE.len, a, dim: i < 2 ? P(t, TOG, 0.3, 'none') : 0, lit: i === 2 ? L.lit(t, [TOG], { long: true }) : 0,
                 tickScale: i === 2 ? L.pulse(t, [TOG], 'bead') : 1, place: { s: TR_S, dx: TR_DX, dy: TR_DY + dy } })
-              traceNames[i].draw({ a, dy })
+              traceNames[i].draw({ a })
+              nameLayers[i].move(dy)
             })
             trTag.draw({ alpha: P(t, TRACES, TRACES_D, 'none') * trOut })
 
@@ -348,7 +370,7 @@
               r.lab.draw(o)
               r.glyph.draw(g)
             })
-            readout.forEach((l, i) => l.draw(live(READ, 'read' + i)))
+            readout.forEach((l, i) => { l.draw(live(READ, 'read' + i)); l.el.setAttribute('fill', L.mixHex(C.ink2, C.ink, P(t, READ_LIT[i], LIT_D, 'none'))) })
             keep.draw(live(KEEP, 'keep'))
             sore.draw(live(SORE, 'sore'))
             const fr = live(FREE, 'free')
@@ -363,7 +385,7 @@
             restPanel.draw({ a: fadeIn(t, REST, 0.3) * (1 - restOut), dy: -12 * restOut })
             restQ.forEach((l, i) => l.draw(live(REST, 'rq' + i)))
             restTitle.draw(live(RTITLE, 'rtitle'))
-            restBody.forEach((l, i) => l.draw(live(RBODY, 'rb' + i)))
+            restBody.forEach((l, i) => { l.draw(live(RBODY, 'rb' + i)); l.el.setAttribute('fill', L.mixHex(C.ink2, C.ink, P(t, RBODY_LIT[i], LIT_D, 'none'))) })
             const ra = live(RADDR, 'raddr')
             restAddr.draw(ra)
             const rulU = P(t, RADDR + 0.2, UL_D, 'power2.out')
