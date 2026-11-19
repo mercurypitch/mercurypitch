@@ -22,9 +22,8 @@ names which part you do; if you are given both, do part 1 first.
 3. **`L.TRACE.STACK`'s duplicate `h`** (DECISIONS 191): the half-height (70) and the "h" glyph's
    label share the key. Rename the glyph's key; S9 then drops its local 70. `L.TRACE.RECAP` (S13)
    must not change.
-4. **The Voice Mirror panel's foot** (DECISIONS 214): `L.RECAP.VM.panel.feet` rises 10 px or more,
-   so S13's ten line (ink y 796 to 827) has 16 px or more under the panel; the panel's own lines
-   keep their padding.
+4. **The Voice Mirror panel's foot** is done in group E's fix round (DECISIONS 216); check only that
+   `L.RECAP.VM` is as group E left it.
 5. **The bokeh's lift on camera moves** (DECISIONS 200; critic C-01 item 12): at normal exposure
    S10's push reads as a zoom and its truck as a pan, because the parallax between the depth layers
    only shows with the shadows lifted. `L.BOKEH_LIFT` (3) and its ramp by slide speed (frames.js) are

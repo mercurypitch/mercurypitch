@@ -1654,3 +1654,37 @@ numbered 132 to 135 too, are 160 to 163 now, so no number appears twice).
      - **Provisional values confirmed**: the "settled" flag in card 3 by group C's rule (entry
        0.704 s, x 334.5, at the line's 1.204 s); the hop height is the pass's (the sole rises 22 px
        in the film). HANDOFFS § Provisional values follows.
+
+## The lead's calls on critic E-01 (group E's fix round), 19 November
+
+215. **The answer holds before the clean break** (item 1): the clean break's cascade starts at
+     `break` + 0.2 (it started at + 0.06), its last element gone before hop 1's apex (about
+     + 0.93; hop 1 takes off at + 0.6); card 3's redraw from
+     "settles" runs 2.4 s at most and ends at least 0.5 s before the cascade starts, so the
+     finished answer holds 0.5 s or more on any voice, its speed computed from the clock (this
+     replaces 214's 0.3 s). "Voice Mirror" lands 0.4 s after the panel, as the board has it; the
+     card's later rows keep their words. The silent beat with Merc's hops stays (190): the hops
+     are its subject; the sound step carries the pad through `break` and gives each landing a soft
+     sound, so the beat never plays as the film's end (a person checks it with the sound on).
+216. **The ten line is one line that fits under the card** (item 2): the board's two lines cannot
+     both stand clear of the floor horizon (the rule of 203). Inter 30, ink-2, x 270, baseline 820,
+     its glyph foot at 828 or higher, ending left of the card's right edge (x 1110); the Voice
+     Mirror card's rows close up by 12 px or more (the readout's line spacing and the gaps after
+     it) so the panel's last foot is at y 778 or higher, 16 px or more over the line's cap top.
+     `L.RECAP.VM` is used by s13 alone, so group E may change it in the kit for this, logged in
+     `tools/CHANGES.md` (this replaces 214's integration item for the panel's foot). HANDOFFS §
+     Recap and practise follows.
+217. **The recap fills more of its frame** (item 3): the figure and the traces at about 1.2 times,
+     within x 1100 to 1690, y 60 to 535, 12 px or more from every label and chip; the band dims to
+     20 % (not 35 %) while cards 1 and 2 are up and comes back to full for card 3 as now.
+218. **The traces carry their ILLUSTRATION chip** (items 4 and 5): the chip stands with the traces
+     while they show (the codes' rule), 12 px or more from every trace and label, and leaves with
+     them; the traces and their chip are gone before card 3's chip lands, so no frame holds both.
+219. **The carried bead keeps its identity** (item 6): S14's rows and outlines fade in from S14's
+     first frame (about 0.6 s), and the bead the cut carries stays filled, as it arrived, until its
+     note lights it blue; it never empties to an outline.
+220. **The tease line clears the kicker** (item 7): its cap top 24 px or more under "NEXT TIME"'s
+     foot (about baseline 170), still centred over the tune; the kicker keeps the frame's left
+     margin, as every kicker does. HANDOFFS § The tease follows.
+221. **Holds** (item 8) go to the final passes (189). The figure's reading on mute (an unlabelled
+     dome under a question that names the diaphragm) is for the owner's look.

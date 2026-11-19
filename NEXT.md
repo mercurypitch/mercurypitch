@@ -4507,3 +4507,17 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   builder resumed; starts only when no scene builder is editing: after group E's fix round and
   leftovers part 2) and $S/briefs/l5-critic-F-01.md (the first full-film critic, on
   renders/film-draft-01.mp4).
+
+## 15:12 UTC, 19 Nov
+- CRITIC E-01 RETURNED: ONE MORE PASS (S13 REVISE, S14 KEEP minor, S15 KEEP). Saved to
+  l5film/review/critic-E-01/REPORT.md. DECISIONS 215-221 (the answer holds 0.5 s, cascade from
+  break + 0.2, "Voice Mirror" 0.4 s after the panel, silent beat kept with pad + landing sounds;
+  ten line one line Inter 30 inside the card, card rows closed up, E may edit L.RECAP.VM; recap
+  1.2x and band 20 %; traces' chip; carried bead filled until lit, S14 rows from frame 0; tease
+  line 24 px under the kicker; holds to final passes). LEDGER E-01 row. Fix brief
+  $S/briefs/l5-fix-E-01.md; integration brief item 4 now done by E.
+- GROUP E FIX ROUND STARTED (the group E builder resumed).
+- Heavy now: group E fix + group B leftovers part 2. Next: accept both; then INTEGRATION
+  ($S/briefs/l5-integration.md: part 1 kit builder, part 2 production builder), then critic F-01
+  ($S/briefs/l5-critic-F-01.md). Sound step adds: pad through `break`, a soft sound on each hop's
+  landing (215), the tune and end chimes, examples, act sounds, ticks, room tone.
