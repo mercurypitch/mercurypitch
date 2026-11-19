@@ -120,9 +120,10 @@
           }
 
           /* ---------------------------------------------------------------- the breath figure (S6's torso) and its labels */
-          // the legs fade out 20 px higher than L.FIGURE.S6's [750, 780], so their strokes end 12 px or more above "with your
-          // breathing muscles," at F-gauge [B-01: 188]
-          const F6 = { ...L.FIGURE.S6, fade: [730, 760] }
+          // the legs fade out 54 px higher than L.FIGURE.S6's [750, 780], so their strokes end 20 px or more above "with your
+          // breathing muscles," at F-gauge [B-01: 188], that line and "never your throat" having moved up 34 px to keep
+          // 12 px or more from the floor horizon (DECISIONS 203, the rule of 188)
+          const F6 = { ...L.FIGURE.S6, fade: [696, 726] }
           const fig = L.figure(world)
           const guess = L.guess(world, { points: [[476, 620], [476, 460]], q: { x: 600, y: 470 }, head: 14 })
           const struck = L.arrow(world, { x1: 476, y1: 620, x2: 476, y2: 460, color: C.chrome, width: 3, head: 14 })
@@ -133,8 +134,8 @@
             cant: L.label(world, 'can’t push air out', { x: 350, y: 580, size: 30, anchor: 'end' }),
             dia: L.label(world, 'diaphragm', { x: 350, y: 640, size: 34, anchor: 'end' }),
             belly: L.label(world, 'belly', { x: 640, y: 700, size: 34 }),
-            muscles: L.label(world, 'with your breathing muscles,', { x: 260, y: 800, size: 32 }),
-            throat: L.label(world, 'never your throat', { x: 260, y: 838, size: 32 }),
+            muscles: L.label(world, 'with your breathing muscles,', { x: 260, y: 766, size: 32 }),   // DECISIONS 203
+            throat: L.label(world, 'never your throat', { x: 260, y: 804, size: 32 }),
             bellyRib: L.label(world, 'belly and rib muscles', { x: 260, y: 800, size: 32 }),
           }
           const diaLeader = L.leader(world, { x1: 356, y1: 631, x2: 378, y2: 661 })
@@ -220,7 +221,7 @@
             return lerp(1, 0, P(t, YES, 1.5, 'sine.inOut'))
           }
 
-          const probe = { cam, ch, lab, slider, ga, fig, fl, gl, tag, a3, quietChip, loudChip, guess, struck, strike, kicker, predict, pills, check, row, split, SPLIT_C, lessLeader, moreLeader,
+          const probe = { room, cam, ch, lab, slider, ga, fig, fl, gl, tag, a3, quietChip, loudChip, guess, struck, strike, kicker, predict, pills, check, row, split, SPLIT_C, lessLeader, moreLeader,
             readoutAt, roPlate, SWITCHES, F6, GP, A: { ADDED, ACT, O6, GLIDE, GLIDE_D, SPLIT, SPLIT_D, FIG, FIG_D, GUESS, ROW_IN, LIT_D, DIA, TIGHT, BELLY, BIN, BIG, QUIET, PRED_K, PILL1, PILL2, PRED2, OPEN, OPEN_D, ONE_NOTE, PUSH_AIR, GAUGE, GAUGE_D, LUNGS_L, GOLD, NEEDS, HATCH, READOUT, CHECK, UNCHANGED, CROSS1, HOLD, BM, NEVER, FULL, WALK, WALK_END, B15, RUN, RUN_D, BRM, CANT, STRIKE, O7, FULL2, CUR_OUT, YES, LOUD, RISE, RISE_D, LESS, BACKW, MORE, SWITCHES, D }, boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe

@@ -19,6 +19,12 @@
   // clear of the words still drawn
   const SWT = new Set()
   ;(S.SWITCHES || []).forEach((s, i) => { for (let k = 0; k <= 9; k++) { const tt = s.t + k / 30; T[`sw${i}_${k}`] = tt; SWT.add(tt) } })
+  // DECISIONS 203 (the rule of 188): the type under the figure keeps 12 px or more from the floor horizon on every frame
+  // it shows; sampled every 0.25 s from "with your breathing muscles," to "belly and rib muscles"'s exit
+  const HZ = new Set()
+  for (let tt = A.BM; tt <= A.O7 + 0.35; tt += 0.25) { T['hz' + tt.toFixed(2)] = tt; HZ.add(tt) }
+  const UNDER = [['muscles', 766, 'with your breathing muscles,'], ['throat', 804, 'never your throat'], ['bellyRib', 800, 'belly and rib muscles']]
+  const hzSeen = {}
   const root = document.getElementById(sid + '-scene')
   const R = H.R
   const vis = (e) => H.alpha(e).toFixed(2)
@@ -244,12 +250,31 @@
           { name: 'F-gauge: the figure\'s head y 125 to 282 (crown)', got: S.cam.map(...S.fig.at('crown'), t)[1], want: 125.4, tol: 1 },
           { name: 'F-gauge: scale 1.05', got: S.cam.scale(t), want: 1.05, tol: 0.001 }, ...H.keepout(root, S.boxes))
       }
+      if (HZ.has(t)) {
+        const floorTop = R(S.room.floor).top, k = S.cam.scale(t)
+        for (const [n, y, text] of UNDER) {
+          const el = S.fl[n].el
+          if (H.alpha(el) < 0.01) continue
+          const ink = H.ink(text, "600 32px 'Outfit'"), base = m(0, y + H.dyOf(el))[1]
+          const gap = floorTop - (base + k * ink.down)
+          const h = hzSeen[n] || (hzSeen[n] = { n: 0, min: 1e9, minAt: 0, k0: 1e9, k1: 0, floor: new Set() })
+          h.n++; h.k0 = Math.min(h.k0, k); h.k1 = Math.max(h.k1, k); h.floor.add(floorTop.toFixed(1))
+          if (gap < h.min) { h.min = gap; h.minAt = t }
+          if (gap < 12) out.push({ name: `[DECISIONS 203] "${text}" 12 px or more over the floor horizon`, got: +gap.toFixed(1), want: '>= 12', pass: false })
+        }
+        if (t === [...HZ].pop()) for (const [n, , text] of UNDER) {
+          const h = hzSeen[n]
+          out.push({ name: `[DECISIONS 203] "${text}": its ink foot over the floor horizon at every sample it shows (count, least gap and when, camera scale, the floor's top)`, got: h ? `${h.n}, ${h.min.toFixed(1)} px at ${h.minAt.toFixed(2)}, scale ${h.k0.toFixed(3)} to ${h.k1.toFixed(3)}, floor ${[...h.floor].join(' ')}` : 'never shown', want: '>= 12 px', pass: !!h && h.min >= 12 })
+        }
+      }
       if (t === T.bm) {
-        const a = R(S.fl.muscles.el), b = R(S.fl.throat.el)
+        const a = R(S.fl.muscles.el), b = R(S.fl.throat.el), k = S.cam.scale(t), floorTop = R(S.room.floor).top
+        const im = H.ink('with your breathing muscles,', "600 32px 'Outfit'"), it = H.ink('never your throat', "600 32px 'Outfit'")
         out.push({ name: '6g: "with your breathing muscles," on screen from x 213', got: a.left, want: 213, tol: 2 },
-          { name: '6g: "never your throat" baseline 855 on screen (font box foot)', got: b.bottom, want: 'info', pass: true },
-          { name: '6g: their screen baselines 815 and 855', got: `${m(0, 800)[1].toFixed(1)}, ${m(0, 838)[1].toFixed(1)}`, want: '814.8, 854.7' },
-          { name: '[B-01: 188] the legs\' lowest visible point (alpha 0.1) 12 px or more above "with your breathing muscles," (ink top)', got: +(m(0, 800)[1] - S.cam.scale(t) * H.ink('with your breathing muscles,', "600 32px 'Outfit'").up - legsLow(t)).toFixed(1), want: '>= 12', pass: m(0, 800)[1] - S.cam.scale(t) * H.ink('with your breathing muscles,', "600 32px 'Outfit'").up - legsLow(t) >= 12 }, ...H.keepout(root, S.boxes))
+          { name: '[DECISIONS 203] their world baselines 766 and 804: on screen', got: `${m(0, 766)[1].toFixed(1)}, ${m(0, 804)[1].toFixed(1)}`, want: '779.1, 819.0' },
+          { name: '[DECISIONS 203] their ink on screen (top of the first, foot of the second) and the floor horizon', got: `${(m(0, 766)[1] - k * im.up).toFixed(1)} to ${(m(0, 804)[1] + k * it.down).toFixed(1)}; floor ${floorTop.toFixed(1)}`, want: 'info', pass: true },
+          { name: '"never your throat" font box foot on screen', got: b.bottom, want: 'info', pass: true },
+          { name: '[B-01: 188; DECISIONS 203] the legs\' lowest visible point (alpha 0.1) 20 px or more above "with your breathing muscles," (ink top)', got: +(m(0, 766)[1] - k * im.up - legsLow(t)).toFixed(1), want: '>= 20', pass: m(0, 766)[1] - k * im.up - legsLow(t) >= 20 }, ...H.keepout(root, S.boxes))
       }
       if (t === T.cant) {
         const c = R(S.fl.cant.el), d = R(S.fl.dia.el)
@@ -281,6 +306,7 @@
         }
       }
       if (t === T.last) {
+        out.push({ name: '[DECISIONS 203] the legs\' lowest visible point on screen (alpha 0.1), carried by S7\'s first frame', got: +legsLow(t).toFixed(1), want: 'info', pass: true })
         const f = R(frameEl()), chip = R(S.tag.box), q = R(S.quietChip.box), l = R(S.loudChip.box), b = bandRect()
         const nl = R(S.gl.needsLoud.el)
         out.push({ name: 'last frame (F-gauge): the frame x 738 to 1662, y 279 to 731', got: `${f.left.toFixed(1)} to ${f.right.toFixed(1)}, ${f.top.toFixed(1)} to ${f.bottom.toFixed(1)}`, want: '737 to 1663, 278 to 732', pass: Math.abs(f.left - 737) < 2 && Math.abs(f.bottom - 732) < 2 },

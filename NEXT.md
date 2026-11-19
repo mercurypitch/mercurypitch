@@ -4498,3 +4498,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   bokeh lift on slow moves, L.mercGate from the video tag, RECAP.VM panel foot +10 px, kit offers),
   root render, full-film critic. Later: sound step, final passes (host idle in pauses, talk cycle
   at 240/300, S6/S7 eye turn), final voices.
+- 14:51: LEFTOVERS PART 1 (S1 amber line) HANDED BACK and looked at (line-before-after.png): the
+  line fades linear hook + 0.35 to + 0.65, 0 amber pixels in the disc on all 21 frames to the cut;
+  S1 to S2 join 0.26 of 255; s02's bead probe 50/50; root check 0 errors; S1 holds 0.9 s. To go
+  into one DECISIONS entry with part 2. Part 2 (group B, S6/S7) still running; critic E-01 running.

@@ -1079,23 +1079,30 @@
  },
  {
   "t": 35.36500000000001,
-  "name": "6g: \"never your throat\" baseline 855 on screen (font box foot)",
-  "got": 863.65,
+  "name": "[DECISIONS 203] their world baselines 766 and 804: on screen",
+  "got": "779.1, 819.0",
+  "want": "779.1, 819.0",
+  "pass": true
+ },
+ {
+  "t": 35.36500000000001,
+  "name": "[DECISIONS 203] their ink on screen (top of the first, foot of the second) and the floor horizon",
+  "got": "753.9 to 826.3; floor 840.0",
   "want": "info",
   "pass": true
  },
  {
   "t": 35.36500000000001,
-  "name": "6g: their screen baselines 815 and 855",
-  "got": "814.8, 854.7",
-  "want": "814.8, 854.7",
+  "name": "\"never your throat\" font box foot on screen",
+  "got": 827.95,
+  "want": "info",
   "pass": true
  },
  {
   "t": 35.36500000000001,
-  "name": "[B-01: 188] the legs' lowest visible point (alpha 0.1) 12 px or more above \"with your breathing muscles,\" (ink top)",
-  "got": 20.8,
-  "want": ">= 12",
+  "name": "[B-01: 188; DECISIONS 203] the legs' lowest visible point (alpha 0.1) 20 px or more above \"with your breathing muscles,\" (ink top)",
+  "got": 20.6,
+  "want": ">= 20",
   "pass": true
  },
  {
@@ -1334,6 +1341,13 @@
   "name": "\"less holding back at first\" on screen from x 738, baseline 778",
   "got": "738.0, 778.0",
   "want": "738, 778",
+  "pass": true
+ },
+ {
+  "t": 68.7745,
+  "name": "[DECISIONS 203] the legs' lowest visible point on screen (alpha 0.1), carried by S7's first frame",
+  "got": 733.5,
+  "want": "info",
   "pass": true
  },
  {
@@ -1706,6 +1720,27 @@
   "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
   "got": "1.00 0.00; cursor 1.00 x 738, plate 1352 to 1656: clear of the words",
   "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.265000000000015,
+  "name": "[DECISIONS 203] \"with your breathing muscles,\": its ink foot over the floor horizon at every sample it shows (count, least gap and when, camera scale, the floor's top)",
+  "got": "58, 53.6 px at 34.02, scale 1.050 to 1.050, floor 840.0",
+  "want": ">= 12 px",
+  "pass": true
+ },
+ {
+  "t": 56.265000000000015,
+  "name": "[DECISIONS 203] \"never your throat\": its ink foot over the floor horizon at every sample it shows (count, least gap and when, camera scale, the floor's top)",
+  "got": "54, 13.7 px at 35.02, scale 1.050 to 1.050, floor 840.0",
+  "want": ">= 12 px",
+  "pass": true
+ },
+ {
+  "t": 56.265000000000015,
+  "name": "[DECISIONS 203] \"belly and rib muscles\": its ink foot over the floor horizon at every sample it shows (count, least gap and when, camera scale, the floor's top)",
+  "got": "25, 17.9 px at 50.27, scale 1.050 to 1.050, floor 840.0",
+  "want": ">= 12 px",
   "pass": true
  }
 ]

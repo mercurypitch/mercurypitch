@@ -4,6 +4,24 @@
 § The band chart, § The wave rule, § Framings (F-cold, F-cold end, F-hook, F-bead), § Camera moves, § Carried (the
 hook's frame), § The cuts S1 to S2. LAB-CHECKS 1, 7 and 9 (and 18's 1a and 1e).
 
+## Leftovers round (DECISIONS 178): Merc's amber line through the softening bead
+
+| Item | Before (round 3) | Now |
+| ---- | ---------------- | --- |
+| Change | `const hookOut = soft`: the line faded with the disc's defocus, r 300 to 1200 (38.27 to 38.67) | `const hookOut = P(t, HOOK + 0.35, 0.3, 'none')` (`compositions/s01-cold-open.html` line 200): linear over 0.3 s, `hook` + 0.35 to + 0.65 (37.96 to 38.26), keyed off `L.at('hook')`; the unused `soft` removed |
+| The line's opacity on frames where the disc has softened (probe) | 0.995 to 0.094 (38.27 to 38.63) | 0 on every one; 1 at hook + 0.35, 0 at hook + 0.65 |
+| Amber inside the disc, every frame hook + 0.5 to the cut (`leftovers/amber_in_disc.py`) | the line: 148 to 2538 px a frame, 38.30 to 38.47; its warm tint: 60 to 4136 px, 38.27 to 38.53 | 0 and 0 on all 21 frames (`amber-after.json`) |
+| measure.py, the pass | peak mean change 13.54 at 38.30, no event | 13.53 at 38.30, no event; nothing in the line's fade (37.96 to 38.26) |
+| measure.py, the clip | holds 0.9 s (longest 0.3 s at 34.10); pops 28.10, 36.73 | the same; -19.9 LUFS integrated, LRA 4.5 LU, true peak -3.3 dBTP |
+| S1 to S2 | 0.26 of 255, no pixel over 24 | 0.26 of 255, no pixel over 24; S1's last frame within 4 of round 3's (mean 0.14) |
+| The bead's flight (s02's probe) | 50 lines pass | 50 lines pass (s02 untouched: last frame bead (487.78, 395.77) r 17.76) |
+| Probe | 75 lines | 78 lines (three for 178), all pass |
+| `check` (root) | 0 errors | 0 errors (23 warnings, one from s01: its `-refl` tags' shared source, as before); contrast 67/67; one layout note, in another group's scene (293.54) |
+
+Stills: `leftovers/line-before-after.png` (round 3 above, now below, hook + 0.66 to + 0.99);
+`leftovers/softening-sheet.png` (every frame, hook + 0.52 to the cut). Round 3's clip, stills and measure:
+`round3/`; its clip again as `leftovers/clip-before.mp4`.
+
 ## Fix round (critic A-01, DECISIONS 170, 171, 173 and 177)
 
 Rows below this section that give the guess's 50 %, the band's fade at 31.60, the hook's exits and the pass into

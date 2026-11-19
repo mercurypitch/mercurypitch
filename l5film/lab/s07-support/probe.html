@@ -125,8 +125,8 @@
           const tag = L.tag(carry, L.TAGS.illustration, G.TAG)
           // the figure: S6's torso at rest on F-gauge's pixels (L.FIGURE.CUT), to its parked place
           const fig = L.figure(world)
-          // S6's legs fade 20 px higher than the kit's [B-01: 188]: its [730, 760] on F-gauge's pixels
-          const FC = { ...L.FIGURE.CUT, fade: [730, 760].map((y) => M.CUT.s * y + M.CUT.dy) }, FS = L.FIGURE.S7
+          // S6's legs fade 54 px higher than the kit's [B-01: 188; DECISIONS 203]: its [696, 726] on F-gauge's pixels
+          const FC = { ...L.FIGURE.CUT, fade: [696, 726].map((y) => M.CUT.s * y + M.CUT.dy) }, FS = L.FIGURE.S7
 
           /* ---------------------------------------------------------------- the reassembled chart (7a) and evidence 1 (7b) */
           const ch = L.bandChart(world, M.CHART)

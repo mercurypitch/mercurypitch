@@ -1,10 +1,10 @@
 # Measurement
 
-File: `lab/s07-support/cut-s06-s07.mp4`
+File: `/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/lab/s15-end/clip.mp4`
 
 | Property | Value |
 | --- | --- |
-| Duration | 1.000 s |
+| Duration | 6.200 s |
 | Picture | 1920x1080 30.00 fps h264 |
 | Audio | aac 48000 Hz 2 ch |
 
@@ -12,12 +12,14 @@ File: `lab/s07-support/cut-s06-s07.mp4`
 
 A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes by 16 or more. Target: at most about 1 s per 30 s in total and none longer than about 0.5 s; a hold that runs to the end (the final call to action) is reported separately and exempt.
 
-**Inside the film:** 0.1 s (3.0 s per 30 s), longest 0.1 s.
+**Inside the film:** 0.8 s (3.9 s per 30 s), longest 0.4 s.
 **Final hold:** none.
 
 | Starts | Length | Note |
 | --- | --- | --- |
-| 0.30 s | 0.1 s |  |
+| 1.60 s | 0.3 s |  |
+| 3.30 s | 0.1 s |  |
+| 4.20 s | 0.4 s |  |
 
 ## Low motion
 
@@ -25,7 +27,7 @@ Runs where the mean change is below 0.35. Not an automatic fail: a critic looks 
 
 | Starts | Length | Largest change | Note |
 | --- | --- | --- | --- |
-| 0.00 s | 0.6 s | 76 | small element moving |
+| 1.20 s | 4.9 s | 213 | small element moving, runs to the end |
 
 0 shorter run(s) totalling 0.0 s are not listed; `motion.csv` has every sample.
 
@@ -37,18 +39,18 @@ None found.
 
 ## Loop seam
 
-From the last frame back to the first: 6.69 on the scale of `frames.csv`, against a median frame change of 0.037, a 95th percentile of 1.56 and a largest of 1.56 at 0.933 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
+From the last frame back to the first: 9.90 on the scale of `frames.csv`, against a median frame change of 0.038, a 95th percentile of 1.78 and a largest of 2.11 at 0.600 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
 
 ## Loudness
 
-Integrated -18.4 LUFS, loudness range 0.0 LU, true peak -7.6 dBTP.
+Integrated -70.0 LUFS, loudness range 0.0 LU, true peak -inf dBTP.
 
 Targets: about -14 LUFS for punchy pieces, -16 to -19 LUFS for calm ones, true peak at most -1 dBTP. Momentary loudness needs a 400 ms window and short-term loudness a 3 s window, so the first samples read -120.7 by definition. Ignore the loudness range on clips shorter than about 10 s. Compare effects with the music using `measure.py audio`.
 
-Short-term per second: 1s -120.7
+Short-term per second: 1s -120.7, 2s -120.7, 3s -172.3, 4s -172.3, 5s -172.3, 6s -172.3
 
 ## Look at these
 
 - `frame-0.png`: must be a finished composition. `frame-last.png`: the end card.
-- 1 contact sheet(s), one frame every 0.2 s, each stamped with its own time: `sheet-01.jpg`
+- 2 contact sheet(s), one frame every 0.2 s, each stamped with its own time: `sheet-01.jpg`, `sheet-02.jpg`
 - Every transition and every single-frame event: `measure.py dense`, at 20 fps and frame-exact (`--fps <film fps>`, `--window` covering the whole transition).
