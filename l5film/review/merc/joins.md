@@ -16,8 +16,8 @@ obsidian; "root" compares the renderer's root on each frame (the sidecars).
 | m-blue | s10-steady to s11-sing | 8624 to 8626 | identical | same | 3761 px, 10, 3861 px, 31, 3957 px, 14 |
 | m-blue | s11-sing to s12-your-turn | 9799 to 9801 | identical | same | 4481 px, 19, 3688 px, 44, 3957 px, 33 |
 | m-blue | s12-your-turn to s13-recap | 12103 to 12105 | identical | same | 0 px, 1, 0 px, 2, 16 px, 8 |
-| m-blue | s13-recap to s14-next | 13996 to 13998 | identical | same | 4415 px, 17, 4337 px, 18, 4527 px, 20 |
-| m-blue | s14-next to s15-end | 14472 to 14474 | sizes differ | same | - |
+| m-blue | s13-recap to s14-next | 14053 to 14055 | identical | same | 3447 px, 12, 3511 px, 18, 3784 px, 30 |
+| m-blue | s14-next to s15-end | 14529 to 14531 | sizes differ | same | - |
 | m-orange | s03-promise to s04-recall (chunk k from frame 0: no pre-roll) | 41 to 43 | identical | same | 3730 px, 36, 4122 px, 28, 4265 px, 19 |
 | m-orange | s04-recall to s05-push | 450 to 452 | identical | same | 3624 px, 30, 3594 px, 28, 3696 px, 20 |
 | m-orange | s05-push to s06-diaphragm | 1536 to 1538 | identical | same | 3976 px, 23, 3988 px, 25, 3866 px, 34 |
@@ -28,7 +28,7 @@ obsidian; "root" compares the renderer's root on each frame (the sidecars).
 | m-orange | s10-steady to s11-sing | 8847 to 8849 | identical | same | 2995 px, 12, 3539 px, 30, 3982 px, 21 |
 | m-orange | s11-sing to s12-your-turn | 10022 to 10024 | identical | same | 3867 px, 21, 3665 px, 21, 4436 px, 16 |
 | m-orange | s12-your-turn to s13-recap | 12326 to 12328 | identical | same | 0 px, 0, 0 px, 0, 12 px, 6 |
-| m-orange | s13-recap to s14-next | 14219 to 14221 | identical | same | 3720 px, 17, 3985 px, 36, 4054 px, 32 |
-| m-orange | s14-next to s15-end | 14695 to 14697 | sizes differ | same | - |
+| m-orange | s13-recap to s14-next | 14276 to 14278 | identical | same | 3203 px, 11, 3563 px, 20, 3760 px, 31 |
+| m-orange | s14-next to s15-end | 14752 to 14754 | sizes differ | same | - |
 
 23 of 23 boundaries checked join.

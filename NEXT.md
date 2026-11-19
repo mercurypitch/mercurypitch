@@ -4439,3 +4439,18 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   a slot frees).
 - Heavy now: passes step + group C fix. Queue: group E (after the passes step), group D's fix
   round, leftovers (A + B), integration.
+
+## 13:00 UTC, 19 Nov
+- GROUP B's hand-back arrived a second time at 12:51 (the harness re-sent it after the agent's
+  monitor timed out): same report as 12:31, already accepted (DECISIONS 203). Nothing to do.
+- PASSES STEP FOR 190 HANDED BACK and ACCEPTED (DECISIONS 211). Lead checked: 97 cues before b55
+  unchanged, 10 moved exactly +1.9 s, `break` 489.71-491.61; film 549.465 s (9:09.5); hops sheet
+  review/merc/hops-190.png (110 -> 700 at +1.13 -> 1290 at +1.78, standing at b55); joins 23/23;
+  only the six s13-s15 chunks re-rendered. Tool edits accepted: board-clock.py (events on both
+  clocks), merc-shots.py keep_before_beat, chapters.json rebuilt. Lead regenerated SCRIPT.md
+  (tools/script-md.py; old one SCRIPT.md.pre190). Scenes: s13 462.37-527.395, s14 -543.265,
+  s15 -549.465.
+- GROUP E STARTED (new builder, (model) xhigh, briefs/l5-film-scenes-E.md updated with 211's times,
+  the hop sheet and C's settled rule).
+- Heavy now: group C fix + group E. Queue: group D's fix round (when C hands back), leftovers
+  (A amber line + B throat line), critic E-01 after E, then integration.

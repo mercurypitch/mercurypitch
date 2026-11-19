@@ -16,8 +16,8 @@ passes on the scratch clock; the final 60 fps passes come after the final voices
 | ---- | ---- | --------- | ------ | ----------- | ------------------- | ----- |
 | m01-blue | Merc | 0.000 to 38.467 (0:00.00 to 0:38.47) | 1154 at 30 fps | 420 | no | `assets/merc/m01-blue-merc.webm` |
 | m01-orange | Tavi | 0.000 to 38.467 (0:00.00 to 0:38.47) | 1154 at 30 fps | 420 | yes, scaleX(-1) | `assets/merc/m01-orange-merc.webm` |
-| m-orange | Tavi | 51.500 to 547.667 (0:51.50 to 9:07.67) | 14885 at 30 fps | 300 and 400 | yes, scaleX(-1) | 13 chunks, below |
-| m-blue | Merc | 58.933 to 547.667 (0:58.93 to 9:07.67) | 14662 at 30 fps | 300 and 400 | no | 12 chunks, below |
+| m-orange | Tavi | 51.500 to 549.567 (0:51.50 to 9:09.57) | 14942 at 30 fps | 300 and 400 | yes, scaleX(-1) | 13 chunks, below |
+| m-blue | Merc | 58.933 to 549.567 (0:58.93 to 9:09.57) | 14719 at 30 fps | 300 and 400 | no | 12 chunks, below |
 
 ## Chunks and renders
 
@@ -41,9 +41,9 @@ with another heavy job sharing the machine.
 | m-orange-s10-merc.webm | s10-steady | 7015 to 8849 | 285.333 to 346.500 | 300 (225) | act5 to b33 | 1835 | 181 ms | 5.5 min |
 | m-orange-s11-merc.webm | s11-sing | 8847 to 10024 | 346.400 to 385.667 | 300 (225) | sing to b38 | 1178 | 158 ms | 3.1 min |
 | m-orange-s12-merc.webm | s12-your-turn | 10022 to 12328 | 385.567 to 462.467 | 300 (225) | b38 to b46a | 2307 | 163 ms | 6.3 min |
-| m-orange-s13-merc.webm | s13-recap | 12326 to 14221 | 462.367 to 525.567 | 300 (225) | recap to card | 1896 | 195 ms | 6.2 min |
-| m-orange-s14-merc.webm | s14-next | 14219 to 14697 | 525.467 to 541.433 | 300 (225) | next to end | 479 | 176 ms | 1.4 min |
-| m-orange-s15-merc.webm | s15-end | 14695 to 14883 | 541.333 to 547.633 | 400 (300) | end to end | 189 | 288 ms | 0.9 min |
+| m-orange-s13-merc.webm | s13-recap | 12326 to 14278 | 462.367 to 527.467 | 300 (225) | recap to card | 1953 | 219 ms | 7.2 min |
+| m-orange-s14-merc.webm | s14-next | 14276 to 14754 | 527.367 to 543.333 | 300 (225) | next to end | 479 | 232 ms | 1.9 min |
+| m-orange-s15-merc.webm | s15-end | 14752 to 14940 | 543.233 to 549.533 | 400 (300) | end to end | 189 | 343 ms | 1.1 min |
 | m-blue-s04-merc.webm | s04-recall | 0 to 229 | 58.933 to 66.600 | 300 (225) | q0 to b6 | 230 | 196 ms | 0.8 min |
 | m-blue-s05-merc.webm | s05-push | 227 to 1315 | 66.500 to 102.800 | 300 (225) | act1 to b9 | 1089 | 342 ms | 6.2 min |
 | m-blue-s06-merc.webm | s06-diaphragm | 1313 to 3378 | 102.700 to 171.567 | 300 (225) | act2 to o8 | 2066 | 217 ms | 7.5 min |
@@ -53,11 +53,11 @@ with another heavy job sharing the machine.
 | m-blue-s10-merc.webm | s10-steady | 6792 to 8626 | 285.333 to 346.500 | 300 (225) | act5 to b33 | 1835 | 174 ms | 5.3 min |
 | m-blue-s11-merc.webm | s11-sing | 8624 to 9801 | 346.400 to 385.667 | 300 (225) | sing to b38 | 1178 | 303 ms | 6.0 min |
 | m-blue-s12-merc.webm | s12-your-turn | 9799 to 12105 | 385.567 to 462.467 | 300 (225) | b38 to b46a | 2307 | 245 ms | 9.4 min |
-| m-blue-s13-merc.webm | s13-recap | 12103 to 13998 | 462.367 to 525.567 | 300 (225) | recap to card | 1896 | 273 ms | 8.7 min |
-| m-blue-s14-merc.webm | s14-next | 13996 to 14474 | 525.467 to 541.433 | 300 (225) | next to end | 479 | 251 ms | 2.0 min |
-| m-blue-s15-merc.webm | s15-end | 14472 to 14660 | 541.333 to 547.633 | 400 (300) | end to end | 189 | 359 ms | 1.1 min |
+| m-blue-s13-merc.webm | s13-recap | 12103 to 14055 | 462.367 to 527.467 | 300 (225) | recap to card | 1953 | 218 ms | 7.1 min |
+| m-blue-s14-merc.webm | s14-next | 14053 to 14531 | 527.367 to 543.333 | 300 (225) | next to end | 479 | 254 ms | 2.0 min |
+| m-blue-s15-merc.webm | s15-end | 14529 to 14717 | 543.233 to 549.533 | 400 (300) | end to end | 189 | 311 ms | 1.0 min |
 
-Rendered: 31922 frames (the shared frames counted in both chunks) in 2.16 hours of rendering.
+Rendered: 32036 frames (the shared frames counted in both chunks) in 2.16 hours of rendering.
 
 ## Moments a scene carries
 
@@ -67,17 +67,16 @@ and moves). Film times on the voiced clock; "air" is when the host is off the fl
 | Pass | Moment | State | Film start | Air | Pass frame | Chunk | The scene |
 | ---- | ------ | ----- | ---------- | --- | ---------- | ----- | --------- |
 | m-orange | leap in | `celebrate` | 51.500 | 51.650 to 52.080 | 0 | m-orange-s03 | carries her in from 300 px beyond the right edge to (1800, 840) while she is in the air |
-| m-orange | hop left (end card) | `celebrate` | 541.406 | 541.556 to 541.986 | 14697 | m-orange-s15 | carries her 190 px left to (1610, 840) in the air, growing 300 to 400 about the feet from the jump's start over 0.70 s |
+| m-orange | hop left (end card) | `celebrate` | 543.306 | 543.456 to 543.886 | 14754 | m-orange-s15 | carries her 190 px left to (1610, 840) in the air, growing 300 to 400 about the feet from the jump's start over 0.70 s |
 | m-blue | leap in | `celebrate` | 58.933 | 59.083 to 59.513 | 0 | m-blue-s04 | carries him in from 300 px beyond the left edge to (110, 840) while he is in the air |
-| m-blue | hop 1 (the `card` pause) | `hop` | 523.290 | 523.410 to 523.820 | 13931 | m-blue-s13 | carries him (110, 840) to (700, 840) through the air, power1.in, cancelling the renderer's root (below) |
-| m-blue | hop 2 (the `card` pause) | `hop` | 523.940 | 524.060 to 524.470 | 13950 | m-blue-s13 | carries him (700, 840) to (1290, 840) through the air, power1.in, cancelling the renderer's root (below) |
+| m-blue | hop 1 (`break`) | `hop` | 490.310 | 490.430 to 490.840 | 12941 | m-blue-s13 | carries him (110, 840) to (700, 840) through the air, power1.in, cancelling the renderer's root (below) |
+| m-blue | hop 2 (`break`) | `hop` | 490.960 | 491.080 to 491.490 | 12961 | m-blue-s13 | carries him (700, 840) to (1290, 840) through the air, power1.in, cancelling the renderer's root (below) |
 
-Merc's hops are in the `card` pause, the first silence after b55 that holds them (DECISIONS 160):
-he stands in his corner, (110, 840), through b55, b56 and b58, and hops only after b58 ends. On
-the board, "Ten minutes, gently, most days." / "Missed a day? Just come back." stand under the
-Voice Mirror card at baselines 822 and 862 from x 230 to about 800 (13f), on his path at the
-floor: S13 must clear them, or the lead re-places them, before he hops. The hops draw their dotted
-arc and echo trail but no floor stop marks (DECISIONS 162).
+Merc's hops are in `break`, the 1.9 s silent beat between b54 and b55 at the recap's clean break
+(DECISIONS 190, amending 160): the recap leaves up fast in its first 0.56 s, hop 1 starts at its
+start + 0.60 and hop 2 at + 1.25, over the empty floor, and the state ends at + 1.91, 0.29 s before
+"Practise it.". So he is at (1290, 840) before b55 starts and stands there through S13 and S14. The
+hops draw their dotted arc and echo trail but no floor stop marks (DECISIONS 162).
 
 ## What the hosts do
 
@@ -98,8 +97,8 @@ of its width (the middle of the opaque body):
 
 | Drawn square | Frames | Sole, lowest row (min to max) | Body top (alpha 128) | Body centre, x |
 | ------------ | ------ | ----------------------------- | -------------------- | -------------- |
-| 225 px | 138 | 0.836 (0.836 to 0.836) | 0.240 | 0.500 |
-| 300 px | 12 | 0.835 (0.833 to 0.837) | 0.240 | 0.498 |
+| 225 px | 156 | 0.836 (0.836 to 0.836) | 0.240 | 0.500 |
+| 300 px | 24 | 0.835 (0.833 to 0.837) | 0.240 | 0.498 |
 
 Both hosts render facing screen right with the same camera (`front`), so both have the same
 feet: **the feet line is 0.836 of the frame's height** (the median nearer sole above; it moves

@@ -20,9 +20,13 @@ its rules, reading list, build, proof and hand-back hold. This brief adds only y
   Mirror card builds after he lands at (1290, 840), where he stays to the end. The `card` pause is
   the board's again: both cards drift and are read whole, the hosts idle. Key the clean break and
   the hops off the `break` cue (`L.at('break')`), never a typed second. The passes for s13 to s15
-  are re-rendered for this; if they are not there yet when you build, build against the kit's
-  placeholder (check's missing-pass finding is the expected one) and re-check your host stills
-  once `merc/PASSES.md` lists the new chunks.
+  are rendered for this and accepted (DECISIONS 211): `break` is 489.71 to 491.61 (film time),
+  hop 1 starts at 490.310 (in the air 490.430 to 490.840, landing at 700), hop 2 at 490.960 (in
+  the air 491.080 to 491.490, landing at 1290), the hop state ends at 491.620 and b55 starts at
+  491.910; the renderer's root settles until 492.23 and `assets/merc/roots.js` cancels it, so
+  place Merc as `merc/PASSES.md` says and he stays put. The lead's frame sheet of the hops, placed
+  as a scene places them, is `review/merc/hops-190.png`. Scenes: s13 462.37 to 527.395, s14 to
+  543.265, s15 to 549.465 (the film is 549.465 s). SCRIPT.md is regenerated and shows `break`.
 - **Every card line is the page's, word for word** (DECISIONS 100; FACTS 54, 58 to 60, 78, 88, 89):
   the recap questions and answers, the Voice Mirror card, its readout, the rest card, the two
   closing lines, the tease line and Lesson 6's hook. Never shorten or reword one; the `[coach]`
@@ -37,8 +41,10 @@ its rules, reading list, build, proof and hand-back hold. This brief adds only y
   4.86 s, the hosts idling past the last frame.
 - **Provisional values that are yours to confirm**, each with a lab still: the "settled" flag's
   place and time in card 3 (x 332, the line's 0.69 s, computed from FACTS 80's points by the page's
-  rule; group C settles the same rule for S10, so read its hand-back in `lab/s10-steady/` if it is
-  there); the hop height (the floor is empty by then, so any height clears; say what it is).
+  rule; group C confirmed that rule for S10 at the page's own 16 ms readings (entry 0.704 s into
+  the take, the flag at 1.204 s; DECISIONS 191, HANDOFFS § Provisional values): use the same rule
+  and its settled-time code in `compositions/s10-steady.html`, without editing that file); the hop height, which is the pass's (measure it on the rendered frames; the floor is
+  empty by then, so any height clears; say what it is).
 - **LAB-CHECKS lines for you**: 21 for your lines (real font widths), 22 (the card lines, the
   coach), and the 0.4 s rule over your rows (§ Build checks); 2's wording for your matched cut on
   `recap` (the carried frame under 2 px, the room's crossfade with no spike).
