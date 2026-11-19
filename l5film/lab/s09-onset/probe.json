@@ -1,9 +1,9 @@
 [
  {
   "t": 0,
-  "name": "first frame (S8's last): the figure at S8's placement, breathed out, jaw 4 px",
-  "got": "crown 991.0,154.0, belly 1050.50, chin 242.00, a 1",
-  "want": "crown 991,154, belly 1050.50, chin 242.00, a 1",
+  "name": "first frame (S8's last): the figure at S8's placement, breathed out to rest (breath 0), jaw 4 px",
+  "got": "crown 991.0,154.0, belly 1061.00, chin 242.00, a 1",
+  "want": "crown 991,154, belly 1061.00, chin 242.00, a 1",
   "pass": true
  },
  {
@@ -35,56 +35,91 @@
   "pass": true
  },
  {
-  "t": 2.514999999999976,
+  "t": 1.7999999999999943,
+  "name": "196: just before the card starts to leave: the folds not begun, the figure at 25 %",
+  "got": "0.000, 0.250, card 1.000",
+  "want": "0.000, 0.250",
+  "pass": true
+ },
+ {
+  "t": 1.8699999999999943,
   "name": "9b (provisional): the ring at the throat (1005, 273), r 10 at scale 0.5, at full strength",
   "got": "centre 1005.0, 273.0; 20.0 across; a 0.100",
   "want": "info",
   "pass": true
  },
  {
-  "t": 2.514999999999976,
+  "t": 1.8699999999999943,
   "name": "9b: the figure fading from 25 %",
   "got": 0.24,
   "want": "< 0.25",
   "pass": true
  },
  {
-  "t": 3.194999999999976,
+  "t": 2.3499999999999943,
+  "name": "196: the ring grown into the folds' box in 0.5 s (its scale riding the slide)",
+  "got": "171.2 across at scale 0.503; grow ends 2.350, card out 1.850",
+  "want": "grow 0.5 s from the card's exit",
+  "pass": true
+ },
+ {
+  "t": 2.549999999999994,
   "name": "9b: mid-slide (info): the folds' box",
-  "got": "848.0 to 1029.1, 199.4 to 380.5",
+  "got": "838.0 to 1039.2, 189.4 to 390.6",
   "want": "info",
   "pass": true
  },
  {
-  "t": 3.194999999999976,
+  "t": 2.549999999999994,
   "name": "9b: the figure gone",
   "got": 0,
   "want": 0,
   "pass": true
  },
  {
-  "t": 3.944999999999976,
-  "name": "9b: the folds' box x 220 to 560, y 260 to 600",
-  "got": "220.0 to 560.0, 260.0 to 600.0",
-  "want": "220 to 560, 260 to 600",
+  "t": 3.299999999999994,
+  "name": "192: the folds' box at 1.35 about (390, 430): x 160.5 to 619.5, y 200.5 to 659.5 (stroke centre)",
+  "got": "160.5 to 619.5, 200.5 to 659.5",
+  "want": "160.5 to 619.5, 200.5 to 659.5",
   "pass": true
  },
  {
-  "t": 3.944999999999976,
-  "name": "9b: \"vocal folds, from above\" x 220, baseline 650",
-  "got": "220.0, 650",
-  "want": "220, 650",
+  "t": 3.299999999999994,
+  "name": "192: the folds' box 60 px or more clear of the lane (x 700)",
+  "got": 80.5,
+  "want": ">= 60",
   "pass": true
  },
  {
-  "t": 5.294999999999976,
+  "t": 3.299999999999994,
+  "name": "\"vocal folds, from above\" centred 390 under the box, baseline 694: its ink 12 px or more under the outline",
+  "got": "390.0, 13.5",
+  "want": "390, >= 12",
+  "pass": true
+ },
+ {
+  "t": 3.299999999999994,
+  "name": "the folds' box clear of Merc's body box (20 px or more)",
+  "got": 26.9,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 4.649999999999994,
+  "name": "192: the lit lane x 700 to 1600, y 320 to 540, chrome at 6 %",
+  "got": "700.0 to 1600.0, 320.0 to 540.0, 0.06 x 1.000",
+  "want": "700 to 1600, 320 to 540, 0.06 x 1.000",
+  "pass": true
+ },
+ {
+  "t": 4.649999999999994,
   "name": "9b: the strip's hairline x 700 to 1600, y 430",
   "got": "700.0 to 1600.0, 430.0",
   "want": "700 to 1600, 430",
   "pass": true
  },
  {
-  "t": 5.294999999999976,
+  "t": 4.649999999999994,
   "name": "9b: its \"ILLUSTRATION\" right-aligned 1600, centred y 270",
   "got": "1329.3 to 1600.0, 250.0 to 290.0",
   "want": "1329 to 1600, 250 to 290",
@@ -95,6 +130,62 @@
   "name": "9b: the four words back, \"onset\" lit",
   "got": "rgb(230,237,243)",
   "want": "info",
+  "pass": true
+ },
+ {
+  "t": 19.19999999999999,
+  "name": "192: trace 1 at 30 % after \"A catch\" (+1.5 s), whole until the catch draws",
+  "got": "0.300, wipe from 690.00",
+  "want": "0.300, wipe from 690.00",
+  "pass": true
+ },
+ {
+  "t": 21.179999999999993,
+  "name": "192: trace 1 at 30 % after \"A catch\" (mid-wait), whole until the catch draws",
+  "got": "0.300, wipe from 690.00",
+  "want": "0.300, wipe from 690.00",
+  "pass": true
+ },
+ {
+  "t": 25.459999999999997,
+  "name": "192: the catch draws over trace 1: trace 1 hidden left of the catch's head",
+  "got": "head 1150.0, wipe from 1150.00, trace 1 0.300",
+  "want": "wipe from 1150.00, 0.300",
+  "pass": true
+ },
+ {
+  "t": 27.80499999999998,
+  "name": "192: trace 2 at 30 % after \"Together\" (+1.0 s), whole until together draws",
+  "got": "0.300, wipe from 690.00",
+  "want": "0.300, wipe from 690.00",
+  "pass": true
+ },
+ {
+  "t": 29.922500000000014,
+  "name": "192: trace 2 at 30 % after \"Together\" (mid-wait), whole until together draws",
+  "got": "0.300, wipe from 690.00",
+  "want": "0.300, wipe from 690.00",
+  "pass": true
+ },
+ {
+  "t": 32.19000000000001,
+  "name": "192: together draws over trace 2",
+  "got": "wipe from 1150.00, trace 2 0.300",
+  "want": "wipe from 1150.00, 0.300",
+  "pass": true
+ },
+ {
+  "t": 33.95000000000001,
+  "name": "197: the folds shrink first: small at STACK + 0.5 s while trace 3 is still on its way",
+  "got": "folds 160.0 to 330.0, 110.0 to 280.0; strip translate(0 12.04) scale(1 0.98836); names 0.00 0.00 0.00",
+  "want": "folds 160 to 330, 110 to 280; names 0",
+  "pass": true
+ },
+ {
+  "t": 34.410000000000004,
+  "name": "197: trace 3 settles before the first name lands (names from about 34.4)",
+  "got": "first name at 34.430; trace 3 lands 34.430; names 0.00 0.00 0.00",
+  "want": "names 0 before",
   "pass": true
  },
  {
@@ -199,33 +290,33 @@
  {
   "t": 34.03000000000001,
   "name": "9f: mid-move (info): trace 3 on its way to row 3, the folds shrinking",
-  "got": "translate(0 188.18) scale(1 0.81818); folds 190.0 to 445.0, 185.0 to 440.0",
+  "got": "translate(0 55.76) scale(1 0.94613); folds 160.0 to 330.0, 110.0 to 280.0",
   "want": "info",
   "pass": true
  },
  {
-  "t": 34.68000000000001,
+  "t": 34.480000000000004,
   "name": "9f: the folds small, x 160 to 330, y 110 to 280",
   "got": "160.0 to 330.0, 110.0 to 280.0",
   "want": "160 to 330, 110 to 280",
   "pass": true
  },
  {
-  "t": 34.68000000000001,
+  "t": 34.480000000000004,
   "name": "9f: the strip's chip at x 1329 to 1600, y 130 to 170",
   "got": "1329.3 to 1600.0, 130.0 to 170.0",
   "want": "1329 to 1600, 130 to 170",
   "pass": true
  },
  {
-  "t": 34.68000000000001,
+  "t": 34.480000000000004,
   "name": "9f: trace 3 in row 3 (its wave y 580 to 720 at full level)",
   "got": "580.7 to 719.3",
   "want": "580 to 720",
   "pass": true
  },
  {
-  "t": 34.68000000000001,
+  "t": 34.480000000000004,
   "name": "9f: row 3's hairline y 650",
   "got": 650,
   "want": 650,
@@ -233,38 +324,52 @@
   "pass": true
  },
  {
-  "t": 34.68000000000001,
+  "t": 34.480000000000004,
   "name": "9f: the gold tick at row 3 (y 630 to 670)",
   "got": "698.0 to 702.0, 630.0 to 670.0",
   "want": "698 to 702, 630 to 670",
   "pass": true
  },
  {
-  "t": 34.68000000000001,
+  "t": 34.480000000000004,
   "name": "9f: the names right-aligned 660 (HANDOFFS 670), baselines 262, 462, 662",
   "got": "660.0/262 660.0/462 660.4/662",
   "want": "info",
   "pass": true
  },
  {
-  "t": 34.68000000000001,
+  "t": 34.480000000000004,
   "name": "no two visible texts overlap",
   "got": "none",
   "want": "none",
   "pass": true
  },
  {
-  "t": 34.68000000000001,
-  "name": "keep-out: nearest visible text to merc's body box (\"Together\")",
-  "got": 348.66,
+  "t": 34.480000000000004,
+  "name": "keep-out: nearest visible text to merc's body box (\"Air first\")",
+  "got": 557.85,
   "want": ">= 20",
   "pass": true
  },
  {
-  "t": 34.68000000000001,
+  "t": 34.480000000000004,
   "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
   "got": 545.46,
   "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 35.63,
+  "name": "197: the three names landed, 0.4 s apart",
+  "got": "1.00 1.00 1.00 at 34.43, 34.83, 35.23",
+  "want": "1.00 1.00 1.00",
+  "pass": true
+ },
+ {
+  "t": 35.63,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
   "pass": true
  },
  {
@@ -332,37 +437,79 @@
  },
  {
   "t": 46.72299999999998,
-  "name": "LAB-CHECKS 13: \"LISTEN ONLY\" under row 1's envelope (320)",
-  "got": 10,
-  "want": ">= 10",
+  "name": "LAB-CHECKS 13 [C-01: 195]: \"LISTEN ONLY\" under \"A catch\", right-aligned 660, centred y 495",
+  "got": "409.6 to 660.0, 475.0 to 515.0",
+  "want": "to 660, 475 to 515",
   "pass": true
  },
  {
   "t": 46.72299999999998,
-  "name": "LAB-CHECKS 13: \"LISTEN ONLY\" over row 2's envelope (380)",
-  "got": 10,
-  "want": ">= 10",
+  "name": "LAB-CHECKS 13: \"LISTEN ONLY\" 12 px or more under the name \"A catch\" (its ink)",
+  "got": 12,
+  "want": ">= 12",
   "pass": true
  },
  {
   "t": 46.72299999999998,
-  "name": "LAB-CHECKS 13: \"LISTEN ONLY\" at row 2's right end (x 1350 to 1600, centred y 350)",
-  "got": "1349.6 to 1600.0, 330.0 to 370.0",
-  "want": "1350 to 1600, 330 to 370",
+  "name": "LAB-CHECKS 13: \"LISTEN ONLY\" 12 px or more left of row 2 (x 700) and of its circle",
+  "got": "40.0, 90.4",
+  "want": "both >= 12",
+  "pass": true
+ },
+ {
+  "t": 46.72299999999998,
+  "name": "LAB-CHECKS 13: \"LISTEN ONLY\" clear of \"Together\" (its ink) and of row 3's envelope (580)",
+  "got": "120.0",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 46.72299999999998,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
   "pass": true
  },
  {
   "t": 48.969999999999985,
-  "name": "9g: \"the easy start\" over row 3's envelope (580)",
-  "got": 7,
-  "want": ">= 4",
+  "name": "195: \"the easy start\" under \"Together\", right-aligned 660, baseline 714 (row 3's own name)",
+  "got": "659.4, 714",
+  "want": "660, 714",
   "pass": true
  },
  {
   "t": 48.969999999999985,
-  "name": "9g: \"the easy start\" under row 2's envelope (520)",
+  "name": "195: \"the easy start\" 12 px or more under \"Together\" (ink to ink)",
   "got": 15,
-  "want": ">= 8",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 48.969999999999985,
+  "name": "195: \"the easy start\" 12 px or more from row 3 (x 700), its gold tick and \"the h, only in your mind\"",
+  "got": "40.6, 38.2, 62.9",
+  "want": "all >= 12",
+  "pass": true
+ },
+ {
+  "t": 48.969999999999985,
+  "name": "195: \"the easy start\" off \"neither\"'s line (baselines)",
+  "got": "714 / 568",
+  "want": "differ by 100 or more",
+  "pass": true
+ },
+ {
+  "t": 48.969999999999985,
+  "name": "keep-out: nearest visible text to merc's body box (\"the easy start\")",
+  "got": 248.43,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 48.969999999999985,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 545.46,
+  "want": ">= 20",
   "pass": true
  },
  {
@@ -374,9 +521,23 @@
  },
  {
   "t": 53.15700000000001,
-  "name": "9g: the faint \"h\" (serif 120, ink-2 at 40 %) centred (760, 690)",
-  "got": "760.0, 613.0 to 769.0, a 0.400",
-  "want": "info",
+  "name": "195: the \"h\" (serif 120, ink-2) at 70 %, centred (760, 690)",
+  "got": "760.0, 613.0 to 769.0, a 0.700",
+  "want": "a 0.700",
+  "pass": true
+ },
+ {
+  "t": 53.15700000000001,
+  "name": "195: row 3's first 200 px (x 704 to 880, soft to 920) at 25 % while it shows",
+  "got": "mask on, 0.250 0.250 1 1",
+  "want": "mask on, 0.250 0.250 1 1",
+  "pass": true
+ },
+ {
+  "t": 56.41999999999997,
+  "name": "195: the \"h\" gone and row 3 whole again (no mask)",
+  "got": "0.000, mask off",
+  "want": "0.000, mask off",
   "pass": true
  },
  {
@@ -402,15 +563,15 @@
  },
  {
   "t": 57.0695,
-  "name": "keep-out: nearest visible text to merc's body box (\"Together\")",
-  "got": 348.66,
+  "name": "keep-out: nearest visible text to merc's body box (\"the easy start\")",
+  "got": 248.43,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 57.0695,
-  "name": "keep-out: nearest visible text to tavi's body box (\"LISTEN ONLY\")",
-  "got": 360.44,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 545.46,
   "want": ">= 20",
   "pass": true
  }

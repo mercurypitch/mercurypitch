@@ -4406,7 +4406,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   stations from 937 at x 401 (844x390) and 815 at x 442 (932x430), art beside; no errors; production
   none. Follow-up polish round 2 DONE. Open: the film queue only.
 
-## 12:40 UTC, 19 Nov
+## 12:20 UTC, 19 Nov
 - GROUP D HANDED BACK (s11-sing 39.2 s, s12-your-turn 76.8 s): probes 55/55 and 122/122, root
   check 0 errors, clock-lint silent, merc-tags clean; sing cut best shift (0,0); recap cut proven
   against a stand-in; push lands 5 frames before "Listen"; hold silent; arcs reach x 229.3 (care
@@ -4419,7 +4419,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Heavy now: group B fix + passes step. Queue: group C's fix round, then group E (after the passes
   step), then D's fix round after its critic.
 
-## 12:50 UTC, 19 Nov
+## 12:35 UTC, 19 Nov
 - GROUP B FIX ROUND HANDED BACK and ACCEPTED (DECISIONS 203; lead looked at payoff-35.png and
   plates-45.0.png): all 10 items done or reported; probes 75/245/110; root check 0 errors. Left:
   the S6/S7 eye turn is in the pass (final passes start it after the cut); "never your throat" on
@@ -4429,7 +4429,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Heavy now: passes step + group C fix. Queue: group E (after the passes step), group D's fix
   round (after critic D-01 + calls), the leftovers round (A + B), then integration.
 
-## 13:00 UTC, 19 Nov
+## 12:45 UTC, 19 Nov
 - CRITIC D-01 RETURNED: ONE MORE PASS (keep the hold). Saved to l5film/review/critic-D-01/REPORT.md.
   DECISIONS 204-210 (ring at 35 % from "ten seconds", reasons fade on b38; answers light then the
   feel block dims as the doctor lines rise, hand-set breaks; chart labels leave with the hold;

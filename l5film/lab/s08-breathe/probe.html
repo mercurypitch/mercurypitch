@@ -43,7 +43,7 @@
           // and S8 to S9). F0 throughout, no camera move: the parked figure, carried from S7 at 35 %, dims under the
           // card, then comes back to full and stands up whole at the frame's centre, its legs drawing down from the
           // hips; Merc's three posture cues and the breath in, each a world label with a leader to its part; the
-          // figure breathes in once and out once. Every time is a cue, a word or a duration.
+          // figure breathes in once and back out to rest. Every time is a cue, a word or a duration.
           const SID = 's08-breathe'
           const D = L.dur(SID)
           const T0 = L.scene(SID).start
@@ -62,9 +62,11 @@
           // 8a: act3, the card over the dimmed, parked figure
           const ACT = at('act3')
           const CARD_IN = ACT + 0.22, CARD_OUT = at('o9', 'start', -0.5)
-          // 8b: o9, the figure stands up whole; its lungs glow on "breathe in?"
+          // 8b: o9, the figure stands up whole; its lungs glow on "breathe in?". The stand-up starts as the card starts
+          // to leave, overlapping its exit, and the figure is at full strength from its start (DECISIONS 196): it comes
+          // up from 25 % over the 0.25 s before (linear), while the card is still up and nothing changes shape
           const O9 = at('o9')
-          const STAND = O9 + 0.05, STAND_D = 1.2                       // board 218.75 to 219.95 (power2.inOut)
+          const STAND = CARD_OUT, STAND_D = 1.2, FULL_D = 0.25         // power2.inOut (the board's 218.75 to 219.95 before)
           const LEGS = STAND + 0.65, LEGS_D = STAND_D - 0.65           // the legs draw down from the hips as it lands
           const LUNGS_Q = word('o9', 'breathe')
           const KICK_OUT = at('b21', 'end')
@@ -78,7 +80,7 @@
           const DROP = word('b22', 'drop')                             // "diaphragm at work"
           const SHOULDERS = word('b22', 'shoulders')                   // "shoulders still" and its level mark
           const TAKING = word('b22', 'taking')                         // "as much as feels easy"
-          const OUT0 = TAKING + 0.06                                   // the breath out (board 234.30 to 236.30)
+          const OUT0 = TAKING + 0.06                                   // the breath out to rest (board 234.30 to 236.30)
           const IN_D = Math.min(2.0, OUT0 - LET), OUT_D = Math.min(2.0, D - OUT0)
           const SINGERS = TAKING + 0.56                                // "Singers breathe in different ways." (board: 0.56 s after)
 
@@ -165,11 +167,12 @@
             const su = P(t, STAND, STAND_D, 'power2.inOut')
             const lg = P(t, LEGS, LEGS_D, 'power2.out')
             const dimA = lerp(0.35, 0.25, P(t, ACT, 0.2, 'none'))
-            const a = lerp(dimA, 1, P(t, STAND, 0.6, 'none'))
+            const a = lerp(dimA, 1, P(t, STAND - FULL_D, FULL_D, 'none'))
             const fv0 = FV[0] + 470 * lg, fv1 = FV[1] + 470 * lg
             const k = lerp(F7.k, F8.k, su), x0 = lerp(F7.x0, F8.x0, su), y0 = lerp(F7.y0, F8.y0, su)
-            // the breath: in once (sine.inOut), held, out to the belly and rib muscles' push (HANDOFFS' table, 8d)
-            const breath = P(t, LET, IN_D, 'sine.inOut') - 2 * P(t, OUT0, OUT_D, 'sine.inOut')
+            // the breath: in once (sine.inOut), held, then out to rest (breath 0, the belly wall springing back in;
+            // FACTS 17), where it stays across the cut: -1 is the muscles' push, not this easy breath (DECISIONS 191)
+            const breath = P(t, LET, IN_D, 'sine.inOut') - P(t, OUT0, OUT_D, 'sine.inOut')
             const knee = 2 * L.env(t, KNEES, 0.4, 0.5, 0.5)            // softens 2 degrees and back
             const jaw = 4 * P(t, JAW, 0.5, 'power2.inOut')            // drops 4 px and stays loose
             const run = L.run(t, JAW + 0.1, 0.7)                       // a light runs down the neck

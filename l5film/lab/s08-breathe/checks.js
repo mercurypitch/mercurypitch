@@ -7,7 +7,7 @@
   const H = window.__H, sid = 's08-breathe'
   const S = window.__sceneProbe[sid], A = S.A
   const T = {
-    f0: 0, dim: A.ACT + 0.25, card: A.CARD_IN + 0.9, mid: A.STAND + 0.6, whole: A.STAND + A.STAND_D + 0.05, lungs: A.LUNGS_Q + 0.4,
+    f0: 0, dim: A.ACT + 0.25, card: A.CARD_IN + 0.9, up: A.STAND - 0.3, go: A.STAND + 0.001, go2: A.STAND + 0.3, mid: A.STAND + 0.6, whole: A.STAND + A.STAND_D + 0.05, lungs: A.LUNGS_Q + 0.4,
     tall: A.TALL + 0.6, knees: A.KNEES + 0.6, jaw: A.JAW + 0.8, inq: A.IN_Q + 0.4, held: A.LET + A.IN_D + 0.1, shoulders: A.SHOULDERS + 0.5,
     much: A.TAKING + 0.4, singers: A.SINGERS + 0.5, last: A.D - 0.0005,
   }
@@ -67,6 +67,9 @@
         const c = S.card.g.getBoundingClientRect()
         out.push({ name: '8a: the card "03 Breathing in" within 1680 px', got: c.width, want: '<= 1680', pass: c.width <= 1680 }, { name: 'the figure still parked and dim under it', got: `${figA().toFixed(2)}, crown ${S.fig.at('crown').map((v) => v.toFixed(1))}`, want: '0.25, crown 255,190', pass: Math.abs(figA() - 0.25) < 0.001 })
       }
+      if (t === T.up) out.push({ name: '196: 0.3 s before the move, under the card: the figure still parked and at 25 %', got: `${figA().toFixed(3)}, crown ${S.fig.at('crown').map((v) => v.toFixed(1))}, card ${S.card.g.getAttribute('opacity')}`, want: '0.250, crown 255,190', pass: Math.abs(figA() - 0.25) < 0.001 && Math.abs(S.fig.at('crown')[1] - 190) < 0.01 })
+      if (t === T.go) out.push({ name: '196: the move starts as the card starts to leave (the card\'s exit from CARD_OUT), the figure at full strength', got: `${figA().toFixed(3)}; move start ${A.STAND.toFixed(3)}, card out ${A.CARD_OUT.toFixed(3)}`, want: '1.000; equal', pass: Math.abs(figA() - 1) < 0.005 && Math.abs(A.STAND - A.CARD_OUT) < 1e-9 })
+      if (t === T.go2) out.push({ name: '196: 0.3 s into the move (info): crown, strength, the card leaving', got: `${S.fig.at('crown').map((v) => v.toFixed(1))}, a ${figA().toFixed(2)}, card ${S.card.g.getAttribute('opacity')}`, want: 'info', pass: true })
       if (t === T.mid) out.push({ name: '8b: mid-stand (info): crown, legs', got: `${S.fig.at('crown').map((v) => v.toFixed(1))}, a ${figA().toFixed(2)}`, want: 'info', pass: true })
       if (t === T.whole) {
         const P8 = (n, x, y) => { const [X, Y] = S.fig.at(n); return [{ name: `8b: S8 ${n} x`, got: X, want: x, tol: 0.6 }, { name: `8b: S8 ${n} y`, got: Y, want: y, tol: 0.6 }] }
@@ -110,7 +113,7 @@
       }
       if (t === T.last) {
         const vis = Object.entries(S.cueL).map(([n, l]) => `${n} ${H.alpha(l.el).toFixed(2)}`).join(', ')
-        out.push({ name: 'last frame (S8 to S9): the figure whole at S8\'s placement, breathed out (breath -1), the jaw at 4 px', got: `crown ${S.fig.at('crown').map((v) => v.toFixed(1))}, belly ${S.fig.at('belly')[0].toFixed(2)}, chin ${S.fig.at('chin')[1].toFixed(2)}`, want: 'crown 991,154, belly 1050.5 (u 315), chin 242', pass: Math.abs(S.fig.at('belly')[0] - (830 + 0.7 * 315)) < 0.05 && Math.abs(S.fig.at('chin')[1] - 242) < 0.05 },
+        out.push({ name: 'last frame (S8 to S9): the figure whole at S8\'s placement, breathed out to rest (breath 0, DECISIONS 191), the jaw at 4 px', got: `crown ${S.fig.at('crown').map((v) => v.toFixed(1))}, belly ${S.fig.at('belly')[0].toFixed(2)}, chin ${S.fig.at('chin')[1].toFixed(2)}`, want: 'crown 991,154, belly 1061.0 (u 330, rest), chin 242', pass: Math.abs(S.fig.at('belly')[0] - (830 + 0.7 * 330)) < 0.05 && Math.abs(S.fig.at('chin')[1] - 242) < 0.05 },
           { name: 'last frame: every cue label at full', got: vis, want: 'all 1.00', pass: Object.values(S.cueL).every((l) => H.alpha(l.el) > 0.999) && S.singers.every((l) => H.alpha(l.el) > 0.999) },
           { name: 'last frame: the card and kicker gone', got: `${S.card.g.getAttribute('opacity')} / ${S.kicker.g.getAttribute('opacity')}`, want: '0.000 / 0.000' })
       }

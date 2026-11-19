@@ -8,10 +8,12 @@
   const root = document.getElementById(sid + '-scene')
   const R = H.R
   const T = {
-    f0: 0, dim: A.ACT + 0.25, ring: A.FOLD0 + 0.02, grow: A.SLIDE + 0.3, folds: A.FOLD_L + 0.05, strip: A.STRIP + 0.95, row: A.ONSET + 0.4,
+    f0: 0, dim: A.ACT + 0.25, pre: A.FOLD0 - 0.05, ring: A.FOLD0 + 0.02, grown: A.FOLD0 + A.GROW_D, grow: A.SLIDE + 0.3, folds: A.FOLD_L + 0.05, strip: A.STRIP + 0.95, row: A.ONSET + 0.4,
+    ghostA: A.CATCH + 1.5, mid1: (A.CATCH + A.S_CATCH) / 2, wipeA: A.S_CATCH + 0.8, ghostC: A.TOG + 1.0, mid2: (A.MEET + A.S_TOG) / 2, wipeC: A.S_TOG + 0.8,
+    fsh: A.STACK + A.FSH_D + 0.02, preNames: A.NAMES[0] - 0.02,
     title: A.TITLE + 0.35, chips: A.CHIPS[2] + 0.35, air: A.AIR + 0.7, airS: A.S_AIR + 0.3, airDone: A.AIR_L + 0.3, catchT: A.LISTEN + 0.3,
     pressed: A.PRESSED + 0.4, catchS: A.S_CATCH + 0.4, tog: A.MEET + 0.5, togS: A.S_TOG + 1.0, stackMid: A.STACK + 0.6, stack: A.STACK + A.STACK_D + 0.05,
-    replay: A.SR[1] + 0.5, circles: A.NEITHER + 0.3, lab13: A.THIRD - 1.26, easy: A.EASY + 0.3, h: A.SOFT + 0.5, last: A.D - 0.0005,
+    names: A.NAMES[2] + 0.4, replay: A.SR[1] + 0.5, circles: A.NEITHER + 0.3, lab13: A.THIRD - 1.26, easy: A.EASY + 0.3, h: A.SOFT + 0.5, hOut: A.ONLY + 1.3, last: A.D - 0.0005,
   }
   const figA = () => +S.fig.g.getAttribute('opacity')
   const overlaps = () => {
@@ -57,11 +59,16 @@
     check(t) {
       const out = []
       if (t === T.f0) {
-        out.push({ name: 'first frame (S8\'s last): the figure at S8\'s placement, breathed out, jaw 4 px', got: `crown ${S.fig.at('crown').map((v) => v.toFixed(1))}, belly ${S.fig.at('belly')[0].toFixed(2)}, chin ${S.fig.at('chin')[1].toFixed(2)}, a ${figA()}`, want: 'crown 991,154, belly 1050.50, chin 242.00, a 1', pass: Math.abs(S.fig.at('belly')[0] - 1050.5) < 0.05 && Math.abs(S.fig.at('chin')[1] - 242) < 0.05 && figA() === 1 },
+        out.push({ name: 'first frame (S8\'s last): the figure at S8\'s placement, breathed out to rest (breath 0), jaw 4 px', got: `crown ${S.fig.at('crown').map((v) => v.toFixed(1))}, belly ${S.fig.at('belly')[0].toFixed(2)}, chin ${S.fig.at('chin')[1].toFixed(2)}, a ${figA()}`, want: 'crown 991,154, belly 1061.00, chin 242.00, a 1', pass: Math.abs(S.fig.at('belly')[0] - 1061) < 0.05 && Math.abs(S.fig.at('chin')[1] - 242) < 0.05 && figA() === 1 },
           { name: 'every cue label at full', got: Object.values(S.cueL).concat(S.singers).every((l) => H.alpha(l.el) > 0.999), want: true },
           { name: 'nothing of S9 shown yet', got: `${S.fo.g.getAttribute('opacity')} ${S.card.g.getAttribute('opacity')}`, want: '0.000 0.000' }, landings())
       }
       if (t === T.dim) out.push({ name: '9a: the figure at 25 %, its labels hidden', got: `${figA().toFixed(3)} / ${H.alpha(S.cueL.tall.el).toFixed(3)}`, want: '0.250 / 0.000' })
+      if (t === T.pre) out.push({ name: '196: just before the card starts to leave: the folds not begun, the figure at 25 %', got: `${S.fo.g.getAttribute('opacity')}, ${figA().toFixed(3)}, card ${S.card.g.getAttribute('opacity')}`, want: '0.000, 0.250', pass: +S.fo.g.getAttribute('opacity') === 0 && Math.abs(figA() - 0.25) < 0.001 })
+      if (t === T.grown) {
+        const b = foldBox()
+        out.push({ name: '196: the ring grown into the folds\' box in 0.5 s (its scale riding the slide)', got: `${b.width.toFixed(1)} across at scale ${(b.width / 340).toFixed(3)}; grow ends ${(A.FOLD0 + A.GROW_D).toFixed(3)}, card out ${A.CARD_OUT.toFixed(3)}`, want: 'grow 0.5 s from the card\'s exit', pass: A.GROW_D === 0.5 && A.FOLD0 === A.CARD_OUT && +S.fo.g.getAttribute('opacity') === 1 })
+      }
       if (t === T.ring) {
         const b = foldBox()
         out.push({ name: '9b (provisional): the ring at the throat (1005, 273), r 10 at scale 0.5, at full strength', got: `centre ${((b.left + b.right) / 2).toFixed(1)}, ${((b.top + b.bottom) / 2).toFixed(1)}; ${b.width.toFixed(1)} across; a ${S.fo.g.getAttribute('opacity')}`, want: 'info', pass: Math.abs((b.left + b.right) / 2 - 1005) < 1 && Math.abs((b.top + b.bottom) / 2 - 273) < 1 },
@@ -70,11 +77,16 @@
       if (t === T.grow) out.push({ name: '9b: mid-slide (info): the folds\' box', got: box(S.fo.g.querySelector('rect')), want: 'info', pass: true }, { name: '9b: the figure gone', got: figA(), want: 0 })
       if (t === T.folds) {
         const b = foldBox(), lb = R(S.foLabel.el)
-        out.push({ name: '9b: the folds\' box x 220 to 560, y 260 to 600', got: box(S.fo.g.querySelector('rect')), want: '220 to 560, 260 to 600', pass: Math.abs(b.left - 220) < 1 && Math.abs(b.right - 560) < 1 && Math.abs(b.top - 260) < 1 && Math.abs(b.bottom - 600) < 1 },
-          { name: '9b: "vocal folds, from above" x 220, baseline 650', got: `${lb.left.toFixed(1)}, ${S.foLabel.el.getAttribute('y')}`, want: '220, 650', pass: Math.abs(lb.left - 220) < 2 })
+        const fl = inkOf(S.foLabel, "500 28px 'Outfit'"), ob = { left: 390 - 170 * A.FS, right: 390 + 170 * A.FS, top: 430 - 170 * A.FS, bottom: 430 + 170 * A.FS }
+        out.push({ name: '192: the folds\' box at 1.35 about (390, 430): x 160.5 to 619.5, y 200.5 to 659.5 (stroke centre)', got: box(S.fo.g.querySelector('rect')), want: '160.5 to 619.5, 200.5 to 659.5', pass: Math.abs(b.left - ob.left) < 1 && Math.abs(b.right - ob.right) < 1 && Math.abs(b.top - ob.top) < 1 && Math.abs(b.bottom - ob.bottom) < 1 },
+          { name: '192: the folds\' box 60 px or more clear of the lane (x 700)', got: 700 - b.right, want: '>= 60', pass: 700 - b.right >= 60 },
+          { name: '"vocal folds, from above" centred 390 under the box, baseline 694: its ink 12 px or more under the outline', got: `${((lb.left + lb.right) / 2).toFixed(1)}, ${(fl.top - b.bottom).toFixed(1)}`, want: '390, >= 12', pass: Math.abs((lb.left + lb.right) / 2 - 390) < 2 && fl.top - b.bottom >= 12 },
+          { name: 'the folds\' box clear of Merc\'s body box (20 px or more)', got: S.boxes.merc ? H.gap(b, { left: S.boxes.merc.x0, right: S.boxes.merc.x1, top: S.boxes.merc.y0, bottom: S.boxes.merc.y1 }) : 'none', want: '>= 20', pass: !S.boxes.merc || H.gap(b, { left: S.boxes.merc.x0, right: S.boxes.merc.x1, top: S.boxes.merc.y0, bottom: S.boxes.merc.y1 }) >= 20 })
       }
       if (t === T.strip) {
         const hr = R(S.baseTr.g.querySelector('rect')), tg = R(S.stripTag.box)
+        const ln = R(S.lane)
+        out.push({ name: '192: the lit lane x 700 to 1600, y 320 to 540, chrome at 6 %', got: `${box(S.lane)}, ${S.lane.getAttribute('fill-opacity')} x ${S.lane.getAttribute('opacity')}`, want: '700 to 1600, 320 to 540, 0.06 x 1.000', pass: Math.abs(ln.left - 700) < 1 && Math.abs(ln.right - 1600) < 1 && Math.abs(ln.top - 320) < 1 && Math.abs(ln.bottom - 540) < 1 && +S.lane.getAttribute('opacity') === 1 })
         out.push({ name: '9b: the strip\'s hairline x 700 to 1600, y 430', got: `${hr.left.toFixed(1)} to ${hr.right.toFixed(1)}, ${(hr.top + hr.height / 2).toFixed(1)}`, want: '700 to 1600, 430', pass: Math.abs(hr.left - 700) < 1 && Math.abs(hr.right - 1600) < 1 },
           { name: '9b: its "ILLUSTRATION" right-aligned 1600, centred y 270', got: box(S.stripTag.box), want: '1329 to 1600, 250 to 290', pass: Math.abs(tg.right - 1600) < 1.5 && Math.abs(tg.top - 250) < 1 })
       }
@@ -95,6 +107,10 @@
         out.push({ name: '9d: "LISTEN ONLY" 24 px after "A catch" (its advance)', got: lb.left - (700 + S.titles[2].el.getComputedTextLength()), want: 24, tol: 1 },
           { name: '9d: "LISTEN ONLY" clear of the strip\'s chip', got: tg.left - lb.right, want: '>= 12', pass: tg.left - lb.right >= 12 }, overlaps())
       }
+      if (t === T.ghostA || t === T.mid1) out.push({ name: `192: trace 1 at 30 % after "A catch" (${t === T.mid1 ? 'mid-wait' : '+1.5 s'}), whole until the catch draws`, got: `${S.airTr.g.getAttribute('opacity')}, wipe from ${S.airWipe.getAttribute('x')}`, want: '0.300, wipe from 690.00', pass: S.airTr.g.getAttribute('opacity') === '0.300' && S.airWipe.getAttribute('x') === '690.00' })
+      if (t === T.wipeA) out.push({ name: '192: the catch draws over trace 1: trace 1 hidden left of the catch\'s head', got: `head ${(700 + 562.5 * 0.8).toFixed(1)}, wipe from ${S.airWipe.getAttribute('x')}, trace 1 ${S.airTr.g.getAttribute('opacity')}`, want: 'wipe from 1150.00, 0.300', pass: S.airWipe.getAttribute('x') === '1150.00' && S.airTr.g.getAttribute('opacity') === '0.300' })
+      if (t === T.ghostC || t === T.mid2) out.push({ name: `192: trace 2 at 30 % after "Together" (${t === T.mid2 ? 'mid-wait' : '+1.0 s'}), whole until together draws`, got: `${S.catchTr.g.getAttribute('opacity')}, wipe from ${S.catchWipe.getAttribute('x')}`, want: '0.300, wipe from 690.00', pass: S.catchTr.g.getAttribute('opacity') === '0.300' && S.catchWipe.getAttribute('x') === '690.00' })
+      if (t === T.wipeC) out.push({ name: '192: together draws over trace 2', got: `wipe from ${S.catchWipe.getAttribute('x')}, trace 2 ${S.catchTr.g.getAttribute('opacity')}`, want: 'wipe from 1150.00, 0.300', pass: S.catchWipe.getAttribute('x') === '1150.00' })
       if (t === T.pressed) out.push({ name: '9d: the folds pressed shut (12 px, no gap)', got: S.fo.g.querySelectorAll('path')[2].getAttribute('stroke-width'), want: '12.00' })
       if (t === T.catchS) out.push({ name: '9d: the catch\'s mark at x 784 (0.15 s), the folds open into vibration', got: `${R(S.catchTr.g.querySelectorAll('rect')[2]).left.toFixed(1)}, ${S.catchTr.g.querySelectorAll('rect')[2].getAttribute('opacity')}`, want: '782.4, 1.000' })
       if (t === T.tog) out.push({ name: '9e: the folds at a slit on "meet"', got: S.fo.g.querySelectorAll('path')[1].getAttribute('d'), want: 'info', pass: true })
@@ -102,6 +118,12 @@
         const k = R(S.tick)
         out.push({ name: '9e: the gold tick 4 x 40 at the onset (x 698 to 702, y 410 to 450)', got: box(S.tick), want: '698 to 702, 410 to 450', pass: Math.abs(k.left - 698) < 0.5 && Math.abs(k.top - 410) < 0.5 && +S.tick.getAttribute('opacity') > 0.99 })
       }
+      if (t === T.fsh) {
+        const b = foldBox()
+        out.push({ name: '197: the folds shrink first: small at STACK + 0.5 s while trace 3 is still on its way', got: `folds ${box(S.fo.g.querySelector('rect'))}; strip ${S.movG.getAttribute('transform') || 'not moved'}; names ${S.names.map((l) => H.alpha(l.el).toFixed(2)).join(' ')}`, want: 'folds 160 to 330, 110 to 280; names 0', pass: Math.abs(b.left - 160) < 1 && Math.abs(b.bottom - 280) < 1 && S.names.every((l) => H.alpha(l.el) === 0) })
+      }
+      if (t === T.preNames) out.push({ name: '197: trace 3 settles before the first name lands (names from about 34.4)', got: `first name at ${A.NAMES[0].toFixed(3)}; trace 3 lands ${(A.TMV + A.TMV_D).toFixed(3)}; names ${S.names.map((l) => H.alpha(l.el).toFixed(2)).join(' ')}`, want: 'names 0 before', pass: S.names.every((l) => H.alpha(l.el) === 0) && A.NAMES[0] >= A.TMV + A.TMV_D - 1e-9 && Math.abs(A.NAMES[0] - 34.4) < 0.1 })
+      if (t === T.names) out.push({ name: '197: the three names landed, 0.4 s apart', got: S.names.map((l) => H.alpha(l.el).toFixed(2)).join(' ') + ` at ${A.NAMES.map((v) => v.toFixed(2)).join(', ')}`, want: '1.00 1.00 1.00', pass: S.names.every((l) => H.alpha(l.el) > 0.999) }, overlaps())
       if (t === T.stackMid) out.push({ name: '9f: mid-move (info): trace 3 on its way to row 3, the folds shrinking', got: `${S.movG.getAttribute('transform')}; folds ${box(S.fo.g.querySelector('rect'))}`, want: 'info', pass: true })
       if (t === T.stack) {
         const b = foldBox(), tg = R(S.stripTag.box), k = R(S.tick)
@@ -126,19 +148,27 @@
           { name: '9f: "the click" between rows 1 and 2 (envelopes to 320, from 380)', got: `${(ck.top - 320).toFixed(1)}, ${(380 - ck.bottom).toFixed(1)}`, want: 'both >= 8', pass: ck.top - 320 >= 8 && 380 - ck.bottom >= 8 }, overlaps())
       }
       if (t === T.lab13) {
-        const tg = R(S.stripTag.box), ls = R(S.listen2.box)
+        const tg = R(S.stripTag.box), ls = R(S.listen2.box), nm = inkOf(S.names[1], "600 36px 'Outfit'"), n3 = inkOf(S.names[2], "600 36px 'Outfit'")
+        const e2 = S.rowTr[1].g.querySelector('ellipse'), ce = R(e2)
         out.push({ name: 'LAB-CHECKS 13 (board 290.00): the strip\'s chip over row 1\'s envelope (180 at full level)', got: 180 - tg.bottom, want: '>= 10', pass: 180 - tg.bottom >= 10 },
-          { name: 'LAB-CHECKS 13: "LISTEN ONLY" under row 1\'s envelope (320)', got: ls.top - 320, want: '>= 10', pass: ls.top - 320 >= 10 },
-          { name: 'LAB-CHECKS 13: "LISTEN ONLY" over row 2\'s envelope (380)', got: 380 - ls.bottom, want: '>= 10', pass: 380 - ls.bottom >= 10 },
-          { name: 'LAB-CHECKS 13: "LISTEN ONLY" at row 2\'s right end (x 1350 to 1600, centred y 350)', got: box(S.listen2.box), want: '1350 to 1600, 330 to 370', pass: Math.abs(ls.right - 1600) < 1.5 && Math.abs(ls.top - 330) < 1 })
+          { name: 'LAB-CHECKS 13 [C-01: 195]: "LISTEN ONLY" under "A catch", right-aligned 660, centred y 495', got: box(S.listen2.box), want: 'to 660, 475 to 515', pass: Math.abs(ls.right - 660) < 1.5 && Math.abs((ls.top + ls.bottom) / 2 - 495) < 1 },
+          { name: 'LAB-CHECKS 13: "LISTEN ONLY" 12 px or more under the name "A catch" (its ink)', got: ls.top - nm.bottom, want: '>= 12', pass: ls.top - nm.bottom >= 12 },
+          { name: 'LAB-CHECKS 13: "LISTEN ONLY" 12 px or more left of row 2 (x 700) and of its circle', got: `${(700 - ls.right).toFixed(1)}, ${(ce.left - ls.right).toFixed(1)}`, want: 'both >= 12', pass: 700 - ls.right >= 12 && ce.left - ls.right >= 12 },
+          { name: 'LAB-CHECKS 13: "LISTEN ONLY" clear of "Together" (its ink) and of row 3\'s envelope (580)', got: `${(n3.top - ls.bottom).toFixed(1)}`, want: '>= 12', pass: n3.top - ls.bottom >= 12 }, overlaps())
       }
       if (t === T.easy) {
-        const e = inkOf(S.easy, "600 40px 'Outfit'")
-        out.push({ name: '9g: "the easy start" over row 3\'s envelope (580)', got: 580 - e.bottom, want: '>= 4', pass: 580 - e.bottom >= 4 },
-          { name: '9g: "the easy start" under row 2\'s envelope (520)', got: e.top - 520, want: '>= 8', pass: e.top - 520 >= 8 },
+        const e = inkOf(S.easy, "600 40px 'Outfit'"), n3 = inkOf(S.names[2], "600 36px 'Outfit'"), ne = inkOf(S.neither, "600 30px 'Outfit'")
+        const hl = R(S.hLine.el), k = R(S.rowTr[2].g.querySelectorAll('g')[1])
+        out.push({ name: '195: "the easy start" under "Together", right-aligned 660, baseline 714 (row 3\'s own name)', got: `${e.right.toFixed(1)}, ${S.easy.el.getAttribute('y')}`, want: '660, 714', pass: Math.abs(e.right - 660) < 2 },
+          { name: '195: "the easy start" 12 px or more under "Together" (ink to ink)', got: e.top - n3.bottom, want: '>= 12', pass: e.top - n3.bottom >= 12 },
+          { name: '195: "the easy start" 12 px or more from row 3 (x 700), its gold tick and "the h, only in your mind"', got: `${(700 - e.right).toFixed(1)}, ${(k.left - e.right).toFixed(1)}, ${H.gap(e, hl).toFixed(1)}`, want: 'all >= 12', pass: 700 - e.right >= 12 && k.left - e.right >= 12 && H.gap(e, hl) >= 12 },
+          { name: '195: "the easy start" off "neither"\'s line (baselines)', got: `${S.easy.el.getAttribute('y')} / ${S.neither.el.getAttribute('y')}`, want: 'differ by 100 or more', pass: Math.abs(+S.easy.el.getAttribute('y') - +S.neither.el.getAttribute('y')) >= 100 },
+          ...H.keepout(root, S.boxes),
           { name: '9g: the gold tick scales 1.2 (peak at + 0.15 s)', got: S.rowTr[2].g.querySelectorAll('g')[1].getAttribute('transform'), want: 'info', pass: true })
       }
-      if (t === T.h) out.push({ name: '9g: the faint "h" (serif 120, ink-2 at 40 %) centred (760, 690)', got: (() => { const b = R(S.hGlyph.el); return `${((b.left + b.right) / 2).toFixed(1)}, ${b.top.toFixed(1)} to ${b.bottom.toFixed(1)}, a ${S.hGlyph.el.getAttribute('opacity')}` })(), want: 'info', pass: true })
+      if (t === T.h) out.push({ name: '195: the "h" (serif 120, ink-2) at 70 %, centred (760, 690)', got: (() => { const b = R(S.hGlyph.el); return `${((b.left + b.right) / 2).toFixed(1)}, ${b.top.toFixed(1)} to ${b.bottom.toFixed(1)}, a ${(+S.hGlyph.el.getAttribute('opacity')).toFixed(3)}` })(), want: 'a 0.700', pass: Math.abs(+S.hGlyph.el.getAttribute('opacity') - 0.7) < 0.002 },
+        { name: '195: row 3\'s first 200 px (x 704 to 880, soft to 920) at 25 % while it shows', got: `mask ${S.rowTr[2].g.getAttribute('mask') ? 'on' : 'off'}, ${S.hStops.map((e) => e.getAttribute('stop-opacity')).join(' ')}`, want: 'mask on, 0.250 0.250 1 1', pass: !!S.rowTr[2].g.getAttribute('mask') && S.hStops[0].getAttribute('stop-opacity') === '0.250' })
+      if (t === T.hOut) out.push({ name: '195: the "h" gone and row 3 whole again (no mask)', got: `${(+S.hGlyph.el.getAttribute('opacity')).toFixed(3)}, mask ${S.rowTr[2].g.getAttribute('mask') || 'off'}`, want: '0.000, mask off', pass: +S.hGlyph.el.getAttribute('opacity') === 0 && !S.rowTr[2].g.getAttribute('mask') })
       if (t === T.last) {
         out.push({ name: 'last frame (S9 to S10): the stack, its names, circles and labels, both chips, the folds small', got: [S.names[2], S.puff, S.click, S.neither, S.easy, S.hLine].map((l) => H.alpha(l.el).toFixed(2)).join(' ') + ` | chips ${S.stripTag.g.getAttribute('opacity')} ${S.listen2.g.getAttribute('opacity')} | h ${S.hGlyph.el.getAttribute('opacity')}`, want: 'all 1.00 | chips 1 1 | h 0', pass: [S.names[2], S.puff, S.click, S.neither, S.easy, S.hLine].every((l) => H.alpha(l.el) > 0.999) && +S.hGlyph.el.getAttribute('opacity') === 0 },
           { name: 'last frame: the folds small and at rest (apart, no vibration)', got: JSON.stringify(S.foldsAt(t)), want: 'info', pass: S.foldsAt(t).vib < 1e-6 }, overlaps(), ...H.keepout(root, S.boxes))

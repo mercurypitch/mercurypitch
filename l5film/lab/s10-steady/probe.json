@@ -15,7 +15,7 @@
  },
  {
   "t": 0,
-  "name": "0.4 s rule: the closest two landings (the chart with its labels / kicker)",
+  "name": "0.4 s rule: the closest two landings (a steady note needs steady air too / the slider)",
   "got": 0.4,
   "want": ">= 0.40",
   "pass": true
@@ -35,18 +35,24 @@
   "pass": true
  },
  {
-  "t": 2.4200000000000044,
-  "name": "10a: the stack gone, up fast, before the chart fades in",
+  "t": 1.8510000000000226,
+  "name": "196: the stack leaves (up fast, from dim) as the card starts to leave",
+  "got": "stack out 1.850, card out 1.850; stack 0.250",
+  "want": "equal; 0.250",
+  "pass": true
+ },
+ {
+  "t": 2.1500000000000226,
+  "name": "10a: the stack gone up fast before the chart comes in (linear 0.25 s from here)",
   "got": "0.000, 0.000",
   "want": "0.000, 0.000",
   "pass": true
  },
  {
-  "t": 2.6700000000000226,
-  "name": "10b: the chart about 40 % as the push moves onto it (board 303.65)",
-  "got": 0.42,
-  "want": 0.42,
-  "tol": 0.05,
+  "t": 2.4190000000000227,
+  "name": "200: the hold chart at full strength before the push starts (its labels and chip too)",
+  "got": "chart 1.000, \"A, any octave\" 1.000, chip 1.000; full at 2.400, push 2.420; camera s 1.0000",
+  "want": "1.000 at the push's start, F0",
   "pass": true
  },
  {
@@ -494,9 +500,30 @@
  },
  {
   "t": 33.952,
-  "name": "10e: the vibrato's bracket at screen x 1500, y 495 to 545",
-  "got": "1485.6 to 1500.0, 494.8 to 545.2",
-  "want": "x 1486 to 1500, y 495 to 545",
+  "name": "199: the vibrato's height as two ink hairlines, 240 px long, under the label's middle",
+  "got": "1124.4 to 1364.4, 486.2 to 496.2 / 1124.4 to 1364.4, 543.8 to 553.8; label middle 1244.4",
+  "want": "240 px each, centred on the label",
+  "pass": true
+ },
+ {
+  "t": 33.952,
+  "name": "199: at the crest and trough heights (the line's outer edges), ticks 8 px in at the ends",
+  "got": "top line y 491.2 (crest edge 491.2), bottom line y 548.8 (trough edge 548.8); ticks 10.0, 10.0",
+  "want": "within 1.5 px; ticks 10 across",
+  "pass": true
+ },
+ {
+  "t": 33.952,
+  "name": "199: ink, 1.5 px on screen, clear of the band's edges",
+  "got": "#e6edf3, 1.5 (non-scaling); 29.2 and 29.2 px from the edges",
+  "want": ">= 12 from the edges",
+  "pass": true
+ },
+ {
+  "t": 33.952,
+  "name": "199: vs the crop the critic took (C-01 item 10): before, a 2 px chrome bracket on the 4 px wave",
+  "got": "two ink hairlines, see fix-C-01/crop-vibrato-33.95.png",
+  "want": "info",
   "pass": true
  },
  {
@@ -564,9 +591,16 @@
  },
  {
   "t": 42.813,
-  "name": "10f: the top bracket from the flag to the plot's end",
-  "got": "334.5 to 1688.0, 475.4 to 483.2",
-  "want": "info",
+  "name": "199: the \"stays\" bracket 16 px or more above the mint edge (its ticks' ends to the edge's top)",
+  "got": "398.0 to 1688.0, 457.0 to 465.1; 16.2 px ink to ink",
+  "want": ">= 16",
+  "pass": true
+ },
+ {
+  "t": 42.813,
+  "name": "199: the bracket from 12 px right of \"settled\" to the plot's end (1688)",
+  "got": "12.0 px after \"settled\"; to 1688.0",
+  "want": "12; 1688",
   "pass": true
  },
  {
@@ -640,52 +674,101 @@
   "pass": true
  },
  {
-  "t": 52.62,
+  "t": 52.02,
+  "name": "198: \"No.\": the ink strike through her guess and its \"?\" (drawn 0.3 s), held 0.4 s, nothing else gone yet",
+  "got": "strike 224.2 to 888.0, 244.0 to 244.0 a 1.000; guess 232.0 to 820.1, 205.0 to 271.0; ? to 880.1; \"steady\" 1.00, her line drawn",
+  "want": "strike across both at full",
+  "pass": true
+ },
+ {
+  "t": 52.22,
+  "name": "198: the rest clears in turn (CLR0 + 0.15): alphas in the order guess, labels, chip and axis, marks, her line",
+  "got": "0.50 0.67 0.83 1.00 1.00 1.00 1.00 1.00 1.00",
+  "want": "rising along the order",
+  "pass": true
+ },
+ {
+  "t": 52.22,
+  "name": "198: 0.05 s apart, never all within 0.2 s; her line last",
+  "got": "0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05; spread 0.40",
+  "want": "0.05 each; > 0.20",
+  "pass": true
+ },
+ {
+  "t": 52.471,
+  "name": "198: the rest clears in turn (as her line starts to go): alphas in the order guess, labels, chip and axis, marks, her line",
+  "got": "0.00 0.00 0.00 0.16 0.33 0.50 0.66 0.83 1.00",
+  "want": "rising along the order",
+  "pass": true
+ },
+ {
+  "t": 52.471,
+  "name": "198: 0.05 s apart, never all within 0.2 s; her line last",
+  "got": "0.05 0.05 0.05 0.05 0.05 0.05 0.05 0.05; spread 0.40",
+  "want": "0.05 each; > 0.20",
+  "pass": true
+ },
+ {
+  "t": 52.769,
+  "name": "198: all of it gone before the frame slides (her wave never squeezed)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 53.919999999999995,
   "name": "10h: the frame at x 1000 to 1640, band y 210 to 280 (screen)",
   "got": "1000.0 to 1640.0, 210.0 to 280.0",
   "want": "1000 to 1640, 210 to 280",
   "pass": true
  },
  {
-  "t": 52.62,
+  "t": 53.919999999999995,
   "name": "10h: Merc's line y 245, 4 px on screen",
   "got": "245.00, 4.00",
   "want": "245.00, 4.00",
   "pass": true
  },
  {
-  "t": 52.62,
-  "name": "10h: her line, the flag, the brackets and the labels gone",
+  "t": 53.919999999999995,
+  "name": "10h: her line, the flag, the brackets and the chart's labels gone",
   "got": "none",
   "want": "none",
   "pass": true
  },
  {
-  "t": 53.18000000000005,
+  "t": 53.46999999999999,
   "name": "10h: the voice box x 300 to 640, y 190 to 510",
   "got": "300.0 to 640.0, 190.0 to 510.0",
   "want": "300 to 640, 190 to 510",
   "pass": true
  },
  {
-  "t": 53.18000000000005,
+  "t": 53.46999999999999,
   "name": "no two visible texts overlap",
   "got": "none",
   "want": "none",
   "pass": true
  },
  {
-  "t": 53.18000000000005,
+  "t": 53.46999999999999,
   "name": "keep-out: nearest visible text to merc's body box (\"voice box\")",
   "got": 482.81,
   "want": ">= 20",
   "pass": true
  },
  {
-  "t": 53.18000000000005,
+  "t": 53.46999999999999,
   "name": "keep-out: nearest visible text to tavi's body box (\"voice box\")",
   "got": 1368.77,
   "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 56.38000000000004,
+  "name": "193: the slider not yet (it starts 0.4 s after \"a steady note needs steady air too\")",
+  "got": "0.000",
+  "want": "0.000",
   "pass": true
  },
  {
@@ -710,88 +793,123 @@
   "pass": true
  },
  {
-  "t": 59.390000000000015,
+  "t": 56.93000000000004,
+  "name": "193: the slider drawn from \"needs\" + 0.4 s, its thumb at 50; the line's head drawing",
+  "got": "1.000, p 50, slider from 56.48 (\"needs\" 56.08), line from 56.78",
+  "want": "1.000, p 50",
+  "pass": true
+ },
+ {
+  "t": 57.53000000000004,
   "name": "10h: the silent line's head at x 1080.0 (106.7 px a second); the thumb",
-  "got": "1080.0; thumb 1401.9, p 63",
+  "got": "1080.0; thumb 1320.0, p 50",
   "want": "info",
   "pass": true
  },
  {
-  "t": 59.390000000000015,
+  "t": 57.53000000000004,
   "name": "10h: \"ILLUSTRATION\" on the frame at x 1369 to 1640, y 156 to 196",
   "got": "1369.3 to 1640.0, 156.0 to 196.0",
   "want": "1369 to 1640, 156 to 196",
   "pass": true
  },
  {
-  "t": 59.390000000000015,
+  "t": 57.53000000000004,
   "name": "no two visible texts overlap",
   "got": "none",
   "want": "none",
   "pass": true
  },
  {
-  "t": 59.390000000000015,
+  "t": 57.53000000000004,
   "name": "keep-out: nearest visible text to merc's body box (\"a steady note needs steady air too\")",
   "got": 70.5,
   "want": ">= 20",
   "pass": true
  },
  {
-  "t": 59.390000000000015,
-  "name": "keep-out: nearest visible text to tavi's body box (\"63\")",
-  "got": 414.8,
+  "t": 57.53000000000004,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 463.82,
   "want": ">= 20",
   "pass": true
  },
  {
-  "t": 60.230000000000004,
-  "name": "10h: the silent line's head at x 1169.6 (106.7 px a second); the thumb",
-  "got": "1169.6; thumb 1439.7, p 69",
+  "t": 58.47000000000001,
+  "name": "193: \"a change in the air moves it\" lands on \"because\", at full 2 s or more, then a 0.4 s linear fade gone by the cut's 364.60 rule",
+  "got": "lands 58.17, full from 58.47 to 60.55 (2.08 s), gone 60.95 = D - 0.13; a 1.000",
+  "want": ">= 2.00 s; D - 0.13",
+  "pass": true
+ },
+ {
+  "t": 59.09000000000002,
+  "name": "193: one push, 50 to 100 and back (two legs of 0.9 s); at the top: the thumb, the bump in the line against the wave's peak to peak",
+  "got": "p 100; bump 59.2 px, wave 28.0 px, ratio 2.12",
+  "want": "p 100; ratio >= 2",
+  "pass": true
+ },
+ {
+  "t": 60.070000000000014,
+  "name": "10h: the silent line's head at x 1350.9 (106.7 px a second); the thumb",
+  "got": "1350.9; thumb 1320.0, p 50",
   "want": "info",
   "pass": true
  },
  {
-  "t": 60.230000000000004,
+  "t": 60.070000000000014,
   "name": "10h: \"ILLUSTRATION\" on the frame at x 1369 to 1640, y 156 to 196",
   "got": "1369.3 to 1640.0, 156.0 to 196.0",
   "want": "1369 to 1640, 156 to 196",
   "pass": true
  },
  {
-  "t": 60.230000000000004,
+  "t": 60.070000000000014,
   "name": "no two visible texts overlap",
   "got": "none",
   "want": "none",
   "pass": true
  },
  {
-  "t": 60.230000000000004,
+  "t": 60.070000000000014,
   "name": "keep-out: nearest visible text to merc's body box (\"a steady note needs steady air too\")",
   "got": 70.5,
   "want": ">= 20",
   "pass": true
  },
  {
-  "t": 60.230000000000004,
-  "name": "keep-out: nearest visible text to tavi's body box (\"69\")",
-  "got": 388.03,
+  "t": 60.070000000000014,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 463.82,
   "want": ">= 20",
   "pass": true
  },
  {
-  "t": 60.629999999999995,
+  "t": 60.529999999999994,
   "name": "10h: the silent line's cycle 19.4 px (W 6 on the 640 px frame, 1.0 px a cent)",
-  "got": 19.33,
+  "got": 19.44,
   "want": 19.4,
   "tol": 1.94,
   "pass": true
  },
  {
-  "t": 60.629999999999995,
-  "name": "10h: its rise with the thumb at 75: 30 px over Merc's line (y 215, less the wave)",
-  "got": 203.22,
-  "want": "about 245 - 30 - 14 = 201",
+  "t": 60.529999999999994,
+  "name": "10h: its rise with the thumb at 100: 60 px over Merc's line (FACTS 73: +60 c at 1.0 px a cent; crest y 245 - 60 - 14 = 171)",
+  "got": 171.76,
+  "want": "about 171",
+  "pass": true
+ },
+ {
+  "t": 60.529999999999994,
+  "name": "193: still drawing (never a still slider over a still line), the label at full",
+  "got": "head 1400.0, \"a change...\" 1.000",
+  "want": "a 1",
+  "pass": true
+ },
+ {
+  "t": 60.95099999999999,
+  "name": "193: nothing but the empty frame from 364.60 (D - 0.13)",
+  "got": "none; slider 0.000; box 0.000",
+  "want": "none; 0.000; 0.000",
   "pass": true
  },
  {
