@@ -4291,3 +4291,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   restart, two heavy max, polish first then film A, B, C+D, E; continue the lead's half-done step;
   re-check #1467; push-notes; silent if nothing is due). Keep the prompt's agent list current
   (update_trigger) as agents start and finish.
+- 09:01: #1467 MERGED (squash 3b120f1f1; CI all green on ac49a8928, no review threads, mergeable
+  clean). Its 09:40 check-in deleted. Polish-2 builder told: item 8 may start after it rebases
+  onto origin/main. Dev check queued ($S/dev/earwide/{desktop,phone}.log via earlab-dev.mjs once
+  dev serves 3b120f1f1). Hourly check-in's prompt updated (no open PRs; agents listed).
