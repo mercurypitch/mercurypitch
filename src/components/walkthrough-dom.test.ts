@@ -172,7 +172,7 @@ describe('scrolling a target into view', () => {
     expect(ascent.scrollIntoView).toHaveBeenCalledWith({
       behavior: 'auto',
       block: 'center',
-      inline: 'center',
+      inline: 'nearest',
     })
     // 844 - 782 of tab bar, and room for the ring.
     expect(margins).toEqual(['', '70px'])
@@ -212,10 +212,60 @@ describe('scrolling a target into view', () => {
     expect(week.scrollIntoView).toHaveBeenCalledWith({
       behavior: 'auto',
       block: 'start',
-      inline: 'center',
+      inline: 'nearest',
     })
     // The switch reaches 60 px into the scroller (110 - 50), and the ring.
     expect(margins).toEqual(['68px', ''])
+  })
+
+  // The Ear Lab's Six stations on a phone on its side (932x430): the right
+  // column of the bench, under the window's foot. Centred across, the shell
+  // that clips the parked instrument rack slid 208 px sideways.
+  it('scrolls a card that is whole across the window up or down only', () => {
+    Object.defineProperty(window, 'innerWidth', {
+      value: 932,
+      configurable: true,
+    })
+    const { main } = phone()
+    const stations = card(main, {
+      top: 815,
+      bottom: 1182,
+      left: 442,
+      right: 920,
+    })
+
+    expect(scrollTargetIntoView(stations)).toBe(true)
+
+    expect(stations.scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'auto',
+      block: 'center',
+      inline: 'nearest',
+    })
+  })
+
+  it('centres a control parked off the side of its bar', () => {
+    const { main } = phone()
+    const bar = add(
+      'div',
+      main,
+      { top: 60, bottom: 104, left: 0, right: 390 },
+      { overflowX: 'auto' },
+    )
+    const bpm = add('button', bar, {
+      top: 64,
+      bottom: 100,
+      left: 520,
+      right: 600,
+    })
+    bpm.scrollIntoView = vi.fn()
+
+    expect(scrollTargetIntoView(bpm)).toBe(true)
+
+    expect(bpm.scrollIntoView).toHaveBeenCalledWith({
+      behavior: 'auto',
+      block: 'nearest',
+      inline: 'center',
+    })
   })
 
   it('leaves a card alone that shows whole, clear of the bars', () => {
