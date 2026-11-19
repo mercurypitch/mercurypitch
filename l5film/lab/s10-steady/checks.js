@@ -116,7 +116,7 @@
         const b = bandR(), lp = (() => { const p = S.ch.lastLine('first')[0]; return S.cam.map(p[0], p[1], t) })()
         out.push({ name: '10d: CU-scoop: the band y 457 to 583', got: box(b), want: 'y 457 to 583', pass: Math.abs(b.top - 457) < 1 && Math.abs(b.bottom - 583) < 1 },
           { name: '10d: the scoop\'s low point (the take\'s start, -60 c) at (360, 628)', got: `${lp[0].toFixed(1)}, ${lp[1].toFixed(1)}`, want: '360, 628', pass: Math.abs(lp[0] - 360) < 1 && Math.abs(lp[1] - 628) < 1 },
-          { name: '10d: the axis faded, the chart\'s chip out (edge rule)', got: `${S.ax.g.getAttribute('opacity')}, ${S.chipW.g.getAttribute('opacity')}`, want: '0.000, 0.000' }, ...waveChecks('at CU-scoop (1.8)', 36.7, 50.4), ...H.keepout(root, S.boxes))
+          { name: '10d: the axis faded, the chart\'s chip out (faded over the first 0.5 s of the push)', got: `${S.ax.g.getAttribute('opacity')}, ${S.chipW.g.getAttribute('opacity')}`, want: '0.000, 0.000' }, ...waveChecks('at CU-scoop (1.8)', 36.7, 50.4), ...H.keepout(root, S.boxes))
       }
       if (t === T.slowed) out.push(...slowedChecks('at 326.20 + 0.3'), (() => { const sb = R(S.slowed.box), lb = R(S.flag.label); return { name: 'LAB-CHECKS 14: SLOWED clears "settled" (real width)', got: sb.left - lb.right, want: '>= 12', pass: sb.left - lb.right >= 12 } })())
       if (t === T.scoopL) { const sc = R(S.scoop.el); out.push({ name: '10d: "scoop" centred (360, 700 baseline), 54 px on screen', got: `${((sc.left + sc.right) / 2).toFixed(1)}, ${S.cam.map(400, 500, t)[1].toFixed(1)}`, want: '360, 700', pass: Math.abs((sc.left + sc.right) / 2 - 360) < 2 }, overlaps(), ...H.keepout(root, S.boxes)) }

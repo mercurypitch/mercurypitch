@@ -4356,3 +4356,18 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   film's sources (433 text and code files, 5 MB, no private details) now go to feat/lead-notes with
   every push-notes (bin/push-notes lists l5film/ minus media, plus briefs/l5-*). Polish-2 builder
   has all 8 items committed (8 commits on feat/phone-polish-2), still walking tours.
+
+## 11:30 UTC, 19 Nov
+- GROUP C HANDED BACK (s08 20 s, s09 57 s, s10 61 s): probes 228/228, root check 0 errors,
+  clock-lint silent, merc-tags 0 stale; matched cut on `sing` best shift (0,0); lead looked at the
+  three clip sheets. DECISIONS 191: departures accepted (S8 level mark 26 px; S9 names 660, puff 148,
+  click 812, easy start 564; S10 axis "0" at 400), chapter cards at act + 0.22 (9a's 237.89 read as
+  + 0.22), S8's out-breath ends at rest 0 (not -1; for C's fix round), holds -> final passes (189),
+  soft line edges at the cut accepted, folds' growth and settled flag (0.704 s, flag 1.204 s)
+  confirmed in HANDOFFS § Provisional values; kit STACK duplicate `h` for integration. HANDOFFS
+  and STORYBOARD (8d, 9a) marked [C: 191].
+- GROUP B FIX ROUND STARTED (resumed the group B builder with briefs/l5-fix-B-01.md).
+- CRITIC C-01 LAUNCHED (fresh motion-critic, xhigh) -> l5film/review/critic-C-01/REPORT.md.
+- Heavy now: polish-2 + group B fix. Next free slot -> group D (briefs/l5-film-scenes-D.md). Then
+  the passes step (briefs/l5-passes-hops.md, resume the passes builder), C's fix round (critic
+  C-01 + S8 out-breath), then group E.

@@ -259,7 +259,7 @@
  },
  {
   "t": 25.198000000000025,
-  "name": "10d: the axis faded, the chart's chip out (edge rule)",
+  "name": "10d: the axis faded, the chart's chip out (faded over the first 0.5 s of the push)",
   "got": "0.000, 0.000",
   "want": "0.000, 0.000",
   "pass": true
@@ -444,7 +444,7 @@
  {
   "t": 32.69,
   "name": "10e: SLOWED left as the truck lands",
-  "got": "0.984",
+  "got": "0.833",
   "want": "< 0.1 by +0.2 s (info)",
   "pass": true
  },

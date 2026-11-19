@@ -51,11 +51,11 @@ Runs where the mean change is below 0.35. Not an automatic fail: a critic looks 
 | 9.50 s | 0.7 s | 181 | small element moving |
 | 10.60 s | 13.1 s | 180 | small element moving |
 | 25.10 s | 1.3 s | 158 | small element moving |
-| 26.50 s | 4.1 s | 173 | small element moving |
-| 32.70 s | 0.7 s | 70 | small element moving |
+| 26.50 s | 4.1 s | 174 | small element moving |
+| 32.70 s | 0.7 s | 71 | small element moving |
 | 33.70 s | 4.5 s | 168 | small element moving |
 | 38.40 s | 0.6 s | 181 | small element moving |
-| 40.50 s | 1.6 s | 185 | small element moving |
+| 40.50 s | 1.6 s | 118 | small element moving |
 | 42.30 s | 1.4 s | 171 | small element moving |
 | 43.80 s | 7.5 s | 174 | small element moving |
 | 52.60 s | 1.1 s | 129 | small element moving |
@@ -75,13 +75,13 @@ From every frame at the film's own rate, by the share of pixels that change by m
 | --- | --- | --- | --- |
 | 1.467 s | jump | 0.31 | 0.47% |
 | 6.467 s | pop | 0.06 | 0.05% |
-| 33.300 s | jump | 0.03 | 0.03% |
+| 33.300 s | jump | 0.04 | 0.03% |
 | 41.567 s | jump | 0.03 | 0.05% |
 | 46.333 s | pop | 0.06 | 0.05% |
 
 ## Loop seam
 
-From the last frame back to the first: 9.49 on the scale of `frames.csv`, against a median frame change of 0.045, a 95th percentile of 2.12 and a largest of 3.60 at 24.600 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
+From the last frame back to the first: 9.49 on the scale of `frames.csv`, against a median frame change of 0.045, a 95th percentile of 2.09 and a largest of 3.60 at 24.600 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
 
 ## Loudness
 

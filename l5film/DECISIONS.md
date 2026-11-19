@@ -1405,3 +1405,35 @@ numbered 132 to 135 too, are 160 to 163 now, so no number appears twice).
      passes step re-renders m-blue's and m-orange's s13 to s15 chunks, then the voice track,
      captions and chapters. The board clock stays frozen: rows 13e to 15 keep their board times,
      and the scenes key off the cues as always.
+
+## Group C's hand-back (s08 to s10), 19 November
+
+191. **Group C's departures are accepted, and its questions answered** (before critic C-01):
+     - The moves that clear collisions HANDOFFS' own numbers caused stand, and HANDOFFS now
+       carries them: S8's level mark 26 px (x 932 to 958, y 289; at 40 px it ran into the neck at
+       x 967); S9's names right-aligned 660, "the puff" baseline 148, "the click" from x 812, "the
+       easy start" baseline 564; S10's axis "0" left-aligned at x 400 with no first tick. The
+       linear or longer fades that replaced measured pops stand (179).
+     - **Chapter cards land at the act mark + 0.22** (§ Type's rule, as 5a, 6a, 8a and 10a have
+       it); row 9a's 237.89 (+ 0.37) was the odd one out and is read as + 0.22.
+     - **S8's out-breath ends at rest, not at -1.** In the kit, -1 is the active push of the belly
+       and rib muscles (S6's lesson for the end of a long note); 8d's easy breath goes back in
+       (FACTS 17's spring back) to 0 over its 2 s and rests there across the cut. Group C's fix
+       round changes it.
+     - **The holds in S8 and S9** (3.8 and 3.0 s per 30 s, none over 0.4 s) fall in Merc's pauses
+       and go to the final passes, as 189 says; nothing is added for them now. The critic measures
+       them anyway.
+     - **The line's softer edges at the `sing` cut** (the kit's camera rasterising at 1.3x: same
+       centre and width, best shift (0, 0)) are accepted under LAB-CHECKS 2.
+     - **Two provisional values are confirmed** (HANDOFFS § Provisional values): the folds' growth
+       from the throat (9b; a ring r 20 at 0.5 from (1005, 273), growing 0.9 s, sliding from +0.4 s
+       over 1.0 s to (390, 430) at 1, landing in x 220 to 560, y 260 to 600); the "settled" flag by
+       the page's own rule at its own 16 ms readings: entry 0.704 s into the take (0.688 on a
+       continuous crossing; the board's 0.69), the flag at 1.204 s, world x 478.8. Group E uses the
+       same rule for card 3.
+     - **For integration, not now**: the kit's `L.TRACE.STACK` names `h` twice (the half-height 70
+       and the "h" glyph's label), so the half-height reads as an object; S9 holds a local 70.
+       Rename the glyph's key and drop the local value when the kit next changes (`L.TRACE.RECAP`,
+       which S13 uses, is not affected). Group C's other kit offers (a trace whose geometry moves,
+       the folds' state machine, a ramp on `cam.edgeAlpha`, the axis "0", a settled-time helper,
+       its cut probe) are looked at then.

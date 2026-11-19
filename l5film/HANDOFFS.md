@@ -245,7 +245,7 @@ Drawn in figure units `(u, v)`: u 0 to 400 back to front (it faces right), v 0 (
   (998, 445), belly front x 1061, knee (995, 686), soles y 840 (on the floor line). Cue labels
   Outfit 600 36, ink, each with a 1.5 px chrome leader: "tall but easy" right-aligned 900, baseline
   200 (its arrow up the back at x 925 from y 830 to 150); "shoulders still" right-aligned 910,
-  baseline 300 (a 40 px level mark at y 290 over the shoulder); "breathe in quietly, low"
+  baseline 300 (a 26 px level mark, x 932 to 958, y 289, over the shoulder: at 40 px it ran into the neck at x 967 **[C: 191]**); "breathe in quietly, low"
   right-aligned 910, baseline 400; "knees unlocked" right-aligned 907, baseline 700 (v2: 950, across
   the back arrow; now 16 px left of the arrow's 3 px stroke at x 923.5 to 926.5, its leader crossing
   the arrow to the knee (995, 686)) **[v3: 9]**; "jaw · tongue ·
@@ -386,9 +386,9 @@ miniatures; the lower half for each piece of evidence while it is large.
   920, 1140 (246.33, 246.73, 247.13); mark labels Outfit 600 30, ink, baseline 580 ("air, no note"
   from x 700; "the catch" from x 786).
 - **Stack** (9f, an object move at F0, 275.50 to 276.70; v1 showed it at F-stack): rows centred y
-  250, 450, 650, half-height 70, x 700 to 1600; names Outfit 600 36 right-aligned 670, baselines
-  262, 462, 662 (275.50, 275.90, 276.30); "the puff" x 720 baseline 165, "the click" x 800 baseline
-  368, "neither" x 720 baseline 568; "the easy start" Outfit 600 40 x 1000 baseline 568; the "h"
+  250, 450, 650, half-height 70, x 700 to 1600; names Outfit 600 36 right-aligned 660 **[C: 191]**, baselines
+  262, 462, 662 (275.50, 275.90, 276.30); "the puff" x 720 baseline 148, "the click" x 812 baseline
+  368, "neither" x 720 baseline 568; "the easy start" Outfit 600 40 x 1000 baseline 564 (the puff, the click and the easy start moved off the circles and the crests **[C: 191]**); the "h"
   serif italic 120 ink-2 at 40 % centred (760, 690); "the h, only in your mind" Outfit 500 30 x 720
   baseline 770; the folds small in x 160 to 330, y 110 to 280. Hosts at 240: Merc's keep-out ends
   at x 184, Tavi's starts at 1736. **Chips in the stack** **[v3: 3]**: the strip's "ILLUSTRATION"
@@ -723,11 +723,15 @@ camera plan, in brackets.
 
 ## Provisional values (each confirmed in a lab still, then unmarked)
 
-The bead's flight S2 to S3; the chart's split from 0.78 (6b) and the strip's opening (6e); the
-folds' growth from the throat (9b); the together start's onset (sound round); Merc's arc reach
-beside the care block (m-blue at 300); the "settled" flag's time, computed from FACTS 80's points
-by the page's rule (stays within 35 c for 0.5 s; entry about 0.69 s, x 477 world); the hop height
-of Merc's two hops (the card's foot at y 300 leaves room for any hop under 328 px). Since v3 the
+Confirmed by group C (DECISIONS 191): the folds' growth from the throat (9b: a ring r 20 at 0.5
+from (1005, 273), growing over 0.9 s, sliding from + 0.4 s over 1.0 s to (390, 430) at 1, landing
+in x 220 to 560, y 260 to 600); the "settled" flag by the page's rule (stays within 35 c for 0.5 s)
+at its own 16 ms readings: entry 0.704 s into the take, the flag at 1.204 s, world x 478.8.
+
+Still provisional: the bead's flight S2 to S3; the chart's split from 0.78 (6b) and the strip's
+opening (6e); the together start's onset (sound round); Merc's arc reach beside the care block
+(m-blue at 300); the hop height of Merc's two hops (at the clean break the floor is empty,
+DECISIONS 190). Since v3 the
 split's curve carries one constraint (the band passes 12 px or more above the gauge's
 "ILLUSTRATION" chip), and every v3 clearance that rests on a type width is an estimate until the
 lab still measures it (LAB-CHECKS.md) **[v3: 3, 9]**.

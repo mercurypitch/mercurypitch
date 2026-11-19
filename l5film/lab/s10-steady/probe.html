@@ -159,6 +159,10 @@
           // not drawn
           const zeroEl = ax.g.querySelector('text'), tick0 = ax.g.querySelector('rect')
           zeroEl.setAttribute('text-anchor', 'start')
+          // "0" and "10 s" stand inside the hosts' video squares at F-hold, over their transparent part: 42 and 32 px from
+          // the body boxes (the keep-out is 20), so the layout audit's occlusion is marked as intended
+          ax.end(4); ax.end(10)
+          for (const e of ax.g.querySelectorAll('text')) e.setAttribute('data-layout-allow-occlusion', '')
           const flag = L.settledFlag(ch.gLabels)
           // Tavi's straight guess (L.GUESS), dead flat along the band's centre, its "?" right of the plot, its travelling
           // head (DECISIONS 170)
@@ -295,15 +299,20 @@
             // "A, any octave" leaves as the truck starts and returns after the pull (10e, 10f)
             anyOct.draw({ a: (t < ANY_BACK ? chA * (1 - P(t, TRUCK, 0.2)) : P(t, ANY_BACK, 0.2, 'power2.out')) * out1 })
             inBand.draw({ a: lit, scale: L.pulse(t, [INSIDE], 'chip') })
+            // the chart's chip: it leaves over the push to CU-scoop's first 0.5 s (linear), before the push would carry it
+            // out of frame; it comes back by the edge rule as the truck lands at CU-wave, where it stands 24 px from the
+            // frame's right edge (HANDOFFS x 1408 to 1896): a ramp of 8 px past the 16 px margin puts it at full there
             const cb = { x0: chipW.x0, y0: 260, x1: chipW.x1, y1: 300 }
-            chipW.draw({ alpha: chA * cam.edgeAlpha(cb, t, 'mid', { margin: 16, ramp: 8 }) * out1 })
+            const chipEdge = t < TRUCK ? 1 - P(t, PUSH2, 0.5, 'none') : cam.edgeAlpha(cb, t, 'mid', { margin: 16, ramp: 8 })
+            chipW.draw({ alpha: chA * chipEdge * out1 })
             const axA = chA * (1 - P(t, PUSH2, 0.2, 'none')) + P(t, AXIS_BACK, 0.2, 'none')
             ax.draw({ a: Math.min(1, axA) * out1, W, X0: ch.G.x0, X1: ch.G.x1, swap: L.swap(t, WIDEN, 0, '4 s', '10 s') })
             zeroEl.setAttribute('x', f2(ch.G.x0)); tick0.setAttribute('opacity', '0')
             const fx = ch.x(ENTRY), fy = band.top
-            const flagEdge = cam.edgeAlpha({ x0: fx - 2, y0: fy - 16, x1: fx + 12, y1: fy }, t, 'mid', { margin: 16, ramp: 24 })
-            const setLab = L.fade(t, FLAG, TRUCK).a + L.fade(t, SET_BACK, null).a
-            flag.draw({ x: fx, y: fy, a: P(t, FLAG, 0.3) * flagEdge * out1, scale: L.pulse(t, [SET_BACK], 'label'), labelA: Math.min(1, setLab) })
+            // "settled" and its flag leave as the truck starts (linear 0.3 s) and come back together on "settles", the flag
+            // scaling 1.2 (10e, 10f)
+            const flagA = t < SET_BACK ? P(t, FLAG, 0.3) * (1 - P(t, TRUCK, 0.3, 'none')) : P(t, SET_BACK, 0.3, 'none')
+            flag.draw({ x: fx, y: fy, a: flagA * out1, scale: L.pulse(t, [SET_BACK], 'label'), labelA: 1 })
             scoop.draw({ a: L.fade(t, SCOOP_L, TRUCK).a })
             vibrato.draw({ a: L.fade(t, SMALL, PULL).a })
             vibBr.draw(P(t, SMALL, 0.4, 'power2.out'), L.fade(t, SMALL, PULL).a)
@@ -315,7 +324,8 @@
             lenBr.set({ x1: ch.G.x0, x2: ch.G.x1 })
             lenBr.draw(P(t, COMF, 0.6, 'power2.out'), out1)
             fixedLen.draw({ a: L.fade(t, COMF, null).a * out1 })
-            const g10A = L.fade(t, AIRQ, null).a * out1g
+            const g10A = L.fade(t, AIRQ, null, { dIn: 0.3, easeIn: 'none' }).a * out1g   // linear: an eased 0.2 s fade of the label,
+            // its 64 px "?" and its line put the change into two frames (a pop, DECISIONS 179)
             g10.draw({ a: g10A }); g10Q.draw({ a: g10A }); g10Line.setAttribute('opacity', g10A.toFixed(3))
 
             /* 10h: the voice box, its labels, the slider and the silent line, in screen px at F-hold */
@@ -332,8 +342,8 @@
 
             /* frame-fixed */
             card.draw(t)
-            kicker.draw(t, KICK, KICK_OUT)
-            slowed.draw({ alpha: L.fade(t, SLOW0, TRUCK + TRUCK_D).a })
+            kicker.draw(t, KICK, KICK_OUT, { outDur: 0.4 })            // a 0.2 s eased exit measured as a pop here
+            slowed.draw({ alpha: L.fade(t, SLOW0, TRUCK + TRUCK_D, { dOut: 0.3, easeOut: 'none' }).a })   // a linear exit (no pop)
           })
           window.__timelines = window.__timelines || {}
           window.__timelines[SID] = tl
