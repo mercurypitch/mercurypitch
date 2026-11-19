@@ -767,6 +767,13 @@
   "pass": true
  },
  {
+  "t": 26.16,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
   "t": 29.559999999999995,
   "name": "[B-01: 183] \"added\" not yet shown 0.3 s after the switch",
   "got": "0.00",
@@ -778,6 +785,13 @@
   "name": "[B-01: 183] the readout: frames with both wordings shown (every switch)",
   "got": 0,
   "want": 0,
+  "pass": true
+ },
+ {
+  "t": 29.379999999999995,
+  "name": "[B-01: 183] mid-swap (both wordings faint): the readout's plate stays, the cursor behind it",
+  "got": "plate 1.00; wordings 0.00 0.02; cursor x 1393 in plate 1350 to 1650; plate after cursor in the document true",
+  "want": "plate 1.00, behind",
   "pass": true
  },
  {
@@ -879,6 +893,13 @@
   "pass": true
  },
  {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
   "t": 44.999999999999986,
   "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
   "got": "none",
@@ -928,6 +949,13 @@
   "pass": true
  },
  {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
   "t": 32.30999999999999,
   "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
   "got": "none",
@@ -972,6 +1000,13 @@
  {
   "t": 32.30999999999999,
   "name": "[B-01: 182] the plate of readoutAdding (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
   "got": "none",
   "want": "none",
   "pass": true
@@ -1101,6 +1136,13 @@
  {
   "t": 55.49700000000001,
   "name": "[B-01: 182] the plate of readoutAdding (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
   "got": "none",
   "want": "none",
   "pass": true

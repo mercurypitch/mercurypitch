@@ -4399,3 +4399,9 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   `node $S/dev/polish2-dev.mjs <repo> $S/dev/polish2` (DEV only): upright Singing notice on its
   transport, pill contrast in both themes, Karaoke header at 1024x768, drill foot at 1440x900 /
   844x390 / 390x844, Ear Lab bench at 844x390 / 932x430, no production requests.
+- 12:10: #1473 VERIFIED ON DEV 2fce8f04a ($S/dev/polish2/): upright Singing notice 8,595,382,696,
+  transport 706-782, not over it (dark and light; dock 138px); mic-off pill mp-dark-stage, 15.55:1
+  on its fill in both themes; Karaoke 1024x768 scroll 0, 80 px tall, 1440x900 one row 44 px; drill
+  runner to 900 at 1440x900, to 390 at 844x390, phone 390x844 unchanged (782, pad 62); Ear Lab
+  stations from 937 at x 401 (844x390) and 815 at x 442 (932x430), art beside; no errors; production
+  none. Follow-up polish round 2 DONE. Open: the film queue only.

@@ -12,7 +12,7 @@
     s10: su(0.1), s20: su(0.2), s25: su(0.25), s30: su(0.3), s35: su(0.35), s40: su(0.4), s45: su(0.45), s50: su(0.5), s55: su(0.55), s60: su(0.6), s65: su(0.65), s70: su(0.7), s80: su(0.8), s90: su(0.9),
     split: A.SPLIT + A.SPLIT_D + 0.05, guess: A.GUESS + 0.5, dia: A.DIA + 0.6, bin: A.BIN + 0.4, pills: A.PILL2 + 0.5,
     open1: A.OPEN + 1.02 * A.OPEN_D / 1.4, open2: A.OPEN + 1.23 * A.OPEN_D / 1.4, opened: A.OPEN + A.OPEN_D + 0.05,
-    stage: A.CHECK + 0.4, preAdd: A.CROSS1 + 0.3, cross: A.ADDED + 0.35, plates45: A.WALK + 2.33, fgauge: A.GAUGE + A.GAUGE_D + 0.05, bm: A.NEVER + 0.5, cant: A.STRIKE + 0.5,
+    stage: A.CHECK + 0.4, preAdd: A.CROSS1 + 0.3, midSwap: A.CROSS1 + 0.12, cross: A.ADDED + 0.35, plates45: A.WALK + 2.33, fgauge: A.GAUGE + A.GAUGE_D + 0.05, bm: A.NEVER + 0.5, cant: A.STRIKE + 0.5,
     quiet: A.YES + 0.6, loud: A.MORE + 0.6, last: A.D - 0.0005,
   }
   const root = document.getElementById(sid + '-scene')
@@ -208,6 +208,10 @@
           { name: '6f: "added" glyphs under the gold line (607.5)', got: top - 607.5, want: '>= 12', pass: top - 607.5 >= 12 },
           { name: '6f: "added" over the lungs\' line at its left end', got: lungsAt(wl) - bot, want: '>= 12', pass: lungsAt(wl) - bot >= 12 },
           { name: 'the push under way: scale', got: s, want: 'info', pass: true }, ...H.keepout(root, S.boxes))
+      }
+      if (t === T.midSwap) {
+        const cur = S.ga.g.children[4], cr = R(cur), pr = R(S.roPlate)
+        out.push({ name: '[B-01: 183] mid-swap (both wordings faint): the readout\'s plate stays, the cursor behind it', got: `plate ${(+S.roPlate.getAttribute('opacity')).toFixed(2)}; wordings ${vis(S.gl.readout.el)} ${vis(S.gl.readoutAdding.el)}; cursor x ${((cr.left + cr.right) / 2).toFixed(0)} in plate ${pr.left.toFixed(0)} to ${pr.right.toFixed(0)}; plate after cursor in the document ${!!(cur.compareDocumentPosition(S.roPlate) & Node.DOCUMENT_POSITION_FOLLOWING)}`, want: 'plate 1.00, behind', pass: +S.roPlate.getAttribute('opacity') > 0.99 && !!(cur.compareDocumentPosition(S.roPlate) & Node.DOCUMENT_POSITION_FOLLOWING) })
       }
       if (t === T.preAdd) out.push({ name: '[B-01: 183] "added" not yet shown 0.3 s after the switch', got: vis(S.gl.added.el), want: '0.00' }, ...swaps())
       if (t === T.stage || t === T.cross || t === T.fgauge || t === T.plates45 || t === T.cant) out.push(...plates(t))

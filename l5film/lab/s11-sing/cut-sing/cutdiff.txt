@@ -1,0 +1,6 @@
+band           best shift (+0, +0) residual 2.08; at (0, 0) 2.08; bright pixels 5.0 %
+line           best shift (+0, +0) residual 8.72; at (0, 0) 8.72; bright pixels 40.0 %
+edges          best shift (+0, +0) residual 4.42; at (0, 0) 4.42; bright pixels 0.0 %
+band           best shift (+0, +0) residual 2.12; at (0, 0) 2.12; bright pixels 5.0 %
+line           best shift (+0, +0) residual 8.71; at (0, 0) 8.71; bright pixels 40.0 %
+edges          best shift (+0, +0) residual 4.42; at (0, 0) 4.42; bright pixels 0.0 %

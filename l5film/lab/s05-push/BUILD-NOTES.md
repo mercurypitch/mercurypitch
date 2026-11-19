@@ -20,7 +20,8 @@ before this lab's renders).
 | 5b | the thumb scales 1.2 | `word('o4', 'ease')` | 2.87 |
 | 5c | the definition (own line, baseline 200) | `word('b7', 'how')` | 5.19 |
 | 5c | the four words return; "air pressure" lights (ink, 2 px underline, a 1.08 pulse) | `word('b7', 'pressure') - 0.54`; `word('b7', 'pressure')` | 8.27; 8.81 |
-| 5c | "mainly: louder" with its arrow down to the strip; the strip's centre glows | `word('b7', 'mainly')` | 10.12 |
+| 5b | "level" moves to the strip's left at its height (right-aligned 366, baseline 701), with the axis's ease **[B-01: 184]** | `at('o4')`, 0.6 s | 2.35 |
+| 5c | "mainly: louder" with its arrow down to the strip; the strip's resting envelope draws in ghost violet (0.5 s), its edge brightening once, and stays to the end **[B-01: 184]** | `word('b7', 'mainly')` | 10.12 |
 | 5c | the four words leave | `word('b7', 'and', 'start', -0.12)` | 12.87 |
 | 5c | "also: a little higher" with its arrow up to the band's top edge | `word('b7', 'nudges')` | 13.32 |
 | 5d | "mainly", "also", the definition leave (0.3 s) | `at('b8')` | 14.89 |
@@ -38,18 +39,17 @@ before this lab's renders).
 | 5g | "loud ≠ high" scales 1.2 about its left baseline | `word('b9', 'they')` | 32.39 |
 | 5g | the fork from the thumb (0.6 s) | `word('b9', 'one')` | 34.10 |
 | 5g | "louder" as its branch arrives; "higher" 0.45 s later | fork + 0.3; + 0.45 | 34.40; 34.85 |
-| 5g | "in a voice, one push moves both" | `max(word('b9', 'both'), "higher" + 0.4)` | 35.24 |
-| 5g | the panels, fork, labels, line and envelope, "LISTEN ONLY", the type fade (0.4 s) | `max(at('b9', 'end'), "both" + 0.4)` | 35.66 to 36.06 |
+| 5g | "in a voice, one push moves both" (the thesis, before the fork) **[B-01: 181]** | `word('b9', 'in')` | 33.12 |
+| 5g | the panels, fork, labels, line and envelope, "LISTEN ONLY", the type fade (0.4 s) | `max(at('b9', 'end'), "higher" + 0.4)` | 35.66 to 36.06 |
 
 ## Departures from the board, with numbers
 
 1. **No chapter-1 kicker.** The board's 5a to 5g name none (chapter 2 has "02 · WHAT THE DIAPHRAGM DOES"); one at (120,
    110) would sit 16 px over the label row's text (baseline 150, from x 400). Built as the board has it; a question for
    the director.
-2. **5g's "higher" and the line's landing** keep the 0.4 s rule on any clock: on the scratch clock b9's "one" to
-   "both." is 1.04 s (board 1.30), so the board's offsets (0.30, 0.75, 1.30) would land the line 0.30 s after "higher".
-   Built as fork + 0.30, + 0.45 more, then `max("both.", higher + 0.4)`: on the board's clock that gives 104.30, 104.75,
-   105.30, the board's own.
+2. **5g's labels** keep the 0.4 s rule on any clock: the fork on "one", "louder" 0.30 s later, "higher" 0.45 s after
+   that (104.30 and 104.75 on the board's clock). The thesis now lands on "in a voice," (DECISIONS 181), 0.98 s before
+   the fork.
 3. **The fork's stem bends.** A straight stem from (915, 720) (DECISIONS 157) passes 5.8 px from the lower right corner
    of "50" (measured on the digits' ink at 0.78: the stem at 64 degrees climbs past the corner at y 704). Built as a
    gentle quadratic from (916, 724) through (956, 700) to the fork point (1010, 525): it leaves the thumb's right side,
@@ -57,8 +57,9 @@ before this lab's renders).
 4. **The plan (5d) is drawn locally, clear of "50"**: the kit slider's plan starts at the thumb (x 960) at y 770 and
    778, through the "50" (y 754 to 776). Here: out at y 774 from x 1002 to 1514, a hold bar at x 1520 (y 740 to 784), back
    at y 750 from 1514 to 1002; 18 px from "50"'s right edge.
-5. **"mainly: louder"'s strip**: the board says the strip's "envelope outline brightens", but before the Push note the
-   strip is a hairline. A chrome glow along the strip's centre (3 px, 50 %) lights on "mainly" (an accent).
+5. **"mainly: louder"'s strip** (superseded by B-01, DECISIONS 184): from "mainly" the strip shows its resting
+   envelope in ghost violet (`L.CONTOUR.demo`, half-height 28, outline 35 %), so the arrow points at a level; the
+   local chrome glow is gone.
 6. **"in the band" and the mint edge** land 0.4 s after "LISTEN ONLY" (the Push note starts inside the band, so the
    board's lit edge would land with the chip): lit from 20.65 to 21.72, dark to 24.35, then lit to the fade.
 7. **The two arrows of 5c**: "also: a little higher" has its 30 px arrow pointing up to the band's top edge, from
@@ -71,28 +72,30 @@ before this lab's renders).
   (JetBrains Mono 500 22 px, ink-2, tracking .18em), a chrome trace (2.5 px) and a bead (r 7) on a 116 px rail. LOUDER:
   the trace's height 14 to 34 px over 0.8 s, the bead still; HIGHER: 3 to 6 cycles over 0.8 s, its bead up 56 px
   (power3.out, 0.3 s). "loud ≠ high" with its ≠ as a 4 px ink path between two texts, laid out from their widths.
-- The fork (three `L.arrow`s, the stem a quadratic), the 5c arrows, the strip's glow, the plan.
+- The fork (three `L.arrow`s, the stem a quadratic), the 5c arrows, the plan.
 - `L.CONTOUR.push`'s band crossings found by bisection on the contour (no typed seconds).
 
-## Proof
+## Fix round B-01 (critic B-01, DECISIONS 180 to 189)
 
-- Probe (`probe.mjs`, `checks.js`, `probe.json`; screenshots `probe-*.png`, no hosts): every check passes. Its
-  numbers: LAB-CHECKS 10, the definition 15 px under the chip's foot and the four words' outlines 13.2 px over it;
-  LAB-CHECKS 9, "ILLUSTRATION" and "LISTEN ONLY" 16.0 px apart at F0 (21.95) and 12.5 px at 0.78 (31.00), "loud ≠ high"
-  18.2 px under "LISTEN ONLY"; LAB-CHECKS 4 (35.55), both arrowheads inside the peak (x 960), the stem 14.7 px from
-  "50"'s ink, "louder" 17.6 px over the swollen fill, "higher" 14.5 px under the band's foot; the wave rule 33.8 / 46.6
-  px at F0 and 26.4 / 36.4 px at 0.78; the plan 18 px from "50".
-- First frame against group A's last (`lab/s04-recall/clip-still-13.63.png`, re-rendered 19 November 09:13) and the
-  last frame against S6's first, by region (`cutdiff.py`): best shift (0, 0) everywhere; mean residual 0.3 to 1.5 of
-  255 (S4's four words 2.5).
-- Clip: `clip.mp4` (30 fps draft with the scratch voice; re-rendered 18 November 23:24, after the passes'
-  re-render and `roots.js` of 23:12); stills `clip-still-*.png` at 0, 1.50 (card), 3.05 (5b), 9.25 (LAB-CHECKS 10),
-  19.44 (plan), 21.95 (LAB-CHECKS 9, F0), 23.25 (the peak), 26.24 (the whole line), 31.00 (LAB-CHECKS 9 at 0.78),
-  35.55 (LAB-CHECKS 4), 36.17 (the last frame). Hosts checked on every still: at 300 in their corners, no keep-out
-  breach (probe: 20 px or more on every frame tested).
-- `measure.py render` (`measure/summary.md`): holds 1.3 s inside the film (1.1 s per 30 s), longest 0.3 s; two
-  single-frame events, both in Merc's own pass: a pop at 7.833 (0.05 % of pixels: his eyes, x 94 to 159, y 736 to
-  787, a blink) and a jump at 10.000 (his talk arcs); integrated -20.0 LUFS, true peak -2.8 dBTP (scratch voice only).
-- `check lab/s05-push/proj --at=21.0,23.25,26.24,31.0,35.55` (LAB-CHECKS 18 for 5e): contrast 51/51, layout 0
-  issues, lint 0 errors (one warning: the kit's duplicated host video entry, as in every scene).
-- clock-lint silent; `merc-tags.py s05-push --check`: 4 tags, 0 stale, 0 problems.
+| Item | Change (file, line) | Before | After | Proof |
+| --- | --- | --- | --- | --- |
+| 2, the thesis (181) | `THESIS = word('b9', 'in')` (s05-push.html line 79); `FADE = max(at('b9', 'end'), L_HIGH + 0.4)` | lands 35.25 (critic: seen from 35.47), on screen about 0.6 s, at full about 0.4 s | lands 33.12 on "in a voice,", fades 35.66 to 36.06: on screen 2.94 s, at full 2.14 s; the fork 0.98 s after it, "louder" 1.28 s, "higher" 1.73 s | `fix-B-01/thesis-33.62-35.55.png`, `clip-still-33.62.png`, `clip-still-35.55.png`; probe |
+| 5, the strip and "level" (184) | the ghost envelope in `ch.draw`'s strip (line 205); "level" moved by its own width on `o4` (lines 90 to 96, 220 to 223); the local strip glow removed | the arrow pointed at a hairline (+11 luma, like the staves); "level" on the slider's row | from "mainly" the resting envelope in ghost violet, outline y 662 to 718, x 400 to 1520, the arrow's tip on its top edge (662); "level" right-aligned 366, its glyphs centred at 689 (the strip 690); S4's first frame unchanged ("level"'s first glyph at x 400) | `fix-B-01/ghost-level-14.2.png` (before and after), `clip-still-3.05.png`, `clip-still-10.92.png`, `clip-still-19.44.png` |
+
+The last frame now carries the ghost envelope and "level" at the strip's left (HANDOFFS § S5 to S6 [B-01: 184]); S6
+draws both from its first frame and fades the envelope as the split begins.
+
+## Proof (after the fix round, 19 November)
+
+- Probe: 75 of 75 pass. LAB-CHECKS 10: 15 px and 13.2 px; LAB-CHECKS 9: 16.0 px at F0, 12.5 px at 0.78, "loud ≠ high"
+  18.2 px under "LISTEN ONLY"; LAB-CHECKS 4: both arrowheads inside the peak, the stem 14.7 px from "50", "louder" 17.6
+  px over the fill, "higher" 14.5 px under the band; the wave rule 33.8 / 46.6 px at F0 and 26.4 / 36.4 px at 0.78.
+- First frame against S4's last (`lab/s04-recall/clip-still-13.63.png`, 19 November 09:13) and the last frame against
+  S6's first: best shift (0, 0) in every region (`cutdiff.py`).
+- Clip `clip.mp4` (30 fps, the scratch voice, 19 November 11:44); stills `clip-still-*.png` at 0, 3.05, 10.92, 14.20,
+  19.44, 23.25, 26.24, 31.00, 33.62, 35.55, 36.17.
+- `measure.py render` (`measure/summary.md`): holds 1.1 s (0.9 s per 30 s), longest 0.2 s; single-frame events all in
+  the hosts' faces (pops 7.833, 12.367, 35.033; jumps 10.000, 14.900, 31.367; the jump at 20.167 is Tavi's eyes as the
+  plan's arrows fade); -20.0 LUFS, true peak -2.8 dBTP.
+- `check lab/s05-push/proj --at=10.92,21.0,23.25,33.62,35.55`: contrast 56/56, layout 0 issues, lint 0 errors.
+- clock-lint silent; `merc-tags.py s05-push --check`: 0 stale, 0 problems.
