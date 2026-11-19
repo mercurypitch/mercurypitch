@@ -25,8 +25,10 @@ its rules, reading list, build, proof and hand-back hold. This brief adds only y
 - **Provisional value that is yours to confirm**: Merc's arc reach beside the care block at 300
   (LAB-CHECKS 15: stills at 424.00 and 433.00, "Your turn." 12 px or more from Merc's measured
   arcs). Write what you measure in your hand-back.
-- **LAB-CHECKS lines for you**: 3 (12c's push has landed at or before `listen` and "Listen" on the
-  voiced clock; the care block's thinning against the stop line), 15, 19 (12e watched with sound
+- **LAB-CHECKS lines for you**: 2 (both your matched cuts, on `sing` and on `recap`: frame pairs
+  either side and measure.py over 0.5 s round each), 3 (12c's push has landed at or before
+  `listen` and "Listen" on the voiced clock; the care block's thinning against the stop line), 15,
+  19 (12e watched with sound
   off and on: say what you see, the critic judges), 21 for your lines (real font widths), and the
   0.4 s rule over your rows (§ Build checks).
 - **Hosts** at 300 in the corners. Both sing `listen` in 12d with arcs on; in 12e both idle,
