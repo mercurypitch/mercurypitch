@@ -573,33 +573,71 @@ test.describe('the warmup routine select', () => {
 // and Start, and nothing in it scrolls. Narrower than the breakpoint a phone
 // on its side had the button already, under a Start that stays in view.
 
-test.describe('the warmup on a phone on its side', () => {
-  test.use({ hasTouch: true, isMobile: true })
+/** The warmup's setup, as the card holds it. */
+async function openWarmup(
+  page: import('@playwright/test').Page,
+  size: { width: number; height: number },
+) {
+  await page.setViewportSize(size)
+  await page.addInitScript(() => {
+    ;(window as unknown as { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+    localStorage.setItem('pitchperfect_advanced_features', 'true')
+    localStorage.setItem('pitchperfect_page_tour_offered_exercises', 'true')
+  })
+  await page.goto('/#/exercises')
+  // Spent in storage, and read by a fresh load: the welcome's dialog,
+  // hidden, still takes the taps it covers.
+  await dismissOverlays(page)
+  await page.reload()
+  await page
+    .locator('.exercise-card', { hasText: 'Guided Warmup' })
+    .first()
+    .click()
+  await expect(page.locator('.exercise-idle-start')).toBeVisible({
+    timeout: 10000,
+  })
+}
 
-  /** The warmup's setup, as the card holds it. */
-  async function openWarmup(
-    page: import('@playwright/test').Page,
-    size: { width: number; height: number },
-  ) {
-    await page.setViewportSize(size)
-    await page.addInitScript(() => {
-      ;(window as unknown as { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
-      localStorage.setItem('pitchperfect_advanced_features', 'true')
-      localStorage.setItem('pitchperfect_page_tour_offered_exercises', 'true')
-    })
-    await page.goto('/#/exercises')
-    // Spent in storage, and read by a fresh load: the welcome's dialog,
-    // hidden, still takes the taps it covers.
-    await dismissOverlays(page)
-    await page.reload()
-    await page
-      .locator('.exercise-card', { hasText: 'Guided Warmup' })
-      .first()
-      .click()
-    await expect(page.locator('.exercise-idle-start')).toBeVisible({
-      timeout: 10000,
+/** What lies at the foot of the window, under its middle: the drill's
+ *  stage, or the page's ground beneath it. */
+function atTheFoot(page: import('@playwright/test').Page): Promise<string> {
+  return page.evaluate(() => {
+    const at = document.elementFromPoint(innerWidth / 2, innerHeight - 2)
+    if (at === null) return 'nothing'
+    if (at.closest('.exercise-runner') !== null) return 'the stage'
+    return at.className === '' ? at.tagName.toLowerCase() : String(at.className)
+  })
+}
+
+// The content area kept a padding under the stage, which showed the page's
+// ground under the booth: a light strip in the light theme, 20 px on a
+// window up to 768 px tall (a phone on its side, a short laptop) and 40 px
+// at a desk. Where no tab bar floats at the foot, the stage reaches it.
+test.describe('the stage reaches the foot of the window', () => {
+  for (const size of [
+    { width: 1440, height: 900 },
+    { width: 1280, height: 720 },
+  ]) {
+    test(`at a desk, ${size.width}x${size.height}`, async ({ page }) => {
+      await openWarmup(page, size)
+
+      expect(await atTheFoot(page)).toBe('the stage')
     })
   }
+
+  test.describe('on a phone on its side', () => {
+    test.use({ hasTouch: true, isMobile: true })
+
+    test('at 844x390', async ({ page }) => {
+      await openWarmup(page, { width: 844, height: 390 })
+
+      expect(await atTheFoot(page)).toBe('the stage')
+    })
+  })
+})
+
+test.describe('the warmup on a phone on its side', () => {
+  test.use({ hasTouch: true, isMobile: true })
 
   for (const size of [
     { width: 844, height: 390 },

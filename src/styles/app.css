@@ -564,6 +564,21 @@ select option:disabled {
   padding-bottom: 0;
 }
 
+/* So does a drill's stage, where no tab bar floats at the foot. The padding
+   under it showed the page's ground under the booth, a light strip in the
+   light theme: 20 px at 844x390 (a phone on its side) and on any window up
+   to 768 px tall, 40 px at a desk. The stage keeps its own foot clear of a
+   phone's home indicator. */
+@media (min-width: 769px) {
+  .main-content:has(.exercise-runner) {
+    padding-bottom: 0;
+  }
+
+  .main-content .exercise-runner {
+    padding-bottom: max(16px, var(--safe-bottom, 0px));
+  }
+}
+
 #ear-lab-page {
   flex: 1;
   min-height: 0;
