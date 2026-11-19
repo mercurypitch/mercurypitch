@@ -4522,7 +4522,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   ($S/briefs/l5-critic-F-01.md). Sound step adds: pad through `break`, a soft sound on each hop's
   landing (215), the tune and end chimes, examples, act sounds, ticks, room tone.
 
-## 15:20 UTC, 19 Nov
+## 15:05 UTC, 19 Nov
 - LEFTOVERS PART 2 (S6/S7 throat line) HANDED BACK and ACCEPTED with part 1 (DECISIONS 222; lead
   looked at lines-horizon-36.5 and lines-vs-one-note-36.5): both lines up 34 px (world 766/804),
   ink 13.7 px over the floor, legs' mask 696-726; joins S5-S6, S6-S7 cut, S7-S8 hold; probes
