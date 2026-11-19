@@ -4502,7 +4502,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   line fades linear hook + 0.35 to + 0.65, 0 amber pixels in the disc on all 21 frames to the cut;
   S1 to S2 join 0.26 of 255; s02's bead probe 50/50; root check 0 errors; S1 holds 0.9 s. To go
   into one DECISIONS entry with part 2. Part 2 (group B, S6/S7) still running; critic E-01 running.
-- 14:58: BRIEFS WRITTEN for what follows: $S/briefs/l5-integration.md (part 1, the kit's fixes, to
+- 14:52: BRIEFS WRITTEN for what follows: $S/briefs/l5-integration.md (part 1, the kit's fixes, to
   the kit builder resumed; part 2, the whole film rendered and measured, to the production
   builder resumed; starts only when no scene builder is editing: after group E's fix round and
   leftovers part 2) and $S/briefs/l5-critic-F-01.md (the first full-film critic, on
