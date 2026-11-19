@@ -62,17 +62,17 @@ window.SCENES = {
  },
  "s13-recap": {
   "start": 462.37,
-  "end": 525.495,
+  "end": 527.395,
   "title": "Quick check and practise"
  },
  "s14-next": {
-  "start": 525.495,
-  "end": 541.365,
+  "start": 527.395,
+  "end": 543.265,
   "title": "Next time"
  },
  "s15-end": {
-  "start": 541.365,
-  "end": 547.565,
+  "start": 543.265,
+  "end": 549.465,
   "title": "End card"
  }
 };

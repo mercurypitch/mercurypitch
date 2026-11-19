@@ -1,0 +1,36 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.093,
+ "words": [
+  {
+   "w": "Stop",
+   "t": 0.02,
+   "e": 0.41
+  },
+  {
+   "w": "immediately",
+   "t": 0.465,
+   "e": 1.19
+  },
+  {
+   "w": "if",
+   "t": 1.445,
+   "e": 1.513
+  },
+  {
+   "w": "anything",
+   "t": 1.588,
+   "e": 2.013
+  },
+  {
+   "w": "feels",
+   "t": 2.113,
+   "e": 2.58
+  },
+  {
+   "w": "uncomfortable.",
+   "t": 2.635,
+   "e": 3.495
+  }
+ ]
+}

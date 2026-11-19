@@ -106,7 +106,10 @@ if sys.argv[1:2] == ['--freeze']:
     freeze()
     sys.exit(0)
 EST, EST_TOTAL = board()
-ORDER = [e['id'] for e in script['events']]
+# The events on both clocks, in script order. An event added to script.json after the freeze has
+# no board time (DECISIONS 190's `break`, between b54 and b55): a board time in the gap it fills
+# maps, as any gap does, by its offset from the event before.
+ORDER = [e['id'] for e in script['events'] if e['id'] in EST]
 
 
 def fmt(t):

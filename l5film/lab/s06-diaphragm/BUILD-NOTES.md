@@ -110,7 +110,7 @@ and `clip-still-5.46.png`, `clip-still-5.76.png`, `clip-still-6.14.png` from the
 | 5, the ghost envelope and "level" (184) | the strip's `rest` envelope in `ch.draw` (line 248), "level" at S5's last place (line 99 on) | the strip a hairline, "level" on the slider's row | the first frame carries S5's last: the resting envelope in ghost violet and "level" right-aligned 366 at the strip's height; the envelope fades as the split begins (4.94, 0.3 s, linear) | `clip-still-0.00.png`, `clip-still-3.22.png` |
 | 7, the hosts at the cut (186) | none: tags and offsets are right | see `../s07-support/BUILD-NOTES.md` § Fix round B-01: Merc's own eye turn in the pass (pass frames 3375 to 3377), for the passes step | - | `../s07-support/fix-B-01/cut-hosts-frames.png` |
 | 9, the legs (188) | `F6 = { ...L.FIGURE.S6, fade: [730, 760] }` (line 125; the kit's [750, 780]) | the legs' strokes about 7 px over "with your breathing muscles," | the legs' lowest visible point 20.8 px over its ink | `legs-36.5.png` (before and after) |
-| 10, holds (189) | no motion added | 4.6 s inside the film (2.0 s per 30 s), longest 0.5 s | HOLDS_AFTER | `measure/summary.md` |
+| 10, holds (189) | no motion added | 4.6 s inside the film (2.0 s per 30 s), longest 0.5 s | 4.5 s inside the film (2.0 s per 30 s), longest 0.4 s: 0.00, 4.40, 4.60 (0.3), 10.60, 14.80, 17.20, 18.00, 18.20 (0.2), 19.60, 34.20 (0.3), 34.60 (0.2), 38.30, 38.60, 39.00, 40.90, 42.20 (0.4), 48.00 (0.2), 49.80, 52.10, 52.60, 53.00, 53.20 (0.3), 54.00, 54.20, 54.40, 55.80, 58.20, 58.40 (0.3), 65.60, 65.80, 67.80; 0.1 s each unless marked; the final 0.1 s at 68.60 exempt | `measure/summary.md` |
 
 Seen, not fixed: "never your throat" (world baseline 838, the board's place, STORYBOARD 6g and HANDOFFS § The breath
 figure) sits on the room's floor horizon at F-gauge (screen y 840 runs through its x-height, 34.87 to 48.20;
@@ -120,7 +120,21 @@ director.
 
 ## Proof (after the fix round, 19 November)
 
-PROOF_AFTER
+- Probe: 245 of 245 pass (`probe.json`; checks in `checks.js`, the B-01 ones marked; 40 of them walk the four swaps
+  frame by frame). The last frame against HANDOFFS § The cuts S6 to S7 as before (frame x 738 to 1662, y 279 to 731;
+  the gold line 451.45; the figure at rest, breath 0.000; no cursor, no readout).
+- Clip `clip.mp4` (30 fps, the scratch voice, 19 November 12:25, after the readout's plate was fitted); stills
+  `clip-still-*.png` at 0, 3.22, 5.76, 6.14, 8.09, 12.13, 19.19, 21.60, 26.16, 29.40, 30.06, 31.50, 32.31, 35.37,
+  36.50, 45.00, 49.40, 55.50, 62.48, 66.65, 68.75. Hosts looked at on every still.
+- `measure.py render` (`measure/summary.md`): holds as in the table above; single-frame events four, all a host's blink
+  in its own pass (38.033 and 51.833 Merc's eyes, the first with the light down the falling line reaching its end in
+  the same frame; 55.400 and 58.833 Tavi's; 0.03 to 0.05 % of pixels). Integrated -19.8 LUFS, true peak -1.5 dBTP.
+- The S6 to S7 join, re-made from this clip (`../s07-support/cut-s06-s07.mp4`): `measure-cut/summary.md` finds no
+  single-frame event; every frame on `../s07-support/dense-cut/dense-000.50s-30fps.jpg`.
+- `dense-swaps/` (the four swaps, every frame) and `dense-cursor/dense-030.70s-30fps.jpg` (29.1 to 32.3).
+- `check lab/s06-diaphragm/proj --at=26.16,29.38,30.06,45.00,66.65`: contrast 62/62, layout 0 issues, lint 0 errors
+  (warnings: the kit's duplicated host video entry; the file's 367 lines).
+- clock-lint silent; `merc-tags.py s05-push s06-diaphragm s07-support --check` (12:30): 12 tags, 0 stale, 0 problems.
 
 ## Proof (round 1, kept for the record)
 

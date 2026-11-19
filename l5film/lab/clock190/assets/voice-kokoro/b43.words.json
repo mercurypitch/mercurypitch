@@ -1,0 +1,51 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.07,
+ "words": [
+  {
+   "w": "How",
+   "t": 0.02,
+   "e": 0.215
+  },
+  {
+   "w": "did",
+   "t": 0.24,
+   "e": 0.34
+  },
+  {
+   "w": "that",
+   "t": 0.39,
+   "e": 0.59
+  },
+  {
+   "w": "feel?",
+   "t": 0.69,
+   "e": 1.105
+  },
+  {
+   "w": "Easy,",
+   "t": 1.59,
+   "e": 2.09
+  },
+  {
+   "w": "workable,",
+   "t": 2.215,
+   "e": 2.775
+  },
+  {
+   "w": "effortful,",
+   "t": 2.9,
+   "e": 3.465
+  },
+  {
+   "w": "or",
+   "t": 3.54,
+   "e": 3.69
+  },
+  {
+   "w": "uncomfortable?",
+   "t": 3.79,
+   "e": 4.605
+  }
+ ]
+}

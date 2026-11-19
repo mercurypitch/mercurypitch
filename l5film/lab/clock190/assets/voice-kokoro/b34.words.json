@@ -1,0 +1,51 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.087,
+ "words": [
+  {
+   "w": "Your",
+   "t": 0.02,
+   "e": 0.225
+  },
+  {
+   "w": "turn:",
+   "t": 0.28,
+   "e": 0.855
+  },
+  {
+   "w": "one",
+   "t": 1.28,
+   "e": 1.57
+  },
+  {
+   "w": "comfortable",
+   "t": 1.645,
+   "e": 2.145
+  },
+  {
+   "w": "note,",
+   "t": 2.22,
+   "e": 2.545
+  },
+  {
+   "w": "held",
+   "t": 2.62,
+   "e": 2.845
+  },
+  {
+   "w": "for",
+   "t": 2.895,
+   "e": 2.995
+  },
+  {
+   "w": "ten",
+   "t": 3.07,
+   "e": 3.37
+  },
+  {
+   "w": "seconds.",
+   "t": 3.47,
+   "e": 3.685
+  }
+ ]
+}

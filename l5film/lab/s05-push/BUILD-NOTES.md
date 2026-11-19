@@ -98,4 +98,4 @@ draws both from its first frame and fades the envelope as the split begins.
   the hosts' faces (pops 7.833, 12.367, 35.033; jumps 10.000, 14.900, 31.367; the jump at 20.167 is Tavi's eyes as the
   plan's arrows fade); -20.0 LUFS, true peak -2.8 dBTP.
 - `check lab/s05-push/proj --at=10.92,21.0,23.25,33.62,35.55`: contrast 56/56, layout 0 issues, lint 0 errors.
-- clock-lint silent; `merc-tags.py s05-push --check`: 0 stale, 0 problems.
+- clock-lint silent; `merc-tags.py s05-push s06-diaphragm s07-support --check` (12:30): 12 tags, 0 stale, 0 problems.

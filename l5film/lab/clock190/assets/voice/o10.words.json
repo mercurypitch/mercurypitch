@@ -1,0 +1,36 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.114,
+ "words": [
+  {
+   "w": "And",
+   "t": 0.02,
+   "e": 0.12
+  },
+  {
+   "w": "how",
+   "t": 0.195,
+   "e": 0.47
+  },
+  {
+   "w": "should",
+   "t": 0.545,
+   "e": 0.695
+  },
+  {
+   "w": "the",
+   "t": 0.72,
+   "e": 0.77
+  },
+  {
+   "w": "note",
+   "t": 0.845,
+   "e": 1.17
+  },
+  {
+   "w": "start?",
+   "t": 1.245,
+   "e": 1.715
+  }
+ ]
+}

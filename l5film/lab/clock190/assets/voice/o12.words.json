@@ -1,0 +1,51 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.09,
+ "words": [
+  {
+   "w": "It",
+   "t": 0.02,
+   "e": 0.177
+  },
+  {
+   "w": "scooped,",
+   "t": 0.252,
+   "e": 0.677
+  },
+  {
+   "w": "and",
+   "t": 0.727,
+   "e": 0.802
+  },
+  {
+   "w": "it",
+   "t": 0.827,
+   "e": 0.877
+  },
+  {
+   "w": "waves.",
+   "t": 0.952,
+   "e": 1.525
+  },
+  {
+   "w": "Is",
+   "t": 1.935,
+   "e": 2.028
+  },
+  {
+   "w": "that",
+   "t": 2.078,
+   "e": 2.303
+  },
+  {
+   "w": "still",
+   "t": 2.377,
+   "e": 2.678
+  },
+  {
+   "w": "steady?",
+   "t": 2.752,
+   "e": 3.355
+  }
+ ]
+}

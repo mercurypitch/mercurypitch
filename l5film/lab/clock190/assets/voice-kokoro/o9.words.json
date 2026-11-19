@@ -1,0 +1,31 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.114,
+ "words": [
+  {
+   "w": "How",
+   "t": 0.02,
+   "e": 0.295
+  },
+  {
+   "w": "should",
+   "t": 0.37,
+   "e": 0.47
+  },
+  {
+   "w": "I",
+   "t": 0.52,
+   "e": 0.645
+  },
+  {
+   "w": "breathe",
+   "t": 0.72,
+   "e": 1.07
+  },
+  {
+   "w": "in?",
+   "t": 1.12,
+   "e": 1.525
+  }
+ ]
+}

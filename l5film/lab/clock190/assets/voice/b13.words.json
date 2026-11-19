@@ -1,0 +1,56 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.111,
+ "words": [
+  {
+   "w": "Hold",
+   "t": 0.02,
+   "e": 0.23
+  },
+  {
+   "w": "it",
+   "t": 0.255,
+   "e": 0.355
+  },
+  {
+   "w": "back,",
+   "t": 0.405,
+   "e": 0.76
+  },
+  {
+   "w": "with",
+   "t": 0.845,
+   "e": 1.03
+  },
+  {
+   "w": "your",
+   "t": 1.08,
+   "e": 1.205
+  },
+  {
+   "w": "breathing",
+   "t": 1.305,
+   "e": 1.68
+  },
+  {
+   "w": "muscles,",
+   "t": 1.73,
+   "e": 2.34
+  },
+  {
+   "w": "never",
+   "t": 2.405,
+   "e": 2.655
+  },
+  {
+   "w": "your",
+   "t": 2.705,
+   "e": 2.855
+  },
+  {
+   "w": "throat.",
+   "t": 2.98,
+   "e": 3.34
+  }
+ ]
+}

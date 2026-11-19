@@ -20,6 +20,38 @@ rest (mix.py reads only Echo samples there, which this film does not use).
 Every heavy run (a render, a Chromium pass, the Merc bundle, the Kokoro run) goes through the
 scratchpad's heavy helper on this shared machine, one at a time.
 
+## 2026-11-19 (Lesson 5, the passes for DECISIONS 190: the hops back at the clean break)
+
+- **script.json: `break`.** `{"id": "break", "type": "pause", "dur": 1.9, "gap": 0.0}` between b54
+  and b55 (b55 keeps its 0.3 s gap); nothing else changed (checked: the parsed script is the old
+  one plus that event).
+- **The clock, rebuilt aside** (`cues.py --no-tts` in `lab/clock190/`, through the heavy helper)
+  and moved into place by rename, the old files kept as `*.pre190`: `cues.json`, `assets/cues.js`,
+  `assets/audio/voice.wav`, `PACING.md`. Checked first: the 97 cues before b55 identical to the
+  millisecond (start, end, every word), the 10 from b55 on exactly 1.9 s later, `break` new
+  (489.71 to 491.61); the voice track identical before b55 and every later line sample-identical
+  45,600 samples (1.9 s) later. The film: 9:09.5 (549.465 s).
+- **gen-root.py and chapters.py, run aside and renamed in** (`MIX=voice`): `assets/scenes.js`
+  (s13's end, s14's and s15's starts), `index.html` (those three hosts and the total) and the s13
+  placeholder's duration; no built scene file touched (s01 to s12 compared). `captions/chapters.json`
+  was stale since step 2, where `chapters.py` ran before `gen-root.py` and read the 8:55 scene
+  table; it is now right (every chapter moved, "Practise it" 491.91). Old files kept as `*.pre190`.
+- **board-clock.py: events on both clocks only.** It walked script.json's events and looked each
+  up in the frozen board clock, which has no `break`: `ORDER` now holds the events both clocks
+  have; a board time in the gap `break` fills maps by its offset from the event before, as any gap.
+- **merc-shots.py: the hops in `break`.** Hop 1 at `break`'s start + 0.60, hop 2 the board's 0.65 s
+  later (+ 1.25), the state ending at + 1.91 (DECISIONS 190); the assertion that no line or sound
+  touches the pair holds. `keep_before_beat`: the first bias key after the beat is also written at
+  its time before the beat, so every frame before it keeps the bias it was rendered with (without
+  it, the long eased span between two glance blocks shifted by up to 5e-8 of lookX).
+- **Re-rendered only m-orange's and m-blue's s13, s14 and s15 chunks** (`lab/clock190/render-190.py`,
+  the queue's own arguments, one at a time through the heavy helper; the queue was not run, since it
+  would redo every chunk). Every chunk from s03 to s12 and both m01 passes proved unchanged on every
+  frame (`review/merc/shots-190.txt`), and their WebMs and sidecars touched so a later queue run
+  counts them done. The old shot files are kept as `merc/shots/*.pre190`.
+- **merc-sheet.py --hops** writes `review/merc/hops-190.png`, the hops frame by frame as a scene
+  places them; merc-passes.py's text now puts the hops in `break`.
+
 ## 2026-11-18 (Lesson 5, production step 2: the lead's answers)
 
 - **merc-shots.py: the hops in a silence, `listen` capped, the listening gaze held, no hop stop

@@ -1,0 +1,5 @@
+{
+ "note": "The scratch Kokoro voice of each host, read by tools/tts.py and tools/cues.py in place of script.json's `voices` (script.json is the board's and is not changed for the scratch voice). Tavi's speed is the lead's 0.78 (DECISIONS 126).",
+ "blue": {"voice": "am_michael", "speed": 0.84},
+ "orange": {"voice": "af_heart", "speed": 0.78}
+}

@@ -1,0 +1,61 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.085,
+ "words": [
+  {
+   "w": "What",
+   "t": 0.02,
+   "e": 0.173
+  },
+  {
+   "w": "does",
+   "t": 0.198,
+   "e": 0.323
+  },
+  {
+   "w": "a",
+   "t": 0.348,
+   "e": 0.398
+  },
+  {
+   "w": "steady",
+   "t": 0.473,
+   "e": 0.873
+  },
+  {
+   "w": "note",
+   "t": 0.948,
+   "e": 1.248
+  },
+  {
+   "w": "look",
+   "t": 1.298,
+   "e": 1.435
+  },
+  {
+   "w": "like?",
+   "t": 1.49,
+   "e": 1.785
+  },
+  {
+   "w": "A",
+   "t": 2.25,
+   "e": 2.273
+  },
+  {
+   "w": "perfectly",
+   "t": 2.4,
+   "e": 3.048
+  },
+  {
+   "w": "straight",
+   "t": 3.123,
+   "e": 3.448
+  },
+  {
+   "w": "line?",
+   "t": 3.498,
+   "e": 3.995
+  }
+ ]
+}

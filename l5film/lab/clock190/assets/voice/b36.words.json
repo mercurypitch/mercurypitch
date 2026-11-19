@@ -1,0 +1,46 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.076,
+ "words": [
+  {
+   "w": "Sore,",
+   "t": 0.02,
+   "e": 0.4
+  },
+  {
+   "w": "hoarse",
+   "t": 0.5,
+   "e": 0.95
+  },
+  {
+   "w": "or",
+   "t": 1.0,
+   "e": 1.19
+  },
+  {
+   "w": "unwell",
+   "t": 1.25,
+   "e": 1.625
+  },
+  {
+   "w": "today?",
+   "t": 1.7,
+   "e": 2.135
+  },
+  {
+   "w": "Just",
+   "t": 2.55,
+   "e": 2.8
+  },
+  {
+   "w": "listen",
+   "t": 2.875,
+   "e": 3.2
+  },
+  {
+   "w": "along.",
+   "t": 3.275,
+   "e": 3.845
+  }
+ ]
+}

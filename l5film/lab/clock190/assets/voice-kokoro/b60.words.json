@@ -1,0 +1,51 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.071,
+ "words": [
+  {
+   "w": "I",
+   "t": 0.02,
+   "e": 0.14
+  },
+  {
+   "w": "move",
+   "t": 0.19,
+   "e": 0.415
+  },
+  {
+   "w": "every",
+   "t": 0.49,
+   "e": 0.74
+  },
+  {
+   "w": "single",
+   "t": 0.84,
+   "e": 1.165
+  },
+  {
+   "w": "note",
+   "t": 1.215,
+   "e": 1.575
+  },
+  {
+   "w": "of",
+   "t": 1.665,
+   "e": 1.825
+  },
+  {
+   "w": "\"Twinkle,",
+   "t": 1.905,
+   "e": 2.465
+  },
+  {
+   "w": "Twinkle\"",
+   "t": 2.705,
+   "e": 3.165
+  },
+  {
+   "w": "up.",
+   "t": 3.24,
+   "e": 3.44
+  }
+ ]
+}

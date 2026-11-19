@@ -1512,3 +1512,27 @@ numbered 132 to 135 too, are 160 to 163 now, so no number appears twice).
        to the final passes (189, 201); LAB-CHECKS 19 with the sound on goes to the sound round.
      - The full doctor lines and the feel block standing 62 px apart (45 px to the capsules) are
        left to the critic, who reads them as one frame or two columns.
+
+## Group B's fix round, accepted, 19 November
+
+203. **Group B's fix round is accepted** (no second critic, the owner's rule; the lead looked at the
+     payoff and plate stills and the numbers). Evidence 1 holds 0.50 s (15 frames) with row 1
+     0.45 s before row 2; the thesis is on screen 2.94 s (2.14 s at full); no plate covers a
+     stroke (921 of 921 columns of the band's edge and the frame's top, the gold line's only gaps
+     the 7 to 8 px where the falling line crosses it); the four readout switches show no frame
+     with both wordings and "added" lands 0.45 s after the switch; the readout moved to
+     right-aligned 1630, baseline 382, under the chip, on empty ground (at 275 any plate covered
+     the band's edge); the ghost resting envelope shows in S5 from "mainly" and in S7 from the
+     reassembly; S7 ends on the better idea in the lower right with rows 0 to 3 at ink-2 (8.89:1);
+     both chips on evidence 2 and row 2; "let" on its word; the legs 20.8 px clear.
+     Two things are left, each with its owner:
+     - **The hosts' eye turn at the S6 to S7 cut is in the pass** (pass frames 3375 to 3377, film
+       frames 5143 to 5145: Merc's eyes turn toward Tavi as she starts o8, across the cut). The
+       final passes start that turn on the cut's far side, so a matched cut never carries a
+       glance; the scratch passes stay as they are.
+     - **"never your throat" (S6) sits on the floor horizon** (world baseline 838; the horizon at
+       screen y 840 runs through its x-height from 34.87 to 48.20). The rule of 188 holds for
+       every line of type, not only S7's row 4: no type within 12 px of the floor horizon. Both
+       lines move up 27 px and the legs shorten 18 px more, in S6 and in S7's first frame. This
+       goes into a short leftovers round before integration with group A's amber line through
+       the softening bead (178), so S1, S6 and S7 render again once, together.

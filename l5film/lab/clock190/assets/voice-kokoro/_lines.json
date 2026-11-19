@@ -1,0 +1,357 @@
+{
+ "o1": {
+  "text": "So if I push the air out harder, the note holds steadier?",
+  "voice": "af_heart",
+  "speed": 0.78
+ },
+ "b1": {
+  "text": "Let's listen: the same note, pushed harder and harder. Will the line settle, steadier than before, or get louder and drift higher?",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b3": {
+  "text": "Louder, and higher. Pushing doesn't hold a note still: it moves it.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "o2": {
+  "text": "But singers are told to \"support\" a long note. If that doesn't mean pushing, what keeps it steady?",
+  "voice": "af_heart",
+  "speed": 0.78
+ },
+ "b4": {
+  "text": "By the end, you'll know what your diaphragm does, how to breathe in low and start easily, and you'll hold a comfortable note for ten seconds.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "o3": {
+  "text": "From Lesson 3: how loud should you sing when you practise matching?",
+  "voice": "af_heart",
+  "speed": 0.78
+ },
+ "b6": {
+  "text": "At about the volume you talk at: a quiet note is just as much the right note.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "o4": {
+  "text": "If I ease off, does it come back down?",
+  "voice": "af_heart",
+  "speed": 0.78
+ },
+ "b7": {
+  "text": "How hard your breath pushes on your vocal folds is its pressure. It mainly sets how loud the note is, and it nudges the pitch.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b8": {
+  "text": "Listen, and watch the line: the push rises, holds, then eases off.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "o5": {
+  "text": "It came back. But Lesson 1 said loud and high are different things. Aren't they?",
+  "voice": "af_heart",
+  "speed": 0.78
+ },
+ "b9": {
+  "text": "They are. But in a voice, one push moves both.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "o6": {
+  "text": "Then where does that push come from? Isn't it the diaphragm?",
+  "voice": "af_heart",
+  "speed": 0.78
+ },
+ "b11": {
+  "text": "Your diaphragm is a dome-shaped muscle under your lungs. It tightens to breathe in.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b12": {
+  "text": "After a big breath, you start a quiet note. Must your body push the air out, or hold it back?",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b13": {
+  "text": "Hold it back, with your breathing muscles, never your throat.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b14": {
+  "text": "Full lungs spring back by themselves, often harder than a quiet note needs. So at first your breathing-in muscles keep working, holding some of that push back.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b15": {
+  "text": "As the air goes, your belly and rib muscles take over the pushing. Your diaphragm can't push air out.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "o7": {
+  "text": "So full lungs push by themselves, and at first I just hold some back.",
+  "voice": "af_heart",
+  "speed": 0.78
+ },
+ "b16": {
+  "text": "Yes. And a loud note needs less holding back at first, but more adding as the air runs low.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "o8": {
+  "text": "What about \"support\"? Don't singers mean pushing hard, or squeezing?",
+  "voice": "af_heart",
+  "speed": 0.78
+ },
+ "b17": {
+  "text": "That's a common mix-up. Pushing moves the note, as you heard.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b18": {
+  "text": "Squeezing your throat makes a pressed sound, the sound people make lifting something heavy, and a pressed sound needs more air pressure, not less.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b19": {
+  "text": "\"Support\" is singers' word for how they manage the breath as they sing. There's no one agreed meaning.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b20": {
+  "text": "A steady note needs steady air, not more of it: breathe in low, start easily, and let the air flow out unforced.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "o9": {
+  "text": "How should I breathe in?",
+  "voice": "af_heart",
+  "speed": 0.78
+ },
+ "b21": {
+  "text": "Start tall but easy. If you're standing, keep your knees unlocked. Let your jaw, tongue and neck go loose.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b22": {
+  "text": "Then breathe in quietly, and let the breath drop low, shoulders still, taking as much as feels easy.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "o10": {
+  "text": "And how should the note start?",
+  "voice": "af_heart",
+  "speed": 0.78
+ },
+ "b24": {
+  "text": "How a note starts is its onset. A voice has three main ways. Just listen.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b25": {
+  "text": "Air first: a puff of breath, like a soft \"h\", then the sound.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b26": {
+  "text": "A catch: the vocal folds are pressed shut, and the note starts as they open, a little like a cough.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b27": {
+  "text": "Or together: the folds meet the air just as it starts to flow.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b27a": {
+  "text": "Back to back now: listen for the puff, then the click, then neither.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b28": {
+  "text": "For a long, easy note, many singing teachers aim for the third, the easy start. It's often found by beginning with a soft \"h\", then keeping it only in your mind.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "o11": {
+  "text": "What does a steady note look like? A perfectly straight line?",
+  "voice": "af_heart",
+  "speed": 0.78
+ },
+ "b29": {
+  "text": "Tavi, hold an A for ten seconds.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "o12": {
+  "text": "It scooped, and it waves. Is that still steady?",
+  "voice": "af_heart",
+  "speed": 0.78
+ },
+ "b30": {
+  "text": "It is. Sung notes are rarely perfectly still: they can begin with a short slide, a scoop.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b31": {
+  "text": "And steady doesn't mean dead straight: a small vibrato, a regular wave in the pitch, can sit inside the band.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b32": {
+  "text": "Steady means the line settles into the band and stays, for a comfortable, fixed length, never \"as long as you can\".",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "o13": {
+  "text": "Then is it steady air that keeps the note there?",
+  "voice": "af_heart",
+  "speed": 0.78
+ },
+ "b33": {
+  "text": "No. Muscles in your voice box set the note. A steady note needs steady air too, because a change in the air moves it.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b34": {
+  "text": "Your turn: one comfortable note, held for ten seconds.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b35": {
+  "text": "Lesson 3's care lines still apply: stop if your voice feels scratchy or hoarse.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b36": {
+  "text": "Sore, hoarse or unwell today? Just listen along.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b37": {
+  "text": "Choose listening if anything hurts or singing has felt uncomfortable, if your voice feels unusually hoarse or tired, if notes you usually reach have suddenly gone, if you're ill, or if talking or singing feels like hard work today.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b37a": {
+  "text": "Listening along? Rest your voice and watch the ring.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b38": {
+  "text": "Otherwise, sing my A, or Tavi's, an octave up.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b39": {
+  "text": "Listen to our note. Breathe in, low and quiet. Then sing straight away, easily, at about speaking volume.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b40": {
+  "text": "Hold the note until the ring closes, or stop sooner if you need to.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b41": {
+  "text": "Stop immediately if anything feels uncomfortable.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b42": {
+  "text": "Breathe in.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b43": {
+  "text": "How did that feel? Easy, workable, effortful, or uncomfortable?",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b44": {
+  "text": "Easy or workable? Rest for a few easy breaths.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b45": {
+  "text": "Effortful? Keep it gentle: rest before you sing again.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b46": {
+  "text": "Uncomfortable? Thanks for saying so. That's enough singing for today: rest your voice.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b46a": {
+  "text": "Whatever you chose: if hoarseness or discomfort lasts more than a couple of weeks, see a doctor (a GP or an ear, nose and throat specialist). If it's very painful, or breathing or swallowing is hard, get help straight away.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b47": {
+  "text": "Quick check.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b48": {
+  "text": "What is your diaphragm's main job?",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b49": {
+  "text": "Breathing in.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b51": {
+  "text": "For a long, easy note, which start do many singing teachers aim for?",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b52": {
+  "text": "Air and sound starting together: the easy start.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "o14a": {
+  "text": "What does a steady long note look like on the pitch line?",
+  "voice": "af_heart",
+  "speed": 0.78
+ },
+ "b54": {
+  "text": "It settles into the band and stays there.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b55": {
+  "text": "Practise it. Voice Mirror has you glide up and down, hold any comfortable note for six seconds, then sing back five notes it plays.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b56": {
+  "text": "Keep the glides comfortable. Sore, hoarse or unwell today? Just listen along. Free, no account: mercurypitch dot com slash mirror.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b58": {
+  "text": "Felt uncomfortable, or listened along today? Rest today. Voice Mirror will be here when your voice feels comfortable: mercurypitch dot com slash mirror.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b59": {
+  "text": "Next time.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "b60": {
+  "text": "I move every single note of \"Twinkle, Twinkle\" up.",
+  "voice": "am_michael",
+  "speed": 0.84
+ },
+ "o15": {
+  "text": "Why can you start \"Twinkle, Twinkle\" on any note and it is still the same tune?",
+  "voice": "af_heart",
+  "speed": 0.78
+ }
+}

@@ -1,0 +1,51 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.065,
+ "words": [
+  {
+   "w": "Effortful?",
+   "t": 0.02,
+   "e": 0.62
+  },
+  {
+   "w": "Keep",
+   "t": 0.695,
+   "e": 0.895
+  },
+  {
+   "w": "it",
+   "t": 0.945,
+   "e": 1.045
+  },
+  {
+   "w": "gentle:",
+   "t": 1.12,
+   "e": 1.695
+  },
+  {
+   "w": "rest",
+   "t": 2.11,
+   "e": 2.445
+  },
+  {
+   "w": "before",
+   "t": 2.505,
+   "e": 2.795
+  },
+  {
+   "w": "you",
+   "t": 2.845,
+   "e": 2.945
+  },
+  {
+   "w": "sing",
+   "t": 3.045,
+   "e": 3.245
+  },
+  {
+   "w": "again.",
+   "t": 3.295,
+   "e": 3.785
+  }
+ ]
+}

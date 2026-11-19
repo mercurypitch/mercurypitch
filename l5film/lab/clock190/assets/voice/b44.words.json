@@ -1,0 +1,51 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.077,
+ "words": [
+  {
+   "w": "Easy",
+   "t": 0.02,
+   "e": 0.458
+  },
+  {
+   "w": "or",
+   "t": 0.533,
+   "e": 0.683
+  },
+  {
+   "w": "workable?",
+   "t": 0.782,
+   "e": 1.365
+  },
+  {
+   "w": "Rest",
+   "t": 1.77,
+   "e": 2.057
+  },
+  {
+   "w": "for",
+   "t": 2.107,
+   "e": 2.307
+  },
+  {
+   "w": "a",
+   "t": 2.407,
+   "e": 2.501
+  },
+  {
+   "w": "few",
+   "t": 2.501,
+   "e": 2.657
+  },
+  {
+   "w": "easy",
+   "t": 2.732,
+   "e": 3.083
+  },
+  {
+   "w": "breaths.",
+   "t": 3.157,
+   "e": 3.735
+  }
+ ]
+}

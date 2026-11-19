@@ -111,8 +111,11 @@ The lab clips are off the film grid, so S6's last lab frame repeats pass frame 3
   peak -2.4 dBTP.
 - `check lab/s07-support/proj --at=1.92,7.80,12.08,19.05,34.00`: contrast 47/47, layout 0 issues, lint 0 errors (one
   warning: the kit's duplicated host video entry).
-- The S6 to S7 join (`cut-s06-s07.mp4`, `measure-cut/`, `dense-cut/`): see below, re-made after S6's last render.
-- clock-lint silent; `merc-tags.py s07-support --check`: 0 stale, 0 problems.
+- The S6 to S7 join (`cut-s06-s07.mp4`: S6's last 0.5 s from its 12:25 clip and S7's first 0.5 s), re-made after S6's
+  last render: `measure-cut/summary.md` finds no single-frame event (no pop, no flash, no empty frame); every frame on
+  `dense-cut/dense-000.50s-30fps.jpg`. The carried objects hold at (0, 0) (`../s05-push/cutdiff.py`); the hosts' eyes
+  move with Merc's own turn in the pass (§ Fix round B-01).
+- clock-lint silent; `merc-tags.py s05-push s06-diaphragm s07-support --check` (12:30): 12 tags, 0 stale, 0 problems.
 
 ## Proof (round 1, kept for the record)
 

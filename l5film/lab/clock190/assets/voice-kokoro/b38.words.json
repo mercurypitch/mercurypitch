@@ -1,0 +1,51 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.064,
+ "words": [
+  {
+   "w": "Otherwise,",
+   "t": 0.02,
+   "e": 0.53
+  },
+  {
+   "w": "sing",
+   "t": 0.63,
+   "e": 0.83
+  },
+  {
+   "w": "my",
+   "t": 0.88,
+   "e": 1.08
+  },
+  {
+   "w": "A,",
+   "t": 1.13,
+   "e": 1.45
+  },
+  {
+   "w": "or",
+   "t": 1.855,
+   "e": 2.005
+  },
+  {
+   "w": "Tavi's,",
+   "t": 2.065,
+   "e": 2.655
+  },
+  {
+   "w": "an",
+   "t": 2.705,
+   "e": 2.835
+  },
+  {
+   "w": "octave",
+   "t": 2.895,
+   "e": 3.11
+  },
+  {
+   "w": "up.",
+   "t": 3.175,
+   "e": 3.53
+  }
+ ]
+}

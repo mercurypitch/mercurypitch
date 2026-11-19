@@ -123,11 +123,11 @@ def main():
             ('m-orange', cue('listen', 'start', 1.0), 'Tavi sings listen (A4)', 'listen + 1.0'),
             ('m-blue', cue('twinkle', 'start', 2.2), 'Merc sings twinkle (A4)', 'twinkle + 2.2'),
         ]),
-        ('Hold, the hops in the card pause, the end', [
+        ('Hold, the hops in the break, the end', [
             ('m-blue', cue('hold', 'start', 5.0), 'Hold: Merc idle, no arcs', 'hold + 5.0'),
             ('m-orange', cue('hold', 'start', 5.0), 'Hold: Tavi idle, no arcs', 'hold + 5.0'),
             ('m-blue', word('b55', 'Voice', 0.15), 'Merc says "Voice Mirror"', 'b55 "Voice" + 0.15'),
-            ('m-blue', hops[0] - 0.2, 'Merc before the hops', 'card + 0.15'),
+            ('m-blue', hops[0] - 0.2, 'Merc before the hops', 'break + 0.40'),
             ('m-blue', hops[0] + 0.325, 'Hop 1: the top, no stop marks', 'hop 1 + 0.33'),
             ('m-blue', hops[1] + 0.325, 'Hop 2: the top', 'hop 2 + 0.33'),
             ('m-blue', hops[1] + 0.7, 'Merc landed', 'hop 2 + 0.70'),
@@ -212,5 +212,50 @@ def main():
     print(out, sheet.size)
 
 
+def hops_sheet():
+    """review/merc/hops-190.png: the two hops through `break`, frame by frame, each a whole frame with
+    Merc placed as a scene places him (PASSES.md): the box at the scene's x (110, then carried to 700
+    and to 1290 through each hop's 0.41 s in the air, power1.in), the renderer's root x cancelled from
+    the chunk's sidecar, the feet on y 840; Tavi in her corner."""
+    font = ImageFont.truetype(FONT, 15)
+    s = shot('m-blue')
+    hops = [c['t'] + s['filmStart'] for c in s['cues'] if c['state'] == 'hop']
+    beat = C['break']['start']
+    def x_at(t):
+        x = 110.0
+        for h, (a, b) in zip(hops, ((110, 700), (700, 1290))):
+            u = min(1.0, max(0.0, (t - (h + 0.12)) / 0.41))
+            if t >= h + 0.12:
+                x = a + (b - a) * u * u
+        return x
+    offs = [0.0, 0.3, 0.6, 0.72, 0.93, 1.13, 1.25, 1.37, 1.57, 1.78, 1.91, 2.2, 2.6]
+    tw, th = 480, 270
+    cols = 4
+    rows = math.ceil(len(offs) / cols)
+    sheet = Image.new('RGB', (cols * (tw + 14) + 14, rows * (th + 40) + 60), (22, 27, 34))
+    d = ImageDraw.Draw(sheet)
+    d.text((14, 12), f'Merc\'s hops in `break` ({beat:.2f} to {beat + 1.9:.2f}): placed as a scene places him, root cancelled; the line is y 840',
+           font=ImageFont.truetype(FONT, 20), fill=INK)
+    for i, off in enumerate(offs):
+        t = beat + off
+        frame = Image.new('RGBA', (1920, 1080), (13, 17, 23, 255))
+        fd = ImageDraw.Draw(frame)
+        fd.line([(0, 840), (1920, 840)], fill=(88, 166, 255, 255), width=2)
+        for x in (110, 700, 1290):
+            fd.line([(x, 850), (x, 870)], fill=(139, 148, 158, 255), width=2)
+        img, root, src = grab('m-blue', t)
+        place(frame, img, root, x_at(t), 300)
+        img2, root2, _ = grab('m-orange', t)
+        place(frame, img2, root2, 1800, 300)
+        cx, cy = 14 + (i % cols) * (tw + 14), 50 + (i // cols) * (th + 40)
+        sheet.paste(frame.convert('RGB').resize((tw, th), Image.LANCZOS), (cx, cy))
+        state = [c['state'] for c in s['cues'] if c['t'] + s['filmStart'] <= t + 1e-9][-1]
+        d.text((cx, cy + th + 4), f'break + {off:.2f} ({t:.2f}): {state}, box x {x_at(t):.0f}, root x {root[0]:+.3f} · {src}', font=font, fill=INK2)
+    out = os.path.join(ROOT, 'review', 'merc', 'hops-190.png')
+    sheet.save(out)
+    print(out, sheet.size)
+
+
 if __name__ == '__main__':
-    main()
+    import sys
+    hops_sheet() if '--hops' in sys.argv else main()

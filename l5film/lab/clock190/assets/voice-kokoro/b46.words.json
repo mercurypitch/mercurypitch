@@ -1,0 +1,71 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.054,
+ "words": [
+  {
+   "w": "Uncomfortable?",
+   "t": 0.02,
+   "e": 0.845
+  },
+  {
+   "w": "Thanks",
+   "t": 1.105,
+   "e": 1.355
+  },
+  {
+   "w": "for",
+   "t": 1.405,
+   "e": 1.505
+  },
+  {
+   "w": "saying",
+   "t": 1.605,
+   "e": 2.005
+  },
+  {
+   "w": "so.",
+   "t": 2.105,
+   "e": 2.43
+  },
+  {
+   "w": "That's",
+   "t": 2.835,
+   "e": 3.03
+  },
+  {
+   "w": "enough",
+   "t": 3.055,
+   "e": 3.305
+  },
+  {
+   "w": "singing",
+   "t": 3.405,
+   "e": 3.73
+  },
+  {
+   "w": "for",
+   "t": 3.78,
+   "e": 3.88
+  },
+  {
+   "w": "today:",
+   "t": 3.93,
+   "e": 4.455
+  },
+  {
+   "w": "rest",
+   "t": 4.58,
+   "e": 4.805
+  },
+  {
+   "w": "your",
+   "t": 4.855,
+   "e": 4.955
+  },
+  {
+   "w": "voice.",
+   "t": 5.03,
+   "e": 5.58
+  }
+ ]
+}

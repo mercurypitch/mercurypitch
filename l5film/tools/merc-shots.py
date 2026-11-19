@@ -28,8 +28,8 @@ The scoring is the board's (Lesson 4's, with `listen`):
 Entrances, hops and the end card's jump are fixed-length states (`fixed`), which win over all the
 rest: each leap is one `celebrate` cycle (LEAP_LEN) on its pass's first frame, which the scene
 carries in from the frame's edge; Merc's two hops are two `hop` states (the renderer's slot 0, a
-hop to his right), 0.65 s apart (the board's rhythm), centred in the `card` pause, the first
-silence after b55 that holds them (nobody talks while hopping, DECISIONS 160), which the scene
+hop to his right), 0.65 s apart (the board's rhythm), in `break`, the silent beat made for them
+at the recap's clean break (DECISIONS 190, amending 160: nobody talks while hopping), which the scene
 carries 590 px each, drawn without the renderer's floor stop marks (`light`: the `stops` slot at
 0 through the renderer's setLook; the dotted arc stays); Tavi's end-card hop is one `celebrate`
 cycle, which the scene carries 190 px left. A gap under 0.45 s between two runs joins the run
@@ -158,15 +158,14 @@ for _k, _by in NOTES.items():
 # ---------------------------------------------------------------- the passes
 
 QUIET = ('breathe', 'tick-in', 'hold', 'tick-out')
-# Merc's two hops (DECISIONS 160, the lead): nobody talks while hopping, so the pair moves out of
-# b55 into a silence, the gap before b55 if it held the pair (0.30 s: it does not), otherwise the
-# first gap after b55 that does: b55 to b56 is 0.50 s, b56 to b58 0.30 s, b58 to b59 2.90 s (the
-# `card` pause, then the S14 cut and the `next` mark). The pair keeps the board's 0.65 s between the
-# hops (509.50 - 508.85 on the board, a physical rhythm) and lasts that plus HOP_LEN; it is centred
-# in the `card` pause, so it starts after b58's mouth has closed and ends before the bead leaves
-# for the tease (the board's card + 1.78) and before the cut.
+# Merc's two hops (DECISIONS 190, amending 160): nobody talks while hopping, and in the `card` pause
+# the hop path crossed the Voice Mirror card, so the pair goes back to the recap's clean break, in
+# `break`, the 1.9 s silent beat made for it between b54 and b55. The recap leaves up fast in the
+# beat's first 0.56 s; hop 1 starts at its start + 0.60 (in the air + 0.72 to + 1.13), hop 2 the
+# board's 0.65 s later (+ 1.25; in the air + 1.37 to + 1.78; a physical rhythm, 509.50 - 508.85 on
+# the board), its state ending at + 1.91, 0.29 s before "Practise it." starts.
 HOP_GAP = round(509.50 - 508.85, 3)
-HOP1 = cue('card', 'start', (C['card']['dur'] - (HOP_GAP + HOP_LEN)) / 2)
+HOP1 = cue('break', 'start', 0.60)
 HOP2 = round(HOP1 + HOP_GAP, 3)
 for _c in C.values():                    # the pair is wholly inside a silence: no line, no sound
     if _c['type'] in ('line', 'sound'):
@@ -190,8 +189,8 @@ PASSES = [
          fixed=[('celebrate', cue('o3', 'start', -LEAP), LEAP_LEN), ('celebrate', TAVI_HOP, LEAP_LEN)],
          sings=('demo', 'listen'), quiet=QUIET, chunked=True),
     # Merc from his leap in from the left edge (in q0, opening LEAP before b6) to past the end: sings
-    # gauge, listen and twinkle, idles through the viewer's turn, hops twice right in the `card`
-    # pause, without the hop's floor stop marks (the `stops` light at 0).
+    # gauge, listen and twinkle, idles through the viewer's turn, hops twice right in `break`, the
+    # recap's clean break, without the hop's floor stop marks (the `stops` light at 0).
     dict(id='m-blue', who='blue', span=(cue('b6', 'start', -LEAP), round(END + 0.1, 3)), size=300,
          fixed=[('celebrate', cue('b6', 'start', -LEAP), LEAP_LEN), ('hop', HOP1, HOP_GAP), ('hop', HOP2, HOP_LEN)],
          sings=('gauge', 'listen', 'twinkle'), quiet=QUIET, chunked=True,
@@ -359,6 +358,25 @@ def glance_bias(listening, dur, fps):
     return keys
 
 
+def keep_before_beat(keys, t0):
+    """DECISIONS 190 inserted `break` (1.9 s) before b55 after the passes were rendered, and only
+    the chunks from s13 on render again. Between two glance blocks the bias eases from one block's
+    last key (FACE to within 1e-5, by rounding) toward the next block's first, so the beat, by moving
+    that next key 1.9 s later, would move every frame of the long span before it by up to 5e-8 of
+    lookX. So the first key after the beat is also written at its time before the beat (FACE, as it
+    was there): every frame before the beat keeps exactly the bias it was rendered with."""
+    beat, shift = C['break']['start'] - t0, C['break']['dur']
+    nxt = next((k for k in keys if k['t'] >= beat), None)
+    if nxt is None:
+        return keys
+    was = round(nxt['t'] - shift, 6)
+    prev = max((k['t'] for k in keys if k['t'] < beat), default=None)
+    if prev is not None and prev < was and all(abs(k['t'] - was) > 1e-6 for k in keys):
+        pin = {'t': was, 'yaw': FACE[0]['yaw'], 'lookX': FACE[0]['lookX'], 'lookY': 0.0}
+        keys = sorted(keys + [pin], key=lambda k: k['t'])
+    return keys
+
+
 def chunks(p, P0, N):
     """The pass cut at the scene boundaries: each chunk covers its scene's film frames, one frame
     before them and two after (tools/merc-tags.py shows a pass up to the film frame after the scene)."""
@@ -398,7 +416,7 @@ def main():
             'cues': [{'t': t, 'state': st} for t, st in states],
             'voice': voice,
             'arcs': arc_keys(windows, dur),
-            'bias': glance_bias(listening, dur, FPS),
+            'bias': keep_before_beat(glance_bias(listening, dur, FPS), t0),
             'sparkles': 'none',
         }
         if 'light' in p:

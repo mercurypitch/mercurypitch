@@ -1,0 +1,16 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.134,
+ "words": [
+  {
+   "w": "Breathe",
+   "t": 0.02,
+   "e": 0.42
+  },
+  {
+   "w": "in.",
+   "t": 0.47,
+   "e": 0.92
+  }
+ ]
+}

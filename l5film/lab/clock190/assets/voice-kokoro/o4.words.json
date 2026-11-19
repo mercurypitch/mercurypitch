@@ -1,0 +1,51 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.041,
+ "words": [
+  {
+   "w": "If",
+   "t": 0.02,
+   "e": 0.215
+  },
+  {
+   "w": "I",
+   "t": 0.29,
+   "e": 0.44
+  },
+  {
+   "w": "ease",
+   "t": 0.515,
+   "e": 0.765
+  },
+  {
+   "w": "off,",
+   "t": 0.84,
+   "e": 1.175
+  },
+  {
+   "w": "does",
+   "t": 1.325,
+   "e": 1.44
+  },
+  {
+   "w": "it",
+   "t": 1.465,
+   "e": 1.515
+  },
+  {
+   "w": "come",
+   "t": 1.565,
+   "e": 1.715
+  },
+  {
+   "w": "back",
+   "t": 1.765,
+   "e": 2.065
+  },
+  {
+   "w": "down?",
+   "t": 2.14,
+   "e": 2.6
+  }
+ ]
+}

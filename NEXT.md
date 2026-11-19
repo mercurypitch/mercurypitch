@@ -4418,3 +4418,13 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - CRITIC D-01 LAUNCHED (fresh motion-critic, xhigh) -> l5film/review/critic-D-01/REPORT.md.
 - Heavy now: group B fix + passes step. Queue: group C's fix round, then group E (after the passes
   step), then D's fix round after its critic.
+
+## 12:50 UTC, 19 Nov
+- GROUP B FIX ROUND HANDED BACK and ACCEPTED (DECISIONS 203; lead looked at payoff-35.png and
+  plates-45.0.png): all 10 items done or reported; probes 75/245/110; root check 0 errors. Left:
+  the S6/S7 eye turn is in the pass (final passes start it after the cut); "never your throat" on
+  the floor horizon (S6) -> LEFTOVERS ROUND before integration with A's amber line (178): S1, S6,
+  S7 render again once. LEDGER B-01 row filled.
+- GROUP C FIX ROUND STARTED (resumed the group C builder, briefs/l5-fix-C-01.md) in B's slot.
+- Heavy now: passes step + group C fix. Queue: group E (after the passes step), group D's fix
+  round (after critic D-01 + calls), the leftovers round (A + B), then integration.

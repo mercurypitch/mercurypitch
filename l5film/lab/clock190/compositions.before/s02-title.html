@@ -1,0 +1,216 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s02-title" data-composition-id="s02-title" data-start="0" data-duration="3.600" data-width="1920" data-height="1080">
+      <div class="scene" id="s02-title-scene"></div>
+      <script>
+        ;(function () {
+          // S2, the title (STORYBOARD 2; HANDOFFS § Carried, the title; § The cuts S1 to S2 and S2 to S3). Lesson 4's
+          // s02-title with this film's line: S1's full-frame field shrinks into the title bead on the middle line of
+          // five living staff lines; the five chimes' notes hop in, each sending a ripple; "LESSON 05", the title and
+          // "Find Your Pitch" land; the type and notes exit up; the staff fades while the band chart fades up under it
+          // at F-promise-a, and the bead lifts off and flies to A3 (L.TITLE.flight, from film time: s03 draws the same
+          // curve). Every time is a cue or a duration.
+          const SID = 's02-title'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const C = L.C, P = L.prog, clamp = L.clamp, lerp = L.lerp, f2 = L.f2, smooth = L.smooth, TT = L.TITLE
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: false })
+          const dust = L.filmDust(room.near)
+
+          /* ---------------------------------------------------------------- anchors */
+          const SHRINK = 0.46                                        // the field into the bead: Lesson 2's curve (radius power2.out, centre power3.out)
+          const CRISP = 0.1, CRISP_SOFT = 0.95, CRISP_R = 1200       // its rim closes from the field's to Lesson 2's disc over the first 0.1 s
+          const TITLE_IN = at('title', 'start', 0.26)               // the title and its kicker land as the light settles
+          const FYP_IN = at('title', 'start', 0.76)                 // "Find Your Pitch" under the title
+          const EXIT = at('title', 'start', 2.42)                   // the type and the notes exit up
+          const LIFT_F = L.cue('title', 'start', TT.LIFT)            // film time: the bead lifts off, the staff fades
+          const BACK = LIFT_F - T0
+          const FADE_UP = L.cue('title', 'start', TT.LIFT - 0.2)
+          const CHIME = (k) => TT.CHIME(k) - T0
+
+          /* ---------------------------------------------------------------- the world: the band chart at F-promise-a */
+          const cam = L.frameRig(room, { from: 'F-promise-a' })
+          const world = L.stage(room.mid)
+          const ch = L.bandChart(world, L.CHART.S1)
+          const lab = { A3: ch.label('A3'), level: ch.label('level') }
+
+          /* ---------------------------------------------------------------- the type layer: staff, notes, type (4 % zoom) */
+          const typeLayer = L.el('div', { class: 'layer', 'data-layout-allow-overflow': '' })
+          root.insertBefore(typeLayer, room.near)
+          Object.assign(typeLayer.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', transformOrigin: '0 0' })
+          const svg = L.stage(typeLayer)
+          const defs = L.svg('defs', {}, svg)
+          const YB = TT.YB, S = TT.S
+          const staff = L.staff(svg, { yb: YB, s: S, id: SID + '-staff' })
+          const clef = L.clef(svg, { x: 150, yb: YB, s: S, fill: 'rgba(195,204,214,0.9)' })
+          // five quarter notes, one per chime (Lesson 4's colours: A3 Merc's blue, A4 Tavi's orange, the rest chrome)
+          const NOTES = [
+            { p: 'A3', color: C.blue }, { p: 'E4', color: C.chrome }, { p: 'A4', color: C.orange },
+            { p: 'C#5', color: C.chrome, sharp: true }, { p: 'E5', color: C.chrome },
+          ]
+          const notesG = L.svg('g', {}, svg)
+          NOTES.forEach((n, i) => {
+            n.x = TT.NOTE_X[i]
+            n.k = L.step(n.p)
+            n.y = YB - (n.k * S) / 2
+            n.t = CHIME(i)
+            n.ride = L.svg('g', {}, notesG)
+            const hg = L.svg('radialGradient', { id: SID + '-halo' + i }, defs)
+            L.svg('stop', { offset: 0, 'stop-color': n.color, 'stop-opacity': 0.55 }, hg)
+            L.svg('stop', { offset: 1, 'stop-color': n.color, 'stop-opacity': 0 }, hg)
+            n.haloEl = L.svg('circle', { cx: n.x, cy: n.y, r: 46, fill: `url(#${SID}-halo${i})`, opacity: 0 }, n.ride)
+            n.ring = L.svg('circle', { cx: n.x, cy: n.y, r: 18, fill: 'none', stroke: n.color, 'stroke-width': 3, opacity: 0 }, n.ride)
+            n.led = L.svg('g', { opacity: 0 }, n.ride)
+            for (let ll = -2; ll >= n.k; ll -= 2) L.svg('line', { x1: n.x - 0.95 * S, x2: n.x + 0.95 * S, y1: YB - (ll * S) / 2, y2: YB - (ll * S) / 2, stroke: 'rgba(195,204,214,0.6)', 'stroke-width': 2.4 }, n.led)
+            n.hop = L.svg('g', { opacity: 0 }, n.ride)
+            n.note = L.note(n.hop, { x: n.x, yb: YB, k: n.k, s: S, color: n.color, ink: 'rgba(214,221,229,0.9)' })
+            if (n.sharp) n.acc = L.sharp(n.hop, { x: n.x - 0.95 * S - 2, y: n.y, s: S, fill: 'rgba(214,221,229,0.92)' })
+          })
+          // the type: "LESSON 05" between two rules, the title (chrome serif italic 140 px, one line, centred on
+          // baseline 380) with Lesson 2's sheen, and "Find Your Pitch" (Outfit 48 px) under it
+          const typeBox = () => {
+            const d = L.el('div', { class: 'layer', 'data-layout-allow-overflow': '' }, typeLayer)
+            Object.assign(d.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', opacity: '0' })
+            return d
+          }
+          const kickBox = typeBox(), titleBox = typeBox(), lockBox = typeBox()
+          const kSvg = L.stage(kickBox), tSvg = L.stage(titleBox), lSvg = L.stage(lockBox)
+          const kText = L.svg('text', { x: 962.7, y: 222, 'text-anchor': 'middle', fill: C.ink2, text: 'LESSON 05', style: `font-family: ${L.FONT.mono}; font-weight: 500; font-size: 30px; letter-spacing: 0.18em;` }, kSvg)
+          const ruleL = L.svg('rect', { x: 0, y: 211, width: 64, height: 2, fill: 'rgba(195,204,214,0.35)' }, kSvg)
+          const ruleR = L.svg('rect', { x: 0, y: 211, width: 64, height: 2, fill: 'rgba(195,204,214,0.35)' }, kSvg)
+          const tDefs = L.svg('defs', {}, tSvg)
+          const chromeV = L.svg('linearGradient', { id: SID + '-chrome', gradientUnits: 'userSpaceOnUse', x1: 0, x2: 0, y1: 380 - 110, y2: 380 + 8 }, tDefs)
+          ;[[0, '#ffffff'], [0.3, '#dce3eb'], [0.58, '#a6b1bd'], [0.78, '#e6edf3'], [1, '#b6c0cb']].forEach(([o, c]) => L.svg('stop', { offset: o, 'stop-color': c }, chromeV))
+          const sheenG = L.svg('linearGradient', { id: SID + '-sheen', gradientUnits: 'userSpaceOnUse', x1: 0, x2: 400, y1: 0, y2: 0 }, tDefs)
+          ;[[0, 0], [0.5, 0.95], [1, 0]].forEach(([o, a]) => L.svg('stop', { offset: o, 'stop-color': '#ffffff', 'stop-opacity': a }, sheenG))
+          const TITLE = 'Breath and a steady note'
+          const titleStyle = `font-family: ${L.FONT.serif}; font-style: italic; font-weight: 400; font-size: 140px; letter-spacing: -0.01em;`
+          const title = L.svg('text', { x: 960, y: 380, 'text-anchor': 'middle', fill: `url(#${SID}-chrome)`, text: TITLE, style: titleStyle, 'data-layout-allow-overlap': '' }, tSvg)
+          const sheen = L.svg('text', { x: 960, y: 380, 'text-anchor': 'middle', fill: `url(#${SID}-sheen)`, text: TITLE, style: titleStyle, 'data-layout-allow-overlap': '' }, tSvg)
+          const lDefs = L.svg('defs', {}, lSvg)
+          const chromeL = L.svg('linearGradient', { id: SID + '-chromeL', gradientUnits: 'userSpaceOnUse', x1: 0, x2: 0, y1: 444, y2: 482 }, lDefs)
+          ;[[0, '#ffffff'], [0.28, '#dce3eb'], [0.56, '#8a97a6'], [0.76, '#e6edf3'], [1, '#a6b1bd']].forEach(([o, c]) => L.svg('stop', { offset: o, 'stop-color': c }, chromeL))
+          const specL = L.svg('linearGradient', { id: SID + '-specL', gradientUnits: 'userSpaceOnUse', x1: 1000, x2: 1140, y1: 440, y2: 490 }, lDefs)
+          ;[[0, C.blue], [0.5, C.aqua], [1, C.brandViolet]].forEach(([o, c]) => L.svg('stop', { offset: o, 'stop-color': c }, specL))
+          const lock = L.svg('text', { x: 960, y: 480, 'text-anchor': 'middle', style: `font-family: ${L.FONT.outfit}; font-weight: 600; font-size: 48px; letter-spacing: -0.01em;` }, lSvg)
+          L.svg('tspan', { text: 'Find Your ', fill: `url(#${SID}-chromeL)` }, lock)
+          const pitchSpan = L.svg('tspan', { text: 'Pitch', fill: `url(#${SID}-specL)` }, lock)
+          let titleBB = { x: 260, w: 1400 }
+          L.afterFonts(() => {
+            const kw = kText.getComputedTextLength()
+            ruleL.setAttribute('x', f2(960 - kw / 2 - 22 - 64)); ruleR.setAttribute('x', f2(960 + kw / 2 + 22))
+            const tw = title.getComputedTextLength()
+            titleBB = { x: 960 - tw / 2, w: tw }
+            const lw = lock.getComputedTextLength(), pw = pitchSpan.getComputedTextLength()
+            specL.setAttribute('x1', f2(960 + lw / 2 - pw)); specL.setAttribute('x2', f2(960 + lw / 2))
+          })
+
+          /* ---------------------------------------------------------------- top layer: the field shrinking to the bead */
+          const top = L.stage(room.top)
+          const field = L.field(top, SID + '-field')
+          const bead = L.bead(top, { r: 22, color: C.chrome })
+          bead.halo.setAttribute('r', 38)
+
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = { cam, ch, lab, bead, field, staff, A: { BACK, D } }
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            dust(T)
+            const z = TT.zoom(T)
+            typeLayer.style.transform = `matrix(${z.toFixed(5)}, 0, 0, ${z.toFixed(5)}, ${f2(960 * (1 - z))}, ${f2(540 * (1 - z))})`
+
+            /* the band chart fades up under the staff at F-promise-a (band, "A3", the strip's hairline, "level"; Merc's
+               line not drawn yet), from film time on the same curve s03 continues */
+            const back = P(T, FADE_UP, TT.FLY, 'sine.inOut')     // the chart fades up 0.2 s before the lift (DECISIONS 176)
+            ch.draw({ band: { a: back }, merc: { draw: 0 }, strip: { a: back } })
+            lab.A3.draw({ a: back }); lab.level.draw({ a: back })
+
+            /* the staff: alive, rippling as each note lands, fading as the chart fades up */
+            const staffA = 1 - P(t, BACK, 0.6, 'power1.inOut')
+            staff.draw((x, i) => TT.disp(x, T) + 0.5 * Math.sin(0.013 * x + 1.7 * i + 1.1 * T), staffA)
+            clef.setAttribute('opacity', (0.9 * (1 - smooth(EXIT + 0.06, EXIT + 0.36, t))).toFixed(3))
+
+            /* the notes: hop in on their chimes, ride the staff bobbing 8 px on a 1.2 s cycle, exit up */
+            NOTES.forEach((n, i) => {
+              const Hh = 0.3, u = (t - (n.t - Hh)) / Hh
+              let dx = 0, dy = 0, sx = 1, sy = 1, op = 0
+              if (u >= 0 && u < 1) {
+                const P0 = [-60, 120], P1 = [-22, -110]
+                dx = (1 - u) * (1 - u) * P0[0] + 2 * u * (1 - u) * P1[0]
+                dy = (1 - u) * (1 - u) * P0[1] + 2 * u * (1 - u) * P1[1]
+                const stch = 0.16 * Math.sin(Math.PI * u)
+                sx = 1 - 0.6 * stch; sy = 1 + stch
+                op = smooth(0, 0.3, u)
+              } else if (u >= 1) {
+                const tau = t - n.t, q = 0.28 * Math.exp(-9 * tau) * Math.cos(26 * tau)
+                sx = 1 + q; sy = 1 - q; op = 1
+                dy = 4 * Math.sin((2 * Math.PI * tau) / 1.2) * smooth(0, 0.25, tau)
+              }
+              const dt = t - (EXIT + 0.04 * i)
+              if (dt > 0) {
+                dy -= 150 * L.ease('power2.in')(clamp(dt / 0.42))
+                op *= 1 - smooth(0.1, 0.4, dt)
+              }
+              n.ride.setAttribute('transform', `translate(0 ${f2(TT.disp(n.x, T))})`)
+              const fy = n.y + 0.44 * S
+              n.hop.setAttribute('transform', `translate(${f2(dx)} ${f2(dy)})`)
+              n.hop.setAttribute('opacity', op.toFixed(3))
+              n.note.body.setAttribute('transform', `translate(${n.x} ${f2(fy)}) scale(${sx.toFixed(4)} ${sy.toFixed(4)}) translate(${-n.x} ${f2(-fy)})`)
+              const tau = t - n.t
+              n.led.setAttribute('opacity', (smooth(-0.04, 0.06, tau) * (1 - smooth(EXIT + 0.04 * i, EXIT + 0.3 + 0.04 * i, t))).toFixed(3))
+              n.led.setAttribute('transform', `translate(0 ${dy < 0 && dt > 0 ? f2(dy) : 0})`)
+              const rp = clamp(tau / 0.45)
+              n.ring.setAttribute('r', (16 + 44 * L.easeOut(rp)).toFixed(2))
+              n.ring.setAttribute('stroke-width', (3 - 2 * rp).toFixed(2))
+              n.ring.setAttribute('opacity', tau > 0 ? (0.7 * Math.pow(1 - rp, 1.8)).toFixed(3) : '0')
+              const hb = tau > 0 ? 0.5 + 0.5 * Math.exp(-4 * tau) + 0.08 * Math.sin(2.2 * T + i) : 0
+              n.haloEl.setAttribute('opacity', (hb * op).toFixed(3))
+            })
+
+            /* the type: in as the light settles, a chrome sheen, out up fast */
+            const tIn = P(t, TITLE_IN, 0.7, 'power3.out'), tOut = P(t, EXIT, 0.38, 'power3.in')
+            titleBox.style.opacity = (tIn * (1 - tOut)).toFixed(3)
+            titleBox.style.transform = `translateY(${(28 * (1 - tIn) - 90 * tOut).toFixed(2)}px)`
+            titleBox.style.filter = tIn < 0.999 ? `blur(${(10 * (1 - tIn)).toFixed(2)}px)` : 'none'
+            const SH = at('title', 'start', 1.2)
+            const sx0 = lerp(titleBB.x - 400, titleBB.x + titleBB.w, P(t, SH, 0.9, 'power2.inOut'))
+            sheenG.setAttribute('x1', f2(sx0)); sheenG.setAttribute('x2', f2(sx0 + 400))
+            sheen.setAttribute('opacity', (smooth(-0.02, 0.05, t - SH) * (1 - smooth(0.85, 0.9, t - SH))).toFixed(3))
+            const kIn = P(t, TITLE_IN + 0.1, 0.6, 'power3.out'), kOut = P(t, EXIT - 0.02, 0.34, 'power3.in')
+            kickBox.style.opacity = (kIn * (1 - kOut)).toFixed(3)
+            kickBox.style.transform = `translateY(${(18 * (1 - kIn) - 60 * kOut).toFixed(2)}px)`
+            const fIn = P(t, FYP_IN, 0.6, 'power3.out'), fOut = P(t, EXIT - 0.04, 0.34, 'power3.in')
+            lockBox.style.opacity = (fIn * (1 - fOut)).toFixed(3)
+            lockBox.style.transform = `translateY(${(22 * (1 - fIn) - 60 * fOut).toFixed(2)}px)`
+
+            /* the field: S1's last frame, shrinking into the chrome bead on the staff's middle line; the vignette comes
+               back as it goes; from the lift the bead flies to A3 on L.TITLE.flight (film time), turning amber as it
+               shrinks to the line's head over its last 0.3 s (the landing is in s03) */
+            const u = P(t, 0, SHRINK, 'power2.out'), uc = P(t, 0, SHRINK, 'power3.out')
+            const rest = TT.zmap(TT.REST[0], TT.REST[1] + TT.disp(TT.REST[0], T), T)
+            const crisp = P(t, 0, CRISP, 'power1.out')
+            let bx = lerp(960, rest[0], uc), by = lerp(540, rest[1], uc)
+            let br = lerp(lerp(L.FIELD.R, CRISP_R, crisp), 22 * z, u)
+            let amber = 0
+            const f = TT.flight(T)
+            if (f) { bx = f.x; by = f.y; br = f.r; amber = f.amber }
+            field.draw({ x: bx, y: by, r: br, a: smooth(26, 80, br), T, soft: lerp(0.8, CRISP_SOFT, crisp) })
+            bead.setColor(L.mixHex(C.chrome, C.amber, amber))
+            L.bead4.place(bead, br > 0.2 ? { x: bx, y: by, scale: br / 22, a: 1 - smooth(30, 90, br) } : null)
+            room.vignette.style.opacity = smooth(0, SHRINK + 0.2, t).toFixed(3)
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

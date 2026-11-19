@@ -1,0 +1,290 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s01-cold-open" data-composition-id="s01-cold-open" data-start="0" data-duration="38.810" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s01-cold-open -->
+      <video id="s01-cold-open-m01-blue" data-merc="m01-blue" class="clip" muted playsinline src="assets/merc/m01-blue-merc.webm" data-start="0.000" data-duration="38.450" data-media-start="0.017"></video>
+      <video id="s01-cold-open-m01-blue-refl" data-merc="m01-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m01-blue-merc.webm" data-start="0.000" data-duration="38.450" data-media-start="0.017"></video>
+      <video id="s01-cold-open-m01-orange" data-merc="m01-orange" class="clip" muted playsinline src="assets/merc/m01-orange-merc.webm" data-start="0.000" data-duration="38.450" data-media-start="0.017"></video>
+      <video id="s01-cold-open-m01-orange-refl" data-merc="m01-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m01-orange-merc.webm" data-start="0.000" data-duration="38.450" data-media-start="0.017"></video>
+      <div class="scene" id="s01-cold-open-scene"></div>
+      <script>
+        ;(function () {
+          // S1, the cold open (STORYBOARD 1a to 1h; HANDOFFS § The band chart, § Framings F-cold to F-bead,
+          // § Camera moves, § The cuts S1 to S2). Frame 0 is the finished chart at F-cold; the easy take draws as it
+          // sounds; Tavi's guess; the predict's pills and ring; the pushed take climbs out of the band; the reveal;
+          // the pull to Lesson 4's last frame with '"support"'; the pass through the long note's head bead into the
+          // full-frame field the title shrinks. Every time is a cue, a word or a duration.
+          const SID = 's01-cold-open'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const C = L.C, P = L.prog, clamp = L.clamp, lerp = L.lerp, f2 = L.f2
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
+          const world = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+
+          /* ---------------------------------------------------------------- anchors */
+          const EASY = at('easy'), EASY_END = at('easy', 'end')
+          const PUSHED = at('pushed'), PUSHED_END = at('pushed', 'end')
+          const LIT_ON = EASY + 0.25                                  // the easy take's centre is in the band (1a)
+          const SUNG = EASY + 0.7                                     // "sung easily", 0.45 s after "in the band"
+          const LIT_OFF = PUSHED + 2.75                               // the pushed take's centre leaves the band (FACTS 80)
+          const ABOVE = PUSHED + 3.45                                 // the whole pushed line above the band
+          const GUESS = word('o1', 'holds')                           // "holds steadier?": the guess draws on (0.5 s)
+          const GHOST = at('predict', 'end', 0.17)                    // the easy line ghosts after the predict
+          const HIGHER = word('b3', 'higher')
+          const OUT = at('o2', 'start', 0.05)                         // the reveal's marks leave up fast in turn (1g)
+          const PULL = at('o2', 'start', 0.15), PULL_D = 3.0          // F-cold end to F-hook, sine.inOut
+          const PULL_END = PULL + PULL_D
+          const TOLD = word('o2', 'told', 'start', -0.03)             // the takes leave, then the band (1g)
+          const SUPPORT = word('o2', 'support')
+          // then the band, "A3" and the label row (with its chip), gone before '"support"' lands over their place
+          // (the board's 32.50 to 33.00 left the row still leaving when the word landed at 32.87)
+          // The band's two edge lines leave with them (DECISIONS 173), so no line passes through the word; the band's
+          // fill and "A3" ride the pull and fade over its last third
+          const BAND_OUT = Math.min(TOLD + 0.3, SUPPORT - 0.45), BAND_D = 0.4
+          // 1h (DECISIONS 171): the type and the hosts clear first, then the approach. `hook` is the end of "steady?";
+          // the title cut is at hook + 1.20 (D)
+          const HOOK = at('hook')
+          const LINES_OUT = HOOK + 0.04, LINES_D = 0.2                // the hook's two lines leave up fast (power3.in)
+          const SLIDE = HOOK, SLIDE_D = 0.45                          // the hosts slide 360 px outward (power2.in)
+          const PUSH = HOOK + 0.34, PUSH_D = 0.7                      // the approach: the bead r 22 to the full field
+
+          /* ---------------------------------------------------------------- the camera: drift, pull, through the bead */
+          const cam = L.frameRig(room, { from: 'F-cold' })
+          cam.to(0, at('o2'), 'F-cold end', 'power1.inOut')          // the drift (not counted as motion)
+          cam.to(PULL, PULL_D, 'F-hook', 'sine.inOut')
+          // The approach (DECISIONS 171), on one progress g, the bead's radius on screen in log scale: ln r runs from
+          // ln 22 (F-hook) to ln R_END (wider than the frame). Its time per step of ln r is a base rate (W_LOG, log
+          // scale: the same ratio a frame while the disc is small), plus the share of the frame that step covers
+          // (W_COVER, so the frame's change is spread out: at most about 1 / W_COVER of the frame a second), plus an
+          // ease from rest (W_EASE); the whole is scaled to PUSH_D. The room's scale takes the first part of that ratio
+          // (F-hook 0.714 to F-bead 2.2, 3.08x of the bead's R_END / 22) and the bead's place eases from (560, 520) to
+          // the frame's centre, both on g.
+          const FH = L.FRAMES['F-hook'], FB = L.FRAMES['F-bead']
+          const R_END = 1200, W_LOG = 1, W_COVER = 4.2, W_EASE = 1.5
+          const LN0 = Math.log(22), LN1 = Math.log(R_END), STEPS = 400
+          const cover = (() => {                                       // the share of the frame a disc about its centre covers
+            const ds = []
+            for (let y = 5; y < 1080; y += 10) for (let x = 5; x < 1920; x += 10) ds.push(Math.hypot(x - 960, y - 540))
+            ds.sort((a, b) => a - b)
+            return (r) => { let lo = 0, hi = ds.length; while (lo < hi) { const m = (lo + hi) >> 1; if (ds[m] <= r) lo = m + 1; else hi = m } return lo / ds.length }
+          })()
+          const cum = [0]
+          for (let i = 1; i <= STEPS; i++) {
+            const a = LN0 + ((LN1 - LN0) * (i - 1)) / STEPS, b = LN0 + ((LN1 - LN0) * i) / STEPS
+            cum.push(cum[i - 1] + (W_LOG + W_EASE * Math.exp(-((a + b) / 2 - LN0) / 0.3)) * (b - a) + W_COVER * (cover(Math.exp(b)) - cover(Math.exp(a))))
+          }
+          const approachAt = (u) => {                                   // g (0 to 1 in ln r) at u (0 to 1 in time)
+            const c = clamp(u) * cum[STEPS]
+            let lo = 0, hi = STEPS
+            while (hi - lo > 1) { const m = (lo + hi) >> 1; if (cum[m] <= c) lo = m; else hi = m }
+            return (lo + (c - cum[lo]) / Math.max(1e-9, cum[hi] - cum[lo])) / STEPS
+          }
+          const approachG = (t) => approachAt(P(t, PUSH, PUSH_D, 'none'))
+          cam.curve(PUSH, PUSH_D, (u) => {
+            const g = approachAt(u), sc = FH.s * Math.pow(FB.s / FH.s, g)
+            const bx = lerp(FH.s * 400 + FH.ox, FB.s * 400 + FB.ox, g), by = lerp(FH.s * 400 + FH.oy, FB.s * 400 + FB.oy, g)
+            return { s: sc, ox: bx - sc * 400, oy: by - sc * 400 }
+          })
+
+          /* ---------------------------------------------------------------- the hosts at 420, cold place (screen space) */
+          const H = L.HOSTS.cold
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm01-blue', tag: SID + '-m01-blue', ...H.merc, glow: { rgb: L.HOSTS.GLOW.merc },
+            moves: [{ at: SLIDE, dur: SLIDE_D, x: H.merc.x - 360, ease: 'power2.in' }] })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm01-orange', tag: SID + '-m01-orange', ...H.tavi, glow: { rgb: L.HOSTS.GLOW.tavi },
+            moves: [{ at: SLIDE, dur: SLIDE_D, x: H.tavi.x + 360, ease: 'power2.in' }] })
+          const top = L.stage(room.top)                                // over the hosts: the field
+
+          /* ---------------------------------------------------------------- the band chart (world, S1's place) */
+          const ch = L.bandChart(world, L.CHART.S1)
+          const lab = {}
+          for (const k of ['A3', 'inBand', 'level', 'row', 'sungEasily', 'aboveBand', 'louderHigher', 'smallType']) lab[k] = ch.label(k)
+          const ill = ch.tag('illustration'), lis = ch.tag('listen')
+          // the swollen part of the pushed take's strip, lit to 40 % violet on "Louder," (an overlay over the kit's 28 %)
+          const swell = L.svg('path', { fill: C.violet, 'fill-opacity': 0, stroke: 'none' })
+          ch.g.insertBefore(swell, ch.g.querySelector('.strip').nextSibling)
+          // Tavi's guess: dashed ink-2, dead flat along the band's centre over the take's held part, its "?" right of it
+          const guess = L.guess(ch.g, { points: [[ch.x(0.5), 400], [1520, 400]], q: { x: L.CHART.LABELS.q.x, y: L.CHART.LABELS.q.y } })
+          // its travelling head (DECISIONS 170): ink-2 at the takes' head-dot size (r 7, a 14 px halo), on the guess's
+          // drawing end, fading as the "?" lands
+          const guessHead = L.svg('g', { opacity: 0, class: 'guess-head' }, ch.g)
+          L.svg('circle', { r: 14, fill: C.ink2, 'fill-opacity': 0.18 }, guessHead)
+          L.svg('circle', { r: 7, fill: C.ink2 }, guessHead)
+          // the band's two edge lines (the kit draws them in the band group with its fill, at 45 %): S1 fades them
+          // ahead of the fill (DECISIONS 173), so they are set here after each ch.draw
+          const bandEdges = [...ch.g.querySelectorAll('.band > rect')].slice(1, 3)
+          // the reveal's arrow (1f): from over the take's last in-band point (t 2.75 s, x 1170) up to over its end
+          // (1520, 250), 20 px clear of the wave's crests (+-35 px) all the way, bowing a little above them
+          const ARROW_UP = 35 + 20
+          const arrow = L.arrow(ch.g, { x1: ch.x(2.75), y1: ch.y(35) - ARROW_UP, x2: 1520, y2: ch.y(60) - ARROW_UP, via: [ch.x(3.375), ch.y(47.5) - ARROW_UP - 30], color: C.ink, width: 3, head: 14 })
+          const rings = L.echoRings(ch.g, {})
+          const bead = ch.bead(30.8)                                   // the long note's head bead, world (400, 400)
+          const beadRings = L.echoRings(ch.g, {})
+
+          /* ---------------------------------------------------------------- frame-fixed type (hud) */
+          const kicker = L.kicker(hud, 'Find Your Pitch · Lesson 05')
+          const pills = [L.pill(hud, 'Settle, steadier than before', { x: 462, x1: 930, y: 108 }), L.pill(hud, 'Get louder and drift higher', { x: 970, x1: 1430, y: 108 })]
+          // The tick is the second pill's, right of it (DECISIONS 166, HANDOFFS § Pills): the check's ink (its path -11
+          // to 12, round caps 2 px past) 12 px clear of the second capsule's outer stroke (1430 + 1), so x 1443 to 1470,
+          // centred y 108, in the place the predict's ring timer held; the first pill's stroke dims as it draws.
+          const TICK_X = 1430 + 1 + 12 + 13
+          const tick = L.check(hud, { x: TICK_X, y: 108, size: 22, color: C.ink, width: 4 })
+          const ring = L.ringTimer(hud, { x: 1480, y: 108, r: 18 })
+          const support = L.text(hud, '“support”', { x: 960, y: 406, size: 160, family: 'serif', anchor: 'middle' })
+          const steady = L.text(hud, 'what keeps it steady?', { x: 960, y: 680, size: 96, family: 'serif', anchor: 'middle' })
+
+          /* ---------------------------------------------------------------- the field (screen space, over everything) */
+          const field = L.field(top, SID + '-field')
+          // the pass into the bead (DECISIONS 164, 171): the bead itself in its own screen layer, growing past the frame,
+          // crisp to r 300, then defocusing (to BLUR px by r 900); it dims to A_END while it is still small (r 250 to
+          // 500), so the frame then brightens only as the disc covers it; its light settles into the full-frame field
+          // (brighter at the centre, darker at the corners) over the approach's last FIELD_IN s, and the field breathes
+          // to the cut
+          const BLUR = 60, A_END = 0.62, FIELD_IN = 0.25
+          const critLayer = L.el('div', { class: 'layer crit-bead', 'data-layout-allow-overflow': '' })
+          Object.assign(critLayer.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', opacity: '0' })
+          room.top.insertBefore(critLayer, top)
+          const critBead = L.bead(L.stage(critLayer), { r: 22, color: C.chrome })
+
+          const easyTake = (t) => clamp(t - EASY, 0, 4)
+          const pushedTake = (t) => clamp(t - PUSHED, 0, 4)
+          const swellPath = () => {
+            const con = L.CONTOUR.pushed, up = [], dn = []
+            for (let i = 0; i <= 60; i++) { const tt = 1 + (3 * i) / 60, h = con.level(tt); up.push([ch.x(tt), ch.G.strip - h]); dn.push([ch.x(tt), ch.G.strip + h]) }
+            return 'M' + up.concat(dn.reverse()).map((p) => f2(p[0]) + ' ' + f2(p[1])).join('L') + 'Z'
+          }
+          swell.setAttribute('d', swellPath())
+
+          // the lab's handle (lab/s01-cold-open/probe.mjs): the objects its checks measure
+          const probe = { cam, ch, lab, ill, lis, pills, tick, support, steady, bead, field, guess, guessHead, arrow, bandEdges, critLayer,
+            A: { HOOK, PULL, PULL_D, PULL_END, SUPPORT, PUSH, PUSH_D, HIGHER, GUESS, LINES_OUT, LINES_D, SLIDE, SLIDE_D, D }, boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            dust(T)
+            probe.boxes = { merc: merc(t), tavi: tavi(t) }
+            room.setFloor(1 - P(t, SLIDE, SLIDE_D, 'power2.in'))
+
+            /* the chart's groups as 1g takes them away: the takes and the strip, then the band and the label row */
+            const takesA = 1 - P(t, TOLD, 0.5)
+            const bandA = 1 - P(t, PULL + (PULL_D * 2) / 3, PULL_D / 3)      // the fill rides the pull, out over its last third
+            const edgeA = 1 - P(t, BAND_OUT, BAND_D)                         // its edges go with the label row
+            const tE = easyTake(t), tP = pushedTake(t)
+            const ghostU = P(t, GHOST, 0.4)
+            const lit = P(t, LIT_ON, 0.2) * (1 - P(t, LIT_OFF, 0.2))
+            // the guess leaves and Merc's line returns over 0.5 s (sine.inOut): over 0.3 s the line's middle frames
+            // changed fast enough for measure.py to call them a pop (26.37)
+            const guessOut = P(t, HIGHER + 0.06, 0.5, 'sine.inOut')
+            // DECISIONS 170: Merc's line fades out as the guess draws and returns at the reveal; the easy take dims to
+            // 50 % while the guess draws and comes back once the "?" has landed (as o1 ends)
+            const gU = P(t, GUESS, 0.5, 'none')
+            const mercDim = gU * (1 - guessOut)
+            const easyDim = 0.5 * P(t, GUESS, 0.3) * (1 - P(t, at('o1', 'end'), 0.5))
+            const run = L.run(t, word('b1', 'same'), 0.6)
+            // the approach (1h): the bead's radius on screen, and how far it has defocused (0 to r 300, 1 at R_END)
+            const sty = word('o2', 'steady')
+            const rb = 22 * Math.pow(R_END / 22, approachG(t)) * L.pulse(t, [sty], 'bead')
+            const soft = L.smooth(300, R_END, rb)
+            const hookOut = soft                                         // the amber line goes as the disc defocuses over it
+            const scale = cam.scale(t)
+            ch.draw({
+              band: { a: bandA, lit },
+              merc: { a: 1 - hookOut, dim: mercDim, glow: L.glow(t, [word('o2', 'steady')]), w: 4 / scale },
+              lines: [
+                { id: 'easy', contour: 'easy', t: tE, a: (tE > 0 ? 1 : 0) * (1 - ghostU) * takesA * (1 - easyDim), head: 1 - P(t, EASY_END, 0.3),
+                  glow: run ? run.a : 0, glowFrom: run ? 4 * (run.u - 0.09) : 0, glowTo: run ? 4 * (run.u + 0.09) : 0 },
+                { id: 'easyGhost', contour: 'easy', t: tE, a: ghostU * takesA, ghost: true, head: 0 },
+                { id: 'pushed', contour: 'pushed', t: tP, a: (tP > 0 ? 1 : 0) * takesA, head: 1 - P(t, PUSHED_END, 0.3),
+                  glow: L.glow(t, [HIGHER]), glowFrom: 1, glowTo: 4 },
+              ],
+              strip: { a: takesA, envs: [
+                { id: 'easyEnv', contour: 'easy', t: tE, a: (tE > 0 ? 1 : 0) * (1 - ghostU), edge: L.glow(t, [word('o1', 'push')]) },
+                { id: 'easyEnvGhost', contour: 'easy', t: tE, a: ghostU, ghost: true },
+                { id: 'pushedEnv', contour: 'pushed', t: tP, a: tP > 0 ? 1 : 0 },
+              ] },
+            })
+            for (const e of bandEdges) e.setAttribute('fill-opacity', (0.45 * edgeA).toFixed(3))
+            swell.setAttribute('fill-opacity', (0.167 * L.lit(t, [word('b3', 'louder')]) * takesA).toFixed(3))
+            rings.draw(t, [{ t: word('o1', 'harder'), x: 1520, y: ch.y(L.CONTOUR.easy.c(4)), r: 8 }])
+
+            /* the chart's labels (world) */
+            lab.A3.life(t, null, PULL + (PULL_D * 2) / 3, { dOut: PULL_D / 3 })
+            lab.row.life(t, null, BAND_OUT, { dOut: BAND_D })
+            lab.level.life(t, null, TOLD, { dOut: 0.5 })
+            lab.inBand.life(t, LIT_ON, LIT_OFF)
+            lab.sungEasily.life(t, SUNG, TOLD, { dOut: 0.5 })
+            lab.aboveBand.life(t, ABOVE, OUT + 0.36, { upFast: true })
+            lab.louderHigher.life(t, word('b3', 'louder'), OUT + 0.09, { upFast: true })
+            lab.smallType.life(t, word('b3', 'pushing'), OUT + 0.27, { upFast: true })
+            const edge = (tg) => cam.edgeAlpha({ x0: tg.x0, y0: 120, x1: tg.x1, y1: 160 }, t)
+            ill.draw({ alpha: (1 - P(t, BAND_OUT, BAND_D)) * edge(ill) })
+            const lf = L.fade(t, PUSHED, OUT + 0.45, { upFast: true })
+            lis.draw({ alpha: lf.a * edge(lis), dy: lf.dy })
+            const ga = 1 - guessOut
+            const qIn = P(t, GUESS + 0.5, 0.2, 'power2.out')
+            const breathe = 1 + 0.035 * Math.sin((2 * Math.PI * (t - at('predict'))) / 1.0) * L.env(t, at('predict'), 0.3, at('predict', 'end') - at('predict') - 0.3, 0.3)
+            guess.draw(gU, ga, qIn * ga, L.pulse(t, [word('b1', 'harder'), word('b1', 'harder#2')], 'label') * breathe)
+            guessHead.setAttribute('transform', `translate(${f2(lerp(ch.x(0.5), 1520, gU))} 400)`)
+            guessHead.setAttribute('opacity', ((gU > 0 ? 1 : 0) * (1 - qIn) * ga).toFixed(3))
+            const af = L.fade(t, word('b3', 'moves'), OUT + 0.18, { upFast: true })
+            arrow.draw(P(t, word('b3', 'moves'), 0.5, 'power2.inOut'), af.a)
+            arrow.g.setAttribute('transform', af.dy ? `translate(0 ${f2(af.dy)})` : '')
+
+            /* the long note's head bead (world): it fades in as the pull lands, pulses on "steady?" */
+            const beadA = P(t, PULL_END, 0.4) * (1 - P(t, PUSH, 0.05))     // the screen layer's bead takes over at the approach
+            L.bead4.place(bead, { x: 400, y: 400, a: beadA, scale: L.pulse(t, [sty], 'bead') })
+            beadRings.draw(t, [{ t: sty, x: 400, y: 400, r: 30.8 }])
+
+            /* frame-fixed type */
+            kicker.draw(t, -D, EASY_END - 0.2)
+            const p1 = L.fade(t, word('b1', 'settle'), OUT, { upFast: true })
+            const p2 = L.fade(t, word('b1', 'louder'), OUT, { upFast: true })
+            const ck = P(t, HIGHER, 0.3, 'power1.out')
+            pills[0].draw({ alpha: p1.a, dy: p1.dy, scale: L.pulse(t, [word('b1', 'settle')], 'pill'), dim: P(t, HIGHER, 0.3) })
+            pills[1].draw({ alpha: p2.a, dy: p2.dy, scale: L.pulse(t, [word('b1', 'louder')], 'pill') })
+            pills[1].box.setAttribute('stroke', L.mixHex(C.chrome, C.ink, ck))             // the ticked pill's stroke brightens
+            pills[1].box.setAttribute('stroke-opacity', lerp(0.7, 1, ck).toFixed(3))
+            tick.draw(ck, p2.a)
+            tick.g.setAttribute('transform', `translate(${TICK_X} ${f2(108 + p2.dy)})`)
+            ring.draw(t, at('predict'), at('predict', 'end') - at('predict'))
+            // '"support"' lands at baseline 406 (its descenders 12 px over Merc's line mid-pull) and eases down to
+            // Lesson 4's 420 with the pull (sine.inOut), so the clearance only grows (LAB-CHECKS 7)
+            const linesOut = { dOut: LINES_D, up: 16, easeOut: 'power3.in' }   // up fast in 0.2 s (DECISIONS 171)
+            const sf = L.fade(t, SUPPORT, LINES_OUT, linesOut)
+            L.place(support, { a: sf.a, dy: 14 * P(t, SUPPORT, PULL_END - SUPPORT, 'sine.inOut') + sf.dy })
+            const kf = L.fade(t, word('o2', 'what'), LINES_OUT, linesOut)
+            L.place(steady, { a: kf.a, dy: kf.dy })
+
+            /* the pass into the head bead (screen space, DECISIONS 171): the disc grows in log scale past the frame,
+               defocusing from r 300 and dimming to the field's level, and its light settles into the field */
+            const [bx, by] = cam.map(400, 400, t)
+            const on = t >= PUSH
+            const fa = P(t, PUSH + PUSH_D - FIELD_IN, FIELD_IN, 'none')
+            // the disc stays whole under the field as the field comes up over it (crossfading both over the dark room
+            // dipped the frame mid-way), and goes once the field is opaque
+            critLayer.style.opacity = on && fa < 1 ? '1' : '0'
+            const blur = BLUR * L.smooth(300, 900, rb)
+            critLayer.style.filter = on && blur > 0 ? `blur(${f2(blur)}px)` : 'none'
+            L.bead4.place(critBead, on ? { x: bx, y: by, scale: rb / 22, a: lerp(1, A_END, L.smooth(250, 500, rb)) } : null)
+            probe.rb = on ? rb : null
+            field.draw({ x: 960, y: 540, r: L.FIELD.R, a: fa, T })
+            room.vignette.style.opacity = (1 - fa).toFixed(3)
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

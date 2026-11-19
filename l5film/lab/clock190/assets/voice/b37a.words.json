@@ -1,0 +1,51 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.099,
+ "words": [
+  {
+   "w": "Listening",
+   "t": 0.02,
+   "e": 0.54
+  },
+  {
+   "w": "along?",
+   "t": 0.59,
+   "e": 1.15
+  },
+  {
+   "w": "Rest",
+   "t": 1.56,
+   "e": 1.765
+  },
+  {
+   "w": "your",
+   "t": 1.79,
+   "e": 1.915
+  },
+  {
+   "w": "voice",
+   "t": 1.99,
+   "e": 2.39
+  },
+  {
+   "w": "and",
+   "t": 2.44,
+   "e": 2.515
+  },
+  {
+   "w": "watch",
+   "t": 2.565,
+   "e": 2.915
+  },
+  {
+   "w": "the",
+   "t": 2.965,
+   "e": 3.04
+  },
+  {
+   "w": "ring.",
+   "t": 3.115,
+   "e": 3.535
+  }
+ ]
+}

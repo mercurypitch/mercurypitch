@@ -1,0 +1,30 @@
+Each chunk against merc/shots/*.pre190: are the state changes, voice entries, arcs and pose bias
+on every frame up to the chunk's last (as merc-pass.mjs evaluates them), and the shot's fixed
+fields and the chunk's own entry, exactly as before?
+m01-blue       shot file byte-identical to its pre190: True
+m01-orange     shot file byte-identical to its pre190: True
+m-orange-s03   frames     0-   43  UNCHANGED
+m-orange-s04   frames    41-  452  UNCHANGED
+m-orange-s05   frames   450- 1538  UNCHANGED
+m-orange-s06   frames  1536- 3601  UNCHANGED
+m-orange-s07   frames  3599- 4693  UNCHANGED
+m-orange-s08   frames  4691- 5305  UNCHANGED
+m-orange-s09   frames  5303- 7017  UNCHANGED
+m-orange-s10   frames  7015- 8849  UNCHANGED
+m-orange-s11   frames  8847-10024  UNCHANGED
+m-orange-s12   frames 10022-12328  UNCHANGED
+m-orange-s13   frames 12326-14278  changed: frames 12326-14221 -> 12326-14278, states, bias
+m-orange-s14   frames 14276-14754  changed: frames 14219-14697 -> 14276-14754, states, voice, arcs, bias
+m-orange-s15   frames 14752-14940  changed: frames 14695-14883 -> 14752-14940, states, voice, arcs, bias
+m-blue-s04     frames     0-  229  UNCHANGED
+m-blue-s05     frames   227- 1315  UNCHANGED
+m-blue-s06     frames  1313- 3378  UNCHANGED
+m-blue-s07     frames  3376- 4470  UNCHANGED
+m-blue-s08     frames  4468- 5082  UNCHANGED
+m-blue-s09     frames  5080- 6794  UNCHANGED
+m-blue-s10     frames  6792- 8626  UNCHANGED
+m-blue-s11     frames  8624- 9801  UNCHANGED
+m-blue-s12     frames  9799-12105  UNCHANGED
+m-blue-s13     frames 12103-14055  changed: frames 12103-13998 -> 12103-14055, states, voice, arcs
+m-blue-s14     frames 14053-14531  changed: frames 13996-14474 -> 14053-14531, states, voice, arcs, bias
+m-blue-s15     frames 14529-14717  changed: frames 14472-14660 -> 14529-14717, states, voice, arcs, bias

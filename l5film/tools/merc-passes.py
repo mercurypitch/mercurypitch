@@ -133,8 +133,8 @@ def main():
         ('m-orange', 0): ('leap in', 'carries her in from 300 px beyond the right edge to (1800, 840) while she is in the air'),
         ('m-orange', 1): ('hop left (end card)', 'carries her 190 px left to (1610, 840) in the air, growing 300 to 400 about the feet from the jump\'s start over 0.70 s'),
         ('m-blue', 0): ('leap in', 'carries him in from 300 px beyond the left edge to (110, 840) while he is in the air'),
-        ('m-blue', 1): ('hop 1 (the `card` pause)', 'carries him (110, 840) to (700, 840) through the air, power1.in, cancelling the renderer\'s root (below)'),
-        ('m-blue', 2): ('hop 2 (the `card` pause)', 'carries him (700, 840) to (1290, 840) through the air, power1.in, cancelling the renderer\'s root (below)'),
+        ('m-blue', 1): ('hop 1 (`break`)', 'carries him (110, 840) to (700, 840) through the air, power1.in, cancelling the renderer\'s root (below)'),
+        ('m-blue', 2): ('hop 2 (`break`)', 'carries him (700, 840) to (1290, 840) through the air, power1.in, cancelling the renderer\'s root (below)'),
     }
     for s in shots:
         k = 0
@@ -149,12 +149,11 @@ def main():
             w(f"| {s['id']} | {name} | `{c['state']}` | {t:.3f} | {air[0]:.3f} to {air[1]:.3f} | {f} | {ch} | {how} |")
             k += 1
     w('')
-    w('Merc\'s hops are in the `card` pause, the first silence after b55 that holds them (DECISIONS 160):')
-    w('he stands in his corner, (110, 840), through b55, b56 and b58, and hops only after b58 ends. On')
-    w('the board, "Ten minutes, gently, most days." / "Missed a day? Just come back." stand under the')
-    w('Voice Mirror card at baselines 822 and 862 from x 230 to about 800 (13f), on his path at the')
-    w('floor: S13 must clear them, or the lead re-places them, before he hops. The hops draw their dotted')
-    w('arc and echo trail but no floor stop marks (DECISIONS 162).')
+    w('Merc\'s hops are in `break`, the 1.9 s silent beat between b54 and b55 at the recap\'s clean break')
+    w('(DECISIONS 190, amending 160): the recap leaves up fast in its first 0.56 s, hop 1 starts at its')
+    w('start + 0.60 and hop 2 at + 1.25, over the empty floor, and the state ends at + 1.91, 0.29 s before')
+    w('"Practise it.". So he is at (1290, 840) before b55 starts and stands there through S13 and S14. The')
+    w('hops draw their dotted arc and echo trail but no floor stop marks (DECISIONS 162).')
     w('')
     w('## What the hosts do')
     w('')

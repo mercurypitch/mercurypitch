@@ -733,6 +733,12 @@
    "gap": 0.6
   },
   {
+   "id": "break",
+   "type": "pause",
+   "dur": 1.9,
+   "gap": 0.0
+  },
+  {
    "id": "b55",
    "type": "line",
    "who": "blue",

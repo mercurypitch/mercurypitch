@@ -1,0 +1,46 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.06,
+ "words": [
+  {
+   "w": "Air",
+   "t": 0.02,
+   "e": 0.375
+  },
+  {
+   "w": "and",
+   "t": 0.425,
+   "e": 0.5
+  },
+  {
+   "w": "sound",
+   "t": 0.6,
+   "e": 0.95
+  },
+  {
+   "w": "starting",
+   "t": 1.0,
+   "e": 1.375
+  },
+  {
+   "w": "together:",
+   "t": 1.425,
+   "e": 1.945
+  },
+  {
+   "w": "the",
+   "t": 2.325,
+   "e": 2.445
+  },
+  {
+   "w": "easy",
+   "t": 2.525,
+   "e": 3.0
+  },
+  {
+   "w": "start.",
+   "t": 3.0,
+   "e": 3.4
+  }
+ ]
+}

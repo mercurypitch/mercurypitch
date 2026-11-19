@@ -1,0 +1,46 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.071,
+ "words": [
+  {
+   "w": "It",
+   "t": 0.02,
+   "e": 0.12
+  },
+  {
+   "w": "settles",
+   "t": 0.22,
+   "e": 0.57
+  },
+  {
+   "w": "into",
+   "t": 0.595,
+   "e": 0.77
+  },
+  {
+   "w": "the",
+   "t": 0.82,
+   "e": 0.895
+  },
+  {
+   "w": "band",
+   "t": 0.97,
+   "e": 1.42
+  },
+  {
+   "w": "and",
+   "t": 1.47,
+   "e": 1.62
+  },
+  {
+   "w": "stays",
+   "t": 1.62,
+   "e": 2.045
+  },
+  {
+   "w": "there.",
+   "t": 2.095,
+   "e": 2.435
+  }
+ ]
+}

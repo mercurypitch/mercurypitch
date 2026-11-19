@@ -1,0 +1,56 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.051,
+ "words": [
+  {
+   "w": "Then",
+   "t": 0.02,
+   "e": 0.285
+  },
+  {
+   "w": "is",
+   "t": 0.36,
+   "e": 0.485
+  },
+  {
+   "w": "it",
+   "t": 0.535,
+   "e": 0.635
+  },
+  {
+   "w": "steady",
+   "t": 0.71,
+   "e": 1.11
+  },
+  {
+   "w": "air",
+   "t": 1.21,
+   "e": 1.52
+  },
+  {
+   "w": "that",
+   "t": 1.69,
+   "e": 1.825
+  },
+  {
+   "w": "keeps",
+   "t": 1.875,
+   "e": 2.185
+  },
+  {
+   "w": "the",
+   "t": 2.235,
+   "e": 2.285
+  },
+  {
+   "w": "note",
+   "t": 2.335,
+   "e": 2.53
+  },
+  {
+   "w": "there?",
+   "t": 2.62,
+   "e": 2.97
+  }
+ ]
+}
