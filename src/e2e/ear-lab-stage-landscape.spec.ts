@@ -113,3 +113,66 @@ test('leaves the instrument on screen in landscape @smoke', async ({
   expect(figure.bottom).toBeLessThanOrEqual(viewport.height + 1)
   expect(desk.bottom).toBeLessThanOrEqual(viewport.height + 1)
 })
+
+// On a phone on its side the console's right edge is the window's, where
+// the phone has its rounded corner and, one way round, its camera. The
+// room's header keeps the side inset; the console kept 16 px and ran 31 px
+// into a 47 px inset at 844x390, Hairline's "Your call" 16 px from the
+// glass. The inset is driven through --safe-left / --safe-right, the tokens
+// every safe-area rule reads (header-safe-area.spec.ts): a desktop browser
+// reports none.
+test("keeps the console inside a phone's side inset in landscape", async ({
+  page,
+}) => {
+  const INSET = 47
+  await page.addInitScript(() => {
+    ;(window as unknown as Record<string, unknown>).E2E_TEST_MODE = true
+  })
+  await page.goto('/')
+  await page.waitForSelector('#app-tabs', { timeout: 10_000 })
+  await dismissOverlays(page)
+  await page.evaluate((inset) => {
+    const root = document.documentElement
+    root.style.setProperty('--safe-left', `${inset}px`)
+    root.style.setProperty('--safe-right', `${inset}px`)
+  }, INSET)
+
+  await openNavTab(page, 'tab-ear-lab')
+  await page
+    .locator('[data-testid="merc-station"][data-faculty="resolution"]')
+    .click()
+  await page
+    .getByTestId('merc-station-row')
+    .filter({ hasText: 'Hairline' })
+    .first()
+    .click()
+  await expect(
+    page.locator('[data-testid="ear-stage-pads"] button:not([disabled])', {
+      hasText: 'The first',
+    }),
+  ).toBeVisible({ timeout: 20_000 })
+  await expect(page.getByTestId('merc-status')).toHaveText('Your call')
+
+  const edges = await page.evaluate(() => {
+    const right = (el: Element | null) => el?.getBoundingClientRect().right
+    const status = document.querySelector('[data-testid="merc-status"]')
+    const words = document.createRange()
+    if (status !== null) words.selectNodeContents(status)
+    return {
+      window: window.innerWidth,
+      words: status === null ? undefined : words.getBoundingClientRect().right,
+      pads: right(document.querySelector('[data-testid="ear-stage-pads"]')),
+      line: right(document.querySelector('[data-testid="merc-bubble"]')),
+    }
+  })
+  const safe = edges.window - INSET
+
+  expect(
+    edges.words,
+    "the pinned row's words stand in the inset",
+  ).toBeLessThanOrEqual(safe)
+  expect(edges.pads, 'the pads stand in the inset').toBeLessThanOrEqual(safe)
+  expect(edges.line, "Merc's line stands in the inset").toBeLessThanOrEqual(
+    safe,
+  )
+})
