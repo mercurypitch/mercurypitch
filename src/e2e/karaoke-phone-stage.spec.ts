@@ -449,15 +449,23 @@ test.describe('with no song loaded', () => {
     await page.reload()
     const header = page.locator('.panel-header')
     await expect(header).toBeVisible()
-    return header.evaluate((row) => ({
-      scrolls: row.scrollWidth - row.clientWidth,
-      pastTheEdge: [...row.querySelectorAll<HTMLElement>('button, a')]
-        .filter((control) => {
-          const r = control.getBoundingClientRect()
-          return r.width > 0 && (r.left < 0 || r.right > innerWidth)
-        })
-        .map((control) => control.textContent?.trim() ?? ''),
-    }))
+    return header.evaluate((row) => {
+      const controls = [
+        ...row.querySelectorAll<HTMLElement>('button, a'),
+      ].filter((control) => control.getBoundingClientRect().width > 0)
+      const tops = controls.map((c) => c.getBoundingClientRect().top)
+      return {
+        scrolls: row.scrollWidth - row.clientWidth,
+        pastTheEdge: controls
+          .filter((control) => {
+            const r = control.getBoundingClientRect()
+            return r.left < 0 || r.right > innerWidth
+          })
+          .map((control) => control.textContent?.trim() ?? ''),
+        /** Every control on one line: a second would be a row lower. */
+        oneLine: Math.max(...tops) - Math.min(...tops) < 24,
+      }
+    })
   }
 
   for (const size of [
@@ -470,7 +478,7 @@ test.describe('with no song loaded', () => {
     test(`at ${size.width}x${size.height}, keeps the header's row in the window, and Settings behind Options`, async ({
       page,
     }) => {
-      const row = await openHeader(page, size)
+      const { oneLine: _oneLine, ...row } = await openHeader(page, size)
 
       expect(row).toEqual({ scrolls: 0, pastTheEdge: [] })
       await page.getByTestId('uvr-mobile-options').tap()
@@ -482,16 +490,44 @@ test.describe('with no song loaded', () => {
     })
   }
 
+  // A tablet keeps the desk's header, beside the sidebar, and its row was
+  // 181 px wider than the 724 px it had at 1024 wide: Guide and Settings
+  // were past the window's edge. The actions go under the title and the
+  // tabs, at the row's end.
+  for (const size of [
+    { width: 1024, height: 768 },
+    { width: 1024, height: 1366 },
+  ]) {
+    test(`on a tablet at ${size.width}x${size.height}, keeps every control in the window`, async ({
+      page,
+    }) => {
+      const { oneLine: _oneLine, ...row } = await openHeader(page, size)
+
+      expect(row).toEqual({ scrolls: 0, pastTheEdge: [] })
+      await expect(page.getByTestId('uvr-mobile-options')).toHaveCount(0)
+      await expect(page.getByTestId('uvr-open-settings')).toBeInViewport({
+        ratio: 1,
+      })
+    })
+  }
+
   test.describe('at a desk', () => {
     test.use({ hasTouch: false, isMobile: false })
 
-    test('keeps every control in the row', async ({ page }) => {
-      const row = await openHeader(page, { width: 1440, height: 900 })
+    for (const size of [
+      { width: 1440, height: 900 },
+      { width: 1280, height: 800 },
+    ]) {
+      test(`at ${size.width}x${size.height}, keeps every control in the one row`, async ({
+        page,
+      }) => {
+        const row = await openHeader(page, size)
 
-      await expect(page.getByTestId('uvr-open-settings')).toBeInViewport()
-      await expect(page.getByTestId('uvr-mobile-options')).toHaveCount(0)
-      expect(row).toEqual({ scrolls: 0, pastTheEdge: [] })
-    })
+        await expect(page.getByTestId('uvr-open-settings')).toBeInViewport()
+        await expect(page.getByTestId('uvr-mobile-options')).toHaveCount(0)
+        expect(row).toEqual({ scrolls: 0, pastTheEdge: [], oneLine: true })
+      })
+    }
   })
 })
 
