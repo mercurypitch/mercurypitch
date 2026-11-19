@@ -4336,3 +4336,19 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   checks and HANDOFFS amended with [B-01: n]. LEDGER B-01 row (after-numbers pending).
 - FIX BRIEF WRITTEN: $S/briefs/l5-fix-B-01.md. Send to the group B builder (resume) when a heavy
   slot frees (polish-2 and group C hold both now). Then the lead checks stills; no second critic.
+
+## 10:45 UTC, 19 Nov
+- BRIEFS READY: group D ($S/briefs/l5-film-scenes-D.md: s11-sing, s12-your-turn), group E
+  ($S/briefs/l5-film-scenes-E.md: s13-recap, s14-next, s15-end), passes step for the hops
+  ($S/briefs/l5-passes-hops.md).
+- DECISIONS 190 (amends 160): Merc's hops back at the recap's clean break, in a new silent beat
+  `break` (pause 1.9 s, gap 0) before b55; in the `card` pause they crossed the Voice Mirror card
+  (foot y 790, x 230-1110) while it is read. Every cue from b55 on moves +1.9 s (film ~549.5 s);
+  nothing before b55 moves. Board 13e and HANDOFFS S13-S14 marked [lead: 190]. The clock change and
+  the s13-s15 chunk re-render go to the passes builder (agent (builder), resumable): clock
+  written aside and renamed in, cues before b55 proven identical, shots per chunk compared, only
+  s13-s15 chunks rendered (the queue would redo all, since it dates chunks by the pass's shot file),
+  unchanged chunks touched. Must finish before group E builds.
+- HEAVY QUEUE (two at a time): now polish-2 + group C. Next free slot -> group B fix round
+  (SendMessage to the B builder, brief l5-fix-B-01.md). When C hands back -> critic C-01 (text agent,
+  any time) and group D (heavy). Then the passes step (heavy), C's fix round, then group E.
