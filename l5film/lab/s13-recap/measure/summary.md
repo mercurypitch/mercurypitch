@@ -12,23 +12,24 @@ File: `lab/s13-recap/clip.mp4`
 
 A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes by 16 or more. Target: at most about 1 s per 30 s in total and none longer than about 0.5 s; a hold that runs to the end (the final call to action) is reported separately and exempt.
 
-**Inside the film:** 3.2 s (1.5 s per 30 s), longest 0.3 s.
+**Inside the film:** 3.5 s (1.6 s per 30 s), longest 0.3 s.
 **Final hold:** none.
 
 | Starts | Length | Note |
 | --- | --- | --- |
 | 6.10 s | 0.1 s |  |
 | 7.60 s | 0.1 s |  |
+| 11.50 s | 0.1 s |  |
 | 11.70 s | 0.1 s |  |
 | 12.10 s | 0.1 s |  |
 | 15.90 s | 0.1 s |  |
 | 16.10 s | 0.1 s |  |
-| 17.20 s | 0.1 s |  |
 | 18.70 s | 0.1 s |  |
 | 20.20 s | 0.2 s |  |
 | 24.30 s | 0.1 s |  |
 | 24.60 s | 0.1 s |  |
-| 30.60 s | 0.1 s |  |
+| 30.60 s | 0.2 s |  |
+| 31.10 s | 0.1 s |  |
 | 31.80 s | 0.1 s |  |
 | 39.80 s | 0.3 s |  |
 | 41.40 s | 0.1 s |  |
@@ -42,6 +43,7 @@ A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes
 | 57.00 s | 0.1 s |  |
 | 57.40 s | 0.1 s |  |
 | 61.30 s | 0.1 s |  |
+| 61.50 s | 0.1 s |  |
 | 61.80 s | 0.1 s |  |
 
 ## Low motion
@@ -50,26 +52,25 @@ Runs where the mean change is below 0.35. Not an automatic fail: a critic looks 
 
 | Starts | Length | Largest change | Note |
 | --- | --- | --- | --- |
-| 2.00 s | 4.6 s | 173 | small element moving |
-| 6.70 s | 1.0 s | 170 | small element moving |
-| 8.10 s | 0.3 s | 130 | small element moving |
-| 8.90 s | 7.6 s | 171 | small element moving |
-| 16.80 s | 2.1 s | 160 | small element moving |
-| 20.10 s | 5.1 s | 172 | small element moving |
-| 25.50 s | 0.4 s | 122 | small element moving |
-| 26.10 s | 1.4 s | 159 | small element moving |
-| 29.90 s | 1.0 s | 123 | small element moving |
-| 31.10 s | 3.1 s | 174 | small element moving |
+| 2.00 s | 4.6 s | 175 | small element moving |
+| 6.80 s | 0.9 s | 121 | small element moving |
+| 8.10 s | 0.3 s | 129 | small element moving |
+| 9.00 s | 7.5 s | 170 | small element moving |
+| 16.80 s | 2.1 s | 159 | small element moving |
+| 20.10 s | 5.1 s | 173 | small element moving |
+| 25.50 s | 0.4 s | 133 | small element moving |
+| 26.10 s | 1.6 s | 159 | small element moving |
+| 30.20 s | 4.0 s | 173 | small element moving |
 | 34.30 s | 4.7 s | 172 | small element moving |
 | 39.30 s | 0.9 s | 93 | small element moving |
-| 40.50 s | 1.5 s | 139 | small element moving |
-| 42.10 s | 1.1 s | 159 | small element moving |
-| 43.30 s | 3.3 s | 156 | small element moving |
+| 40.50 s | 1.5 s | 140 | small element moving |
+| 42.10 s | 1.1 s | 160 | small element moving |
+| 43.30 s | 3.3 s | 157 | small element moving |
 | 46.80 s | 4.0 s | 165 | small element moving |
-| 51.20 s | 4.7 s | 164 | small element moving |
-| 56.00 s | 6.6 s | 165 | small element moving |
+| 51.20 s | 4.7 s | 165 | small element moving |
+| 56.00 s | 6.6 s | 167 | small element moving |
 
-5 shorter run(s) totalling 0.7 s are not listed; `motion.csv` has every sample.
+7 shorter run(s) totalling 0.9 s are not listed; `motion.csv` has every sample.
 
 ## Single-frame events
 
@@ -78,22 +79,19 @@ From every frame at the film's own rate, by the share of pixels that change by m
 | Time | Kind | Mean change | Pixels changed |
 | --- | --- | --- | --- |
 | 5.233 s | pop | 0.11 | 0.11% |
-| 8.900 s | jump | 0.17 | 0.06% |
-| 14.967 s | pop | 0.08 | 0.08% |
-| 15.067 s | jump | 0.14 | 0.10% |
-| 16.733 s | jump | 0.31 | 0.23% |
-| 17.733 s | pop | 0.08 | 0.06% |
+| 8.900 s | jump | 0.23 | 0.05% |
+| 14.967 s | pop | 0.08 | 0.09% |
+| 15.067 s | jump | 0.14 | 0.11% |
+| 16.733 s | jump | 0.37 | 0.23% |
+| 17.733 s | pop | 0.09 | 0.06% |
 | 21.600 s | pop | 0.06 | 0.05% |
 | 23.367 s | pop | 0.06 | 0.05% |
-| 47.367 s | pop | 0.08 | 0.06% |
-| 62.733 s | jump | 0.34 | 0.12% |
-| 62.800 s | jump | 0.33 | 0.07% |
-| 62.900 s | jump | 0.49 | 0.56% |
-| 64.100 s | jump | 0.42 | 0.45% |
+| 62.733 s | jump | 0.37 | 0.18% |
+| 62.900 s | jump | 0.51 | 0.62% |
 
 ## Loop seam
 
-From the last frame back to the first: 4.41 on the scale of `frames.csv`, against a median frame change of 0.036, a 95th percentile of 0.51 and a largest of 2.06 at 0.733 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
+From the last frame back to the first: 4.41 on the scale of `frames.csv`, against a median frame change of 0.036, a 95th percentile of 0.54 and a largest of 2.06 at 0.733 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
 
 ## Loudness
 

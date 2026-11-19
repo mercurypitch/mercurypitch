@@ -1,0 +1,1615 @@
+[
+ {
+  "t": 0,
+  "name": "first frame: the band on F-turn's pixels, x 928 to 1824, y 104 to 202",
+  "got": "928.0 to 1824.0, 104.0 to 202.0",
+  "want": "928 to 1824, 104 to 202",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "Merc's line y 153, x 928 to 1824, 5.6 px (F-turn's 4 x 1.4)",
+  "got": "153.00, 928.0 to 1824.0, 5.6",
+  "want": "153, 928 to 1824, 5.6",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "the band's edges 2.8 px, centred on its top and foot (DECISIONS 202)",
+  "got": "2.80 at 102.60; 2.80 at 200.60",
+  "want": "2.80 at 102.60; 2.80 at 200.60",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "no labels, no voice line, the chart at full",
+  "got": "0 texts, 0 line points, a 1.00",
+  "want": "0 texts, 0 line points, a 1.00",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "the room crossfading from F-turn (the ghost layers at full on the cut frame)",
+  "got": "1 1 1",
+  "want": "1 1 1",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "hosts at 300 in the corners",
+  "got": "30.5-189.5; 1720.5-1879.5",
+  "want": "30.5-189.5; 1720.5-1879.5",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "keep-out: nearest visible text to merc's body box (\"\")",
+  "got": null,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "keep-out: nearest visible text to tavi's body box (\"\")",
+  "got": null,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 0,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 0.7099999999999568,
+  "name": "mid-slide: the frame between its places (an object move)",
+  "got": "580.0 to 1756.0, 329.3 to 423.8",
+  "want": "between",
+  "pass": true
+ },
+ {
+  "t": 0.7099999999999568,
+  "name": "the camera still at F0 (the room does not part)",
+  "got": "1 0 0",
+  "want": "1 0 0",
+  "pass": true
+ },
+ {
+  "t": 0.7099999999999568,
+  "name": "no voice line during the slide (L.RECAP.voiceOK)",
+  "got": 0,
+  "want": 0,
+  "pass": true
+ },
+ {
+  "t": 0.7099999999999568,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 0.7099999999999568,
+  "name": "keep-out: nearest visible text to merc's body box (\"QUICK CHECK\")",
+  "got": 529,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.7099999999999568,
+  "name": "keep-out: nearest visible text to tavi's body box (\"QUICK CHECK\")",
+  "got": 1443.52,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.7099999999999568,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 116,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 1.3199999999999568,
+  "name": "landed: the recap frame x 232 to 1688, band 554.5 to 645.5",
+  "got": "232.0 to 1688.0, 554.5 to 645.5",
+  "want": "232 to 1688, 554.5 to 645.5",
+  "pass": true
+ },
+ {
+  "t": 1.3199999999999568,
+  "name": "Merc's line y 600 at 4 px; the edges 2 px",
+  "got": "600.00, 4; 2.00",
+  "want": "600.00, 4; 2.00",
+  "pass": true
+ },
+ {
+  "t": 1.3199999999999568,
+  "name": "the wave rule holds here (k / rule k)",
+  "got": 1,
+  "want": 1,
+  "tol": 0.01,
+  "pass": true
+ },
+ {
+  "t": 1.3199999999999568,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 1.3199999999999568,
+  "name": "keep-out: nearest visible text to merc's body box (\"QUICK CHECK\")",
+  "got": 529,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 1.3199999999999568,
+  "name": "keep-out: nearest visible text to tavi's body box (\"QUICK CHECK\")",
+  "got": 1443.52,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 1.3199999999999568,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 116,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 1.6599999999999568,
+  "name": "13a: the frame dimmed to 20 % (its labels hidden; DECISIONS 217)",
+  "got": 0.2,
+  "want": 0.2,
+  "tol": 0.01,
+  "pass": true
+ },
+ {
+  "t": 1.6599999999999568,
+  "name": "the kicker \"QUICK CHECK\" at (120, 110)",
+  "got": "122.0, 110.0",
+  "want": "122, 110",
+  "pass": true
+ },
+ {
+  "t": 1.6599999999999568,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 1.6599999999999568,
+  "name": "keep-out: nearest visible text to merc's body box (\"QUICK CHECK\")",
+  "got": 529,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 1.6599999999999568,
+  "name": "keep-out: nearest visible text to tavi's body box (\"QUICK CHECK\")",
+  "got": 1443.52,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 1.6599999999999568,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 116,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 2.1250000000000226,
+  "name": "the panel x 120 to 960, y 140 to 330",
+  "got": "120.0 to 960.0, 140.0 to 330.0",
+  "want": "120 to 960, 140 to 330",
+  "pass": true
+ },
+ {
+  "t": 2.1250000000000226,
+  "name": "question 1 from x 150, one line on the ring timer's height (baseline 264)",
+  "got": "150.0 to 790.8, 234.0 to 273.0; base 264.0",
+  "want": "x 150, base 264",
+  "pass": true
+ },
+ {
+  "t": 2.1250000000000226,
+  "name": "the ring timer beside it, in the panel, at (910, 250): its ring 12 px or more right of the question",
+  "got": "892.0 to 928.0, 232.0 to 268.0; gap 101.2",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.1250000000000226,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 2.1250000000000226,
+  "name": "keep-out: nearest visible text to merc's body box (\"What is your diaphragm's main job?\")",
+  "got": 374,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 2.1250000000000226,
+  "name": "keep-out: nearest visible text to tavi's body box (\"What is your diaphragm's main job?\")",
+  "got": 1001.04,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 2.1250000000000226,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 273,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 3.174999999999977,
+  "name": "card 1's figure at 1.2 times L.FIGURE.S13 (k 0.9 for 0.75; DECISIONS 217)",
+  "got": "1.200",
+  "want": "1.200",
+  "pass": true
+ },
+ {
+  "t": 3.174999999999977,
+  "name": "within x 1100 to 1690, y 60 to 535: crown, back, head's back, belly front (breathing in at u 360), the fade's end",
+  "got": "crown 63.0, back 1300.5, head from 1314.0, belly 1462.5 (in: 1489.5), fade 513.0 to 531.0",
+  "want": "all inside",
+  "pass": true
+ },
+ {
+  "t": 3.174999999999977,
+  "name": "the fade at the same figure units as the kit's (v 520 to 540)",
+  "got": "520.0 to 540.0",
+  "want": "520.0 to 540.0",
+  "pass": true
+ },
+ {
+  "t": 3.174999999999977,
+  "name": "its masked foot over the dimmed band (554.5)",
+  "got": "23.5",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.174999999999977,
+  "name": "drawn whole",
+  "got": 1,
+  "want": 1,
+  "tol": 0.01,
+  "pass": true
+ },
+ {
+  "t": 3.174999999999977,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 3.174999999999977,
+  "name": "keep-out: nearest visible text to merc's body box (\"What is your diaphragm's main job?\")",
+  "got": 374,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 3.174999999999977,
+  "name": "keep-out: nearest visible text to tavi's body box (\"What is your diaphragm's main job?\")",
+  "got": 1001.04,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 3.174999999999977,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 273,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 7.76999999999997,
+  "name": "13b: \"Breathing in.\" serif italic 64, x 150, baseline 400",
+  "got": "147.0 to 450.0, 352.0 to 414.0; base 400.0",
+  "want": "x 150, base 400",
+  "pass": true
+ },
+ {
+  "t": 7.76999999999997,
+  "name": "under the panel (gap)",
+  "got": 22,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 7.76999999999997,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 7.76999999999997,
+  "name": "keep-out: nearest visible text to merc's body box (\"Breathing in.\")",
+  "got": 228,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 7.76999999999997,
+  "name": "keep-out: nearest visible text to tavi's body box (\"What is your diaphragm's main job?\")",
+  "got": 1001.04,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 7.76999999999997,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 414,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 8.224999999999977,
+  "name": "13c: question 3 in two lines, baselines 220 and 280, from x 150",
+  "got": "220.0, 280.0; 152.0",
+  "want": "220, 280; 150",
+  "pass": true
+ },
+ {
+  "t": 8.224999999999977,
+  "name": "both lines 12 px or more left of the ring timer",
+  "got": "125.0",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 8.224999999999977,
+  "name": "question 1 and \"Breathing in.\" gone; the figure gone",
+  "got": "0.00 0.00 0.00",
+  "want": "0.00 0.00 0.00",
+  "pass": true
+ },
+ {
+  "t": 8.224999999999977,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 8.224999999999977,
+  "name": "keep-out: nearest visible text to merc's body box (\"do many singing teachers aim for?\")",
+  "got": 358,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 8.224999999999977,
+  "name": "keep-out: nearest visible text to tavi's body box (\"do many singing teachers aim for?\")",
+  "got": 1017.42,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 8.224999999999977,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 289,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 9.100000000000023,
+  "name": "card 2: the traces at 1.2 times L.TRACE.RECAP: x 1136 to 1688, centred y 170, 314, 458, half-height 54 (the waves' own extent)",
+  "got": "1136-1688 @170 h53; 1136-1688 @314 h53; 1136-1688 @458 h53",
+  "want": "1136-1688 @170; @314; @458, h <= 54",
+  "pass": true
+ },
+ {
+  "t": 9.100000000000023,
+  "name": "the stack (centres +- 54) within y 60 to 535 and x 1100 to 1690",
+  "got": "116.0 to 512.0; x 1136.0 to 1688.0",
+  "want": "inside",
+  "pass": true
+ },
+ {
+  "t": 9.100000000000023,
+  "name": "their names right-aligned 1116 (20 px left of the traces), baselines 180, 324, 468",
+  "got": "1116.3/180.0 1115.1/324.0 1116.0/468.0",
+  "want": "1116 / 180 324 468",
+  "pass": true
+ },
+ {
+  "t": 9.100000000000023,
+  "name": "the traces' foot (458 + 54) clear of the dimmed band (554.5)",
+  "got": "42.5",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 9.100000000000023,
+  "name": "names clear of the panel (x 960)",
+  "got": "992.6",
+  "want": "> 972",
+  "pass": true
+ },
+ {
+  "t": 9.100000000000023,
+  "name": "their ILLUSTRATION chip (DECISIONS 218): standing, right-aligned with the traces (1688), over the stack",
+  "got": "a 1.00; 1417.3 to 1688.0, 62.0 to 102.0",
+  "want": "a 1.00; right 1688",
+  "pass": true
+ },
+ {
+  "t": 9.100000000000023,
+  "name": "the chip 12 px or more from every trace (the top one's crest at 116) and every label",
+  "got": "14.0; from the names 301.0; top 62.0",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 9.100000000000023,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 9.100000000000023,
+  "name": "keep-out: nearest visible text to merc's body box (\"do many singing teachers aim for?\")",
+  "got": 358,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 9.100000000000023,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 550.39,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 9.100000000000023,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 475,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 16.795000000000005,
+  "name": "13c: the answer in two lines, serif italic 56, baselines 392 and 452",
+  "got": "392.0, 452.0; to x 791.3",
+  "want": "392, 452",
+  "pass": true
+ },
+ {
+  "t": 16.795000000000005,
+  "name": "its foot over the frame's labels (baseline 510, cap top about 488)",
+  "got": "23.0",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 16.795000000000005,
+  "name": "rows 1 and 2 dimming, row 3 lit",
+  "got": "0.350 0.350 1.000",
+  "want": "dim, dim, 1",
+  "pass": true
+ },
+ {
+  "t": 16.795000000000005,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 16.795000000000005,
+  "name": "keep-out: nearest visible text to merc's body box (\"the easy start.\")",
+  "got": 179,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 16.795000000000005,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 550.39,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 16.795000000000005,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 475,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 19.394999999999992,
+  "name": "13d: question 4 (o14a, word for word) in two lines at 220 and 280",
+  "got": "What does a steady long note look like / on the pitch line?",
+  "want": "What does a steady long note look like / on the pitch line?",
+  "pass": true
+ },
+ {
+  "t": 19.394999999999992,
+  "name": "left of the ring timer by 12 px or more",
+  "got": "57.1",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 19.394999999999992,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 19.394999999999992,
+  "name": "keep-out: nearest visible text to merc's body box (\"on the pitch line?\")",
+  "got": 358,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 19.394999999999992,
+  "name": "keep-out: nearest visible text to tavi's body box (\"What does a steady long note look like\")",
+  "got": 978.71,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 19.394999999999992,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 289,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 19.34999999999999,
+  "name": "13d: the traces and their chip gone with the question's swap, before the frame's labels (DECISIONS 218)",
+  "got": "traces 0.00 0.00 0.00; chip 0.00; card 3's chip 0.00",
+  "want": "traces 0.00 0.00 0.00; chip 0.00; card 3's chip 0.00",
+  "pass": true
+ },
+ {
+  "t": 19.34999999999999,
+  "name": "gone before card 3's labels start (s)",
+  "got": "0.135",
+  "want": "> 0",
+  "pass": true
+ },
+ {
+  "t": 19.34999999999999,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 19.34999999999999,
+  "name": "keep-out: nearest visible text to merc's body box (\"on the pitch line?\")",
+  "got": 358,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 19.34999999999999,
+  "name": "keep-out: nearest visible text to tavi's body box (\"What does a steady long note look like\")",
+  "got": 978.71,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 19.34999999999999,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 289,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 20.13000000000002,
+  "name": "13d: the frame back to full",
+  "got": 1,
+  "want": 1,
+  "tol": 0.01,
+  "pass": true
+ },
+ {
+  "t": 20.13000000000002,
+  "name": "\"A, any octave\" x 232, baseline 510",
+  "got": "232.0, 510.0",
+  "want": "232, 510",
+  "pass": true
+ },
+ {
+  "t": 20.13000000000002,
+  "name": "\"ILLUSTRATION\" right-aligned 1688, centred y 500",
+  "got": "1688.0, 500.0",
+  "want": "1688, 500",
+  "pass": true
+ },
+ {
+  "t": 20.13000000000002,
+  "name": "the traces gone",
+  "got": "0.00 0.00 0.00",
+  "want": "0.00 0.00 0.00",
+  "pass": true
+ },
+ {
+  "t": 20.13000000000002,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 20.13000000000002,
+  "name": "keep-out: nearest visible text to merc's body box (\"A, any octave\")",
+  "got": 136.77,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 20.13000000000002,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 137.79,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 20.13000000000002,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 517,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 25.491224000000013,
+  "name": "13d: the mint edge and \"in the band\" lit at the entry (the page's 16 ms rule: entry 0.704 s)",
+  "got": "entry 0.704; lit 1.00; \"in the band\" 1.00",
+  "want": "entry 0.704; lit 1.00; \"in the band\" 1.00",
+  "pass": true
+ },
+ {
+  "t": 25.491224000000013,
+  "name": "\"in the band\" x 520, baseline 510",
+  "got": "521.0, 510.0",
+  "want": "520, 510",
+  "pass": true
+ },
+ {
+  "t": 25.491224000000013,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 25.491224000000013,
+  "name": "keep-out: nearest visible text to merc's body box (\"A, any octave\")",
+  "got": 136.77,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 25.491224000000013,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 137.79,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 25.491224000000013,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 517,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 25.637974000000014,
+  "name": "13d: the \"settled\" flag (no label) at the entry's x: 232 + 145.6 x 0.704 = 334.5, y 538.5 to 554.5",
+  "got": "x 334.50, y 538.5 to 554.5; label 0.00",
+  "want": "x 334.50, y 538.5 to 554.5; label 0.00",
+  "pass": true
+ },
+ {
+  "t": 25.637974000000014,
+  "name": "it stands at the line's 1.204 s (scene time)",
+  "got": "25.338",
+  "want": "25.338",
+  "pass": true
+ },
+ {
+  "t": 25.637974000000014,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 25.637974000000014,
+  "name": "keep-out: nearest visible text to merc's body box (\"A, any octave\")",
+  "got": 136.77,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 25.637974000000014,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 137.79,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 25.637974000000014,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 517,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 27.15500000000002,
+  "name": "13d: the wave in the recap frame: one cycle (px)",
+  "got": 26.48,
+  "want": 26.47,
+  "tol": 2.6470000000000002,
+  "pass": true
+ },
+ {
+  "t": 27.15500000000002,
+  "name": "peak to peak (px)",
+  "got": 36.4,
+  "want": 36.4,
+  "tol": 3.64,
+  "pass": true
+ },
+ {
+  "t": 27.15500000000002,
+  "name": "ratio",
+  "got": 1.37,
+  "want": 1.375,
+  "tol": 0.075,
+  "pass": true
+ },
+ {
+  "t": 27.15500000000002,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 27.15500000000002,
+  "name": "keep-out: nearest visible text to merc's body box (\"A, any octave\")",
+  "got": 136.77,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 27.15500000000002,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 137.79,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 27.15500000000002,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 517,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 26.15500000000002,
+  "name": "13d: \"It settles into the band / and stays there.\" baselines 392 and 452",
+  "got": "392.0, 452.0",
+  "want": "392, 452",
+  "pass": true
+ },
+ {
+  "t": 26.15500000000002,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 26.15500000000002,
+  "name": "keep-out: nearest visible text to merc's body box (\"A, any octave\")",
+  "got": 136.77,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 26.15500000000002,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 137.79,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 26.15500000000002,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 517,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 27.049999999999965,
+  "name": "13d: card 3's redraw complete (its last point at the frame's 10 s, x 1688)",
+  "got": "1688.0",
+  "want": "1688.0",
+  "pass": true
+ },
+ {
+  "t": 27.049999999999965,
+  "name": "the redraw 2.4 s or less, from the clock (DECISIONS 215)",
+  "got": "1.935 s (speed 10 / 1.935)",
+  "want": "<= 2.4",
+  "pass": true
+ },
+ {
+  "t": 27.049999999999965,
+  "name": "the finished answer holds 0.5 s or more before the cascade starts",
+  "got": "0.500",
+  "want": ">= 0.5",
+  "pass": true
+ },
+ {
+  "t": 27.049999999999965,
+  "name": "the frame and the answer still up",
+  "got": "chart 1.00; answer 1.00",
+  "want": "chart 1.00; answer 1.00",
+  "pass": true
+ },
+ {
+  "t": 27.049999999999965,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 27.049999999999965,
+  "name": "keep-out: nearest visible text to merc's body box (\"A, any octave\")",
+  "got": 136.77,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 27.049999999999965,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 137.79,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 27.049999999999965,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 517,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 28.054999999999964,
+  "name": "13e: the clean break from break + 0.2, the recap gone (the last element's 0.3 s out)",
+  "got": "0 texts; chart 0.00; panel 0.00; cascade from break + 0.20",
+  "want": "0 texts; chart 0.00; panel 0.00; cascade from break + 0.20",
+  "pass": true
+ },
+ {
+  "t": 28.054999999999964,
+  "name": "gone before hop 1's apex (s to spare)",
+  "got": "0.210",
+  "want": "> 0",
+  "pass": true
+ },
+ {
+  "t": 28.054999999999964,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 28.054999999999964,
+  "name": "keep-out: nearest visible text to merc's body box (\"\")",
+  "got": null,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 28.054999999999964,
+  "name": "keep-out: nearest visible text to tavi's body box (\"\")",
+  "got": null,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 28.054999999999964,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 0,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 28.259999999999998,
+  "name": "13e: Merc in the air (hop 1): nothing drawn below y 300 from x 0 to 1400",
+  "got": 0,
+  "want": 0,
+  "pass": true
+ },
+ {
+  "t": 28.259999999999998,
+  "name": "his box carried through the air",
+  "got": "222.1",
+  "want": "110 to 700",
+  "pass": true
+ },
+ {
+  "t": 28.259999999999998,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 28.259999999999998,
+  "name": "keep-out: nearest visible text to merc's body box (\"\")",
+  "got": null,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 28.259999999999998,
+  "name": "keep-out: nearest visible text to tavi's body box (\"\")",
+  "got": null,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 28.259999999999998,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 0,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 28.909999999999975,
+  "name": "13e: Merc in the air (hop 2): nothing drawn below y 300 from x 0 to 1400",
+  "got": 0,
+  "want": 0,
+  "pass": true
+ },
+ {
+  "t": 28.909999999999975,
+  "name": "his box carried through the air",
+  "got": "814.1",
+  "want": "700 to 1290",
+  "pass": true
+ },
+ {
+  "t": 28.909999999999975,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 28.909999999999975,
+  "name": "keep-out: nearest visible text to merc's body box (\"\")",
+  "got": null,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 28.909999999999975,
+  "name": "keep-out: nearest visible text to tavi's body box (\"\")",
+  "got": null,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 28.909999999999975,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 0,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 29.169999999999977,
+  "name": "Merc landed at (1290, 840): the box less the root it cancels (0.38 units at the landing)",
+  "got": "1290.00, 840",
+  "want": "1290.00, 840",
+  "pass": true
+ },
+ {
+  "t": 29.169999999999977,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 29.169999999999977,
+  "name": "keep-out: nearest visible text to merc's body box (\"\")",
+  "got": null,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 29.169999999999977,
+  "name": "keep-out: nearest visible text to tavi's body box (\"\")",
+  "got": null,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 29.169999999999977,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 0,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 29.910000000000004,
+  "name": "13e: the Voice Mirror card's panel x 230 to 1110, top 90, its foot at 300",
+  "got": "230.0 to 1110.0, 90.0 to 300.0",
+  "want": "230 to 1110, 90 to 300",
+  "pass": true
+ },
+ {
+  "t": 29.910000000000004,
+  "name": "\"Practise it.\" Outfit 600 40 from x 270, baseline 150",
+  "got": "272.0, 150.0",
+  "want": "270, 150",
+  "pass": true
+ },
+ {
+  "t": 29.910000000000004,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 29.910000000000004,
+  "name": "keep-out: nearest visible text to merc's body box (\"Practise it.\")",
+  "got": 893.33,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 29.910000000000004,
+  "name": "keep-out: nearest visible text to tavi's body box (\"Practise it.\")",
+  "got": 1349.58,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 29.910000000000004,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 151,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 30.41,
+  "name": "\"Voice Mirror\" serif italic 96, baseline 250; the rule y 272, x 270 to 1070",
+  "got": "250.0; 270.0 to 1070.0, 271.0 to 273.0",
+  "want": "250; 270 to 1070, 271 to 273",
+  "pass": true
+ },
+ {
+  "t": 30.41,
+  "name": "\"Voice Mirror\" lands 0.4 s after the panel (board; DECISIONS 215)",
+  "got": "0.400",
+  "want": "0.400",
+  "pass": true
+ },
+ {
+  "t": 30.41,
+  "name": "\"Practise it.\" and \"Voice Mirror\" apart (gap)",
+  "got": "29.0",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 30.41,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.41,
+  "name": "keep-out: nearest visible text to merc's body box (\"Voice Mirror\")",
+  "got": 630.32,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 30.41,
+  "name": "keep-out: nearest visible text to tavi's body box (\"Voice Mirror\")",
+  "got": 1085.99,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 30.41,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 251,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 37.450000000000024,
+  "name": "b55's three rows, word for word, from x 326 at baselines 340, 400, 460",
+  "got": "Voice Mirror has you glide up and down, / hold any comfortable note for six seconds, / then sing back five notes it plays.",
+  "want": "Voice Mirror has you glide up and down, / hold any comfortable note for six seconds, / then sing back five notes it plays.",
+  "pass": true
+ },
+ {
+  "t": 37.450000000000024,
+  "name": "their places",
+  "got": "326/340 327/400 326/460",
+  "want": "326/340 326/400 326/460",
+  "pass": true
+ },
+ {
+  "t": 37.450000000000024,
+  "name": "each glyph at x 270, left of its row's words",
+  "got": "271-303 (gap 23) 272-309 (gap 18) 268-312 (gap 14)",
+  "want": "from 270, gap >= 8",
+  "pass": true
+ },
+ {
+  "t": 37.450000000000024,
+  "name": "the foot at 480",
+  "got": 480,
+  "want": 480,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 37.450000000000024,
+  "name": "every row inside the card (right edge)",
+  "got": "970.8",
+  "want": "<= 1090",
+  "pass": true
+ },
+ {
+  "t": 37.450000000000024,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 37.450000000000024,
+  "name": "keep-out: nearest visible text to merc's body box (\"hold any comfortable note for six second\")",
+  "got": 337.4,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 37.450000000000024,
+  "name": "keep-out: nearest visible text to tavi's body box (\"hold any comfortable note for six second\")",
+  "got": 785.4,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 37.450000000000024,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 468,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 39.4,
+  "name": "the readout, word for word, Inter 32 in three lines within 800 px (baselines 523, 560, 597: closed up, DECISIONS 216)",
+  "got": "For the hold, it shows in cents how fast the note drifted | and how much it wobbled, and a vibrato isn’t counted | against you. @ 523.0 560.0 597.0",
+  "want": "the brief's sentence",
+  "pass": true
+ },
+ {
+  "t": 39.4,
+  "name": "its lines apart (ink gaps)",
+  "got": "8.0 8.0",
+  "want": "> 0",
+  "pass": true
+ },
+ {
+  "t": 39.4,
+  "name": "the foot at 617",
+  "got": 617,
+  "want": 617,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 39.4,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 39.4,
+  "name": "keep-out: nearest visible text to merc's body box (\"For the hold, it shows in cents how fast\")",
+  "got": 218.72,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 39.4,
+  "name": "keep-out: nearest visible text to tavi's body box (\"For the hold, it shows in cents how fast\")",
+  "got": 704.58,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 39.4,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 604,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 42.23,
+  "name": "\"Keep the glides comfortable.\" (654) and \"Sore, hoarse or unwell today? Just listen along.\" (699)",
+  "got": "654.0, 699.0; to x 969.7",
+  "want": "654, 699",
+  "pass": true
+ },
+ {
+  "t": 42.23,
+  "name": "the readout's foot (597) to \"Keep...\" (ink gap)",
+  "got": "25.0",
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 42.23,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 42.23,
+  "name": "keep-out: nearest visible text to merc's body box (\"For the hold, it shows in cents how fast\")",
+  "got": 218.72,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 42.23,
+  "name": "keep-out: nearest visible text to tavi's body box (\"For the hold, it shows in cents how fast\")",
+  "got": 704.58,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 42.23,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 707,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 48.564999999999976,
+  "name": "\"Free, no account: mercurypitch.com/mirror\" (baseline 752), the address underlined at y 764",
+  "got": "752.0; underline 587.3 to 1047.8, 763.0 to 765.0",
+  "want": "752; under the address, y 763 to 765",
+  "pass": true
+ },
+ {
+  "t": 48.564999999999976,
+  "name": "the panel's last foot at 777 (778 or higher; DECISIONS 216)",
+  "got": 777,
+  "want": 777,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 48.564999999999976,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 48.564999999999976,
+  "name": "keep-out: nearest visible text to merc's body box (\"Free, no account: mercurypitch.com/mirro\")",
+  "got": 162.02,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 48.564999999999976,
+  "name": "keep-out: nearest visible text to tavi's body box (\"Free, no account: mercurypitch.com/mirro\")",
+  "got": 672.02,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 48.564999999999976,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 761,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 50.485000000000056,
+  "name": "\"Ten minutes, gently, most days. Missed a day? Just come back.\" under the card: one line, Inter 30, ink-2, x 270, baseline 820 (DECISIONS 216)",
+  "got": "Ten minutes, gently, most days. Missed a day? Just come back.; Inter 30px #a8b3bf; 270.0 to 1100.2, 797.0 to 827.0; base 820.0",
+  "want": "one line from x 270, Inter 30px, base 820",
+  "pass": true
+ },
+ {
+  "t": 50.485000000000056,
+  "name": "its glyph foot at 828 or higher, its end left of the card's edge (1110)",
+  "got": "foot 827.0, end 1100.2",
+  "want": "foot <= 828, end < 1110",
+  "pass": true
+ },
+ {
+  "t": 50.485000000000056,
+  "name": "the panel's last foot 16 px or more over its cap top",
+  "got": "777.0; 20.0 px",
+  "want": ">= 16",
+  "pass": true
+ },
+ {
+  "t": 50.485000000000056,
+  "name": "its ink 12 px or more over the floor horizon (840; DECISIONS 203)",
+  "got": "13.0",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 50.485000000000056,
+  "name": "from Merc's body at (1290, 840)",
+  "got": "110.3",
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 50.485000000000056,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 50.485000000000056,
+  "name": "keep-out: nearest visible text to merc's body box (\"Ten minutes, gently, most days. Missed a\")",
+  "got": 109.42,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 50.485000000000056,
+  "name": "keep-out: nearest visible text to tavi's body box (\"Ten minutes, gently, most days. Missed a\")",
+  "got": 619.42,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 50.485000000000056,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 827,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 60.26500000000003,
+  "name": "13g: the rest card x 1130 to 1690, y 250 to 600",
+  "got": "1130.0 to 1690.0, 250.0 to 600.0",
+  "want": "1130 to 1690, 250 to 600",
+  "pass": true
+ },
+ {
+  "t": 60.26500000000003,
+  "name": "its lines, word for word (b58)",
+  "got": "Felt uncomfortable, or listened / along today? / Rest today / Voice Mirror will be here when / your voice feels comfortable: / mercurypitch.com/mirror",
+  "want": "Felt uncomfortable, or listened / along today? / Rest today / Voice Mirror will be here when / your voice feels comfortable: / mercurypitch.com/mirror",
+  "pass": true
+ },
+ {
+  "t": 60.26500000000003,
+  "name": "every line inside the card (x 1160 to 1670), baselines 296, 332, 416, 470, 508, 566",
+  "got": "296 332 416 470 508 566; right 1574.9",
+  "want": "296 332 416 470 508 566",
+  "pass": true
+ },
+ {
+  "t": 60.26500000000003,
+  "name": "the address underlined at y 576",
+  "got": "1160.0 to 1574.5, 575.0 to 577.0",
+  "want": "1160 to the address's end, 575 to 577",
+  "pass": true
+ },
+ {
+  "t": 60.26500000000003,
+  "name": "its foot 28 px or more over Merc's keep-out (box top 648, keep-out 628)",
+  "got": "28.0",
+  "want": ">= 28",
+  "pass": true
+ },
+ {
+  "t": 60.26500000000003,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 60.26500000000003,
+  "name": "keep-out: nearest visible text to merc's body box (\"mercurypitch.com/mirror\")",
+  "got": 73,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 60.26500000000003,
+  "name": "keep-out: nearest visible text to tavi's body box (\"mercurypitch.com/mirror\")",
+  "got": 162.88,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 60.26500000000003,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 827,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 64.255,
+  "name": "the carry starts on the \"five notes\" glyph's first dot: its place now (272, 434 after the drift)",
+  "got": "272, 434.41",
+  "want": "272, 434",
+  "pass": true
+ },
+ {
+  "t": 64.255,
+  "name": "the bead's carry from there (L.TEASE.carry at its start)",
+  "got": "272.0, 434.0, r 4.00",
+  "want": "272.0, 434.0, r 4.00",
+  "pass": true
+ },
+ {
+  "t": 64.255,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 64.255,
+  "name": "keep-out: nearest visible text to merc's body box (\"mercurypitch.com/mirror\")",
+  "got": 86.59,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 64.255,
+  "name": "keep-out: nearest visible text to tavi's body box (\"mercurypitch.com/mirror\")",
+  "got": 169.4,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 64.255,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 813.41,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 64.65499999999997,
+  "name": "the cards' lines leaving in turn (some gone, some not)",
+  "got": 3,
+  "want": "between",
+  "pass": true
+ },
+ {
+  "t": 64.65499999999997,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 64.65499999999997,
+  "name": "keep-out: nearest visible text to merc's body box (\"Ten minutes, gently, most days. Missed a\")",
+  "got": 109.42,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 64.65499999999997,
+  "name": "keep-out: nearest visible text to tavi's body box (\"Ten minutes, gently, most days. Missed a\")",
+  "got": 619.42,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 64.65499999999997,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 813,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 65.0245,
+  "name": "last frame: no texts or panels left (HANDOFFS § S13 to S14: the lines gone)",
+  "got": "0 texts; panels 0.00 0.00",
+  "want": "0 texts; panels 0.00 0.00",
+  "pass": true
+ },
+ {
+  "t": 65.0245,
+  "name": "the bead in flight on L.TEASE.carry (its centre)",
+  "got": "332.16, 594.32, r 11.12",
+  "want": "332.16, 594.32, r 11.12",
+  "pass": true
+ },
+ {
+  "t": 65.0245,
+  "name": "Merc at (1290, 840), Tavi at (1800, 840), both 300",
+  "got": "1290, 1800",
+  "want": "1290, 1800",
+  "pass": true
+ },
+ {
+  "t": 65.0245,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 65.0245,
+  "name": "keep-out: nearest visible text to merc's body box (\"\")",
+  "got": null,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 65.0245,
+  "name": "keep-out: nearest visible text to tavi's body box (\"\")",
+  "got": null,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 65.0245,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 0,
+  "want": "<= 896",
+  "pass": true
+ }
+]

@@ -1,0 +1,533 @@
+[
+ {
+  "t": 0,
+  "name": "first frame (S4's last): band 312.5 to 487.5 at F0",
+  "got": "312.5 to 487.5",
+  "want": "312.5 to 487.5",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "plot x 400 to 1520",
+  "got": "400 to 1520",
+  "want": "400 to 1520",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "\"A3\" right edge 366, \"level\"'s first glyph origin at x 400 (as S4 leaves it), the row's text from 400 at full",
+  "got": "366.0 400.0 400.0 1.00",
+  "want": "366 400 400 1.00",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "no chip on the chart, no slider",
+  "got": "0.00 0.00 0.00",
+  "want": "0.00 0.00 0.00",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "the four words parked dim: right edge 1800, outlines 68 to 106",
+  "got": "1800.0, 68.0 to 106.0, rgb(168,179,191)",
+  "want": "1800, 68 to 106, ink-2",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "hosts at 300 in their corners: Merc, Tavi body boxes",
+  "got": "30.5-189.5; 1720.5-1879.5",
+  "want": "30.5-189.5; 1720.5-1879.5",
+  "pass": true
+ },
+ {
+  "t": 3.0499999999999945,
+  "name": "5b: the band at 1.667 px a cent: 341.7 to 458.3",
+  "got": "341.7 to 458.3",
+  "want": "341.7 to 458.3",
+  "pass": true
+ },
+ {
+  "t": 3.0499999999999945,
+  "name": "5b: the slider: track x 400 to 1520, thumb at 960, \"Push\" right edge 366",
+  "got": "400 to 1520, 960.0, 366.0",
+  "want": "400 to 1520, 960, 366",
+  "pass": true
+ },
+ {
+  "t": 3.0499999999999945,
+  "name": "[B-01: 184] \"level\" at the strip's left (right edge 366), its glyphs centred on the strip (690)",
+  "got": "366.0, 689.0",
+  "want": "366, 690 +- 4",
+  "pass": true
+ },
+ {
+  "t": 3.0499999999999945,
+  "name": "5b: \"ILLUSTRATION\" x 1249 to 1520, y 120 to 160",
+  "got": "1249.3 to 1520.0, 120.0 to 160.0",
+  "want": "1249 to 1520, 120 to 160",
+  "pass": true
+ },
+ {
+  "t": 3.0499999999999945,
+  "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
+  "got": 107.69,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 3.0499999999999945,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 534.41,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 9.250000000000002,
+  "name": "LAB-CHECKS 10: the definition (baseline 200) under the chip's foot (160)",
+  "got": 15,
+  "want": ">= 12 (board 15)",
+  "pass": true
+ },
+ {
+  "t": 9.250000000000002,
+  "name": "LAB-CHECKS 10: the four words' outlines over the chip",
+  "got": 13.2,
+  "want": ">= 12 (board 14)",
+  "pass": true
+ },
+ {
+  "t": 9.250000000000002,
+  "name": "the definition's right end (board about 1370)",
+  "got": 1283.16,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 9.250000000000002,
+  "name": "\"air pressure\" lit: ink, underlined",
+  "got": "rgb(230,237,243) 1.00",
+  "want": "rgb(230,237,243) 1.00",
+  "pass": true
+ },
+ {
+  "t": 9.250000000000002,
+  "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
+  "got": 107.69,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 9.250000000000002,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 534.41,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 19.444999999999993,
+  "name": "5d: the plan clear of the thumb's \"50\" (its value text right edge vs the arrows' left end, head included)",
+  "got": 18,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 19.444999999999993,
+  "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
+  "got": 107.69,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 19.444999999999993,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 534.41,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 21.945000000000004,
+  "name": "LAB-CHECKS 9 (92.00): \"ILLUSTRATION\" and \"LISTEN ONLY\" apart at F0",
+  "got": 15.99,
+  "want": ">= 12 (board 16)",
+  "pass": true
+ },
+ {
+  "t": 21.945000000000004,
+  "name": "\"LISTEN ONLY\" x 1536 to 1786",
+  "got": "1536.0 to 1786.4",
+  "want": "1536 to 1786",
+  "pass": true
+ },
+ {
+  "t": 21.945000000000004,
+  "name": "\"LISTEN ONLY\" over \"above the band\" (baseline 300)",
+  "got": 113,
+  "want": ">= 12 (board 114)",
+  "pass": true
+ },
+ {
+  "t": 21.945000000000004,
+  "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
+  "got": 107.69,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 21.945000000000004,
+  "name": "keep-out: nearest visible text to tavi's body box (\"87\")",
+  "got": 332.13,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 23.245000000000005,
+  "name": "5e: \"above the band\" shown at x 1536, baseline 300, the band edge dark, \"in the band\" gone",
+  "got": "1.00 1536 0.00",
+  "want": "1.00 1536 0.00",
+  "pass": true
+ },
+ {
+  "t": 23.245000000000005,
+  "name": "5e: the thumb at 100 (x 1520) with its value 100",
+  "got": "1520 100",
+  "want": "1520 100",
+  "pass": true
+ },
+ {
+  "t": 23.245000000000005,
+  "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
+  "got": 107.69,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 23.245000000000005,
+  "name": "keep-out: nearest visible text to tavi's body box (\"100\")",
+  "got": 173.65,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 26.244999999999997,
+  "name": "wave rule at F0 (W 6, k 1.667): a cycle 33.9 px",
+  "got": 33.83,
+  "want": 33.9,
+  "tol": 3.4,
+  "pass": true
+ },
+ {
+  "t": 26.244999999999997,
+  "name": "wave rule at F0: peak to peak 46.7 px (on the flat top)",
+  "got": 46.61,
+  "want": 46.7,
+  "tol": 4.7,
+  "pass": true
+ },
+ {
+  "t": 26.244999999999997,
+  "name": "ratio (peak to peak / cycle) 1.30 to 1.45",
+  "got": 1.38,
+  "want": "1.30 to 1.45",
+  "pass": true
+ },
+ {
+  "t": 26.244999999999997,
+  "name": "the line climbs 100 px (+60 c) out of the top: its flat top centred y 300",
+  "got": 300,
+  "want": 300,
+  "tol": 2,
+  "pass": true
+ },
+ {
+  "t": 26.244999999999997,
+  "name": "\"in the band\" and the mint edge back at the end",
+  "got": "1.00",
+  "want": "1.00",
+  "pass": true
+ },
+ {
+  "t": 26.244999999999997,
+  "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
+  "got": 107.69,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 26.244999999999997,
+  "name": "keep-out: nearest visible text to tavi's body box (\"LISTEN ONLY\")",
+  "got": 490.64,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 31.000000000000007,
+  "name": "LAB-CHECKS 9 (100.50): the chips at 0.78: \"ILLUSTRATION\" x 1128 to 1340, \"LISTEN ONLY\" from 1352",
+  "got": "1128.5 to 1339.6, 1352.1",
+  "want": "1128 to 1340, 1352",
+  "pass": true
+ },
+ {
+  "t": 31.000000000000007,
+  "name": "LAB-CHECKS 9: the chips apart at 0.78",
+  "got": 12.47,
+  "want": ">= 12 (board 12.5)",
+  "pass": true
+ },
+ {
+  "t": 31.000000000000007,
+  "name": "LAB-CHECKS 9: \"loud ≠ high\" (ink top) under \"LISTEN ONLY\"'s foot",
+  "got": 18.2,
+  "want": ">= 12 (board 19)",
+  "pass": true
+ },
+ {
+  "t": 31.000000000000007,
+  "name": "\"loud ≠ high\" spans (board x 1496 to 1760)",
+  "got": "1506 to 1750",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 31.000000000000007,
+  "name": "\"loud ≠ high\" over the panels (y 301)",
+  "got": 12,
+  "want": ">= 12 (board 14)",
+  "pass": true
+ },
+ {
+  "t": 31.000000000000007,
+  "name": "Lesson 1's panels x 1433 to 1620 and 1636 to 1823, y 301 to 503",
+  "got": "1433-1620, 1636-1823, 301-504",
+  "want": "1433-1620, 1636-1823, 301-504",
+  "pass": true
+ },
+ {
+  "t": 31.000000000000007,
+  "name": "the chart at 0.78: plot x 466 to 1340, band 365.5 to 456.5",
+  "got": "466.0 to 1339.6, 365.5 to 456.5",
+  "want": "466 to 1340, 365.5 to 456.5",
+  "pass": true
+ },
+ {
+  "t": 31.000000000000007,
+  "name": "wave rule at 0.78: a cycle 26.4 px on screen",
+  "got": 26.39,
+  "want": 26.4,
+  "tol": 2.7,
+  "pass": true
+ },
+ {
+  "t": 31.000000000000007,
+  "name": "wave rule at 0.78: peak to peak 36.4 px",
+  "got": 36.36,
+  "want": 36.4,
+  "tol": 3.7,
+  "pass": true
+ },
+ {
+  "t": 31.000000000000007,
+  "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
+  "got": 196.32,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 31.000000000000007,
+  "name": "keep-out: nearest visible text to tavi's body box (\"HIGHER\")",
+  "got": 304,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 35.55,
+  "name": "LAB-CHECKS 4: both arrowheads inside the peak (screen x 772 to 990)",
+  "got": "960 and 960",
+  "want": "inside",
+  "pass": true
+ },
+ {
+  "t": 35.55,
+  "name": "LAB-CHECKS 4: the stem's least distance to \"50\" (ink)",
+  "got": 14.67,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 35.55,
+  "name": "LAB-CHECKS 4: \"louder\" (ink) over the swollen strip's fill",
+  "got": 17.6,
+  "want": ">= 12 (board 18)",
+  "pass": true
+ },
+ {
+  "t": 35.55,
+  "name": "LAB-CHECKS 4: \"higher\" (ink) under the band's foot (456.5)",
+  "got": 14.5,
+  "want": ">= 12 (board 14)",
+  "pass": true
+ },
+ {
+  "t": 35.55,
+  "name": "\"louder\" left of its branch (tip 960)",
+  "got": 37.08,
+  "want": "info (board 40)",
+  "pass": true
+ },
+ {
+  "t": 35.55,
+  "name": "\"louder\" and \"higher\" apart",
+  "got": 37,
+  "want": "info (board 38)",
+  "pass": true
+ },
+ {
+  "t": 35.55,
+  "name": "the strip swollen under the peak: its top (board 593)",
+  "got": 593.6,
+  "want": 593,
+  "tol": 3,
+  "pass": true
+ },
+ {
+  "t": 35.55,
+  "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
+  "got": 196.32,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 35.55,
+  "name": "keep-out: nearest visible text to tavi's body box (\"HIGHER\")",
+  "got": 304,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 33.617000000000004,
+  "name": "[B-01: 181] the thesis lands on \"in a voice,\" and stays to the fade: on screen (s)",
+  "got": 2.94,
+  "want": ">= 2",
+  "pass": true
+ },
+ {
+  "t": 33.617000000000004,
+  "name": "[B-01: 181] ... at full from its landing (0.4 s) to the fade (s)",
+  "got": 2.14,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 33.617000000000004,
+  "name": "[B-01: 181] the fork and its labels land 0.4 s or more after it",
+  "got": "0.98, 1.28, 1.73",
+  "want": ">= 0.4",
+  "pass": true
+ },
+ {
+  "t": 33.617000000000004,
+  "name": "the thesis shown, top centre (centred 960, baseline 130)",
+  "got": "1.00, 960",
+  "want": "1.00, 960",
+  "pass": true
+ },
+ {
+  "t": 33.617000000000004,
+  "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
+  "got": 196.32,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 33.617000000000004,
+  "name": "keep-out: nearest visible text to tavi's body box (\"HIGHER\")",
+  "got": 304,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 10.920000000000005,
+  "name": "[B-01: 184] the strip's resting envelope in ghost violet from \"mainly\": outline y 662 to 718, x 400 to 1520",
+  "got": "400 to 1520, 662.0 to 718.0, stroke null",
+  "want": "400 to 1520, 662 to 718, stroke 0.35 (outline)",
+  "pass": true
+ },
+ {
+  "t": 10.920000000000005,
+  "name": "[B-01: 184] \"mainly: louder\"'s arrow tip on the envelope's top (662)",
+  "got": 662,
+  "want": 662,
+  "pass": true
+ },
+ {
+  "t": 10.920000000000005,
+  "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
+  "got": 107.69,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 10.920000000000005,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 534.41,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 36.204499999999996,
+  "name": "last frame: the bare chart at 0.78: plot x 466 to 1340, band 365.5 to 456.5",
+  "got": "466.0 to 1339.6, 365.5 to 456.5",
+  "want": "466 to 1340, 365.5 to 456.5",
+  "pass": true
+ },
+ {
+  "t": 36.204499999999996,
+  "name": "the thumb at 50: (903, 723)",
+  "got": "(902.8, 723.0)",
+  "want": "(902.8, 723.0)",
+  "pass": true
+ },
+ {
+  "t": 36.204499999999996,
+  "name": "\"50\" and \"Push\" shown",
+  "got": "50 1.00 1.00",
+  "want": "50 1.00 1.00",
+  "pass": true
+ },
+ {
+  "t": 36.204499999999996,
+  "name": "\"ILLUSTRATION\" x 1128 to 1340, centred y 208",
+  "got": "1128.5 to 1339.6, 208.2",
+  "want": "1128 to 1340, 208.2",
+  "pass": true
+ },
+ {
+  "t": 36.204499999999996,
+  "name": "the row's text at full; no line, no \"in the band\", no \"LISTEN ONLY\", panels, fork or type",
+  "got": "1.00 / 0.00 0.00 0.00 0.00 0.00 0.00",
+  "want": "1.00 / 0.00 0.00 0.00 0.00 0.00 0.00",
+  "pass": true
+ },
+ {
+  "t": 36.204499999999996,
+  "name": "hosts at 300 in their corners",
+  "got": "30.5-189.5; 1720.5-1879.5",
+  "want": "30.5-189.5; 1720.5-1879.5",
+  "pass": true
+ },
+ {
+  "t": 36.204499999999996,
+  "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
+  "got": 196.32,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 36.204499999999996,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 577.82,
+  "want": ">= 20",
+  "pass": true
+ }
+]

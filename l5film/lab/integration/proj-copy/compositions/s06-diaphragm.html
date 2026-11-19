@@ -1,0 +1,368 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s06-diaphragm" data-composition-id="s06-diaphragm" data-start="0" data-duration="68.775" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s06-diaphragm -->
+      <video id="s06-diaphragm-m-orange" data-merc="m-orange" class="clip" muted playsinline src="assets/merc/m-orange-s06-merc.webm" data-start="0.000" data-duration="68.797" data-media-start="0.050"></video>
+      <video id="s06-diaphragm-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m-orange-s06-merc.webm" data-start="0.000" data-duration="68.797" data-media-start="0.050"></video>
+      <video id="s06-diaphragm-m-blue" data-merc="m-blue" class="clip" muted playsinline src="assets/merc/m-blue-s06-merc.webm" data-start="0.000" data-duration="68.797" data-media-start="0.050"></video>
+      <video id="s06-diaphragm-m-blue-refl" data-merc="m-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m-blue-s06-merc.webm" data-start="0.000" data-duration="68.797" data-media-start="0.050"></video>
+      <div class="scene" id="s06-diaphragm-scene"></div>
+      <script>
+        ;(function () {
+          // S6, chapter 2 "What the diaphragm does" (STORYBOARD 6a to 6k; HANDOFFS § The breath figure (S6), § The
+          // gauge and Merc's small band, § Framings F-gauge, § Camera moves (the steady push), § The cuts S5 to S6 and
+          // S6 to S7). The card over the dimmed chart at 0.78; the hosts shrink to 240; the chart's chip glides to the
+          // gauge's corner; the chart splits (the band rises into Merc's small band, the strip slides to the gauge's
+          // floor) as the breath figure draws on; the figure breathes; the predict; the strip opens into the gauge;
+          // Merc's ten seconds under a steady 5 % push to F-gauge, the gauge's labels in stages; the reveal on the
+          // cursor and the figure; Quiet and Loud. Ends at F-gauge for the matched cut at o8. Every time is a cue, a
+          // word, a duration or the gauge note's own time.
+          const SID = 's06-diaphragm'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const C = L.C, P = L.prog, clamp = L.clamp, lerp = L.lerp, f2 = L.f2, G = L.GAUGE
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
+          const world = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+
+          /* ---------------------------------------------------------------- anchors */
+          // 6a
+          const ACT = at('act2')
+          const CARD_IN = ACT + 0.22, CARD_OUT = at('o6', 'start', -0.5), BACK = CARD_OUT + 0.38
+          // 6b: o6
+          const O6 = at('o6')
+          const SHRINK = O6 + 0.07, SHRINK_D = 0.8                     // the hosts to 240 in place (power2.inOut)
+          const GLIDE = O6 + 0.17, GLIDE_D = 0.6                       // the chip glides to the gauge's corner
+          const THAT = word('o6', 'that')                              // the thumb scales 1.2
+          const SPLIT = word('o6', "isn't"), SPLIT_D = 1.5             // the chart splits (one move, the curves below)
+          const FIG = SPLIT + 0.1, FIG_D = 1.0                         // the figure draws on from the spine outward
+          const GUESS = Math.max(word('o6', 'diaphragm', 'start', 0.13), FIG + FIG_D)   // her guess, once the figure is drawn
+          // 6c: b11
+          const ROW_IN = at('b11', 'start', -0.15)                     // the four words come back
+          const LIT_D = word('b11', 'diaphragm')                       // "diaphragm" lights
+          const DIA = LIT_D + 0.47                                     // "diaphragm" lands by the dome with its leader
+          const DOME = word('b11', 'dome-shaped')                      // a light runs along the dome
+          const LUNGS = word('b11', 'lungs')                           // "lungs" lands, the guess fades
+          const TIGHT = word('b11', 'tightens'), TIGHT_D = 1.5         // the figure breathes in once
+          const BELLY = TIGHT + 0.24                                   // "belly" lands as the wall moves out; the row leaves
+          const BIN = Math.max(word('b11', 'breathe', 'start', -0.12), BELLY + 0.4)   // "breathing in"
+          const EASE_BACK = TIGHT + 1.54, EASE_BACK_D = 1.0
+          const KICK_OUT = at('b11', 'end')
+          // 6d: b12
+          const BIG = word('b12', 'big'), BIG_D = 1.21                 // breathes in fully and stays full
+          const QUIET = word('b12', 'quiet')                           // the strip's low, even envelope draws (0.6 s)
+          const PRED_K = word('b12', 'must'), PILL1 = word('b12', 'push'), PILL2 = word('b12', 'hold')
+          // 6e: predict2
+          const PRED2 = at('predict2'), PRED2_D = at('predict2', 'end') - PRED2
+          const OPEN = PRED2 + 0.05, OPEN_D = 1.4                      // the strip opens out into the gauge's frame
+          const ONE_NOTE = PRED2 + 0.5, PUSH_AIR = ONE_NOTE + 0.45
+          // 6f: the gauge, ten seconds; its stages in the note's own time (STORYBOARD 6f)
+          const GAUGE = at('gauge'), GAUGE_D = at('gauge', 'end') - GAUGE
+          const gs = (sec) => GAUGE + (sec * GAUGE_D) / 10             // the note's second `sec`
+          const LUNGS_L = gs(0.2), GOLD = gs(1.0), NEEDS = gs(1.3), HATCH = gs(2.0), READOUT = gs(2.5)
+          const CHECK = gs(3.5), PRED_OUT = gs(4.0), UNCHANGED = gs(5.0), CROSS1 = gs(G.cross(G.GOLD.quiet))
+          const ADDED = CROSS1 + 0.45                                  // "added", 0.45 s after the readout's switch [B-01: 183]
+          // 6g: b13
+          const HOLD = word('b13', 'hold'), BM = word('b13', 'breathing'), NEVER = word('b13', 'never')
+          // 6h: b14
+          const FULL = word('b14', 'full'), SPRING = word('b14', 'spring'), HARDER = word('b14', 'harder')
+          const WALK = word('b14', 'so'), WALK_END = word('b14', 'back#2'), BIM = word('b14', 'breathing-in'), HOLDING = word('b14', 'holding')
+          // 6i: b15
+          const B15 = at('b15'), RUN = word('b15', 'the'), RUN_D = 1.27, BRM = word('b15', 'belly'), CANT = word('b15', "can't")
+          const STRIKE = CANT + 0.43
+          // 6j: o7
+          const O7 = at('o7') + 0.01, FULL2 = word('o7', 'full'), HOLD2 = word('o7', 'hold'), CUR_OUT = at('o7', 'end', 0.16)
+          // 6k: b16
+          const YES = at('b16'), LOUD = word('b16', 'loud'), RISE = word('b16', 'note'), LESS = word('b16', 'less')
+          const RISE_D = clamp(LESS - RISE, 0.5, 0.8)                  // the gold line has risen before its new label lands
+          const BACKW = word('b16', 'back'), MORE = word('b16', 'more')
+
+          /* ---------------------------------------------------------------- the camera: the steady 10 s push to F-gauge */
+          const cam = L.frameRig(room, { from: 'F0' })
+          cam.to(GAUGE, GAUGE_D, 'F-gauge', L.steady(GAUGE_D))
+
+          /* ---------------------------------------------------------------- the hosts: 300 in the corners, then 240 small */
+          const Hc = L.HOSTS.corners, Hs = L.HOSTS.small
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hc.merc, moves: [{ at: SHRINK, dur: SHRINK_D, x: Hs.merc.x, size: Hs.merc.size }] })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hc.tavi, moves: [{ at: SHRINK, dur: SHRINK_D, x: Hs.tavi.x, size: Hs.tavi.size }] })
+
+          /* ---------------------------------------------------------------- the chart at 0.78, as S5 left it (until the split) */
+          const ch = L.bandChart(world, L.CHART.S5)
+          ch.place(L.CHART.AT078)
+          // "level" labels the strip at its left, at its height, as S5 leaves it [B-01: 184]
+          const lab = { A3: ch.label('A3'), level: ch.label('level', null, { x: 366, y: 701, anchor: 'end' }), row: ch.label('row') }
+          const slider = L.pushSlider(ch.g, {})
+
+          /* ---------------------------------------------------------------- the split (6b): the settled curves */
+          // The board's constraint: the band rises before it slides right, its foot above y 288 before its right end
+          // passes x 1347, so it clears the gauge's chip (x 1359 to 1630, y 300 to 340) by 12 px or more. The lab adds a
+          // second: the figure draws on at the left as the band leaves (the head at x 389 to 561, y 143 to 293), so the
+          // band and the "A3" it carries must be right of the head before each part of it is drawn. Settled: the band
+          // rises over the move's first 35 % (power2.out), slides right over 15 to 75 % (power2.inOut), and the strip and
+          // the line's weight move over the whole (power2.inOut); the figure's outline draws on power2.in.
+          const SPLIT_C = { rise: [0, 0.35, 'power2.out'], slide: [0.15, 0.75, 'power2.inOut'], strip: [0, 1, 'power2.inOut'] }
+          const seg = (u, [a, b, e]) => L.ease(e)(clamp((u - a) / (b - a)))
+          const split = (u) => {
+            const A = G.FROM078, B = G.SMALL
+            const uy = seg(u, SPLIT_C.rise), ux = seg(u, SPLIT_C.slide), us = seg(u, SPLIT_C.strip)
+            return {
+              uy, ux, us,
+              band: { x0: lerp(A.band.x0, B.x0, ux), x1: lerp(A.band.x1, B.x1, ux), y0: lerp(A.band.y0, B.y0, uy), y1: lerp(A.band.y1, B.y1, uy), line: lerp(A.band.line, B.line, uy), lw: lerp(A.band.lw, 3, us) },
+              strip: { x0: lerp(A.strip.x0, B.x0, us), x1: lerp(A.strip.x1, B.x1, us), y: lerp(A.strip.y, G.STRIP.y, us) },
+            }
+          }
+
+          /* ---------------------------------------------------------------- the breath figure (S6's torso) and its labels */
+          // the legs fade out 54 px higher than L.FIGURE.S6's [750, 780], so their strokes end 20 px or more above "with your
+          // breathing muscles," at F-gauge [B-01: 188], that line and "never your throat" having moved up 34 px to keep
+          // 12 px or more from the floor horizon (DECISIONS 203, the rule of 188)
+          const F6 = { ...L.FIGURE.S6, fade: [696, 726] }
+          const fig = L.figure(world)
+          const guess = L.guess(world, { points: [[476, 620], [476, 460]], q: { x: 600, y: 470 }, head: 14 })
+          const struck = L.arrow(world, { x1: 476, y1: 620, x2: 476, y2: 460, color: C.chrome, width: 3, head: 14 })
+          const strike = L.arrow(world, { x1: 446, y1: 560, x2: 506, y2: 520, color: C.ink, width: 3, head: 0 })
+          const fl = {
+            lungs: L.label(world, 'lungs', { x: 350, y: 470, size: 34, anchor: 'end' }),
+            breathingIn: L.label(world, 'breathing in', { x: 350, y: 580, size: 36, anchor: 'end' }),
+            cant: L.label(world, 'can’t push air out', { x: 350, y: 580, size: 30, anchor: 'end' }),
+            dia: L.label(world, 'diaphragm', { x: 350, y: 640, size: 34, anchor: 'end' }),
+            belly: L.label(world, 'belly', { x: 640, y: 700, size: 34 }),
+            muscles: L.label(world, 'with your breathing muscles,', { x: 260, y: 766, size: 32 }),   // DECISIONS 203
+            throat: L.label(world, 'never your throat', { x: 260, y: 804, size: 32 }),
+            bellyRib: L.label(world, 'belly and rib muscles', { x: 260, y: 800, size: 32 }),
+          }
+          const diaLeader = L.leader(world, { x1: 356, y1: 631, x2: 378, y2: 661 })
+          // at F-gauge "diaphragm" sits inside Merc's video square (transparent there; 30 px from his drawn body)
+          fl.dia.el.setAttribute('data-layout-allow-occlusion', '')
+          const cantLeader = L.leader(world, { x1: 358, y1: 571, x2: 466, y2: 583 })
+
+          /* ---------------------------------------------------------------- the gauge and Merc's small band (world) */
+          const ga = L.gauge(world)
+          const gFrame = ga.g.children[3], goldEl = gFrame.children[6]
+          // 6j: the falling line's first stretch glows (an accent over the lungs' line, 0 to 3.5 s)
+          const firstGlow = L.svg('path', { d: `M${G.x(0)} ${G.lungs(0)}L${G.x(3.5)} ${G.lungs(3.5)}`, fill: 'none', stroke: '#ffffff', 'stroke-width': 9, 'stroke-opacity': 0.35, 'stroke-linecap': 'round', opacity: 0 }, gFrame)
+          const GL = G.LABELS
+          const GP = { pushOfAir: 276, lungsPush: 327, needs: 646, readout: { x: 1630, y: 382 } }   // [B-01: 182]
+          const gl = {}
+          // The labels' plates are trimmed to the text box + 4 px and cover no stroke [B-01: 182]: "push of air (not pitch)"
+          // and "the lungs' own push" sit centred in their gaps (band edge 241 / frame top 289; frame top 291 / the lungs'
+          // line); "what the note needs" moves down until its plate clears the gold line by 4 px; the readout, whose
+          // plate cannot fit between the band's edge and the frame's top, goes on empty ground inside the frame's top
+          // right, under the chip (right-aligned 1630). The cursor still passes behind every one.
+          const PLACE = { pushOfAir: { y: GP.pushOfAir }, lungsPush: { y: GP.lungsPush }, needs: { y: GP.needs }, readout: GP.readout, readoutAdding: GP.readout }
+          // the readout's own plate, the wider wording's box + 4 px, shown for the readout's whole life: in a swap both
+          // wordings are faint, and the cursor (at the crossing, under the readout) must stay behind [B-01: 183]
+          const roPlate = L.svg('rect', { fill: C.ground, rx: 6, opacity: 0 }, world)
+          for (const n of ['unchanged', 'pushOfAir', 'oneNote', 'lungsPush', 'needs', 'heldBack', 'added', 'readout', 'readoutAdding', 'needsLoud', 'lessHolding', 'moreAdding']) gl[n] = L.label(world, GL[n].text, { ...GL[n], ...(PLACE[n] || {}), back: G.BACKS.includes(n), backPadX: 4, backPadY: 4 })
+          // the readout's two wordings share one place and switch: one is shown at a time
+          for (const n of ['readout', 'readoutAdding']) gl[n].el.setAttribute('data-layout-allow-overlap', '')
+          const upArrow = L.arrow(world, { x1: G.LEADERS.upArrow.x, y1: G.LEADERS.upArrow.y + 1, x2: G.LEADERS.upArrow.x, y2: G.LEADERS.upArrow.y - 23, color: C.ink, width: 2.5, head: 9 })
+          const lessLeader = L.leader(world, G.LEADERS.lessHolding)
+          const moreLeader = L.leader(world, G.LEADERS.moreAdding)
+          const quietChip = L.chip(world, G.CHIPS.quiet.text, { x: G.CHIPS.quiet.x, y: G.CHIPS.quiet.y })
+          const loudChip = L.chip(world, G.CHIPS.loud.text, { x: G.CHIPS.loud.x, y: G.CHIPS.loud.y })
+          // the small band's "A3", carried from the chart's (at 0.78: right edge 439.5, baseline 424.3, 37.4 px) to its
+          // place (right-aligned 740, baseline 212, 36 px) with the band
+          const a3 = L.text(world, 'A3', { x: 0, y: 0, size: 36, anchor: 'end', opacity: 0 })
+          // the chart's "ILLUSTRATION" chip, made once at the gauge's place and drawn from the label row's place at 0.78
+          const tag = L.tag(world, L.TAGS.illustration, G.TAG)
+          const A78 = L.CHART.AT078                                    // the label row's chip at 0.78: centre y 208.2
+
+          /* ---------------------------------------------------------------- frame-fixed: the card, the kicker, the predict, the four words */
+          const card = L.chapterCard(hud, { num: 2, title: 'What the diaphragm does', tIn: CARD_IN, tOut: CARD_OUT })
+          const kicker = L.kicker(hud, '02 · What the diaphragm does')
+          const PR = G.PREDICT
+          const predict = L.text(hud, PR.kicker.text, { x: PR.kicker.x, y: PR.kicker.y, size: 26, family: 'mono', weight: 500, fill: C.ink2, tracking: 0.18 })
+          const pills = PR.pills.map((p) => L.pill(hud, p.text, { x: p.x, x1: p.x1, y: PR.y, h: PR.h }))
+          // "Hold it back"'s check: right of its capsule (the 30 px between the two pills cannot hold a 22 px check 12 px
+          // from both), where the ring timer stood until the predict's end
+          const check = L.check(hud, { x: 1446, y: PR.y, size: 22, color: C.ink, width: 4 })
+          const ring = L.ringTimer(hud, { x: PR.ring.x, y: PR.ring.y, r: 18 })
+          const WORDS = ['air pressure', 'diaphragm', 'onset', '“support”']
+          const row = L.chipRow(hud, WORDS, { right: 1800, y: 87, gap: 12 })
+
+          /* ---------------------------------------------------------------- the cursor: the note's own pace, then the reveal's walks */
+          const c6f = (t) => clamp(((t - GAUGE) / GAUGE_D) * 10, 0, 10)
+          const cur = (t) => {
+            if (t < FULL) return c6f(t)
+            if (t < WALK) return 10 * (1 - P(t, FULL, 0.4))
+            if (t < RUN) return 3.5 * P(t, WALK, WALK_END - WALK, 'sine.inOut')
+            if (t < FULL2) return 3.5 + 5 * P(t, RUN, RUN_D, 'power2.inOut')
+            return 8.5 * (1 - P(t, FULL2, 0.4))
+          }
+          const tc = G.cross(G.GOLD.quiet)
+          const crossIn = (a, b) => { let lo = a, hi = b; const s0 = cur(lo) > tc; for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if ((cur(m) > tc) === s0) lo = m; else hi = m } return (lo + hi) / 2 }
+          // the readout's switches, each where the cursor crosses the gold line: a swap, the old words out (0.1 s), then
+          // the new in (0.15 s), never glyph on glyph [B-01: 183]
+          const SWITCHES = [{ t: CROSS1, to: 1 }, { t: crossIn(FULL, FULL + 0.4), to: 0 }, { t: crossIn(RUN, RUN + RUN_D), to: 1 }, { t: crossIn(FULL2, FULL2 + 0.4), to: 0 }]
+          const switchAt = (t) => { let last = null; for (const s of SWITCHES) if (t >= s.t) last = s; return last }
+          const readoutAt = (t) => {
+            const last = switchAt(t)
+            if (!last) return { hold: { a: 1, dy: 0 }, add: { a: 0, dy: 0 } }
+            const o = { a: 1 - P(t, last.t, 0.1, 'none'), dy: 0 }, n = { a: P(t, last.t + 0.1, 0.15, 'none'), dy: 0 }
+            return last.to === 1 ? { hold: o, add: n } : { hold: n, add: o }
+          }
+          // the figure's breath follows the cursor while it walks the note: full lungs at 0 s, empty at the crossing,
+          // then the belly wall in a little as the belly and rib muscles push (FACTS 17; Q27)
+          const breathOf = (c) => (c <= tc ? 1 - c / tc : (-0.6 * (c - tc)) / (10 - tc))
+          const breath = (t) => {
+            if (t < GAUGE) return L.track(t, 0, [{ at: TIGHT, dur: TIGHT_D, to: 1, ease: 'sine.inOut' }, { at: EASE_BACK, dur: EASE_BACK_D, to: 0, ease: 'sine.inOut' }, { at: BIG, dur: BIG_D, to: 1, ease: 'sine.inOut' }])
+            if (t < FULL) return breathOf(c6f(t))
+            if (t < WALK) return lerp(breathOf(10), 1, P(t, FULL, 0.9, 'sine.inOut')) - 0.3 * L.env(t, SPRING, 0.25, 0, 0.45)
+            if (t < FULL2) return breathOf(cur(t))
+            if (t < YES) return lerp(breathOf(8.5), 1, P(t, FULL2, 0.9, 'sine.inOut'))
+            return lerp(1, 0, P(t, YES, 1.5, 'sine.inOut'))
+          }
+
+          const probe = { room, cam, ch, lab, slider, ga, fig, fl, gl, tag, a3, quietChip, loudChip, guess, struck, strike, kicker, predict, pills, check, row, split, SPLIT_C, lessLeader, moreLeader,
+            readoutAt, roPlate, SWITCHES, F6, GP, A: { ADDED, ACT, O6, GLIDE, GLIDE_D, SPLIT, SPLIT_D, FIG, FIG_D, GUESS, ROW_IN, LIT_D, DIA, TIGHT, BELLY, BIN, BIG, QUIET, PRED_K, PILL1, PILL2, PRED2, OPEN, OPEN_D, ONE_NOTE, PUSH_AIR, GAUGE, GAUGE_D, LUNGS_L, GOLD, NEEDS, HATCH, READOUT, CHECK, UNCHANGED, CROSS1, HOLD, BM, NEVER, FULL, WALK, WALK_END, B15, RUN, RUN_D, BRM, CANT, STRIKE, O7, FULL2, CUR_OUT, YES, LOUD, RISE, RISE_D, LESS, BACKW, MORE, SWITCHES, D }, boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            dust(T)
+            probe.boxes = { merc: merc(t), tavi: tavi(t) }
+
+            /* 6a: the chart and slider at 25 % under the card, their labels and chip hidden while dim */
+            const dimU = P(t, ACT, 0.2) - P(t, BACK, 0.2)
+            const labA = 1 - dimU
+            card.draw(t)
+
+            /* 6b: the split. Before it, the chart at 0.78 (band, Merc's line, the strip's hairline); from it, the gauge's
+               small band and strip, on the same pixels at its start */
+            const u = clamp((t - SPLIT) / SPLIT_D)
+            const sp = split(u)
+            const splitting = t >= SPLIT
+            const textOut = 1 - P(t, SPLIT, 0.2)
+            const hide = splitting ? 0 : 1                            // the band, line and strip pass to the gauge's
+            // the strip's resting envelope in ghost violet, as S5 leaves it; it fades as the strip leaves for the gauge [B-01: 184]
+            ch.draw({ a: lerp(1, 0.25, dimU), band: { a: hide }, merc: { a: hide }, strip: { a: 1, hair: hide, envs: [{ id: 'rest', contour: 'demo', t: L.CHART.S5.W, ghost: true, a: 1 - P(t, SPLIT, 0.3, 'none') }] } })
+            slider.draw({ a: textOut, p: 50, thumbScale: L.pulse(t, [THAT], 'label') })
+            slider.val.setAttribute('opacity', labA.toFixed(3)); slider.lab.setAttribute('opacity', labA.toFixed(3))
+            lab.A3.draw({ a: splitting ? 0 : labA }); lab.level.draw({ a: labA * textOut }); lab.row.draw({ a: labA * textOut })
+            // Merc's line rides into the small band whole, fades as the gauge opens, and the sung note draws it again
+            const lineA = (1 - P(t, OPEN, 0.3)) + (t >= GAUGE ? 1 : 0)
+            const lineTo = t >= GAUGE && t < GAUGE + GAUGE_D ? G.x(c6f(t)) : null
+            const stripH = 14 * P(t, QUIET, 0.3)                       // the quiet note's low, even envelope (6d)
+            const open = P(t, OPEN, OPEN_D, 'none')                    // the kit eases the opening (power2.inOut)
+            const c = cur(t)
+            // the cursor fades up linearly over 0.4 s: an eased 0.3 s ramp put the whole thin line's change into two frames,
+            // which measure.py reads as a pop
+            const cursorA = P(t, OPEN + OPEN_D - 0.2, 0.4, 'none') * (1 - P(t, CUR_OUT, 0.2))
+            const drawn = t < GAUGE + GAUGE_D ? c6f(t) : 10
+            const goldY = lerp(G.GOLD.quiet, G.GOLD.loud, P(t, RISE, RISE_D))
+            ga.draw({
+              band: splitting ? { ...sp.band, lineA, lineTo } : null,
+              strip: splitting ? { ...sp.strip, h: stripH, draw: P(t, QUIET, 0.6) } : null,
+              open, cursor: t >= OPEN + OPEN_D - 0.2 ? c : null, cursorA, drawn,
+              gold: goldY, goldDraw: P(t, GOLD, 0.6), hatch: P(t, HATCH, 0.4),
+              heldLit: L.lit(t, [HOLD, HARDER, HOLD2], { long: true }), addedLit: L.lit(t, [BRM, MORE], { long: true }),
+              lungsRun: L.run(t, SPRING, 1.0),
+            })
+            firstGlow.setAttribute('opacity', (0.5 * L.glow(t, [FULL2], { up: 0.25, hold: 0.8, down: 0.6 })).toFixed(3))
+            // "A3" with the band: its right end 26.5 to 20 px left of the band, its baseline 13.3 to 12 px under the line
+            if (splitting) {
+              const ax = sp.band.x0 - lerp(26.5, 20, sp.ux), ay = sp.band.line + lerp(13.26, 12, sp.uy), as = lerp(37.44, 36, sp.us) / 36
+              a3.setAttribute('transform', `translate(${f2(ax)} ${f2(ay)}) scale(${as.toFixed(4)})`)
+              a3.setAttribute('opacity', '1')
+            } else a3.setAttribute('opacity', '0')
+
+            /* the chip: hidden while the chart is dim; glides down and then right to the gauge's corner, growing to full
+               size (6b); stays through the split and the gauge, drawn above the frame's stroke and the cursor */
+            const gu = clamp((t - GLIDE) / GLIDE_D)
+            const gy = L.ease('power2.inOut')(clamp(gu / 0.6)), gx = L.ease('power2.inOut')(clamp((gu - 0.35) / 0.65))
+            const toCx = G.TAG.x - tag.w / 2, toCy = G.TAG.y
+            const fromCx = A78.s * (1520 - tag.w / 2) + A78.dx, fromCy = A78.s * 140 + A78.dy
+            const tcx = lerp(fromCx, toCx, gx), tcy = lerp(fromCy, toCy, gy), ts = lerp(A78.s, 1, L.ease('power2.inOut')(gu))
+            tag.draw({ alpha: labA, dx: tcx - toCx, dy: tcy - toCy, scale: ts })
+
+            /* the figure: draws on with the split, breathes, its lungs following the cursor through the reveal */
+            const b = breath(t)
+            const glow = { dome: Math.max(L.glow(t, [BM], { hold: 0.6 }), L.glow(t, [BIM], { hold: 0.6 })), ribs: Math.max(L.glow(t, [BM], { hold: 0.6 }), L.glow(t, [BRM], { hold: 0.8 })), belly: L.glow(t, [BRM], { hold: 0.8 }) }
+            const run = L.run(t, DOME, 0.6)
+            fig.draw({ ...F6, a: t >= FIG ? 1 : 0, draw: P(t, FIG, FIG_D, 'power2.in'), legs: 0, fade: F6.fade, breath: b, lungFill: clamp(b), glow, run: run ? { part: 'dome', ...run } : null })
+            const gIn = P(t, GUESS, 0.4, 'none'), gOut = 1 - P(t, LUNGS, 0.3)
+            guess.draw(gIn, gOut, P(t, GUESS, 0.2) * gOut)
+            fl.lungs.life(t, LUNGS, null)
+            const dl = fl.dia.life(t, DIA, null)
+            const [dx2, dy2] = fig.at('domeL')
+            diaLeader.set({ x2: dx2, y2: dy2 }); diaLeader.draw(P(t, DIA, 0.3), dl)
+            fl.belly.life(t, BELLY, null)
+            fl.breathingIn.life(t, BIN, BIG)
+            fl.muscles.life(t, BM, B15)
+            fl.throat.life(t, NEVER, B15)
+            fl.bellyRib.life(t, BRM, O7, { dOut: 0.3 })
+            const sa = 1 - P(t, O7, 0.3)
+            struck.draw(P(t, CANT, 0.3), sa)
+            strike.draw(P(t, STRIKE, 0.3), sa)
+            const ca = fl.cant.life(t, STRIKE, O7, { dOut: 0.3 })
+            cantLeader.draw(P(t, STRIKE, 0.3), ca)
+
+            /* the gauge's labels, in stages (6e, 6f), the reveal's pulses, Loud (6k) */
+            gl.oneNote.life(t, ONE_NOTE, YES)
+            gl.pushOfAir.life(t, PUSH_AIR, null)
+            upArrow.draw(P(t, PUSH_AIR, 0.3), P(t, PUSH_AIR, 0.2))
+            gl.lungsPush.life(t, LUNGS_L, null)
+            gl.needs.life(t, NEEDS, LOUD)
+            gl.heldBack.life(t, HATCH, LOUD, {}, [HOLDING, HOLD2], 'label')
+            gl.unchanged.life(t, UNCHANGED, null)
+            gl.added.life(t, ADDED, LOUD)
+            const ro = readoutAt(t), roA = P(t, READOUT, 0.2) * (1 - P(t, CUR_OUT, 0.2))
+            if (roA > 0) {
+              // the plate fits the wording shown, + 4 px; across a swap it goes from the old wording's box to the new's:
+              // it grows as the old words leave (0.1 s), before the new land, or shrinks as the new land (0.15 s), after
+              // the old have gone, so every glyph drawn stays on it and the cursor at the crossing behind it [B-01: 182, 183]
+              const bh = gl.readout.el.getBBox(), bd = gl.readoutAdding.el.getBBox()   // read as drawn, so the font is the one in use
+              const sw = switchAt(t)
+              const [b0, b1] = !sw ? [bh, bh] : sw.to === 1 ? [bh, bd] : [bd, bh]
+              const u = !sw ? 0 : b1.width > b0.width ? P(t, sw.t, 0.1, 'none') : P(t, sw.t + 0.1, 0.15, 'none')
+              const x0 = lerp(b0.x, b1.x, u), x1 = lerp(b0.x + b0.width, b1.x + b1.width, u)
+              const y0 = lerp(b0.y, b1.y, u), y1 = lerp(b0.y + b0.height, b1.y + b1.height, u)
+              roPlate.setAttribute('x', f2(x0 - 4)); roPlate.setAttribute('y', f2(y0 - 4)); roPlate.setAttribute('width', f2(x1 - x0 + 8)); roPlate.setAttribute('height', f2(y1 - y0 + 8))
+            }
+            roPlate.setAttribute('opacity', roA.toFixed(3))
+            gl.readout.draw({ a: roA * ro.hold.a, dy: ro.hold.dy })
+            gl.readoutAdding.draw({ a: roA * ro.add.a, dy: ro.add.dy })
+            gl.needsLoud.life(t, BACKW, null)
+            const lh = gl.lessHolding.life(t, LESS, null)
+            lessLeader.draw(P(t, LESS, 0.4), lh)
+            const ma = gl.moreAdding.life(t, MORE, null)
+            moreLeader.draw(P(t, MORE, 0.4), ma)
+            const chipA = P(t, YES, 0.2), loudU = P(t, LOUD, 0.25)
+            quietChip.draw({ alpha: chipA, lit: 1 - loudU })
+            loudChip.draw({ alpha: chipA, lit: loudU, scale: L.pulse(t, [LOUD], 'chip') })
+
+            /* frame-fixed: the kicker, the predict and its pills, the ring, the check, the four words */
+            kicker.draw(t, O6, KICK_OUT)
+            const pk = L.fade(t, PRED_K, PRED_OUT, { upFast: true })
+            L.place(predict, { a: pk.a, dy: pk.dy })
+            const p1 = L.fade(t, PILL1, PRED_OUT, { upFast: true }), p2 = L.fade(t, PILL2, PRED_OUT, { upFast: true })
+            pills[0].draw({ alpha: p1.a, dy: p1.dy, dim: P(t, CHECK, 0.3) })
+            const ck = P(t, CHECK, 0.3, 'power1.out')
+            pills[1].draw({ alpha: p2.a, dy: p2.dy, scale: L.pulse(t, [CHECK], 'pill') })
+            pills[1].box.setAttribute('stroke', L.mixHex(C.chrome, C.ink, ck))
+            check.draw(ck, p2.a)
+            check.g.setAttribute('transform', `translate(1446 ${f2(PR.y + p2.dy)})`)
+            ring.draw(t, PRED2, PRED2_D)
+            // the four words: back for "diaphragm", "air pressure" still lit from S5 (DECISIONS 75)
+            const wf = L.fade(t, ROW_IN, BELLY)
+            const litD = P(t, LIT_D, 0.3, 'power2.out')
+            row.draw((i) => ({ alpha: wf.a, lit: i === 0 ? 1 : i === 1 ? litD : 0, underline: i === 0 ? 1 : i === 1 ? litD : 0, scale: i === 1 ? L.pulse(t, [LIT_D], 'chip') : 1 }))
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

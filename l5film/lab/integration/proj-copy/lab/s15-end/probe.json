@@ -1,0 +1,338 @@
+[
+ {
+  "t": 0,
+  "name": "first frame: the figure on L.TEASE.shrink from film time (S14's last computes the same): bead 1 and bead 7",
+  "got": "u 0.0690; 475.10, 719.17; 1398.69, 517.14",
+  "want": "475.10, 719.17; 1398.69, 517.14",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "the camera at F0 on the cut frame (the push starts from rest)",
+  "got": "1.00000",
+  "want": "1.00000",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "no type yet; the beads lit, the copy and \"?\" drawn",
+  "got": "0 texts; lit 1111111",
+  "want": "0 texts; lit 1111111",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "Merc at (1290, 840), Tavi at (1800, 840), 300",
+  "got": "1290 159.0; 1800",
+  "want": "1290 159.0; 1800",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "keep-out: nearest visible text to merc's body box (\"?\")",
+  "got": 279.69,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "keep-out: nearest visible text to tavi's body box (\"?\")",
+  "got": 362.18,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "keep-out: the tease figure from merc's body box",
+  "got": 96.23,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "keep-out: the tease figure from tavi's body box",
+  "got": 302.87,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 364.17,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 0.38999999999998636,
+  "name": "the lockup mid-wipe (feathered, left to right)",
+  "got": "1.000",
+  "want": "1.000",
+  "pass": true
+ },
+ {
+  "t": 0.38999999999998636,
+  "name": "keep-out: nearest visible text to merc's body box (\"?\")",
+  "got": 415.86,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.38999999999998636,
+  "name": "keep-out: nearest visible text to tavi's body box (\"?\")",
+  "got": 355.26,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.38999999999998636,
+  "name": "keep-out: the tease figure from merc's body box",
+  "got": 146.21,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.38999999999998636,
+  "name": "keep-out: the tease figure from tavi's body box",
+  "got": 253.46,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.38999999999998636,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 254,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 0.9000000000000545,
+  "name": "the tease figure settled in the end card's box (x 1210 to 1660, y 150 to 380 at F0, riding the push)",
+  "got": "1203.2 to 1688.1, 158.9 to 386.5",
+  "want": "about 1210.4 to 1661.1, 149.4 to 379.8 (the \"?\" and the beads' halos past it)",
+  "pass": true
+ },
+ {
+  "t": 0.9000000000000545,
+  "name": "the rows and the arrows gone",
+  "got": "0.000 0.000",
+  "want": "0.000 0.000",
+  "pass": true
+ },
+ {
+  "t": 0.9000000000000545,
+  "name": "keep-out: nearest visible text to merc's body box (\"mercurypitch.com/mirror\")",
+  "got": 339.45,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.9000000000000545,
+  "name": "keep-out: nearest visible text to tavi's body box (\"?\")",
+  "got": 373.52,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.9000000000000545,
+  "name": "keep-out: the tease figure from merc's body box",
+  "got": 197.54,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.9000000000000545,
+  "name": "keep-out: the tease figure from tavi's body box",
+  "got": 278.47,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.9000000000000545,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 335,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 1.1450000000000544,
+  "name": "the lockup at x 120, y 80 to 180 (its ink from 124.6, its orb's margin)",
+  "got": "124.6 to 497.4, 84.6 to 175.4",
+  "want": "124.6 to 574, 80 to 180",
+  "pass": true
+ },
+ {
+  "t": 1.1450000000000544,
+  "name": "the address Outfit 600 72, x 120, baseline 320",
+  "got": "mercurypitch.com/mirror; 124.0 to 948.8, 266.0 to 335.0; base 320.0",
+  "want": "mercurypitch.com/mirror; x 120; 320",
+  "pass": true
+ },
+ {
+  "t": 1.1450000000000544,
+  "name": "\"Voice Mirror is free, with no account\" Outfit 500 44, baseline 395",
+  "got": "Voice Mirror is free, with no account; 121.0 to 815.0, 362.0 to 402.0",
+  "want": "baseline 395",
+  "pass": true
+ },
+ {
+  "t": 1.1450000000000544,
+  "name": "all at rest (full) by end + 1.14",
+  "got": "1.00 1.00; the wipe's edge at x 633.85",
+  "want": "1.00 1.00; the wipe's edge past the lockup (120 + 453.85 + 60)",
+  "pass": true
+ },
+ {
+  "t": 1.1450000000000544,
+  "name": "the address and the free line over the clear zone (y 460)",
+  "got": "58.0",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 1.1450000000000544,
+  "name": "keep-out: nearest visible text to merc's body box (\"mercurypitch.com/mirror\")",
+  "got": 339.45,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 1.1450000000000544,
+  "name": "keep-out: nearest visible text to tavi's body box (\"?\")",
+  "got": 373.82,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 1.1450000000000544,
+  "name": "keep-out: the tease figure from merc's body box",
+  "got": 197.68,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 1.1450000000000544,
+  "name": "keep-out: the tease figure from tavi's body box",
+  "got": 278.35,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 1.1450000000000544,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 402,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 0.7899999999999636,
+  "name": "Merc grown to 400 in place at (1290, 840): body x 1184 to 1396, y 584 to 840",
+  "got": "1184.0 to 1396.0, 584.0 to 840",
+  "want": "1184 to 1396, 584 to 840",
+  "pass": true
+ },
+ {
+  "t": 0.7899999999999636,
+  "name": "Tavi hopped 190 px left to (1610, 840) at 400: body x 1504 to 1716",
+  "got": "1504.0 to 1716.0, 584.0",
+  "want": "1504 to 1716, 584",
+  "pass": true
+ },
+ {
+  "t": 0.7899999999999636,
+  "name": "keep-out: nearest visible text to merc's body box (\"mercurypitch.com/mirror\")",
+  "got": 339.45,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.7899999999999636,
+  "name": "keep-out: nearest visible text to tavi's body box (\"?\")",
+  "got": 372,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.7899999999999636,
+  "name": "keep-out: the tease figure from merc's body box",
+  "got": 196.57,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.7899999999999636,
+  "name": "keep-out: the tease figure from tavi's body box",
+  "got": 278.99,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.7899999999999636,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 335,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 6.1995000000000005,
+  "name": "the clear zone x 80 to 1100, y 460 to 880: nothing of the scene's drawn (the room's ground, glow, floor and dust only)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 6.1995000000000005,
+  "name": "the push landed: F-end, s 1.03 (the room and the figure)",
+  "got": "1.0300",
+  "want": "1.0300",
+  "pass": true
+ },
+ {
+  "t": 6.1995000000000005,
+  "name": "the type frame-fixed (the address still at baseline 320)",
+  "got": "320.00",
+  "want": "320.00",
+  "pass": true
+ },
+ {
+  "t": 6.1995000000000005,
+  "name": "the hosts past the last frame: their passes run to it",
+  "got": "true true",
+  "want": "true true",
+  "pass": true
+ },
+ {
+  "t": 6.1995000000000005,
+  "name": "keep-out: nearest visible text to merc's body box (\"mercurypitch.com/mirror\")",
+  "got": 339.45,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 6.1995000000000005,
+  "name": "keep-out: nearest visible text to tavi's body box (\"?\")",
+  "got": 382.08,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 6.1995000000000005,
+  "name": "keep-out: the tease figure from merc's body box",
+  "got": 201.9,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 6.1995000000000005,
+  "name": "keep-out: the tease figure from tavi's body box",
+  "got": 274.78,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 6.1995000000000005,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 402,
+  "want": "<= 896",
+  "pass": true
+ }
+]

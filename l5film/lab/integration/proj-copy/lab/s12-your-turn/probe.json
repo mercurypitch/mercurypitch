@@ -1,0 +1,967 @@
+[
+ {
+  "t": 0,
+  "name": "first frame (S11's last, F0): the band x 1000 to 1640, y 210 to 280",
+  "got": "1000.0 to 1640.0, 210.0 to 280.0",
+  "want": "1000 to 1640, 210 to 280",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "the care block to the listening line, the doctor lines small, the bracket, \"0\", \"10 s\", \"Nothing listens\"",
+  "got": 16,
+  "want": 16,
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "the ring at 35 %, drawn, at rest, no counter",
+  "got": "1.000 / 0.350 / none / 0",
+  "want": "1.000 / 0.350 / none / 0",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "hosts at 300 in the corners",
+  "got": "30.5-189.5; 1720.5-1879.5",
+  "want": "30.5-189.5; 1720.5-1879.5",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "keep-out: nearest visible text to merc's body box (\"If hoarseness or discomfort lasts more t\")",
+  "got": 70.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "keep-out: nearest visible text to tavi's body box (\"10 s\")",
+  "got": 328.03,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
+  "got": 771,
+  "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 0.5400000000000387,
+  "name": "12a (DECISIONS 204): the six reasons gone on \"Otherwise,\"",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 0.5400000000000387,
+  "name": "kept: \"Your turn.\", the comfort line and its icon, the listening line, the small doctor lines",
+  "got": 9,
+  "want": 9,
+  "pass": true
+ },
+ {
+  "t": 1.1800000000000523,
+  "name": "12a: \"A3 · Merc\" from x 1016, baseline 362; its blue dot x 1000 to 1012",
+  "got": "1016.0 to 1139.4, 340.0 to 363.0; dot 1000.0 to 1012.0",
+  "want": "x 1016 to 1139, y 340 to 363",
+  "pass": true
+ },
+ {
+  "t": 1.1800000000000523,
+  "name": "under \"0\" (gap)",
+  "got": 17,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 1.1800000000000523,
+  "name": "Merc's line glows",
+  "got": 0.5,
+  "want": "> 0.3",
+  "pass": true
+ },
+ {
+  "t": 3.0050000000000407,
+  "name": "12a: \"A4 · Tavi, an octave up\" from x 1202; its orange dot from 1186",
+  "got": "1202.0 to 1499.5, 340.0 to 369.0; dot 1186.0",
+  "want": "x 1202 to 1500",
+  "pass": true
+ },
+ {
+  "t": 3.0050000000000407,
+  "name": "its dot right of \"A3 · Merc\" (gap)",
+  "got": 46.63,
+  "want": ">= 30",
+  "pass": true
+ },
+ {
+  "t": 3.0050000000000407,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 3.0050000000000407,
+  "name": "keep-out: nearest visible text to merc's body box (\"If hoarseness or discomfort lasts more t\")",
+  "got": 70.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 3.0050000000000407,
+  "name": "keep-out: nearest visible text to tavi's body box (\"10 s\")",
+  "got": 328.03,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 3.0050000000000407,
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
+  "got": 771,
+  "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 4.155000000000018,
+  "name": "12b: \"LISTEN · BREATHE · SING\" centred x 1320, baseline 747 (advance boxes)",
+  "got": "1071.4 to 1568.7 (centre 1320.0)",
+  "want": "centre 1320",
+  "pass": true
+ },
+ {
+  "t": 4.155000000000018,
+  "name": "the middots between the words, a space each side (advance gaps)",
+  "got": "26.9, 26.9, 26.9, 26.9",
+  "want": "all equal",
+  "pass": true
+ },
+ {
+  "t": 4.155000000000018,
+  "name": "\"Listen\" lit: ink at full; the others ink-2 at 60 % (DECISIONS 209)",
+  "got": "rgb(230,237,243) 1.000; rgb(168,179,191) 0.600; rgb(168,179,191) 0.600",
+  "want": "ink 1.000; ink-2 0.600 x2",
+  "pass": true
+ },
+ {
+  "t": 4.155000000000018,
+  "name": "a small chrome mark under \"Listen\" (centred, under its baseline)",
+  "got": "1134.4 vs 1134.4; 24 x 3 at y 754.0",
+  "want": "centred, 24 x 3, y 754",
+  "pass": true
+ },
+ {
+  "t": 4.155000000000018,
+  "name": "the row under the ring (gap from the track's foot)",
+  "got": 13,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.865000000000032,
+  "name": "12b: \"Breathe\" lit, its mark under it; \"Listen\" back to ink-2 at 60 %",
+  "got": "0.600 1.000 0.600; mark 1341.9 vs 1341.9",
+  "want": "0.600 1.000 0.600; centred",
+  "pass": true
+ },
+ {
+  "t": 10.650000000000023,
+  "name": "12b: \"Sing\" lit, its mark under it; \"at about speaking volume\" centred 1320, baseline 785",
+  "got": "0.600 0.600 1.000; mark 1527.5 vs 1527.5; 1149.7 to 1490.3, 763.0 to 792.0",
+  "want": "0.600 0.600 1.000; centred; centre 1320",
+  "pass": true
+ },
+ {
+  "t": 13.955000000000007,
+  "name": "12b: the ring's 12 o'clock tick brightens on \"ring closes,\"",
+  "got": 1,
+  "want": "> 0.9",
+  "pass": true
+ },
+ {
+  "t": 15.635000000000037,
+  "name": "12b: \"stop sooner if you need to\" baseline 820: its ink 12 px or more above the floor horizon (DECISIONS 203)",
+  "got": "1149.9 to 1489.2, 798.0 to 826.0",
+  "want": "foot <= 828",
+  "pass": true
+ },
+ {
+  "t": 15.635000000000037,
+  "name": "only \"Sing\" lit",
+  "got": "0.600 0.600 1.000",
+  "want": "0.600 0.600 1.000",
+  "pass": true
+ },
+ {
+  "t": 15.635000000000037,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 15.635000000000037,
+  "name": "keep-out: nearest visible text to merc's body box (\"If hoarseness or discomfort lasts more t\")",
+  "got": 70.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 15.635000000000037,
+  "name": "keep-out: nearest visible text to tavi's body box (\"SING\")",
+  "got": 146.77,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 15.635000000000037,
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
+  "got": 826,
+  "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 17.835,
+  "name": "12c: the stop line x 260, baselines 548 and 590 (ink)",
+  "got": "260.0 to 726.2, 521.0 to 556.0; 260.0 to 596.3, 563.0 to 591.0",
+  "want": "x 260 to 726 / 596, within 960",
+  "pass": true
+ },
+ {
+  "t": 17.835,
+  "name": "between the listening line and the doctor lines (gaps)",
+  "got": "28.0, 37.0",
+  "want": ">= 12 each",
+  "pass": true
+ },
+ {
+  "t": 17.835,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 17.835,
+  "name": "keep-out: nearest visible text to merc's body box (\"If hoarseness or discomfort lasts more t\")",
+  "got": 70.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 17.835,
+  "name": "keep-out: nearest visible text to tavi's body box (\"SING\")",
+  "got": 146.77,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 17.835,
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
+  "got": 826,
+  "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 20.16000000000001,
+  "name": "12c: thinned before the push: the icon, comfort line, reasons and listening line at 0",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 20.16000000000001,
+  "name": "the phase row and its two lines gone",
+  "got": "0.000 / 0.000",
+  "want": "0 / 0",
+  "pass": true
+ },
+ {
+  "t": 20.16000000000001,
+  "name": "kept: \"Your turn.\", the stop line, the doctor lines",
+  "got": 7,
+  "want": 7,
+  "pass": true
+ },
+ {
+  "t": 20.16000000000001,
+  "name": "the push not started (s)",
+  "got": 1,
+  "want": 1,
+  "tol": 0.0005,
+  "pass": true
+ },
+ {
+  "t": 20.86000000000001,
+  "name": "12c: mid-push the layers part (far, mid, near scale)",
+  "got": "1.050, 1.200, 1.320",
+  "want": "far < mid < near",
+  "pass": true
+ },
+ {
+  "t": 20.86000000000001,
+  "name": "the care block holds still through the push (\"Your turn.\" ink left)",
+  "got": 266,
+  "want": 266,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "12c: F-turn: the frame x 928 to 1824, band 104 to 202",
+  "got": "928.0 to 1824.0, 104.0 to 202.0",
+  "want": "928 to 1824, 104 to 202",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "Merc's line y 153",
+  "got": 153,
+  "want": 153,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "the ring centre (1376, 610.8), r 190.4 on screen (DECISIONS 208)",
+  "got": "1376.0, 610.8, r 190.4",
+  "want": "1376, 610.8, r 190.4",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "at rest its stroke 8 px or more above the floor horizon (y 840)",
+  "got": 31.8,
+  "want": ">= 8",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "at rest its stroke 12 px or more under \"Nothing listens\" (its ink foot)",
+  "got": 30.8,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "labels at screen baselines 261 (\"0\", \"10 s\"), 317 (voices), 373 (\"Nothing listens\")",
+  "got": "260.8, 316.8, 372.8",
+  "want": "261, 317, 373",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "\"Nothing listens\" x 928 to 1243",
+  "got": "930.8 to 1208.2",
+  "want": "928 to 1243",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "LAB-CHECKS 15: \"Your turn.\" from the frame and its labels (x 928)",
+  "got": 265.27,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "LAB-CHECKS 15: \"Your turn.\" from the ring",
+  "got": 517.87,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "LAB-CHECKS 3: the push has landed before `listen`",
+  "got": "landed 21.410, listen 21.550",
+  "want": "0.14 s before",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "LAB-CHECKS 3: the thinning starts after the stop line has landed",
+  "got": "thin 19.810, stop in by 17.735",
+  "want": "thin later",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "the ring's right edge from Tavi's keep-out (1700)",
+  "got": 126.6,
+  "want": ">= 0",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "keep-out: nearest visible text to merc's body box (\"If hoarseness or discomfort lasts more t\")",
+  "got": 70.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "keep-out: nearest visible text to tavi's body box (\"A4 · Tavi, an octave up\")",
+  "got": 333.21,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
+  "got": 771,
+  "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 21.850000000000012,
+  "name": "12d: \"Listen\" inside the ring, 56 px on screen, centred x 1376, baseline 552",
+  "got": "1302.4 to 1450.3, 511.4 to 553.4, base 552.0",
+  "want": "centre 1376, base 552",
+  "pass": true
+ },
+ {
+  "t": 21.850000000000012,
+  "name": "the camera at F-turn (s 1.4) when \"Listen\" lands",
+  "got": 1.4,
+  "want": 1.4,
+  "tol": 0.0005,
+  "pass": true
+ },
+ {
+  "t": 21.850000000000012,
+  "name": "the voices scale 1.08 (both)",
+  "got": "1.0683, 1.0683",
+  "want": "> 1.0",
+  "pass": true
+ },
+ {
+  "t": 24.420000000000005,
+  "name": "12d: \"Breathe in, low and quiet\" right-aligned to 1824, baseline 373 (screen)",
+  "got": "1390.9 to 1824.2, 343.4 to 381.2, base 372.8",
+  "want": "right 1824, base 373",
+  "pass": true
+ },
+ {
+  "t": 24.420000000000005,
+  "name": "it shares a baseline with \"Nothing listens\", 70 px or more apart",
+  "got": 182.72,
+  "want": ">= 70",
+  "pass": true
+ },
+ {
+  "t": 24.420000000000005,
+  "name": "\"Breathe\" in the ring, \"Listen\" gone",
+  "got": "Breathe",
+  "want": "Breathe",
+  "pass": true
+ },
+ {
+  "t": 24.420000000000005,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 24.420000000000005,
+  "name": "keep-out: nearest visible text to merc's body box (\"If hoarseness or discomfort lasts more t\")",
+  "got": 70.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 24.420000000000005,
+  "name": "keep-out: nearest visible text to tavi's body box (\"Breathe\")",
+  "got": 249.72,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 24.420000000000005,
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
+  "got": 771,
+  "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 24.650000000000006,
+  "name": "12d: the ring breathes to 1.08 (its largest)",
+  "got": 1.08,
+  "want": 1.08,
+  "tol": 0.0005,
+  "pass": true
+ },
+ {
+  "t": 24.650000000000006,
+  "name": "at its largest the stroke above the floor horizon (y 840)",
+  "got": 16.01,
+  "want": "> 0",
+  "pass": true
+ },
+ {
+  "t": 24.650000000000006,
+  "name": "at its largest 12 px or more from \"Breathe in, low and quiet\" (its circle; its tick)",
+  "got": "23.9; 17.5",
+  "want": ">= 12 each",
+  "pass": true
+ },
+ {
+  "t": 24.650000000000006,
+  "name": "at its largest its tick's top 12 px or more under the foot of \"Breathe\" (no tick tucked under the label)",
+  "got": 12.82,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 24.650000000000006,
+  "name": "at its largest clear of \"Nothing listens\" (stroke top under its ink foot)",
+  "got": 15.01,
+  "want": "> 0",
+  "pass": true
+ },
+ {
+  "t": 25.99,
+  "name": "12e: \"Sing\" in the ring; \"Breathe in, low and quiet\" gone; no counter yet",
+  "got": "Sing; 0.00",
+  "want": "Sing; 0.00",
+  "pass": true
+ },
+ {
+  "t": 26.339999999999996,
+  "name": "12e: the counter at \"0\" (baseline 680.8 on screen, 112 px)",
+  "got": "Sing, 0",
+  "want": "Sing, 0",
+  "pass": true
+ },
+ {
+  "t": 30.59000000000002,
+  "name": "12e (board 433.00): the counter at \"4\", 112 px, baseline 680.8 (screen)",
+  "got": "1343.6 to 1408.0, 601.0 to 680.8, base 680.8",
+  "want": "base 680.8",
+  "pass": true
+ },
+ {
+  "t": 30.59000000000002,
+  "name": "the arc at an even pace: 0.48 of the ring at 4.8 s",
+  "got": 0.48,
+  "want": 0.48,
+  "tol": 0.002,
+  "pass": true
+ },
+ {
+  "t": 30.59000000000002,
+  "name": "the playhead at 928 + 89.6 x 4.8 = 1358.1, the band's height (104 to 202)",
+  "got": "1358.1, 104.0 to 202.0",
+  "want": "1358.1, 104 to 202",
+  "pass": true
+ },
+ {
+  "t": 30.59000000000002,
+  "name": "nothing listens: no violet line, no word but \"Sing\"",
+  "got": "0 lines; Sing, 4",
+  "want": "0 lines; Sing, 4",
+  "pass": true
+ },
+ {
+  "t": 30.59000000000002,
+  "name": "LAB-CHECKS 15: \"Your turn.\" on screen through the ten seconds",
+  "got": "1.00",
+  "want": "1.00",
+  "pass": true
+ },
+ {
+  "t": 30.59000000000002,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.59000000000002,
+  "name": "keep-out: nearest visible text to merc's body box (\"If hoarseness or discomfort lasts more t\")",
+  "got": 70.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 30.59000000000002,
+  "name": "keep-out: nearest visible text to tavi's body box (\"Sing\")",
+  "got": 300.78,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 30.59000000000002,
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
+  "got": 771,
+  "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 35.91000000000002,
+  "name": "12e: at the second tick the ring is closed and \"10\" counts",
+  "got": "1.00000 1; Sing, 10",
+  "want": "1.00000 1; Sing, 10",
+  "pass": true
+ },
+ {
+  "t": 35.91000000000002,
+  "name": "one chrome echo ring",
+  "got": 1,
+  "want": 1,
+  "pass": true
+ },
+ {
+  "t": 36.60000000000005,
+  "name": "12f: the ring, its word, the counter, the playhead and \"Your turn.\" gone",
+  "got": "0.000 0.000 0.000",
+  "want": "0.000 0.000 0.000",
+  "pass": true
+ },
+ {
+  "t": 36.60000000000005,
+  "name": "12f (DECISIONS 206): the bracket, \"0\", \"10 s\", \"A3 · Merc\", \"A4 · Tavi, an octave up\" gone with it",
+  "got": "0.000 0.000 0.000 0.000 0.000",
+  "want": "0.000 0.000 0.000 0.000 0.000",
+  "pass": true
+ },
+ {
+  "t": 36.60000000000005,
+  "name": "the band, Merc's line and \"Nothing listens\" stay",
+  "got": "1.000 1.000",
+  "want": "1 1.000",
+  "pass": true
+ },
+ {
+  "t": 36.99000000000003,
+  "name": "12f: \"How did that feel?\" x 1000, baseline 480 (frame-fixed)",
+  "got": "997.0 to 1406.8, 431.0 to 481.0",
+  "want": "x 997 to 1407, y 431 to 481",
+  "pass": true
+ },
+ {
+  "t": 36.99000000000003,
+  "name": "it lands where the ring was, under the frame's labels (\"Nothing listens\" foot)",
+  "got": 48.4,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 36.99000000000003,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 36.99000000000003,
+  "name": "keep-out: nearest visible text to merc's body box (\"If hoarseness or discomfort lasts more t\")",
+  "got": 70.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 36.99000000000003,
+  "name": "keep-out: nearest visible text to tavi's body box (\"How did that feel?\")",
+  "got": 346.9,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 36.99000000000003,
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
+  "got": 771,
+  "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 40.68000000000005,
+  "name": "12f: four capsules x 1000 to 1230, 44 high, centred y 540, 596, 652, 708",
+  "got": "1000-1230 @540; 1000-1230 @596; 1000-1230 @652; 1000-1230 @708",
+  "want": "1000-1230 @540/596/652/708",
+  "pass": true
+ },
+ {
+  "t": 40.68000000000005,
+  "name": "each word inside its capsule (pads)",
+  "got": "84.7/82.5, 49.3/49.5, 59.2/58.6, 12.6/11.8",
+  "want": ">= 10 each side",
+  "pass": true
+ },
+ {
+  "t": 40.68000000000005,
+  "name": "the capsules under the question (gap)",
+  "got": 37,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 40.68000000000005,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 40.68000000000005,
+  "name": "keep-out: nearest visible text to merc's body box (\"If hoarseness or discomfort lasts more t\")",
+  "got": 70.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 40.68000000000005,
+  "name": "keep-out: nearest visible text to tavi's body box (\"How did that feel?\")",
+  "got": 346.9,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 40.68000000000005,
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
+  "got": 771,
+  "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 42.465,
+  "name": "12f: the small ring timer beside the question at (1660, 458), r 16",
+  "got": "1660.0, 458.0",
+  "want": "1660, 458",
+  "pass": true
+ },
+ {
+  "t": 42.465,
+  "name": "right of the question (gap)",
+  "got": 237.24,
+  "want": ">= 40",
+  "pass": true
+ },
+ {
+  "t": 45.985000000000014,
+  "name": "12g: Easy and Workable lit (stroke 1.0)",
+  "got": "1.000 1.000 0.700 0.700",
+  "want": "1.000 1.000 0.700 0.700",
+  "pass": true
+ },
+ {
+  "t": 45.985000000000014,
+  "name": "the bracket at x 1240, y 540 to 596, its ticks back to the capsules",
+  "got": "1234.0 to 1240.0, 540.0 to 596.0",
+  "want": "1234 to 1240, 540 to 596",
+  "pass": true
+ },
+ {
+  "t": 45.985000000000014,
+  "name": "\"rest for a few easy breaths\" (the page's words, DECISIONS 209) x 1260, baseline 579, left of x 1630",
+  "got": "rest for a few easy breaths: 1261.0 to 1614.6, 557.0 to 585.0",
+  "want": "from 1260, to <= 1630",
+  "pass": true
+ },
+ {
+  "t": 50.230000000000004,
+  "name": "12g: Effortful lit, the two before dimmed (their labels ink)",
+  "got": "0.280 0.280 1.000 0.700; #e6edf3 #e6edf3 #e6edf3 #e6edf3",
+  "want": "0.280 0.280 1.000 0.700",
+  "pass": true
+ },
+ {
+  "t": 55.33000000000003,
+  "name": "12g: Uncomfortable lit, Effortful dimmed",
+  "got": "0.280 0.280 0.280 1.000",
+  "want": "0.280 0.280 0.280 1.000",
+  "pass": true
+ },
+ {
+  "t": 55.33000000000003,
+  "name": "the feel block left of x 1630 and above y 730",
+  "got": "1614.6, 730.0",
+  "want": "<= 1630, <= 731",
+  "pass": true
+ },
+ {
+  "t": 55.33000000000003,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 55.33000000000003,
+  "name": "keep-out: nearest visible text to merc's body box (\"If hoarseness or discomfort lasts more t\")",
+  "got": 70.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 55.33000000000003,
+  "name": "keep-out: nearest visible text to tavi's body box (\"rest before you sing again\")",
+  "got": 118.8,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 55.33000000000003,
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
+  "got": 771,
+  "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 58.22500000000001,
+  "name": "12h: all four lit together",
+  "got": "1.000 1.000 1.000 1.000",
+  "want": "1.000 1.000 1.000 1.000",
+  "pass": true
+ },
+ {
+  "t": 58.975000000000016,
+  "name": "12h (DECISIONS 205): the doctor lines full size (Inter 40, ink), broken by hand at phrase ends",
+  "got": "If hoarseness or discomfort lasts | more than a couple of weeks, | see a doctor (a GP or an ear, | nose and throat specialist). | If it’s very painful, | or breathing or swallowing is hard, | get help straight away.",
+  "want": "7 lines, none ending \"(a\", the last not \"away.\" alone",
+  "pass": true
+ },
+ {
+  "t": 58.975000000000016,
+  "name": "within x 260 to 960 (ink), baselines from 430, 50 apart",
+  "got": "261.0 to 846.2; 430, 480, 530, 580, 630, 680, 730",
+  "want": ">= 258, <= 960; 430 to 730",
+  "pass": true
+ },
+ {
+  "t": 58.975000000000016,
+  "name": "word for word",
+  "got": "same",
+  "want": "same",
+  "pass": true
+ },
+ {
+  "t": 58.975000000000016,
+  "name": "the small lines and the stop line gone",
+  "got": "0.00 0.00",
+  "want": "0.00 0.00",
+  "pass": true
+ },
+ {
+  "t": 58.975000000000016,
+  "name": "clear of the frame's labels (\"Nothing listens\" at screen x 928, foot)",
+  "got": 17.4,
+  "want": ">= 12 (or left of 928)",
+  "pass": true
+ },
+ {
+  "t": 58.975000000000016,
+  "name": "clear of the answers (x 1000)",
+  "got": 153.78,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 58.975000000000016,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 58.975000000000016,
+  "name": "keep-out: nearest visible text to merc's body box (\"or breathing or swallowing is hard,\")",
+  "got": 70.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 58.975000000000016,
+  "name": "keep-out: nearest visible text to tavi's body box (\"Nothing listens\")",
+  "got": 575.92,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 58.975000000000016,
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
+  "got": 739,
+  "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 59.07500000000001,
+  "name": "12h (DECISIONS 205): the feel block dimmed to 35 % (question, capsules, lines, bracket)",
+  "got": "0.350 to 0.350",
+  "want": "0.350",
+  "pass": true
+ },
+ {
+  "t": 59.07500000000001,
+  "name": "all four still lit (dimmed with the block, not unlit)",
+  "got": "1.000 1.000 1.000 1.000",
+  "want": "1.000 1.000 1.000 1.000",
+  "pass": true
+ },
+ {
+  "t": 59.07500000000001,
+  "name": "the doctor lines at full",
+  "got": "1.000",
+  "want": "1.000",
+  "pass": true
+ },
+ {
+  "t": 64.72,
+  "name": "12h: \"see a doctor\" underlined (segments)",
+  "got": "260.0-475.0 @540",
+  "want": "under its words",
+  "pass": true
+ },
+ {
+  "t": 75.15500000000002,
+  "name": "12h: \"get help straight away\" underlined (segments)",
+  "got": "260.0-638.9 @740",
+  "want": "under its words",
+  "pass": true
+ },
+ {
+  "t": 76.30000000000003,
+  "name": "12h: every mark of the turn gone but the band and Merc's line",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 76.7795,
+  "name": "last frame (HANDOFFS § S12 to S13): the band x 928 to 1824, y 104 to 202",
+  "got": "928.0 to 1824.0, 104.0 to 202.0",
+  "want": "928 to 1824, 104 to 202",
+  "pass": true
+ },
+ {
+  "t": 76.7795,
+  "name": "Merc's line y 153, 5.6 px on screen (L.RECAP.mercW(0))",
+  "got": "153.00, 5.60",
+  "want": "153, 5.60",
+  "pass": true
+ },
+ {
+  "t": 76.7795,
+  "name": "no labels",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ }
+]

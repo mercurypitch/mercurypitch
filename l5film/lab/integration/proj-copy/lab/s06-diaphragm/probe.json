@@ -1,0 +1,1746 @@
+[
+ {
+  "t": 0,
+  "name": "first frame (S5's last): the bare chart at 0.78: plot x 466 to 1340, band 365.5 to 456.5",
+  "got": "466.0 to 1339.6, 365.5 to 456.5",
+  "want": "466.0 to 1339.6, 365.5 to 456.5",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "the thumb at 50: (902.8, 723.0)",
+  "got": "(902.8, 723.0)",
+  "want": "(902.8, 723.0)",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "\"ILLUSTRATION\" x 1128.5 to 1339.6, centred y 208.2 (S5's last frame)",
+  "got": "1128.6 to 1339.6, 208.2",
+  "want": "1128.5 to 1339.6, 208.2",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "\"A3\", \"level\", the row's text, \"50\" and \"Push\" at full",
+  "got": "1.00 1.00 1.00 1.00 1.00",
+  "want": "1.00 1.00 1.00 1.00 1.00",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "hosts at 300 in their corners",
+  "got": "30.5-189.5; 1720.5-1879.5",
+  "want": "30.5-189.5; 1720.5-1879.5",
+  "pass": true
+ },
+ {
+  "t": 1.3500000000000056,
+  "name": "6a: the card within 1680 px wide",
+  "got": 1664.95,
+  "want": "<= 1680",
+  "pass": true
+ },
+ {
+  "t": 1.3500000000000056,
+  "name": "6a: the chart's labels and chip hidden while dim",
+  "got": "0.00 0.00 0.00 0.00",
+  "want": "0.00 0.00 0.00 0.00",
+  "pass": true
+ },
+ {
+  "t": 3.2199999999999944,
+  "name": "6b: the chip at the gauge's place: x 1359 to 1630, y 300 to 340",
+  "got": "1359.4 to 1630.0, 300.0 to 340.0",
+  "want": "1359 to 1630, 300 to 340",
+  "pass": true
+ },
+ {
+  "t": 3.2199999999999944,
+  "name": "6b: the chip right of the plot's end (1340)",
+  "got": 19.85,
+  "want": "board 19",
+  "pass": true
+ },
+ {
+  "t": 3.2199999999999944,
+  "name": "6b: the chip over the band's top at 0.78 (365.5)",
+  "got": 25.5,
+  "want": "board 25",
+  "pass": true
+ },
+ {
+  "t": 3.2199999999999944,
+  "name": "hosts shrunk to 240 at (100, 840) and (1820, 840)",
+  "got": "36.4-163.6; 1756.4-1883.6",
+  "want": "36.4-163.6; 1756.4-1883.6",
+  "pass": true
+ },
+ {
+  "t": 3.2199999999999944,
+  "name": "keep-out: nearest visible text to merc's body box (\"Push\")",
+  "got": 222.22,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 3.2199999999999944,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 375.17,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 5.085000000000003,
+  "name": "split u 0.10: band x 466 to 1340, y 235 to 319; the figure drawn 0.00",
+  "got": "info",
+  "pass": true
+ },
+ {
+  "t": 5.085000000000003,
+  "name": "split u 0.10: the band's foot over the chip once its right end passes 1347",
+  "got": "not past",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.085000000000003,
+  "name": "split u 0.10: the band clear of the drawn figure",
+  "got": "not drawn",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.085000000000003,
+  "name": "split u 0.10: \"A3\" clear of the drawn figure",
+  "got": "not drawn",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.235000000000002,
+  "name": "split u 0.20: band x 467 to 1341, y 176 to 257; the figure drawn 0.01",
+  "got": "info",
+  "pass": true
+ },
+ {
+  "t": 5.235000000000002,
+  "name": "split u 0.20: the band's foot over the chip once its right end passes 1347",
+  "got": "not past",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.235000000000002,
+  "name": "split u 0.20: the band clear of the drawn figure",
+  "got": 326.32,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.235000000000002,
+  "name": "split u 0.20: \"A3\" clear of the drawn figure",
+  "got": 331.4,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.310000000000002,
+  "name": "split u 0.25: band x 471 to 1346, y 165 to 245; the figure drawn 0.02",
+  "got": "info",
+  "pass": true
+ },
+ {
+  "t": 5.310000000000002,
+  "name": "split u 0.25: the band's foot over the chip once its right end passes 1347",
+  "got": "not past",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.310000000000002,
+  "name": "split u 0.25: the band clear of the drawn figure",
+  "got": 323.14,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.310000000000002,
+  "name": "split u 0.25: \"A3\" clear of the drawn figure",
+  "got": 326.69,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.3850000000000025,
+  "name": "split u 0.30: band x 484 to 1359, y 161 to 241; the figure drawn 0.04",
+  "got": "info",
+  "pass": true
+ },
+ {
+  "t": 5.3850000000000025,
+  "name": "split u 0.30: the band's foot over the chip once its right end passes 1347",
+  "got": 59.37,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.3850000000000025,
+  "name": "split u 0.30: the band clear of the drawn figure",
+  "got": 304.31,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.3850000000000025,
+  "name": "split u 0.30: \"A3\" clear of the drawn figure",
+  "got": 303.45,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.460000000000003,
+  "name": "split u 0.35: band x 510 to 1384, y 160 to 240; the figure drawn 0.08",
+  "got": "info",
+  "pass": true
+ },
+ {
+  "t": 5.460000000000003,
+  "name": "split u 0.35: the band's foot over the chip once its right end passes 1347",
+  "got": 60,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.460000000000003,
+  "name": "split u 0.35: the band clear of the drawn figure",
+  "got": 275.49,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.460000000000003,
+  "name": "split u 0.35: \"A3\" clear of the drawn figure",
+  "got": 264.97,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.535000000000002,
+  "name": "split u 0.40: band x 551 to 1427, y 160 to 240; the figure drawn 0.13",
+  "got": "info",
+  "pass": true
+ },
+ {
+  "t": 5.535000000000002,
+  "name": "split u 0.40: the band's foot over the chip once its right end passes 1347",
+  "got": 60,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.535000000000002,
+  "name": "split u 0.40: the band clear of the drawn figure",
+  "got": 248.13,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.535000000000002,
+  "name": "split u 0.40: \"A3\" clear of the drawn figure",
+  "got": 219.77,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.610000000000002,
+  "name": "split u 0.45: band x 613 to 1490, y 160 to 240; the figure drawn 0.19",
+  "got": "info",
+  "pass": true
+ },
+ {
+  "t": 5.610000000000002,
+  "name": "split u 0.45: the band's foot over the chip once its right end passes 1347",
+  "got": 60,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.610000000000002,
+  "name": "split u 0.45: the band clear of the drawn figure",
+  "got": 215.25,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.610000000000002,
+  "name": "split u 0.45: \"A3\" clear of the drawn figure",
+  "got": 173.49,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.685000000000002,
+  "name": "split u 0.50: band x 675 to 1553, y 160 to 240; the figure drawn 0.27",
+  "got": "info",
+  "pass": true
+ },
+ {
+  "t": 5.685000000000002,
+  "name": "split u 0.50: the band's foot over the chip once its right end passes 1347",
+  "got": 60,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.685000000000002,
+  "name": "split u 0.50: the band clear of the drawn figure",
+  "got": 255.34,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.685000000000002,
+  "name": "split u 0.50: \"A3\" clear of the drawn figure",
+  "got": 195.79,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.7600000000000025,
+  "name": "split u 0.55: band x 716 to 1596, y 160 to 240; the figure drawn 0.38",
+  "got": "info",
+  "pass": true
+ },
+ {
+  "t": 5.7600000000000025,
+  "name": "split u 0.55: the band's foot over the chip once its right end passes 1347",
+  "got": 60,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.7600000000000025,
+  "name": "split u 0.55: the band clear of the drawn figure",
+  "got": 265.73,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.7600000000000025,
+  "name": "split u 0.55: \"A3\" clear of the drawn figure",
+  "got": 200.5,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.835000000000003,
+  "name": "split u 0.60: band x 742 to 1621, y 160 to 240; the figure drawn 0.51",
+  "got": "info",
+  "pass": true
+ },
+ {
+  "t": 5.835000000000003,
+  "name": "split u 0.60: the band's foot over the chip once its right end passes 1347",
+  "got": 60,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.835000000000003,
+  "name": "split u 0.60: the band clear of the drawn figure",
+  "got": 181.11,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.835000000000003,
+  "name": "split u 0.60: \"A3\" clear of the drawn figure",
+  "got": 115.23,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.910000000000002,
+  "name": "split u 0.65: band x 755 to 1634, y 160 to 240; the figure drawn 0.67",
+  "got": "info",
+  "pass": true
+ },
+ {
+  "t": 5.910000000000002,
+  "name": "split u 0.65: the band's foot over the chip once its right end passes 1347",
+  "got": 60,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.910000000000002,
+  "name": "split u 0.65: the band clear of the drawn figure",
+  "got": 194.38,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.910000000000002,
+  "name": "split u 0.65: \"A3\" clear of the drawn figure",
+  "got": 128.84,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.985000000000002,
+  "name": "split u 0.70: band x 759 to 1639, y 160 to 240; the figure drawn 0.86",
+  "got": "info",
+  "pass": true
+ },
+ {
+  "t": 5.985000000000002,
+  "name": "split u 0.70: the band's foot over the chip once its right end passes 1347",
+  "got": 60,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.985000000000002,
+  "name": "split u 0.70: the band clear of the drawn figure",
+  "got": 199.14,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 5.985000000000002,
+  "name": "split u 0.70: \"A3\" clear of the drawn figure",
+  "got": 133.81,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 6.1350000000000025,
+  "name": "split u 0.80: band x 760 to 1640, y 160 to 240; the figure drawn 1.00",
+  "got": "info",
+  "pass": true
+ },
+ {
+  "t": 6.1350000000000025,
+  "name": "split u 0.80: the band's foot over the chip once its right end passes 1347",
+  "got": 60,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 6.1350000000000025,
+  "name": "split u 0.80: the band clear of the drawn figure",
+  "got": 199.82,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 6.1350000000000025,
+  "name": "split u 0.80: \"A3\" clear of the drawn figure",
+  "got": 134.63,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 6.285000000000002,
+  "name": "split u 0.90: band x 760 to 1640, y 160 to 240; the figure drawn 1.00",
+  "got": "info",
+  "pass": true
+ },
+ {
+  "t": 6.285000000000002,
+  "name": "split u 0.90: the band's foot over the chip once its right end passes 1347",
+  "got": 60,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 6.285000000000002,
+  "name": "split u 0.90: the band clear of the drawn figure",
+  "got": 199.82,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 6.285000000000002,
+  "name": "split u 0.90: \"A3\" clear of the drawn figure",
+  "got": 134.68,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 6.485000000000002,
+  "name": "the small band x 760 to 1640, y 160 to 240",
+  "got": "760.0 to 1640.0, 160.0 to 240.0",
+  "want": "760 to 1640, 160 to 240",
+  "pass": true
+ },
+ {
+  "t": 6.485000000000002,
+  "name": "\"A3\" right-aligned 740, baseline 212",
+  "got": "740.0, translate(740.00 212.00) scale(1.0000)",
+  "want": "740",
+  "pass": true
+ },
+ {
+  "t": 6.485000000000002,
+  "name": "the strip at the gauge's floor: x 760 to 1640, y 690",
+  "got": "760.0 to 1640.0, 690.0",
+  "want": "760 to 1640, 690",
+  "pass": true
+ },
+ {
+  "t": 6.485000000000002,
+  "name": "the figure's head y 143 to 293 (crown, chin)",
+  "got": 143,
+  "want": 143,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 6.485000000000002,
+  "name": "the head 33 px under the kicker's baseline (110)",
+  "got": 33,
+  "want": 33,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 6.485000000000002,
+  "name": "the kicker spans (board to about x 730)",
+  "got": "120 to 775",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 6.485000000000002,
+  "name": "keep-out: nearest visible text to merc's body box (\"?\")",
+  "got": 479.8,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 6.485000000000002,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 375.17,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 6.535000000000002,
+  "name": "6b: the guess's \"?\" right of the chest (x 600, baseline 470)",
+  "got": 600,
+  "want": 600,
+  "tol": 3,
+  "pass": true
+ },
+ {
+  "t": 6.535000000000002,
+  "name": "keep-out: nearest visible text to merc's body box (\"?\")",
+  "got": 479.8,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 6.535000000000002,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 375.17,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 8.085,
+  "name": "6c: the four words back, \"air pressure\" and \"diaphragm\" lit",
+  "got": "lit lit dim dim",
+  "want": "lit lit dim dim",
+  "pass": true
+ },
+ {
+  "t": 8.085,
+  "name": "6c: the row's right edge 1800, outlines 68 to 106",
+  "got": "1800.0, 68.0 to 106.0",
+  "want": "1800, 68 to 106",
+  "pass": true
+ },
+ {
+  "t": 8.085,
+  "name": "6c: \"diaphragm\" right-aligned 350, baseline 640",
+  "got": 350,
+  "want": 350,
+  "tol": 2,
+  "pass": true
+ },
+ {
+  "t": 8.085,
+  "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
+  "got": 40.69,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 8.085,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 375.17,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 12.130000000000004,
+  "name": "6c: \"breathing in\" over \"diaphragm\"",
+  "got": 17,
+  "want": ">= 4 (font boxes)",
+  "pass": true
+ },
+ {
+  "t": 12.130000000000004,
+  "name": "6c: \"belly\" right of the belly wall at full breath",
+  "got": 33.41,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 12.130000000000004,
+  "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
+  "got": 40.69,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 12.130000000000004,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 375.17,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 19.189999999999998,
+  "name": "6d: \"PREDICT\" from x 760, the pills x 920 to 1150 and 1180 to 1420, y 81 to 129",
+  "got": "760; 920-1150, 1180-1420, 81-129",
+  "want": "760; 920-1150, 1180-1420, 81-129",
+  "pass": true
+ },
+ {
+  "t": 19.189999999999998,
+  "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
+  "got": 40.69,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 19.189999999999998,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 375.17,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 20.979999999999997,
+  "name": "6e (board 128.97): the frame's top edge",
+  "got": 317.2,
+  "want": "about 340 (the chip's foot)",
+  "pass": true
+ },
+ {
+  "t": 20.979999999999997,
+  "name": "6e: the chip drawn above the frame's stroke",
+  "got": true,
+  "want": true,
+  "pass": true
+ },
+ {
+  "t": 21.189999999999998,
+  "name": "6e (board 129.18): the frame's top edge",
+  "got": 292.44,
+  "want": "about 300 (the chip's top)",
+  "pass": true
+ },
+ {
+  "t": 21.189999999999998,
+  "name": "6e: the chip drawn above the frame's stroke",
+  "got": true,
+  "want": true,
+  "pass": true
+ },
+ {
+  "t": 21.409999999999997,
+  "name": "6e: the frame x 760 to 1640, y 290 to 720",
+  "got": "760 to 1640, 290 to 720",
+  "want": "759 to 1641, 289 to 721",
+  "pass": true
+ },
+ {
+  "t": 21.409999999999997,
+  "name": "6e: the chip 9 px in from the frame's right stroke and 9 px under its top one",
+  "got": "9.0, 9.0",
+  "want": "9, 9",
+  "pass": true
+ },
+ {
+  "t": 21.409999999999997,
+  "name": "6e: \"one 10-second note\" and \"push of air (not pitch)\" shown",
+  "got": "1.00 1.00",
+  "want": "1.00 1.00",
+  "pass": true
+ },
+ {
+  "t": 21.409999999999997,
+  "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
+  "got": 40.69,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 21.409999999999997,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 375.17,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "6f: \"Hold it back\" checked, \"Push it out\" dimmed",
+  "got": "1.00",
+  "want": "1.00",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "6f: the readout says \"Now: holding back\"",
+  "got": "1.00 0.00",
+  "want": "1.00 0.00",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
+  "got": 34.61,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "keep-out: nearest visible text to tavi's body box (\"Now: holding back\")",
+  "got": 320.16,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1040.2, 293.0 to 339.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "[B-01: 182] the plate of heldBack (world 782.4 to 937.6, 502.0 to 553.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "[B-01: 182] the plate of readout (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 26.16,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 29.559999999999995,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 1.00; cursor 1.00 x 1410, plate 1441 to 1650: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.559999999999995,
+  "name": "[B-01: 183] \"added\" not yet shown 0.3 s after the switch",
+  "got": "0.00",
+  "want": "0.00",
+  "pass": true
+ },
+ {
+  "t": 29.559999999999995,
+  "name": "[B-01: 183] the readout: frames with both wordings shown (every switch)",
+  "got": 0,
+  "want": 0,
+  "pass": true
+ },
+ {
+  "t": 29.379999999999995,
+  "name": "[B-01: 183] mid-swap (both wordings faint): the readout's plate stays, the cursor behind it or clear of the words",
+  "got": "plate 1.00; wordings 0.00 0.02; cursor x 1393, plate 1362 to 1650: behind it; plate after cursor in the document true",
+  "want": "plate 1.00, behind or clear",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "6f: after the crossing the readout says \"Now: adding\"",
+  "got": "0.00 1.00",
+  "want": "0.00 1.00",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 183] \"added\" landed 0.45 s after the switch",
+  "got": "1.00; 0.45 s",
+  "want": "1.00; 0.45 s",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "6f: \"added\" glyphs under the gold line (607.5)",
+  "got": 15.5,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "6f: \"added\" over the lungs' line at its left end",
+  "got": 20.71,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "the push under way: scale",
+  "got": 1.04,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
+  "got": 31.72,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "keep-out: nearest visible text to tavi's body box (\"added\")",
+  "got": 139.84,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1040.2, 293.0 to 339.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the plate of heldBack (world 782.4 to 937.6, 502.0 to 553.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the plate of added (world 1512.6 to 1607.4, 611.0 to 657.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the plate of readoutAdding (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 30.059999999999995,
+  "name": "[B-01: 182] the readout's plate fits \"Now: adding\" (world px each side of its box)",
+  "got": "4.0 4.0",
+  "want": "4 4 (+-1)",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1040.2, 293.0 to 339.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the plate of heldBack (world 782.4 to 937.6, 502.0 to 553.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the plate of added (world 1512.6 to 1607.4, 611.0 to 657.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the plate of readout (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1344.6 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.999999999999986,
+  "name": "[B-01: 182] the readout's plate fits \"Now: holding back\" (world px each side of its box)",
+  "got": "4.0 4.0",
+  "want": "4 4 (+-1)",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1040.2, 293.0 to 339.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] the plate of heldBack (world 782.4 to 937.6, 502.0 to 553.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] the plate of added (world 1512.6 to 1607.4, 611.0 to 657.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] the plate of readoutAdding (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "F-gauge: the frame on screen x 738 to 1662, y 279 to 731 (outer stroke edges +-1)",
+  "got": "738.0 to 1662.0, 279.3 to 730.8",
+  "want": "737 to 1663, 278 to 732",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "F-gauge: the figure's head y 125 to 282 (crown)",
+  "got": 124.9,
+  "want": 125.4,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "F-gauge: scale 1.05",
+  "got": 1.05,
+  "want": 1.05,
+  "tol": 0.001,
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
+  "got": 30.2,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 32.30999999999999,
+  "name": "keep-out: nearest visible text to tavi's body box (\"added\")",
+  "got": 135.35,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 35.36500000000001,
+  "name": "6g: \"with your breathing muscles,\" on screen from x 213",
+  "got": 213,
+  "want": 213,
+  "tol": 2,
+  "pass": true
+ },
+ {
+  "t": 35.36500000000001,
+  "name": "[DECISIONS 203] their world baselines 766 and 804: on screen",
+  "got": "779.1, 819.0",
+  "want": "779.1, 819.0",
+  "pass": true
+ },
+ {
+  "t": 35.36500000000001,
+  "name": "[DECISIONS 203] their ink on screen (top of the first, foot of the second) and the floor horizon",
+  "got": "753.9 to 826.3; floor 840.0",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 35.36500000000001,
+  "name": "\"never your throat\" font box foot on screen",
+  "got": 827.95,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 35.36500000000001,
+  "name": "[B-01: 188; DECISIONS 203] the legs' lowest visible point (alpha 0.1) 20 px or more above \"with your breathing muscles,\" (ink top)",
+  "got": 20.6,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 35.36500000000001,
+  "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
+  "got": 30.2,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 35.36500000000001,
+  "name": "keep-out: nearest visible text to tavi's body box (\"added\")",
+  "got": 135.35,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] the plate of pushOfAir (world 786.0 to 1079.9, 242.0 to 288.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] the plate of lungsPush (world 772.0 to 1040.2, 293.0 to 339.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] the plate of needs (world 772.0 to 1052.9, 612.0 to 658.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] \"what the note needs\": its plate under the gold line",
+  "got": 4.5,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] the plate of heldBack (world 782.4 to 937.6, 502.0 to 553.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] the plate of added (world 1512.6 to 1607.4, 611.0 to 657.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] the plate of readoutAdding (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "[B-01: 182] the plate of the readout's own plate (world 1432.8 to 1634.0, 344.0 to 395.0) covers no stroke",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "LAB-CHECKS 5: \"can't push air out\" starts at or right of screen x 0",
+  "got": 64.42,
+  "want": ">= 0 (board 24)",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "LAB-CHECKS 5: 12 px or more over \"diaphragm\" (ink)",
+  "got": 29.4,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "the struck arrow and its strike shown",
+  "got": "1.00 1.00",
+  "want": "1.00 1.00",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
+  "got": 30.2,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 55.49700000000001,
+  "name": "keep-out: nearest visible text to tavi's body box (\"added\")",
+  "got": 135.35,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 62.48,
+  "name": "LAB-CHECKS 8 (Quiet): \"Quiet\" and \"Loud\" from the frame's stroke (screen)",
+  "got": "13.7, 13.7",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 62.48,
+  "name": "LAB-CHECKS 8: \"Quiet\" and \"Loud\" apart",
+  "got": 14.7,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 62.48,
+  "name": "LAB-CHECKS 8: the chips on screen (board x 1675 to 1783, y 290 to 386)",
+  "got": "1676 to 1784, 291 to 385",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 62.48,
+  "name": "LAB-CHECKS 8: the chips from the \"ILLUSTRATION\" chip across the stroke",
+  "got": 24.15,
+  "want": "board 22",
+  "pass": true
+ },
+ {
+  "t": 62.48,
+  "name": "Quiet lit",
+  "got": "rgb(230,237,243) rgb(168,179,191)",
+  "want": "rgb(230,237,243) rgb(168,179,191)",
+  "pass": true
+ },
+ {
+  "t": 62.48,
+  "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
+  "got": 30.2,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 62.48,
+  "name": "keep-out: nearest visible text to tavi's body box (\"added\")",
+  "got": 135.35,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 66.65,
+  "name": "LAB-CHECKS 8 (Loud): \"Quiet\" and \"Loud\" from the frame's stroke (screen)",
+  "got": "13.7, 13.7",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 66.65,
+  "name": "LAB-CHECKS 8: \"Quiet\" and \"Loud\" apart",
+  "got": 14.7,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 66.65,
+  "name": "LAB-CHECKS 8: the chips on screen (board x 1675 to 1783, y 290 to 386)",
+  "got": "1676 to 1784, 291 to 385",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 66.65,
+  "name": "LAB-CHECKS 8: the chips from the \"ILLUSTRATION\" chip across the stroke",
+  "got": 24.15,
+  "want": "board 22",
+  "pass": true
+ },
+ {
+  "t": 66.65,
+  "name": "Loud lit",
+  "got": "rgb(168,179,191) rgb(230,237,243)",
+  "want": "rgb(168,179,191) rgb(230,237,243)",
+  "pass": true
+ },
+ {
+  "t": 66.65,
+  "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
+  "got": 30.2,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 66.65,
+  "name": "keep-out: nearest visible text to tavi's body box (\"more adding as the air runs low\")",
+  "got": 93.62,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 66.65,
+  "name": "LAB-CHECKS 8: \"less holding back at first\" and \"more adding as the air runs low\" apart (across, ink)",
+  "got": 141.66,
+  "want": ">= 12 (board 25)",
+  "pass": true
+ },
+ {
+  "t": 66.65,
+  "name": "LAB-CHECKS 8: ... and in height (the one's cap top under the other's descenders)",
+  "got": 11.55,
+  "want": "board 12",
+  "pass": true
+ },
+ {
+  "t": 66.65,
+  "name": "LAB-CHECKS 8: \"what the note needs\" (Loud) over the gold line (its stroke's top, ink)",
+  "got": 12.08,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 66.65,
+  "name": "LAB-CHECKS 8: the leader at x 900 runs (900, 740) to (900, 430): world",
+  "got": "900,740 to 900,430",
+  "want": "900,740 to 900,430",
+  "pass": true
+ },
+ {
+  "t": 66.65,
+  "name": "\"less holding back at first\" on screen from x 738, baseline 778",
+  "got": "738.0, 778.0",
+  "want": "738, 778",
+  "pass": true
+ },
+ {
+  "t": 68.7745,
+  "name": "[DECISIONS 203] the legs' lowest visible point on screen (alpha 0.1), carried by S7's first frame",
+  "got": 733.5,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 68.7745,
+  "name": "last frame (F-gauge): the frame x 738 to 1662, y 279 to 731",
+  "got": "738.0 to 1662.0, 279.3 to 730.8",
+  "want": "737 to 1663, 278 to 732",
+  "pass": true
+ },
+ {
+  "t": 68.7745,
+  "name": "the gold line at world 454 (screen 451.45)",
+  "got": 451.45,
+  "want": 451.45,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 68.7745,
+  "name": "the chip screen x 1367 to 1652, y 290 to 332",
+  "got": "1367.4 to 1651.5, 289.8 to 331.8",
+  "want": "1367 to 1652, 290 to 332",
+  "pass": true
+ },
+ {
+  "t": 68.7745,
+  "name": "\"Quiet\" and \"Loud\" (Loud lit) screen y 290 to 332 and 344 to 386",
+  "got": "1675.7: 290.8 to 330.7, 345.4 to 385.3",
+  "want": "info (HANDOFFS 290-332, 344-386 for 40 px outlines)",
+  "pass": true
+ },
+ {
+  "t": 68.7745,
+  "name": "\"what the note needs\" (Loud) screen right edge 1652, baseline 437",
+  "got": "1651.5, 436.8",
+  "want": "1651.5, 436.75",
+  "pass": true
+ },
+ {
+  "t": 68.7745,
+  "name": "the small band x 738 to 1662, y 143 to 227, Merc's line whole",
+  "got": "738.0 to 1662.0, 142.8 to 226.8",
+  "want": "738 to 1662, 142.75 to 226.75",
+  "pass": true
+ },
+ {
+  "t": 68.7745,
+  "name": "the figure at rest at F-gauge: k 1.2075, x0 150, y0 100.75 on screen (its crown and back)",
+  "got": "427.73, 124.90; breath 0.000",
+  "want": "427.73, 124.90; breath 0.000",
+  "pass": true
+ },
+ {
+  "t": 68.7745,
+  "name": "no cursor, no readout",
+  "got": "0.00 0.00 0.00",
+  "want": "0.00 0.00 0.00",
+  "pass": true
+ },
+ {
+  "t": 68.7745,
+  "name": "hosts at 240",
+  "got": "36.4-163.6; 1756.4-1883.6",
+  "want": "36.4-163.6; 1756.4-1883.6",
+  "pass": true
+ },
+ {
+  "t": 68.7745,
+  "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
+  "got": 30.2,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 68.7745,
+  "name": "keep-out: nearest visible text to tavi's body box (\"more adding as the air runs low\")",
+  "got": 93.62,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 29.259999999999994,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "1.00 0.00; cursor 1.00 x 1382, plate 1350 to 1649: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.29333333333333,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.44 0.00; cursor 1.00 x 1385, plate 1350 to 1649: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.32666666666666,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.11 0.00; cursor 1.00 x 1388, plate 1350 to 1650: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.359999999999996,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.00; cursor 1.00 x 1391, plate 1350 to 1650: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.393333333333327,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.05; cursor 1.00 x 1394, plate 1370 to 1650: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.426666666666662,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.20; cursor 1.00 x 1398, plate 1390 to 1650: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.459999999999994,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.44; cursor 1.00 x 1401, plate 1411 to 1650: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.49333333333333,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.79; cursor 1.00 x 1404, plate 1431 to 1650: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.52666666666666,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 1.00; cursor 1.00 x 1407, plate 1441 to 1650: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.559999999999995,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 1.00; cursor 1.00 x 1410, plate 1441 to 1650: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 29.559999999999995,
+  "name": "[B-01: 183] \"added\" not yet shown 0.3 s after the switch",
+  "got": "0.00",
+  "want": "0.00",
+  "pass": true
+ },
+ {
+  "t": 29.559999999999995,
+  "name": "[B-01: 183] the readout: frames with both wordings shown (every switch)",
+  "got": 0,
+  "want": 0,
+  "pass": true
+ },
+ {
+  "t": 36.338686533060255,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 1.00; cursor 1.00 x 1385, plate 1444 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.372019866393586,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.44; cursor 1.00 x 1186, plate 1414 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.405353199726925,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.11; cursor 1.00 x 996, plate 1383 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.438686533060256,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.00; cursor 1.00 x 869, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.47201986639359,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.05 0.00; cursor 1.00 x 792, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.50535319972692,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.20 0.00; cursor 1.00 x 754, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.53868653306026,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.44 0.00; cursor 1.00 x 740, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.57201986639359,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.79 0.00; cursor 1.00 x 738, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.60535319972692,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "1.00 0.00; cursor 1.00 x 738, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 36.63868653306025,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "1.00 0.00; cursor 1.00 x 738, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.20242025753359,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "1.00 0.00; cursor 1.00 x 1385, plate 1352 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.23575359086692,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.44 0.00; cursor 1.00 x 1409, plate 1352 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.26908692420026,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.11 0.00; cursor 1.00 x 1430, plate 1352 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.30242025753359,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.00; cursor 1.00 x 1449, plate 1352 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.33575359086692,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.05; cursor 1.00 x 1465, plate 1372 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.36908692420025,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.20; cursor 1.00 x 1478, plate 1393 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.40242025753359,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.44; cursor 1.00 x 1489, plate 1414 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.43575359086692,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.79; cursor 1.00 x 1498, plate 1434 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.469086924200255,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 1.00; cursor 1.00 x 1506, plate 1444 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 49.502420257533586,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 1.00; cursor 1.00 x 1512, plate 1444 to 1656: behind it",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.73133968052612,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 1.00; cursor 1.00 x 1385, plate 1444 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.76467301385945,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.44; cursor 1.00 x 1262, plate 1414 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.79800634719279,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.11; cursor 1.00 x 1085, plate 1383 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.83133968052612,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.00 0.00; cursor 1.00 x 934, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.86467301385945,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.05 0.00; cursor 1.00 x 835, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.89800634719278,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.20 0.00; cursor 1.00 x 776, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.93133968052612,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.44 0.00; cursor 1.00 x 748, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.96467301385945,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "0.79 0.00; cursor 1.00 x 739, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.998006347192785,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "1.00 0.00; cursor 1.00 x 738, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 57.031339680526116,
+  "name": "[B-01: 183] a swap's frame: one wording at a time, on its plate; the cursor behind the plate or clear of the words",
+  "got": "1.00 0.00; cursor 1.00 x 738, plate 1352 to 1656: clear of the words",
+  "want": "one wording, on its plate; behind or clear",
+  "pass": true
+ },
+ {
+  "t": 56.265000000000015,
+  "name": "[DECISIONS 203] \"with your breathing muscles,\": its ink foot over the floor horizon at every sample it shows (count, least gap and when, camera scale, the floor's top)",
+  "got": "58, 53.6 px at 34.02, scale 1.050 to 1.050, floor 840.0",
+  "want": ">= 12 px",
+  "pass": true
+ },
+ {
+  "t": 56.265000000000015,
+  "name": "[DECISIONS 203] \"never your throat\": its ink foot over the floor horizon at every sample it shows (count, least gap and when, camera scale, the floor's top)",
+  "got": "54, 13.7 px at 35.02, scale 1.050 to 1.050, floor 840.0",
+  "want": ">= 12 px",
+  "pass": true
+ },
+ {
+  "t": 56.265000000000015,
+  "name": "[DECISIONS 203] \"belly and rib muscles\": its ink foot over the floor horizon at every sample it shows (count, least gap and when, camera scale, the floor's top)",
+  "got": "25, 17.9 px at 50.27, scale 1.050 to 1.050, floor 840.0",
+  "want": ">= 12 px",
+  "pass": true
+ }
+]

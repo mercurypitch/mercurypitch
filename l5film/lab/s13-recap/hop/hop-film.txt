@@ -1,5 +1,5 @@
-Merc's sole and crown in the film's own frames (clip stills), rows with 15 px or more of his body colour (B >= 170):
-  clip-still-27.94.png: crown y 673, sole y 835
-  clip-still-28.27.png: crown y 640, sole y 813
-  clip-still-28.91.png: crown y 637, sole y 813
+Merc's sole and crown in the film's own frames (the fix round's clip stills), rows with 15 px or more of his body colour (B >= 170):
+  clip-still-28.05.png: crown y 681, sole y 827
+  clip-still-28.27.png: crown y 639, sole y 814
+  clip-still-28.91.png: crown y 637, sole y 812
   clip-still-29.25.png: crown y 666, sole y 835

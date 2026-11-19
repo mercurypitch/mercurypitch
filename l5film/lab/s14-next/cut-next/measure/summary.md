@@ -19,11 +19,7 @@ A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes
 
 Runs where the mean change is below 0.35. Not an automatic fail: a critic looks at each one. A large "largest change" means something small is visibly moving (a thin line drawing, a small object), which the mean hides.
 
-| Starts | Length | Largest change | Note |
-| --- | --- | --- | --- |
-| 0.40 s | 0.6 s | 213 | small element moving, runs to the end |
-
-0 shorter run(s) totalling 0.0 s are not listed; `motion.csv` has every sample.
+1 shorter run(s) totalling 0.1 s are not listed; `motion.csv` has every sample.
 
 ## Single-frame events
 
@@ -33,7 +29,7 @@ None found.
 
 ## Loop seam
 
-From the last frame back to the first: 5.13 on the scale of `frames.csv`, against a median frame change of 0.112, a 95th percentile of 1.00 and a largest of 1.04 at 0.167 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
+From the last frame back to the first: 6.24 on the scale of `frames.csv`, against a median frame change of 0.261, a 95th percentile of 1.02 and a largest of 1.05 at 0.167 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
 
 ## Loudness
 

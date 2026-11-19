@@ -1,0 +1,411 @@
+[
+ {
+  "t": 0,
+  "name": "first frame (S7's last): the parked figure's crown at (255, 190)",
+  "got": "255.00, 190.00",
+  "want": "255.00, 190.00",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "its back at x 215",
+  "got": 215,
+  "want": 215,
+  "tol": 0.01,
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "at 35 %",
+  "got": 0.35,
+  "want": 0.35,
+  "tol": 0.001,
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "no label, leader or mark visible",
+  "got": 0,
+  "want": 0,
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "hosts at 240",
+  "got": "36.4-163.6; 1756.4-1883.6",
+  "want": "36.4-163.6; 1756.4-1883.6",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "0.4 s rule: the closest two landings (as much as feels easy / Singers breathe in different ways.)",
+  "got": 0.56,
+  "want": ">= 0.40",
+  "pass": true
+ },
+ {
+  "t": 0.4000000000000057,
+  "name": "8a: the figure dimmed to 25 % under the card",
+  "got": 0.25,
+  "want": 0.25,
+  "tol": 0.001,
+  "pass": true
+ },
+ {
+  "t": 1.2700000000000058,
+  "name": "8a: the card \"03 Breathing in\" within 1680 px",
+  "got": 1091.1,
+  "want": "<= 1680",
+  "pass": true
+ },
+ {
+  "t": 1.2700000000000058,
+  "name": "the figure still parked and dim under it",
+  "got": "0.25, crown 255.0,190.0",
+  "want": "0.25, crown 255,190",
+  "pass": true
+ },
+ {
+  "t": 1.5500000000000227,
+  "name": "196: 0.3 s before the move, under the card: the figure still parked and at 25 %",
+  "got": "0.250, crown 255.0,190.0, card 1.000",
+  "want": "0.250, crown 255,190",
+  "pass": true
+ },
+ {
+  "t": 1.8510000000000226,
+  "name": "196: the move starts as the card starts to leave (the card's exit from CARD_OUT), the figure at full strength",
+  "got": "1.000; move start 1.850, card out 1.850",
+  "want": "1.000; equal",
+  "pass": true
+ },
+ {
+  "t": 2.1500000000000226,
+  "name": "196: 0.3 s into the move (info): crown, strength, the card leaving",
+  "got": "301.0,187.8, a 1.00, card 0.612",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 2.450000000000023,
+  "name": "8b: mid-stand (info): crown, legs",
+  "got": "623.0,172.0, a 1.00",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: S8 head x",
+  "got": 991,
+  "want": 991,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: S8 head y",
+  "got": 199.5,
+  "want": 199.5,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: S8 chin x",
+  "got": 1029.5,
+  "want": 1029.5,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: S8 chin y",
+  "got": 238,
+  "want": 238,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: S8 throat x",
+  "got": 1005,
+  "want": 1005,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: S8 throat y",
+  "got": 273,
+  "want": 273,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: S8 shoulder x",
+  "got": 952.5,
+  "want": 952.5,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: S8 shoulder y",
+  "got": 304.5,
+  "want": 304.5,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: S8 lungs x",
+  "got": 998,
+  "want": 998,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: S8 lungs y",
+  "got": 374.5,
+  "want": 374.5,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: S8 domeApex x",
+  "got": 998,
+  "want": 998,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: S8 domeApex y",
+  "got": 444.5,
+  "want": 444.5,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: S8 knee x",
+  "got": 994.5,
+  "want": 994.5,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: S8 knee y",
+  "got": 686,
+  "want": 686,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: soles on the floor line (840)",
+  "got": 840,
+  "want": 840,
+  "tol": 0.1,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: full strength",
+  "got": 1,
+  "want": 1,
+  "tol": 0.001,
+  "pass": true
+ },
+ {
+  "t": 3.1000000000000227,
+  "name": "8b: the figure x 820 to 1100 (its drawn box)",
+  "got": "930 to 1061, y 154 to 840",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.4700000000000215,
+  "name": "8b: the lungs glow on \"breathe in?\"",
+  "got": 1,
+  "want": "> 0.5",
+  "pass": true
+ },
+ {
+  "t": 5.130000000000001,
+  "name": "8c: \"tall but easy\" right-aligned 900, baseline 200",
+  "got": "900.1",
+  "want": "about 900",
+  "pass": true
+ },
+ {
+  "t": 5.130000000000001,
+  "name": "8c: the back arrow x 925, from y 830 up to 150 (its path; the stroke 3 px)",
+  "got": "x 925.0, y 150.0 to 830.0",
+  "want": "x 925.0, y 150.0 to 830.0",
+  "pass": true
+ },
+ {
+  "t": 8.110000000000019,
+  "name": "LAB-CHECKS 6: \"knees unlocked\" (ink) left of the back arrow's stroke",
+  "got": 17.67,
+  "want": ">= 16",
+  "pass": true
+ },
+ {
+  "t": 8.110000000000019,
+  "name": "its font box right edge (right-aligned 907)",
+  "got": 907,
+  "want": 907,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 8.110000000000019,
+  "name": "its leader crosses the arrow to the back of the knee",
+  "got": "M913.00 687.40L976.06 686.00",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 8.110000000000019,
+  "name": "the knee softened (2 degrees)",
+  "got": 2.69,
+  "want": "> 0",
+  "pass": true
+ },
+ {
+  "t": 10.43500000000002,
+  "name": "8c: the jaw dropped 4 px (the chin)",
+  "got": 4,
+  "want": 4,
+  "tol": 0.05,
+  "pass": true
+ },
+ {
+  "t": 10.43500000000002,
+  "name": "8c: \"jaw · tongue · neck loose\" set from x 1070 (the j's hook reaches 5 px left of it)",
+  "got": 1070,
+  "want": 1070,
+  "tol": 0.01,
+  "pass": true
+ },
+ {
+  "t": 16.555000000000014,
+  "name": "8d: breathed in: the belly front at x 1082 (u 360)",
+  "got": 1082,
+  "want": 1082,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 16.555000000000014,
+  "name": "8d: the dome lowered (apex v 477.5)",
+  "got": 474.25,
+  "want": 474.25,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 16.78,
+  "name": "8d: the shoulder does not move (at rest and breathed in)",
+  "got": "952.50, 304.50",
+  "want": "952.50, 304.50",
+  "pass": true
+ },
+ {
+  "t": 16.78,
+  "name": "8d: the level mark (x, y)",
+  "got": "932.0 to 958.0, y 289.0 to 294.0",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 16.78,
+  "name": "8d: the level mark clear of the back arrow's stroke (its outer edge 926.5)",
+  "got": 4.25,
+  "want": ">= 4",
+  "pass": true
+ },
+ {
+  "t": 18.825000000000014,
+  "name": "every label 8 px or more from the other leaders and the arrow (nearest: breathe / the arrow)",
+  "got": 14.68,
+  "want": ">= 8",
+  "pass": true
+ },
+ {
+  "t": 18.825000000000014,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 18.825000000000014,
+  "name": "keep-out: nearest visible text to merc's body box (\"breathe in quietly, low\")",
+  "got": 480.1,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 18.825000000000014,
+  "name": "keep-out: nearest visible text to tavi's body box (\"as much as feels easy\")",
+  "got": 324.13,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 20.384500000000003,
+  "name": "every label 8 px or more from the other leaders and the arrow (nearest: breathe / the arrow)",
+  "got": 14.68,
+  "want": ">= 8",
+  "pass": true
+ },
+ {
+  "t": 20.384500000000003,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 20.384500000000003,
+  "name": "keep-out: nearest visible text to merc's body box (\"breathe in quietly, low\")",
+  "got": 480.1,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 20.384500000000003,
+  "name": "keep-out: nearest visible text to tavi's body box (\"as much as feels easy\")",
+  "got": 324.13,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 20.384500000000003,
+  "name": "last frame (S8 to S9): the figure whole at S8's placement, breathed out to rest (breath 0, DECISIONS 191), the jaw at 4 px",
+  "got": "crown 991.0,154.0, belly 1061.00, chin 242.00",
+  "want": "crown 991,154, belly 1061.0 (u 330, rest), chin 242",
+  "pass": true
+ },
+ {
+  "t": 20.384500000000003,
+  "name": "last frame: every cue label at full",
+  "got": "tall 1.00, shoulders 1.00, breathe 1.00, knees 1.00, jaw 1.00, dia 1.00, much 1.00",
+  "want": "all 1.00",
+  "pass": true
+ },
+ {
+  "t": 20.384500000000003,
+  "name": "last frame: the card and kicker gone",
+  "got": "0.000 / 0.000",
+  "want": "0.000 / 0.000",
+  "pass": true
+ }
+]

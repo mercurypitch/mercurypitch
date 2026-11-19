@@ -1,0 +1,206 @@
+<!doctype html>
+<!-- The probe's harness for compositions/s08-breathe.html (lab/s05-push/probe.mjs). -->
+<html lang="en"><head><meta charset="UTF-8" />
+<script src="/assets/vendor/gsap-3.14.2.min.js"></script>
+<script src="/assets/cues.js"></script>
+<script src="/assets/scenes.js"></script>
+<script src="/assets/merc/roots.js"></script>
+<script src="/assets/lib/lesson.js"></script>
+<script src="/assets/lib/motion.js"></script>
+<script src="/assets/lib/marks.js"></script>
+<script src="/assets/lib/frames.js"></script>
+<script src="/assets/lib/chart.js"></script>
+<script src="/assets/lib/figure.js"></script>
+<script src="/assets/lib/gauge.js"></script>
+<script src="/assets/lib/mixup.js"></script>
+<script src="/assets/lib/folds.js"></script>
+<script src="/assets/lib/turn.js"></script>
+<script src="/assets/lib/recap.js"></script>
+<script src="/assets/lib/tease.js"></script>
+<script src="/assets/lib/hosts.js"></script>
+<link rel="stylesheet" href="/assets/lib/lesson.css" />
+<style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('/assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('/assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('/assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+</style></head><body><div id="root">
+    <div id="s08-breathe" data-composition-id="s08-breathe" data-start="0" data-duration="20.385" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s08-breathe -->
+      <video id="s08-breathe-m-orange" data-merc="m-orange" class="clip" muted playsinline src="/assets/merc/m-orange-s08-merc.webm" data-start="0.000" data-duration="20.432" data-media-start="0.050"></video>
+      <video id="s08-breathe-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="/assets/merc/m-orange-s08-merc.webm" data-start="0.000" data-duration="20.432" data-media-start="0.050"></video>
+      <video id="s08-breathe-m-blue" data-merc="m-blue" class="clip" muted playsinline src="/assets/merc/m-blue-s08-merc.webm" data-start="0.000" data-duration="20.432" data-media-start="0.050"></video>
+      <video id="s08-breathe-m-blue-refl" data-merc="m-blue" data-merc-refl class="clip" muted playsinline src="/assets/merc/m-blue-s08-merc.webm" data-start="0.000" data-duration="20.432" data-media-start="0.050"></video>
+      <div class="scene" id="s08-breathe-scene"></div>
+      <script>
+        ;(function () {
+          // S8, chapter 3 "Breathing in" (STORYBOARD 8a to 8d; HANDOFFS § The breath figure (S8), § The cuts S7 to S8
+          // and S8 to S9). F0 throughout, no camera move: the parked figure, carried from S7 at 35 %, dims under the
+          // card, then comes back to full and stands up whole at the frame's centre, its legs drawing down from the
+          // hips; Merc's three posture cues and the breath in, each a world label with a leader to its part; the
+          // figure breathes in once and back out to rest. Every time is a cue, a word or a duration.
+          const SID = 's08-breathe'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const C = L.C, P = L.prog, clamp = L.clamp, lerp = L.lerp, f2 = L.f2
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
+          const world = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+          const cam = L.frameRig(room, { from: 'F0' })                // F0 throughout: the stand-up is an object move
+
+          /* ---------------------------------------------------------------- anchors */
+          // 8a: act3, the card over the dimmed, parked figure
+          const ACT = at('act3')
+          const CARD_IN = ACT + 0.22, CARD_OUT = at('o9', 'start', -0.5)
+          // 8b: o9, the figure stands up whole; its lungs glow on "breathe in?". The stand-up starts as the card starts
+          // to leave, overlapping its exit, and the figure is at full strength from its start (DECISIONS 196): it comes
+          // up from 25 % over the 0.25 s before (linear), while the card is still up and nothing changes shape
+          const O9 = at('o9')
+          const STAND = CARD_OUT, STAND_D = 1.2, FULL_D = 0.25         // power2.inOut (the board's 218.75 to 219.95 before)
+          const LEGS = STAND + 0.65, LEGS_D = STAND_D - 0.65           // the legs draw down from the hips as it lands
+          const LUNGS_Q = word('o9', 'breathe')
+          const KICK_OUT = at('b21', 'end')
+          // 8c: b21, the posture cues
+          const TALL = word('b21', 'tall'), ARROW_D = 0.5
+          const KNEES = word('b21', 'knees')
+          const JAW = word('b21', 'jaw')
+          // 8d: b22, the breath in, as instructions only
+          const IN_Q = word('b22', 'in')                               // "breathe in quietly, low" (the board's 229.93)
+          const LET = word('b22', 'let')                               // the breath in (board 2.0 s), then held
+          const DROP = word('b22', 'drop')                             // "diaphragm at work"
+          const SHOULDERS = word('b22', 'shoulders')                   // "shoulders still" and its level mark
+          const TAKING = word('b22', 'taking')                         // "as much as feels easy"
+          const OUT0 = TAKING + 0.06                                   // the breath out to rest (board 234.30 to 236.30)
+          const IN_D = Math.min(2.0, OUT0 - LET), OUT_D = Math.min(2.0, D - OUT0)
+          const SINGERS = TAKING + 0.56                                // "Singers breathe in different ways." (board: 0.56 s after)
+
+          /* ---------------------------------------------------------------- the hosts at 240 */
+          const Hs = L.HOSTS.small
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hs.merc })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hs.tavi })
+
+          /* ---------------------------------------------------------------- the figure: parked (S7) to whole (S8) */
+          const fig = L.figure(world)
+          const F7 = L.FIGURE.S7, F8 = L.FIGURE.S8
+          // the parked figure's legs are masked from v 540 to 570 (S7's world fade [450, 465] at k 0.5, y0 180); as the
+          // legs draw down the soft edge goes with the reveal, to v 1010 to 1040, under the soles
+          const FV = [(F7.fade[0] - F7.y0) / F7.k, (F7.fade[1] - F7.y0) / F7.k]
+
+          /* ---------------------------------------------------------------- S8's cue labels, marks and leaders (world px;
+             HANDOFFS § The breath figure, S8). The same block stands in s09-onset for its first frame. */
+          const CUE = {
+            tall: { text: 'tall but easy', x: 900, y: 200, anchor: 'end' },
+            shoulders: { text: 'shoulders still', x: 910, y: 300, anchor: 'end' },
+            breathe: { text: 'breathe in quietly, low', x: 910, y: 400, anchor: 'end' },
+            knees: { text: 'knees unlocked', x: 907, y: 700, anchor: 'end' },
+            jaw: { text: 'jaw · tongue · neck loose', x: 1070, y: 245 },
+            dia: { text: 'diaphragm at work', x: 1110, y: 470 },
+            much: { text: 'as much as feels easy', x: 1110, y: 560 },
+          }
+          const cueL = {}
+          for (const [n, c] of Object.entries(CUE)) cueL[n] = L.label(world, c.text, { ...c, size: 36 })
+          const singers = [
+            L.label(world, 'Singers breathe in', { x: 1110, y: 720, size: 48, family: 'serif' }),
+            L.label(world, 'different ways.', { x: 1110, y: 770, size: 48, family: 'serif' }),
+          ]
+          for (const l of singers) l.el.setAttribute('data-layout-allow-overlap', '')   // one label's two lines, 50 px apart
+          // the arrow up the back, heel to crown (x 925, y 830 to 150), and the level mark over the shoulder: 26 px at
+          // y 289, x 932 to 958 (HANDOFFS: 40 px at y 290; at 40 px its right end runs into the neck's back outline at
+          // x 967 and its left end comes within 8 px of the arrow; here 5.5 px from the arrow's stroke, 6 px from the neck)
+          const ARROW = { x: 925, y1: 830, y2: 150 }
+          const backArrow = L.arrow(world, { x1: ARROW.x, y1: ARROW.y1, x2: ARROW.x, y2: ARROW.y2, color: C.chrome, width: 3, head: 12 })
+          const LEVEL = { x1: 932, x2: 958, y: 289 }
+          const level = L.bracket(world, { x1: LEVEL.x1, x2: LEVEL.x2, y: LEVEL.y, dir: 'down', tick: 5, width: 2.5 })
+          // leaders, 1.5 px chrome, each from 6 px off its label's end to 3 px short of its part, drawn from the figure's
+          // current pose (the lungs, the dome, the knee and the jaw move)
+          const lead = {}
+          for (const n of ['tall', 'shoulders', 'breathe', 'knees', 'jaw', 'dia']) lead[n] = L.leader(world, {})
+          const lungsEdge = (y) => {                                  // the lungs' outline's left edge at height y
+            const s = fig.shape(), k = F8.k
+            const cy = F8.y0 + k * s.lungs[1], rx = k * s.lungs[2], ry = k * s.lungs[3]
+            return F8.x0 + k * s.lungs[0] - rx * Math.sqrt(Math.max(0, 1 - ((y - cy) / ry) ** 2))
+          }
+          const kneeBack = () => {                                    // the back of the knee (the near leg's outline, v 780)
+            const s = fig.shape()
+            return [F8.x0 + F8.k * (209.1 + s.legDu(780)), F8.y0 + F8.k * 780]
+          }
+          const leaders = () => {
+            const mid = (c) => c.y - 0.35 * 36                        // a 36 px label's mid-height
+            const [kx, ky] = kneeBack(), [cx, cy] = fig.at('chin'), [dx, dy] = fig.at('domeApex')
+            lead.tall.set({ x1: CUE.tall.x + 6, y1: mid(CUE.tall), x2: ARROW.x - 4, y2: mid(CUE.tall) })
+            lead.shoulders.set({ x1: CUE.shoulders.x + 6, y1: LEVEL.y, x2: LEVEL.x1 - 3, y2: LEVEL.y })
+            const by = mid(CUE.breathe)
+            lead.breathe.set({ x1: CUE.breathe.x + 6, y1: by, x2: lungsEdge(by) - 3, y2: by })
+            lead.knees.set({ x1: CUE.knees.x + 6, y1: mid(CUE.knees), x2: kx - 3, y2: ky })
+            lead.jaw.set({ x1: CUE.jaw.x - 6, y1: mid(CUE.jaw), x2: cx + 3, y2: cy + 1 })
+            lead.dia.set({ x1: CUE.dia.x - 6, y1: mid(CUE.dia), x2: dx + 3, y2: dy })
+          }
+
+          /* ---------------------------------------------------------------- frame-fixed: the card and the kicker */
+          const card = L.chapterCard(hud, { num: 3, title: 'Breathing in', tIn: CARD_IN, tOut: CARD_OUT })
+          const kicker = L.kicker(hud, '03 · Breathing in')
+
+          const probe = { cam, fig, cueL, singers, backArrow, level, lead, card, kicker, CUE, ARROW, LEVEL,
+            A: { ACT, CARD_IN, CARD_OUT, O9, STAND, STAND_D, LEGS, LUNGS_Q, TALL, KNEES, JAW, IN_Q, LET, DROP, SHOULDERS, TAKING, OUT0, IN_D, OUT_D, SINGERS, KICK_OUT, D }, boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            dust(T)
+            probe.boxes = { merc: merc(t), tavi: tavi(t) }
+
+            /* 8a, 8b: the figure dims from S7's 35 % to 25 % under the card (linear, no two-frame pop), comes back to
+               full and stands up whole at the centre (an object move), the legs drawing down from the hips */
+            const su = P(t, STAND, STAND_D, 'power2.inOut')
+            const lg = P(t, LEGS, LEGS_D, 'power2.out')
+            const dimA = lerp(0.35, 0.25, P(t, ACT, 0.2, 'none'))
+            const a = lerp(dimA, 1, P(t, STAND - FULL_D, FULL_D, 'none'))
+            const fv0 = FV[0] + 470 * lg, fv1 = FV[1] + 470 * lg
+            const k = lerp(F7.k, F8.k, su), x0 = lerp(F7.x0, F8.x0, su), y0 = lerp(F7.y0, F8.y0, su)
+            // the breath: in once (sine.inOut), held, then out to rest (breath 0, the belly wall springing back in;
+            // FACTS 17), where it stays across the cut: -1 is the muscles' push, not this easy breath (DECISIONS 191)
+            const breath = P(t, LET, IN_D, 'sine.inOut') - P(t, OUT0, OUT_D, 'sine.inOut')
+            const knee = 2 * L.env(t, KNEES, 0.4, 0.5, 0.5)            // softens 2 degrees and back
+            const jaw = 4 * P(t, JAW, 0.5, 'power2.inOut')            // drops 4 px and stays loose
+            const run = L.run(t, JAW + 0.1, 0.7)                       // a light runs down the neck
+            fig.draw({ k, x0, y0, a, legs: lg, fade: [y0 + k * fv0, y0 + k * fv1], breath, knee, jaw,
+              glow: { lungs: L.glow(t, [LUNGS_Q], { up: 0.25, hold: 0.4, down: 0.6 }) },
+              run: run ? { part: 'neck', u: run.u, a: run.a } : null })
+
+            /* 8c, 8d: the cue labels, each with its leader, and the marks (all from the figure's pose above) */
+            leaders()
+            const arrowU = P(t, TALL, ARROW_D, 'power2.inOut')
+            backArrow.draw(arrowU, arrowU > 0 ? 1 : 0)
+            const lands = { tall: TALL, knees: KNEES, jaw: JAW, breathe: IN_Q, dia: DROP, shoulders: SHOULDERS, much: TAKING }
+            for (const [n, t0] of Object.entries(lands)) {
+              const la = cueL[n].life(t, t0, null)
+              if (lead[n]) lead[n].draw(P(t, t0, 0.3, 'power2.out'), la)
+            }
+            level.draw(P(t, SHOULDERS, 0.4, 'power2.out'), P(t, SHOULDERS, 0.2))
+            for (const s of singers) s.life(t, SINGERS, null)
+
+            /* frame-fixed */
+            card.draw(t)
+            kicker.draw(t, O9, KICK_OUT)
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </div>
+<script src="/lab/s05-push/helpers.js"></script>
+<script src="/lab/s08-breathe/checks.js"></script></body></html>

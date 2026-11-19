@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s04-recall" data-composition-id="s04-recall" data-start="0" data-duration="13.635" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s04-recall -->
+      <video id="s04-recall-m-orange" data-merc="m-orange" class="clip" muted playsinline src="assets/merc/m-orange-s04-merc.webm" data-start="0.000" data-duration="13.670" data-media-start="0.050"></video>
+      <video id="s04-recall-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m-orange-s04-merc.webm" data-start="0.000" data-duration="13.670" data-media-start="0.050"></video>
+      <video id="s04-recall-m-blue" data-merc="m-blue" class="clip" muted playsinline src="assets/merc/m-blue-s04-merc.webm" data-start="6.037" data-duration="7.633" data-media-start="0.017"></video>
+      <video id="s04-recall-m-blue-refl" data-merc="m-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m-blue-s04-merc.webm" data-start="6.037" data-duration="7.633" data-media-start="0.017"></video>
+      <div class="scene" id="s04-recall-scene"></div>
+      <script>
+        ;(function () {
+          // S4, the recall (STORYBOARD 4a to 4d; HANDOFFS § The band chart, the swatches; § Framings F-strip; § Camera
+          // moves, push-and-return 1; § The cuts S3 to S4 and S4 to S5). From F-promise-b the camera cranes down onto
+          // the level strip at 1.4x; three level swatches land under it; the predict's ring while Merc leaps in from the
+          // left; the middle swatch lights on "about the volume" with a hairline up to the strip; the four words land as
+          // chips and fly to the top lane, dim; the crane brings the band back at F0. Every time is a cue, a word or a
+          // duration.
+          const SID = 's04-recall'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const C = L.C, P = L.prog, clamp = L.clamp, lerp = L.lerp, f2 = L.f2
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
+          const world = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+
+          /* ---------------------------------------------------------------- anchors */
+          const CRANE = at('o3', 'start', 0.3), CRANE_D = 1.4           // F-promise-b to F-strip (power2.inOut)
+          const SW = word('o3', 'loud')                                 // the swatches land 0.4 s apart from "loud"
+          const Q0 = at('q0'), Q0_D = at('q0', 'end') - at('q0')
+          const LIGHT = word('b6', 'about')                             // "about the volume": the middle swatch lights
+          // the row flies to the top lane on "much" (0.6 s); the heading lands on "a quiet note", or, on a faster read,
+          // early enough that its four chips, 0.4 s apart, still hold 0.6 s before the flight (the scratch clock's b6 is
+          // 1.3 s shorter than the board's: on "a quiet" its last chip would land 0.04 s before the row leaves)
+          const FLY = word('b6', 'much', 'start', -0.15), FLY_D = 0.6
+          const HEAD = Math.min(word('b6', 'a quiet'), FLY - (0.43 + 3 * 0.4 + 0.6))  // "FOUR WORDS YOU'LL MEET"
+          const CHIP = (k) => HEAD + 0.43 + 0.4 * k
+          const UP = word('b6', 'the right', 'start', -0.28), UP_D = 1.5  // the crane back to F0 (power2.inOut)
+          const UP_END = UP + UP_D
+          // DECISIONS 172: only the type the row's flight crosses leaves before it (the heading at 11.93 to 11.97 and the
+          // three names at 12.00 to 12.03, lab/s04-recall/flight-cross.mjs); the swatches and the hairline leave with the
+          // crane up, on "right" (the board's 66.00 to 66.40), and the strip's envelope stays until the band's foot is in
+          // frame. The flying chips pass in front of the middle and right swatches and the envelope (frame-fixed over a
+          // mark, as DECISIONS 168 has the parked words over the band's fill).
+          const OUT = FLY - 0.2, OUT_D = 0.3
+          const SW_OUT = word('b6', 'right'), SW_OUT_D = 0.4
+
+          /* ---------------------------------------------------------------- the camera: push-and-return 1 */
+          const cam = L.frameRig(room, { from: 'F-promise-b' })
+          cam.to(CRANE, CRANE_D, 'F-strip', 'power2.inOut')
+          cam.to(UP, UP_D, 'F0', 'power2.inOut')
+
+          /* ---------------------------------------------------------------- the hosts at 300 in their corners */
+          const Hc = L.HOSTS.corners
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hc.tavi })
+          const R = window.MERC_ROOTS && window.MERC_ROOTS['m-blue-s04']
+          const leapAt = R ? R.t0 - T0 : at('b6', 'start', -1.38)       // the pass's first frame is its celebrate (PASSES.md)
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hc.merc, leap: { at: leapAt, from: 'left' } })
+
+          /* ---------------------------------------------------------------- the band chart and the swatches (world) */
+          const ch = L.bandChart(world, L.CHART.S1)
+          const lab = { A3: ch.label('A3'), level: ch.label('level'), row: ch.label('row') }
+          const EVEN = L.CONTOUR.from(() => 0, () => 0, null)          // the strip's even envelope at 0 dB (28 px)
+          const SWATCH = [
+            { x: 640, h: 10, name: 'whisper' }, { x: 960, h: 28, name: 'about speaking volume' }, { x: 1280, h: 56, name: 'shout' },
+          ]
+          const SY = 850, SWW = 160
+          const swG = L.svg('g', { class: 'swatches' }, ch.g)
+          SWATCH.forEach((s) => {
+            s.g = L.svg('g', { opacity: 0 }, swG)
+            s.box = L.svg('rect', { x: s.x - SWW / 2, y: SY - s.h, width: SWW, height: 2 * s.h, rx: 3, fill: C.violet, 'fill-opacity': 0, stroke: C.chrome, 'stroke-width': 2, 'stroke-opacity': 0.5 }, s.g)
+            s.label = L.text(s.g, s.name, { x: s.x, y: 950, size: 36, anchor: 'middle', fill: C.ink2, opacity: 1 })
+          })
+          const hair = L.svg('line', { x1: 960, y1: SY - 28, x2: 960, y2: SY - 28, stroke: C.chrome, 'stroke-opacity': 0.4, 'stroke-width': 1.5, opacity: 0 }, ch.g)
+          const STRIP_FOOT = ch.G.strip + 28
+          // the crane up brings the band in from the top: the first moment its foot (the whole of its 2 px edge line)
+          // is 16 px into the frame, found on the camera's own curve
+          const FOOT_IN = (() => {
+            for (let k = 0; k <= 600; k++) { const tt = UP + (UP_D * k) / 600; if (cam.map(0, ch.band().bot + 1, tt)[1] >= 16) return tt }
+            return UP_END
+          })()
+
+          /* ---------------------------------------------------------------- frame-fixed: kicker, ring, the four words */
+          const kicker = L.kicker(hud, 'From Lesson 3')
+          // the predict's ring beside the swatches (DECISIONS 175): right of the third, centred on the row, its ring
+          // (r 18, a 3 px stroke: 19.5 px out) 40 px clear of the swatch's outline (2 world px, 1.4 on screen each side)
+          const [swR, swY] = cam.map(SWATCH[2].x + SWW / 2, SY, Q0)
+          const ring = L.ringTimer(hud, { x: swR + cam.scale(Q0) + 40 + 19.5, y: swY, r: 18 })
+          const heading = L.text(hud, 'FOUR WORDS YOU’LL MEET', { x: 960, y: 716, size: 26, family: 'mono', weight: 500, fill: C.ink2, tracking: 0.18, anchor: 'middle' })
+          const WORDS = ['air pressure', 'diaphragm', 'onset', '“support”']
+          const row = L.chipRow(hud, WORDS, { right: 1800, y: 87, gap: 12 })
+          const BIG = 44 / 30, BIG_Y = 790 - 0.35 * 44                 // the introduced row: 44 px, centred, baseline 790
+
+          const probe = { cam, ch, lab, row, ring, heading, kicker, SWATCH, hair, A: { CRANE, CRANE_D, SW, LIGHT, HEAD, FLY, FLY_D, UP, UP_D, Q0, Q0_D, SW_OUT, SW_OUT_D, FOOT_IN, D }, boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            dust(T)
+            probe.boxes = { tavi: tavi(t), merc: merc(t) }
+
+            /* the chart: band, Merc's line, "A3", "level", the strip; its even envelope through the visit; the label
+               row's text back as the crane lands at F0 */
+            const swOut = 1 - P(t, SW_OUT, SW_OUT_D)                     // the swatches and the hairline, with the crane
+            ch.draw({ strip: { envs: [{ id: 'even', contour: EVEN, t: ch.G.W, a: P(t, CRANE, 0.8) * (1 - P(t, FOOT_IN, 0.4)) }] } })
+            // "A3" rides the band out of the top and back: it leaves as the crane starts and returns as the crane up
+            // brings it into frame, so it never passes under the kicker (check's layout pass, 53.93)
+            lab.A3.draw({ a: (1 - P(t, CRANE, 0.3)) + P(t, UP + 0.6, 0.5) }); lab.level.draw({ a: 1 })
+            lab.row.life(t, UP_END - 0.5, null, { dIn: 0.5 })
+
+            /* 4a: the three swatches, 0.4 s apart, each with its name; 4c: the middle one lights */
+            const lit = P(t, LIGHT, 0.3, 'power2.out')
+            SWATCH.forEach((s, i) => {
+              const f = L.fade(t, SW + 0.4 * i, SW_OUT, { dIn: 0.3, rise: 12, dOut: SW_OUT_D })
+              s.g.setAttribute('opacity', f.a.toFixed(3))
+              s.label.setAttribute('opacity', (1 - P(t, OUT, OUT_D)).toFixed(3))     // its name leaves before the flight
+              const isMid = i === 1
+              const k = isMid ? L.pulse(t, [LIGHT], 'chip') : 1
+              s.g.setAttribute('transform', `translate(0 ${f2(f.dy)})` + (k !== 1 ? ` translate(${s.x} ${SY}) scale(${k.toFixed(4)}) translate(${-s.x} ${-SY})` : ''))
+              if (isMid) {
+                s.box.setAttribute('fill-opacity', (0.28 * lit).toFixed(3))
+                s.box.setAttribute('stroke', L.mixHex(C.chrome, C.ink, lit))
+                s.box.setAttribute('stroke-opacity', lerp(0.5, 1, lit).toFixed(3))
+                s.label.setAttribute('fill', L.mixHex(C.ink2, C.ink, lit))
+              }
+            })
+            const hu = P(t, LIGHT + 0.1, 0.4, 'power2.out')
+            hair.setAttribute('y2', f2(lerp(SY - 28, STRIP_FOOT, hu)))
+            hair.setAttribute('opacity', ((hu > 0 ? 1 : 0) * swOut).toFixed(3))
+
+            /* frame-fixed: the kicker, the predict's ring (Merc's leap lands as it closes) */
+            kicker.draw(t, at('o3', 'start', 0.05), at('q0', 'end'))
+            ring.draw(t, Q0, Q0_D)
+
+            /* 4d: the heading, the four chips 0.4 s apart (44 px, centred, baseline 790), then the row shrinks to 30 px,
+               flies to the top lane (right-aligned 1800, baseline 98) and dims */
+            const hf = L.fade(t, HEAD, OUT, { dOut: OUT_D })
+            L.place(heading, { a: hf.a })
+            const chips = row.chips
+            const left0 = chips[0].x0, wSmall = chips[3].x1 - left0
+            const bigLeft = 960 - (BIG * wSmall) / 2
+            const u = P(t, FLY, FLY_D, 'power2.inOut')
+            row.draw((i) => {
+              const c = chips[i]
+              const f = L.fade(t, CHIP(i), null, { rise: 12 })
+              const bx = bigLeft + BIG * (c.x0 - left0)
+              return { alpha: f.a, lit: 1 - u, scale: lerp(BIG, 1, u), dx: (1 - u) * (bx - c.x0), dy: (1 - u) * (BIG_Y - 87) + f.dy }
+            })
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

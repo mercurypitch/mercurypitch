@@ -1,0 +1,48 @@
+<!doctype html>
+<!-- Lab for kit-cardgp, written by tools/lab.mjs: the scene from its own time 0, the soundtrack from film time 0.000. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+    <script src="assets/vendor/gsap-3.14.2.min.js"></script>
+    <script src="assets/cues.js"></script>
+    <script src="assets/scenes.js"></script>
+    <script src="assets/merc/roots.js"></script>
+    <script src="assets/lib/lesson.js"></script>
+    <script src="assets/lib/motion.js"></script>
+    <script src="assets/lib/marks.js"></script>
+    <script src="assets/lib/frames.js"></script>
+    <script src="assets/lib/chart.js"></script>
+    <script src="assets/lib/figure.js"></script>
+    <script src="assets/lib/gauge.js"></script>
+    <script src="assets/lib/mixup.js"></script>
+    <script src="assets/lib/folds.js"></script>
+    <script src="assets/lib/turn.js"></script>
+    <script src="assets/lib/recap.js"></script>
+    <script src="assets/lib/tease.js"></script>
+    <script src="assets/lib/hosts.js"></script>
+    <link rel="stylesheet" href="assets/lib/lesson.css" />
+    <style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="lab" data-start="0" data-duration="4.200" data-width="1920" data-height="1080">
+      <div id="host-kit-cardgp" class="clip" data-composition-id="kit-cardgp" data-composition-src="compositions/kit-cardgp.html" data-start="0" data-duration="4.200"></div>
+    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true })
+      tl.set({}, {}, 4.200)
+      window.__timelines = window.__timelines || {}
+      window.__timelines['lab'] = tl
+    </script>
+  </body>
+</html>

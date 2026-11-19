@@ -1,0 +1,177 @@
+// One scene alone, the way the skill's § 5 proves a component: stills, and a short clip with its sound.
+//
+//   node tools/lab.mjs <scene-id> 0.0,1.2,3.4        stills at those scene times (hyperframes snapshot):
+//                                                    lab/<scene-id>/still-<t>.png
+//   node tools/lab.mjs <scene-id> --clip             a 30 fps draft of the scene's first 4 s, with its sound:
+//                                                    lab/<scene-id>/clip.mp4
+//        --from=<t> --len=<s>                        another window: <len> s (3 to 4 is the skill's clip)
+//                                                    from scene time <t>, as clip-<t>.mp4
+//        --full                                      the whole scene (measure.py's holds need its length)
+//        --stills=1.2,3.4                            stills taken from the clip (these show Merc: a
+//                                                    snapshot does not show a video inside a scene, trap 5)
+//        --fps=<n>                                   another frame rate (60 to check a handoff frame)
+//   node tools/lab.mjs kit:<name> ...                the same for a kit lab page, lab/kit-src/<name>.html
+//                                                    (its own `kit-<name>` composition id and data-duration),
+//                                                    in lab/kit-<name>/
+//
+// Reads compositions/<scene-id>.html, assets/scenes.js, assets/lib/scripts.txt, lesson.css and
+// fonts.css.txt (the root's kit, so a lab loads what the film loads), and the soundtrack
+// assets/audio/<MIX>.wav (default full; MIX=voice for the scratch voice; none if it does not exist).
+// Writes lab/<scene-id>/proj/ (a temporary HyperFrames project hosting the scene from 0 to the clip's
+// end or the scene's, the scene still its own length inside (L.dur), the
+// soundtrack offset to the scene's start, assets/ linked), and the stills and clips above.
+// It runs one HyperFrames process; on a shared machine wrap it in the scratchpad's heavy helper.
+// A window that does not start at 0 is rendered from the scene's start and cut, so every frame is the
+// film's own; it costs the frames before the window.
+// For a scene whose Merc passes are not rendered yet, set HF_VIDEO_EXTRACTION_FAILURE_MODE=observe
+// and HF_VIDEO_COVERAGE_THRESHOLD=0 (PRODUCTION-PIPELINE trap 3); they pass through.
+//
+// Recreated for Lesson 5 from its contract (Lesson 1 and 2 BUILD-GUIDEs, Proving a scene;
+// tools/CHANGES.md, 17 October: kit labs and the shared script list); the original was lost with
+// Lesson 4's project.
+
+import { spawnSync } from 'node:child_process'
+import { copyFileSync, existsSync, mkdirSync, readFileSync, renameSync, rmSync, symlinkSync, writeFileSync, readdirSync } from 'node:fs'
+import { dirname, join, relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const HERE = dirname(fileURLToPath(import.meta.url))
+const ROOT = join(HERE, '..')
+const HF = ['--yes', 'hyperframes@0.8.97']
+const env = { ...process.env, HYPERFRAMES_SKIP_SKILLS: '1', HYPERFRAMES_NO_TELEMETRY: '1', HYPERFRAMES_RENDER_DETACHED: '1' }
+
+const args = process.argv.slice(2)
+const target = args.find((a) => !a.startsWith('--'))
+if (!target) {
+  console.error('usage: node tools/lab.mjs <scene-id | kit:<name>> [<t,t,...>] [--clip [--from=t] [--len=s] [--full] [--stills=t,t] [--fps=n]]')
+  process.exit(2)
+}
+const opt = (name, dflt) => {
+  const a = args.find((x) => x.startsWith(`--${name}=`))
+  return a ? a.slice(name.length + 3) : dflt
+}
+const times = args.filter((a) => !a.startsWith('--') && a !== target).join(',')
+const clip = args.includes('--clip')
+const full = args.includes('--full')
+const fps = Number(opt('fps', 30))
+
+const run = (cmd, argv, what) => {
+  const r = spawnSync(cmd, argv, { stdio: 'inherit', env })
+  if (r.status !== 0) throw new Error(`${what} failed (exit ${r.status})`)
+}
+
+// The scene (or kit page) and its span
+const kit = target.startsWith('kit:') ? target.slice(4) : null
+const cid = kit ? `kit-${kit}` : target
+const src = kit ? join(ROOT, 'lab/kit-src', `${kit}.html`) : join(ROOT, 'compositions', `${target}.html`)
+if (!existsSync(src)) throw new Error(`no such page: ${relative(ROOT, src)}`)
+let start = 0
+let D
+if (kit) {
+  const m = readFileSync(src, 'utf8').match(/data-composition-id="kit-[^"]*"[^>]*data-duration="([\d.]+)"/)
+  if (!m) throw new Error(`${relative(ROOT, src)}: its root needs data-composition-id="${cid}" and data-duration`)
+  D = Number(m[1])
+} else {
+  const js = readFileSync(join(ROOT, 'assets/scenes.js'), 'utf8')
+  const scenes = JSON.parse(js.slice(js.indexOf('=') + 1).trim().replace(/;\s*$/, ''))
+  if (!scenes[target]) throw new Error(`${target} is not in assets/scenes.js`)
+  start = scenes[target].start
+  D = Math.round((scenes[target].end - scenes[target].start) * 1000) / 1000
+}
+
+// The window a clip renders: [0, end] of the scene, cut to [from, end]
+const from = full ? 0 : Number(opt('from', 0))
+const len = full ? D - from : Number(opt('len', 4))
+const end = Math.min(D, from + len)
+if (clip && !(from >= 0 && end > from)) throw new Error(`the window ${from} to ${from + len} s is not inside the scene (0 to ${D} s)`)
+
+// The lab project
+const LAB = join(ROOT, 'lab', cid)
+const PROJ = join(LAB, 'proj')
+rmSync(PROJ, { recursive: true, force: true })
+mkdirSync(join(PROJ, 'compositions'), { recursive: true })
+symlinkSync(relative(PROJ, join(ROOT, 'assets')), join(PROJ, 'assets'))
+symlinkSync(relative(join(PROJ, 'compositions'), src), join(PROJ, 'compositions', `${cid}.html`))
+for (const f of ['hyperframes.json', 'package.json']) if (existsSync(join(ROOT, f))) copyFileSync(join(ROOT, f), join(PROJ, f))
+writeFileSync(join(PROJ, 'meta.json'), JSON.stringify({ id: `lab-${cid}`, name: `lab-${cid}` }, null, 2) + '\n')
+
+const dur = clip ? end : D
+const mix = process.env.MIX ?? 'full'
+const audio = !kit && existsSync(join(ROOT, `assets/audio/${mix}.wav`))
+  ? `      <audio id="soundtrack" src="assets/audio/${mix}.wav" data-start="0" data-duration="${dur.toFixed(3)}" data-media-start="${start.toFixed(3)}" data-volume="1"></audio>\n`
+  : ''
+const scripts = readFileSync(join(ROOT, 'assets/lib/scripts.txt'), 'utf8')
+  .split('\n')
+  .map((l) => l.trim())
+  .filter((l) => l && !l.startsWith('#'))
+  .map((p) => `    <script src="${p}"></script>`)
+  .join('\n')
+const fonts = readFileSync(join(ROOT, 'assets/lib/fonts.css.txt'), 'utf8')
+writeFileSync(
+  join(PROJ, 'index.html'),
+  `<!doctype html>
+<!-- Lab for ${cid}, written by tools/lab.mjs: the scene from its own time 0, the soundtrack from film time ${start.toFixed(3)}. -->
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=1920, height=1080" />
+${scripts}
+    <link rel="stylesheet" href="assets/lib/lesson.css" />
+    <style>
+${fonts}
+    </style>
+  </head>
+  <body>
+    <div id="root" data-composition-id="lab" data-start="0" data-duration="${dur.toFixed(3)}" data-width="1920" data-height="1080">
+      <div id="host-${cid}" class="clip" data-composition-id="${cid}" data-composition-src="compositions/${cid}.html" data-start="0" data-duration="${dur.toFixed(3)}"></div>
+${audio}    </div>
+    <script>
+      const tl = gsap.timeline({ paused: true })
+      tl.set({}, {}, ${dur.toFixed(3)})
+      window.__timelines = window.__timelines || {}
+      window.__timelines['lab'] = tl
+    </script>
+  </body>
+</html>
+`,
+)
+
+const tag = (t) => Number(t).toFixed(2)
+
+// Stills by snapshot (no videos inside the scene: use --clip --stills for Merc)
+if (times) {
+  const shots = join(LAB, 'snap')
+  rmSync(shots, { recursive: true, force: true })
+  run('npx', [...HF, 'snapshot', PROJ, '--at', times, '--no-end', '--describe', 'false', '-o', shots], 'snapshot')
+  const pngs = readdirSync(shots).filter((f) => f.endsWith('.png')).sort()
+  const ts = times.split(',')
+  pngs.forEach((f, i) => {
+    if (i < ts.length) renameSync(join(shots, f), join(LAB, `still-${tag(ts[i])}.png`))
+  })
+  for (const t of ts) console.log('still', relative(ROOT, join(LAB, `still-${tag(t)}.png`)))
+}
+
+// A clip: render [0, end], cut [from, end]
+if (clip) {
+  const name = from > 0 ? `clip-${tag(from)}.mp4` : 'clip.mp4'
+  const raw = join(LAB, from > 0 ? '_render.mp4' : name)
+  run('npx', [...HF, 'render', PROJ, '--quality', 'draft', '--fps', String(fps), '--output', raw], 'render')
+  if (from > 0) {
+    run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-ss', String(from), '-i', raw, '-t', String(end - from),
+      '-c:v', 'libx264', '-crf', '16', '-preset', 'veryfast', '-pix_fmt', 'yuv420p', '-c:a', 'aac', '-b:a', '192k', join(LAB, name)], 'cut')
+    rmSync(raw, { force: true })
+  }
+  console.log('clip', relative(ROOT, join(LAB, name)), `(scene ${from.toFixed(2)} to ${end.toFixed(2)} s, ${fps} fps)`)
+  const stills = opt('stills', '')
+  for (const t of stills ? stills.split(',') : []) {
+    const at = Number(t) - from
+    if (at < 0 || at > end - from) {
+      console.warn(`still ${t}: outside the clip`)
+      continue
+    }
+    const png = join(LAB, `clip-still-${tag(t)}.png`)
+    run('ffmpeg', ['-hide_banner', '-loglevel', 'error', '-y', '-ss', String(at), '-i', join(LAB, name), '-frames:v', '1', png], 'still')
+    console.log('still', relative(ROOT, png))
+  }
+}
+if (!times && !clip) console.log('lab project written:', relative(ROOT, PROJ), '(give times for stills, or --clip)')

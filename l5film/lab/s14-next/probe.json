@@ -70,6 +70,62 @@
   "pass": true
  },
  {
+  "t": 0.61,
+  "name": "14a: the rows and the six outlines in from S14's first frame over 0.6 s (DECISIONS 219)",
+  "got": "rows 1.00; outlines 1.00 1.00 1.00 1.00 1.00 1.00; from 0 over 0.6",
+  "want": "rows 1.00; outlines 1.00 x6; from 0 over 0.6",
+  "pass": true
+ },
+ {
+  "t": 0.61,
+  "name": "the first bead's place holds only the carried bead, filled (no outline under it)",
+  "got": "bead 0 0.00; carried a 1.00 at 418.7, 743.0",
+  "want": "bead 0 0.00; carried a 1.00",
+  "pass": true
+ },
+ {
+  "t": 0.61,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 0.61,
+  "name": "keep-out: nearest visible text to merc's body box (\"NEXT TIME\")",
+  "got": 1026.67,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.61,
+  "name": "keep-out: nearest visible text to tavi's body box (\"NEXT TIME\")",
+  "got": 1487.16,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.61,
+  "name": "keep-out: the beads and the copy from merc's body box",
+  "got": 94,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.61,
+  "name": "keep-out: the beads and the copy from tavi's body box",
+  "got": 334.96,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.61,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 110,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
   "t": 0.6499999999999773,
   "name": "14a: the kicker \"NEXT TIME\" at (120, 110)",
   "got": "122.0, 110.0",
@@ -100,14 +156,14 @@
  {
   "t": 0.6499999999999773,
   "name": "keep-out: the beads and the copy from merc's body box",
-  "got": null,
+  "got": 94,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 0.6499999999999773,
   "name": "keep-out: the beads and the copy from tavi's body box",
-  "got": null,
+  "got": 334.96,
   "want": ">= 20",
   "pass": true
  },
@@ -156,14 +212,14 @@
  {
   "t": 0.8350000000000183,
   "name": "keep-out: the beads and the copy from merc's body box",
-  "got": null,
+  "got": 94,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 0.8350000000000183,
   "name": "keep-out: the beads and the copy from tavi's body box",
-  "got": null,
+  "got": 334.96,
   "want": ">= 20",
   "pass": true
  },
@@ -175,63 +231,112 @@
   "pass": true
  },
  {
-  "t": 1.3800000000000183,
-  "name": "14a: the seven beads at x 420 + 160 i on C4 C4 G4 G4 A4 A4 G4 (y 745 745 535 535 475 475 535)",
-  "got": "420,745 580,745 740,535 900,535 1060,475 1220,475 1380,535",
-  "want": "420,745 580,745 740,535 900,535 1060,475 1220,475 1380,535",
+  "t": 1.690000000000009,
+  "name": "14a: just before its note, the carried bead still filled at C4 (r 20), never an outline",
+  "got": "carried a 1.00 at 420.0, 745.0, r 20.0; bead 0 0.00",
+  "want": "carried a 1.00 at 420, 745, r 20; bead 0 0.00",
   "pass": true
  },
  {
-  "t": 1.3800000000000183,
-  "name": "as chrome outlines (all seven at full), the carried bead given way",
-  "got": "1.00 1.00 1.00 1.00 1.00 1.00 1.00; carried hidden",
-  "want": "1.00 x7; carried hidden",
-  "pass": true
- },
- {
-  "t": 1.3800000000000183,
-  "name": "the rows in, masked round the hosts (two holes)",
-  "got": 2,
-  "want": 2,
-  "pass": true
- },
- {
-  "t": 1.3800000000000183,
+  "t": 1.690000000000009,
   "name": "no two visible texts overlap (ink)",
   "got": "none",
   "want": "none",
   "pass": true
  },
  {
-  "t": 1.3800000000000183,
+  "t": 1.690000000000009,
   "name": "keep-out: nearest visible text to merc's body box (\"NEXT TIME\")",
   "got": 1026.67,
   "want": ">= 20",
   "pass": true
  },
  {
-  "t": 1.3800000000000183,
+  "t": 1.690000000000009,
   "name": "keep-out: nearest visible text to tavi's body box (\"NEXT TIME\")",
   "got": 1487.16,
   "want": ">= 20",
   "pass": true
  },
  {
-  "t": 1.3800000000000183,
+  "t": 1.690000000000009,
   "name": "keep-out: the beads and the copy from merc's body box",
   "got": 94,
   "want": ">= 20",
   "pass": true
  },
  {
-  "t": 1.3800000000000183,
+  "t": 1.690000000000009,
   "name": "keep-out: the beads and the copy from tavi's body box",
   "got": 334.96,
   "want": ">= 20",
   "pass": true
  },
  {
-  "t": 1.3800000000000183,
+  "t": 1.690000000000009,
+  "name": "nothing visible below y 896 (ink)",
+  "got": 110,
+  "want": "<= 896",
+  "pass": true
+ },
+ {
+  "t": 1.950000000000009,
+  "name": "14a: the seven beads at x 420 + 160 i on C4 C4 G4 G4 A4 A4 G4 (y 745 745 535 535 475 475 535)",
+  "got": "420,745 580,745 740,535 900,535 1060,475 1220,475 1380,535",
+  "want": "420,745 580,745 740,535 900,535 1060,475 1220,475 1380,535",
+  "pass": true
+ },
+ {
+  "t": 1.950000000000009,
+  "name": "on its note the first bead lit blue and the carried bead given way to it (LIGHT_D); the other six outlines",
+  "got": "bead 0 fill 1.00; groups 1.00 1.00 1.00 1.00 1.00 1.00 1.00; carried hidden",
+  "want": "bead 0 fill 1.00; groups 1.00 x7; carried hidden",
+  "pass": true
+ },
+ {
+  "t": 1.950000000000009,
+  "name": "the rows in, masked round the hosts (two holes)",
+  "got": 2,
+  "want": 2,
+  "pass": true
+ },
+ {
+  "t": 1.950000000000009,
+  "name": "no two visible texts overlap (ink)",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 1.950000000000009,
+  "name": "keep-out: nearest visible text to merc's body box (\"NEXT TIME\")",
+  "got": 1026.67,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 1.950000000000009,
+  "name": "keep-out: nearest visible text to tavi's body box (\"NEXT TIME\")",
+  "got": 1487.16,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 1.950000000000009,
+  "name": "keep-out: the beads and the copy from merc's body box",
+  "got": 94,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 1.950000000000009,
+  "name": "keep-out: the beads and the copy from tavi's body box",
+  "got": 334.96,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 1.950000000000009,
   "name": "nothing visible below y 896 (ink)",
   "got": 110,
   "want": "<= 896",
@@ -295,15 +400,29 @@
  },
  {
   "t": 6.260000000000036,
-  "name": "14b: the tease line, word for word, centred x 960, baseline 150",
-  "got": "Merc moves every single note of ‘Twinkle, Twinkle’ up.; 436.3 to 1484.7, 117.0 to 160.0",
-  "want": "Merc moves every single note of ‘Twinkle, Twinkle’ up.; centred 960",
+  "name": "14b: the tease line, word for word, centred over the tune (x 960), baseline 170 (DECISIONS 220)",
+  "got": "Merc moves every single note of ‘Twinkle, Twinkle’ up.; 436.3 to 1484.7, 137.0 to 180.0; base 170.0; tune centre 900",
+  "want": "Merc moves every single note of ‘Twinkle, Twinkle’ up.; centred 960; base 170",
   "pass": true
  },
  {
   "t": 6.260000000000036,
-  "name": "clear of the kicker",
-  "got": "156.5",
+  "name": "its ink top (caps and quotes) 24 px or more under \"NEXT TIME\"'s foot",
+  "got": "kicker foot 110.0, line top 137.0: 27.0",
+  "want": ">= 24",
+  "pass": true
+ },
+ {
+  "t": 6.260000000000036,
+  "name": "the kicker at the frame's left margin (x 120)",
+  "got": "122.0",
+  "want": "120 to 124",
+  "pass": true
+ },
+ {
+  "t": 6.260000000000036,
+  "name": "over the dashed copy (its top) by 12 px or more",
+  "got": "96.0",
   "want": ">= 12",
   "pass": true
  },
@@ -317,14 +436,14 @@
  {
   "t": 6.260000000000036,
   "name": "keep-out: nearest visible text to merc's body box (\"Merc moves every single note of ‘Twinkle\")",
-  "got": 487,
+  "got": 467,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 6.260000000000036,
   "name": "keep-out: nearest visible text to tavi's body box (\"Merc moves every single note of ‘Twinkle\")",
-  "got": 540.38,
+  "got": 522.43,
   "want": ">= 20",
   "pass": true
  },
@@ -345,7 +464,7 @@
  {
   "t": 6.260000000000036,
   "name": "nothing visible below y 896 (ink)",
-  "got": 160,
+  "got": 180,
   "want": "<= 896",
   "pass": true
  },

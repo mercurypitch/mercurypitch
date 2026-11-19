@@ -1,0 +1,170 @@
+[
+ {
+  "t": 0,
+  "name": "t 0.0000 bead (487.72, 395.81) r 17.72; to \"A3\" ink",
+  "got": 25.4,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "F-promise-a: plot x 480 to 1600",
+  "got": "480 to 1600",
+  "want": "480 to 1600",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "DECISIONS 176: the chart's fade-up on the first frame (the band's group; s02's last frame draws the same)",
+  "got": 1,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 0.020000000000000757,
+  "name": "t 0.0200 bead (485.31, 397.07) r 16.11; to \"A3\" ink",
+  "got": 24.6,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 0.040000000000001514,
+  "name": "t 0.0400 bead (483.37, 398.12) r 14.14; to \"A3\" ink",
+  "got": 24.63,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 0.060000000000002274,
+  "name": "t 0.0600 bead (481.88, 398.94) r 11.79; to \"A3\" ink",
+  "got": 25.49,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 0.08000000000000303,
+  "name": "t 0.0800 bead (480.83, 399.53) r 9.00; to \"A3\" ink",
+  "got": 27.23,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 0.1000000000000038,
+  "name": "t 0.1000 bead (480.21, 399.88) r 5.75; to \"A3\" ink",
+  "got": 29.86,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 0.11950000000000455,
+  "name": "t 0.1195 bead (480.00, 400.00) r 2.10; to \"A3\" ink",
+  "got": 33.3,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 0.11950000000000455,
+  "name": "the bead lands on A3 at the plot's left end, (480, 400)",
+  "got": "480.0, 400.0",
+  "want": "480.0, 400.0",
+  "pass": true
+ },
+ {
+  "t": 1.9920000000000044,
+  "name": "DECISIONS 174 (t 1.99): \"what your diaphragm does\" left-aligned with \"level\": their x (advance origins, screen)",
+  "got": "474.2 / 474.2",
+  "want": "equal",
+  "pass": true
+ },
+ {
+  "t": 1.9920000000000044,
+  "name": "  their ink's left edges (glyph boxes)",
+  "got": "474.2 / 474.2",
+  "want": "within 2 px",
+  "pass": true
+ },
+ {
+  "t": 1.9920000000000044,
+  "name": "  \"what your diaphragm does\" box (x, y) and its gap under \"level\"",
+  "got": "474.2 to 957.5, 796.0 to 846.0; 10.0 px",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 9.470000000000002,
+  "name": "DECISIONS 174 (t 9.47): \"what your diaphragm does\" left-aligned with \"level\": their x (advance origins, screen)",
+  "got": "321.8 / 321.8",
+  "want": "equal",
+  "pass": true
+ },
+ {
+  "t": 9.470000000000002,
+  "name": "  their ink's left edges (glyph boxes)",
+  "got": "321.8 / 321.8",
+  "want": "within 2 px",
+  "pass": true
+ },
+ {
+  "t": 9.470000000000002,
+  "name": "  \"what your diaphragm does\" box (x, y) and its gap under \"level\"",
+  "got": "321.8 to 805.0, 796.0 to 846.0; 10.0 px",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 9.470000000000002,
+  "name": "keep-out: nearest visible text to tavi's body box (\"a comfortable note · 10 s\")",
+  "got": 502.14,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 9.470000000000002,
+  "name": "keep-out: nearest visible text to tavi's body box (\"a comfortable note · 10 s\")",
+  "got": 502.14,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 10.170000000000009,
+  "name": "F-promise-b: plot x 320 to 1440, line y 400",
+  "got": "320 to 1440, 400",
+  "want": "320 to 1440, 400",
+  "pass": true
+ },
+ {
+  "t": 10.170000000000009,
+  "name": "keep-out: nearest visible text to tavi's body box (\"a comfortable note · 10 s\")",
+  "got": 449.05,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 10.4695,
+  "name": "F-promise-b: plot x 320 to 1440, line y 400",
+  "got": "320 to 1440, 400",
+  "want": "320 to 1440, 400",
+  "pass": true
+ },
+ {
+  "t": 10.4695,
+  "name": "last frame: \"A3\", \"level\" at full; the promise labels gone",
+  "got": "1.00 1.00 / 0.00 0.00 0.00",
+  "want": "1.00 1.00 / 0.00 0.00 0.00",
+  "pass": true
+ },
+ {
+  "t": 10.4695,
+  "name": "Tavi landed at (1800, 840), 300: body box",
+  "got": "1720.5-1879.5, 648-840",
+  "want": "1720.5-1879.5, 648-840",
+  "pass": true
+ },
+ {
+  "t": 10.4695,
+  "name": "keep-out: nearest visible text to tavi's body box (\"level\")",
+  "got": 1334.05,
+  "want": ">= 20",
+  "pass": true
+ }
+]

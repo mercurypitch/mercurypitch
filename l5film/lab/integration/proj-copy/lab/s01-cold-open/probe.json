@@ -1,0 +1,578 @@
+[
+ {
+  "t": 0,
+  "name": "frame 0 at F-cold: plot from x 456",
+  "got": 456,
+  "want": 456,
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "plot to x 1464",
+  "got": 1464,
+  "want": 1464,
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "Merc's line y 405",
+  "got": 405,
+  "want": 405,
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "\"A3\" right edge 425 (its advance)",
+  "got": 425.4,
+  "want": 425,
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "\"level\" from x 456",
+  "got": 456,
+  "want": 456,
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "\"level\" baseline 745",
+  "got": 745.2,
+  "want": 745.2,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "frame 0 is finished: kicker, chart, row, chip, A3, level all at full",
+  "got": "1.00 1.00 1.00 1.00",
+  "want": "1.00 x 4",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "keep-out: nearest visible text to merc's body box (\"level\")",
+  "got": 114.7,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 404.54,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 5.1,
+  "name": "the wave rule at F-cold: one cycle on screen (px)",
+  "got": 45.9,
+  "want": 45.8,
+  "tol": 4.6,
+  "pass": true
+ },
+ {
+  "t": 5.1,
+  "name": "peak to peak on screen (px)",
+  "got": 63.08,
+  "want": 63,
+  "tol": 6.3,
+  "pass": true
+ },
+ {
+  "t": 5.1,
+  "name": "ratio",
+  "got": 1.37,
+  "want": "1.30 to 1.45",
+  "pass": true
+ },
+ {
+  "t": 8.255,
+  "name": "DECISIONS 170, the guess half drawn (t 8.26): Merc's line / the easy take / the guess's head / the guess",
+  "got": "0.50 / 0.51 / 1.00 / 1.00",
+  "want": "0.50 / - / 1.00",
+  "pass": true
+ },
+ {
+  "t": 8.255,
+  "name": "the guess's head on its drawing end (screen x, y)",
+  "got": "1023.2, 404.9",
+  "want": "1023.2, 404.9",
+  "pass": true
+ },
+ {
+  "t": 8.255,
+  "name": "its size: r 7 world (the takes' head dot), on screen",
+  "got": 6.32,
+  "want": 6.320517994598659,
+  "tol": 0.3,
+  "pass": true
+ },
+ {
+  "t": 8.605,
+  "name": "DECISIONS 170, the guess drawn, its \"?\" landing (t 8.61): Merc's line / the easy take / the guess's head / the guess",
+  "got": "0.00 / 0.50 / 0.13 / 1.00",
+  "want": "0.00 / 0.50 / -",
+  "pass": true
+ },
+ {
+  "t": 9.66,
+  "name": "DECISIONS 170, o1 over, the \"?\" landed (t 9.66): Merc's line / the easy take / the guess's head / the guess",
+  "got": "0.00 / 1.00 / 0.00 / 1.00",
+  "want": "0.00 / 1.00 / 0.00",
+  "pass": true
+ },
+ {
+  "t": 24.73,
+  "name": "LAB-CHECKS 9: \"ILLUSTRATION\" to \"LISTEN ONLY\" (t 24.73)",
+  "got": 14.7,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 24.73,
+  "name": "\"LISTEN ONLY\" on screen x (board 1488 to 1720)",
+  "got": "1489.1 to 1719.0, y 146.9 to 183.6",
+  "want": "1488-1720, 146-184",
+  "pass": true
+ },
+ {
+  "t": 26.66,
+  "name": "the check right of the second pill: its ink 12 px clear of the capsule's outer stroke",
+  "got": 12,
+  "want": 12,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 26.66,
+  "name": "its ink x (about 1442 to 1469)",
+  "got": "1443.0 to 1470.0",
+  "want": "1443.0 to 1470.0",
+  "pass": true
+ },
+ {
+  "t": 26.66,
+  "name": "centred y 108 (its ink's middle)",
+  "got": 108,
+  "want": 108,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 26.66,
+  "name": "the first pill's stroke dimmed, the second's bright",
+  "got": "0.280 / 1.000",
+  "want": "0.28 / 1",
+  "pass": true
+ },
+ {
+  "t": 26.66,
+  "name": "keep-out: nearest visible text to merc's body box (\"level\")",
+  "got": 103.86,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 26.66,
+  "name": "keep-out: nearest visible text to tavi's body box (\"sung easily\")",
+  "got": 94.65,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 26.86,
+  "name": "DECISIONS 170, the reveal (\"higher.\") (t 26.86): Merc's line / the easy take / the guess's head / the guess",
+  "got": "1.00 / 0.00 / 0.00 / 0.00",
+  "want": "1.00 / - / 0.00 / 0.00",
+  "pass": true
+ },
+ {
+  "t": 30.445,
+  "name": "LAB-CHECKS 9: \"ILLUSTRATION\" to \"LISTEN ONLY\" (t 30.45)",
+  "got": 14.72,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 30.445,
+  "name": "\"LISTEN ONLY\" on screen x (board 1488 to 1720)",
+  "got": "1489.9 to 1720.2, y 146.4 to 183.2",
+  "want": "1488-1720, 146-184",
+  "pass": true
+ },
+ {
+  "t": 30.445,
+  "name": "LAB-CHECKS 9: the chip 12 px under the second pill at the drift's end",
+  "got": 12.4,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 30.445,
+  "name": "F-cold end: plot from x 444.8",
+  "got": 444.8,
+  "want": 444.8,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 30.445,
+  "name": "plot to x 1475.2",
+  "got": 1475.2,
+  "want": 1475.2,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 30.445,
+  "name": "line y 404",
+  "got": 404,
+  "want": 404,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 30.445,
+  "name": "keep-out: nearest visible text to merc's body box (\"level\")",
+  "got": 103.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 30.445,
+  "name": "keep-out: nearest visible text to tavi's body box (\"sung easily\")",
+  "got": 94.63,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 31.493333333333332,
+  "name": "the check's ink to the \"ILLUSTRATION\" chip, nearest over its 140 frames (t 29.993)",
+  "got": 27.4,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 31.493333333333332,
+  "name": "the check's ink to the \"LISTEN ONLY\" chip, nearest over the same frames (t 26.193)",
+  "got": 33.82,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 32.047,
+  "name": "LAB-CHECKS 7: '\"support\"' descenders over the top of Merc's line's stroke (t 32.05)",
+  "got": 15.06,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 32.144999999999996,
+  "name": "DECISIONS 173, the pull at 50 % (t 32.14): the band's fill / its edges / \"A3\" / the label row / the chip",
+  "got": "1.00 / 0.00 / 1.00 / 0.00 / 0.00",
+  "want": "1.00 / 0.00 / 1.00 / 0.00 / 0.00",
+  "pass": true
+ },
+ {
+  "t": 32.247,
+  "name": "LAB-CHECKS 7: '\"support\"' descenders over the top of Merc's line's stroke (t 32.25)",
+  "got": 26.65,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 33.045,
+  "name": "DECISIONS 173, the pull at 80 % (t 33.05): the band's fill / its edges / \"A3\" / the label row / the chip",
+  "got": "0.74 / 0.00 / 0.88 / 0.00 / 0.00",
+  "want": "fading (last third) / 0.00 / fading / 0.00 / 0.00",
+  "pass": true
+ },
+ {
+  "t": 33.644999999999996,
+  "name": "LAB-CHECKS 7: '\"support\"' descenders over the top of Merc's line's stroke (t 33.64)",
+  "got": 65,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 33.644999999999996,
+  "name": "\"support\" on Lesson 4's baseline 420 as the pull lands",
+  "got": 420,
+  "want": 420,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 34.144999999999996,
+  "name": "F-hook: the long note from x 560",
+  "got": 560,
+  "want": 560,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 34.144999999999996,
+  "name": "to x 1360",
+  "got": 1360,
+  "want": 1360,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 34.144999999999996,
+  "name": "at y 520",
+  "got": 520,
+  "want": 520,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 34.144999999999996,
+  "name": "its stroke 4 px on screen (Lesson 4's weight)",
+  "got": 4,
+  "want": 4,
+  "tol": 0.05,
+  "pass": true
+ },
+ {
+  "t": 34.144999999999996,
+  "name": "head bead centre (560, 520): x",
+  "got": 560.01,
+  "want": 560,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 34.144999999999996,
+  "name": "y",
+  "got": 520.01,
+  "want": 520,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 34.144999999999996,
+  "name": "head bead r 22 on screen (when not pulsing)",
+  "got": 22,
+  "want": 22,
+  "pass": true
+ },
+ {
+  "t": 34.144999999999996,
+  "name": "\"support\" 160 px centred x 960, baseline 420",
+  "got": "960, 420.0",
+  "want": "960, 420.0",
+  "pass": true
+ },
+ {
+  "t": 34.144999999999996,
+  "name": "\"what keeps it steady?\" 96 px centred x 960, baseline 680",
+  "got": "960, 680",
+  "want": "960, 680",
+  "pass": true
+ },
+ {
+  "t": 34.144999999999996,
+  "name": "keep-out: nearest visible text to merc's body box (\"“support”\")",
+  "got": 363.01,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 34.144999999999996,
+  "name": "keep-out: nearest visible text to tavi's body box (\"“support”\")",
+  "got": 352.04,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 37.348,
+  "name": "F-hook: the long note from x 560",
+  "got": 560,
+  "want": 560,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 37.348,
+  "name": "to x 1360",
+  "got": 1360,
+  "want": 1360,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 37.348,
+  "name": "at y 520",
+  "got": 520,
+  "want": 520,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 37.348,
+  "name": "its stroke 4 px on screen (Lesson 4's weight)",
+  "got": 4,
+  "want": 4,
+  "tol": 0.05,
+  "pass": true
+ },
+ {
+  "t": 37.348,
+  "name": "head bead centre (560, 520): x",
+  "got": 560.01,
+  "want": 560,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 37.348,
+  "name": "y",
+  "got": 520.01,
+  "want": 520,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 37.348,
+  "name": "head bead r 22 on screen (when not pulsing)",
+  "got": 25.76,
+  "want": "22 x pulse",
+  "pass": true
+ },
+ {
+  "t": 37.348,
+  "name": "\"support\" 160 px centred x 960, baseline 420",
+  "got": "960, 420.0",
+  "want": "960, 420.0",
+  "pass": true
+ },
+ {
+  "t": 37.348,
+  "name": "\"what keeps it steady?\" 96 px centred x 960, baseline 680",
+  "got": "960, 680",
+  "want": "960, 680",
+  "pass": true
+ },
+ {
+  "t": 37.348,
+  "name": "keep-out: nearest visible text to merc's body box (\"what keeps it steady?\")",
+  "got": 264.17,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 37.348,
+  "name": "keep-out: nearest visible text to tavi's body box (\"what keeps it steady?\")",
+  "got": 260.54,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 37.85,
+  "name": "DECISIONS 171: the hook's two lines gone at hook + 0.24",
+  "got": "0.00 / 0.00",
+  "want": "0.00 / 0.00",
+  "pass": true
+ },
+ {
+  "t": 37.96,
+  "name": "DECISIONS 178: Merc's amber line at hook + 0.35 (its fade starts, linear, 0.3 s)",
+  "got": 1,
+  "want": 1,
+  "tol": 0.0005,
+  "pass": true
+ },
+ {
+  "t": 38.06,
+  "name": "DECISIONS 171: the hosts slid out by hook + 0.45: Merc's body box right edge / Tavi's left edge",
+  "got": "-18.7 / 1938.7",
+  "want": "<= 0 / >= 1920",
+  "pass": true
+ },
+ {
+  "t": 38.26,
+  "name": "DECISIONS 178: Merc's amber line at hook + 0.65 (gone, before the disc softens)",
+  "got": 0,
+  "want": 0,
+  "tol": 0.0005,
+  "pass": true
+ },
+ {
+  "t": 38.650000000000006,
+  "name": "F-bead: the head bead at the frame's centre (x)",
+  "got": 960,
+  "want": 960,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 38.650000000000006,
+  "name": "(y)",
+  "got": 540,
+  "want": 540,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 38.650000000000006,
+  "name": "its radius 68 on screen",
+  "got": 67.76,
+  "want": 68,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 38.650000000000006,
+  "name": "the field fills the frame: r",
+  "got": 1500,
+  "want": 1500,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 38.666666666666664,
+  "name": "DECISIONS 171: the approach (37.95 to 38.65, 22 frames to the first after it): the bead's r on screen on its first frame / after it (the frame's half-diagonal is 1101)",
+  "got": "24.1 / 1200.0",
+  "want": "22 to 25 / >= 1101",
+  "pass": true
+ },
+ {
+  "t": 38.666666666666664,
+  "name": "log scale while the disc is small (r < 300): its growth a frame, least / most",
+  "got": "1.25x / 1.45x",
+  "want": "one steady ratio, eased from rest",
+  "pass": true
+ },
+ {
+  "t": 38.666666666666664,
+  "name": "crisp until r 300: the radius on the first frame with any blur",
+  "got": 338.71,
+  "want": ">= 300",
+  "pass": true
+ },
+ {
+  "t": 38.666666666666664,
+  "name": "DECISIONS 178: Merc's amber line on the frames where the disc has softened (any blur): its most opacity",
+  "got": 0,
+  "want": 0,
+  "tol": 0.0005,
+  "pass": true
+ },
+ {
+  "t": 38.8,
+  "name": "DECISIONS 173: no line under '\"support\"' from its landing to the cut (203 frames; the band's edges, the takes, the strip, the arrow, the guess): the most seen",
+  "got": 0,
+  "want": 0,
+  "tol": 0.005,
+  "pass": true
+ },
+ {
+  "t": 38.809000000000005,
+  "name": "last frame: the field centred (960, 540), r 1500, opaque (S2's first frame)",
+  "got": "960.00, 540.00, 1500.00, 1.000",
+  "want": "960.00, 540.00, 1500.00, 1.000",
+  "pass": true
+ }
+]

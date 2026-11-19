@@ -1,0 +1,300 @@
+<!doctype html>
+<!-- The probe's harness for compositions/s05-push.html (lab/s05-push/probe.mjs). -->
+<html lang="en"><head><meta charset="UTF-8" />
+<script src="/assets/vendor/gsap-3.14.2.min.js"></script>
+<script src="/assets/cues.js"></script>
+<script src="/assets/scenes.js"></script>
+<script src="/assets/merc/roots.js"></script>
+<script src="/assets/lib/lesson.js"></script>
+<script src="/assets/lib/motion.js"></script>
+<script src="/assets/lib/marks.js"></script>
+<script src="/assets/lib/frames.js"></script>
+<script src="/assets/lib/chart.js"></script>
+<script src="/assets/lib/figure.js"></script>
+<script src="/assets/lib/gauge.js"></script>
+<script src="/assets/lib/mixup.js"></script>
+<script src="/assets/lib/folds.js"></script>
+<script src="/assets/lib/turn.js"></script>
+<script src="/assets/lib/recap.js"></script>
+<script src="/assets/lib/tease.js"></script>
+<script src="/assets/lib/hosts.js"></script>
+<link rel="stylesheet" href="/assets/lib/lesson.css" />
+<style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('/assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('/assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('/assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+</style></head><body><div id="root">
+    <div id="s05-push" data-composition-id="s05-push" data-start="0" data-duration="36.205" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s05-push -->
+      <video id="s05-push-m-orange" data-merc="m-orange" class="clip" muted playsinline src="/assets/merc/m-orange-s05-merc.webm" data-start="0.000" data-duration="36.235" data-media-start="0.050"></video>
+      <video id="s05-push-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="/assets/merc/m-orange-s05-merc.webm" data-start="0.000" data-duration="36.235" data-media-start="0.050"></video>
+      <video id="s05-push-m-blue" data-merc="m-blue" class="clip" muted playsinline src="/assets/merc/m-blue-s05-merc.webm" data-start="0.000" data-duration="36.235" data-media-start="0.050"></video>
+      <video id="s05-push-m-blue-refl" data-merc="m-blue" data-merc-refl class="clip" muted playsinline src="/assets/merc/m-blue-s05-merc.webm" data-start="0.000" data-duration="36.235" data-media-start="0.050"></video>
+      <div class="scene" id="s05-push-scene"></div>
+      <script>
+        ;(function () {
+          // S5, chapter 1 "What pushing does" (STORYBOARD 5a to 5g; HANDOFFS § The band chart (S5's k, the Push
+          // slider, the chart at 0.78, Lesson 1's figure, the fork, the tags), § The wave rule, § The cuts S4 to S5
+          // and S5 to S6). F0 throughout: the chapter card over the dimmed chart; the pitch axis eased to the 6 s
+          // window's k; the Push slider and its plan; pressure's definition and its two effects; the Push note with
+          // its thumb, strip and line; the chart's object move to 0.78 beside Lesson 1's loud-or-high panels; the
+          // fork from the thumb to the note's peak. Every time is a cue, a word, a duration or a contour's own time.
+          const SID = 's05-push'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const C = L.C, P = L.prog, clamp = L.clamp, lerp = L.lerp, f2 = L.f2
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
+          const world = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+          const cam = L.frameRig(room, { from: 'F0' })               // F0 throughout: every move here is an object move
+
+          /* ---------------------------------------------------------------- anchors */
+          // 5a: the chart dims on the mark, the card lands, leaves up fast 0.1 s before o4, the chart comes back
+          const ACT = at('act1')
+          const CARD_IN = ACT + 0.22, CARD_OUT = at('o4', 'start', -0.5)   // the card's 0.38 s exit ends 0.12 s before o4
+          const BACK = CARD_OUT + 0.38                                 // the chart back to full as the card has gone
+          // 5b: o4
+          const O4 = at('o4')
+          const SLIDER = word('o4', 'if')                              // the slider (with "Push" and "50") draws, 0.5 s
+          const ILL = SLIDER + 0.45                                    // "ILLUSTRATION" lands: the toy is a drawing (Q29)
+          const EASE_P = word('o4', 'ease')                            // the thumb scales 1.2
+          // 5c: b7
+          const DEF = word('b7', 'how')                                // pressure's definition, its own line
+          const LIT_AP = word('b7', 'pressure')                        // "air pressure" lights
+          const ROW_IN = LIT_AP - 0.54                                 // the four words come back ahead of their word
+          const ROW_OUT = word('b7', 'and', 'start', -0.12)            // and leave before "nudges the pitch"
+          const MAINLY = word('b7', 'mainly'), ALSO = word('b7', 'nudges')
+          // 5d: b8
+          const B8 = at('b8')                                          // "mainly", "also" and the definition leave
+          const RING = word('b8', 'watch')                             // the line's starting point sends an echo ring
+          const PLAN = [word('b8', 'rises'), word('b8', 'holds'), word('b8', 'eases')]
+          const PUSH = at('push'), PUSH_END = at('push', 'end')
+          const PLAN_OUT = PUSH - 0.2
+          // 5e: the Push note (FACTS 80), its times from its own contour: the centre leaves the band (+35 c) on the
+          // way up and comes back on the way down; the whole line (centre less the 14 c wave) is above it between
+          const CON = L.CONTOUR.push
+          const cross = (f, lo, hi) => { for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (f(m) === f(lo)) lo = m; else hi = m } return (lo + hi) / 2 }
+          const PEAK0 = cross((u) => L.CONTOUR.pushAt(u) >= 100, 0, CON.len)                  // the push reaches 100 (2.1 s)
+          const PEAK1 = cross((u) => L.CONTOUR.pushAt(u) < 100, PEAK0 + 0.01, CON.len)         // and starts back (3.6 s)
+          const C_OUT = PUSH + cross((u) => CON.cents(u) > 35, 0, PEAK0)               // centre out, rising
+          const C_IN = PUSH + cross((u) => CON.cents(u) <= 35, PEAK0 + 0.01, CON.len)   // centre back in
+          const A_OUT = PUSH + cross((u) => CON.cents(u) - 14 > 35, 0, PEAK0)          // the whole line out
+          const A_IN = PUSH + cross((u) => CON.cents(u) - 14 <= 35, PEAK0 + 0.01, CON.len)
+          const LIT_ON = PUSH + 0.4                                    // "in the band" (and the mint edge), 0.4 s after "LISTEN ONLY"
+          // 5f: o5
+          const CAME = word('o5', 'it'), CAME_BACK = word('o5', 'back')
+          const SHRINK = word('o5', 'but'), SHRINK_D = 1.2             // the chart to 0.78 (an object move)
+          const PANELS = SHRINK + 0.3, PANELS_D = SHRINK_D - 0.3        // Lesson 1's figure slides in, landing with it
+          const PLAY_L = word('o5', 'loud'), PLAY_H = word('o5', 'high')
+          const NEQ = word('o5', 'different')
+          // 5g: b9
+          const THEY = word('b9', 'they')
+          const FORK = word('b9', 'one'), FORK_D = 0.6
+          const L_LOUD = FORK + 0.3, L_HIGH = L_LOUD + 0.45            // the board's 0.45; the 0.4 s rule kept on any clock
+          // the thesis lands with its sentence, on "in a voice," (before the fork), and stays to the fade [B-01: 181]
+          const THESIS = word('b9', 'in')
+          const FADE = Math.max(at('b9', 'end'), L_HIGH + 0.4), FADE_D = 0.4
+
+          /* ---------------------------------------------------------------- the hosts at 300 in their corners */
+          const Hc = L.HOSTS.corners
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hc.merc })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hc.tavi })
+
+          /* ---------------------------------------------------------------- the band chart (world, S5's place) */
+          const ch = L.bandChart(world, L.CHART.S5)                  // W 6; k starts at S4's 2.5 and eases to the rule's
+          const K0 = 2.5, K1 = L.waveK(6)
+          const lab = {}
+          // "level" labels the strip: right-aligned at the strip's left, at its height (as "A3" labels the band), not on the
+          // slider's row; it moves there from S4's place as the axis eases on o4 [B-01: 184]
+          // It stays S4's label (from x 400, baseline 778) and moves by its own width, read as drawn, so the first frame
+          // needs no measure and its right end lands on x 366 once the font is in.
+          const LEVEL = { right: 366, y: 701 }
+          for (const k of ['A3', 'inBand', 'level', 'row', 'def', 'aboveBand5', 'alsoHigher', 'mainlyLouder']) lab[k] = ch.label(k)
+          const LEVEL_FROM = L.CHART.LABELS.level
+          const ill = ch.tag('illustration'), lis = ch.tag('listen')
+          const slider = L.pushSlider(ch.g, {})
+          // the two short chrome arrows of 5c: up to the band's top edge, down to the strip's top
+          const upArrow = L.arrow(ch.gLabels, { x1: 440, y1: 372, x2: 440, y2: 342, color: C.chrome, width: 3, head: 9 })
+          const dnArrow = L.arrow(ch.gLabels, { x1: 440, y1: 632, x2: 440, y2: 662, color: C.chrome, width: 3, head: 9 })
+          // 5d: the push's plan, over the slider (chrome 40 %), clear of the thumb's "50": out to 100, a hold, back to 50
+          const planG = L.svg('g', { opacity: 0 }, ch.g)
+          const planUp = L.arrow(planG, { x1: 1002, y1: 774, x2: 1514, y2: 774, color: C.chrome, width: 3, head: 10, opacity: 0.4 })
+          const planHold = L.svg('rect', { x: 1518, y: 740, width: 4, height: 44, fill: C.chrome, 'fill-opacity': 0.4, opacity: 0 }, planG)
+          const planBack = L.arrow(planG, { x1: 1514, y1: 750, x2: 1002, y2: 750, color: C.chrome, width: 3, head: 10, opacity: 0.4 })
+          const rings = L.echoRings(ch.g, {})
+
+          /* ---------------------------------------------------------------- Lesson 1's loud-or-high figure (5f; world = screen at F0) */
+          // Two panels 187 x 203 (HANDOFFS § The band chart, Lesson 1's figure), Lesson 1's drawings rebuilt small: LOUDER,
+          // a trace that grows taller while the bead on its rail stays put; HIGHER, a trace that packs tighter while its
+          // bead jumps up. Chrome on the ground, titled in the tags' mono.
+          const PANEL = { y0: 301, w: 187, h: 203, xs: [1433, 1636] }
+          const panelsG = L.svg('g', { class: 'lesson1', opacity: 0 }, world)
+          const panels = ['LOUDER', 'HIGHER'].map((name, i) => {
+            const x0 = PANEL.xs[i], y0 = PANEL.y0
+            const g = L.svg('g', {}, panelsG)
+            L.svg('rect', { x: x0, y: y0, width: PANEL.w, height: PANEL.h, rx: 12, fill: C.ground, 'fill-opacity': 0.7, stroke: C.chrome, 'stroke-width': 1.5, 'stroke-opacity': 0.3 }, g)
+            L.text(g, name, { x: x0 + 16, y: y0 + 36, size: 22, family: 'mono', weight: 500, fill: C.ink2, tracking: 0.18, opacity: 1 })
+            const trace = L.svg('path', { fill: 'none', stroke: C.chrome, 'stroke-width': 2.5, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, g)
+            const railX = x0 + PANEL.w - 26
+            L.svg('rect', { x: railX - 1, y: y0 + 64, width: 2, height: 116, fill: C.chrome, 'fill-opacity': 0.4 }, g)
+            const bead = L.svg('circle', { cx: railX, cy: y0 + 132, r: 7, fill: C.chrome }, g)
+            return { g, x0, y0, trace, bead }
+          })
+          const traceD = (p, amp, cycles, phase) => {
+            const xa = p.x0 + 16, xb = p.x0 + PANEL.w - 46, yc = p.y0 + 122
+            let d = ''
+            for (let i = 0; i <= 90; i++) {
+              const u = i / 90
+              d += (i ? 'L' : 'M') + f2(lerp(xa, xb, u)) + ' ' + f2(yc - amp * Math.sin(2 * Math.PI * (cycles * u + phase)))
+            }
+            return d
+          }
+          // "loud ≠ high", Outfit 600 48, centred x 1628, baseline 277, its ≠ drawn as a path
+          const NEQ_Y = 277
+          const neqG = L.svg('g', { opacity: 0 }, world)
+          const tLoud = L.text(neqG, 'loud', { x: 0, y: NEQ_Y, size: 48, opacity: 1 })
+          const tHigh = L.text(neqG, 'high', { x: 0, y: NEQ_Y, size: 48, opacity: 1 })
+          const neqPath = L.svg('path', { fill: 'none', stroke: C.ink, 'stroke-width': 4, 'stroke-linecap': 'round' }, neqG)
+          let neqLeft = 1500
+          const layoutNeq = () => {
+            const wl = tLoud.getComputedTextLength(), wh = tHigh.getComputedTextLength(), gap = 14, ws = 30
+            const total = wl + gap + ws + gap + wh
+            neqLeft = 1628 - total / 2
+            tLoud.setAttribute('x', f2(neqLeft))
+            const sx = neqLeft + wl + gap
+            neqPath.setAttribute('d', `M${f2(sx)} ${NEQ_Y - 22}H${f2(sx + ws)}M${f2(sx)} ${NEQ_Y - 10}H${f2(sx + ws)}M${f2(sx + 22)} ${NEQ_Y - 33}L${f2(sx + 8)} ${NEQ_Y + 1}`)
+            tHigh.setAttribute('x', f2(sx + ws + gap))
+          }
+          L.afterFonts(layoutNeq)
+
+          /* ---------------------------------------------------------------- 5g: the fork (screen px at F0) and its labels */
+          const forkG = L.svg('g', { class: 'fork' }, world)
+          // the stem leaves the thumb's right side and bends up to the fork point, so it keeps 12 px from "50" (a straight
+          // stem from (915, 720) passes about 6 px from the digits' lower right corner, measured)
+          const stem = L.arrow(forkG, { x1: 916, y1: 724, via: [956, 700], x2: 1010, y2: 525, color: C.ink, width: 3, head: 0 })
+          const brLoud = L.arrow(forkG, { x1: 1010, y1: 525, x2: 960, y2: 582, color: C.ink, width: 3, head: 12 })
+          const brHigh = L.arrow(forkG, { x1: 1010, y1: 525, x2: 960, y2: 375, color: C.ink, width: 3, head: 12 })
+          const louder = L.label(world, 'louder', { x: 806, y: 575, size: 40 })
+          const higher = L.label(world, 'higher', { x: 806, y: 500, size: 40 })
+
+          /* ---------------------------------------------------------------- frame-fixed: the card, the four words, the line of 5g */
+          const card = L.chapterCard(hud, { num: 1, title: 'What pushing does', tIn: CARD_IN, tOut: CARD_OUT })
+          const WORDS = ['air pressure', 'diaphragm', 'onset', '“support”']
+          const row = L.chipRow(hud, WORDS, { right: 1800, y: 87, gap: 12 })
+          const both = L.label(hud, 'in a voice, one push moves both', { x: 960, y: 130, size: 56, family: 'serif', anchor: 'middle' })
+
+          const probe = { cam, ch, lab, ill, lis, slider, row, panels, neqG, louder, higher, both, stem, brLoud, brHigh,
+            A: { ACT, CARD_IN, CARD_OUT, BACK, O4, SLIDER, ILL, DEF, ROW_IN, LIT_AP, ROW_OUT, MAINLY, ALSO, B8, RING, PLAN, PUSH, PUSH_END, C_OUT, C_IN, A_OUT, A_IN, LIT_ON, SHRINK, SHRINK_D, PANELS, PLAY_L, PLAY_H, NEQ, THEY, FORK, L_LOUD, L_HIGH, THESIS, FADE, D, LEVEL_MOVE: O4 }, boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            dust(T)
+            probe.boxes = { merc: merc(t), tavi: tavi(t) }
+
+            /* 5a: the chart at 25 % under the card, its labels hidden while dim; back to full as the card leaves */
+            const dimU = P(t, ACT, 0.2) - P(t, BACK, 0.2)
+            const chartA = lerp(1, 0.25, dimU), labA = 1 - dimU
+            card.draw(t)
+
+            /* 5b: the pitch axis eased to the 6 s window's k about Merc's line (the band 175 to 117 px) */
+            ch.geo({ k: lerp(K0, K1, P(t, O4, 0.6)) })
+            /* 5f: the whole chart slides left and shrinks to 0.78 (an object move; the room stays still) */
+            const su = P(t, SHRINK, SHRINK_D)
+            const A78 = L.CHART.AT078
+            ch.place({ s: lerp(1, A78.s, su), dx: lerp(0, A78.dx, su), dy: lerp(0, A78.dy, su) })
+
+            /* 5e: the Push note: line, strip and thumb are one function of the take's own time */
+            const tk = clamp(t - PUSH, 0, CON.len)
+            const fadeOut = 1 - P(t, FADE, FADE_D)
+            const noteA = (t >= PUSH ? 1 : 0) * fadeOut
+            const lit = (P(t, LIT_ON, 0.2) * (1 - P(t, C_OUT, 0.2)) + P(t, C_IN, 0.2)) * fadeOut
+            const backGlow = L.glow(t, [CAME], { up: 0.25, hold: 0.4, down: 0.5 })
+            ch.draw({
+              a: chartA,
+              band: { lit },
+              merc: { a: 1 },
+              lines: [{ id: 'push', contour: 'push', t: tk, a: noteA, head: 1 - P(t, PUSH_END, 0.3), glow: backGlow, glowFrom: PEAK1, glowTo: CON.len }],
+              // from "mainly" the strip shows its resting envelope in ghost violet (drawn left to right, its edge
+              // brightening once), so "louder" points at a level; it stays to the scene's end [B-01: 184]
+              strip: { envs: [{ id: 'rest', contour: 'demo', t: L.CHART.S5.W * P(t, MAINLY, 0.5), ghost: true, edge: L.glow(t, [MAINLY], { up: 0.25, hold: 0.5, down: 0.6 }) }, { id: 'push', contour: 'push', t: tk, a: noteA }] },
+            })
+            rings.draw(t, [{ t: RING, x: 400, y: 400, r: 8 }])
+
+            /* the slider: draws on "If I ease off", its thumb pulses on "ease off," and "that push", follows the
+               Push note exactly, the plan over it in 5d */
+            slider.draw({ a: P(t, SLIDER, 0.2) * labA, p: t >= PUSH ? L.CONTOUR.pushAt(tk) : 50, draw: P(t, SLIDER, 0.5), thumbScale: L.pulse(t, [EASE_P], 'label') })
+            const planA = P(t, PLAN[0], 0.2) * (1 - P(t, PLAN_OUT, 0.2))
+            planG.setAttribute('opacity', planA.toFixed(3))
+            planUp.draw(P(t, PLAN[0], 0.4), 1)
+            planHold.setAttribute('opacity', P(t, PLAN[1], 0.2).toFixed(3))
+            planBack.draw(P(t, PLAN[2], 0.4), 1)
+
+            /* the chart's labels (world): hidden while it is dim */
+            const lvU = 1 - P(t, O4, 0.6)
+            lab.A3.draw({ a: labA }); lab.row.draw({ a: labA })
+            const lvW = lvU < 1 ? lab.level.el.getComputedTextLength() : 0
+            lab.level.draw({ a: labA, dx: (1 - lvU) * (LEVEL.right - lvW - LEVEL_FROM.x), dy: (1 - lvU) * (LEVEL.y - LEVEL_FROM.y) })
+            lab.def.life(t, DEF, B8, { dOut: 0.3 })
+            lab.mainlyLouder.life(t, MAINLY, B8, { dOut: 0.3 })
+            dnArrow.draw(P(t, MAINLY, 0.4), L.fade(t, MAINLY, B8, { dOut: 0.3 }).a)
+            lab.alsoHigher.life(t, ALSO, B8, { dOut: 0.3 })
+            upArrow.draw(P(t, ALSO, 0.4), L.fade(t, ALSO, B8, { dOut: 0.3 }).a)
+            // "in the band" beside the lit edge only; it scales 1.08 on "came back."
+            const ib = L.pulse(t, [CAME_BACK], 'chip')
+            lab.inBand.draw({ a: lit, scale: ib })
+            lab.aboveBand5.life(t, A_OUT, A_IN)
+            ill.draw({ alpha: P(t, ILL, 0.2) * labA })
+            const lf = L.fade(t, PUSH, FADE, { dOut: FADE_D })
+            lis.draw({ alpha: lf.a })
+
+            /* 5f: Lesson 1's panels slide in from the right edge as the chart makes room; each plays once */
+            const pu = P(t, PANELS, PANELS_D)
+            panelsG.setAttribute('opacity', (P(t, PANELS, 0.3) * fadeOut).toFixed(3))
+            panelsG.setAttribute('transform', `translate(${f2((1 - pu) * (1920 + 24 - PANEL.xs[0]))} 0)`)
+            const gl = P(t, PLAY_L, 0.8), gh = P(t, PLAY_H, 0.8)
+            const phL = 0.6 * P(t, PLAY_L, 0.8, 'none'), phH = 0.6 * P(t, PLAY_H, 0.8, 'none')
+            panels[0].trace.setAttribute('d', traceD(panels[0], lerp(14, 34, gl), 3, phL))
+            panels[1].trace.setAttribute('d', traceD(panels[1], 22, lerp(3, 6, gh), phH))
+            panels[1].bead.setAttribute('cy', f2(lerp(PANEL.y0 + 132, PANEL.y0 + 76, P(t, PLAY_H + 0.15, 0.3, 'power3.out'))))
+            const nf = L.fade(t, NEQ, FADE, { dOut: FADE_D })
+            const nk = L.pulse(t, [THEY], 'label')
+            L.place(neqG, { a: nf.a, scale: nk, ox: neqLeft, oy: NEQ_Y })
+
+            /* 5g: the fork from the thumb to the note's peak, "louder" and "higher" inside it, the line top centre */
+            const fu = P(t, FORK, FORK_D, 'none')
+            stem.draw(L.ease('power2.inOut')(clamp(fu / 0.5)), fadeOut)
+            brLoud.draw(L.ease('power2.out')(clamp((fu - 0.5) / 0.25)), fadeOut)
+            brHigh.draw(L.ease('power2.out')(clamp((fu - 0.5) / 0.5)), fadeOut)
+            louder.life(t, L_LOUD, FADE, { dOut: FADE_D })
+            higher.life(t, L_HIGH, FADE, { dOut: FADE_D })
+            both.life(t, THESIS, FADE, { dOut: FADE_D })
+
+            /* the four words: parked dim through the card, up fast on o4; back for "pressure", which lights */
+            const wOut = L.fade(t, null, O4, { upFast: true })
+            const wBack = L.fade(t, ROW_IN, ROW_OUT, { rise: 0 })
+            const litU = P(t, LIT_AP, 0.3, 'power2.out')
+            row.draw((i) => ({ alpha: t < ROW_IN - 0.5 ? wOut.a : wBack.a, dy: t < ROW_IN - 0.5 ? wOut.dy : 0, lit: i === 0 ? litU : 0, underline: i === 0 ? litU : 0, scale: i === 0 ? L.pulse(t, [LIT_AP], 'chip') : 1 }))
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </div>
+<script src="/lab/s05-push/helpers.js"></script>
+<script src="/lab/s05-push/checks.js"></script></body></html>

@@ -1,0 +1,240 @@
+<!doctype html>
+<!-- The probe's harness for compositions/s11-sing.html (lab/s05-push/probe.mjs). -->
+<html lang="en"><head><meta charset="UTF-8" />
+<script src="/assets/vendor/gsap-3.14.2.min.js"></script>
+<script src="/assets/cues.js"></script>
+<script src="/assets/scenes.js"></script>
+<script src="/assets/merc/roots.js"></script>
+<script src="/assets/lib/lesson.js"></script>
+<script src="/assets/lib/motion.js"></script>
+<script src="/assets/lib/marks.js"></script>
+<script src="/assets/lib/frames.js"></script>
+<script src="/assets/lib/chart.js"></script>
+<script src="/assets/lib/figure.js"></script>
+<script src="/assets/lib/gauge.js"></script>
+<script src="/assets/lib/mixup.js"></script>
+<script src="/assets/lib/folds.js"></script>
+<script src="/assets/lib/turn.js"></script>
+<script src="/assets/lib/recap.js"></script>
+<script src="/assets/lib/tease.js"></script>
+<script src="/assets/lib/hosts.js"></script>
+<link rel="stylesheet" href="/assets/lib/lesson.css" />
+<style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('/assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('/assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('/assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+</style></head><body><div id="root">
+    <div id="s11-sing" data-composition-id="s11-sing" data-start="0" data-duration="39.170" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s11-sing -->
+      <video id="s11-sing-m-orange" data-merc="m-orange" class="clip" muted playsinline src="/assets/merc/m-orange-s11-merc.webm" data-start="0.000" data-duration="39.197" data-media-start="0.050"></video>
+      <video id="s11-sing-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="/assets/merc/m-orange-s11-merc.webm" data-start="0.000" data-duration="39.197" data-media-start="0.050"></video>
+      <video id="s11-sing-m-blue" data-merc="m-blue" class="clip" muted playsinline src="/assets/merc/m-blue-s11-merc.webm" data-start="0.000" data-duration="39.197" data-media-start="0.050"></video>
+      <video id="s11-sing-m-blue-refl" data-merc="m-blue" data-merc-refl class="clip" muted playsinline src="/assets/merc/m-blue-s11-merc.webm" data-start="0.000" data-duration="39.197" data-media-start="0.050"></video>
+      <div class="scene" id="s11-sing-scene"></div>
+      <script>
+        ;(function () {
+          // S11, "Sing it" (STORYBOARD 11a to 11e; HANDOFFS § The hold frame at the right half, § The turn, § The cuts
+          // S10 to S11 (matched) and S11 to S12). F0 from the cut on `sing`: S10's empty hold frame on its pixels (x 1000 to
+          // 1640, band 210 to 280, Merc's line y 245) while the room crossfades from F-hold to rest (L.roomCut); the frame
+          // dims under the card "Sing it" and comes back as it leaves; the care block builds on the left (frame-fixed),
+          // the frame's bracket, the ring under it (on "ten seconds,", DECISIONS 204) and "Nothing listens" on the right
+          // (world). Every time is a cue, a word or a duration.
+          const SID = 's11-sing'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const C = L.C, P = L.prog
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
+          const cut = L.roomCut(room, { from: 'F-hold' })             // the room as S10 left it, crossfading to rest
+          const world = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+          const cam = L.frameRig(room, { from: 'F0' })               // F0 throughout
+
+          /* ---------------------------------------------------------------- the turn's objects (the same block in
+             s11-sing and s12-your-turn: the kit gives their places, L.TURN, and the ring; this builds the rest of the
+             block once from those places, so both scenes draw the same pixels on either side of the cut on b38) */
+          const turnObjects = (world, hud) => {
+            const T = L.TURN, K = T.CARE
+            const o = {}
+            // world: the hold frame (L.CHART.FRAME), its bracket with "0" and "10 s", the voices, "Nothing listens",
+            // "Breathe in, low and quiet", the ring, the phase row under it, the playhead and the ring's echo
+            o.ch = L.bandChart(world, T.FRAME)
+            o.br = L.bracket(world, { x1: T.BRACKET.x0, x2: T.BRACKET.x1, y: T.BRACKET.y, dir: 'up', tick: T.BRACKET.tick })
+            o.br0 = L.label(world, '0', { x: T.BRACKET.x0, y: T.BRACKET.labels.y, size: T.BRACKET.labels.size, fill: C.ink2 })
+            o.br10 = L.label(world, '10 s', { x: T.BRACKET.x1, y: T.BRACKET.labels.y, size: T.BRACKET.labels.size, fill: C.ink2, anchor: 'end' })
+            o.voices = T.VOICES.map((v) => {
+              const g = L.svg('g', { opacity: 0, class: 'voice' }, world)
+              L.svg('circle', { cx: v.dot + 6, cy: T.voicesY - 10, r: 6, fill: v.color }, g)
+              const el = L.text(g, v.text, { x: v.x, y: T.voicesY, size: 30, opacity: 1 })
+              return { g, el, draw: ({ a = 1, scale = 1 } = {}) => L.place(g, { a, scale, ox: v.dot, oy: T.voicesY }) }
+            })
+            o.nothing = L.label(world, T.NOTHING.text, T.NOTHING)
+            o.breatheIn = L.label(world, T.BREATHE_IN.text, T.BREATHE_IN)
+            // the ring (DECISIONS 207, 208): centre (1320, 572), r 136 in the world, so at F-turn (1376, 610.8), r 190.4
+            // on screen; at rest its stroke clears the floor horizon (y 840) and "Nothing listens" at F0 and at F-turn;
+            // at its largest breath (1.08) it touches neither and its tick stays 12 px or more under the foot of
+            // "Breathe in, low and quiet"; at F0 the phase row keeps 12 px or more under it
+            o.RING = { cx: 1320, cy: 572, r: 136 }
+            o.ring = L.ring(world, o.RING)
+            // the phase row (mono 28, as the kit's lab sets it: uppercase, tracking .18em) under the ring, each word its
+            // own text, laid out from the whole row's measured advance, centred x 1320; the unlit words ink-2 at 60 %, the
+            // lit one ink with a small chrome mark under it (DECISIONS 209). Its two lines under it, the last one's ink
+            // 12 px or more above the floor horizon (DECISIONS 203)
+            o.ROWY = [747, 785, 820]
+            const ROWW = T.ROW.texts[0].split(' · ')
+            const rowFont = { size: 28, family: 'mono', weight: 500, fill: C.ink2, tracking: 0.18, upper: true }
+            o.rowG = L.svg('g', { opacity: 0, class: 'phase-row' }, world)
+            o.rowWords = ROWW.map((s) => L.text(o.rowG, s, { ...rowFont, x: T.ROW.x, y: o.ROWY[0], opacity: 0.6 }))
+            o.rowDots = [0, 1].map(() => L.text(o.rowG, '·', { ...rowFont, x: T.ROW.x, y: o.ROWY[0], opacity: 0.6 }))
+            o.rowMark = L.svg('rect', { x: T.ROW.x - 12, y: o.ROWY[0] + 7, width: 24, height: 3, rx: 1.5, fill: C.chrome }, o.rowG)
+            o.rowCx = [T.ROW.x, T.ROW.x, T.ROW.x]
+            const rowLayout = () => {
+              const probe = L.text(o.rowG, T.ROW.texts[0], { ...rowFont, opacity: 0 })
+              const tr = 0.18 * 28                                        // no tracking after a word's last glyph
+              const full = probe.getComputedTextLength() - tr
+              const adv = (s) => { probe.textContent = s.toUpperCase(); return probe.getComputedTextLength() }
+              let x = T.ROW.x - full / 2
+              ROWW.forEach((s, i) => {
+                o.rowWords[i].setAttribute('x', L.f2(x))
+                o.rowCx[i] = x + (adv(s) - tr) / 2
+                x += adv(s + ' ')
+                if (i < 2) { o.rowDots[i].setAttribute('x', L.f2(x)); x += adv('· ') }
+              })
+              probe.remove()
+            }
+            rowLayout()
+            L.afterFonts(rowLayout)
+            o.rowLines = [1, 2].map((i) => L.label(world, T.ROW.texts[i], { x: T.ROW.x, y: o.ROWY[i], size: 30, weight: 500, anchor: 'middle' }))
+            o.playhead = L.playhead(world)
+            // the close's echo: to 1.16 times the ring's radius, so it stays above the floor horizon at F-turn
+            o.echo = L.echoRings(world, { dur: 0.6, grow: 1.16, max: 1 })
+            // hud: the care block (HANDOFFS § The turn, Frame-fixed; every line the page's words, L.TURN.CARE)
+            o.title = L.label(hud, K.title.text, K.title)
+            o.icon = L.icon(hud, K.icon.name, K.icon)
+            o.comfort = K.comfort.map((c) => L.label(hud, c.text, c))
+            // the reasons: five phrases on three lines, each landing on its own word; a phrase after a middot carries
+            // the middot, and stands where the whole line would set it (measured once the fonts are in)
+            const rFont = { size: K.reasonSize, weight: K.reasonWeight }
+            o.reasons = []
+            K.reasons.forEach((r) => {
+              const parts = r.text.split(' · ')
+              parts.forEach((s, j) => o.reasons.push({ line: r, j, lab: L.label(hud, j ? '· ' + s : s, { ...rFont, x: K.comfort[0].x, y: r.y }), prefix: parts.slice(0, j).join(' · ') + (j ? ' ' : '') }))
+            })
+            const reasonLayout = () => {
+              const probe = L.text(hud, '', { ...rFont, opacity: 0 })
+              for (const p of o.reasons) {
+                probe.textContent = p.prefix
+                p.lab.el.setAttribute('x', L.f2(K.comfort[0].x + (p.j ? probe.getComputedTextLength() : 0)))
+              }
+              probe.remove()
+            }
+            reasonLayout()
+            L.afterFonts(reasonLayout)
+            o.listening = L.label(hud, K.listening.text, K.listening)
+            o.stop = K.stop.map((s) => L.label(hud, s.text, { x: K.x, y: s.y, size: K.stopSize }))
+            // the doctor lines, small (Inter 30, ink-2, five lines broken where the font puts them within 700 px)
+            const DS = K.doctorSmall
+            o.docG = L.svg('g', { opacity: 0, class: 'doctor-small' }, hud)
+            o.doc = DS.y.map((y) => L.text(o.docG, '', { x: K.x, y, size: DS.size, family: DS.family, weight: 400, fill: DS.fill, opacity: 1 }))
+            L.afterFonts(() => L.TURN.breakLines(hud, K.doctor, DS).forEach((s, i) => { if (o.doc[i]) o.doc[i].textContent = s }))
+            return o
+          }
+          const O = turnObjects(world, hud)
+          const K = L.TURN.CARE
+
+          /* ---------------------------------------------------------------- anchors */
+          // 11a: sing (the cut is 0.15 s before the mark)
+          const SING = at('sing')
+          const DIM = SING, DIM_D = 0.2                                 // the empty frame dims to 25 % (linear)
+          const CARD_IN = SING + 0.22, CARD_OUT = at('b34', 'start', -0.5)
+          const UNDIM = CARD_OUT, UNDIM_D = 0.38                        // back to full as the card leaves (linear)
+          // 11b: b34
+          const YT = word('b34', 'Your')                                // "Your turn."
+          const COMF = word('b34', 'comfortable')                       // the frame's band glows
+          const BR = word('b34', 'ten'), BR_D = 0.5                     // the bracket with "0" and "10 s" (one object)
+          // the ring draws on under them as the ten seconds' clock (35 %, its tick, no counter; DECISIONS 204)
+          const RING = word('b34', 'seconds'), RING_D = 0.8
+          const NOTH = RING + 0.4                                       // "Nothing listens"
+          // 11c: b35, b36
+          const DOC = word('b35', 'care lines')                         // the doctor lines, small
+          const SORE = word('b36', 'Sore'), JUST = word('b36', 'Just')  // the comfort line, its two halves; the icon with the first
+          // 11d: b37, each reason on its word
+          const RS = [word('b37', 'hurts'), word('b37', 'unusually'), word('b37', 'suddenly'), word('b37', 'ill'), word('b37', 'talking')]
+          // 11e: b37a
+          const LISTENING = word('b37a', 'Rest')                        // "listening along: rest your voice and watch the ring"
+          const RING_P = word('b37a', 'the ring')                       // the ring scales 1.05 once
+
+          /* ---------------------------------------------------------------- the hosts at 300 in the corners */
+          const Hc = L.HOSTS.corners
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hc.merc })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hc.tavi })
+
+          /* ---------------------------------------------------------------- the card */
+          const card = L.chapterCard(hud, { num: null, title: 'Sing it', tIn: CARD_IN, tOut: CARD_OUT })
+
+          const probe = { cam, cut, card, ...O,
+            A: { SING, DIM, DIM_D, CARD_IN, CARD_OUT, UNDIM, UNDIM_D, YT, COMF, BR, BR_D, NOTH, DOC, SORE, JUST, RS, RING, RING_D, LISTENING, RING_P, D }, boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            cut.draw(t, T)
+            dust(T)
+            probe.boxes = { merc: merc(t), tavi: tavi(t) }
+
+            /* 11a: the frame on S10's pixels, dimmed under the card, back to full as it leaves; 11b: its band glows */
+            const frameA = 1 - 0.75 * P(t, DIM, DIM_D, 'none') + 0.75 * P(t, UNDIM, UNDIM_D, 'none')
+            const glow = L.glow(t, [COMF], { up: 0.3, hold: 0.5, down: 0.8 })
+            O.ch.draw({ a: frameA, band: { fill: 0.12 + 0.12 * glow }, merc: { a: 1, w: 4 } })
+            card.draw(t)
+
+            /* 11b: the task, the bracket, the ring under it (the ten seconds' clock), "Nothing listens"; 11e: on "the
+               ring." the ring scales 1.05 once */
+            O.title.life(t, YT, null, { dIn: 0.3, easeIn: 'none' })
+            O.br.draw(P(t, BR, BR_D, 'power2.out'), 1)
+            const brL = L.fade(t, BR + 0.3, null).a                    // "0" and "10 s" arrive with the bracket's ends
+            O.br0.draw({ a: brL }); O.br10.draw({ a: brL })
+            O.ring.draw({ a: t >= RING ? 1 : 0, draw: P(t, RING, RING_D, 'power2.inOut'), trackA: 0.35, scale: L.pulse(t, [RING_P], 'ring') })
+            O.nothing.life(t, NOTH, null)
+
+            /* 11c: the doctor lines, small; the comfort line beside its icon */
+            O.docG.setAttribute('opacity', L.fade(t, DOC, null, { dIn: 0.3, easeIn: 'none' }).a.toFixed(3))
+            const soreA = O.comfort[0].life(t, SORE, null)
+            O.icon.setAttribute('opacity', soreA.toFixed(3))
+            O.comfort[1].life(t, JUST, null)
+
+            /* 11d: the reasons, each on its word */
+            O.reasons.forEach((p, i) => p.lab.life(t, RS[i], null))
+
+            /* 11e: the listening line */
+            O.listening.life(t, LISTENING, null)
+
+            /* not yet in this scene */
+            O.voices.forEach((v) => v.draw({ a: 0 }))
+            O.breatheIn.draw({ a: 0 })
+            O.rowG.setAttribute('opacity', '0'); O.rowLines.forEach((l) => l.draw({ a: 0 }))
+            O.stop.forEach((l) => l.draw({ a: 0 }))
+            O.playhead.draw({ a: 0 })
+            O.echo.draw(t, [])
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </div>
+<script src="/lab/s05-push/helpers.js"></script>
+<script src="/lab/s11-sing/checks.js"></script></body></html>

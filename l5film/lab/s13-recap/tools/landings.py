@@ -49,7 +49,9 @@ def mk(sid):
 def s13():
     at, word = mk('s13-recap')
     SETTLES = word('b54', 'settles')
-    LINE_K = 10 / 2.4
+    # the redraw from the clock (DECISIONS 215): 2.4 s at most, ending 0.5 s or more before the cascade (break + 0.2)
+    REDRAW = min(2.4, at('break', 'start', 0.2) - 0.5 - SETTLES)
+    LINE_K = 10 / REDRAW
     ENTRY = 0.704                       # the page's rule over L.CONTOUR.demo (the probe's A.ENTRY)
     LAND = [
         (at('recap'), 'kicker "QUICK CHECK"'),
@@ -64,9 +66,9 @@ def s13():
         (SETTLES, 'Tavi\'s line starts its silent redraw'),
         (SETTLES + ENTRY / LINE_K, 'the mint edge and "in the band" light (0.2 s)', 'board 13d: the redraw 504.93, the mint edge at the line\'s 0.69 s, 505.10'),
         (word('b54', 'band'), 'answer 4 "It settles into the band / and stays there."'),
-        (SETTLES + (ENTRY + 0.5) / LINE_K, 'the "settled" flag stands (0.25 s)', 'board 13d: the mint edge 505.10, the flag 505.21, both by the page\'s rule at 10 / 2.4'),
+        (SETTLES + (ENTRY + 0.5) / LINE_K, 'the "settled" flag stands (0.25 s)', 'board 13d: the mint edge 505.10, the flag 505.21, both by the page\'s rule at the redraw\'s speed'),
         (word('b55', 'Practise'), 'the Voice Mirror panel and "Practise it."'),
-        (word('b55', 'Voice Mirror'), '"Voice Mirror" and its rule'),
+        (word('b55', 'Practise') + 0.4, '"Voice Mirror" and its rule, 0.4 s after the panel (DECISIONS 215)'),
         (word('b55', 'glide') - 0.25, 'row 1: its glyph, its words 0.25 s later (one row)'),
         (word('b55', 'hold') - 0.25, 'row 2: its glyph, its words 0.25 s later (one row)'),
         (word('b55', 'then') - 0.25, 'row 3: its glyph, its words 0.25 s later (one row)'),
@@ -84,7 +86,8 @@ def s13():
     ]
     MOVES = [
         (at('recap', 'start', -0.04), 'the frame slides down and widens (1.2 s, power2.inOut), then dims (0.3 s)'),
-        (at('break'), 'the clean break: kicker +0.06, panel +0.13, answer +0.2, frame +0.26 (leaves, up fast)'),
+        (at('break', 'start', 0.2), 'the clean break (DECISIONS 215): kicker +0.20, panel +0.27, answer +0.34, frame +0.41 (leaves, up fast, 0.3 s each)'),
+        (SETTLES + REDRAW, 'card 3\'s redraw complete; the answer holds 0.5 s to the cascade'),
         (at('break', 'start', 0.6), 'hop 1 (the pass\'s crouch, then the air 0.41 s)'),
         (at('break', 'start', 1.25), 'hop 2'),
         (at('card'), 'both cards drift up 14 px over `card`'),
@@ -100,10 +103,10 @@ def s14():
     QM = COPY + 7 * 0.08 + 0.1
     TW = at('twinkle')
     LAND = [
-        (at('next'), 'kicker "NEXT TIME"'),
-        (at('next', 'start', 0.38), 'the faint rows fade in (0.6 s), the six outlines (0.5 s)', 'board 14a: the kicker 540.62, the rows 541.00'),
-        (at('next', 'start', -0.92) + 1.6, 'the carried bead lands on C4 (squash) and hands to bead 0', 'board 14a: the rows 541.00, the bead 541.30 (a carried object, in flight since S13)'),
-    ] + [(TW + 0.5 * i, f'bead {i} lights on its note (0.2 s), its echo ring') for i in range(7)] + [
+        (at('next'), 'kicker "NEXT TIME"', 'board 14a: the kicker 540.62 = next + 0.15; the rows from S14\'s first frame since DECISIONS 219'),
+        (0.0, 'the faint rows and the six outlines fade in from S14\'s first frame (0.6 s; DECISIONS 219)'),
+        (at('next', 'start', -0.92) + 1.6, 'the carried bead lands on C4 (squash), filled until its note', 'board 14a: the bead 541.30, a carried object in flight since S13, landing while the rows come in (DECISIONS 219)'),
+    ] + [(TW + 0.5 * i, f'bead {i} lights on its note (0.2 s), its echo ring' + (' (the carried bead gives way to it)' if i == 0 else '')) for i in range(7)] + [
         (word('b60', 'I move'), 'the tease line'),
         (ARROWS, 'the arrows rise, 0.08 s apart (one stagger)'),
         (COPY, 'the dashed copy draws bead by bead (0.56 s, with the arrows)', 'board 14b: the arrows and the copy are one beat, the copy drawing as each arrow arrives'),

@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 260" width="1180" height="260">
+  <!-- Meniscus v2 horizontal lockup. Wordmark: Outfit SemiBold, camel-case,
+       "Mercury" chrome-white, "Pitch" in the spectrum gradient (per BRAND.md). -->
+  <defs>
+    <clipPath id="orb2"><circle cx="130" cy="130" r="118"/></clipPath>
+    <radialGradient id="chrome2" cx="0.38" cy="0.28" r="1.05">
+      <stop offset="0" stop-color="#f4f8fd"/>
+      <stop offset="0.32" stop-color="#c3ccd6"/>
+      <stop offset="0.62" stop-color="#8a97a6"/>
+      <stop offset="1" stop-color="#3d4b5c"/>
+    </radialGradient>
+    <linearGradient id="liquid2" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#1d3050"/>
+      <stop offset="1" stop-color="#0b1220"/>
+    </linearGradient>
+    <linearGradient id="spectrum2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#58a6ff"/>
+      <stop offset="0.5" stop-color="#2dd4bf"/>
+      <stop offset="1" stop-color="#bc8cff"/>
+    </linearGradient>
+  </defs>
+  <g clip-path="url(#orb2)">
+    <circle cx="130" cy="130" r="118" fill="url(#chrome2)"/>
+    <path d="M12,130 C54,86 86,86 130,130 S206,174 248,130 A118,118 0 0 1 12,130 Z" fill="url(#liquid2)"/>
+    <path d="M12,130 C54,86 86,86 130,130 S206,174 248,130" fill="none" stroke="url(#spectrum2)" stroke-width="11" stroke-linecap="round"/>
+    <ellipse cx="94" cy="69" rx="25" ry="12.5" fill="#ffffff" opacity="0.85" transform="rotate(-20 94 69)"/>
+  </g>
+  <circle cx="130" cy="130" r="118" fill="none" stroke="#c3ccd6" stroke-opacity="0.35" stroke-width="2"/>
+  <text x="292" y="172" font-family="Outfit, Inter, system-ui, sans-serif" font-size="118" font-weight="600" letter-spacing="-2">
+    <tspan fill="#e6edf3">Mercury</tspan><tspan fill="url(#spectrum2)">Pitch</tspan>
+  </text>
+</svg>

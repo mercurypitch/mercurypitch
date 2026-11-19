@@ -1,6 +1,7 @@
 # The carried object's step from frame to frame through a cut's 30 fps frames (frame 15 is the first after the cut):
 # the centroid of the bright pixels in a box, so the step across the cut (14 to 15) can be read against its neighbours.
 #   python3 steps.py <dir> x0,y0,x1,y1 [threshold] [blue]   (blue: only the lit beads' blue, B - R over the threshold)
+# (Kept here, not in a cut folder: lab/s13-recap/cutprobe.mjs clears its output folder on every run.)
 import sys
 import numpy as np
 from PIL import Image

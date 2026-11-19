@@ -67,12 +67,16 @@
           const KICK = at('next')                                     // "NEXT TIME"
           const CARRY0 = at('next', 'start', -0.92), CARRY_D = 1.6    // the carry (L.TEASE.carry's own start and length)
           const LAND = CARRY0 + CARRY_D                               // the bead lands on C4 with a squash
-          const ROWS_IN = at('next', 'start', 0.38), ROWS_D = 0.6     // the faint rows fade in under it (board 541.00 to 541.60)
-          const BEADS_D = 0.5                                         // the six other beads as outlines (board 541.30 to 541.80)
+          // the faint rows and the six other beads' outlines fade in from S14's first frame (0.6 s), so the join never holds
+          // the carried bead alone (DECISIONS 219)
+          const ROWS_IN = 0, ROWS_D = 0.6
           const TW = at('twinkle')                                    // each bead lights on its note's onset (L.TEASE.onset)
           const LIGHT_D = 0.2                                         // the light comes up linearly (a 0.06 s light flagged as a pop)
           // 14b: b60
           const LINE = word('b60', 'I move')                          // the tease line
+          // its baseline 170, not the kit's 150 (DECISIONS 220): its cap top 24 px or more under "NEXT TIME"'s foot (110),
+          // still centred over the tune (x 960); the kicker keeps the frame's left margin
+          const LINE_Y = 170
           const ARROWS = word('b60', 'every'), ARROW_STEP = 0.08, ARROW_D = 0.4   // the arrows rise, one after another
           const COPY = ARROWS + 0.3, COPY_D = 7 * ARROW_STEP          // the dashed copy draws bead by bead as each arrow arrives
           const QM = COPY + COPY_D + 0.1                              // its "?" once the copy is drawn
@@ -89,13 +93,14 @@
           const arrowsG = te.beads[0].arrow.g.parentNode
           const echo = L.echoRings(world, { max: 2 })
           // the carried bead: the chrome bead S13's glyph dot grew into, on L.TEASE.carry from film time (s13-recap draws the
-          // same); it lands with a squash and settles into the first bead's outline as the other six come in
+          // same); it lands with a squash and stays filled, as it arrived, until its note lights the first bead blue under it
+          // (DECISIONS 219): it never empties to an outline
           const bead = L.bead(world, { r: 20, color: C.chrome })
           L.bead4.place(bead, null)
 
           /* ---------------------------------------------------------------- type (hud, frame-fixed) */
           const kicker = L.kicker(hud, 'Next time')
-          const line = L.label(hud, TE.LINE.text, { x: TE.LINE.x, y: TE.LINE.y, size: TE.LINE.size, anchor: 'middle' })
+          const line = L.label(hud, TE.LINE.text, { x: TE.LINE.x, y: LINE_Y, size: TE.LINE.size, anchor: 'middle' })
           const hook = TE.HOOK.map((h) => L.label(hud, h.text, { x: 960, y: h.y, size: TE.hookSize, family: 'serif', anchor: 'middle' }))
 
           /* ---------------------------------------------------------------- the hosts at 300: Merc under the tune's right
@@ -105,7 +110,7 @@
           const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...HR.tavi })
 
           const probe = { cam, te, arrowsG, echo, bead, kicker, line, hook,
-            A: { KICK, CARRY0, CARRY_D, LAND, ROWS_IN, ROWS_D, BEADS_D, TW, LIGHT_D, LINE, ARROWS, ARROW_STEP, ARROW_D, COPY, COPY_D, QM, LINE_OUT, HOOK, HOOK_OUT, SHRINK0, ROWS_OUT_D, D, T0 },
+            A: { KICK, CARRY0, CARRY_D, LAND, ROWS_IN, ROWS_D, TW, LINE_Y, LIGHT_D, LINE, ARROWS, ARROW_STEP, ARROW_D, COPY, COPY_D, QM, LINE_OUT, HOOK, HOOK_OUT, SHRINK0, ROWS_OUT_D, D, T0 },
             boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
@@ -120,12 +125,12 @@
             const mb = merc(t), tb = tavi(t)
             probe.boxes = { merc: mb, tavi: tb }
 
-            /* the carry: in flight from S13, landing on C4 with a squash, then its glossy body gives way to the bead's
-               outline (BEADS_D) as the other six come in */
+            /* the carry: in flight from S13, landing on C4 with a squash; it stays filled until its note's onset, where it
+               gives way (LIGHT_D, linear) to the first bead lighting blue under it */
             const c = L.TEASE.carry(T, T0 + CARRY0)
-            const settle = P(t, LAND, BEADS_D, 'none')
+            const handed = P(t, TW + TE.onset(0), LIGHT_D, 'none')
             const [sx, sy] = L.bead4.squash(t, LAND)
-            L.bead4.place(bead, c && settle < 1 ? { x: c.x, y: c.y, scale: c.r / 20, a: 1 - settle, sx, sy } : null)
+            L.bead4.place(bead, c && handed < 1 ? { x: c.x, y: c.y, scale: c.r / 20, a: 1 - handed, sx, sy } : null)
 
             /* the figure: the rows fade in under the bead and out as it shrinks; the beads light on the tune's onsets and
                stay lit (Merc's notes, blue); the arrows, the copy and its "?" (14b); the shrink toward the end card (14c) */
@@ -134,7 +139,7 @@
             te.draw({
               rowsA: P(t, ROWS_IN, ROWS_D, 'none') * (1 - P(t, SHRINK0, ROWS_OUT_D, 'none')),
               keep: [mb, tb].filter(Boolean),
-              beads: (i) => ({ a: i === 0 ? settle : P(t, LAND, BEADS_D, 'none'), lit: lit(i), scale: L.pulse(t, [TW + TE.onset(i)], 'bead') }),
+              beads: (i) => ({ a: i === 0 ? (handed > 0 ? 1 : 0) : P(t, ROWS_IN, ROWS_D, 'none'), lit: lit(i), scale: L.pulse(t, [TW + TE.onset(i)], 'bead') }),
               arrows: (i) => P(t, ARROWS + ARROW_STEP * i, ARROW_D, 'power2.out'),
               copy: P(t, COPY, COPY_D, 'none'),
               qA: P(t, QM, 0.25, 'none'),

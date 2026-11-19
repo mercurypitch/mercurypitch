@@ -1,0 +1,288 @@
+[
+ {
+  "t": 0,
+  "name": "first frame at F-promise-b: plot x 320 to 1440",
+  "got": "320 to 1440",
+  "want": "320 to 1440",
+  "pass": true
+ },
+ {
+  "t": 3.2799999999999985,
+  "name": "F-strip: the strip x 176 to 1744",
+  "got": "176 to 1744",
+  "want": "176 to 1744",
+  "pass": true
+ },
+ {
+  "t": 3.2799999999999985,
+  "name": "its envelope y 227 to 305",
+  "got": "226.8 to 305.2",
+  "want": "226.8 to 305.2",
+  "pass": true
+ },
+ {
+  "t": 3.2799999999999985,
+  "name": "the swatches centred (512, 490), (960, 490), (1408, 490)",
+  "got": "(512.0, 490.0) (960.0, 490.0) (1408.0, 490.0)",
+  "want": "(512.0, 490.0) (960.0, 490.0) (1408.0, 490.0)",
+  "pass": true
+ },
+ {
+  "t": 3.2799999999999985,
+  "name": "their names' baseline 630 at 50 px",
+  "got": "630, 50.4 px",
+  "want": "630, 50.4 px",
+  "pass": true
+ },
+ {
+  "t": 3.2799999999999985,
+  "name": "keep-out: nearest visible text to tavi's body box (\"shout\")",
+  "got": 249.76,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 6.049999999999997,
+  "name": "DECISIONS 175: the q0 ring right of the third swatch, its ink 40 px clear of the swatch outline's outer edge",
+  "got": 40,
+  "want": 40,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 6.049999999999997,
+  "name": "centred on the swatch row (y)",
+  "got": 490,
+  "want": 490.00001525878906,
+  "tol": 0.5,
+  "pass": true
+ },
+ {
+  "t": 6.049999999999997,
+  "name": "same ring, same size: r 18",
+  "got": 18,
+  "want": 18,
+  "tol": 0.3,
+  "pass": true
+ },
+ {
+  "t": 6.049999999999997,
+  "name": "the ring on screen at (x, y)",
+  "got": "1580.9, 490.0",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 6.049999999999997,
+  "name": "keep-out: nearest visible text to tavi's body box (\"shout\")",
+  "got": 249.76,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 6.049999999999997,
+  "name": "keep-out: nearest visible text to merc's body box (\"level\")",
+  "got": 378.67,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 8.24,
+  "name": "the middle swatch lit: violet 28 % fill, ink outline, its name in ink",
+  "got": "0.280, rgb(230,237,243), rgb(230,237,243)",
+  "want": "0.280, rgb(230,237,243), rgb(230,237,243)",
+  "pass": true
+ },
+ {
+  "t": 8.24,
+  "name": "keep-out: nearest visible text to tavi's body box (\"shout\")",
+  "got": 249.76,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 8.24,
+  "name": "keep-out: nearest visible text to merc's body box (\"whisper\")",
+  "got": 232.19,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 11.489999999999984,
+  "name": "the four words introduced: row centred on x 960",
+  "got": 960,
+  "want": 960,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 11.489999999999984,
+  "name": "their text 44 px (scaled 30 x 44/30)",
+  "got": "1.4667",
+  "want": "1.4667",
+  "pass": true
+ },
+ {
+  "t": 11.489999999999984,
+  "name": "the gaps between them (12 x 44/30 = 17.6)",
+  "got": "17.6 17.6 17.6",
+  "want": "17.6 x 3",
+  "pass": true
+ },
+ {
+  "t": 11.489999999999984,
+  "name": "row from x .. to ..",
+  "got": "470.5 to 1449.5, y 746.7 to 802.5",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 11.489999999999984,
+  "name": "keep-out: nearest visible text to tavi's body box (\"shout\")",
+  "got": 249.76,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 11.489999999999984,
+  "name": "keep-out: nearest visible text to merc's body box (\"whisper\")",
+  "got": 232.19,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 12.334999999999996,
+  "name": "DECISIONS 172: 0.4 s into the crane up, the swatches / their names / the hairline / the heading",
+  "got": "1.00 1.00 1.00 / 0.00 0.00 0.00 / 1.00 / 0.00",
+  "want": "still up (leaving on \"right\") / 0 / up / 0",
+  "pass": true
+ },
+ {
+  "t": 12.366666666666667,
+  "name": "DECISIONS 172: the flight (18 frames) crosses no type still on screen: the nearest visible type's gap to a chip",
+  "got": 17.07,
+  "want": "> 0",
+  "pass": true
+ },
+ {
+  "t": 12.366666666666667,
+  "name": "the marks the chips pass in front of (frame-fixed over a mark, DECISIONS 168)",
+  "got": "swatch shout, swatch about speaking volume, hairline, the strip's envelope",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 12.389999999999985,
+  "name": "the four words parked (t 12.39): right edge 1800",
+  "got": 1800,
+  "want": 1800,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 12.389999999999985,
+  "name": "outlines y 68 to 106",
+  "got": "68.0 to 106.0",
+  "want": "68.0 to 106.0",
+  "pass": true
+ },
+ {
+  "t": 12.389999999999985,
+  "name": "gaps 12",
+  "got": "12.0 12.0 12.0",
+  "want": "12.0 x 3",
+  "pass": true
+ },
+ {
+  "t": 12.389999999999985,
+  "name": "dim: ink-2 text",
+  "got": "rgb(168,179,191) rgb(168,179,191) rgb(168,179,191) rgb(168,179,191)",
+  "want": "rgb(168,179,191) x 4",
+  "pass": true
+ },
+ {
+  "t": 13.433333333333334,
+  "name": "DECISIONS 172: the crane up (45 frames) never runs over an empty frame: the fewest marks of the chart on screen at 30 % or more",
+  "got": "1 at 12.667 (band)",
+  "want": ">= 1",
+  "pass": true
+ },
+ {
+  "t": 13.433333333333334,
+  "name": "the strip's envelope stays until the band's foot is 16 px into the frame",
+  "got": "foot in at 12.312, envelope out 12.312 to 12.712",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 13.6345,
+  "name": "the four words parked (t 13.63): right edge 1800",
+  "got": 1800,
+  "want": 1800,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 13.6345,
+  "name": "outlines y 68 to 106",
+  "got": "68.0 to 106.0",
+  "want": "68.0 to 106.0",
+  "pass": true
+ },
+ {
+  "t": 13.6345,
+  "name": "gaps 12",
+  "got": "12.0 12.0 12.0",
+  "want": "12.0 x 3",
+  "pass": true
+ },
+ {
+  "t": 13.6345,
+  "name": "dim: ink-2 text",
+  "got": "rgb(168,179,191) rgb(168,179,191) rgb(168,179,191) rgb(168,179,191)",
+  "want": "rgb(168,179,191) x 4",
+  "pass": true
+ },
+ {
+  "t": 13.6345,
+  "name": "last frame F0: band 312.5 to 487.5, line y 400",
+  "got": "312.5 to 487.5, 400",
+  "want": "312.5 to 487.5, 400",
+  "pass": true
+ },
+ {
+  "t": 13.6345,
+  "name": "the label row's text from x 400, baseline 150, at full",
+  "got": "400, 150, 1.00",
+  "want": "400, 150, 1.00",
+  "pass": true
+ },
+ {
+  "t": 13.6345,
+  "name": "\"A3\", \"level\" at full; the swatches and heading gone",
+  "got": "1.00 1.00 / 0.00 0.00 0.00 0.00",
+  "want": "1.00 1.00 / 0.00 0.00 0.00 0.00",
+  "pass": true
+ },
+ {
+  "t": 13.6345,
+  "name": "hosts at 300 in their corners: Merc, Tavi body boxes",
+  "got": "30.5-189.5; 1720.5-1879.5",
+  "want": "30.5-189.5; 1720.5-1879.5",
+  "pass": true
+ },
+ {
+  "t": 13.6345,
+  "name": "keep-out: nearest visible text to tavi's body box (\"“support”\")",
+  "got": 542.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 13.6345,
+  "name": "keep-out: nearest visible text to merc's body box (\"level\")",
+  "got": 210.5,
+  "want": ">= 20",
+  "pass": true
+ }
+]

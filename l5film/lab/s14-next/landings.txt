@@ -1,9 +1,9 @@
 s14-next: the board's 0.4 s rule over the landings (scene time, from the clock)
 
-    0.150  kicker "NEXT TIME"
-    0.530  the faint rows fade in (0.6 s), the six outlines (0.5 s)   <-- 0.380 s after the last
-    0.830  the carried bead lands on C4 (squash) and hands to bead 0   <-- 0.300 s after the last
-    1.740  bead 0 lights on its note (0.2 s), its echo ring
+    0.000  the faint rows and the six outlines fade in from S14's first frame (0.6 s; DECISIONS 219)
+    0.150  kicker "NEXT TIME"   <-- 0.150 s after the last
+    0.830  the carried bead lands on C4 (squash), filled until its note
+    1.740  bead 0 lights on its note (0.2 s), its echo ring (the carried bead gives way to it)
     2.240  bead 1 lights on its note (0.2 s), its echo ring
     2.740  bead 2 lights on its note (0.2 s), its echo ring
     3.240  bead 3 lights on its note (0.2 s), its echo ring
@@ -23,7 +23,6 @@ moves and leaves (not landings):
    15.510  the hook leaves up fast
    15.560  the shrink starts; the rows and arrows fade (0.4 s)
 
-16 landings, 3 closer than 0.4 s, each the board's own or not:
-  0.150 -> 0.530 (0.380 s): the board's (board 14a: the kicker 540.62, the rows 541.00)
-  0.530 -> 0.830 (0.300 s): the board's (board 14a: the rows 541.00, the bead 541.30 (a carried object, in flight since S13))
+16 landings, 2 closer than 0.4 s, each the board's own or not:
+  0.000 -> 0.150 (0.150 s): the board's (board 14a: the kicker 540.62 = next + 0.15; the rows from S14's first frame since DECISIONS 219)
   6.430 -> 6.730 (0.300 s): the board's (board 14b: the arrows and the copy are one beat, the copy drawing as each arrow arrives)

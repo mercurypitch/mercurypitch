@@ -70,7 +70,8 @@
           /* ---------------------------------------------------------------- anchors */
           // 13a: recap, b47, b48, q1
           const SLIDE = at('recap', 'start', -0.04), SLIDE_D = 1.2     // the frame's slide (board 478.20 to 479.40, power2.inOut)
-          const DIM = SLIDE + SLIDE_D, DIM_D = 0.3                    // then its strokes dim to 35 % (linear)
+          const DIM = SLIDE + SLIDE_D, DIM_D = 0.3                    // then its strokes dim to 20 % (linear; DECISIONS 217)
+          const DIM_TO = 0.2                                          // the frame's alpha under cards 1 and 2
           const KICK = at('recap')                                    // "QUICK CHECK"
           const Q1 = word('b48', 'What is')                           // the panel and question 1
           const FIG = word('b48', "diaphragm's"), FIG_D = 0.8         // the figure's torso draws on, as Merc names it
@@ -82,9 +83,11 @@
           const TOG = word('b52', 'together')                         // row 3 lights, its tick scales 1.2; the answer
           // 13d: o14a, q4, b54
           const Q4 = at('o14a')                                       // question 4, Tavi's (a swap)
-          const BACK = word('o14a', 'steady'), BACK_D = 0.6           // the traces fade; the frame back to full with its labels
-          const SETTLES = word('b54', 'settles')                      // Tavi's line redraws, silent, at 10 / 2.4 its speed
-          const LINE_K = 10 / 2.4
+          const BACK = word('o14a', 'steady'), BACK_D = 0.6           // the frame back to full with its labels
+          // card 2's traces and their ILLUSTRATION chip leave with the question's swap, gone before card 3's labels land at
+          // BACK, so no frame holds both chips (DECISIONS 218)
+          const TR_OUT = Q4, TR_OUT_D = Math.min(0.4, BACK - Q4 - 0.1)
+          const SETTLES = word('b54', 'settles')                      // Tavi's line redraws, silent, from "settles"
           const ANS4 = word('b54', 'band')                            // "It settles into the band / and stays there."
           // the page's rule (FACTS 80; group C's s10-steady, DECISIONS 191): read every 16 ms, settled from the first reading
           // from which the line stays within 35 cents for 0.5 s; the mint edge and "in the band" light at the entry, and the
@@ -100,15 +103,23 @@
             return null
           })()
           const SETTLED = ENTRY + 0.5
-          const LIT = SETTLES + ENTRY / LINE_K, FLAG = SETTLES + SETTLED / LINE_K
-          // 13e: the clean break on `break` (DECISIONS 190): the recap leaves up fast in turn in the beat's first 0.56 s
+          // 13e: the clean break on `break` (DECISIONS 190, 215): the recap leaves up fast in turn from the beat's start + 0.2,
+          // 0.07 s apart, each over 0.3 s, the last gone at + 0.71, before hop 1's apex (+ 0.93)
           const BREAK = at('break')
-          const OUT = { kicker: at('break', 'start', 0.06), panel: at('break', 'start', 0.13), answer: at('break', 'start', 0.2), frame: at('break', 'start', 0.26) }
+          const CASCADE = at('break', 'start', 0.2), CASCADE_STEP = 0.07
+          const OUT = { kicker: CASCADE, panel: CASCADE + CASCADE_STEP, answer: CASCADE + 2 * CASCADE_STEP, frame: CASCADE + 3 * CASCADE_STEP }
+          // card 3's redraw (DECISIONS 215): 2.4 s at most (the board's), ending 0.5 s or more before the cascade, so the
+          // finished answer holds on any voice; its speed from the clock (the scratch voice leaves 1.935 s: 10 / 1.935)
+          const HOLD_MIN = 0.5
+          const REDRAW = Math.min(2.4, CASCADE - HOLD_MIN - SETTLES)
+          const LINE_K = DC.len / REDRAW
+          const DONE = SETTLES + REDRAW
+          const LIT = SETTLES + ENTRY / LINE_K, FLAG = SETTLES + SETTLED / LINE_K
           // Merc's two hops (the pass's, PASSES.md): carried through the air, power1.in, his root's x cancelled by mercGate
           const HOP1 = at('break', 'start', 0.6), HOP2 = at('break', 'start', 1.25)
           // the Voice Mirror card, after he has landed: its panel grows down as its rows land (each 0.3 s, power2.out)
           const PRACT = word('b55', 'Practise')                       // the panel (foot 300) and "Practise it."
-          const VMT = word('b55', 'Voice Mirror')                     // "Voice Mirror" and the rule under it
+          const VMT = PRACT + 0.4                                     // "Voice Mirror" and its rule, 0.4 s after the panel (board, DECISIONS 215)
           const ROWS = [word('b55', 'glide'), word('b55', 'hold'), word('b55', 'then')]   // each row after its glyph
           const GLYPH_LEAD = 0.25                                     // a row's glyph lands this long before its words
           const READ = word('b55', 'plays')                           // the hold's readout
@@ -133,13 +144,27 @@
           const tag = L.tag(ch.gLabels, L.TAGS.illustration, RC.LABELS.tag)
           const flag = L.settledFlag(ch.gLabels)
 
-          /* ---------------------------------------------------------------- card 1: the breath figure's torso (world) */
+          /* ---------------------------------------------------------------- card 1: the breath figure's torso (world), at
+             1.2 times the kit's S13 placement (DECISIONS 217): k 0.9 (0.75), its crown at y 63 and its fade at the same figure
+             units (v 520 to 540: world y 513 to 531), centred on x 1395 in the recap's object box (x 1100 to 1690, y 60 to 535) */
           const fig = L.figure(world)
-          /* ---------------------------------------------------------------- card 2: the three traces, smaller (world) */
+          const S13F = L.FIGURE.S13, FIG_S = 1.2
+          const FIG_K = S13F.k * FIG_S, FIG_X0 = 1395 - FIG_K * 255, FIG_Y0 = 45
+          const FIG_FADE = S13F.fade.map((y) => FIG_Y0 + ((y - S13F.y0) / S13F.k) * FIG_K)
+          /* ---------------------------------------------------------------- card 2: the three traces (world), the kit's
+             L.TRACE.RECAP drawn at 1.2 times (DECISIONS 217): x 1136 to 1688, centres 170, 314 and 458, half-height 54, so the
+             stack runs y 116 to 512; their names (Outfit 30, as chapter 4's type) right-aligned 20 px left of them; their
+             ILLUSTRATION chip over the stack's right end, as chapter 4's stack carried it (DECISIONS 218) */
           const TR = L.TRACE.RECAP
           const KINDS = ['air', 'catch', 'together'], NAMES = L.TRACE.STACK.names.texts
+          const TR_S = 1.2, TR_X1 = 1688, TR_Y0 = 170
+          const TR_DX = TR_X1 - TR_S * TR.x1, TR_DY = TR_Y0 - TR_S * TR.rows[0]
+          const trX = (x) => TR_S * x + TR_DX, trY = (y) => TR_S * y + TR_DY
           const traces = TR.rows.map((y) => L.trace(world, { x0: TR.x0, x1: TR.x1, y, h: TR.h }))
-          const traceNames = NAMES.map((s, i) => L.label(world, s, { x: TR.names.x, y: TR.names.y[i], size: TR.names.size, anchor: 'end' }))
+          const NAME_GAP = 20
+          const traceNames = NAMES.map((s, i) => L.label(world, s, { x: trX(TR.x0) - NAME_GAP, y: trY(TR.rows[i]) + 10, size: TR.names.size, anchor: 'end' }))
+          const TR_TAG_GAP = 14, TAG_H = 40
+          const trTag = L.tag(world, L.TAGS.illustration, { x: TR_X1, y: trY(TR.rows[0]) - TR_S * TR.h - TR_TAG_GAP - TAG_H / 2, anchor: 'end' })
 
           /* ---------------------------------------------------------------- the quick check (hud, frame-fixed) */
           const kicker = L.kicker(hud, 'Quick check')
@@ -161,8 +186,15 @@
 
           /* ---------------------------------------------------------------- the practise cards (hud): each card a group
              that drifts in `card`; every line the page's (DECISIONS 100; L.RECAP.VM and .REST) */
-          const vmG = L.svg('g', { class: 'vm-card' }, hud)
-          const restG = L.svg('g', { class: 'rest-card' }, hud)
+          // the cards drift 14 px in `card`: Chrome snaps text baselines to whole pixels inside an SVG, so a group translated
+          // by sub-pixel steps moves its type a pixel at a time (measure.py found 3.3 to 3.9 % of the frame jumping every
+          // 0.1 s); the cards stand in their own HTML layer instead, moved by a composited translate3d, which the raster
+          // does not step (HANDOFFS § Recap and practise: "draw at sub-pixel positions")
+          const cardsLayer = L.el('div', { class: 'cards-layer', 'data-layout-allow-overflow': '' }, room.hud)
+          Object.assign(cardsLayer.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', pointerEvents: 'none', willChange: 'transform', transform: 'translate3d(0px, 0px, 0px)' })
+          const cards = L.stage(cardsLayer)
+          const vmG = L.svg('g', { class: 'vm-card' }, cards)
+          const restG = L.svg('g', { class: 'rest-card' }, cards)
           const vmPanel = L.panel(vmG, { x0: VM.panel.x0, y0: VM.panel.y0, x1: VM.panel.x1, y1: VM.panel.feet[0] })
           const practise = L.label(vmG, VM.practise.text, VM.practise)
           const vmTitle = L.label(vmG, VM.title.text, VM.title)
@@ -177,11 +209,10 @@
           const freeUl = L.svg('rect', { y: VM.free.underlineY - 1, height: 2, width: 0, fill: C.chrome, opacity: 0 }, vmG)
           let ulX = [0, 0]
           L.afterFonts(() => { const el = free.el, n = VM.free.text.indexOf('mercurypitch'); ulX = [VM.free.x + el.getSubStringLength(0, n), VM.free.x + el.getComputedTextLength()] })
-          // "Ten minutes, gently, most days. Missed a day? Just come back.": the board's two lines at baselines 822 and 862
-          // would put the floor horizon (y 840) through the second line's capitals (DECISIONS 203: no type within 12 px of
-          // it), and two lines cannot fit between the card's foot (790) and 828; so one line, Inter 32, ink-2, baseline 820,
-          // its ink 796 to 827 (lab/s13-recap/widths.txt: x 270 to 1147, 63 px from Merc's body at (1290, 840))
-          const TEN_LINE = { text: VM.ten.map((s) => s.text).join(' '), x: VM.tenX, y: 820, size: 32, family: 'inter', weight: 400, fill: C.ink2 }
+          // "Ten minutes, gently, most days. Missed a day? Just come back.": one line (DECISIONS 216; the board's two lines
+          // cannot both clear the floor horizon, 203), Inter 30, ink-2, x 270, baseline 820, ending left of the card's edge
+          // (1110), under the card's last foot (777, the kit's VM closed up for it)
+          const TEN_LINE = { ...VM.ten, fill: C.ink2 }
           const ten = L.label(vmG, TEN_LINE.text, TEN_LINE)
           const restPanel = L.panel(restG, { x0: RS.panel.x0, y0: RS.panel.y0, x1: RS.panel.x1, y1: RS.panel.y1 })
           const restQ = RS.question.map((s) => L.label(restG, s.text, { x: RS.x, y: s.y, size: RS.qSize, weight: 500, fill: C.ink2 }))
@@ -220,13 +251,23 @@
             { at: HOP1 + L.HOP.crouch, dur: L.HOP.air, x: HOP_X[0], ease: 'power1.in' },
             { at: HOP2 + L.HOP.crouch, dur: L.HOP.air, x: HOP_X[1], ease: 'power1.in' },
           ]
-          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hc.merc, moves: mercMoves })
+          // the root is cancelled on the pass frame the renderer shows: video time is the tag's data-media-start plus the
+          // scene time past its data-start, so the shown frame runs about 1.4 frames ahead of the frame index mercGate counts
+          // from the root table's t0 (lab/s13-recap/events: at hop 2's start, where the root snaps from 0.38 back to 0, that
+          // put Merc 50 px left for 3 film frames). Reading the tag keeps the two on one frame.
+          const rootFromTag = (tag, key) => {
+            const v = document.getElementById(tag), r = window.MERC_ROOTS && window.MERC_ROOTS[key]
+            if (!v || !r) return undefined
+            const ds = parseFloat(v.getAttribute('data-start')), ms = parseFloat(v.getAttribute('data-media-start'))
+            return { frames: r.frames, fps: r.fps || 30, t0: T0 + ds - ms }
+          }
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hc.merc, moves: mercMoves, root: rootFromTag(SID + '-m-blue', 'm-blue-' + SID.slice(0, 3)) })
           const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hc.tavi })
 
-          const probe = { cam, ch, bandRects, anyOct, inBand, tag, flag, fig, traces, traceNames, kicker, panel, ring, Qs, ans1, ans3, ans4,
+          const probe = { cam, ch, cardsLayer, bandRects, anyOct, inBand, tag, flag, fig, traces, traceNames, trTag, kicker, panel, ring, Qs, ans1, ans3, ans4,
             vmG, restG, vmPanel, practise, vmTitle, vmRule, rows, readout, keep, sore, free, freeUl, ten, restPanel, restQ, restTitle, restBody, restAddr, restUl, bead,
             A: { SLIDE, SLIDE_D, DIM, DIM_D, KICK, Q1, FIG, FIG_D, ANS1, BREATH_D, Q3, TRACES, TRACES_D, TOG, Q4, BACK, BACK_D, SETTLES, LINE_K, ENTRY, SETTLED, LIT, FLAG, ANS4,
-              BREAK, OUT, HOP1, HOP2, PRACT, VMT, ROWS, GLYPH_LEAD, READ, KEEP, SORE, FREE, UL, TEN, REST, RTITLE, RBODY, RADDR, DRIFT, DRIFT_D, LEAVE, LEAVE_STEP, LEAVE_D, CARRY0, D, T0 },
+              BREAK, CASCADE, REDRAW, DONE, HOLD_MIN, DIM_TO, TR_OUT, TR_OUT_D, FIG_K, FIG_X0, FIG_Y0, FIG_FADE, TR_S, TR_DX, TR_DY, OUT, HOP1, HOP2, PRACT, VMT, ROWS, GLYPH_LEAD, READ, KEEP, SORE, FREE, UL, TEN, REST, RTITLE, RBODY, RADDR, DRIFT, DRIFT_D, LEAVE, LEAVE_STEP, LEAVE_D, CARRY0, D, T0 },
             boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
@@ -252,7 +293,7 @@
             const u = P(t, SLIDE, SLIDE_D, 'power2.inOut')
             ch.geo(RC.frameAt(u))
             const fOut = upFast(t, OUT.frame)
-            const frameA = (1 - 0.65 * P(t, DIM, DIM_D, 'none') + 0.65 * P(t, BACK, BACK_D, 'none')) * fOut.a
+            const frameA = (1 - (1 - DIM_TO) * P(t, DIM, DIM_D, 'none') + (1 - DIM_TO) * P(t, BACK, BACK_D, 'none')) * fOut.a
             ch.place({ s: 1, dx: 0, dy: fOut.dy })
             const lineT = RC.voiceOK(u) ? clamp((t - SETTLES) * LINE_K, 0, DC.len) : 0
             const litA = P(t, LIT, 0.2, 'none')
@@ -260,7 +301,7 @@
               a: frameA,
               band: { lit: litA },
               merc: { a: 1, w: RC.mercW(u) },
-              lines: lineT > 0 ? [{ id: 'hold', contour: 'demo', t: lineT, head: 1 - P(t, SETTLES + DC.len / LINE_K, 0.3, 'none') }] : [],
+              lines: lineT > 0 ? [{ id: 'hold', contour: 'demo', t: lineT, head: 1 - P(t, DONE, 0.3, 'none') }] : [],
             })
             // the band's edges as F-turn showed them at the cut (2 world px at 1.4x: 2.8 px), easing to 2 px through the slide
             // (DECISIONS 202), so the carried frame matches S12's last frame to its fringe rows
@@ -274,20 +315,21 @@
             flag.draw({ x: ch.x(ENTRY), y: top, a: P(t, FLAG, 0.25, 'none'), labelA: 0 })
 
             /* 13a, 13b, 13c: card 1's figure draws on as Merc names the diaphragm, breathes in on "Breathing", fades at q3 */
-            const S13F = L.FIGURE.S13
-            fig.draw({ k: S13F.k, x0: S13F.x0, y0: S13F.y0, fade: S13F.fade, legs: 0, a: 1 - P(t, Q3, 0.4, 'none'),
+            fig.draw({ k: FIG_K, x0: FIG_X0, y0: FIG_Y0, fade: FIG_FADE, legs: 0, a: 1 - P(t, Q3, 0.4, 'none'),
               draw: P(t, FIG, FIG_D, 'power1.inOut'), breath: P(t, ANS1, BREATH_D, 'sine.inOut') })
 
             /* 13c, 13d: card 2's traces stack in, rising 14 px, 0.1 s apart; on "together:" row 3 lights and its gold tick
-               scales 1.2, rows 1 and 2 dim their strokes (their names stay ink); they fade as the frame comes back */
-            const trOut = 1 - P(t, BACK, BACK_D, 'none')
+               scales 1.2, rows 1 and 2 dim their strokes (their names stay ink); their chip lands with the first and stands
+               while they show; all leave with the question's swap to q4, before the frame's labels come back */
+            const trOut = 1 - P(t, TR_OUT, TR_OUT_D, 'none')
             traces.forEach((tr, i) => {
               const t0 = TRACES + 0.1 * i
               const a = P(t, t0, TRACES_D, 'none') * trOut, dy = 14 * (1 - P(t, t0, TRACES_D, 'power2.out'))
               tr.draw({ kind: KINDS[i], t: L.TRACE.len, a, dim: i < 2 ? P(t, TOG, 0.3, 'none') : 0, lit: i === 2 ? L.lit(t, [TOG], { long: true }) : 0,
-                tickScale: i === 2 ? L.pulse(t, [TOG], 'bead') : 1, place: { s: 1, dx: 0, dy } })
+                tickScale: i === 2 ? L.pulse(t, [TOG], 'bead') : 1, place: { s: TR_S, dx: TR_DX, dy: TR_DY + dy } })
               traceNames[i].draw({ a, dy })
             })
+            trTag.draw({ alpha: P(t, TRACES, TRACES_D, 'none') * trOut })
 
             /* the quick check: the kicker, the panel with its question (each a swap) and its ring timer beside the question,
                the answers under it; 13e: each leaves up fast in turn on the beat's start */
@@ -312,8 +354,7 @@
 
             /* 13e, 13f: the Voice Mirror card under its own name, its foot easing down as its rows land */
             const drift = -RC.DRIFT * P(t, DRIFT, DRIFT_D, 'sine.inOut')
-            vmG.setAttribute('transform', `translate(0 ${drift.toFixed(3)})`)
-            restG.setAttribute('transform', `translate(0 ${drift.toFixed(3)})`)
+            cardsLayer.style.transform = `translate3d(0px, ${drift.toFixed(3)}px, 0px)`
             const foot = L.track(t, VM.panel.feet[0], FEET.slice(1).map((tf, i) => ({ at: tf, dur: 0.3, to: VM.panel.feet[i + 1], ease: 'power2.out' })))
             const lv = (k) => { const o = leaveOf(t, k); return { a: 1 - o, dy: -12 * o } }
             const live = (tIn, k, d = 0.25) => { const o = lv(k); return { a: fadeIn(t, tIn, d) * o.a, dy: o.dy } }
@@ -402,12 +443,16 @@
           const KICK = at('next')                                     // "NEXT TIME"
           const CARRY0 = at('next', 'start', -0.92), CARRY_D = 1.6    // the carry (L.TEASE.carry's own start and length)
           const LAND = CARRY0 + CARRY_D                               // the bead lands on C4 with a squash
-          const ROWS_IN = at('next', 'start', 0.38), ROWS_D = 0.6     // the faint rows fade in under it (board 541.00 to 541.60)
-          const BEADS_D = 0.5                                         // the six other beads as outlines (board 541.30 to 541.80)
+          // the faint rows and the six other beads' outlines fade in from S14's first frame (0.6 s), so the join never holds
+          // the carried bead alone (DECISIONS 219)
+          const ROWS_IN = 0, ROWS_D = 0.6
           const TW = at('twinkle')                                    // each bead lights on its note's onset (L.TEASE.onset)
           const LIGHT_D = 0.2                                         // the light comes up linearly (a 0.06 s light flagged as a pop)
           // 14b: b60
           const LINE = word('b60', 'I move')                          // the tease line
+          // its baseline 170, not the kit's 150 (DECISIONS 220): its cap top 24 px or more under "NEXT TIME"'s foot (110),
+          // still centred over the tune (x 960); the kicker keeps the frame's left margin
+          const LINE_Y = 170
           const ARROWS = word('b60', 'every'), ARROW_STEP = 0.08, ARROW_D = 0.4   // the arrows rise, one after another
           const COPY = ARROWS + 0.3, COPY_D = 7 * ARROW_STEP          // the dashed copy draws bead by bead as each arrow arrives
           const QM = COPY + COPY_D + 0.1                              // its "?" once the copy is drawn
@@ -424,13 +469,14 @@
           const arrowsG = te.beads[0].arrow.g.parentNode
           const echo = L.echoRings(world, { max: 2 })
           // the carried bead: the chrome bead S13's glyph dot grew into, on L.TEASE.carry from film time (s13-recap draws the
-          // same); it lands with a squash and settles into the first bead's outline as the other six come in
+          // same); it lands with a squash and stays filled, as it arrived, until its note lights the first bead blue under it
+          // (DECISIONS 219): it never empties to an outline
           const bead = L.bead(world, { r: 20, color: C.chrome })
           L.bead4.place(bead, null)
 
           /* ---------------------------------------------------------------- type (hud, frame-fixed) */
           const kicker = L.kicker(hud, 'Next time')
-          const line = L.label(hud, TE.LINE.text, { x: TE.LINE.x, y: TE.LINE.y, size: TE.LINE.size, anchor: 'middle' })
+          const line = L.label(hud, TE.LINE.text, { x: TE.LINE.x, y: LINE_Y, size: TE.LINE.size, anchor: 'middle' })
           const hook = TE.HOOK.map((h) => L.label(hud, h.text, { x: 960, y: h.y, size: TE.hookSize, family: 'serif', anchor: 'middle' }))
 
           /* ---------------------------------------------------------------- the hosts at 300: Merc under the tune's right
@@ -440,7 +486,7 @@
           const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...HR.tavi })
 
           const probe = { cam, te, arrowsG, echo, bead, kicker, line, hook,
-            A: { KICK, CARRY0, CARRY_D, LAND, ROWS_IN, ROWS_D, BEADS_D, TW, LIGHT_D, LINE, ARROWS, ARROW_STEP, ARROW_D, COPY, COPY_D, QM, LINE_OUT, HOOK, HOOK_OUT, SHRINK0, ROWS_OUT_D, D, T0 },
+            A: { KICK, CARRY0, CARRY_D, LAND, ROWS_IN, ROWS_D, TW, LINE_Y, LIGHT_D, LINE, ARROWS, ARROW_STEP, ARROW_D, COPY, COPY_D, QM, LINE_OUT, HOOK, HOOK_OUT, SHRINK0, ROWS_OUT_D, D, T0 },
             boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
@@ -455,12 +501,12 @@
             const mb = merc(t), tb = tavi(t)
             probe.boxes = { merc: mb, tavi: tb }
 
-            /* the carry: in flight from S13, landing on C4 with a squash, then its glossy body gives way to the bead's
-               outline (BEADS_D) as the other six come in */
+            /* the carry: in flight from S13, landing on C4 with a squash; it stays filled until its note's onset, where it
+               gives way (LIGHT_D, linear) to the first bead lighting blue under it */
             const c = L.TEASE.carry(T, T0 + CARRY0)
-            const settle = P(t, LAND, BEADS_D, 'none')
+            const handed = P(t, TW + TE.onset(0), LIGHT_D, 'none')
             const [sx, sy] = L.bead4.squash(t, LAND)
-            L.bead4.place(bead, c && settle < 1 ? { x: c.x, y: c.y, scale: c.r / 20, a: 1 - settle, sx, sy } : null)
+            L.bead4.place(bead, c && handed < 1 ? { x: c.x, y: c.y, scale: c.r / 20, a: 1 - handed, sx, sy } : null)
 
             /* the figure: the rows fade in under the bead and out as it shrinks; the beads light on the tune's onsets and
                stay lit (Merc's notes, blue); the arrows, the copy and its "?" (14b); the shrink toward the end card (14c) */
@@ -469,7 +515,7 @@
             te.draw({
               rowsA: P(t, ROWS_IN, ROWS_D, 'none') * (1 - P(t, SHRINK0, ROWS_OUT_D, 'none')),
               keep: [mb, tb].filter(Boolean),
-              beads: (i) => ({ a: i === 0 ? settle : P(t, LAND, BEADS_D, 'none'), lit: lit(i), scale: L.pulse(t, [TW + TE.onset(i)], 'bead') }),
+              beads: (i) => ({ a: i === 0 ? (handed > 0 ? 1 : 0) : P(t, ROWS_IN, ROWS_D, 'none'), lit: lit(i), scale: L.pulse(t, [TW + TE.onset(i)], 'bead') }),
               arrows: (i) => P(t, ARROWS + ARROW_STEP * i, ARROW_D, 'power2.out'),
               copy: P(t, COPY, COPY_D, 'none'),
               qA: P(t, QM, 0.25, 'none'),

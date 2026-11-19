@@ -1,0 +1,352 @@
+[
+ {
+  "t": 0,
+  "name": "first frame: the field centred (960, 540), r 1500, opaque (S1's last frame)",
+  "got": "960.00, 540.00, 1500.00, 1.000",
+  "want": "960.00, 540.00, 1500.00, 1.000",
+  "pass": true
+ },
+ {
+  "t": 2.719999999999999,
+  "name": "flight t 2.720: bead (1060.2, 639.2) r 22.1; to \"A3\" ink (alpha 0.01)",
+  "got": 632.11,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.719999999999999,
+  "name": "  staff alpha 1.00, bead foot over the top staff line by",
+  "got": -78.8,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 2.73,
+  "name": "flight t 2.730: bead (1059.9, 623.4) r 22.1; to \"A3\" ink (alpha 0.01)",
+  "got": 626.65,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.73,
+  "name": "  staff alpha 1.00, bead foot over the top staff line by",
+  "got": -63.09,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 2.73,
+  "name": "DECISIONS 176: the chart's fade-up at 2.73 (the critic's near-empty 2.73 to 3.0)",
+  "got": 0.11,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 2.774999999999999,
+  "name": "flight t 2.775: bead (1050.8, 559.2) r 22.1; to \"A3\" ink (alpha 0.02)",
+  "got": 600.4,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.774999999999999,
+  "name": "  staff alpha 0.97, bead foot over the top staff line by",
+  "got": 1.13,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 2.829999999999999,
+  "name": "flight t 2.830: bead (1024.9, 494.6) r 22.1; to \"A3\" ink (alpha 0.05)",
+  "got": 563.25,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.829999999999999,
+  "name": "  staff alpha 0.87, bead foot over the top staff line by",
+  "got": 65.72,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 2.884999999999999,
+  "name": "flight t 2.885: bead (985.8, 444.1) r 22.1; to \"A3\" ink (alpha 0.09)",
+  "got": 519.83,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.884999999999999,
+  "name": "  staff alpha 0.72, bead foot over the top staff line by",
+  "got": 116.11,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 2.939999999999999,
+  "name": "flight t 2.940: bead (937.4, 406.5) r 22.1; to \"A3\" ink (alpha 0.14)",
+  "got": 470.72,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.939999999999999,
+  "name": "  staff alpha 0.53, bead foot over the top staff line by",
+  "got": 153.68,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 2.994999999999999,
+  "name": "flight t 2.995: bead (883.0, 380.1) r 22.1; to \"A3\" ink (alpha 0.21)",
+  "got": 416.34,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.994999999999999,
+  "name": "  staff alpha 0.34, bead foot over the top staff line by",
+  "got": 180.08,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3,
+  "name": "flight t 3.000: bead (877.9, 378.2) r 22.1; to \"A3\" ink (alpha 0.22)",
+  "got": 411.23,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3,
+  "name": "  staff alpha 0.32, bead foot over the top staff line by",
+  "got": 181.97,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3,
+  "name": "DECISIONS 176: the chart's fade-up at 3.00 (the critic's near-empty 2.73 to 3.0)",
+  "got": 0.47,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.0499999999999994,
+  "name": "flight t 3.050: bead (826.0, 363.1) r 22.1; to \"A3\" ink (alpha 0.30)",
+  "got": 359.86,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.0499999999999994,
+  "name": "  staff alpha 0.16, bead foot over the top staff line by",
+  "got": 196.98,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.1049999999999995,
+  "name": "flight t 3.105: bead (769.3, 354.0) r 22.1; to \"A3\" ink (alpha 0.40)",
+  "got": 303.96,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.1049999999999995,
+  "name": "  staff alpha 0.07, bead foot over the top staff line by",
+  "got": 206.11,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.1599999999999993,
+  "name": "flight t 3.160: bead (715.3, 350.9) r 22.1; to \"A3\" ink (alpha 0.51)",
+  "got": 250.58,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.1599999999999993,
+  "name": "  staff alpha 0.02, bead foot over the top staff line by",
+  "got": 209.17,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.2149999999999994,
+  "name": "flight t 3.215: bead (665.9, 352.4) r 22.1; to \"A3\" ink (alpha 0.62)",
+  "got": 201.32,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.2149999999999994,
+  "name": "  staff alpha 0.00, bead foot over the top staff line by",
+  "got": 207.66,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.2699999999999996,
+  "name": "flight t 3.270: bead (622.1, 356.9) r 22.1; to \"A3\" ink (alpha 0.73)",
+  "got": 157.37,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.2699999999999996,
+  "name": "  staff alpha 0.00, bead foot over the top staff line by",
+  "got": 203.07,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.3000000000000003,
+  "name": "flight t 3.300: bead (600.9, 360.3) r 22.1; to \"A3\" ink (alpha 0.78)",
+  "got": 135.91,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.3000000000000003,
+  "name": "  staff alpha 0.00, bead foot over the top staff line by",
+  "got": 199.66,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.3000000000000003,
+  "name": "DECISIONS 176: the chart's fade-up at 3.30 (the critic's near-empty 2.73 to 3.0)",
+  "got": 0.89,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.3249999999999997,
+  "name": "flight t 3.325: bead (584.8, 363.5) r 22.1; to \"A3\" ink (alpha 0.83)",
+  "got": 119.46,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.3249999999999997,
+  "name": "  staff alpha 0.00, bead foot over the top staff line by",
+  "got": 196.51,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.38,
+  "name": "flight t 3.380: bead (553.9, 370.9) r 22.1; to \"A3\" ink (alpha 0.91)",
+  "got": 87.96,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.38,
+  "name": "  staff alpha 0.00, bead foot over the top staff line by",
+  "got": 189.07,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.4349999999999996,
+  "name": "flight t 3.435: bead (529.4, 378.4) r 22.1; to \"A3\" ink (alpha 0.96)",
+  "got": 62.9,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.4349999999999996,
+  "name": "  staff alpha 0.00, bead foot over the top staff line by",
+  "got": 181.55,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.49,
+  "name": "flight t 3.490: bead (510.7, 385.3) r 21.8; to \"A3\" ink (alpha 1.00)",
+  "got": 44.27,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.49,
+  "name": "  staff alpha 0.00, bead foot over the top staff line by",
+  "got": 174.84,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.545,
+  "name": "flight t 3.545: bead (497.0, 391.3) r 20.6; to \"A3\" ink (alpha 1.00)",
+  "got": 31.8,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.545,
+  "name": "  staff alpha 0.00, bead foot over the top staff line by",
+  "got": 170.08,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.5995,
+  "name": "flight t 3.599: bead (487.8, 395.8) r 17.8; to \"A3\" ink (alpha 1.00)",
+  "got": 25.42,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.5995,
+  "name": "  staff alpha 0.00, bead foot over the top staff line by",
+  "got": 168.41,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.5995,
+  "name": "last frame: bead centre and radius (s03 draws the same at its 0)",
+  "got": "487.78, 395.77, r 17.76",
+  "want": "see s03 t 0",
+  "pass": true
+ },
+ {
+  "t": 3.5995,
+  "name": "DECISIONS 176: the chart's fade-up on the last frame (the band's group; s03's first frame draws the same)",
+  "got": 1,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.6,
+  "name": "flight t 3.600: bead (487.7, 395.8) r 17.7; to \"A3\" ink (alpha 1.00)",
+  "got": 25.4,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.6,
+  "name": "  staff alpha 0.00, bead foot over the top staff line by",
+  "got": 168.41,
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 3.6,
+  "name": "last frame: bead centre and radius (s03 draws the same at its 0)",
+  "got": "487.72, 395.81, r 17.72",
+  "want": "see s03 t 0",
+  "pass": true
+ },
+ {
+  "t": 3.6,
+  "name": "DECISIONS 176: the chart's fade-up on the last frame (the band's group; s03's first frame draws the same)",
+  "got": 1,
+  "want": "info",
+  "pass": true
+ }
+]

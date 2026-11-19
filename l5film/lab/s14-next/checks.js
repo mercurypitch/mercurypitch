@@ -6,7 +6,7 @@
   const H = window.__H, sid = 's14-next'
   const S = window.__sceneProbe[sid], A = S.A, TE = L.TEASE
   const T = {
-    f0: 0, kick: A.KICK + 0.5, land: A.LAND + 0.005, beads: A.LAND + A.BEADS_D + 0.05, lit: A.TW + TE.onset(6) + 0.3, line: A.LINE + 0.3,
+    f0: 0, rowsIn: A.ROWS_IN + A.ROWS_D + 0.01, kick: A.KICK + 0.5, land: A.LAND + 0.005, held: A.TW + TE.onset(0) - 0.05, beads: A.TW + TE.onset(0) + A.LIGHT_D + 0.01, lit: A.TW + TE.onset(6) + 0.3, line: A.LINE + 0.3,
     copy: A.QM + 0.3, hook1: A.HOOK[0] + 0.35, hook2: A.HOOK[1] + 0.35, hookOut: A.HOOK_OUT + 0.31, last: A.D - 0.0005,
   }
   const root = document.getElementById(sid + '-scene')
@@ -61,6 +61,15 @@
           { name: 'nothing else: no texts, no beads, no rows yet', got: `${visTexts(0.01).length} texts; beads ${S.te.beads.map((B) => H.alpha(B.outline)).filter((a) => a > 0.01).length}`, want: '0 texts; beads 0' },
           { name: 'Merc at (1290, 840), Tavi at (1800, 840), 300', got: `${S.boxes.merc && (S.boxes.merc.x0 + S.boxes.merc.x1) / 2} ${S.boxes.merc && S.boxes.merc.x1 - S.boxes.merc.x0}; ${S.boxes.tavi && (S.boxes.tavi.x0 + S.boxes.tavi.x1) / 2}`, want: '1290 159; 1800', pass: !!S.boxes.merc && near((S.boxes.merc.x0 + S.boxes.merc.x1) / 2, 1290, 0.5) && near(S.boxes.merc.x1 - S.boxes.merc.x0, 159, 0.5) && near((S.boxes.tavi.x0 + S.boxes.tavi.x1) / 2, 1800, 0.5) }, ...common())
       }
+      if (t === T.rowsIn) {
+        const rowsA = +S.te.g.querySelector('g[mask]').getAttribute('opacity'), b = beadSeen()
+        out.push({ name: '14a: the rows and the six outlines in from S14\'s first frame over 0.6 s (DECISIONS 219)', got: `rows ${rowsA.toFixed(2)}; outlines ${S.te.beads.slice(1).map((B) => (+B.g.getAttribute('opacity')).toFixed(2)).join(' ')}; from ${A.ROWS_IN} over ${A.ROWS_D}`, want: 'rows 1.00; outlines 1.00 x6; from 0 over 0.6', pass: rowsA > 0.99 && S.te.beads.slice(1).every((B) => +B.g.getAttribute('opacity') > 0.99) && A.ROWS_IN === 0 },
+          { name: 'the first bead\'s place holds only the carried bead, filled (no outline under it)', got: `bead 0 ${(+S.te.beads[0].g.getAttribute('opacity')).toFixed(2)}; carried ${S.bead.g.getAttribute('display') === 'none' ? 'hidden' : 'a ' + (+S.bead.g.getAttribute('opacity')).toFixed(2)} at ${b[0].toFixed(1)}, ${b[1].toFixed(1)}`, want: 'bead 0 0.00; carried a 1.00', pass: +S.te.beads[0].g.getAttribute('opacity') === 0 && S.bead.g.getAttribute('display') !== 'none' && +S.bead.g.getAttribute('opacity') > 0.99 }, ...common())
+      }
+      if (t === T.held) {
+        const b = beadSeen()
+        out.push({ name: '14a: just before its note, the carried bead still filled at C4 (r 20), never an outline', got: `carried ${S.bead.g.getAttribute('display') === 'none' ? 'hidden' : 'a ' + (+S.bead.g.getAttribute('opacity')).toFixed(2)} at ${b[0].toFixed(1)}, ${b[1].toFixed(1)}, r ${b[2].toFixed(1)}; bead 0 ${(+S.te.beads[0].g.getAttribute('opacity')).toFixed(2)}`, want: 'carried a 1.00 at 420, 745, r 20; bead 0 0.00', pass: S.bead.g.getAttribute('display') !== 'none' && +S.bead.g.getAttribute('opacity') > 0.99 && near(b[0], 420, 0.6) && near(b[1], 745, 0.6) && near(b[2], 20, 0.6) && +S.te.beads[0].g.getAttribute('opacity') === 0 }, ...common())
+      }
       if (t === T.kick) out.push({ name: '14a: the kicker "NEXT TIME" at (120, 110)', got: `${inkOf(S.kicker.el).left.toFixed(1)}, ${inkOf(S.kicker.el).base.toFixed(1)}`, want: '122, 110', pass: near(inkOf(S.kicker.el).base, 110, 0.5) }, ...common())
       if (t === T.land) {
         // the bead's place (its group's translate) and its squash about its foot (a landing squash moves the centre down)
@@ -71,7 +80,7 @@
       if (t === T.beads) {
         const c = S.te.beads.map((B) => cen(B.outline))
         out.push({ name: '14a: the seven beads at x 420 + 160 i on C4 C4 G4 G4 A4 A4 G4 (y 745 745 535 535 475 475 535)', got: c.map((p) => `${p[0].toFixed(0)},${p[1].toFixed(0)}`).join(' '), want: '420,745 580,745 740,535 900,535 1060,475 1220,475 1380,535', pass: c.every((p, i) => near(p[0], TE.BEADS[i].x, 0.5) && near(p[1], TE.BEADS[i].y, 0.5)) },
-          { name: 'as chrome outlines (all seven at full), the carried bead given way', got: `${S.te.beads.map((B) => H.alpha(B.outline).toFixed(2)).join(' ')}; carried ${S.bead.g.getAttribute('display') === 'none' ? 'hidden' : 'shown'}`, want: '1.00 x7; carried hidden', pass: S.te.beads.every((B) => H.alpha(B.outline) > 0.99) && S.bead.g.getAttribute('display') === 'none' },
+          { name: 'on its note the first bead lit blue and the carried bead given way to it (LIGHT_D); the other six outlines', got: `bead 0 fill ${(+S.te.beads[0].fill.getAttribute('opacity')).toFixed(2)}; groups ${S.te.beads.map((B) => (+B.g.getAttribute('opacity')).toFixed(2)).join(' ')}; carried ${S.bead.g.getAttribute('display') === 'none' ? 'hidden' : 'shown'}`, want: 'bead 0 fill 1.00; groups 1.00 x7; carried hidden', pass: +S.te.beads[0].fill.getAttribute('opacity') > 0.99 && S.te.beads.every((B) => +B.g.getAttribute('opacity') > 0.99) && S.bead.g.getAttribute('display') === 'none' },
           { name: 'the rows in, masked round the hosts (two holes)', got: [...S.te.g.querySelectorAll('mask rect[fill="#000"]')].filter((r) => r.getAttribute('display') !== 'none').length, want: 2 }, ...common())
       }
       if (t === T.lit) {
@@ -81,8 +90,11 @@
       }
       if (t === T.line) {
         const l = inkOf(S.line.el), k = inkOf(S.kicker.el)
-        out.push({ name: '14b: the tease line, word for word, centred x 960, baseline 150', got: `${S.line.el.textContent}; ${fmt(l)}`, want: 'Merc moves every single note of ‘Twinkle, Twinkle’ up.; centred 960', pass: near((l.left + l.right) / 2, 960, 3) && near(l.base, 150, 0.5) },
-          { name: 'clear of the kicker', got: H.gap(l, k).toFixed(1), want: '>= 12', pass: H.gap(l, k) >= 12 }, ...common())
+        const tune = (TE.BEADS[0].x + TE.BEADS[6].x) / 2
+        out.push({ name: '14b: the tease line, word for word, centred over the tune (x 960), baseline 170 (DECISIONS 220)', got: `${S.line.el.textContent}; ${fmt(l)}; base ${l.base.toFixed(1)}; tune centre ${tune}`, want: 'Merc moves every single note of ‘Twinkle, Twinkle’ up.; centred 960; base 170', pass: near((l.left + l.right) / 2, 960, 3) && near(l.base, 170, 0.5) },
+          { name: 'its ink top (caps and quotes) 24 px or more under "NEXT TIME"\'s foot', got: `kicker foot ${k.bottom.toFixed(1)}, line top ${l.top.toFixed(1)}: ${(l.top - k.bottom).toFixed(1)}`, want: '>= 24', pass: l.top - k.bottom >= 24 },
+          { name: 'the kicker at the frame\'s left margin (x 120)', got: k.left.toFixed(1), want: '120 to 124', pass: k.left >= 119 && k.left <= 125 },
+          { name: 'over the dashed copy (its top) by 12 px or more', got: (Math.min(...S.te.beads.map((B) => R(B.copy).top)) - l.bottom).toFixed(1), want: '>= 12', pass: Math.min(...S.te.beads.map((B) => R(B.copy).top)) - l.bottom >= 12 }, ...common())
       }
       if (t === T.copy) {
         const cc = S.te.beads.map((B) => cen(B.copy)), q = inkOf(S.te.g.querySelector('text'))

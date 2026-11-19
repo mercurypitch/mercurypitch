@@ -614,8 +614,11 @@ fade with the ring, and the band, Merc's line and "Nothing listens" stay **[D-01
   comfortable." Outfit 500 34, baseline 665 (519.09); "Sore, hoarse or unwell today? Just listen
   along." 710 (520.81); "Free, no account: mercurypitch.com/mirror" Outfit 600 40, 765, the address
   underlined at y 777 (524.26; the underline 525.55); under the card, "Ten minutes, gently, most
-  days." and "Missed a day? Just come back." Inter 34, ink-2, x 270, baselines 822 and 862 (527.40;
-  both end before x 820).
+  days. Missed a day? Just come back." as one line, Inter 30, ink-2, x 270 to 1100, baseline 820, its
+  ink y 797 to 827 (13 px over the floor horizon, 20 px under the panel's last foot) (527.40) **[E-01 fix: 223]**.
+  Since the fix round the card closes up 13 px under its glyph rows: the readout at baselines 523,
+  560, 597; "Keep" 654; "Sore" 699; "Free" 752, its underline 764; the panel's feet 300, 360, 420,
+  480, 617, 674, 719, 777 (`L.RECAP.VM`) **[E-01 fix: 223]**; "Voice Mirror" lands 0.4 s after the panel.
 - **Rest card** (13g): panel x 1130 to 1690, y 250 to 600 (Merc's keep-out from y 628; Tavi's from
   x 1700); text from x 1160: "Felt uncomfortable, or listened" / "along today?" Outfit 500 28, ink-2,
   baselines 296 and 332 (528.01); "Rest today" serif italic 72, ink, 416 (530.59); "Voice Mirror
@@ -623,6 +626,15 @@ fade with the ring, and the band, Merc's line and "Nothing listens" stay **[D-01
   "mercurypitch.com/mirror" Outfit 600 36, 566, underlined at y 576 (535.77).
 - **The drift** (card): both cards and their lines move up 14 px together, 537.92 to 539.92,
   sine.inOut (whole-pixel steps are not allowed: draw at sub-pixel positions).
+
+- **Group E's fix round** **[E-01 fix: 223]**: the recap's figure at k 0.9 (x 1300.5 to 1489.5, crown
+  y 63, masked by 531) and its traces at 1.2 times (x 1136 to 1688, centres 170, 314, 458; names
+  Outfit 30 right-aligned 1116) with their ILLUSTRATION chip (x 1417 to 1688, y 62 to 102), leaving
+  with them before card 3's chip lands; the band at 20 % under cards 1 and 2, full for card 3. Card
+  3's redraw from "settles" lasts min(2.4, the cascade - 0.5 - "settles"), so the answer holds
+  0.5 s; the clean break's cascade starts at `break` + 0.2, the kicker, panel, answer and frame
+  0.07 s apart, 0.3 s each, the recap gone before hop 1's apex. S14's rows and outlines fade in
+  from its first frame over 0.6 s; the carried bead stays filled until its note lights it.
 
 ### The tease and the end card
 
@@ -635,7 +647,7 @@ fade with the ring, and the band, Merc's line and "Nothing listens" stay **[D-01
   copy, six rows up (y - 180): `L.GUESS` outlines at (420, 565), (580, 565), (740, 355), (900,
   355), (1060, 295), (1220, 295), (1380, 355); its "?" Outfit 600 64, ink-2, x 1430, baseline 375;
   the rising arrows 1.5 px chrome at 40 % from each bead's top to its copy's bottom. The tease line
-  Outfit 600 44, ink, centred, baseline 150 (546.23; leaves 550.05 to 550.35); the hook serif italic
+  Outfit 600 44, ink, centred, baseline 170 (its ink 27 px under "NEXT TIME"'s foot) **[E-01 fix: 223]** (546.23; leaves 550.05 to 550.35); the hook serif italic
   60, ink, centred, baselines 130 (550.50) and 200 (553.34).
 - **The end card** (S15): the tease figure (beads, copy, "?") on `x' = 1210 + 0.45 (x - 400)`,
   `y' = 150 + 0.45 (y - 255)`, so in x 1210 to 1660, y 150 to 380; the lockup

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <!-- Kit lab: two matched cuts, each between two scene roots in one page, as the film has them (HANDOFFS
+         § The cuts [kit-01: 6]; LAB-CHECKS 2). 0 to 2 s "S6": the push F0 to F-gauge (0.2 to 1.4 s,
+         shortened), the gauge at rest. The cut at 2.0 to "S7": its own room at F0 under L.roomCut (the room as
+         S6 left it, at F-gauge, crossfading to rest over 0.3 s), the gauge carried on F-gauge's pixels
+         (ga.place(L.MIXUP.CUT)). 4 to 6 s "S12": the push F0 to F-turn (4.2 to 5.3 s), the hold frame with
+         Merc's line. The cut at 6.0 to "S13": the frame carried at L.RECAP.FROM (F-turn's pixels at F0), the
+         room crossfading from F-turn. The dust is drawn from one clock in every root, as from film time. -->
+    <div id="kit-cuts" data-composition-id="kit-cuts" data-start="0" data-duration="8" data-width="1920" data-height="1080">
+      <div class="scene" id="kit-cuts-a"></div>
+      <div class="scene" id="kit-cuts-b"></div>
+      <div class="scene" id="kit-cuts-c"></div>
+      <div class="scene" id="kit-cuts-d"></div>
+      <script>
+        ;(function () {
+          const ID = 'kit-cuts', D = 8
+          const C = L.C, G = L.GAUGE
+          const make = (sfx, framing) => {
+            const root = document.getElementById(ID + '-' + sfx)
+            const room = L.room(root, {})
+            const world = L.stage(room.mid), hud = L.stage(room.hud)
+            const dust = L.filmDust(room.near)
+            return { root, room, world, hud, dust }
+          }
+          const A = make('a'), B = make('b'), Cc = make('c'), Dd = make('d')
+          for (const s of [A, B, Cc, Dd]) L.text(s.hud, 'kit-cuts: the room across a matched cut (cuts at 2.00 and 6.00)', { x: 24, y: 1060, size: 20, family: 'mono', weight: 500, fill: C.ink2, opacity: 1 })
+          // S6: the gauge in the world at F0, the camera pushed to F-gauge
+          const camA = L.frameRig(A.room, { from: 'F0' }); camA.to(0.2, 1.2, 'F-gauge', 'power2.inOut')
+          const gaA = L.gauge(A.world)
+          // S7: the gauge kept on F-gauge's pixels at F0, the room crossfading from F-gauge
+          const camB = L.frameRig(B.room, { from: 'F0' })
+          const gaB = L.gauge(B.world); gaB.place(L.MIXUP.CUT)
+          const cutB = L.roomCut(B.room, { from: 'F-gauge', at: 0 })
+          // S12: the hold frame in the world at F0, pushed to F-turn
+          const camC = L.frameRig(Cc.room, { from: 'F0' }); camC.to(4.2, 1.1, 'F-turn', 'power2.inOut')
+          const chC = L.bandChart(Cc.world, L.TURN.FRAME)
+          // S13: the frame at F-turn's pixels (L.RECAP.FROM) at F0
+          const camD = L.frameRig(Dd.room, { from: 'F0' })
+          const chD = L.bandChart(Dd.world, { ...L.RECAP.FROM, strip: null })
+          const cutD = L.roomCut(Dd.room, { from: 'F-turn', at: 0 })
+          const gaugeState = { band: { ...G.SMALL, lw: 3 }, open: 1, cursor: null, drawn: 10, gold: G.GOLD.loud, goldDraw: 1, hatch: 1 }
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const on = [t < 2, t >= 2 && t < 4, t >= 4 && t < 6, t >= 6]
+            ;[A, B, Cc, Dd].forEach((s, i) => { s.root.style.opacity = on[i] ? '1' : '0' })
+            if (on[0]) { camA.apply(t); A.dust(t); gaA.draw(gaugeState) }
+            if (on[1]) { camB.apply(t - 2); cutB.draw(t - 2, t); B.dust(t); gaB.draw(gaugeState) }
+            if (on[2]) { camC.apply(t); Cc.dust(t); chC.draw({ merc: { a: 1 } }) }
+            if (on[3]) { camD.apply(t - 6); cutD.draw(t - 6, t); Dd.dust(t); chD.draw({ merc: { a: 1, w: L.RECAP.mercW(0) } }) }
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+
+          const R = (el) => el.getBoundingClientRect()
+          const frameOf = (ga) => R(ga.g.children[3].querySelector(':scope > rect'))
+          const bandOf = (ch) => R(ch.g.querySelector('.band rect'))
+          const snap = {}
+          window.__kitProbe = window.__kitProbe || {}
+          window.__kitProbe[ID] = {
+            times: [1.9667, 2.0, 2.15, 2.3333, 5.9667, 6.0, 6.3333],
+            check(t) {
+              if (t === 1.9667) { snap.g = frameOf(gaA); return [] }
+              if (t === 5.9667) { snap.c = bandOf(chC); return [] }
+              if (t === 2.0 || t === 6.0) {
+                const a = t === 2.0 ? snap.g : snap.c, b = t === 2.0 ? frameOf(gaB) : bandOf(chD)
+                const room = t === 2.0 ? B.room : Dd.room
+                return [{ name: `cut ${t}: the carried object holds its pixels (left)`, got: b.left, want: a.left }, { name: `cut ${t}: top`, got: b.top, want: a.top }, { name: `cut ${t}: right`, got: b.right, want: a.right }, { name: `cut ${t}: foot`, got: b.bottom, want: a.bottom },
+                  { name: `cut ${t}: the first frame shows the outgoing room (ghost 1, rest 0)`, got: `${room.near.nextSibling && (t === 2 ? cutB : cutD).ghost.near.style.opacity} / ${room.near.style.opacity}`, want: '1.000 / 0.000', pass: +(t === 2 ? cutB : cutD).ghost.near.style.opacity === 1 && +room.near.style.opacity === 0 }]
+              }
+              if (t === 2.15) return [{ name: 'cut 2.0 + 0.15 s: halfway through the crossfade', got: +cutB.ghost.far.style.opacity, want: 0.5, tol: 0.05 }]
+              const cut = t < 4 ? cutB : cutD
+              return [{ name: `cut + 0.33 s: the outgoing room gone (ghost ${t < 4 ? 'S7' : 'S13'})`, got: +cut.ghost.under.style.opacity, want: 0, tol: 0.001 }]
+            },
+          }
+        })()
+      </script>
+    </div>
+  </body>
+</html>

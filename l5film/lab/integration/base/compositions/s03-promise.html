@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s03-promise" data-composition-id="s03-promise" data-start="0" data-duration="10.470" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s03-promise -->
+      <video id="s03-promise-m-orange" data-merc="m-orange" class="clip" muted playsinline src="assets/merc/m-orange-s03-merc.webm" data-start="9.073" data-duration="1.434" data-media-start="0.017"></video>
+      <video id="s03-promise-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m-orange-s03-merc.webm" data-start="9.073" data-duration="1.434" data-media-start="0.017"></video>
+      <div class="scene" id="s03-promise-scene"></div>
+      <script>
+        ;(function () {
+          // S3, the promise (STORYBOARD 3a to 3c; HANDOFFS § The cuts S2 to S3 and S3 to S4, § Camera moves). The
+          // title's bead lands on A3 at the plot's left end, turns amber, sends one echo ring and becomes the head of
+          // Merc's line, which draws on to the plot's end; the truck right (160 px) carries the promise from a note's
+          // start to its ten seconds: "what your diaphragm does" with the strip's outline, "breathe in low · start
+          // easily" with a tick and the line's first 120 px glowing, "a comfortable note · 10 s" with a playhead
+          // sweeping the band; the labels leave and Tavi leaps in from the right. Every time is a cue, a word or a
+          // duration.
+          const SID = 's03-promise'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const C = L.C, P = L.prog, clamp = L.clamp, lerp = L.lerp, f2 = L.f2, TT = L.TITLE
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: false })
+          const world = L.stage(room.mid)
+          const dust = L.filmDust(room.near)
+
+          /* ---------------------------------------------------------------- anchors */
+          // film time: the chart's fade-up, 0.2 s before the bead lifts off (from s02; DECISIONS 176)
+          const FADE_UP = L.cue('title', 'start', TT.LIFT - 0.2)
+          const LAND = L.cue('title', 'start', TT.LIFT + TT.FLY) - T0 // the bead lands on A3 (scene time)
+          const DRAW = 0.6                                            // Merc's line draws on from the bead (power2.out)
+          const TRUCK = LAND + DRAW, TRUCK_END = at('o3', 'start', -0.3)
+          const DIA = word('b4', 'what')                              // "what your diaphragm does"
+          const BREATHE = word('b4', 'breathe')                       // "breathe in low · start easily"
+          const START = word('b4', 'start')                           // the tick at the line's start
+          const HOLD = word('b4', 'hold')                             // "a comfortable note · 10 s"
+          const SWEEP = word('b4', 'comfortable'), SWEEP_D = 2.0      // the playhead sweeps the band
+          const LEAVE = at('b4', 'end', -0.1)                         // the three labels leave up fast, 0.1 s apart
+          const LEAP = at('o3', 'start', -1.38)                       // Tavi's celebrate leap (merc/PASSES.md: 1.38 s before o3)
+
+          /* ---------------------------------------------------------------- the camera: the truck right */
+          const cam = L.frameRig(room, { from: 'F-promise-a' })
+          cam.to(TRUCK, TRUCK_END - TRUCK, 'F-promise-b', 'power1.inOut')
+
+          /* ---------------------------------------------------------------- Tavi, from the right (screen space) */
+          const leapAt = window.MERC_ROOTS && window.MERC_ROOTS['m-orange-s03'] ? window.MERC_ROOTS['m-orange-s03'].t0 - T0 : LEAP
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...L.HOSTS.corners.tavi, leap: { at: leapAt, from: 'right' } })
+          const top = L.stage(room.top)
+
+          /* ---------------------------------------------------------------- the band chart (world, S1's place) */
+          const ch = L.bandChart(world, L.CHART.S1)
+          const lab = { A3: ch.label('A3'), level: ch.label('level') }
+          const band = ch.band()
+          const PX0 = ch.G.x0, PX1 = ch.G.x1
+          const pre = (el) => ch.g.insertBefore(el, ch.merc.g)          // under Merc's line, over the band
+          // the band's fill spreading behind the line as it draws (an amber overlay, eased off once it is drawn)
+          const spread = pre(L.svg('rect', { x: PX0, y: f2(band.top), height: f2(band.bot - band.top), width: 0, fill: C.amber, 'fill-opacity': 0 }))
+          // the playhead's light: the band's fill from 12 to 24 % behind the playhead, easing back after it
+          const phId = SID + '-ph'
+          const phGrad = L.svg('linearGradient', { id: phId, gradientUnits: 'userSpaceOnUse', x1: 0, x2: 1, y1: 0, y2: 0 }, L.svg('defs', {}, ch.g))
+          const phStops = [0, 1].map((o) => L.svg('stop', { offset: o, 'stop-color': C.amber, 'stop-opacity': 0 }, phGrad))
+          const phLight = pre(L.svg('rect', { y: f2(band.top), height: f2(band.bot - band.top), x: PX0, width: 0, fill: `url(#${phId})` }))
+          // the first 120 px of Merc's line glowing (3b): a wider amber stroke under his line
+          const startGlow = pre(L.svg('path', { d: `M${PX0} ${ch.G.y0}L${PX0 + 120} ${ch.G.y0}`, fill: 'none', stroke: C.amber, 'stroke-width': 14, 'stroke-linecap': 'round', 'stroke-opacity': 0 }))
+          // the line's head while it draws: the landed bead, now the 4 px line's amber head
+          const head = L.svg('circle', { r: 3.5, fill: C.amber, opacity: 0 }, ch.g)
+          // the tick at the line's start (4 px, the band's height) and the playhead (3 px, the band's height): chrome
+          const tick = L.svg('rect', { x: PX0 - 2, y: f2(band.top), width: 4, height: f2(band.bot - band.top), fill: C.chrome, opacity: 0 }, ch.g)
+          const playhead = L.svg('rect', { y: f2(band.top), width: 3, height: f2(band.bot - band.top), fill: C.chrome, opacity: 0 }, ch.g)
+          // the strip's rounded outline, drawn round in chrome on "what your diaphragm does" and dimmed back
+          const SO = { x: PX0 - 10, y: ch.G.strip - 40, w: PX1 - PX0 + 20, h: 80 }
+          const stripOutline = L.svg('rect', { x: SO.x, y: SO.y, width: SO.w, height: SO.h, rx: 40, fill: 'none', stroke: C.chrome, 'stroke-width': 2, pathLength: 1, 'stroke-dasharray': '0 1', opacity: 0 }, ch.g)
+          // the promise's three labels (world: they ride the truck)
+          const LBL = { size: 40, weight: 600 }
+          // under "level" (its baseline 778), left-aligned with it at the plot's left end (DECISIONS 174): baseline 836
+          const diaphragm = L.label(ch.gLabels, 'what your diaphragm does', { ...LBL, x: PX0, y: ch.G.strip + 146 })
+          const breathe = L.label(ch.gLabels, 'breathe in low · start easily', { ...LBL, x: PX0, y: band.top - 22 })
+          const comfortable = L.label(ch.gLabels, 'a comfortable note · 10 s', { ...LBL, x: PX1, y: band.top - 22, anchor: 'end' })
+          const rings = L.echoRings(top, {})
+
+          /* ---------------------------------------------------------------- the bead in flight (screen space, film time) */
+          const bead = L.bead(top, { r: 22, color: C.chrome })
+          bead.halo.setAttribute('r', 38)
+
+          const probe = { cam, ch, lab, bead, diaphragm, breathe, comfortable, A: { LAND, TRUCK, TRUCK_END, LEAVE, DIA, D }, boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            dust(T)
+            probe.boxes = { tavi: tavi(t) }
+            room.setFloor(P(t, leapAt, 0.3))
+
+            /* the chart: its fade-up from s02 runs on to the landing; Merc's line draws on from the bead */
+            const back = P(T, FADE_UP, TT.FLY, 'sine.inOut')
+            const md = P(t, LAND, DRAW, 'power2.out')
+            const sweepU = P(t, SWEEP, SWEEP_D, 'sine.inOut')
+            ch.draw({ band: { a: back }, merc: { draw: md }, strip: { a: back } })
+            lab.A3.draw({ a: back }); lab.level.draw({ a: back })
+            const hx = PX0 + (PX1 - PX0) * md
+            spread.setAttribute('width', f2(hx - PX0))
+            spread.setAttribute('fill-opacity', (0.07 * (t >= LAND ? 1 : 0) * (1 - P(t, LAND + DRAW, 0.6))).toFixed(3))
+            head.setAttribute('cx', f2(hx)); head.setAttribute('cy', ch.G.y0)
+            head.setAttribute('opacity', (t >= LAND ? 1 - P(t, LAND + DRAW - 0.1, 0.3) : 0).toFixed(3))
+
+            /* 3a: "what your diaphragm does" under the strip's left half; the strip's rounded outline draws round */
+            const leave = (k) => L.fade(t, null, LEAVE + 0.1 * k, { upFast: true })
+            const f0 = leave(0), f1 = leave(1), f2_ = leave(2)
+            diaphragm.life(t, DIA, LEAVE, { upFast: true })
+            const so = P(t, DIA + 0.05, 0.5, 'power2.inOut')
+            stripOutline.setAttribute('stroke-dasharray', `${so.toFixed(4)} 1`)
+            stripOutline.setAttribute('opacity', ((so > 0 ? 1 : 0) * lerp(1, 0.3, P(t, DIA + 0.75, 0.6)) * f0.a).toFixed(3))
+            stripOutline.setAttribute('transform', f0.dy ? `translate(0 ${f2(f0.dy)})` : '')
+
+            /* 3b: "breathe in low · start easily"; on "start" the tick stands and the line's first 120 px glow */
+            breathe.life(t, BREATHE, LEAVE + 0.1, { upFast: true })
+            tick.setAttribute('opacity', (P(t, START, 0.3, 'power2.out') * f1.a).toFixed(3))
+            startGlow.setAttribute('stroke-opacity', (lerp(0.55, 0.3, P(t, START + 0.4, 0.8)) * P(t, START, 0.3, 'power2.out') * f1.a).toFixed(3))
+
+            /* 3c: "a comfortable note · 10 s"; on "comfortable" the playhead sweeps the band over 2.0 s */
+            comfortable.life(t, HOLD, LEAVE + 0.2, { upFast: true })
+            const phx = PX0 + (PX1 - PX0) * sweepU
+            const phA = P(t, SWEEP, 0.15) * (1 - P(t, SWEEP + SWEEP_D, 0.3)) * f2_.a
+            playhead.setAttribute('x', f2(phx - 1.5))
+            playhead.setAttribute('opacity', phA.toFixed(3))
+            const trail = 360                                          // the light eases back over 360 px behind the head
+            phLight.setAttribute('x', f2(PX0)); phLight.setAttribute('width', f2(Math.max(0, phx - PX0)))
+            phGrad.setAttribute('x1', f2(phx - trail)); phGrad.setAttribute('x2', f2(phx))
+            const lightA = 0.136 * (t >= SWEEP ? 1 : 0) * (1 - P(t, SWEEP + SWEEP_D, 0.6))
+            phStops[0].setAttribute('stop-opacity', '0')
+            phStops[1].setAttribute('stop-opacity', lightA.toFixed(3))
+
+            /* the bead: in flight from the title (L.TITLE.flight, film time), shrinking to the line's head and turning
+               amber over its last 0.3 s; it lands on A3 and sends one echo ring */
+            const fl = TT.flight(T)
+            if (fl && !fl.landed) {
+              bead.setColor(L.mixHex(C.chrome, C.amber, fl.amber))
+              L.bead4.place(bead, { x: fl.x, y: fl.y, scale: fl.r / 22, a: 1 })
+            } else L.bead4.place(bead, null)
+            const [lx, ly] = cam.map(PX0, ch.G.y0, t)
+            rings.draw(t, [{ t: LAND, x: lx, y: ly, r: 22 }])
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

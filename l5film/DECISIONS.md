@@ -1704,3 +1704,18 @@ numbered 132 to 135 too, are 160 to 163 now, so no number appears twice).
      - The first line now shares a row with the gauge's "one 10-second note" (96 px apart, white
        against the axis's grey, the axis label under its ticks): accepted as two separate things;
        the owner's final polish may right-align the axis label to the axis's end.
+
+## The lead's call on group E's fix round, 19 November
+
+223. **Group E's fix round is accepted** (no second critic, the owner's rule; the lead looked at the
+     recap's fill at 3.27 and 9.15 and the whole cards at 60.47, and read the numbers). The answer
+     holds 0.50 s before the cascade (redraw 1.935 s on the scratch voice), the recap is gone 0.21
+     s before hop 1's apex, "Voice Mirror" lands 0.4 s after the panel (the empty stage before the
+     panel 1.51 s, from 1.73); the ten line is one line inside the card's width, 20 px under the
+     panel's foot and 13 px over the floor; the figure 4.3 % and the traces 10.5 % of the frame,
+     with their chip, no frame holding two chips; the carried bead stays filled until lit; the
+     tease line 27 px under the kicker. Probes 229, 107 and 48, root check 0 errors, the cuts on
+     `recap`, `next` and `end` unchanged. Accepted as built: the trace names stay at 30 px (36 would
+     come within 8 px of the panel); the tease line's 170 is local to s14 (the kit's
+     `L.TEASE.LINE.y` moves to 170 at integration, and s14 drops its local value). HANDOFFS
+     follows ([E-01 fix: 223]).

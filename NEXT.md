@@ -4535,3 +4535,15 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   changes live (atomic renames) and runs the proofs. Then part 2 (production builder) and critic
   F-01.
 - Heavy now: group E fix + kit builder (staged).
+
+## 15:31 UTC, 19 Nov
+- GROUP E FIX ROUND HANDED BACK and ACCEPTED (DECISIONS 223; lead looked at item3-fill and
+  item2-card-whole): answer held 0.50 s, "Voice Mirror" panel + 0.4, ten line one line inside the
+  card (L.RECAP.VM closed up 13 px), recap fill 4.3 % / 10.5 % with the traces' chip, carried bead
+  filled until lit, tease line 27 px under the kicker; probes 229/107/48, root check 0 errors.
+  HANDOFFS ([E-01 fix: 223]; backup $S/handoffs-pre223.md), LEDGER E-01 filled.
+- KIT BUILDER TOLD "group E is done" (applies its staged integration part 1 live, plus
+  L.TEASE.LINE.y 170 and dropping s14's local LINE_Y).
+- Heavy now: the kit builder only. NEXT: its hand-back -> lead checks -> integration part 2 (the
+  production builder resumed with briefs/l5-integration.md part 2: render film-draft-01, measure,
+  cuts table) -> critic F-01 (briefs/l5-critic-F-01.md).

@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <!-- Kit lab: the turn (turn.js, with chart.js and frames.js; HANDOFFS § The hold frame at the right half,
+         § The turn). 0 to 1 s the hold frame, its labels and the ring land, with the care block (frame-fixed,
+         left); 1 to 6 s the viewer's ten seconds at double speed: the arc, the counter, the playhead, the
+         ring breathing; 6 to 6.3 s the care block thins; 6.4 to 7.5 s the push to F-turn (1.1 s,
+         power2.inOut), the frame and ring growing while the care block holds still; the phase row and its two
+         lines leave up with the thinning (6.0 to 6.3 s), before the push (critic-kit-01 item 4). -->
+    <div id="kit-turn" data-composition-id="kit-turn" data-start="0" data-duration="8.5" data-width="1920" data-height="1080">
+      <div class="scene" id="kit-turn-root"></div>
+      <script>
+        ;(function () {
+          const ID = 'kit-turn', D = 8.5
+          const C = L.C, T = L.TURN
+          const root = document.getElementById(ID + '-root')
+          const room = L.room(root, {})
+          const world = L.stage(room.mid), hud = L.stage(room.hud)
+          L.text(hud, 'kit-turn: the hold frame, the ring and the care block', { x: 24, y: 1060, size: 20, family: 'mono', weight: 500, fill: C.ink2, opacity: 1 })
+          const ch = L.bandChart(world, T.FRAME)
+          const br = L.bracket(world, { x1: T.BRACKET.x0, x2: T.BRACKET.x1, y: T.BRACKET.y, dir: 'up', tick: T.BRACKET.tick })
+          const w = []
+          w.push(L.label(world, '0', { x: 1000, y: 322, size: 30, fill: C.ink2 }), L.label(world, '10 s', { x: 1640, y: 322, size: 30, fill: C.ink2, anchor: 'end' }))
+          for (const v of T.VOICES) { L.svg('circle', { cx: v.dot + 6, cy: T.voicesY - 10, r: 6, fill: v.color }, world); w.push(L.label(world, v.text, { x: v.x, y: T.voicesY, size: 30 })) }
+          w.push(L.label(world, T.NOTHING.text, T.NOTHING), L.label(world, T.BREATHE_IN.text, T.BREATHE_IN))
+          const rg = L.ring(world, T.RING)
+          const ph = L.playhead(world)
+          const rowEls = T.ROW.texts.map((s, i) => L.text(world, s, { x: T.ROW.x, y: T.ROW.y[i], size: i ? 30 : 28, family: i ? 'outfit' : 'mono', weight: i ? 500 : 500, fill: i ? C.ink : C.ink2, anchor: 'middle', tracking: i ? 0 : 0.18, upper: !i, opacity: 1 }))
+          // the care block, frame-fixed
+          const K = T.CARE
+          const title = L.label(hud, K.title.text, K.title)
+          const icon = L.icon(hud, 'leaf', K.icon)
+          const thin = [L.label(hud, K.comfort[0].text, K.comfort[0]), L.label(hud, K.comfort[1].text, K.comfort[1]), ...K.reasons.map((r) => L.label(hud, r.text, { x: 310, y: r.y, size: K.reasonSize, weight: K.reasonWeight, fill: C.ink2 })), L.label(hud, K.listening.text, K.listening)]
+          const stop = K.stop.map((s) => L.label(hud, s.text, { x: 260, y: s.y, size: K.stopSize }))
+          const doc = K.doctorSmall.y.map((y) => L.text(hud, '', { x: 260, y, size: K.doctorSmall.size, family: 'inter', weight: 400, fill: C.ink2, opacity: 1 }))
+          L.afterFonts(() => L.TURN.breakLines(hud, K.doctor, K.doctorSmall).forEach((s, i) => { if (doc[i]) doc[i].textContent = s }))
+          const cam = L.frameRig(room, { from: 'F0' })
+          cam.to(6.4, 1.1, 'F-turn', 'power2.inOut')
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            cam.apply(t)
+            const a = L.prog(t, 0, 0.4)
+            const hold = L.clamp((t - 1) * 2, 0, 10)
+            ch.draw({ a, merc: { a: 1 } })
+            br.draw(a, a)
+            w.forEach((l) => l.draw({ a }))
+            const n = Math.min(10, Math.floor(hold) + 1)
+            rg.draw({ a, draw: L.prog(t, 0, 0.8), arc: hold / 10, tick: L.env(t, 1, 0.1, 0.1, 0.3), scale: 1 + 0.04 * (1 - Math.cos(2 * Math.PI * hold / 5)), words: [{ text: t < 1 ? 'Breathe' : 'Sing', a: 1 }], counts: t < 1 ? [] : [{ text: String(n), a: 1 }] })
+            ph.draw({ x: T.playhead(hold), y0: 210, y1: 280, a: t >= 1 ? 1 : 0 })
+            // the phase row and its two lines leave up fast with the care block's thinning, before the push
+            // (board v3: 422.30 to 422.60), so nothing rides the push into the caption band
+            const rowOut = L.prog(t, 6.0, 0.3, 'power3.in')
+            rowEls.forEach((e) => { e.setAttribute('opacity', (a * (1 - rowOut)).toFixed(3)); e.setAttribute('transform', `translate(0 ${L.f2(-16 * rowOut)})`) })
+            title.draw({ a }); icon.setAttribute('opacity', (a * (1 - L.prog(t, 6.0, 0.3))).toFixed(3))
+            thin.forEach((l) => l.draw({ a: a * (1 - L.prog(t, 6.0, 0.3)) }))
+            stop.forEach((l) => l.draw({ a }))
+            doc.forEach((d) => d.setAttribute('opacity', a.toFixed(3)))
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+
+          const R = (el) => el.getBoundingClientRect()
+          const track = () => R(rg.g.querySelector('circle'))
+          window.__kitProbe = window.__kitProbe || {}
+          window.__kitProbe[ID] = {
+            times: [5.9, 7.6],
+            check(t) {
+              const tr = track(), b = R(ch.g.querySelector('.band rect'))
+              if (t === 5.9) return [
+                { name: 'ring centre (1320, 590): x', got: tr.x + tr.width / 2, want: 1320, tol: 2 }, { name: 'ring centre y', got: tr.y + tr.height / 2, want: 590 }, { name: 'ring r 160 (x 1.04 breathing at 9.8 s)', got: tr.width / 2 / (1 + 0.04 * (1 - Math.cos(2 * Math.PI * 9.8 / 5))), want: 160 },
+                { name: 'frame band x 1000 to 1640 (left)', got: b.left, want: 1000 }, { name: 'frame band right', got: b.right, want: 1640 }, { name: 'frame band y 210 to 280 (top)', got: b.top, want: 210 }, { name: 'frame band foot', got: b.bottom, want: 280 },
+                { name: 'playhead at 9.8 s: x 1000 + 64 t', got: R(ph.g).x + 1.5, want: 1627.2 },
+                { name: '"Your turn." x 260', got: +title.el.getAttribute('x'), want: 260, tol: 0.5 }, { name: '"Your turn." baseline 200', got: +title.el.getAttribute('y'), want: 200, tol: 0.5 },
+                { name: 'care icon box top-left (260, 236): x (its 36 px box; the leaf\'s ink starts at ' + R(icon).left.toFixed(1) + ')', got: +/translate\(([-\d.]+)/.exec(icon.getAttribute('transform'))[1], want: 260, tol: 0.5 }, { name: 'care icon box y (ink from ' + R(icon).top.toFixed(1) + ')', got: +/translate\([-\d.]+[ ,]+([-\d.]+)/.exec(icon.getAttribute('transform'))[1], want: 236, tol: 0.5 },
+                { name: 'doctor lines broken at 700 px (count)', got: doc.filter((d) => d.textContent).length, want: doc.filter((d) => d.textContent).length, pass: doc.every((d) => !d.textContent || d.getComputedTextLength() <= 700) },
+              ]
+              return [
+                { name: 'F-turn: ring centre (1376, 636): x', got: tr.x + tr.width / 2, want: 1376 }, { name: 'F-turn: ring centre y', got: tr.y + tr.height / 2, want: 636 }, { name: 'F-turn: ring r 224', got: tr.width / 2, want: 224 },
+                { name: 'F-turn: frame x 928', got: b.left, want: 928 }, { name: 'F-turn: frame right 1824', got: b.right, want: 1824 }, { name: 'F-turn: band 104', got: b.top, want: 104 }, { name: 'F-turn: band foot 202', got: b.bottom, want: 202 },
+                { name: 'care block holds still through the push ("Your turn." box left)', got: R(title.el).left, want: 260, tol: 1 },
+                { name: 'the phase row and its lines are gone before the push lands', got: Math.max(...rowEls.map((e) => +e.getAttribute('opacity'))), want: 0, tol: 0.001 },
+                { name: 'nothing of the turn visible under y 880 (the caption band) at F-turn', got: Math.max(tr.bottom + 7, b.bottom), want: '<= 880', pass: tr.bottom + 7 <= 880 },
+              ]
+            },
+          }
+        })()
+      </script>
+    </div>
+  </body>
+</html>
