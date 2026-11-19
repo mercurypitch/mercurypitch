@@ -83,6 +83,7 @@
             L.label(world, 'Singers breathe in', { x: 1110, y: 720, size: 48, family: 'serif' }),
             L.label(world, 'different ways.', { x: 1110, y: 770, size: 48, family: 'serif' }),
           ]
+          for (const l of singers) l.el.setAttribute('data-layout-allow-overlap', '')   // one label's two lines, 50 px apart
           // the arrow up the back, heel to crown (x 925, y 830 to 150), and the level mark over the shoulder: 26 px at
           // y 289, x 932 to 958 (HANDOFFS: 40 px at y 290; at 40 px its right end runs into the neck's back outline at
           // x 967 and its left end comes within 8 px of the arrow; here 5.5 px from the arrow's stroke, 6 px from the neck)

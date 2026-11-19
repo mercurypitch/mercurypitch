@@ -4352,7 +4352,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - HEAVY QUEUE (two at a time): now polish-2 + group C. Next free slot -> group B fix round
   (SendMessage to the B builder, brief l5-fix-B-01.md). When C hands back -> critic C-01 (text agent,
   any time) and group D (heavy). Then the passes step (heavy), C's fix round, then group E.
-- 10:55: critic briefs ready for C, D and E ($S/briefs/l5-critic-{C,D,E}-01.md, from A-01's). The
+- 10:50: critic briefs ready for C, D and E ($S/briefs/l5-critic-{C,D,E}-01.md, from A-01's). The
   film's sources (433 text and code files, 5 MB, no private details) now go to feat/lead-notes with
   every push-notes (bin/push-notes lists l5film/ minus media, plus briefs/l5-*). Polish-2 builder
   has all 8 items committed (8 commits on feat/phone-polish-2), still walking tours.

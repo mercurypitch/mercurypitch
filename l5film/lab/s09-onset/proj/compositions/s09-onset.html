@@ -92,6 +92,7 @@
             L.label(world, 'Singers breathe in', { x: 1110, y: 720, size: 48, family: 'serif' }),
             L.label(world, 'different ways.', { x: 1110, y: 770, size: 48, family: 'serif' }),
           ]
+          for (const l of singers) l.el.setAttribute('data-layout-allow-overlap', '')   // one label's two lines, 50 px apart
           const ARROW = { x: 925, y1: 830, y2: 150 }
           const backArrow = L.arrow(world, { x1: ARROW.x, y1: ARROW.y1, x2: ARROW.x, y2: ARROW.y2, color: C.chrome, width: 3, head: 12 })
           const LEVEL = { x1: 932, x2: 958, y: 289 }
@@ -233,7 +234,7 @@
             const fs = lerp(lerp(GROW.s0, 1, su), FO.SMALL.s, ku)
             const fst = foldsAt(t)
             fo.draw({ a: P(t, FOLD0, 0.2, 'none'), cx: fx, cy: fy, s: fs, grow, T, state: fst.state, vib: fst.vib, airA: fst.airA || 0, airU: fst.airU || 0 })
-            foLabel.draw({ a: L.fade(t, FOLD_L, OUT1).a })
+            foLabel.draw({ a: L.fade(t, FOLD_L, OUT1, { dIn: 0.3, easeIn: 'none' }).a })   // linear: it lands as the folds settle
 
             // the strip's hairline draws on left to right with its chip
             clipRect.setAttribute('width', f2((TR.x1 - TR.x0 + 8) * P(t, STRIP, STRIP_D, 'power2.inOut')))
@@ -269,8 +270,9 @@
             /* 9f, 9g: the stack. Rows 1 and 2 open with the move; row 3 is trace 3 carried down until the replay; the
                three back to back, each row lit as it plays; the circles; the third lit, rows 1 and 2 dim */
             const rowsA = [P(t, STACK, STACK_D, 'none'), P(t, STACK, STACK_D, 'none'), landed ? 1 : 0]
-            const lit3 = P(t, THIRD, 0.3)
-            const dim12 = P(t, THIRD, 0.3)
+            // linear over 0.6 s: an eased 0.3 s light over the row's whole area put its change into two frames (a pop)
+            const lit3 = P(t, THIRD, 0.6, 'none')
+            const dim12 = P(t, THIRD, 0.6, 'none')
             rowTr.forEach((tr, i) => {
               const tt = clamp(t - SR[i], 0, LEN)
               tr.draw({ kind: KINDS[i], t: tt, a: rowsA[i], lit: Math.max(L.env(t, SR[i], 0.15, LEN - 0.15, 0.3), i === 2 ? lit3 : 0),

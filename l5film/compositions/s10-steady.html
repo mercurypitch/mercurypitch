@@ -287,7 +287,8 @@
             lenBr.set({ x1: ch.G.x0, x2: ch.G.x1 })
             lenBr.draw(P(t, COMF, 0.6, 'power2.out'), out1)
             fixedLen.draw({ a: L.fade(t, COMF, null).a * out1 })
-            const g10A = L.fade(t, AIRQ, null).a * out1g
+            const g10A = L.fade(t, AIRQ, null, { dIn: 0.3, easeIn: 'none' }).a * out1g   // linear: an eased 0.2 s fade of the label,
+            // its 64 px "?" and its line put the change into two frames (a pop, DECISIONS 179)
             g10.draw({ a: g10A }); g10Q.draw({ a: g10A }); g10Line.setAttribute('opacity', g10A.toFixed(3))
 
             /* 10h: the voice box, its labels, the slider and the silent line, in screen px at F-hold */
@@ -304,8 +305,8 @@
 
             /* frame-fixed */
             card.draw(t)
-            kicker.draw(t, KICK, KICK_OUT)
-            slowed.draw({ alpha: L.fade(t, SLOW0, TRUCK + TRUCK_D).a })
+            kicker.draw(t, KICK, KICK_OUT, { outDur: 0.4 })            // a 0.2 s eased exit measured as a pop here
+            slowed.draw({ alpha: L.fade(t, SLOW0, TRUCK + TRUCK_D, { dOut: 0.3, easeOut: 'none' }).a })   // a linear exit (no pop)
           })
           window.__timelines = window.__timelines || {}
           window.__timelines[SID] = tl
