@@ -13,11 +13,15 @@
 
 import { afterEach, describe, expect, it, vi } from 'vitest'
 
-const viewport = vi.hoisted(() => ({ narrow: false }))
+const viewport = vi.hoisted(() => ({ narrow: false, jamPhone: false }))
 
 vi.mock('@/lib/use-viewport', () => ({
   isNarrow: () => viewport.narrow,
   isPhoneStage: () => viewport.narrow,
+}))
+// The room's own phone layout, at 640 px (jam-phone-layout.ts).
+vi.mock('@/lib/jam/jam-phone-layout', () => ({
+  jamPhoneLayout: () => viewport.jamPhone,
 }))
 
 import { TAB_JAM, TAB_PIANO } from '@/features/tabs/constants'
@@ -31,6 +35,7 @@ afterEach(() => {
   endWalkthrough()
   room.open = false
   viewport.narrow = false
+  viewport.jamPhone = false
 })
 
 const LOBBY_ONLY = ['#jam-display-name', '#jam-room-id', 'jam.actions']
@@ -126,6 +131,7 @@ describe('the room’s tour', () => {
     // On a phone all but the microphone and the way out fold into a menu.
     const runFor = (narrow: boolean): string[] => {
       viewport.narrow = narrow
+      viewport.jamPhone = narrow
       room.open = true
       startPageTour(TAB_JAM)
       const titles = tourSteps().map((step) => step.title)
@@ -140,15 +146,31 @@ describe('the room’s tour', () => {
     const variants = JAM_ROOM_TOUR_STEPS.filter(
       (step) => step.targetSelector === '[data-tour="jam.room-actions"]',
     )
-    // By the width, as the header folds: a phone on its side wider than
-    // the breakpoint has the whole row.
+    // By the room's own width, as the header folds: 640 px.
     expect(variants.map((step) => step.viewport).sort()).toEqual([
-      'narrow',
-      'wide',
+      'jam-phone',
+      'jam-wide',
     ])
-    expect(variants.find((s) => s.viewport === 'narrow')?.description).toMatch(
-      /menu button/,
+    expect(
+      variants.find((s) => s.viewport === 'jam-phone')?.description,
+    ).toMatch(/menu button/)
+  })
+
+  // From 641 to 768 px the screen is narrow (the sidebar is a drawer, the
+  // tab bar at the foot) but the room's header has its whole row and no
+  // menu button: the step said "The menu button holds the rest" there.
+  it('names no menu button where the header has its whole row, 641 to 768 px wide', () => {
+    viewport.narrow = true
+    viewport.jamPhone = false
+    room.open = true
+    startPageTour(TAB_JAM)
+    const header = tourSteps().find(
+      (step) => step.targetSelector === '[data-tour="jam.room-actions"]',
     )
+    endWalkthrough()
+
+    expect(header?.description).not.toMatch(/menu/)
+    expect(header?.description).toMatch(/camera/)
   })
 
   it('is written the way the rest of the app talks', () => {
