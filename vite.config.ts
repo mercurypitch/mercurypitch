@@ -291,11 +291,13 @@ export default defineConfig(({ command, mode }) => {
     process.env[DRAFT_LESSONS_ENV] ?? modeEnv[DRAFT_LESSONS_ENV],
   )
 
-  // This build's default for every experimental feature (Studio first): on
-  // in development mode (`pnpm dev`, `build:dev`: the dev deploy and PR
-  // previews) and in `build:e2e`, off in production mode (the `v*` tag
-  // deploy). The owner's switch overrides it at runtime either way; with it
-  // off, the feature's pages are served but listed nowhere. See
+  // This build's default for every experimental feature: on in development
+  // mode (`pnpm dev`, `build:dev`: the dev deploy and PR previews) and in
+  // `build:e2e`, off in production mode (the `v*` tag deploy). A feature on
+  // in production (Studio, src/lib/experimental-feature-defaults.ts) is on
+  // and listed in every web build whatever this says. The owner's switch
+  // overrides the default at runtime either way; a feature off by default
+  // has its pages served but listed nowhere. See
   // tools/experimental-features.ts.
   const experimentsOn = isExperimentalFeaturesOn(
     process.env[EXPERIMENTAL_FEATURES_ENV] ??

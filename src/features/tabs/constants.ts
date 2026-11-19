@@ -131,7 +131,7 @@ const COMMON_TAB_GROUPS: readonly TabGroupDef[] = [
   },
 ]
 
-/** The last group while Studio is not available, which is all mercurypitch.com shows today. */
+/** The last group while Studio is not available: the native app, and any site where the owner has switched Studio off. */
 const STUDIO_GROUP: TabGroupDef = {
   // Power-user surfaces. Settings is last on purpose: it is the way back
   // from simple mode, so it must never be the tab that overflows.
@@ -319,9 +319,10 @@ const SIMPLE_TABS: ReadonlySet<ActiveTab> = new Set<ActiveTab>([
 
 // ── Experimental tabs ───────────────────────────────────────────────
 // A tab that IS an experimental feature (src/lib/experimental-features.ts)
-// exists only while its feature is on for this page: off by default on
-// mercurypitch.com, on for the dev deploy, previews and `pnpm dev`, and either
-// way when the owner switches it. Asked inside isTabVisible, so every bar,
+// exists only while its feature is on for this page: on by default for the
+// dev deploy, previews and `pnpm dev`, off on mercurypitch.com unless the
+// feature is on in production as Studio is, and either way when the owner
+// switches it. Asked inside isTabVisible, so every bar,
 // menu, swipe order, voice command and tour that filters on visibility drops
 // it with no call site of its own, and the route guard sends its address Home.
 //

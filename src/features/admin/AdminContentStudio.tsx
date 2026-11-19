@@ -90,7 +90,7 @@ const SECTIONS: readonly SectionMeta[] = [
     label: 'Experimental Features',
     shortLabel: 'Features',
     description:
-      'Switch a feature still being built, Studio first, on or off for this environment, or back to the build default.',
+      'Switch an experimental feature, Studio first, on or off for this environment, or back to its build default.',
   },
 ] as const
 

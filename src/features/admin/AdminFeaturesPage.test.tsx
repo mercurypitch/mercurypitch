@@ -78,9 +78,6 @@ describe('a feature on the Features page', () => {
           name: `Studio: Build default, ${word} here`,
         }),
       ).toHaveAttribute('aria-pressed', 'true')
-      expect(screen.getByTestId('admin-features')).toHaveTextContent(
-        `Build default here: ${word}`,
-      )
     },
   )
 

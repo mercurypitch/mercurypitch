@@ -2,12 +2,13 @@
 // AdminFeaturesPage — the owner's switches for experimental features, per environment
 // ============================================================
 //
-// THESIS: the owner turns a feature that is still being built on or off for
-// everyone on this site, or hands it back to the build's default, and reads
-// plainly what that does and whom it reaches.
-// FIRST VIEWPORT: which environment a switch made here reaches, this
-// build's default, then each feature with what it is, what visitors get,
-// its switch and when it last changed.
+// THESIS: the owner turns an experimental feature on or off for everyone on
+// this site, or hands it back to the build's default, and reads plainly
+// what that does and whom it reaches.
+// FIRST VIEWPORT: which environment a switch made here reaches, then each
+// feature with what it is, what visitors get, its own build default here,
+// its switch and when it last changed. A default is per feature: Studio is
+// on in production with no switch set, a feature still being built is not.
 // FORM: one card per feature, its three settings as one group of buttons,
 // the pressed one the switch as stored. Saved at once on the dev site; in
 // production the page asks first, since every visitor gets the change.
@@ -23,8 +24,9 @@ import type { JSX } from 'solid-js'
 import { createMemo, createUniqueId, For, Match, onMount, Show, Switch, } from 'solid-js'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { PowerSymbol, RotateCcw } from '@/components/icons'
+import { onInProduction } from '@/lib/experimental-feature-defaults'
 import { useConfirm } from '@/lib/use-confirm'
-import { experimentalFeaturesBuildDefault } from '@/stores/experimental-features-store'
+import { experimentalFeatureDefault } from '@/stores/experimental-features-store'
 import type { AdminEnvironment } from './admin-environment'
 import styles from './AdminFeaturesPage.module.css'
 import type { FeatureSwitchState } from './feature-switches/feature-switch-client'
@@ -41,7 +43,10 @@ export interface AdminFeaturesPageProps {
   onChangeKey?: () => void
   /** The environment the switches belong to; the one behind this page's API by default. */
   environment?: AdminEnvironment
-  /** The default a feature with no switch falls back to here; this page's own by default. */
+  /**
+   * One default for every feature with no switch, in place of each
+   * feature's own in the environment the page reaches. Tests only.
+   */
   buildDefault?: boolean
 }
 
@@ -66,17 +71,19 @@ export function AdminFeaturesPage(props: AdminFeaturesPageProps): JSX.Element {
   const environment = createMemo(
     () => props.environment ?? featureSwitchEnvironment(),
   )
-  // What visitors in the environment this console reaches fall back to:
-  // the production build's default is off, and the dev site's and every
-  // PR preview's is on (tools/experimental-features.ts). Not this console's
-  // own bundle, which can be a dev build pointed at production. Only an
-  // address the console cannot place falls back to its own build's.
-  const buildDefault = (): boolean => {
+  // What visitors in the environment this console reaches fall back to, per
+  // feature: the dev site and every PR preview have every feature on
+  // (tools/experimental-features.ts), and the production build only a
+  // feature on in production, Studio (src/lib/experimental-feature-
+  // defaults.ts). Not this console's own bundle, which can be a dev build
+  // pointed at production. Only an address the console cannot place falls
+  // back to its own build's.
+  const buildDefault = (name: string): boolean => {
     if (props.buildDefault !== undefined) return props.buildDefault
     const kind = environment().kind
-    if (kind === 'production') return false
+    if (kind === 'production') return onInProduction(name)
     if (kind === 'development' || kind === 'preview') return true
-    return experimentalFeaturesBuildDefault()
+    return experimentalFeatureDefault(name)
   }
   const switches = useFeatureSwitches({
     adminKey: () => props.adminKey,
@@ -106,7 +113,7 @@ export function AdminFeaturesPage(props: AdminFeaturesPageProps): JSX.Element {
       ...switchQuestion(
         aboutFeature(name),
         setting,
-        buildDefault(),
+        buildDefault(name),
         environment(),
       ),
       confirmIcon: <PowerSymbol size={16} />,
@@ -134,9 +141,6 @@ export function AdminFeaturesPage(props: AdminFeaturesPageProps): JSX.Element {
             title="The API environment every switch here is saved to"
           >
             {environment().label}
-          </span>
-          <span class={styles.badge}>
-            Build default here: {onOff(buildDefault())}
           </span>
         </div>
         <p>{environmentSentence(environment())}</p>
@@ -187,7 +191,7 @@ export function AdminFeaturesPage(props: AdminFeaturesPageProps): JSX.Element {
                 {(row) => (
                   <FeatureCard
                     row={row()}
-                    buildDefault={buildDefault()}
+                    buildDefault={buildDefault(name)}
                     switches={switches}
                     onChoose={choose}
                     onChangeKey={props.onChangeKey}
@@ -205,13 +209,16 @@ export function AdminFeaturesPage(props: AdminFeaturesPageProps): JSX.Element {
         </h3>
         <ul class={styles.notes}>
           <li>
-            A browser keeps the last switches it heard: a feature switched on
-            stays for a visitor whose next read is slow or offline, and only a
-            new answer from this site changes it.
+            A browser keeps the last switches it heard: a feature switched on or
+            off stays that way for a visitor whose next read is slow or offline,
+            and only a new answer from this site changes it.
           </li>
           <li>
-            Switched on, a feature shows in the app. Its own page stays out of
-            search and the sitemap until it graduates in code.
+            A switch changes the app, not the site's pages. In production,
+            Studio's page stays in the sitemap and open to search even while
+            Studio is switched off; its address then opens Home. A feature still
+            being built stays out of both there until the code turns it on by
+            default.
           </li>
           <li>
             The phone app never reads these switches. It keeps its own build's

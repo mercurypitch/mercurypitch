@@ -1,8 +1,12 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import type * as NativeBuild from '@/lib/native-build'
 import type * as StoreModule from './experimental-features-store'
-import { EXPERIMENTAL_FEATURES_BUILD_DEFAULT, experimentalFeatureOn, experimentalFeaturesBuildDefault, experimentalFeaturesPending, FEATURES_READ_TIMEOUT_MS, loadExperimentalFeatures, REMEMBERED_FEATURES_KEY, resetExperimentalFeaturesStoreForTests, } from './experimental-features-store'
+import { EXPERIMENTAL_FEATURES_BUILD_DEFAULT, experimentalFeatureDefault, experimentalFeatureOn, experimentalFeaturesPending, FEATURES_READ_TIMEOUT_MS, loadExperimentalFeatures, REMEMBERED_FEATURES_KEY, resetExperimentalFeaturesStoreForTests, } from './experimental-features-store'
 
 const API = 'https://api.test'
+
+/** A name the db-worker could list ahead of this build: a feature still being built, on in production nowhere. */
+const STILL_BEING_BUILT = 'karaoke-v2'
 
 type Fetcher = typeof fetch
 type Store = typeof StoreModule
@@ -36,44 +40,61 @@ function answeringLater(): Fetcher & { answer: (body: unknown) => void } {
   return Object.assign(fetcher, { answer: (body: unknown) => answer(body) })
 }
 
-/** Every read that gives this page nothing it can use. */
-const FAILED_READS: [string, Fetcher][] = [
-  ['an error status', answering({ studio: false }, 500)],
-  [
-    'a body that is not JSON',
-    (async () => new Response('<html>', { status: 200 })) as Fetcher,
-  ],
-  ['a body that is not an object', answering(['studio'])],
-  [
-    'a network failure',
-    (async () => {
-      throw new TypeError('Failed to fetch')
-    }) as Fetcher,
-  ],
-]
+/**
+ * Every read that gives this page nothing it can use. The error status
+ * carries `switches`, the opposite of what the test expects to keep, so a
+ * page that read its body would show.
+ */
+function failedReads(switches: Record<string, boolean>): [string, Fetcher][] {
+  return [
+    ['an error status', answering(switches, 500)],
+    [
+      'a body that is not JSON',
+      (async () => new Response('<html>', { status: 200 })) as Fetcher,
+    ],
+    ['a body that is not an object', answering(['studio'])],
+    [
+      'a network failure',
+      (async () => {
+        throw new TypeError('Failed to fetch')
+      }) as Fetcher,
+    ],
+  ]
+}
 
 /** Pages a test opened, each a fresh copy of the store, as a reload makes one. */
 const opened: Store[] = []
 
 /**
- * A new page in this same browser, built with experimental features `on` or
- * off by default: off as mercurypitch.com is built, on as the dev deploy is.
- * Storage carries over from the page before, as it does across a reload.
+ * A new page in this same browser. `production` is mercurypitch.com's web
+ * build: the shared default off, Studio on all the same, as it is on in
+ * production. `dev` is the dev deploy's, with every feature on. `native` is
+ * the native app's: the shared default off, and nothing on in production
+ * reaches it. Storage carries over from the page before, as it does across
+ * a reload.
  */
-async function openPage(buildDefault: 'on' | 'off'): Promise<Store> {
-  vi.stubEnv('VITE_EXPERIMENTAL_FEATURES', buildDefault === 'on' ? '1' : '0')
+async function openPage(
+  build: 'production' | 'dev' | 'native',
+): Promise<Store> {
+  vi.stubEnv('VITE_EXPERIMENTAL_FEATURES', build === 'dev' ? '1' : '0')
   vi.resetModules()
+  if (build === 'native') {
+    vi.doMock('@/lib/native-build', async (importOriginal) => ({
+      ...(await importOriginal<typeof NativeBuild>()),
+      IS_NATIVE_BUILD: true,
+    }))
+  }
   const page = await import('./experimental-features-store')
   opened.push(page)
   return page
 }
 
-/** A page on `buildDefault` that heard the owner's `switches`, as the visit before this one did. */
+/** A page of `build` that heard the owner's `switches`, as the visit before this one did. */
 async function heard(
-  buildDefault: 'on' | 'off',
+  build: 'production' | 'dev',
   switches: Record<string, boolean>,
 ): Promise<void> {
-  const page = await openPage(buildDefault)
+  const page = await openPage(build)
   await page.loadExperimentalFeatures({
     base: API,
     fetcher: answering(switches),
@@ -86,6 +107,7 @@ afterEach(() => {
   }
   resetExperimentalFeaturesStoreForTests()
   delete (window as { __MP_E2E_EXPERIMENTS__?: unknown }).__MP_E2E_EXPERIMENTS__
+  vi.doUnmock('@/lib/native-build')
   vi.unstubAllEnvs()
   vi.unstubAllGlobals()
   vi.resetModules()
@@ -96,22 +118,41 @@ describe('the build default', () => {
   it('is on in the test build, as on the dev deploy and in the e2e bundle', () => {
     expect(EXPERIMENTAL_FEATURES_BUILD_DEFAULT).toBe(true)
     expect(experimentalFeatureOn('studio')).toBe(true)
+    expect(experimentalFeatureDefault(STILL_BEING_BUILT)).toBe(true)
     expect(experimentalFeaturesPending()).toBe(false)
   })
 
-  it('is off in a production build until the owner switches a feature on', async () => {
-    vi.stubEnv('VITE_EXPERIMENTAL_FEATURES', '0')
-    vi.resetModules()
-    const store = await import('./experimental-features-store')
-    expect(store.EXPERIMENTAL_FEATURES_BUILD_DEFAULT).toBe(false)
-    expect(store.experimentalFeatureOn('studio')).toBe(false)
+  it('keeps Studio on in the production build, whose shared default is off, until the owner switches it off', async () => {
+    const page = await openPage('production')
+    const onBeforeAsking = page.experimentalFeatureOn('studio')
 
-    await store.loadExperimentalFeatures({
+    await page.loadExperimentalFeatures({
       base: API,
-      fetcher: answering({ studio: true }),
+      fetcher: answering({ studio: false }),
     })
 
-    expect(store.experimentalFeatureOn('studio')).toBe(true)
+    expect(page.EXPERIMENTAL_FEATURES_BUILD_DEFAULT).toBe(false)
+    expect(page.experimentalFeatureDefault('studio')).toBe(true)
+    expect(onBeforeAsking).toBe(true)
+    expect(page.experimentalFeatureOn('studio')).toBe(false)
+  })
+
+  it('keeps a feature that is not on in production off there, and on for the dev deploy', async () => {
+    const production = await openPage('production')
+    const productionDefault =
+      production.experimentalFeatureDefault(STILL_BEING_BUILT)
+    const dev = await openPage('dev')
+
+    expect(productionDefault).toBe(false)
+    expect(dev.experimentalFeatureDefault(STILL_BEING_BUILT)).toBe(true)
+  })
+
+  it('keeps every feature off in the native app, Studio included', async () => {
+    const page = await openPage('native')
+
+    expect(page.experimentalFeatureDefault('studio')).toBe(false)
+    expect(page.experimentalFeatureOn('studio')).toBe(false)
+    expect(page.experimentalFeatureDefault(STILL_BEING_BUILT)).toBe(false)
   })
 })
 
@@ -153,7 +194,7 @@ describe('the startup read', () => {
   })
 
   it.each([
-    ...FAILED_READS,
+    ...failedReads({ studio: false }),
     ['an answer with no switch it knows', answering({ ghost: false })],
   ])('keeps the default on %s', async (_label, fetcher) => {
     await loadExperimentalFeatures({ base: API, fetcher })
@@ -178,7 +219,7 @@ describe('the startup read', () => {
 })
 
 describe('the e2e door', () => {
-  it('reads the page origin on a loopback host, from the default the spec hands it', async () => {
+  it("reads the page origin on a loopback host, and boots on the spec's default: production's, Studio on and the rest off", async () => {
     ;(window as { __MP_E2E_EXPERIMENTS__?: unknown }).__MP_E2E_EXPERIMENTS__ = {
       buildDefault: false,
     }
@@ -190,10 +231,10 @@ describe('the e2e door', () => {
 
     expect(window.location.hostname).toBe('localhost')
     expect(fetcher.calls).toEqual(['/api/features'])
-    expect(onWhileAsking).toBe(false)
-    expect(experimentalFeatureOn('studio')).toBe(false)
+    expect(onWhileAsking).toBe(true)
+    expect(experimentalFeatureOn('studio')).toBe(true)
     // The console says which default this page stands on: the spec's.
-    expect(experimentalFeaturesBuildDefault()).toBe(false)
+    expect(experimentalFeatureDefault(STILL_BEING_BUILT)).toBe(false)
   })
 
   it('is ignored by a build that has an API to ask', async () => {
@@ -205,18 +246,18 @@ describe('the e2e door', () => {
     await loadExperimentalFeatures({ base: API, fetcher })
 
     expect(fetcher.calls).toEqual([`${API}/api/features`])
-    expect(experimentalFeatureOn('studio')).toBe(true)
+    expect(experimentalFeatureDefault(STILL_BEING_BUILT)).toBe(true)
   })
 })
 
-// The last answer this browser heard stands until the server answers again.
-// Studio's songs live only in this browser, so a switched-on Studio that
-// vanished whenever a read was slow or offline took them out of reach for
-// that visit, and sent /studio-night Home (the Studio audit's E1).
-describe('a browser that heard the owner switch Studio on', () => {
-  it('keeps Studio while the read is out, and after the page stops waiting on it', async () => {
-    await heard('off', { studio: true })
-    const page = await openPage('off')
+// The last answer this browser heard stands until the server answers again,
+// an "off" included. With Studio on in production, the owner's off is the
+// switch a visitor keeps: a slow or offline read must not bring Studio back
+// over it.
+describe('a browser that heard the owner switch Studio off in production', () => {
+  it('keeps Studio off while the read is out, and after the page stops waiting on it', async () => {
+    await heard('production', { studio: false })
+    const page = await openPage('production')
 
     const read = page.loadExperimentalFeatures({
       base: API,
@@ -226,30 +267,33 @@ describe('a browser that heard the owner switch Studio on', () => {
     const onWhileAsking = page.experimentalFeatureOn('studio')
     await read
 
-    expect(onWhileAsking).toBe(true)
-    expect(page.experimentalFeatureOn('studio')).toBe(true)
+    expect(onWhileAsking).toBe(false)
+    expect(page.experimentalFeatureOn('studio')).toBe(false)
     expect(page.experimentalFeaturesPending()).toBe(false)
   })
 
-  it.each(FAILED_READS)('keeps Studio through %s', async (_label, fetcher) => {
-    await heard('off', { studio: true })
-    const page = await openPage('off')
+  it.each(failedReads({ studio: true }))(
+    'keeps Studio off through %s',
+    async (_label, fetcher) => {
+      await heard('production', { studio: false })
+      const page = await openPage('production')
 
-    await page.loadExperimentalFeatures({ base: API, fetcher })
+      await page.loadExperimentalFeatures({ base: API, fetcher })
 
-    expect(page.experimentalFeatureOn('studio')).toBe(true)
-    expect(page.experimentalFeaturesPending()).toBe(false)
-  })
+      expect(page.experimentalFeatureOn('studio')).toBe(false)
+      expect(page.experimentalFeaturesPending()).toBe(false)
+    },
+  )
 
   it('still has it for the page after a failed read', async () => {
-    await heard('off', { studio: true })
-    const failed = await openPage('off')
+    await heard('production', { studio: false })
+    const failed = await openPage('production')
     await failed.loadExperimentalFeatures({
       base: API,
       fetcher: hanging,
       timeoutMs: 5,
     })
-    const page = await openPage('off')
+    const page = await openPage('production')
 
     const read = page.loadExperimentalFeatures({
       base: API,
@@ -258,37 +302,28 @@ describe('a browser that heard the owner switch Studio on', () => {
     const onWhileAsking = page.experimentalFeatureOn('studio')
     await read
 
-    expect(onWhileAsking).toBe(true)
-    expect(page.experimentalFeatureOn('studio')).toBe(true)
+    expect(onWhileAsking).toBe(false)
+    expect(page.experimentalFeatureOn('studio')).toBe(false)
   })
 
-  it("hides Studio once the server answers the owner's off", async () => {
-    await heard('off', { studio: true })
-    const page = await openPage('off')
+  it('hands Studio back to its default, on, once the owner clears the switch', async () => {
+    await heard('production', { studio: false })
+    const page = await openPage('production')
 
     const read = page.loadExperimentalFeatures({
       base: API,
-      fetcher: answering({ studio: false }),
+      fetcher: answering({}),
     })
     const onWhileAsking = page.experimentalFeatureOn('studio')
     await read
 
-    expect(onWhileAsking).toBe(true)
-    expect(page.experimentalFeatureOn('studio')).toBe(false)
-  })
-
-  it('hands Studio back to the build once the server answers no switch at all', async () => {
-    await heard('off', { studio: true })
-    const page = await openPage('off')
-
-    await page.loadExperimentalFeatures({ base: API, fetcher: answering({}) })
-
-    expect(page.experimentalFeatureOn('studio')).toBe(false)
+    expect(onWhileAsking).toBe(false)
+    expect(page.experimentalFeatureOn('studio')).toBe(true)
   })
 
   it('keeps nothing heard from another API', async () => {
-    await heard('off', { studio: true })
-    const page = await openPage('off')
+    await heard('production', { studio: false })
+    const page = await openPage('production')
 
     const read = page.loadExperimentalFeatures({
       base: 'https://api.other.test',
@@ -298,15 +333,15 @@ describe('a browser that heard the owner switch Studio on', () => {
     const onWhileAsking = page.experimentalFeatureOn('studio')
     await read
 
-    expect(onWhileAsking).toBe(false)
-    expect(page.experimentalFeatureOn('studio')).toBe(false)
+    expect(onWhileAsking).toBe(true)
+    expect(page.experimentalFeatureOn('studio')).toBe(true)
   })
 })
 
 describe('what a browser heard last', () => {
-  it("keeps the owner's off through a failed read where the build's default is on", async () => {
-    await heard('on', { studio: false })
-    const page = await openPage('on')
+  it("keeps the owner's off through a failed read on the dev deploy too", async () => {
+    await heard('dev', { studio: false })
+    const page = await openPage('dev')
 
     const read = page.loadExperimentalFeatures({
       base: API,
@@ -322,18 +357,18 @@ describe('what a browser heard last', () => {
 
   it('takes an answer that lands after the page stopped waiting for the next page, not this one', async () => {
     const late = answeringLater()
-    const page = await openPage('off')
+    const page = await openPage('production')
     await page.loadExperimentalFeatures({
       base: API,
       fetcher: late,
       timeoutMs: 5,
     })
 
-    late.answer({ studio: true })
+    late.answer({ studio: false })
     await vi.waitFor(() => {
       expect(localStorage.getItem(REMEMBERED_FEATURES_KEY)).not.toBeNull()
     })
-    const next = await openPage('off')
+    const next = await openPage('production')
     const read = next.loadExperimentalFeatures({
       base: API,
       fetcher: hanging,
@@ -342,8 +377,8 @@ describe('what a browser heard last', () => {
     const onNextWhileAsking = next.experimentalFeatureOn('studio')
     await read
 
-    expect(page.experimentalFeatureOn('studio')).toBe(false)
-    expect(onNextWhileAsking).toBe(true)
+    expect(page.experimentalFeatureOn('studio')).toBe(true)
+    expect(onNextWhileAsking).toBe(false)
   })
 
   it('follows the server on a browser that blocks storage', async () => {
@@ -355,14 +390,14 @@ describe('what a browser heard last', () => {
       setItem: blocked,
       removeItem: blocked,
     })
-    const page = await openPage('off')
+    const page = await openPage('production')
 
     await page.loadExperimentalFeatures({
       base: API,
-      fetcher: answering({ studio: true }),
+      fetcher: answering({ studio: false }),
     })
 
-    expect(page.experimentalFeatureOn('studio')).toBe(true)
+    expect(page.experimentalFeatureOn('studio')).toBe(false)
     expect(page.experimentalFeaturesPending()).toBe(false)
   })
 })

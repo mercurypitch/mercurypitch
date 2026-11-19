@@ -435,9 +435,12 @@ export default defineConfig(({ mode, command }) => {
       'import.meta.env.VITE_DRAFT_LESSONS': JSON.stringify('0'),
       // Always "0". The web build's experimental-features switch
       // (tools/experimental-features.ts) is the default of a feature still
-      // being built, Studio first. A store build keeps the shape it was
-      // reviewed with: the shell has no door to one, and this app never asks
-      // the db-worker for the owner's runtime switches
+      // being built. A store build keeps the shape it was reviewed with: the
+      // shell has no door to one, and this app never asks the db-worker for
+      // the owner's runtime switches, so a feature on here could not be
+      // switched off. Studio, on in every web build
+      // (src/lib/experimental-feature-defaults.ts), stays off here too: the
+      // store leaves that list out of a native build
       // (src/stores/experimental-features-store.ts).
       'import.meta.env.VITE_EXPERIMENTAL_FEATURES': JSON.stringify('0'),
       __APP_CHANNEL__: JSON.stringify(
