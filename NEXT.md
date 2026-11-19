@@ -4391,3 +4391,11 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   LEDGER C-01 row. Fix brief $S/briefs/l5-fix-C-01.md (resume the group C builder when a slot frees).
 - Heavy now: group B fix + group D. Queue: the passes step for 190 (blocks E), group C's fix
   round, then group E.
+
+## 12:05 UTC, 19 Nov (later)
+- PR #1473 CI green (PR Gate, unit 2/2, smoke 2/2, lint, code health; browser shards skipped by
+  scope). Server-added footer removed from the body. MERGED squash 2fce8f04a (owner's standing go).
+  Unsubscribed. Waiting for dev to serve 2fce8f04a (background wait), then run
+  `node $S/dev/polish2-dev.mjs <repo> $S/dev/polish2` (DEV only): upright Singing notice on its
+  transport, pill contrast in both themes, Karaoke header at 1024x768, drill foot at 1440x900 /
+  844x390 / 390x844, Ear Lab bench at 844x390 / 932x430, no production requests.

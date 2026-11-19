@@ -1,0 +1,12 @@
+clip-still-32.31.png
+  gold line (y 611 Quiet, 451 Loud): shown 914 of 921 columns; hidden runs [(1380, 1385)]
+  small band's lower edge (y 227): shown 921 of 921 columns; hidden runs none
+  frame's top stroke (y 279): shown 921 of 921 columns; hidden runs none
+clip-still-45.00.png
+  gold line (y 611 Quiet, 451 Loud): shown 913 of 921 columns; hidden runs [(1380, 1387)]
+  small band's lower edge (y 227): shown 921 of 921 columns; hidden runs none
+  frame's top stroke (y 279): shown 921 of 921 columns; hidden runs none
+clip-still-68.75.png
+  gold line (y 611 Quiet, 451 Loud): shown 913 of 921 columns; hidden runs [(1010, 1017)]
+  small band's lower edge (y 227): shown 921 of 921 columns; hidden runs none
+  frame's top stroke (y 279): shown 921 of 921 columns; hidden runs none

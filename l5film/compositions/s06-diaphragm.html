@@ -156,8 +156,11 @@
           // plate cannot fit between the band's edge and the frame's top, goes on empty ground inside the frame's top
           // right, under the chip (right-aligned 1630). The cursor still passes behind every one.
           const PLACE = { pushOfAir: { y: GP.pushOfAir }, lungsPush: { y: GP.lungsPush }, needs: { y: GP.needs }, readout: GP.readout, readoutAdding: GP.readout }
+          // the readout's own plate, the wider wording's box + 4 px, shown for the readout's whole life: in a swap both
+          // wordings are faint, and the cursor (at the crossing, under the readout) must stay behind [B-01: 183]
+          const roPlate = L.svg('rect', { fill: C.ground, rx: 6, opacity: 0 }, world)
           for (const n of ['unchanged', 'pushOfAir', 'oneNote', 'lungsPush', 'needs', 'heldBack', 'added', 'readout', 'readoutAdding', 'needsLoud', 'lessHolding', 'moreAdding']) gl[n] = L.label(world, GL[n].text, { ...GL[n], ...(PLACE[n] || {}), back: G.BACKS.includes(n), backPadX: 4, backPadY: 4 })
-          // the readout's two wordings share one place and switch (L.swap): one is shown at a time
+          // the readout's two wordings share one place and switch: one is shown at a time
           for (const n of ['readout', 'readoutAdding']) gl[n].el.setAttribute('data-layout-allow-overlap', '')
           const upArrow = L.arrow(world, { x1: G.LEADERS.upArrow.x, y1: G.LEADERS.upArrow.y + 1, x2: G.LEADERS.upArrow.x, y2: G.LEADERS.upArrow.y - 23, color: C.ink, width: 2.5, head: 9 })
           const lessLeader = L.leader(world, G.LEADERS.lessHolding)
@@ -218,7 +221,7 @@
           }
 
           const probe = { cam, ch, lab, slider, ga, fig, fl, gl, tag, a3, quietChip, loudChip, guess, struck, strike, kicker, predict, pills, check, row, split, SPLIT_C, lessLeader, moreLeader,
-            readoutAt, F6, GP, A: { ADDED, ACT, O6, GLIDE, GLIDE_D, SPLIT, SPLIT_D, FIG, FIG_D, GUESS, ROW_IN, LIT_D, DIA, TIGHT, BELLY, BIN, BIG, QUIET, PRED_K, PILL1, PILL2, PRED2, OPEN, OPEN_D, ONE_NOTE, PUSH_AIR, GAUGE, GAUGE_D, LUNGS_L, GOLD, NEEDS, HATCH, READOUT, CHECK, UNCHANGED, CROSS1, HOLD, BM, NEVER, FULL, WALK, WALK_END, B15, RUN, RUN_D, BRM, CANT, STRIKE, O7, FULL2, CUR_OUT, YES, LOUD, RISE, RISE_D, LESS, BACKW, MORE, SWITCHES, D }, boxes: {} }
+            readoutAt, roPlate, F6, GP, A: { ADDED, ACT, O6, GLIDE, GLIDE_D, SPLIT, SPLIT_D, FIG, FIG_D, GUESS, ROW_IN, LIT_D, DIA, TIGHT, BELLY, BIN, BIG, QUIET, PRED_K, PILL1, PILL2, PRED2, OPEN, OPEN_D, ONE_NOTE, PUSH_AIR, GAUGE, GAUGE_D, LUNGS_L, GOLD, NEEDS, HATCH, READOUT, CHECK, UNCHANGED, CROSS1, HOLD, BM, NEVER, FULL, WALK, WALK_END, B15, RUN, RUN_D, BRM, CANT, STRIKE, O7, FULL2, CUR_OUT, YES, LOUD, RISE, RISE_D, LESS, BACKW, MORE, SWITCHES, D }, boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
 
@@ -314,6 +317,11 @@
             gl.unchanged.life(t, UNCHANGED, null)
             gl.added.life(t, ADDED, LOUD)
             const ro = readoutAt(t), roA = P(t, READOUT, 0.2) * (1 - P(t, CUR_OUT, 0.2))
+            if (roA > 0) {
+              const b = gl.readout.el.getBBox()                       // read as drawn, so the font is the one in use
+              roPlate.setAttribute('x', f2(b.x - 4)); roPlate.setAttribute('y', f2(b.y - 4)); roPlate.setAttribute('width', f2(b.width + 8)); roPlate.setAttribute('height', f2(b.height + 8))
+            }
+            roPlate.setAttribute('opacity', roA.toFixed(3))
             gl.readout.draw({ a: roA * ro.hold.a, dy: ro.hold.dy })
             gl.readoutAdding.draw({ a: roA * ro.add.a, dy: ro.add.dy })
             gl.needsLoud.life(t, BACKW, null)

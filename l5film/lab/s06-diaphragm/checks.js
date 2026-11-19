@@ -67,10 +67,11 @@
       { n: 'up arrow', x0: 763, x1: 773, y0: 252, y1: 277 },
     ]
     if (ga > 0 && gw > 0) strokes.push({ n: 'gold line', x0: 760, x1: 760 + gw, y0: gy - 1.5, y1: gy + 1.5 })
-    for (const n of ['pushOfAir', 'lungsPush', 'needs', 'heldBack', 'added', 'readout', 'readoutAdding']) {
-      const lb = S.gl[n]
-      if (!lb.back || H.alpha(lb.el) < 0.5) continue
-      const r = R(lb.back), [ax, ay] = S.cam.inv(r.left, r.top, t), [bx, by] = S.cam.inv(r.right, r.bottom, t)
+    const items = ['pushOfAir', 'lungsPush', 'needs', 'heldBack', 'added', 'readout', 'readoutAdding'].map((n) => ({ n, el: S.gl[n].el, back: S.gl[n].back }))
+    items.push({ n: 'the readout\'s own plate', el: S.roPlate, back: S.roPlate })
+    for (const { n, el, back } of items) {
+      if (!back || H.alpha(el) < 0.5) continue
+      const r = R(back), [ax, ay] = S.cam.inv(r.left, r.top, t), [bx, by] = S.cam.inv(r.right, r.bottom, t)
       const cov = []
       for (const k of strokes) {
         const ox = Math.min(bx, k.x1) - Math.max(ax, k.x0), oy = Math.min(by, k.y1) - Math.max(ay, k.y0)

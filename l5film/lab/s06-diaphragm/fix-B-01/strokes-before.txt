@@ -1,0 +1,8 @@
+/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/review/critic-B-01/f06/t45.0.png
+  gold line (y 611 Quiet, 451 Loud): shown 613 of 921 columns; hidden runs [(748, 1047), (1380, 1387)]
+  small band's lower edge (y 227): shown 310 of 921 columns; hidden runs [(765, 1073), (1359, 1660)]
+  frame's top stroke (y 279): shown 644 of 921 columns; hidden runs [(751, 889), (894, 1031)]
+/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/review/critic-B-01/f06/t33.5.png
+  gold line (y 611 Quiet, 451 Loud): shown 613 of 921 columns; hidden runs [(748, 1047), (1380, 1387)]
+  small band's lower edge (y 227): shown 402 of 921 columns; hidden runs [(765, 1073), (1451, 1660)]
+  frame's top stroke (y 279): shown 640 of 921 columns; hidden runs [(751, 1031)]
