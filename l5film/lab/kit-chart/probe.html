@@ -1,0 +1,136 @@
+<!doctype html>
+<!-- The probe's harness for lab/kit-src/chart.html (lab/kit-src/probe.mjs): the kit, the fonts, the page. -->
+<html lang="en"><head><meta charset="UTF-8" />
+<script src="/assets/vendor/gsap-3.14.2.min.js"></script>
+<script src="/assets/cues.js"></script>
+<script src="/assets/scenes.js"></script>
+<script src="/assets/merc/roots.js"></script>
+<script src="/assets/lib/lesson.js"></script>
+<script src="/assets/lib/motion.js"></script>
+<script src="/assets/lib/marks.js"></script>
+<script src="/assets/lib/frames.js"></script>
+<script src="/assets/lib/chart.js"></script>
+<script src="/assets/lib/figure.js"></script>
+<script src="/assets/lib/gauge.js"></script>
+<script src="/assets/lib/mixup.js"></script>
+<script src="/assets/lib/folds.js"></script>
+<script src="/assets/lib/turn.js"></script>
+<script src="/assets/lib/recap.js"></script>
+<script src="/assets/lib/tease.js"></script>
+<script src="/assets/lib/hosts.js"></script>
+<link rel="stylesheet" href="/assets/lib/lesson.css" />
+<style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('/assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('/assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('/assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+</style></head><body><div id="root">
+    <!-- Kit lab: the band chart (chart.js; HANDOFFS § The band chart, § The wave rule, § The hold chart).
+         0 to 4.6 s: S1's chart at F0 (W 4) with the easy take drawn as it sings, its strip, the band lit
+         beside "in the band", the axis, both tags and the labels by the plot. 4.6 to 9 s: the same chart at
+         S5's 0.78 place with the Push note and its slider (the 5g still at 7.2: the peak held). 9 to 12 s:
+         S10's W 10 chart (the demo hold, no strip). World px at F0; the settled labels sit over the amber
+         and violet fills for check's contrast audit (LAB-CHECKS 18). -->
+    <div id="kit-chart" data-composition-id="kit-chart" data-start="0" data-duration="12" data-width="1920" data-height="1080">
+      <div class="scene" id="kit-chart-root"></div>
+      <script>
+        ;(function () {
+          const ID = 'kit-chart', D = 12
+          const C = L.C
+          const root = document.getElementById(ID + '-root')
+          const room = L.room(root, {})
+          const world = L.stage(room.mid), hud = L.stage(room.hud)
+          L.text(hud, 'kit-chart: the band chart (world px, F0)', { x: 24, y: 1060, size: 20, family: 'mono', weight: 500, fill: C.ink2, opacity: 1 })
+          const ch = L.bandChart(world, L.CHART.S1)
+          const ax = L.timeAxis(ch.g, {})
+          const sl = L.pushSlider(ch.g, {})
+          const lab = { A3: ch.label('A3'), inBand: ch.label('inBand'), level: ch.label('level'), sungEasily: ch.label('sungEasily'), louderHigher: ch.label('louderHigher'), smallType: ch.label('smallType') }
+          const ill = ch.tag('illustration'), lis = ch.tag('listen')
+          const phase = (t) => (t < 4.6 ? 'S1' : t < 9 ? 'S5' : 'S10')
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const p = phase(t)
+            if (p === 'S1') {
+              ch.geo(L.CHART.S1); ch.place({})
+              const tt = L.clamp(t - 0.3, 0, 4)
+              ch.draw({ band: { lit: tt > 0.5 ? 1 : 0 }, lines: [{ id: 'v', contour: 'easy', t: tt }], strip: { envs: [{ id: 'v', contour: 'easy', t: tt }] } })
+              ax.draw({ a: 1, W: 4 })
+              sl.draw({ a: 0 })
+              for (const k of ['A3', 'inBand', 'level', 'sungEasily', 'smallType']) lab[k].draw({ a: 1 })
+              lab.louderHigher.draw({ a: 0 })
+              ill.draw({ alpha: 1 }); lis.draw({ alpha: 1 })
+            } else if (p === 'S5') {
+              ch.geo(L.CHART.S5); ch.place(L.CHART.AT078)
+              const tt = L.clamp(t - 4.8, 0, 4.2)
+              ch.draw({ lines: [{ id: 'v', contour: 'push', t: tt }], strip: { envs: [{ id: 'v', contour: 'push', t: tt }] } })
+              ax.draw({ a: 1, W: 6 })
+              sl.draw({ a: 1, p: L.CONTOUR.pushAt(tt) })
+              for (const k of ['A3', 'inBand', 'level', 'sungEasily', 'smallType']) lab[k].draw({ a: 0 })
+              lab.louderHigher.draw({ a: 1 })
+              ill.draw({ alpha: 1 }); lis.draw({ alpha: 1 })
+            } else {
+              ch.geo(L.CHART.S10); ch.place({})
+              const tt = L.clamp(t - 9.1, 0, 2.9)
+              ch.draw({ band: { lit: 1 }, lines: [{ id: 'v', contour: 'demo', t: 0.9 + tt * 3 }], strip: { a: 0 } })
+              ax.draw({ a: 1, W: 10 })
+              sl.draw({ a: 0 })
+              for (const k of Object.keys(lab)) lab[k].draw({ a: 0 })
+              lab.inBand.draw({ a: 1 }); lab.A3.draw({ a: 1 })
+              ill.draw({ alpha: 1 }); lis.draw({ alpha: 0 })
+            }
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+
+          const R = (el) => el.getBoundingClientRect()
+          const band = () => R(ch.g.querySelector('.band rect'))
+          const wave = (pts, x0) => {
+            const ys = pts.filter((p) => p[0] >= x0).map((p) => p[1])
+            const peaks = []
+            const q = pts.filter((p) => p[0] >= x0)
+            for (let i = 1; i < q.length - 1; i++) if (q[i][1] < q[i - 1][1] && q[i][1] <= q[i + 1][1]) peaks.push(q[i][0])
+            const gaps = peaks.slice(1).map((x, i) => x - peaks[i])
+            return { pp: Math.max(...ys) - Math.min(...ys), cyc: gaps.reduce((a, b) => a + b, 0) / Math.max(1, gaps.length) }
+          }
+          window.__kitProbe = window.__kitProbe || {}
+          window.__kitProbe[ID] = {
+            times: [2.0, 4.5, 7.2, 11.9],
+            check(t) {
+              const out = []
+              const b = band()
+              if (t === 2.0) {
+                const z = R(ax.g.querySelector('text'))
+                let d = Infinity
+                for (const [x, y] of ch.lastLine('v')) d = Math.min(d, Math.hypot(Math.max(z.left - x, 0, x - z.right), Math.max(z.top - y, 0, y - z.bottom)))
+                return [{ name: 'the line\'s tail clear of the axis "0" (right-aligned 388, baseline 523)', got: d, want: '>= 12', pass: d >= 12 }]
+              }
+              if (t === 4.5) {
+                out.push({ name: 'S1 band x 400 to 1520 (left)', got: b.left, want: 400 }, { name: 'S1 band right', got: b.right, want: 1520 }, { name: 'S1 band top (35 cents at 2.5 px)', got: b.top, want: 312.5 }, { name: 'S1 band foot', got: b.bottom, want: 487.5 })
+                const w = wave(ch.lastLine('v'), ch.x(1.5))
+                out.push({ name: 'wave rule W 4: peak to peak 280 / W', got: w.pp, want: 70, tol: 1 }, { name: 'wave rule W 4: a cycle 203.6 / W', got: w.cyc, want: 50.9, tol: 1 }, { name: 'wave rule ratio (cycle / height) 0.727', got: w.cyc / w.pp, want: 0.727, tol: 0.02 })
+                const hr = R(ch.g.querySelector('.strip rect'))
+                out.push({ name: 'strip hairline y 690', got: hr.top + hr.height / 2, want: 690, tol: 1 })
+                out.push({ name: '"A3" right edge 366 (anchor end)', got: R(lab.A3.el).right, want: 366, tol: 2 }, { name: 'ILLUSTRATION x 1249 to 1520 (right)', got: R(ill.g).right, want: 1520 }, { name: 'ILLUSTRATION left', got: R(ill.g).left, want: 1249, tol: 3 }, { name: 'ILLUSTRATION y 120 to 160', got: R(ill.g).top, want: 120 }, { name: 'LISTEN ONLY left 1536', got: R(lis.g).left, want: 1536 }, { name: 'LISTEN ONLY right 1786', got: R(lis.g).right, want: 1786, tol: 3 })
+              } else if (t === 7.2) {
+                out.push({ name: 'at 0.78: band left 466', got: b.left, want: 466 }, { name: 'at 0.78: band right 1340', got: b.right, want: 1340 }, { name: 'at 0.78: band top 365.5 (W 6: 1.667 px a cent)', got: b.top, want: 365.5, tol: 2.5 }, { name: 'at 0.78: band foot 456.5', got: b.bottom, want: 456.5, tol: 2.5 })
+                out.push({ name: 'ILLUSTRATION at 0.78: x 1128 to 1340 (left)', got: R(ill.g).left, want: 1128, tol: 3 }, { name: 'LISTEN ONLY at 0.78: from 1352', got: R(lis.g).left, want: 1352 }, { name: 'LISTEN ONLY at 0.78: y 192 to 224 (foot)', got: R(lis.g).bottom, want: 224 })
+                const th = R(sl.g.querySelector('circle'))
+                out.push({ name: 'thumb at 0.78 (p 100 held): x 903 is p 50; here p 100 at 1340', got: th.x + th.width / 2, want: 0.78 * 1520 + 154 })
+              } else {
+                out.push({ name: 'S10 band top (W 10: 1 px a cent)', got: b.top, want: 365 }, { name: 'S10 band foot', got: b.bottom, want: 435 })
+                const w = wave(ch.lastLine('v'), ch.x(1.6))
+                out.push({ name: 'wave rule W 10: peak to peak 28', got: w.pp, want: 28, tol: 1 }, { name: 'wave rule W 10: a cycle 20.36', got: w.cyc, want: 20.36, tol: 1 })
+              }
+              return out
+            },
+          }
+        })()
+      </script>
+    </div>
+  </div></body></html>

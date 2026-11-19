@@ -1,0 +1,109 @@
+{
+  "ok": true,
+  "strict": false,
+  "lint": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "filesScanned": 2
+  },
+  "runtime": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": []
+  },
+  "layout": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 1,
+    "findings": [
+      {
+        "code": "content_overlap",
+        "severity": "info",
+        "time": 6.125,
+        "selector": "div.layer.mid > svg:nth-of-type(1) > g:nth-of-type(7) > text:nth-of-type(1)",
+        "message": "Two text blocks overlap and may render unreadable.",
+        "rect": {
+          "left": 1358.61,
+          "top": 237.93,
+          "right": 1640,
+          "bottom": 280.93,
+          "width": 281.39,
+          "height": 43
+        },
+        "containerSelector": "div.layer.mid > svg:nth-of-type(1) > g:nth-of-type(8) > text:nth-of-type(1)",
+        "text": "Now: holding back",
+        "fixHint": "Give each block its own zone, or mark intentional layering with data-layout-allow-overlap.",
+        "dataAttributes": {},
+        "sourceFile": "compositions/kit-gauge.html",
+        "bbox": {
+          "x": 1358.61,
+          "y": 237.93,
+          "width": 281.39,
+          "height": 43
+        },
+        "firstSeen": 6.125,
+        "lastSeen": 6.125,
+        "occurrences": 1,
+        "heldMs": 0
+      }
+    ],
+    "duration": 9,
+    "samples": [
+      3.3,
+      5.9,
+      6.3,
+      8.9
+    ],
+    "transitionSamples": [],
+    "transitionSamplesDropped": 0,
+    "tolerance": 2,
+    "totalIssueCount": 1,
+    "truncated": false
+  },
+  "motion": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": false,
+    "samples": 0
+  },
+  "contrast": {
+    "ok": true,
+    "errorCount": 0,
+    "warningCount": 0,
+    "infoCount": 0,
+    "findings": [],
+    "enabled": true,
+    "samples": [
+      3.3,
+      5.9,
+      6.3,
+      8.9
+    ],
+    "checked": 47,
+    "passed": 47
+  },
+  "hdr": {
+    "autoPromotion": null,
+    "inspection": "available"
+  },
+  "snapshots": {
+    "enabled": false,
+    "files": [],
+    "times": [],
+    "findingFiles": []
+  },
+  "_meta": {
+    "version": "0.8.97",
+    "latestVersion": "0.9.67",
+    "updateAvailable": true
+  }
+}

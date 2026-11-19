@@ -1,0 +1,106 @@
+<!doctype html>
+<!-- The probe's harness for lab/kit-src/mixup.html (lab/kit-src/probe.mjs): the kit, the fonts, the page. -->
+<html lang="en"><head><meta charset="UTF-8" />
+<script src="/assets/vendor/gsap-3.14.2.min.js"></script>
+<script src="/assets/cues.js"></script>
+<script src="/assets/scenes.js"></script>
+<script src="/assets/merc/roots.js"></script>
+<script src="/assets/lib/lesson.js"></script>
+<script src="/assets/lib/motion.js"></script>
+<script src="/assets/lib/marks.js"></script>
+<script src="/assets/lib/frames.js"></script>
+<script src="/assets/lib/chart.js"></script>
+<script src="/assets/lib/figure.js"></script>
+<script src="/assets/lib/gauge.js"></script>
+<script src="/assets/lib/mixup.js"></script>
+<script src="/assets/lib/folds.js"></script>
+<script src="/assets/lib/turn.js"></script>
+<script src="/assets/lib/recap.js"></script>
+<script src="/assets/lib/tease.js"></script>
+<script src="/assets/lib/hosts.js"></script>
+<link rel="stylesheet" href="/assets/lib/lesson.css" />
+<style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('/assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('/assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('/assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+</style></head><body><div id="root">
+    <!-- Kit lab: the mix-up card (mixup.js, with gauge.js and chart.js; HANDOFFS § The mix-up card, § The cuts
+         S6 to S7). 0 to 1.5 s 7a: the gauge, kept at F-gauge's pixels (L.MIXUP.CUT), folds back while its
+         small band and strip glide to the chart reassembled (L.MIXUP.REASSEMBLE); 1.5 to 2 s the chart takes
+         over; 2 to 3.5 s it shrinks into row 1 (L.MIXUP.ROW1, 0.41); 3.5 to 5 s the press pair draws, large;
+         5 to 6.5 s it shrinks into row 2 (0.5); the rows' words land as they would: row 0 with its dashed
+         underline and "?" (L.beliefRow), row 1 with its "ILLUSTRATION" chip at x 360. Frame-fixed screen px. -->
+    <div id="kit-mixup" data-composition-id="kit-mixup" data-start="0" data-duration="7" data-width="1920" data-height="1080">
+      <div class="scene" id="kit-mixup-root"></div>
+      <script>
+        ;(function () {
+          const ID = 'kit-mixup', D = 7
+          const C = L.C, M = L.MIXUP
+          const root = document.getElementById(ID + '-root')
+          const room = L.room(root, {})
+          const world = L.stage(room.mid), hud = L.stage(room.hud)
+          L.text(hud, 'kit-mixup: the mix-up card (screen px)', { x: 24, y: 1060, size: 20, family: 'mono', weight: 500, fill: C.ink2, opacity: 1 })
+          const ga = L.gauge(world)
+          ga.place(M.CUT)
+          const ch = L.bandChart(world, M.CHART)
+          const chTag = L.tag(ch.g, L.TAGS.illustration, M.CHART.tag)
+          const pr = L.pressPair(world)
+          const kicker = L.kicker(hud, M.ROWS.kicker.text, M.ROWS.kicker)
+          const rows = {}
+          const belief = L.beliefRow(hud)
+          for (const [n, v] of Object.entries(M.ROWS)) if (n !== 'kicker' && n !== 'row0') rows[n] = L.label(hud, v.text, v)
+          const row1Tag = L.tag(hud, L.TAGS.illustration, M.ROW1.tag)
+          const when = { row0: 0.2, row1: 3.0, row2a: 6.0, row2b: 6.0, row2c: 6.2 }
+          const lerpPlace = (a, b, u) => ({ s: L.lerp(a.s, b.s, u), dx: L.lerp(a.dx, b.dx, u), dy: L.lerp(a.dy, b.dy, u) })
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const u = L.clamp(t / 1.5)
+            const r = M.REASSEMBLE(u)
+            ga.draw({ band: { ...r.band, a: 1 - L.prog(t, 1.5, 0.5) }, strip: { ...r.strip, h: 28, a: 1 - L.prog(t, 1.5, 0.5) }, open: 1 - L.ease('power2.inOut')(u), frameA: 1 - u, gold: L.GAUGE.GOLD.loud })
+            const ca = L.prog(t, 1.5, 0.5)
+            ch.place(lerpPlace({ s: 1, dx: 0, dy: 0 }, M.ROW1, L.prog(t, 2, 1.5)))
+            ch.draw({ a: ca, lines: [{ id: 'p', contour: 'pushed', t: 4 }], strip: { envs: [{ id: 'p', contour: 'pushed', t: 4 }] } })
+            chTag.draw({ alpha: ca * (1 - L.prog(t, 2, 0.3)) })
+            const pu = L.prog(t, 5, 1.5)
+            pr.draw({ a: L.prog(t, 3.5, 0.2), draw: L.prog(t, 3.5, 1.2, 'none'), place: t >= 5 ? lerpPlace({ s: 1, dx: 0, dy: 0 }, M.ROW2, pu) : null, namesA: 1 - L.prog(t, 5, 0.3), smallA: L.prog(t, 6.2, 0.3), pushA: 1 - pu })
+            kicker.draw(t, 0, 99)
+            for (const [n, l] of Object.entries(rows)) l.draw({ a: when[n] != null && t >= when[n] ? 1 : 0 })
+            belief.draw({ a: L.prog(t, 0.2, 0.2), line: L.prog(t, 0.4, 0.5), qA: L.prog(t, 0.9, 0.2), qScale: L.pulse(t, [0.9], 'label') })
+            // row 1's chip: the chart's own chip leaves as it shrinks (2.0 to 2.3) and row 1's lands under the words
+            row1Tag.draw({ alpha: L.prog(t, 3.0, 0.2) })
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+
+          const R = (el) => el.getBoundingClientRect()
+          const rects = () => pr.g.querySelectorAll('rect')
+          window.__kitProbe = window.__kitProbe || {}
+          window.__kitProbe[ID] = {
+            times: [1.5, 3.5, 4.9, 6.9],
+            check(t) {
+              if (t === 1.5) {
+                const b = R(ga.g.children[1].querySelector('rect'))
+                return [{ name: '7a end: the small band on the chart\'s band, x 400', got: b.left, want: 400 }, { name: 'right 1520', got: b.right, want: 1520 }, { name: 'top 382.5 (470 - 87.5)', got: b.top, want: 382.5 }, { name: 'foot 557.5', got: b.bottom, want: 557.5 }]
+              }
+              if (t === 3.5) {
+                const b = R(ch.g.querySelector('.band rect')), tg = R(row1Tag.g), ul = R(belief.line), q = R(belief.q)
+                const ext = [{ name: 'row 0: dashed underline at y 194 under the whole row (left 360)', got: ul.left, want: 358.5, tol: 2 }, { name: 'row 0: underline right = the words\' end', got: ul.right, want: belief.end() + 1.5, tol: 2 }, { name: 'row 0: its "?" 14 px after the last word', got: q.left - belief.end(), want: 14, tol: 6 },
+                  { name: 'row 1: its "ILLUSTRATION" chip from x 360', got: tg.left, want: 360 }, { name: 'row 1: chip centred y 345', got: tg.top + 20, want: 345 }]
+                return [...ext, { name: 'row 1: the chart at 0.41, band from x 1180', got: b.left, want: 1180 }, { name: 'right 1639.2', got: b.right, want: 1639.2 }, { name: 'top 274.1', got: b.top, want: 274.1 }, { name: 'foot 345.9', got: b.bottom, want: 345.9 }]
+              }
+              const [e, p] = rects()
+              if (t === 4.9) return [{ name: 'pair: "easy" x 860 to 1200', got: R(e).left, want: 860 }, { name: '"easy" y 570 to 790 (top)', got: R(e).top, want: 570 }, { name: '"easy" foot', got: R(e).bottom, want: 790 }, { name: '"pressed" x 1260 to 1600 (right)', got: R(p).right, want: 1600 }, { name: '"pressed" y 652 to 708 (top)', got: R(p).top, want: 652 }]
+              return [{ name: 'row 2 (0.5): "easy" from x 1180', got: R(e).left, want: 1180 }, { name: '"easy" top 465', got: R(e).top, want: 465 }, { name: '"pressed" right 1550', got: R(p).right, want: 1550 }, { name: 'row 2 names baseline 605 (26 px)', got: 520 + 0.5 * (850 - 680), want: 605, tol: 0.5 }]
+            },
+          }
+        })()
+      </script>
+    </div>
+  </div></body></html>

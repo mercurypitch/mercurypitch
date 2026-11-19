@@ -1,0 +1,163 @@
+/* Find Your Pitch, Lesson 5 kit: the breath figure (HANDOFFS § World, The breath figure). window.L,
+   after marks.js. A schematic standing figure in side view, facing right, chrome on the dark room (not
+   to scale), drawn in figure units (u, v): u 0 to 400 back to front, v 0 (crown) to 1000 (soles), placed
+   by x = x0 + k u, y = y0 + k v. Chrome strokes 3 px at k 1 (they scale with k), joins round.
+
+     L.FIGURE           the placements: S6 { k 1.15, x0 200, y0 120, fade [750, 780] } (the torso), CUT
+                        (F-gauge's pixels at the S6 to S7 cut: k 1.2075, x0 150, y0 100.75), S7 (parked:
+                        k 0.5, x0 140, y0 180, fade [450, 465], dimmed to 35 % by the scene), S8 (whole:
+                        k 0.7, x0 830, y0 140), S13 (recap card 1: k 0.75, x0 1150, y0 90, fade [480, 495]);
+                        PARTS, every part's figure units (HANDOFFS' table)
+     const fig = L.figure(svg)
+     fig.draw({
+       k, x0, y0,          the placement (tween them for an object move: 7a, 8b)
+       a = 1,              the whole figure's opacity (dimmed: 0.35 parked, 0.25 under a card; its labels
+                           are the scene's and hide while it is dim)
+       draw = 1,           0..1 its strokes draw on from the spine outward (6b)
+       legs = 1,           0..1 the legs draw down from the hips (8b; 0 in S6, S7 and S13)
+       fade = null,        [y0, y1] world y: everything below y1 hidden, fading from y0 (the masked legs)
+       breath = 0,         -1..1: 1 breathing in (the dome flattens and lowers to v 485, control v 470; the
+                           belly bows to u 360 at v 490; the lungs to ry 118, centre v 345); -1 breathing out
+                           (the belly wall in to u 315 as the belly and rib muscles push; the lungs to ry 95,
+                           centre v 330; the dome at rest, rising: it never pushes)
+       lungFill = 0,       0..1 the lungs' outline fills (chrome 14 %)
+       glow = {},          { ribs, dome, lungs, belly, neck, back } 0..1, a soft chrome glow on the part
+       run = null,         { part: 'dome' | 'neck' | 'back', u, a } a light running along a part (L.run)
+       knee = 0,           degrees the knee softens (8c: 2, and back)
+       jaw = 0,            world px the jaw drops (8c: 4)
+     })
+     fig.pt(u, v) -> [x, y]     a figure point at the last placement
+     fig.at(name) -> [x, y]     a named anchor at the last placement and breath: head (centre), crown, chin,
+                                throat, shoulder, lungs, domeApex, domeL, domeR, belly (its front at v 490),
+                                back (u 150, v 400), knee, ankle, toe, heel
+*/
+;(function () {
+  const L = window.L
+  const C = L.C
+  const f2 = L.f2
+  const clamp = L.clamp
+  const lerp = L.lerp
+
+  L.FIGURE = {
+    S6: { k: 1.15, x0: 200, y0: 120, fade: [750, 780] },
+    CUT: { k: 1.2075, x0: 150, y0: 100.75, fade: [759.25, 790.75] },
+    S7: { k: 0.5, x0: 140, y0: 180, fade: [450, 465] },
+    S8: { k: 0.7, x0: 830, y0: 140, fade: null },
+    S13: { k: 0.75, x0: 1150, y0: 90, fade: [480, 495] },
+    PARTS: {
+      head: [230, 85], headR: 65, jaw: [200, 130], chin: [285, 140], neckBack: 200, neckFront: 250, neckV: [150, 215],
+      throat: [250, 190], shoulder: [175, 235], back: 150, backV: [230, 560], chest: 320, chestV: [230, 400],
+      belly: 330, bellyV: [420, 560], ribs: [290, 340, 390], ribU: [160, 320], lungs: [240, 335, 75, 105],
+      dome: [[155, 470], [240, 400], [325, 470]], knee: [235, 780], ankle: [220, 980], toe: [300, 1000],
+    },
+  }
+
+  L.figure = (svg) => {
+    const id = L.uid('fig')
+    const outer = L.svg('g', { class: 'breath-figure', opacity: 0 }, svg)
+    const defs = L.svg('defs', {}, outer)
+    const blur = L.svg('filter', { id: id + '-glow', x: '-50%', y: '-50%', width: '200%', height: '200%' }, defs)
+    L.svg('feGaussianBlur', { stdDeviation: 6 }, blur)
+    const fadeGrad = L.svg('linearGradient', { id: id + '-fg', gradientUnits: 'userSpaceOnUse', x1: 0, x2: 0, y1: 0, y2: 1 }, defs)
+    const fs0 = L.svg('stop', { offset: 0, 'stop-color': '#fff' }, fadeGrad)
+    const fs1 = L.svg('stop', { offset: 1, 'stop-color': '#000' }, fadeGrad)
+    const mask = L.svg('mask', { id: id + '-m', maskUnits: 'userSpaceOnUse', x: -4000, y: -4000, width: 10000, height: 10000 }, defs)
+    const maskRect = L.svg('rect', { x: -4000, y: -4000, width: 10000, height: 10000, fill: '#fff' }, mask)
+    const body = L.svg('g', { mask: `url(#${id}-m)` }, outer)
+    const fig = L.svg('g', {}, body)
+    const glows = L.svg('g', { filter: `url(#${id}-glow)` }, fig)
+    const strokes = L.svg('g', {}, fig)
+    const sk = { fill: 'none', stroke: C.chrome, 'stroke-width': 3, 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }
+    const P = L.FIGURE.PARTS
+    const mk = (attrs = {}) => L.svg('path', { ...sk, pathLength: 1, 'stroke-dasharray': '1 1', ...attrs }, strokes)
+    const lungFill = L.svg('ellipse', { fill: C.chrome, 'fill-opacity': 0 }, strokes)
+    const el = {
+      head: L.svg('circle', { ...sk, cx: P.head[0], cy: P.head[1], r: P.headR, pathLength: 1, 'stroke-dasharray': '1 1' }, strokes),
+      jaw: mk(), neckB: mk(), neckF: mk(), back: mk(), front: mk(), belly: mk(), dome: mk(),
+      ribs: P.ribs.map(() => mk({ 'stroke-opacity': 0.75, 'stroke-width': 2.4 })),
+      lungs: L.svg('ellipse', { ...sk, pathLength: 1, 'stroke-dasharray': '1 1' }, strokes),
+      leg: mk(),
+    }
+    const runP = L.svg('path', { fill: 'none', stroke: '#ffffff', 'stroke-width': 5, 'stroke-linecap': 'round', pathLength: 1, 'stroke-dasharray': '0.16 1', opacity: 0 }, fig)
+    const gl = {}
+    for (const name of ['ribs', 'dome', 'lungs', 'belly', 'neck', 'back']) gl[name] = L.svg('path', { fill: 'none', stroke: C.chrome, 'stroke-width': 9, 'stroke-linecap': 'round', opacity: 0 }, glows)
+
+    const last = { k: 1, x0: 0, y0: 0, breath: 0, knee: 0, jaw: 0, shape: null }
+    const shapeOf = (breath, knee, jaw) => {
+      const bi = clamp(breath, 0, 1), bo = clamp(-breath, 0, 1)
+      // the dome: rest, flattened and lowered on the breath in, at rest on the way out (it rises)
+      const dEnd = lerp(470, 485, bi), dCtl = lerp(400, 470, bi)
+      const dome = `M155 ${f2(dEnd)} Q240 ${f2(dCtl)} 325 ${f2(dEnd)}`
+      const domeApex = 0.5 * dEnd + 0.5 * dCtl
+      // the belly wall's front at v 490: 330 at rest, 360 in, 315 out
+      const bu = 330 + 30 * bi - 15 * bo
+      const belly = `M320 400 Q330 404 330 420 Q${f2(2 * bu - 330)} 490 330 560`
+      const lungs = [240, 335 + 10 * bi - 5 * bo, 75, 105 + 13 * bi - 10 * bo]
+      const kx = Math.tan((knee * Math.PI) / 180) * 220
+      const leg = `M240 560 L${f2(235 + kx)} 780 L220 980 L205 1000 L300 1000`
+      const jawP = `M200 130 L285 ${f2(140 + jaw)}`
+      return { dome, domeApex, dEnd, belly, bu, lungs, leg, jawP, kx }
+    }
+    const F = {
+      g: outer,
+      pt: (u, v) => [last.x0 + last.k * u, last.y0 + last.k * v],
+      at(name) {
+        const s = last.shape || shapeOf(0, 0, 0)
+        const pts = {
+          head: P.head, crown: [P.head[0], P.head[1] - P.headR], chin: [285, 140 + last.jaw], throat: P.throat, shoulder: P.shoulder,
+          lungs: [s.lungs[0], s.lungs[1]], domeApex: [240, s.domeApex], domeL: [155, s.dEnd], domeR: [325, s.dEnd],
+          belly: [s.bu, 490], back: [150, 400], knee: [235 + s.kx, 780], ankle: P.ankle, toe: P.toe, heel: [205, 1000],
+        }
+        const p = pts[name]
+        if (!p) throw new Error('L.figure: no anchor ' + name)
+        return F.pt(p[0], p[1])
+      },
+      draw({ k = 1, x0 = 0, y0 = 0, a = 1, draw = 1, legs = 1, fade = null, breath = 0, lungFill: lf = 0, glow = {}, run = null, knee = 0, jaw = 0 } = {}) {
+        Object.assign(last, { k, x0, y0, breath, knee, jaw })
+        const s = (last.shape = shapeOf(breath, knee, jaw))
+        outer.setAttribute('opacity', clamp(a).toFixed(3))
+        fig.setAttribute('transform', `translate(${f2(x0)} ${f2(y0)}) scale(${k.toFixed(5)})`)
+        if (fade) {
+          fadeGrad.setAttribute('y1', f2(fade[0])); fadeGrad.setAttribute('y2', f2(fade[1]))
+          maskRect.setAttribute('fill', `url(#${id}-fg)`)
+        } else maskRect.setAttribute('fill', '#fff')
+        // the paths
+        el.jaw.setAttribute('d', s.jawP)
+        el.neckB.setAttribute('d', `M${P.neckBack} 150 L${P.neckBack} 215`)
+        el.neckF.setAttribute('d', `M${P.neckFront} 150 L${P.neckFront} 215`)
+        el.back.setAttribute('d', 'M150 560 L150 262 Q150 236 175 235 Q193 233 200 215')
+        el.front.setAttribute('d', 'M250 215 Q262 232 296 236 Q320 240 320 262 L320 400')
+        el.belly.setAttribute('d', s.belly)
+        el.dome.setAttribute('d', s.dome)
+        P.ribs.forEach((v, i) => el.ribs[i].setAttribute('d', `M160 ${v} Q240 ${v + 16} 320 ${v}`))
+        for (const e of [el.lungs, lungFill]) {
+          e.setAttribute('cx', s.lungs[0]); e.setAttribute('cy', f2(s.lungs[1])); e.setAttribute('rx', s.lungs[2]); e.setAttribute('ry', f2(s.lungs[3]))
+        }
+        lungFill.setAttribute('fill-opacity', (0.14 * clamp(lf)).toFixed(3))
+        el.leg.setAttribute('d', s.leg)
+        // drawing on from the spine outward: the back first, then the rest
+        const dr = (e, from, to) => e.setAttribute('stroke-dashoffset', (1 - clamp((draw - from) / (to - from))).toFixed(4))
+        dr(el.back, 0, 0.45)
+        for (const e of [el.neckB, el.front, el.dome, el.lungs, ...el.ribs]) dr(e, 0.2, 0.75)
+        for (const e of [el.head, el.jaw, el.neckF, el.belly]) dr(e, 0.35, 1)
+        el.leg.setAttribute('stroke-dashoffset', (1 - clamp(legs) * clamp((draw - 0.5) / 0.5)).toFixed(4))
+        // glows (accents)
+        const gd = { ribs: P.ribs.map((v) => `M160 ${v} Q240 ${v + 16} 320 ${v}`).join(' '), dome: s.dome, belly: s.belly, back: 'M150 560 L150 262', neck: `M${P.neckFront} 150 L${P.neckFront} 215 M${P.neckBack} 150 L${P.neckBack} 215`,
+          lungs: `M${s.lungs[0] - s.lungs[2]} ${f2(s.lungs[1])} a${s.lungs[2]} ${f2(s.lungs[3])} 0 1 0 ${2 * s.lungs[2]} 0 a${s.lungs[2]} ${f2(s.lungs[3])} 0 1 0 ${-2 * s.lungs[2]} 0` }
+        for (const [name, p] of Object.entries(gl)) {
+          const v = clamp(glow[name] || 0)
+          p.setAttribute('opacity', (0.7 * v).toFixed(3))
+          if (v > 0) p.setAttribute('d', gd[name])
+        }
+        // a light running along a part
+        if (run && run.a > 0) {
+          const d = run.part === 'neck' ? `M${P.neckFront} 150 L${P.neckFront} 215` : run.part === 'back' ? 'M150 262 L150 560' : s.dome
+          runP.setAttribute('d', d)
+          runP.setAttribute('stroke-dashoffset', f2(-(run.u * 1.16 - 0.16)))
+          runP.setAttribute('opacity', (0.8 * clamp(run.a)).toFixed(3))
+        } else runP.setAttribute('opacity', '0')
+      },
+    }
+    return F
+  }
+})()

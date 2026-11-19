@@ -1,0 +1,832 @@
+[
+ {
+  "t": 0,
+  "name": "first frame (S9's last): the stack at full, its labels and both chips",
+  "got": "1.000 / 11111111 / 1.000 1.000",
+  "want": "1.000 / 11111111 / 1.000 1.000",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "the settled flag's time by the page's rule (16 ms readings, 0.5 s within 35 c): entry and flag, the take's own time",
+  "got": "0.704 / 1.204 (world x 478.8)",
+  "want": "about 0.69 / 1.19 (x 477)",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "0.4 s rule: the closest two landings (the chart with its labels / kicker)",
+  "got": 0.4,
+  "want": ">= 0.40",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "returns after the pull: the axis, \"A, any octave\", \"settled\", 0.2 to 0.3 s apart",
+  "got": "0.25, 0.21",
+  "want": "0.20 to 0.30",
+  "pass": true
+ },
+ {
+  "t": 0.4000000000000341,
+  "name": "10a: the stack at 25 %, its labels and chips hidden, its circles undrawn",
+  "got": "0.250 / 0.00 / 0",
+  "want": "0.250 / 0.00 / 0",
+  "pass": true
+ },
+ {
+  "t": 2.4200000000000044,
+  "name": "10a: the stack gone, up fast, before the chart fades in",
+  "got": "0.000, 0.000",
+  "want": "0.000, 0.000",
+  "pass": true
+ },
+ {
+  "t": 2.6700000000000226,
+  "name": "10b: the chart about 40 % as the push moves onto it (board 303.65)",
+  "got": 0.42,
+  "want": 0.42,
+  "tol": 0.05,
+  "pass": true
+ },
+ {
+  "t": 3.9700000000000224,
+  "name": "10b: F-hold, W 4: the plot x 232 to 1688, band y 416 to 644",
+  "got": "232.0 to 1688.0, 416.3 to 643.8",
+  "want": "232 to 1688, 416 to 644",
+  "pass": true
+ },
+ {
+  "t": 3.9700000000000224,
+  "name": "10b: Merc's line y 530",
+  "got": 530,
+  "want": 530,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 3.9700000000000224,
+  "name": "10b: \"A, any octave\" from x 232, baseline 387",
+  "got": "232.0, 387.0",
+  "want": "232, 387",
+  "pass": true
+ },
+ {
+  "t": 3.9700000000000224,
+  "name": "10b: \"ILLUSTRATION\" right-aligned 1688",
+  "got": 1688.01,
+  "want": 1688,
+  "tol": 2,
+  "pass": true
+ },
+ {
+  "t": 3.9700000000000224,
+  "name": "10b: the axis's \"0\" from x 232 (left-aligned 400), its baseline 690",
+  "got": "232.0, 689.9",
+  "want": "232, 690",
+  "pass": true
+ },
+ {
+  "t": 3.9700000000000224,
+  "name": "10b: the hosts back at 300 in the corners",
+  "got": "30.5-189.5; 1720.5-1879.5",
+  "want": "30.5-189.5; 1720.5-1879.5",
+  "pass": true
+ },
+ {
+  "t": 3.9700000000000224,
+  "name": "keep-out: nearest visible text to merc's body box (\"0\")",
+  "got": 42.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 3.9700000000000224,
+  "name": "keep-out: nearest visible text to tavi's body box (\"4 s\")",
+  "got": 32.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 6.148000000000013,
+  "name": "10b: the dashed guess along y 530, x 232 to 1688",
+  "got": "232.0 to 1688.0, 530.0 to 530.0",
+  "want": "232 to 1688, about 530",
+  "pass": true
+ },
+ {
+  "t": 6.148000000000013,
+  "name": "10b: its \"?\" right of the plot (x 1709 on, y 514 to 560)",
+  "got": "1708.8 to 1750.6, 476.9 to 581.9",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 6.148000000000013,
+  "name": "10b: Merc's line at 0 under the guess (DECISIONS 170)",
+  "got": "0.000",
+  "want": "0.000",
+  "pass": true
+ },
+ {
+  "t": 6.148000000000013,
+  "name": "keep-out: nearest visible text to merc's body box (\"0\")",
+  "got": 42.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 6.148000000000013,
+  "name": "keep-out: nearest visible text to tavi's body box (\"4 s\")",
+  "got": 32.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 8.926999999999998,
+  "name": "10b: W 10: the band y 484.5 to 575.5",
+  "got": "232.0 to 1688.0, 484.5 to 575.5",
+  "want": "232 to 1688, 484.5 to 575.5",
+  "pass": true
+ },
+ {
+  "t": 8.926999999999998,
+  "name": "10b: the ticks 146 px apart (1 to 9 s; \"0\" and \"10 s\" stand for the end ticks)",
+  "got": "9: 145.6 to 145.6",
+  "want": "9: 145.6",
+  "pass": true
+ },
+ {
+  "t": 8.926999999999998,
+  "name": "10b: \"10 s\" shown, \"4 s\" gone",
+  "got": "0:1.0 4 s:0.0 10 s:1.0",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 10.629000000000023,
+  "name": "10c: the mint edge and \"in the band\" (x 544, baseline 387) lit once",
+  "got": "544.0, a 1.00",
+  "want": "544, 1",
+  "pass": true
+ },
+ {
+  "t": 11.029000000000023,
+  "name": "10c (provisional, settled): the flag on the band's top edge at the entry (screen x 334.5 for world 478.8; y 464 to 484.5)",
+  "got": "334.5, 463.7 to 484.5",
+  "want": "about 332, 464 to 484.5",
+  "pass": true
+ },
+ {
+  "t": 11.029000000000023,
+  "name": "10c: \"settled\" over it, baseline 455 (screen)",
+  "got": 454.6,
+  "want": 455,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 11.029000000000023,
+  "name": "\"settled\" box",
+  "got": "283.0 to 386.0, 420.6 to 463.6",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 12.025000000000023,
+  "name": "10c: the guess and its \"?\" gone, Merc's line back to full",
+  "got": "0.000, 1.000",
+  "want": "0.000, 1.000",
+  "pass": true
+ },
+ {
+  "t": 19.575000000000024,
+  "name": "wave rule at F-hold (1.3): one cycle 26.5 px (within 10 %)",
+  "got": 26.52,
+  "want": 26.5,
+  "tol": 2.6500000000000004,
+  "pass": true
+ },
+ {
+  "t": 19.575000000000024,
+  "name": "wave rule at F-hold (1.3): peak to peak 36.4 px",
+  "got": 36.4,
+  "want": 36.4,
+  "tol": 3.64,
+  "pass": true
+ },
+ {
+  "t": 19.575000000000024,
+  "name": "wave rule at F-hold (1.3): ratio 1.30 to 1.45",
+  "got": 1.37,
+  "want": "1.30 to 1.45",
+  "pass": true
+ },
+ {
+  "t": 19.575000000000024,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 19.575000000000024,
+  "name": "keep-out: nearest visible text to merc's body box (\"0\")",
+  "got": 42.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 19.575000000000024,
+  "name": "keep-out: nearest visible text to tavi's body box (\"10 s\")",
+  "got": 32.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 25.198000000000025,
+  "name": "10d: CU-scoop: the band y 457 to 583",
+  "got": "360.0 to 2376.0, 457.0 to 583.0",
+  "want": "y 457 to 583",
+  "pass": true
+ },
+ {
+  "t": 25.198000000000025,
+  "name": "10d: the scoop's low point (the take's start, -60 c) at (360, 628)",
+  "got": "360.0, 628.0",
+  "want": "360, 628",
+  "pass": true
+ },
+ {
+  "t": 25.198000000000025,
+  "name": "10d: the axis faded, the chart's chip out (edge rule)",
+  "got": "0.000, 0.000",
+  "want": "0.000, 0.000",
+  "pass": true
+ },
+ {
+  "t": 25.198000000000025,
+  "name": "wave rule at CU-scoop (1.8): one cycle 36.7 px (within 10 %)",
+  "got": 36.72,
+  "want": 36.7,
+  "tol": 3.6700000000000004,
+  "pass": true
+ },
+ {
+  "t": 25.198000000000025,
+  "name": "wave rule at CU-scoop (1.8): peak to peak 50.4 px",
+  "got": 50.4,
+  "want": 50.4,
+  "tol": 5.04,
+  "pass": true
+ },
+ {
+  "t": 25.198000000000025,
+  "name": "wave rule at CU-scoop (1.8): ratio 1.30 to 1.45",
+  "got": 1.37,
+  "want": "1.30 to 1.45",
+  "pass": true
+ },
+ {
+  "t": 25.198000000000025,
+  "name": "keep-out: nearest visible text to merc's body box (\"settled\")",
+  "got": 326.65,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 25.198000000000025,
+  "name": "keep-out: nearest visible text to tavi's body box (\"in the band\")",
+  "got": 727.86,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 25.548000000000027,
+  "name": "LAB-CHECKS 14 at 326.20 + 0.3: SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 380 to 420",
+  "got": "1110.0 to 1563.2, 380.0 to 420.0",
+  "want": "1110 to 1563, 380 to 420",
+  "pass": true
+ },
+ {
+  "t": 25.548000000000027,
+  "name": "LAB-CHECKS 14 at 326.20 + 0.3: nothing passes under it (nearest: the band's top)",
+  "got": 37,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 25.548000000000027,
+  "name": "LAB-CHECKS 14: SLOWED clears \"settled\" (real width)",
+  "got": 536.73,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 29.84200000000003,
+  "name": "10d: \"scoop\" centred (360, 700 baseline), 54 px on screen",
+  "got": "360.0, 700.0",
+  "want": "360, 700",
+  "pass": true
+ },
+ {
+  "t": 29.84200000000003,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 29.84200000000003,
+  "name": "keep-out: nearest visible text to merc's body box (\"scoop\")",
+  "got": 98.92,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 29.84200000000003,
+  "name": "keep-out: nearest visible text to tavi's body box (\"SLOWED · ILLUSTRATION\")",
+  "got": 285.7,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 31.14,
+  "name": "LAB-CHECKS 14 mid-truck (+0.50 s): SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 380 to 420",
+  "got": "1110.0 to 1563.2, 380.0 to 420.0",
+  "want": "1110 to 1563, 380 to 420",
+  "pass": true
+ },
+ {
+  "t": 31.14,
+  "name": "LAB-CHECKS 14 mid-truck (+0.50 s): nothing passes under it (nearest: the band's top)",
+  "got": 37,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 31.14,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 31.64,
+  "name": "LAB-CHECKS 14 mid-truck (+1.00 s): SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 380 to 420",
+  "got": "1110.0 to 1563.2, 380.0 to 420.0",
+  "want": "1110 to 1563, 380 to 420",
+  "pass": true
+ },
+ {
+  "t": 31.64,
+  "name": "LAB-CHECKS 14 mid-truck (+1.00 s): nothing passes under it (nearest: the band's top)",
+  "got": 37,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 31.64,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.14,
+  "name": "LAB-CHECKS 14 mid-truck (+1.50 s): SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 380 to 420",
+  "got": "1110.0 to 1563.2, 380.0 to 420.0",
+  "want": "1110 to 1563, 380 to 420",
+  "pass": true
+ },
+ {
+  "t": 32.14,
+  "name": "LAB-CHECKS 14 mid-truck (+1.50 s): nothing passes under it (nearest: the band's top)",
+  "got": 37,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 32.14,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.59,
+  "name": "LAB-CHECKS 14 mid-truck (+1.95 s): SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 380 to 420",
+  "got": "1110.0 to 1563.2, 380.0 to 420.0",
+  "want": "1110 to 1563, 380 to 420",
+  "pass": true
+ },
+ {
+  "t": 32.59,
+  "name": "LAB-CHECKS 14 mid-truck (+1.95 s): nothing passes under it (nearest: the band's top)",
+  "got": 37,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 32.59,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 32.69,
+  "name": "10e: CU-wave: the chart's chip at x 1408 to 1896, centred y 304, at full",
+  "got": "1408.8 to 1896.0, 268.0 to 340.0, a 1.000",
+  "want": "1408 to 1896, 284 to 324, a 1",
+  "pass": true
+ },
+ {
+  "t": 32.69,
+  "name": "10e: SLOWED left as the truck lands",
+  "got": "0.984",
+  "want": "< 0.1 by +0.2 s (info)",
+  "pass": true
+ },
+ {
+  "t": 32.69,
+  "name": "10e: the band y 457 to 583",
+  "got": "-120.0 to 1896.0, 457.0 to 583.0",
+  "want": "y 457 to 583",
+  "pass": true
+ },
+ {
+  "t": 32.69,
+  "name": "wave rule at CU-wave (1.8): one cycle 36.7 px (within 10 %)",
+  "got": 36.72,
+  "want": 36.7,
+  "tol": 3.6700000000000004,
+  "pass": true
+ },
+ {
+  "t": 32.69,
+  "name": "wave rule at CU-wave (1.8): peak to peak 50.4 px",
+  "got": 50.4,
+  "want": 50.4,
+  "tol": 5.04,
+  "pass": true
+ },
+ {
+  "t": 32.69,
+  "name": "wave rule at CU-wave (1.8): ratio 1.30 to 1.45",
+  "got": 1.37,
+  "want": "1.30 to 1.45",
+  "pass": true
+ },
+ {
+  "t": 32.69,
+  "name": "keep-out: nearest visible text to merc's body box (\"in the band\")",
+  "got": 335.33,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 32.69,
+  "name": "keep-out: nearest visible text to tavi's body box (\"SLOWED · ILLUSTRATION\")",
+  "got": 285.7,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 33.952,
+  "name": "10e: the vibrato's bracket at screen x 1500, y 495 to 545",
+  "got": "1485.6 to 1500.0, 494.8 to 545.2",
+  "want": "x 1486 to 1500, y 495 to 545",
+  "pass": true
+ },
+ {
+  "t": 33.952,
+  "name": "10e: \"small vibrato: inside the band\" from (888, 416)",
+  "got": "888.0, 415.6",
+  "want": "888, 416",
+  "pass": true
+ },
+ {
+  "t": 33.952,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 33.952,
+  "name": "keep-out: nearest visible text to merc's body box (\"in the band\")",
+  "got": 335.33,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 33.952,
+  "name": "keep-out: nearest visible text to tavi's body box (\"small vibrato: inside the band\")",
+  "got": 249.09,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 38.30300000000002,
+  "name": "10e: the mint edge glows, \"in the band\" scales 1.08 (rising)",
+  "got": " translate(640.00 290.00) scale(1.0800) translate(-640.00 -290.00)",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 40.62000000000005,
+  "name": "10f: back at F-hold, band 484.5 to 575.5",
+  "got": "232.0 to 1688.0, 484.5 to 575.5",
+  "want": "232 to 1688, 484.5 to 575.5",
+  "pass": true
+ },
+ {
+  "t": 41.310000000000045,
+  "name": "10f: the axis, \"A, any octave\" and \"settled\" back",
+  "got": "1.000 1.00 1.00",
+  "want": "1.000 1.00 1.00",
+  "pass": true
+ },
+ {
+  "t": 41.310000000000045,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 42.813,
+  "name": "10f: \"steady: settles into the band and stays\" at (232, 322)",
+  "got": "232.0, 322.0",
+  "want": "232, 322",
+  "pass": true
+ },
+ {
+  "t": 42.813,
+  "name": "10f: the top bracket from the flag to the plot's end",
+  "got": "334.5 to 1688.0, 475.4 to 483.2",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 42.813,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.389000000000024,
+  "name": "10f: the bracket under the plot, 0 to 10 s, y 712",
+  "got": "232.0 to 1688.0, 699.0 to 712.0",
+  "want": "232 to 1688, 699 to 712",
+  "pass": true
+ },
+ {
+  "t": 44.389000000000024,
+  "name": "10f: \"a comfortable, fixed length\" centred 960, baseline 760",
+  "got": "960.0, 760.1",
+  "want": "960, 760",
+  "pass": true
+ },
+ {
+  "t": 44.389000000000024,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 44.389000000000024,
+  "name": "keep-out: nearest visible text to merc's body box (\"0\")",
+  "got": 42.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 44.389000000000024,
+  "name": "keep-out: nearest visible text to tavi's body box (\"10 s\")",
+  "got": 32.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 48.93000000000003,
+  "name": "10g: her guess at (232, 257), its dashed underline and \"?\"",
+  "got": "232.0, 257.0; line 232.0 to 820.1, 275.2 to 275.2; ? 838.3 to 880.1, 174.0 to 279.0",
+  "want": "232, 257",
+  "pass": true
+ },
+ {
+  "t": 48.93000000000003,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 48.93000000000003,
+  "name": "keep-out: nearest visible text to merc's body box (\"0\")",
+  "got": 42.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 48.93000000000003,
+  "name": "keep-out: nearest visible text to tavi's body box (\"10 s\")",
+  "got": 32.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 52.62,
+  "name": "10h: the frame at x 1000 to 1640, band y 210 to 280 (screen)",
+  "got": "1000.0 to 1640.0, 210.0 to 280.0",
+  "want": "1000 to 1640, 210 to 280",
+  "pass": true
+ },
+ {
+  "t": 52.62,
+  "name": "10h: Merc's line y 245, 4 px on screen",
+  "got": "245.00, 4.00",
+  "want": "245.00, 4.00",
+  "pass": true
+ },
+ {
+  "t": 52.62,
+  "name": "10h: her line, the flag, the brackets and the labels gone",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 53.18000000000005,
+  "name": "10h: the voice box x 300 to 640, y 190 to 510",
+  "got": "300.0 to 640.0, 190.0 to 510.0",
+  "want": "300 to 640, 190 to 510",
+  "pass": true
+ },
+ {
+  "t": 53.18000000000005,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 53.18000000000005,
+  "name": "keep-out: nearest visible text to merc's body box (\"voice box\")",
+  "got": 482.81,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 53.18000000000005,
+  "name": "keep-out: nearest visible text to tavi's body box (\"voice box\")",
+  "got": 1368.77,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 56.38000000000004,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 56.38000000000004,
+  "name": "keep-out: nearest visible text to merc's body box (\"a steady note needs steady air too\")",
+  "got": 70.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 56.38000000000004,
+  "name": "keep-out: nearest visible text to tavi's body box (\"a steady note needs steady air too\")",
+  "got": 845.14,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 59.390000000000015,
+  "name": "10h: the silent line's head at x 1080.0 (106.7 px a second); the thumb",
+  "got": "1080.0; thumb 1401.9, p 63",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 59.390000000000015,
+  "name": "10h: \"ILLUSTRATION\" on the frame at x 1369 to 1640, y 156 to 196",
+  "got": "1369.3 to 1640.0, 156.0 to 196.0",
+  "want": "1369 to 1640, 156 to 196",
+  "pass": true
+ },
+ {
+  "t": 59.390000000000015,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 59.390000000000015,
+  "name": "keep-out: nearest visible text to merc's body box (\"a steady note needs steady air too\")",
+  "got": 70.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 59.390000000000015,
+  "name": "keep-out: nearest visible text to tavi's body box (\"63\")",
+  "got": 414.8,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 60.230000000000004,
+  "name": "10h: the silent line's head at x 1169.6 (106.7 px a second); the thumb",
+  "got": "1169.6; thumb 1439.7, p 69",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 60.230000000000004,
+  "name": "10h: \"ILLUSTRATION\" on the frame at x 1369 to 1640, y 156 to 196",
+  "got": "1369.3 to 1640.0, 156.0 to 196.0",
+  "want": "1369 to 1640, 156 to 196",
+  "pass": true
+ },
+ {
+  "t": 60.230000000000004,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 60.230000000000004,
+  "name": "keep-out: nearest visible text to merc's body box (\"a steady note needs steady air too\")",
+  "got": 70.5,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 60.230000000000004,
+  "name": "keep-out: nearest visible text to tavi's body box (\"69\")",
+  "got": 388.03,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 60.629999999999995,
+  "name": "10h: the silent line's cycle 19.4 px (W 6 on the 640 px frame, 1.0 px a cent)",
+  "got": 19.33,
+  "want": 19.4,
+  "tol": 1.94,
+  "pass": true
+ },
+ {
+  "t": 60.629999999999995,
+  "name": "10h: its rise with the thumb at 75: 30 px over Merc's line (y 215, less the wave)",
+  "got": 203.22,
+  "want": "about 245 - 30 - 14 = 201",
+  "pass": true
+ },
+ {
+  "t": 61.079499999999996,
+  "name": "last frame (S10 to S11, LAB-CHECKS 2): the empty frame at x 1000 to 1640, band y 210 to 280",
+  "got": "1000.0 to 1640.0, 210.0 to 280.0",
+  "want": "1000 to 1640, 210 to 280",
+  "pass": true
+ },
+ {
+  "t": 61.079499999999996,
+  "name": "last frame: Merc's line y 245, 4 px",
+  "got": "245.00, 4.00",
+  "want": "245.00, 4.00",
+  "pass": true
+ },
+ {
+  "t": 61.079499999999996,
+  "name": "last frame: no label, no slider, no line, no box",
+  "got": "none; slider 0.000; line 1.000/0; box 0.000",
+  "want": "none; slider 0.000; line ...0.000; box 0.000",
+  "pass": true
+ },
+ {
+  "t": 61.079499999999996,
+  "name": "last frame: the camera at F-hold",
+  "got": "{\"s\":1.3,\"ox\":-288,\"oy\":10,\"px\":0,\"py\":0}",
+  "want": "s 1.3, ox -288, oy 10",
+  "pass": true
+ },
+ {
+  "t": 61.079499999999996,
+  "name": "last frame: hosts at 300 in the corners",
+  "got": "30.5-189.5; 1720.5-1879.5",
+  "want": "30.5-189.5; 1720.5-1879.5",
+  "pass": true
+ }
+]

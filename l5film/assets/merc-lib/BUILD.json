@@ -1,0 +1,22 @@
+{
+ "repo": "/home/user/mercurypitch/.claude/worktrees/fix",
+ "commit": "b5ddaf2d7",
+ "mercLastChanged": "124c04f52",
+ "warmLastChanged": "dc8a17e80",
+ "esbuild": "0.25.12",
+ "built": "2026-11-18T17:59:11.256Z",
+ "switches": [
+  "__mercSparkles: no celebration sparkles when false",
+  "__mercArcs: the sound arcs scaled by the shot"
+ ],
+ "bundles": {
+  "merc-blue.js": {
+   "bytes": 112263,
+   "sha256": "3e904fc64e4958142787b34a7cca9b2fe2feef43e6436a209b810e006466928d"
+  },
+  "merc-orange.js": {
+   "bytes": 112269,
+   "sha256": "ec824687ac755e1f096cb76c3d066b1606d9136ec585c0d53399dec37286aa2d"
+  }
+ }
+}

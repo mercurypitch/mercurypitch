@@ -1,0 +1,4 @@
+{"id": "lab-listen-orange-left", "note": "Production step 2: the renderer's listen pose with this facing (not a film pass).",
+ "variant": "orange", "size": 300, "quality": "medium", "fps": 30, "duration": 3.0, "view": "front",
+ "cues": [{"t": 0, "state": "idle"}, {"t": 0.5, "state": "listen"}], "voice": [],
+ "bias": [{"t": 0, "yaw": -0.32, "lookX": -0.35}], "arcs": [{"t": 0, "v": 0}], "sparkles": "none"}

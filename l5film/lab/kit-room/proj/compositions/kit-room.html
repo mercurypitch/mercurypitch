@@ -1,0 +1,160 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <!-- Kit lab: the room and the camera (lesson.js L.room, L.filmDust; frames.js L.frameRig; HANDOFFS
+         § Framings, § Camera moves). Every framing lands and holds 0.4 s; every move runs on its own
+         curve and ease, at its film length except three marked SHORT (the drift 31.25 s to 3 s, the
+         promise truck 10.8 s to 4 s, the end push 6 s to 3 s). The matched cuts snap the room back to F0.
+         The world is S1's chart with a cross at each framing's anchor; the floor and the two host boxes
+         are screen space and must not move. The push to F-gauge runs on L.steady (critic-kit-01 item 7);
+         CU-scoop anchors the scoop at x 360 (item 9); each matched cut crossfades the room over 0.3 s
+         (L.roomCut, item 6); the chart's chip fades by its distance to the edge (item 11). Lab times. -->
+    <div id="kit-room" data-composition-id="kit-room" data-start="0" data-duration="41.5" data-width="1920" data-height="1080">
+      <div class="scene" id="kit-room-root"></div>
+      <script>
+        ;(function () {
+          const ID = 'kit-room', D = 41.5
+          const C = L.C
+          const root = document.getElementById(ID + '-root')
+          const room = L.room(root, { floor: true })
+          const world = L.stage(room.mid), top = L.stage(room.top), hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+
+          // the world: S1's chart, the easy take drawn whole, and the anchors
+          const ch = L.bandChart(world, L.CHART.S1)
+          const ill = ch.tag('illustration')
+          const A = { a: [400, 400], b: [1520, 400], c: [960, 400], d: [1000, 400], e: [1320, 590], f: [1000, 210], g: [760, 290], h: [1640, 720], i: [400, 630], j: [1520, 750], k: [960, 540] }
+          const mk = {}
+          for (const [n, [x, y]] of Object.entries(A)) {
+            const g = L.svg('g', {}, world)
+            L.svg('path', { d: `M${x - 14} ${y}H${x + 14}M${x} ${y - 14}V${y + 14}`, stroke: C.aqua, 'stroke-width': 2, 'stroke-opacity': 0.8 }, g)
+            mk[n] = L.svg('circle', { cx: x, cy: y, r: 4, fill: C.aqua }, g)
+          }
+          // two host-sized boxes in screen space (the corners' places), and the floor at 840
+          for (const p of [L.HOSTS.corners.merc, L.HOSTS.corners.tavi]) {
+            const b = L.mercBox(p.x, p.feetY, p.size)
+            L.svg('rect', { x: b.x0, y: b.y0, width: b.x1 - b.x0, height: b.y1 - b.y0, fill: 'none', stroke: C.chrome, 'stroke-opacity': 0.5, 'stroke-width': 2, 'stroke-dasharray': '6 6' }, top)
+          }
+          const cap = L.text(hud, 'kit-room: the room and the camera', { x: 24, y: 1060, size: 20, family: 'mono', weight: 500, fill: C.ink2, opacity: 1 })
+          const name = L.text(hud, '', { x: 1896, y: 1060, size: 26, family: 'mono', weight: 500, fill: C.ink2, anchor: 'end', opacity: 1 })
+
+          // the moves (lab time): [name, at, dur, to, ease, note]
+          const CUT = 0.001
+          const M = [
+            ['drift (SHORT: 31.25 s)', 0.4, 3.0, 'F-cold end', 'power1.inOut'],
+            ['pull', 3.8, 3.0, 'F-hook', 'sine.inOut'],
+            ['through the head bead', 7.2, 0.55, 'F-bead', 'power3.in'],
+            ['cut', 8.15, CUT, 'F-promise-a', 'none'],
+            ['truck (SHORT: 10.8 s)', 8.55, 4.0, 'F-promise-b', 'power1.inOut'],
+            ['crane down and push', 12.95, 1.4, 'F-strip', 'power2.inOut'],
+            ['crane up and pull', 14.75, 1.5, 'F0', 'power2.inOut'],
+            ['push (5 % over 10 s, L.steady)', 16.65, 10.0, 'F-gauge', L.steady(10)],
+            ['matched cut 178.83', 27.05, CUT, 'F0', 'none'],
+            ['push', 27.45, 1.5, 'F-hold', 'power2.inOut'],
+            ['push', 29.35, 1.5, 'CU-scoop', 'power2.inOut'],
+            ['truck', 31.25, 2.0, 'CU-wave', 'sine.inOut'],
+            ['pull', 33.65, 1.46, 'F-hold', 'power2.inOut'],
+            ['matched cut 364.73', 35.51, CUT, 'F0', 'none'],
+            ['push', 35.91, 1.1, 'F-turn', 'power2.inOut'],
+            ['matched cut 478.09', 37.41, CUT, 'F0', 'none'],
+            ['push (SHORT: 6 s)', 37.81, 3.0, 'F-end', 'sine.inOut'],
+          ]
+          const cam = L.frameRig(room, { from: 'F-cold' })
+          for (const [, at, dur, to, ease] of M) cam.to(at, dur, to, ease)
+          // each matched cut crossfades the room from the framing it leaves (HANDOFFS § The cuts [kit-01: 6])
+          const cuts = [[27.05, 'F-gauge'], [35.51, 'F-hold'], [37.41, 'F-turn']].map(([at, from]) => L.roomCut(room, { from, at: at + CUT }))
+          // the chart's chip fades by its distance to the frame's edge: never cropped, never within 16 px
+          const illBox = { x0: 1249, y0: 120, x1: 1520, y1: 160 }
+          const label = (t) => {
+            let s = 'F-COLD'
+            for (const [n, at, dur, to] of M) {
+              if (t >= at + dur) s = to.toUpperCase()
+              else if (t >= at) s = `${n.toUpperCase()} TO ${to.toUpperCase()}`
+            }
+            return s
+          }
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            cam.apply(t)
+            dust(t)
+            cuts.forEach((c) => c.draw(t, t))
+            ch.draw({ lines: [{ id: 'easy', contour: 'easy', t: 4 }], strip: { envs: [{ id: 'easy', contour: 'easy', t: 4 }] } })
+            ill.draw({ alpha: cam.edgeAlpha(illBox, t) })
+            name.textContent = label(t)
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+
+          // the probe: each framing landed, each anchor on its HANDOFFS screen point
+          const at = (n) => { const r = mk[n].getBoundingClientRect(); return [r.x + r.width / 2, r.y + r.height / 2] }
+          const LAND = [
+            [0.2, 'F-cold', [['a', 456, 405], ['b', 1464, 405]]],
+            [3.6, 'F-cold end', [['a', 444.8, 404], ['b', 1475.2, 404]]],
+            [7.0, 'F-hook', [['a', 560, 520], ['b', 1360, 520]]],
+            [7.75, 'F-bead', [['a', 960, 540]]],
+            [8.35, 'F-promise-a', [['a', 480, 400], ['b', 1600, 400]]],
+            [12.75, 'F-promise-b', [['a', 320, 400], ['b', 1440, 400]]],
+            [14.55, 'F-strip', [['i', 176, 182], ['j', 1744, 350]]],
+            [16.45, 'F0', [['a', 400, 400]]],
+            [26.85, 'F-gauge', [['g', 738, 279.25], ['h', 1662, 730.75]]],
+            [29.15, 'F-hold', [['c', 960, 530], ['a', 232, 530], ['b', 1688, 530]]],
+            [31.05, 'CU-scoop', [['a', 360, 520]]],
+            [33.45, 'CU-wave', [['d', 960, 520]]],
+            [35.31, 'F-hold (back)', [['c', 960, 530]]],
+            [37.21, 'F-turn', [['e', 1376, 636], ['f', 928, 104]]],
+            [41.2, 'F-end', [['k', 960, 540], ['a', 383.2, 395.8]]],
+          ]
+          const nearAt = { 26.85: 1.08, 29.15: 1.48, 37.21: 1.64 }
+          window.__kitProbe = window.__kitProbe || {}
+          window.__kitProbe[ID] = {
+            times: LAND.map((l) => l[0]).concat([21.65, 27.1, 35.56, 37.46]),
+            check(t) {
+              const out = []
+              const row = LAND.find((l) => l[0] === t)
+              if (row) for (const [n, x, y] of row[2]) {
+                const [X, Y] = at(n)
+                out.push({ name: `${row[1]}: world (${A[n]}) x`, got: X, want: x }, { name: `${row[1]}: world (${A[n]}) y`, got: Y, want: y })
+              }
+              if (nearAt[t]) out.push({ name: `near layer scale at ${row[1]}`, got: cam.scale(t, 'near'), want: nearAt[t], tol: 0.005 })
+              if (t === 21.65) {
+                const f = cam.scale(t, 'far'), m = cam.scale(t, 'mid'), n = cam.scale(t, 'near')
+                out.push({ name: 'mid-push to F-gauge: layers part (far < mid < near)', got: `${f.toFixed(4)} / ${m.toFixed(4)} / ${n.toFixed(4)}`, want: 'far < mid < near', pass: f < m && m < n })
+              }
+              if ([27.1, 35.56, 37.46].includes(t)) out.push({ name: `after the matched cut: near scale back to 1`, got: cam.scale(t, 'near'), want: 1, tol: 0.0005 })
+              if (t === 26.85) {
+                // the 10 s push never stands still: every 0.5 s window moves the frame's corners 1 px or more
+                let minMove = Infinity
+                for (let x = 16.65; x + 0.5 <= 26.65 + 1e-9; x += 1 / 30) {
+                  let mv = 0
+                  for (const [u, v] of [[0, 0], [1920, 0], [0, 1080], [1920, 1080]]) { const p = cam.inv(u, v, 16.45), a0 = cam.map(p[0], p[1], x), a1 = cam.map(p[0], p[1], x + 0.5); mv = Math.max(mv, Math.hypot(a1[0] - a0[0], a1[1] - a0[1])) }
+                  minMove = Math.min(minMove, mv)
+                }
+                out.push({ name: 'the push to F-gauge: least movement in any 0.5 s window (screen px, the corners\' content)', got: minMove, want: '>= 1', pass: minMove >= 1 })
+              }
+              if (t === 41.2) {
+                let worst = Infinity, shown = 0
+                for (let x = 0; x <= D; x += 1 / 30) {
+                  const al = cam.edgeAlpha(illBox, x)
+                  if (al <= 0.001) continue
+                  shown++
+                  const [X0, Y0] = cam.map(illBox.x0, illBox.y0, x), [X1, Y1] = cam.map(illBox.x1, illBox.y1, x)
+                  worst = Math.min(worst, X0, Y0, 1920 - X1, 1080 - Y1)
+                }
+                out.push({ name: 'the chart\'s chip, whenever shown (every frame of the clip): its least distance to an edge', got: worst, want: '>= 16', pass: worst >= 16 && shown > 0 })
+                const lifted = []
+                for (const [n, at, dur] of M) if (dur === CUT) for (const d of [1 / 120, 1 / 60, 1 / 30]) { cam.apply(at + d); if (Math.abs(+room.bokeh.style.opacity - 1 / L.BOKEH_LIFT) > 1e-3) lifted.push(n + ' +' + d.toFixed(3)) }
+                cam.apply(t)
+                out.push({ name: 'the frame after each lab cut lifts no bokeh (one change, LAB-CHECKS 2)', got: lifted.join(', ') || 'none lifted', want: 'none lifted' })
+              }
+              const fl = room.floor.getBoundingClientRect()
+              out.push({ name: 'floor line stays at y 840 (screen space)', got: fl.y, want: 840, tol: 0.5 })
+              return out
+            },
+          }
+        })()
+      </script>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,34 @@
+# Lab checks: Lesson 5's board v3
+
+What paper could not settle, for the component rounds. One line each: where, what to look at in the
+lab stills or clip, and the pass rule. Sources: storyboard critic 02 (`review/storyboard-02/REPORT.md`)
+items 8 and 10, the parts of item 9 (and item 2) that rest on real type widths, its "Not judgeable
+on paper" list, and the lead's check of the turn's push on the voiced clock (DECISIONS 120). Times
+are the board clock's; on a voiced clock, find them by cue. The board's clearances use the report's
+widths (Outfit about 0.5 em a character; JetBrains Mono 0.6 em plus .18 em tracking); a line that
+fails goes back to the lead with its still.
+
+| # | Row, time | Look at | Pass |
+| - | --------- | ------- | ---- |
+| 1 | 1h, 37.50 to 38.05 (item 8) | A dense contact sheet of the pass into the bead beside Lesson 2's 24.20 to 25.55, built two ways: the board's (F-bead 2.2x, the glow filling the frame) and the critic's (the bead layer scaled until the disc itself is wider than the frame, the room layers capped at 2.2x) | The object itself fills the frame and its edge detail falls to 0 by 38.05, nothing blooms sideways; the lead picks the form from the two sheets |
+| 2 | Matched cuts 178.83, 364.73, 478.09 (item 10, Q32) | Frame pairs either side of each cut and `measure.py` over 0.5 s round it; the near layer snaps from 1.08x, 1.48x and 1.64x to 1.0 | The carried object moves under 2 px across the cut, and the room crossfades from the outgoing framing over 0.3 s (`L.roomCut`, DECISIONS 149) with no one-frame spike from the near layer's dust and bokeh **[kit-01: 6]** |
+| 3 | 12c, 420.86 to 424.04, voiced clock (item 4) | The voiced S12 clip: the push's last moving frame against `listen`'s first; the care block's thinning against the stop line's landing | The push has landed at or before `listen` and "Listen" (board: 0.14 s before), and the thinning starts only after the stop line has landed; b41's gap still 0.2 s |
+| 4 | 5g, 104.00 to 106.20 (item 9) | A still at 105.00 | Both arrowheads inside the peak (screen x 772 to 990); the stem 12 px or more right of "50"; "louder" and "higher" each 12 px or more off every fill (board: 18 and 14) |
+| 5 | 6i, 163.80 to 165.70 (item 9) | A still at F-gauge | "can't push air out" at 30 px starts at or right of screen x 0 (board: 24) and keeps 12 px from "diaphragm" |
+| 6 | 8c, 224.40 on (item 9) | A still at 225.00 | "knees unlocked" 16 px or more left of the back arrow's stroke; its leader crossing the arrow reads as a leader passing, not a collision |
+| 7 | 1g, 32.87 to 34.40 (item 9) | Frames at 32.87, 33.07 and 34.40 | '"support"' (real Instrument Serif italic descenders) 12 px or more over the top of Merc's line's stroke at 32.87; at 34.40 on Lesson 4's baseline 420, within 1 px of Lesson 4's S15 still; its ease never steps a whole pixel a frame |
+| 8 | 6k, 170.34 to 179.40 (items 1, 9) | Stills at 171.00 (Quiet) and 176.00 (Loud) | "Quiet" and "Loud" 12 px or more from the frame's stroke and from each other; "less holding back at first" and "more adding as the air runs low" 12 px or more apart; the leader at x 900 meets only the frame's foot and the gold line on its way to (900, 430); "what the note needs" (Loud) 12 px over the gold line |
+| 9 | 1e and 5e to 5g, 21.48 to 31.30 and 90.30 to 105.80 (item 2) | Stills at 25.00, 31.20 (the drift's end), 92.00 and 100.50 (the chart at 0.78) | "ILLUSTRATION" and "LISTEN ONLY" 12 px or more apart at each scale (board: 14.7 and 12.5); at 31.20 the chip 12 px under the second pill; at 100.50 "loud ≠ high" 12 px or more under "LISTEN ONLY" |
+| 10 | 5c, 73.60 to 84.72 (item 2) | A still at 78.50 | The definition (baseline 200) 12 px or more under the chip's foot; the four words' outlines (baseline 98) 12 px or more over the chip |
+| 11 | 6b to 6e, 108.80 to 129.35 (item 3) | The clip | The chip's glide crosses nothing; the band's curve in the split passes 12 px or more above the chip; the frame's top stroke passes behind the chip only in the opening's last 0.2 s and never shows through it; the chip reads as a tag in the frame's corner, 9 px from its strokes (the lead's place) |
+| 12 | 6f, about 137.1 to 140.1 (item 3) | The clip | The cursor passes behind the "ILLUSTRATION" chip and the readout with no flicker in either |
+| 13 | 9f to 10a, 281.37 to 303.40 (item 3) | A still at 290.00 | The strip's chip (centred y 150) and "LISTEN ONLY" (centred y 350) each 10 px or more from the rows' envelopes at full level, and "LISTEN ONLY" reads as row 2's tag, not row 1's |
+| 14 | 10d to 10e, 326.20 to 334.10 (item 3) | The clip through the truck | "SLOWED · ILLUSTRATION" holds still on screen, nothing passes under it, and at real width it clears "settled" by 12 px or more |
+| 15 | 12c to 12f, 422.30 to 439.00 (items 4, 7) | Stills at 424.00 and 433.00, with m-blue at 300 | "Your turn." 12 px or more from Merc's measured arcs (board: 35 px) and from everything of the frame's and the ring's |
+| 16 | The sound and the ticks (not judgeable on paper) | The sound round's mix: `tick-in`, `tick-out`, the three starts and `starts` | Each tick 12 dB or more under `listen`'s peak, with no pitch (FACTS 97); the starts' onsets where FACTS 80 times them |
+| 17 | How far the voices move the times (not judgeable on paper) | The scratch and then the final voiced clock | The 0.4 s sweep (STORYBOARD § Build checks) re-run on the voiced cues: every pair still 0.40 s or more, returns 0.2 to 0.3 s; line 3 passes; past 9:50, decision 99's order |
+| 18 | Contrast over the hatches and the strip fills (not judgeable on paper) | Stills of 1a, 1e, 5e, 6f, 6k, 7b and 7c | Every settled label 4.5:1 or better against what is behind it, measured: the gauge's labels over the hatches, "in the band" and "sung easily" by the amber fill, labels by the violet strip fills |
+| 19 | Whether the playhead reads as "listening" (not judgeable on paper) | 12e, 428.20 to 438.30, watched with sound off and on | No one reads the playhead or the ring as hearing them; if a critic does, back to the lead (the ring's fallback is in DECISIONS 104) |
+| 20 | Whether a 5 % push over 10 s registers (not judgeable on paper) | 6f, 130.25 to 140.25: the clip and `measure.py` | The frame keeps moving through the 10 s (no still stretch over 0.5 s) and the layers part; the cursor carries the beat **[kit-01: 7]** |
+| 21 | Real font widths, items 2 and 9 (not judgeable on paper) | Lines 4 to 15, measured in the real fonts | Each clearance there holds, measured |
+| 22 | The coach's sign-off (not judgeable on paper) | The care block, the turn, the `[coach]` lines and the out-breath (6f, 6i, 8d) | The coach signs before the final voices (MASTER-PLAN § 7) |

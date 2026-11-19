@@ -1,0 +1,261 @@
+<!doctype html>
+<!-- The probe's harness for lab/kit-src/type.html (lab/kit-src/probe.mjs): the kit, the fonts, the page. -->
+<html lang="en"><head><meta charset="UTF-8" />
+<script src="/assets/vendor/gsap-3.14.2.min.js"></script>
+<script src="/assets/cues.js"></script>
+<script src="/assets/scenes.js"></script>
+<script src="/assets/merc/roots.js"></script>
+<script src="/assets/lib/lesson.js"></script>
+<script src="/assets/lib/motion.js"></script>
+<script src="/assets/lib/marks.js"></script>
+<script src="/assets/lib/frames.js"></script>
+<script src="/assets/lib/chart.js"></script>
+<script src="/assets/lib/figure.js"></script>
+<script src="/assets/lib/gauge.js"></script>
+<script src="/assets/lib/mixup.js"></script>
+<script src="/assets/lib/folds.js"></script>
+<script src="/assets/lib/turn.js"></script>
+<script src="/assets/lib/recap.js"></script>
+<script src="/assets/lib/tease.js"></script>
+<script src="/assets/lib/hosts.js"></script>
+<link rel="stylesheet" href="/assets/lib/lesson.css" />
+<style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('/assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('/assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('/assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+</style></head><body><div id="root">
+    <!-- Kit lab: type and marks (marks.js, motion.js; STORYBOARD § Type, § Codes; HANDOFFS § The band
+         chart's tags and pills). 0 to 2.5 s a chapter card over the room; from 2.6 s the marks board:
+         S1's pills and ring timer, the four words' row, the three tags, a spelled label, a bracket, an
+         arrow, Tavi's guess, the check, the icons, a bead's pulse and echo ring. Screen px, F0.
+         window.__kitWidths() (run by lab/kit-src/probe.mjs) measures every label HANDOFFS places in the
+         real fonts and LAB-CHECKS lines 4 to 15's clearances: lab/kit-type/WIDTHS.md. -->
+    <div id="kit-type" data-composition-id="kit-type" data-start="0" data-duration="7" data-width="1920" data-height="1080">
+      <div class="scene" id="kit-type-root"></div>
+      <script>
+        ;(function () {
+          const ID = 'kit-type', D = 7
+          const C = L.C
+          const root = document.getElementById(ID + '-root')
+          const room = L.room(root, {})
+          const hud = L.stage(room.hud)
+          L.text(hud, 'kit-type: type and marks (screen px)', { x: 24, y: 1060, size: 20, family: 'mono', weight: 500, fill: C.ink2, opacity: 1 })
+
+          const kicker = L.kicker(hud, 'Chapter 2')
+          const card = L.chapterCard(hud, { num: 2, title: 'What the diaphragm does', baseline: 480, tIn: 0.1, tOut: 2.0 })
+          const board = L.svg('g', { opacity: 0 }, hud)
+          // S1's pills: the first widened to the left to 468 px (x 462 to 930) so its pads are 24 px; its right
+          // end and the gap that holds the second pill's check stay as the board has them (DECISIONS 146)
+          const pills = [L.pill(board, 'Settle, steadier than before', { x: 462, x1: 930, y: 108 }), L.pill(board, 'Get louder and drift higher', { x: 970, x1: 1430, y: 108 })]
+          const ring = L.ringTimer(board, { x: 1480, y: 108, r: 18 })
+          // the four words, right-aligned to x 1800, baseline 98 (y 68 to 106), 12 px apart (chosen)
+          const WORDS = ['air pressure', 'diaphragm', 'onset', '“support”']
+          const row = L.chipRow(board, WORDS, { right: 1800, y: 87, gap: 12 })
+          const chips = row.chips
+          const tags = [L.tag(board, L.TAGS.illustration, { x: 1520, y: 200, anchor: 'end' }), L.tag(board, L.TAGS.listen, { x: 1536, y: 200, anchor: 'start' }), L.tag(board, L.TAGS.slowed, { x: 1110, y: 400, anchor: 'start' })]
+          const sp = L.spell(board, 'A♯ is B♭', { x: 120, y: 330, size: 56 })
+          const br = L.bracket(board, { x1: 120, x2: 600, y: 470 })
+          const ar = L.arrow(board, { x1: 700, y1: 520, x2: 940, y2: 420, via: [860, 520] })
+          const gs = L.guess(board, { points: [[1000, 600], [1500, 600]], q: { x: 1520, y: 623 } })
+          const ck = L.check(board, { x: 140, y: 600 })
+          const leaf = L.icon(board, 'leaf', { x: 260, y: 580 })
+          const halt = L.icon(board, 'halt', { x: 320, y: 580 })
+          const big = L.label(board, 'louder · higher', { x: 420, y: 760, size: 56 })
+          const rings = L.echoRings(board, {})
+          const bead = L.bead(board, { r: 22, color: C.chrome })
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            card.draw(t)
+            kicker.draw(t, 2.3, 99)
+            board.setAttribute('opacity', L.smooth(2.4, 2.7, t).toFixed(3))
+            const pa = 1 - L.prog(t, 4.2, 0.2), ca = L.prog(t, 4.4, 0.2)
+            // the board (1e, on "higher."): the SECOND pill gets the ink check, the first dims its stroke
+            pills[0].draw({ alpha: pa, dim: L.prog(t, 3.0, 0.3) })
+            pills[1].draw({ alpha: pa, check: L.prog(t, 3.0, 0.3), scale: L.pulse(t, [2.6], 'pill') })
+            ring.draw(t, 2.6, 1.4)
+            chips.forEach((c, i) => c.draw({ alpha: ca, lit: i === 1 ? 1 : 0, underline: i === 1 ? L.prog(t, 4.6, 0.4) : 0 }))
+            tags.forEach((g) => g.draw({ alpha: 1 }))
+            sp.draw({ alpha: 1 })
+            br.draw(L.prog(t, 2.8, 0.5), 1)
+            ar.draw(L.prog(t, 3.0, 0.6), 1)
+            gs.draw(L.prog(t, 3.2, 0.8), 1, L.prog(t, 4.0, 0.2), 1)
+            ck.draw(L.prog(t, 3.0, 0.3), 1, 1)
+            big.life(t, 2.6, 99, {}, [4.2], 'label')
+            L.bead4.place(bead, { x: 1700, y: 760, scale: L.pulse(t, [4.5], 'bead') })
+            rings.draw(t, [{ t: 4.5, x: 1700, y: 760, r: 22 }])
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+
+          const box = (el) => el.getBoundingClientRect()
+          window.__kitProbe = window.__kitProbe || {}
+          window.__kitProbe[ID] = {
+            times: [1.2, 1.95, 3.9, 5.0],
+            check(t) {
+              const out = []
+              if (t === 1.2 || t === 1.95) {
+                const b = box(card.g)
+                out.push({ name: 'chapter card centred on x 960', got: b.x + b.width / 2, want: 960, tol: 3 }, { name: `chapter card at most 1680 px wide (t ${t}, ${t === 1.95 ? 'its breathing at its peak' : 'breathing'})`, got: b.width, want: '<= 1680', pass: b.width <= 1680 })
+                return out
+              }
+              if (t === 3.9) return pills.flatMap((p, i) => { const r = box(p.g.querySelector('rect')); const tb = box(p.el); return [{ name: `pill ${i + 1}: text pad left (24)`, got: tb.left - r.left, want: 24, tol: 1.5 }, { name: `pill ${i + 1}: text pad right (24)`, got: r.right - tb.right, want: 24, tol: 1.5 }, { name: `pill ${i + 1} left`, got: r.left, want: [462, 970][i] }, { name: `pill ${i + 1} right`, got: r.right, want: [930, 1430][i] }, { name: `pill ${i + 1} top 82`, got: r.top, want: 82 }, { name: `pill ${i + 1} foot 134`, got: r.bottom, want: 134 }] }).concat([{ name: 'the ticked pill is the board\'s second, "Get louder and drift higher" (its check drawn, the first\'s not)', got: `check opacity ${pills[0].g.lastElementChild.getAttribute('opacity')} / ${pills[1].g.lastElementChild.getAttribute('opacity')}`, want: 'second only', pass: +(pills[1].g.lastElementChild.getAttribute('opacity') || 0) > 0.5 && +(pills[0].g.lastElementChild.getAttribute('opacity') || 0) < 0.05 }, { name: 'the check in the gap: clear of the first pill (930) by', got: box(pills[1].g.lastElementChild).left - 930, want: '>= 8.5', pass: box(pills[1].g.lastElementChild).left - 930 >= 8.5 }, { name: 'ring timer centre x 1480', got: box(ring.g).x + box(ring.g).width / 2, want: 1480 }, { name: 'ring timer centre y 108', got: box(ring.g).y + box(ring.g).height / 2, want: 108 }])
+              const W = { illustration: 271, listen: 250, slowed: 453 }
+              ;[['illustration', 0], ['listen', 1], ['slowed', 2]].forEach(([k, i]) => {
+                out.push({ name: `tag "${L.TAGS[k]}" width (board ${W[k]})`, got: tags[i].x1 - tags[i].x0, want: W[k], tol: 4 })
+                const r = box(tags[i].g)
+                out.push({ name: `tag "${L.TAGS[k]}" height 40`, got: r.height, want: 40, tol: 2 })
+              })
+              out.push({ name: 'ILLUSTRATION right edge 1520', got: box(tags[0].g).right, want: 1520, tol: 2 })
+              out.push({ name: 'LISTEN ONLY left edge 1536', got: box(tags[1].g).left, want: 1536, tol: 2 })
+              out.push({ name: 'SLOWED chip x 1110 to 1563', got: box(tags[2].g).right, want: 1563, tol: 4 })
+              const cr = box(chips[3].g.querySelector('rect')), cl = box(chips[0].g.querySelector('rect'))
+              const gaps = chips.slice(1).map((c, i) => box(c.g.querySelector('rect')).left - box(chips[i].g.querySelector('rect')).right)
+              gaps.forEach((g, i) => out.push({ name: `four words: gap ${i + 1} is 12 px`, got: g, want: 12, tol: 0.5 }))
+              out.push({ name: 'four words: right edge 1800', got: cr.right, want: 1800 }, { name: 'four words: outline top 68', got: cr.top, want: 68 }, { name: 'four words: outline foot 106', got: cr.bottom, want: 106 }, { name: 'four words: row left edge (chosen 12 px gaps)', got: cl.left, want: cl.left, pass: true })
+              const kb = kicker.el
+              out.push({ name: 'kicker x 120', got: +kb.getAttribute('x'), want: 120 }, { name: 'kicker baseline 110', got: +kb.getAttribute('y'), want: 110 })
+              return out
+            },
+          }
+
+          /* ---------------------------------------------------------------- the real widths */
+          const cv = document.createElement('canvas').getContext('2d')
+          const FAM = { outfit: "'Outfit'", inter: "'Inter'", mono: "'JetBrains Mono'", serif: "'Instrument Serif'", music: "'Noto Music'" }
+          // a label's ink box in its own px: { w (advance, less trailing tracking), l, r, t, b }
+          const ink = (text, { size = 36, family = 'outfit', weight = 600, italic = family === 'serif', tracking = 0, x = 0, y = 0, anchor = 'start' } = {}) => {
+            cv.font = `${italic ? 'italic ' : ''}${family === 'serif' ? 400 : weight} ${size}px ${FAM[family]}`
+            cv.letterSpacing = tracking ? `${tracking * size}px` : '0px'
+            const m = cv.measureText(text)
+            const w = m.width - (tracking ? tracking * size : 0)
+            const x0 = anchor === 'end' ? x - w : anchor === 'middle' ? x - w / 2 : x
+            return { w, x0, l: x0 - m.actualBoundingBoxLeft, r: x0 + m.actualBoundingBoxRight, t: y - m.actualBoundingBoxAscent, b: y + m.actualBoundingBoxDescent }
+          }
+          const map = (bx, s, ox = 0, oy = 0) => ({ ...bx, w: bx.w * s, x0: bx.x0 * s + ox, l: bx.l * s + ox, r: bx.r * s + ox, t: bx.t * s + oy, b: bx.b * s + oy })
+          const boxGap = (a, b) => {
+            const dx = Math.max(0, Math.max(a.l, b.l) - Math.min(a.r, b.r))
+            const dy = Math.max(0, Math.max(a.t, b.t) - Math.min(a.b, b.b))
+            return dx > 0 && dy > 0 ? Math.hypot(dx, dy) : Math.max(dx, dy)
+          }
+          const segDist = (bx, [x1, y1], [x2, y2]) => {
+            let best = Infinity
+            for (let i = 0; i <= 400; i++) {
+              const u = i / 400, px = x1 + (x2 - x1) * u, py = y1 + (y2 - y1) * u
+              const dx = Math.max(bx.l - px, 0, px - bx.r), dy = Math.max(bx.t - py, 0, py - bx.b)
+              best = Math.min(best, Math.hypot(dx, dy))
+            }
+            return best
+          }
+          window.__kitWidths = () => {
+            const labels = []
+            const add = (group, name, text, o) => { const b = ink(text, o); labels.push({ group, name, text, font: `${o.family || 'outfit'} ${o.family === 'serif' ? 'italic 400' : o.weight || 600} ${o.size}`, x: o.x, y: o.y, anchor: o.anchor || 'start', ...b }); return b }
+            for (const [n, v] of Object.entries(L.CHART.LABELS)) add('band chart (world, F0)', n, v.text, { ...v, family: v.family || 'outfit', weight: v.weight || 600 })
+            for (const [n, v] of Object.entries(L.GAUGE.LABELS)) add('gauge (world, F0)', n, v.text, { ...v, weight: v.weight || 600 })
+            for (const [n, v] of Object.entries(L.GAUGE.CHIPS)) add('gauge chips (world)', n, v.text, { size: 30, x: v.x + 14, y: v.y + 10 })
+            for (const [k, v] of Object.entries(L.TAGS)) add('tags (mono 500 26, .18em)', k, v, { size: 26, family: 'mono', weight: 500, tracking: 0.18 })
+            add('pills (frame-fixed)', 'pill 1', 'Settle, steadier than before', { size: 34, x: 494, y: 120 })
+            add('pills (frame-fixed)', 'pill 2', 'Get louder and drift higher', { size: 34, x: 994, y: 120 })
+            WORDS.forEach((w) => add('four words (chips, frame-fixed)', w, w, { size: 30 }))
+            const T = L.TURN
+            add('turn (frame-fixed)', 'Your turn.', T.CARE.title.text, { size: 110, family: 'serif', x: 260, y: 200 })
+            T.CARE.comfort.forEach((c, i) => add('turn (frame-fixed)', 'comfort ' + (i + 1), c.text, { size: 36, weight: 700, x: c.x, y: c.y }))
+            T.CARE.reasons.forEach((c, i) => add('turn (frame-fixed)', 'reason ' + (i + 1), c.text, { size: 30, weight: 500, x: 310, y: c.y }))
+            add('turn (frame-fixed)', 'listening', T.CARE.listening.text, { size: 30, weight: 500, x: 260, y: 486 })
+            T.CARE.stop.forEach((c, i) => add('turn (frame-fixed)', 'stop ' + (i + 1), c.text, { size: 36, x: 260, y: c.y }))
+            add('turn (frame-fixed)', 'Nothing listens', T.NOTHING.text, { size: 30, x: 1000, y: 402 })
+            add('turn (frame-fixed)', 'Breathe in', T.BREATHE_IN.text, { size: 28, x: 1640, y: 402, anchor: 'end' })
+            T.VOICES.forEach((v) => add('turn (frame-fixed)', v.text, v.text, { size: 30, x: v.x, y: T.voicesY }))
+            add('turn (frame-fixed)', 'How did that feel?', T.FEEL.question.text, { size: 64, family: 'serif', x: 1000, y: 480 })
+            T.FEEL.capsules.texts.forEach((c) => add('turn feel capsules (x 1000 to 1230)', c, c, { size: 30, x: 1014, y: 0 }))
+            const V = L.RECAP.VM
+            V.rows.forEach((r) => add('recap Voice Mirror card', r.text.slice(0, 24), r.text, { size: 34, x: r.x, y: r.y }))
+            add('recap Voice Mirror card', 'free', V.free.text, { size: 40, x: 270, y: 765 })
+            add('recap Voice Mirror card', 'sore', V.sore.text, { size: 34, weight: 500, x: 270, y: 710 })
+            const Rr = L.RECAP.REST
+            Rr.question.forEach((q, i) => add('recap rest card (x 1160 to 1660)', 'question ' + (i + 1), q.text, { size: 28, x: 1160, y: q.y }))
+            Rr.body.forEach((q, i) => add('recap rest card (x 1160 to 1660)', 'body ' + (i + 1), q.text, { size: 30, x: 1160, y: q.y }))
+            add('recap rest card (x 1160 to 1660)', 'address', Rr.address.text, { size: 36, x: 1160, y: 566 })
+            add('end card', 'address', L.TEASE.END.address.text, { size: 72, x: 120, y: 320 })
+            add('end card', 'free', L.TEASE.END.free.text, { size: 44, weight: 500, x: 120, y: 395 })
+
+            const checks = []
+            const chk = (line, what, measured, need, board, note = '') => checks.push({ line, what, measured, need, board, pass: measured >= need - 1e-9, note })
+            // 4: 5g at 105.00, screen px (the fork's labels are screen px; the chart at 0.78)
+            const louder = ink('louder', { size: 40, x: 806, y: 575 }), higher = ink('higher', { size: 40, x: 806, y: 500 })
+            chk(4, '"louder" off the swollen strip\'s fill (top 593)', 593 - louder.b, 12, 18)
+            chk(4, '"louder" from its branch (1010, 525) to (960, 582)', segDist(louder, [1010, 525], [960, 582]), 12, 40)
+            chk(4, '"higher" under the band\'s foot (456.5)', higher.t - 456.5, 12, 14)
+            chk(4, '"higher" from its branch (1010, 525) to (960, 375)', segDist(higher, [1010, 525], [960, 375]), 12, 66)
+            const fiftyS = map(ink('50', { size: 30, x: 0, y: 0, anchor: 'middle' }), 0.78, 903, 0.78 * 776 + 99)
+            const dir = [Math.cos(Math.PI / 6), -Math.sin(Math.PI / 6)]
+            chk(4, 'the stem (from (915, 720), the lead\'s answer 5; 30 degrees up and right) right of "50"', segDist(fiftyS, [915, 720], [915 + 100 * dir[0], 720 + 100 * dir[1]]), 12, 12, `"50" at 0.78: x ${fiftyS.l.toFixed(1)} to ${fiftyS.r.toFixed(1)}, y ${fiftyS.t.toFixed(1)} to ${fiftyS.b.toFixed(1)}; from (914, 717) it was 9.1`)
+            // 5: 6i at F-gauge (s 1.05, ox -60, oy -25.25); world labels right-aligned 350
+            const FG = L.FRAMES['F-gauge']
+            const cant = map(ink("can’t push air out", { size: 30, x: 350, y: 580, anchor: 'end' }), FG.s, FG.ox, FG.oy)
+            const dia = map(ink('diaphragm', { size: 36, x: 350, y: 640, anchor: 'end' }), FG.s, FG.ox, FG.oy)
+            chk(5, '"can’t push air out" (30 px) starts at or right of screen x 0', cant.l, 0, 24)
+            chk(5, '"can’t push air out" from "diaphragm" (36 px assumed)', boxGap(cant, dia), 12, 29)
+            // 6: 8c at F0
+            const knees = ink('knees unlocked', { size: 36, x: 907, y: 700, anchor: 'end' })
+            chk(6, '"knees unlocked" left of the back arrow\'s stroke (x 923.5)', 923.5 - knees.r, 16, 16)
+            // 7: 1g at 32.87: '"support"' serif italic 160 centred 960, baseline 406; Merc's line mid-pull
+            const sup = ink('“support”', { size: 160, family: 'serif', x: 960, y: 406, anchor: 'middle' })
+            const e = L.ease('sine.inOut')((32.87 - 31.40) / 3.0)
+            const a0 = L.FRAMES['F-cold end'], a1 = L.FRAMES['F-hook']
+            const s = L.lerp(a0.s, a1.s, e), oy = L.lerp(a0.oy, a1.oy, e)
+            const lineTop = s * 400 + oy - 2 * s
+            chk(7, '“support” descenders over the top of Merc\'s line\'s stroke at 32.87', lineTop - sup.b, 12, 12, `line y ${(s * 400 + oy).toFixed(1)} at s ${s.toFixed(4)} (sine.inOut, pull 31.40 to 34.40), stroke 4 world px; descender foot ${sup.b.toFixed(1)}`)
+            // 8: 6k at F-gauge
+            const less = map(ink('less holding back at first', { size: 30, x: 760, y: 765 }), FG.s, FG.ox, FG.oy)
+            const more = map(ink('more adding as the air runs low', { size: 30, x: 1640, y: 805, anchor: 'end' }), FG.s, FG.ox, FG.oy)
+            chk(8, '"less holding back at first" from "more adding as the air runs low"', boxGap(less, more), 12, 12)
+            const needs = map(ink('what the note needs', { size: 30, x: 1630, y: 440, anchor: 'end' }), FG.s, FG.ox, FG.oy)
+            chk(8, '"what the note needs" (Loud) over the gold line (454, 3 px)', FG.s * 452.5 + FG.oy - needs.b, 12, 12)
+            chk(8, '"Quiet" and "Loud" chips apart (38 high, centred 320 and 372)', FG.s * ((372 - 19) - (320 + 19)), 12, 14.7, 'height-only, no width in it')
+            chk(8, 'the chips from the frame stroke\'s outer edge (1641; chips from 1653, the lead\'s answer 5)', FG.s * (L.GAUGE.CHIPS.quiet.x - 1641), 12, 12, 'at F-gauge (1.05); from 1652 it was 11.6')
+            const qChip = ink('Quiet', { size: 30, x: L.GAUGE.CHIPS.quiet.x + 14, y: 330 })
+            chk(8, '"Quiet" chip\'s right end on screen (inside 1920)', 1920 - (FG.s * (qChip.x0 + qChip.w + 14) + FG.ox), 0, 0, `chip x ${(FG.s * L.GAUGE.CHIPS.quiet.x + FG.ox).toFixed(1)} to ${(FG.s * (qChip.x0 + qChip.w + 14) + FG.ox).toFixed(1)}`)
+            // 9: the tags at each scale
+            chk(9, 'ILLUSTRATION to LISTEN ONLY at F-cold end (0.92)', 16 * 0.92, 12, 14.7, 'right-aligned 1520 and left-aligned 1536: no width in it')
+            chk(9, 'ILLUSTRATION to LISTEN ONLY at 0.78', 16 * 0.78, 12, 12.5)
+            chk(9, 'the chip under the second pill at 31.20 (pill foot 134)', (0.92 * 120 + 36) - 134, 12, 12)
+            const lnh = ink('loud ≠ high', { size: 48, x: 1628, y: 277, anchor: 'middle' })
+            chk(9, '"loud ≠ high" under LISTEN ONLY at 0.78 (to y 223.8)', lnh.t - (0.78 * 160 + 99), 12, 19, `x ${lnh.l.toFixed(1)} to ${lnh.r.toFixed(1)}`)
+            const p2 = ink('Get louder and drift higher', { size: 34 })
+            chk(9, 'pill 2: each pad, its text centred in the fixed 460 px capsule', (460 - p2.w) / 2, 12, 24, `text ${p2.w.toFixed(1)} px; L.pill centres the text when x1 is fixed`)
+            const p1 = ink('Settle, steadier than before', { size: 34 })
+            chk(9, 'pill 1: each pad, its text centred in its 468 px capsule (x 462 to 930, DECISIONS 146)', (468 - p1.w) / 2, 12, 24, `text ${p1.w.toFixed(1)} px; at 460 px its pads were 20.3`)
+            chk(9, 'the second pill\'s check (22 px, centred 20 px left of the capsule) from the first pill (930)', (970 - 31) - 930, 12, 9, 'the board\'s own gap (40 px between the capsules): unchanged, 9 px; centring both 468 px capsules would make it 5')
+            chk(9, 'the second pill\'s check from its own capsule (970)', 970 - (970 - 9), 12, 9, 'the board\'s place: 9 px')
+            // 10: 5c at 78.50 (F0)
+            const def = ink(L.CHART.LABELS.def.text, { size: 34, x: 400, y: 200 })
+            chk(10, 'the definition (baseline 200) under the chip\'s foot (160)', def.t - 160, 12, 15, `x ${def.l.toFixed(1)} to ${def.r.toFixed(1)}`)
+            chk(10, 'the four words\' outlines (to 106) over the chip (from 120)', 120 - 106, 12, 14)
+            // 11: the split clears the gauge's chip (x 1359 to 1630, y 300 to 340)
+            let worst = -Infinity
+            for (let i = 0; i <= 1000; i++) { const b = L.GAUGE.split(i / 1000).band; if (b.x1 > 1359 - 12) worst = Math.max(worst, b.y1 + 1) }
+            chk(11, 'the band\'s foot (and its 2 px edge) over the gauge chip while over it', 300 - worst, 12, 12, 'L.GAUGE.split sampled every 0.001')
+            chk(11, 'the gauge chip from the frame\'s strokes (right 1630 vs 1640; top 300 vs 290)', 9, 9, 9, '10 px to the strokes\' centres (1640, 290), 9 to their inner edges (1639, 291): the lead\'s place')
+            // 13: the stack's chips
+            chk(13, 'strip chip (130 to 170) from row 1\'s envelope (180)', 10, 10, 10, 'heights only')
+            chk(13, 'LISTEN ONLY (330 to 370) from rows 1 and 2 (320, 380)', 10, 10, 10, 'heights only')
+            // 14: CU-scoop: "settled" (Outfit 600 26 world, centred on the flag at x(0.69 s) = 477.3) and SLOWED (x 1110)
+            const CU = L.FRAMES['CU-scoop']
+            const set = map(ink('settled', { size: 26, x: 400 + 112 * 0.69, y: 342, anchor: 'middle' }), CU.s, CU.ox, CU.oy)
+            chk(14, '"SLOWED · ILLUSTRATION" (from x 1110) clears "settled"', 1110 - set.r, 12, 55, `"settled" at CU-scoop x ${set.l.toFixed(1)} to ${set.r.toFixed(1)}`)
+            // 15: "Your turn." against the frame (F-turn: x 928) and the ring (centre 1376, r 224 + 7 stroke)
+            const yt = ink('Your turn.', { size: 110, family: 'serif', x: 260, y: 200 })
+            chk(15, '"Your turn." from the frame (screen x 928 at F-turn)', 928 - yt.r, 12, 35, `x ${yt.l.toFixed(1)} to ${yt.r.toFixed(1)}, y ${yt.t.toFixed(1)} to ${yt.b.toFixed(1)}; Merc's arcs need m-blue at 300`)
+            chk(15, '"Your turn." from the ring (1376 - 231)', 1376 - 231 - yt.r, 12, 12)
+            return { labels, checks }
+          }
+        })()
+      </script>
+    </div>
+  </div></body></html>

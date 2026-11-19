@@ -1,0 +1,37 @@
+CLOCK: S5 clip = film-66.515; S6 clip = film-102.72; S7 clip = film-171.495
+S5 measure: holds 1.3s (1.1/30s) longest 0.3; events tiny pops 7.83,12.37,35.03 (<0.1%)
+S6 measure: holds 4.6s/68.8 (2.0/30s) longest 0.5 @53.0 (b15 gap), 0.4@42.2, 0.3@4.6,34.2,58.4
+S7 measure: holds 3.0s/36.4 (2.5/30s) longest 0.5 @24.4 (b19 gap "sing."->"There's")
+CUT S6->S7: carried objects best shift (0,0) all regions; room one-frame step at cut (mean 0.287 vs 0.004/0.037 at 960px); staves+bokeh+host eyes in diff
+S5 end: thesis "in a voice, one push moves both" lands 35.47, fades 35.87-36.07 => ~0.4s full, 0.6s total. fork 34.2-34.6, louder 34.43, higher 34.87
+S6 36.5: readout switch, old "Now: adding" ghost overlapping new "Now: holding back" (12px apart) - text over text mid-transition; plates over band bottom edge
+S6 label plates (dark backers) occlude: gold line left part (738-1047) behind "what the note needs"; frame top stroke behind "the lungs' own push"; band bottom edge behind readout & "push of air"
+S6 29.4: "Now: adding" and "added" land same ~0.1s (board build-check says 0.45 apart; row 6f/HANDOFFS say at crossing together)
+S6 Loud (66,68.7): chips Quiet/Loud 14px from stroke, 15 apart; less/more labels fine; leader x885 ends on 'g' of holding (ok)
+S6 55.0: "can't push air out" x~65-307 (pass LAB5); diaphragm 35px below
+S6 36.5: leg lines run down to y~785 into "with your breathing muscles," cap top ~792 (touch)
+S7 0.8: gauge frame outline folding w/o contents; band gliding; kicker landed
+S7 1.4-7.0: bare amber band + Merc line, lower 40% of frame empty, row0 lands 2.8/4.2
+S7 8.8-9.0: pushed take finishes drawing ~8.75 and shrink starts immediately (no hold; board 0.5s hold)
+S7 12.5: evidence 2 large OK; 20.5 big "support" baseline ~800 down to floor line
+S7 35.0: wall of 11 lines of type + 2 miniatures; lower right empty; slide-deck look; row4 line 2 sits across floor horizon y840
+S7 row4 "start easily · let it flow out unforced" appears ~34.5 (word "let" 33.60) 
+S7 exit 36.07-36.37 rows up fast; last frame room+dim figure+hosts
+S6 kicker: only "M DOES" visible at 10.0-12.2 (partial?) need check
+S6 29.27: "added" fades in 29.27-29.33 (line end still at gold line), readout switch 29.37-29.43; glyph-on-glyph overlap of "Now: holding back"/"Now: adding" ~3 frames (29.37,29.40). 0.1s between two landings.
+GOLD LINE measured t45: gold visible 1048-1659 only (+740-747); hidden 748-1047 behind "what the note needs" plate. t26 hidden 763-1055.
+HANDOFFS S4->S5, S5->S6: frame diffs only on hosts (mean 0.46/0.34) - pass
+S5 LAB10 @9.6: four-word outlines foot 106, chip 120-160 (14px), definition cap ~173 (13px) PASS; top band crowded (3 rows in 140px)
+S5 LAB9 @30.5: chips y192-225, "loud≠high" 242-280 (17px), panels 300 (20px) PASS
+S5 LAB4 @35.6: arrowheads x960 inside peak; louder 548-578 vs strip 590 (12px); higher 470-505 vs band foot 455 (15px); stem 15px right of "50" PASS
+S5 @23.0: line above band, "above the band" right, thumb 100, strip swollen - reads
+S5 14.2: "mainly: louder" arrow points at empty strip: hairline at y689-690 (+11 luma) indistinguishable from staves at 665/687/709/731 (+6). "level" label sits on slider row -> reads as slider label
+S5 19.4 (b8, 14.9-19.8): frame ~70% empty: band + slider + faint 40% plan arrows; weak 5 s
+S6 kicker full at 7-12 (sheet tile artifact) OK. LAB11 split: band foot ~200 when right end passes 1347 PASS; chip glide clean. Guess arrow legible.
+LAB20 push: far staves move 3-4px (y185->182) vs frame top 10px, left 26px: parallax PASS; no holds 22-32
+CUT hosts: Merc eyes jump right ~6px in S7 frame 1 (f03->f04), Tavi eyes shift; then steady. Room-only change at cut <=11 luma (no spike)
+Sync spot checks OK except S7 row4 "let it flow out unforced" lands ~34.5 vs "let" 33.60 (0.9s late); S5 thesis 35.47 vs "both." 35.14
+Single-frame events all in host faces (blinks/mouth) - OK
+S7 evidence 2 strips (easy vs pressed, 110 vs 28 half-height => ~12 dB implied) have no ILLUSTRATION chip; row1 miniature has one
+S7 evidence 1: draw completes ~8.70, shrink starts 8.73-8.77, done 9.10; whole picture held 1-2 frames (board 0.5s); row1 lands 9.4 (0.3 s after the miniature arrives)
+t45 S6: small band bottom edge hidden 764-1075 ("push of air" plate) and 1358-1662 (readout plate); gauge top stroke hidden 749-1034 ("lungs' own push" plate) [+1368-1647 chip, by spec]

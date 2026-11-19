@@ -1,0 +1,65 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <!-- Kit lab: the folds, the traces and the voice box (folds.js; HANDOFFS § The folds and the traces,
+         § The hold frame (the voice box), § Recap card 2). 0 to 0.8 s the folds grow from a ring; 0.8 to 3 s
+         apart, air rising (9c), slit, pressed, then vibrating; 1 to 2.6 s the strip draws the "air" start;
+         3.2 to 5.6 s the stack: air, catch and together, each drawn in its own time, the gold tick on
+         together; 6 to 8 s the voice box. World px at F0. -->
+    <div id="kit-folds" data-composition-id="kit-folds" data-start="0" data-duration="8" data-width="1920" data-height="1080">
+      <div class="scene" id="kit-folds-root"></div>
+      <script>
+        ;(function () {
+          const ID = 'kit-folds', D = 8
+          const C = L.C, T = L.TRACE
+          const root = document.getElementById(ID + '-root')
+          const room = L.room(root, {})
+          const world = L.stage(room.mid), hud = L.stage(room.hud)
+          L.text(hud, 'kit-folds: the folds, the traces, the voice box (world px, F0)', { x: 24, y: 1060, size: 20, family: 'mono', weight: 500, fill: C.ink2, opacity: 1 })
+          const fo = L.folds(world)
+          const foLabel = L.text(world, 'vocal folds, from above', { x: 220, y: 650, size: 28, weight: 500, fill: C.ink2 })
+          const strip = L.trace(world, {})
+          const stack = [250, 450, 650].map((y, i) => L.trace(world, { y, h: 70, seed: 75 + i }))
+          const names = ['air first', 'a catch', 'together'].map((n, i) => L.text(world, n, { x: 670, y: [262, 462, 662][i], size: 36, anchor: 'end' }))
+          const vb = L.voiceBox(world)
+          const state = (t) => (t < 1.6 ? 'apart' : t < 2.0 ? { from: 'apart', to: 'slit', u: (t - 1.6) / 0.4 } : t < 2.3 ? 'slit' : t < 2.6 ? { from: 'slit', to: 'pressed', u: (t - 2.3) / 0.3 } : 'pressed')
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const A1 = 1 - L.prog(t, 3.0, 0.2)
+            fo.draw({ a: A1, state: state(t), grow: L.prog(t, 0, 0.8), vib: L.prog(t, 2.7, 0.2), T: t, airA: L.env(t, 0.9, 0.2, 0.5, 0.2), airU: L.prog(t, 0.9, 0.4) })
+            foLabel.setAttribute('opacity', (A1 * L.prog(t, 0.6, 0.2)).toFixed(3))
+            strip.draw({ kind: 'air', t: L.clamp(t - 1.0, 0, 1.6), a: A1 })
+            const A2 = L.prog(t, 3.2, 0.2) * (1 - L.prog(t, 5.8, 0.2))
+            ;['air', 'catch', 'together'].forEach((k, i) => stack[i].draw({ kind: k, t: L.clamp(t - 3.4 - 0.2 * i, 0, 1.6), a: A2, circle: L.prog(t, 5.2, 0.3) }))
+            names.forEach((n) => n.setAttribute('opacity', A2.toFixed(3)))
+            vb.draw({ a: L.prog(t, 6.0, 0.2), draw: L.prog(t, 6.0, 0.8), glow: L.env(t, 7.0, 0.3, 0.3, 0.4), T: t })
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+
+          const R = (el) => el.getBoundingClientRect()
+          window.__kitProbe = window.__kitProbe || {}
+          window.__kitProbe[ID] = {
+            times: [2.0, 5.5, 7.9],
+            check(t) {
+              if (t === 2.0) {
+                const o = R(fo.g.querySelector('rect'))
+                const b = R(strip.g ? strip.g.querySelectorAll('rect')[1] : document.querySelector('#kit-folds .trace rect:nth-of-type(2)'))
+                return [{ name: 'folds box x 220', got: o.left, want: 220 }, { name: 'folds box right 560', got: o.right, want: 560 }, { name: 'folds box top 260', got: o.top, want: 260 }, { name: 'folds box foot 600', got: o.bottom, want: 600 },
+                  { name: 'strip x 700', got: b.left, want: 700 }, { name: 'strip right 1600', got: b.right, want: 1600 }, { name: 'strip y 320 to 540 (centre 430, h 110)', got: b.top, want: 320 }, { name: 'x(t) = 700 + 562.5 t at 1.6 s', got: 700 + 562.5 * 1.6, want: 1600, tol: 0.01 }]
+              }
+              if (t === 5.5) return [0, 1, 2].map((i) => {
+                const b = R((stack[i].g || document.querySelectorAll('#kit-folds .trace')[i + 1]).querySelectorAll('rect')[1])
+                return { name: `stack row ${i + 1} centre y ${[250, 450, 650][i]} (h 70)`, got: b.top + b.height / 2, want: [250, 450, 650][i] }
+              })
+              const v = R(vb.g.querySelector('rect'))
+              return [{ name: 'voice box x 300 to 640 (left)', got: v.left, want: 300 }, { name: 'voice box right', got: v.right, want: 640 }, { name: 'voice box y 190 to 510 (top)', got: v.top, want: 190 }, { name: 'voice box foot', got: v.bottom, want: 510 }]
+            },
+          }
+        })()
+      </script>
+    </div>
+  </body>
+</html>

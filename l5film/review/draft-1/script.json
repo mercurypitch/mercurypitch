@@ -1,0 +1,813 @@
+{
+ "title": "Find Your Pitch, Lesson 5: Breath and a steady note",
+ "voices": {
+  "blue": {
+   "voice": "am_michael",
+   "speed": 0.84
+  },
+  "orange": {
+   "voice": "af_heart",
+   "speed": 0.9
+  }
+ },
+ "gap": 0.3,
+ "events": [
+  {
+   "id": "open",
+   "type": "mark",
+   "gap": 0.6
+  },
+  {
+   "id": "easy",
+   "type": "sound",
+   "sound": "easy",
+   "dur": 4.0,
+   "gap": 0.0,
+   "facts": "72, 80"
+  },
+  {
+   "id": "heard",
+   "type": "pause",
+   "dur": 0.6,
+   "gap": 0.0
+  },
+  {
+   "id": "o1",
+   "type": "line",
+   "who": "orange",
+   "text": "So if I push the air out harder, the note holds steadier?",
+   "facts": "82 (her guess, LESSON.md's cold open word for word)",
+   "gap": 0.2
+  },
+  {
+   "id": "b1",
+   "type": "line",
+   "who": "blue",
+   "text": "Let's listen. The same note, with a harder and harder push of air.",
+   "facts": "72, 82",
+   "gap": 0.2
+  },
+  {
+   "id": "b2",
+   "type": "line",
+   "who": "blue",
+   "text": "Predict: will the line settle, steadier than before? Or get louder and drift higher?",
+   "facts": "82 (the page's predict and its two choices)",
+   "gap": 0.35
+  },
+  {
+   "id": "predict",
+   "type": "pause",
+   "dur": 2.0,
+   "gap": 0.3
+  },
+  {
+   "id": "pushed",
+   "type": "sound",
+   "sound": "pushed",
+   "dur": 4.0,
+   "gap": 0.35,
+   "facts": "72, 80 [coach]"
+  },
+  {
+   "id": "b3",
+   "type": "line",
+   "who": "blue",
+   "text": "Louder, and higher. Pushing doesn't hold a note still: it moves it.",
+   "facts": "7, 8, 82",
+   "gap": 0.2
+  },
+  {
+   "id": "o2",
+   "type": "line",
+   "who": "orange",
+   "text": "But singers are told to \"support\" a long note. If that doesn't mean pushing, what keeps it steady?",
+   "facts": "1, 24, 82 (the hook, as Tavi's question)",
+   "gap": 0.4
+  },
+  {
+   "id": "hook",
+   "type": "pause",
+   "dur": 1.0,
+   "gap": 0.0
+  },
+  {
+   "id": "title",
+   "type": "sting",
+   "dur": 3.2,
+   "gap": 0.4
+  },
+  {
+   "id": "b4",
+   "type": "line",
+   "who": "blue",
+   "text": "By the end, you'll know what pushing does to a note, how to breathe in low and start easily, and you'll hold a comfortable note for ten seconds.",
+   "facts": "44, 63, 82 (the page's promise, to its first hold)",
+   "gap": 0.4
+  },
+  {
+   "id": "b5",
+   "type": "line",
+   "who": "blue",
+   "text": "First, one from Lesson 3.",
+   "facts": "3, 83",
+   "gap": 0.2
+  },
+  {
+   "id": "o3",
+   "type": "line",
+   "who": "orange",
+   "text": "How loud should you sing when you practise matching?",
+   "facts": "3, 83 (L3 quick check 4, word for word)",
+   "gap": 0.6
+  },
+  {
+   "id": "q0",
+   "type": "pause",
+   "dur": 1.8,
+   "gap": 0.35
+  },
+  {
+   "id": "b6",
+   "type": "line",
+   "who": "blue",
+   "text": "At about the volume you talk at. No shouting, no whispering: a quiet note is just as much the right note.",
+   "facts": "3, 13, 46, 83 (L3 FACTS 28a, 29)",
+   "gap": 0.5
+  },
+  {
+   "id": "act1",
+   "type": "mark",
+   "gap": 0.7
+  },
+  {
+   "id": "o4",
+   "type": "line",
+   "who": "orange",
+   "text": "But why would a harder push make the note higher?",
+   "facts": "84 (her question: Step 1's heading)"
+  },
+  {
+   "id": "b7",
+   "type": "line",
+   "who": "blue",
+   "text": "How hard your breath pushes on your vocal folds is its pressure. It mainly sets how loud the note is, and it nudges the pitch.",
+   "facts": "6, 7, 8 [coach]",
+   "gap": 0.2
+  },
+  {
+   "id": "b8",
+   "type": "line",
+   "who": "blue",
+   "text": "Listen as the push rises, then falls back.",
+   "facts": "73, 80, 84",
+   "gap": 0.35
+  },
+  {
+   "id": "push",
+   "type": "sound",
+   "sound": "push",
+   "dur": 5.5,
+   "gap": 0.4,
+   "facts": "73, 80 [coach]"
+  },
+  {
+   "id": "o5",
+   "type": "line",
+   "who": "orange",
+   "text": "Lesson 1 said loud and high are different things. Aren't they?",
+   "facts": "13, 84 (her doubt)"
+  },
+  {
+   "id": "b9",
+   "type": "line",
+   "who": "blue",
+   "text": "They are. But in a voice, one push moves both.",
+   "facts": "7, 8, 13",
+   "gap": 0.2
+  },
+  {
+   "id": "b10",
+   "type": "line",
+   "who": "blue",
+   "text": "So singers learn to keep each note's pressure steady, and loud and high apart.",
+   "facts": "9, 10, 11",
+   "gap": 0.5
+  },
+  {
+   "id": "act2",
+   "type": "mark",
+   "gap": 0.7
+  },
+  {
+   "id": "o6",
+   "type": "line",
+   "who": "orange",
+   "text": "So what does my diaphragm actually do? Isn't that the muscle that pushes?",
+   "facts": "85 (Step 2's heading, and her guess)"
+  },
+  {
+   "id": "b11",
+   "type": "line",
+   "who": "blue",
+   "text": "Not the pushing. Your diaphragm is a dome-shaped muscle under your lungs. It mostly works on the breath in: it tightens, and air flows in. It can't push air out.",
+   "facts": "14, 15, 21, 22",
+   "gap": 0.35
+  },
+  {
+   "id": "b12",
+   "type": "line",
+   "who": "blue",
+   "text": "Predict: after a big breath, you start a quiet note. Must your body push the air out, or hold it back?",
+   "facts": "18, 85 (Step 2's predict)",
+   "gap": 0.35
+  },
+  {
+   "id": "predict2",
+   "type": "pause",
+   "dur": 2.0,
+   "gap": 0.35
+  },
+  {
+   "id": "b13",
+   "type": "line",
+   "who": "blue",
+   "text": "Hold it back, with your breathing muscles, never your throat.",
+   "facts": "18, 32 [coach]",
+   "gap": 0.2
+  },
+  {
+   "id": "b14",
+   "type": "line",
+   "who": "blue",
+   "text": "Full lungs spring back by themselves, often harder than a quiet note needs. So at first your breathing-in muscles keep working, holding some of that push back.",
+   "facts": "17, 18, 19 [coach]",
+   "gap": 0.2
+  },
+  {
+   "id": "b15",
+   "type": "line",
+   "who": "blue",
+   "text": "As the air goes, your belly and rib muscles take over the pushing.",
+   "facts": "17, 18 [coach]"
+  },
+  {
+   "id": "o7",
+   "type": "line",
+   "who": "orange",
+   "text": "So full lungs push by themselves, and at first I just hold some back.",
+   "facts": "17, 18 (her re-explanation, Step 2's word for word)"
+  },
+  {
+   "id": "b16",
+   "type": "line",
+   "who": "blue",
+   "text": "Yes. And a loud note needs less holding back.",
+   "facts": "18, 19, 20, 74 [coach]",
+   "gap": 0.4
+  },
+  {
+   "id": "o8",
+   "type": "line",
+   "who": "orange",
+   "text": "Then when singers say \"support\", don't they mean pushing hard, or squeezing?",
+   "facts": "24, 85 (her belief: the mix-up card's)"
+  },
+  {
+   "id": "b17",
+   "type": "line",
+   "who": "blue",
+   "text": "That's a common mix-up. Pushing moves the note, as you heard.",
+   "facts": "7, 8, 24 (the mix-up card)",
+   "gap": 0.2
+  },
+  {
+   "id": "b18",
+   "type": "line",
+   "who": "blue",
+   "text": "Squeezing your throat makes a pressed sound, the sound people make lifting something heavy, and a pressed sound needs more air pressure, not less.",
+   "facts": "26 [coach]",
+   "gap": 0.35
+  },
+  {
+   "id": "b19",
+   "type": "line",
+   "who": "blue",
+   "text": "\"Support\" is singers' word for how they manage the breath as they sing. There's no one agreed meaning.",
+   "facts": "24a, 25 [coach]",
+   "gap": 0.35
+  },
+  {
+   "id": "b20",
+   "type": "line",
+   "who": "blue",
+   "text": "The better idea: a steady note needs steady air, not more of it. Breathe in low, start easily, and let the air flow out unforced.",
+   "facts": "10, 32",
+   "gap": 0.5
+  },
+  {
+   "id": "act3",
+   "type": "mark",
+   "gap": 0.7
+  },
+  {
+   "id": "o9",
+   "type": "line",
+   "who": "orange",
+   "text": "So how should I breathe in?",
+   "facts": "- (a question: Step 3's heading)"
+  },
+  {
+   "id": "b21",
+   "type": "line",
+   "who": "blue",
+   "text": "Start tall but easy. If you're standing, keep your knees unlocked. Let your jaw, tongue and neck go loose. That's where singing teachers usually begin.",
+   "facts": "28 [coach]",
+   "gap": 0.2
+  },
+  {
+   "id": "b22",
+   "type": "line",
+   "who": "blue",
+   "text": "Then breathe in quietly, and let the breath drop low, shoulders still, taking as much as feels easy.",
+   "facts": "32 [coach]",
+   "gap": 0.2
+  },
+  {
+   "id": "b23",
+   "type": "line",
+   "who": "blue",
+   "text": "If your belly moves out, that's your diaphragm at work. Singers breathe in different ways; this is a calm place to start.",
+   "facts": "29, 30",
+   "gap": 0.5
+  },
+  {
+   "id": "act4",
+   "type": "mark",
+   "gap": 0.7
+  },
+  {
+   "id": "o10",
+   "type": "line",
+   "who": "orange",
+   "text": "And once the air is in, how should the note start?",
+   "facts": "- (a question: Step 4's heading)"
+  },
+  {
+   "id": "b24",
+   "type": "line",
+   "who": "blue",
+   "text": "A voice has three main ways to start a note: its onset. Just listen to these.",
+   "facts": "34, 38 [coach]",
+   "gap": 0.35
+  },
+  {
+   "id": "b25",
+   "type": "line",
+   "who": "blue",
+   "text": "Air first: a puff of breath, like a soft \"h\", then the sound.",
+   "facts": "35",
+   "gap": 0.3
+  },
+  {
+   "id": "start-air",
+   "type": "sound",
+   "sound": "start-air",
+   "dur": 1.6,
+   "gap": 0.35,
+   "facts": "75, 80"
+  },
+  {
+   "id": "b26",
+   "type": "line",
+   "who": "blue",
+   "text": "A catch: the vocal folds are pressed shut, and the note starts as they open, a little like a cough.",
+   "facts": "36 [coach]",
+   "gap": 0.3
+  },
+  {
+   "id": "start-catch",
+   "type": "sound",
+   "sound": "start-catch",
+   "dur": 1.6,
+   "gap": 0.35,
+   "facts": "75, 80 [coach]"
+  },
+  {
+   "id": "b27",
+   "type": "line",
+   "who": "blue",
+   "text": "Or together: the folds meet the air just as it starts to flow.",
+   "facts": "37",
+   "gap": 0.3
+  },
+  {
+   "id": "start-together",
+   "type": "sound",
+   "sound": "start-together",
+   "dur": 1.6,
+   "gap": 0.35,
+   "facts": "75, 80"
+  },
+  {
+   "id": "b28",
+   "type": "line",
+   "who": "blue",
+   "text": "For a long, easy note, many singing teachers aim for the third, the easy start. It's often found by beginning with a soft \"h\", then keeping it only in your mind.",
+   "facts": "39, 40 [coach]",
+   "gap": 0.5
+  },
+  {
+   "id": "act5",
+   "type": "mark",
+   "gap": 0.7
+  },
+  {
+   "id": "o11",
+   "type": "line",
+   "who": "orange",
+   "text": "So what does a steady note look like? A perfectly straight line?",
+   "facts": "86 (Step 5's heading, and her guess: quiz question 4's second answer)"
+  },
+  {
+   "id": "b29",
+   "type": "line",
+   "who": "blue",
+   "text": "Tavi, hold an A for ten seconds, and watch your line.",
+   "facts": "44, 76, 86",
+   "gap": 0.4
+  },
+  {
+   "id": "demo",
+   "type": "sound",
+   "sound": "demo",
+   "dur": 10.0,
+   "gap": 0.4,
+   "facts": "76, 80, 86"
+  },
+  {
+   "id": "o12",
+   "type": "line",
+   "who": "orange",
+   "text": "It scooped at the start, and it waves. Is that still steady?",
+   "facts": "41, 42, 86 (her question)"
+  },
+  {
+   "id": "b30",
+   "type": "line",
+   "who": "blue",
+   "text": "It is. Sung notes are rarely perfectly still: they can begin with a short slide, a scoop.",
+   "facts": "41",
+   "gap": 0.2
+  },
+  {
+   "id": "b31",
+   "type": "line",
+   "who": "blue",
+   "text": "And steady doesn't mean dead straight: a small vibrato, a regular wave in the pitch, can sit inside the band.",
+   "facts": "42 [coach]",
+   "gap": 0.35
+  },
+  {
+   "id": "b32",
+   "type": "line",
+   "who": "blue",
+   "text": "Steady means the line settles into the band and stays, for a comfortable, fixed length: five, ten or fifteen seconds, never \"as long as you can\".",
+   "facts": "44 [coach]"
+  },
+  {
+   "id": "o13",
+   "type": "line",
+   "who": "orange",
+   "text": "So a steady note needs steady air, not more of it: breathe in low, start easily, and let it settle?",
+   "facts": "10, 32, 86 (her synthesis: the hook answered in one place)",
+   "gap": 0.3
+  },
+  {
+   "id": "b33",
+   "type": "line",
+   "who": "blue",
+   "text": "That's it.",
+   "facts": "10, 32, 86",
+   "gap": 0.5
+  },
+  {
+   "id": "sing",
+   "type": "mark",
+   "gap": 0.7
+  },
+  {
+   "id": "b34",
+   "type": "line",
+   "who": "blue",
+   "text": "Your turn: one comfortable note, held for ten seconds.",
+   "facts": "44, 56, 63, 87 [coach]",
+   "gap": 0.35
+  },
+  {
+   "id": "b35",
+   "type": "line",
+   "who": "blue",
+   "text": "Lesson 3's care lines still apply: stop if your voice feels scratchy or hoarse.",
+   "facts": "47 [coach]",
+   "gap": 0.2
+  },
+  {
+   "id": "b36",
+   "type": "line",
+   "who": "blue",
+   "text": "Sore, hoarse or unwell today? Just listen along.",
+   "facts": "48 [coach]",
+   "gap": 0.2
+  },
+  {
+   "id": "b37",
+   "type": "line",
+   "who": "blue",
+   "text": "Choose listening if anything hurts or singing has felt uncomfortable, if your voice feels unusually hoarse or tired, if notes you usually reach have suddenly gone, if you're ill, or if talking or singing feels like hard work today.",
+   "facts": "49 [coach]",
+   "gap": 0.4
+  },
+  {
+   "id": "b38",
+   "type": "line",
+   "who": "blue",
+   "text": "Otherwise, choose a voice. Lower: sing with me, around A three. Higher: sing with Tavi, around A four.",
+   "facts": "5, 55, 87 [coach]",
+   "gap": 0.35
+  },
+  {
+   "id": "pick",
+   "type": "sound",
+   "sound": "pick",
+   "dur": 2.2,
+   "gap": 0.35,
+   "facts": "77, 80"
+  },
+  {
+   "id": "b39",
+   "type": "line",
+   "who": "blue",
+   "text": "It goes listen, breathe, sing. Listen to our note. Breathe in, low and quiet. Then sing straight away, easily, at about speaking volume.",
+   "facts": "46, 56, 65, 87 [coach]",
+   "gap": 0.2
+  },
+  {
+   "id": "b40",
+   "type": "line",
+   "who": "blue",
+   "text": "Hold the note until the ring closes, or stop sooner if you need to.",
+   "facts": "56, 87 [coach]",
+   "gap": 0.2
+  },
+  {
+   "id": "b41",
+   "type": "line",
+   "who": "blue",
+   "text": "Stop immediately if anything feels uncomfortable.",
+   "facts": "50 [coach]",
+   "gap": 0.2
+  },
+  {
+   "id": "listen",
+   "type": "sound",
+   "sound": "listen",
+   "dur": 2.0,
+   "gap": 0.6,
+   "facts": "56, 77, 80"
+  },
+  {
+   "id": "b42",
+   "type": "line",
+   "who": "blue",
+   "text": "Breathe in.",
+   "facts": "56, 65, 87 [coach]",
+   "gap": 0.1
+  },
+  {
+   "id": "breathe",
+   "type": "pause",
+   "dur": 1.1,
+   "gap": 0.0
+  },
+  {
+   "id": "hold",
+   "type": "pause",
+   "dur": 10.0,
+   "gap": 0.0,
+   "facts": "44, 56, 87 [coach]"
+  },
+  {
+   "id": "b43",
+   "type": "line",
+   "who": "blue",
+   "text": "How did that feel? Easy, workable, effortful, or uncomfortable?",
+   "facts": "52, 87 [coach]",
+   "gap": 0.8
+  },
+  {
+   "id": "feel",
+   "type": "pause",
+   "dur": 1.8,
+   "gap": 0.35
+  },
+  {
+   "id": "b44",
+   "type": "line",
+   "who": "blue",
+   "text": "Easy or workable? Rest for a few easy breaths.",
+   "facts": "52, 87 [coach]",
+   "gap": 0.35
+  },
+  {
+   "id": "b45",
+   "type": "line",
+   "who": "blue",
+   "text": "Effortful? Keep it gentle: rest before you sing again.",
+   "facts": "52, 87 [coach]",
+   "gap": 0.35
+  },
+  {
+   "id": "b46",
+   "type": "line",
+   "who": "blue",
+   "text": "Uncomfortable? Thanks for saying so. That's enough singing for today: rest your voice.",
+   "facts": "52, 87 [coach]",
+   "gap": 0.35
+  },
+  {
+   "id": "rest",
+   "type": "pause",
+   "dur": 2.5,
+   "gap": 0.0,
+   "facts": "51, 87 [coach] (the doctor lines on screen, full size)"
+  },
+  {
+   "id": "recap",
+   "type": "mark",
+   "gap": 1.2
+  },
+  {
+   "id": "b47",
+   "type": "line",
+   "who": "blue",
+   "text": "Quick check.",
+   "facts": "-"
+  },
+  {
+   "id": "b48",
+   "type": "line",
+   "who": "blue",
+   "text": "What is your diaphragm's main job?",
+   "facts": "14, 15, 88",
+   "gap": 0.35
+  },
+  {
+   "id": "q1",
+   "type": "pause",
+   "dur": 1.8,
+   "gap": 0.35
+  },
+  {
+   "id": "b49",
+   "type": "line",
+   "who": "blue",
+   "text": "Breathing in. It can't push air out.",
+   "facts": "14, 15, 88"
+  },
+  {
+   "id": "o14",
+   "type": "line",
+   "who": "orange",
+   "text": "A singer pushes more and more air into a long note. What happens to the note?",
+   "facts": "7, 8, 88",
+   "gap": 0.35
+  },
+  {
+   "id": "q2",
+   "type": "pause",
+   "dur": 1.8,
+   "gap": 0.35
+  },
+  {
+   "id": "b50",
+   "type": "line",
+   "who": "blue",
+   "text": "It gets louder, and it tends to drift higher.",
+   "facts": "7, 8, 88"
+  },
+  {
+   "id": "b51",
+   "type": "line",
+   "who": "blue",
+   "text": "For a long, easy note, which start do many singing teachers aim for?",
+   "facts": "39, 88",
+   "gap": 0.35
+  },
+  {
+   "id": "q3",
+   "type": "pause",
+   "dur": 1.8,
+   "gap": 0.35
+  },
+  {
+   "id": "b52",
+   "type": "line",
+   "who": "blue",
+   "text": "Air and sound starting together: the easy start.",
+   "facts": "37, 39, 88"
+  },
+  {
+   "id": "b53",
+   "type": "line",
+   "who": "blue",
+   "text": "And what does a steady long note look like on the pitch line?",
+   "facts": "41, 42, 88",
+   "gap": 0.35
+  },
+  {
+   "id": "q4",
+   "type": "pause",
+   "dur": 1.8,
+   "gap": 0.35
+  },
+  {
+   "id": "b54",
+   "type": "line",
+   "who": "blue",
+   "text": "It settles into the band and stays there.",
+   "facts": "41, 42, 88",
+   "gap": 0.5
+  },
+  {
+   "id": "b55",
+   "type": "line",
+   "who": "blue",
+   "text": "Practise it in Voice Mirror. For its hold, it shows in cents how fast the note drifted and how much it wobbled, and a vibrato isn't counted against you.",
+   "facts": "42, 58, 59, 89 [coach]",
+   "gap": 0.2
+  },
+  {
+   "id": "b56",
+   "type": "line",
+   "who": "blue",
+   "text": "Keep its glides comfortable. Free, no account: mercurypitch dot com slash mirror.",
+   "facts": "58, 60, 78, 89 [coach]",
+   "gap": 0.35
+  },
+  {
+   "id": "b57",
+   "type": "line",
+   "who": "blue",
+   "text": "Ten minutes, gently, most days. Missed a day? Just come back.",
+   "facts": "54, 89 [coach]",
+   "gap": 0.35
+  },
+  {
+   "id": "b58",
+   "type": "line",
+   "who": "blue",
+   "text": "If you listened along today, or it felt uncomfortable: rest today. Voice Mirror will be here when your voice feels comfortable.",
+   "facts": "54, 89 [coach]"
+  },
+  {
+   "id": "card",
+   "type": "pause",
+   "dur": 4.0,
+   "gap": 0.0
+  },
+  {
+   "id": "next",
+   "type": "mark",
+   "gap": 0.7
+  },
+  {
+   "id": "b59",
+   "type": "line",
+   "who": "blue",
+   "text": "Next time.",
+   "facts": "-"
+  },
+  {
+   "id": "b60",
+   "type": "line",
+   "who": "blue",
+   "text": "I move every single note of \"Twinkle, Twinkle\" up.",
+   "facts": "4, 90 (L6 FACTS 20, 36)",
+   "gap": 0.2
+  },
+  {
+   "id": "o15",
+   "type": "line",
+   "who": "orange",
+   "text": "Why can you start \"Twinkle, Twinkle\" on any note and it is still the same tune?",
+   "facts": "4, 90 (L6 FACTS 1)"
+  },
+  {
+   "id": "end",
+   "type": "sting",
+   "dur": 6.0,
+   "gap": 0.4
+  }
+ ]
+}

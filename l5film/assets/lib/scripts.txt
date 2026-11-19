@@ -1,0 +1,33 @@
+# The kit's scripts, in load order. tools/gen-root.py and tools/lab.mjs each write one <script src>
+# per line, so the film and a lab load the same kit. Each module reads only what loads before it.
+assets/vendor/gsap-3.14.2.min.js
+assets/cues.js
+assets/scenes.js
+# the hosts' renderer roots, one entry a chunk (tools/merc-roots.py; merc/PASSES.md)
+assets/merc/roots.js
+# the clock, the room, the bead, the staff (window.L)
+assets/lib/lesson.js
+# timing helpers: prog, track, env, pulse, lit, fade, swap, echoRings
+assets/lib/motion.js
+# type and marks: kicker, chapterCard, ringTimer, pill, chip, tag, spell, bracket, arrow, guess
+assets/lib/marks.js
+# the camera: framings, moves, parallax
+assets/lib/frames.js
+# the band chart, Merc's line by the wave rule, the strip, the axis, the Push slider
+assets/lib/chart.js
+# the breath figure
+assets/lib/figure.js
+# the gauge and Merc's small band
+assets/lib/gauge.js
+# the mix-up card's rows and press pair
+assets/lib/mixup.js
+# the folds, the traces and the voice box
+assets/lib/folds.js
+# the turn: the hold frame's labels, the ring, the playhead, the care and feel blocks
+assets/lib/turn.js
+# the recap frame and its slide, the panel, the cards' glyphs
+assets/lib/recap.js
+# the tease, the end card, the lockup
+assets/lib/tease.js
+# the hosts: Merc's passes on the floor line, reflections, leaps and hops
+assets/lib/hosts.js

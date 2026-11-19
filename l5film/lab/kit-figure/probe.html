@@ -1,0 +1,106 @@
+<!doctype html>
+<!-- The probe's harness for lab/kit-src/figure.html (lab/kit-src/probe.mjs): the kit, the fonts, the page. -->
+<html lang="en"><head><meta charset="UTF-8" />
+<script src="/assets/vendor/gsap-3.14.2.min.js"></script>
+<script src="/assets/cues.js"></script>
+<script src="/assets/scenes.js"></script>
+<script src="/assets/merc/roots.js"></script>
+<script src="/assets/lib/lesson.js"></script>
+<script src="/assets/lib/motion.js"></script>
+<script src="/assets/lib/marks.js"></script>
+<script src="/assets/lib/frames.js"></script>
+<script src="/assets/lib/chart.js"></script>
+<script src="/assets/lib/figure.js"></script>
+<script src="/assets/lib/gauge.js"></script>
+<script src="/assets/lib/mixup.js"></script>
+<script src="/assets/lib/folds.js"></script>
+<script src="/assets/lib/turn.js"></script>
+<script src="/assets/lib/recap.js"></script>
+<script src="/assets/lib/tease.js"></script>
+<script src="/assets/lib/hosts.js"></script>
+<link rel="stylesheet" href="/assets/lib/lesson.css" />
+<style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('/assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('/assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('/assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+</style></head><body><div id="root">
+    <!-- Kit lab: the breath figure, redrawn (figure.js; HANDOFFS § The breath figure; critic-kit-01 item 1).
+         0 to 4 s S6's torso, the legs masked: in (0.2 to 1.4 s: the dome lowers and flattens, the belly bows
+         to u 360, the dome's front end going with it), out (1.4 to 3.4 s: the belly wall in to u 315), rest;
+         4 to 4.8 s the object move to S7's parked place, dimmed to 35 %; 4.8 to 6.0 s it comes to full and
+         breathes in once; 6.0 to 7.2 s to S8, the legs drawing down from the hips (6.6 to 7.2 s); 7.2 to 9.5 s
+         S8 whole, breathing in and out, the knee softening and the jaw dropping at 8.6 s; 9.5 to 11 s recap
+         card 1's place (S13). World px at F0; the floor line at 840 is the room's. -->
+    <div id="kit-figure" data-composition-id="kit-figure" data-start="0" data-duration="11" data-width="1920" data-height="1080">
+      <div class="scene" id="kit-figure-root"></div>
+      <script>
+        ;(function () {
+          const ID = 'kit-figure', D = 11
+          const C = L.C
+          const root = document.getElementById(ID + '-root')
+          const room = L.room(root, { floor: true })
+          const world = L.stage(room.mid), hud = L.stage(room.hud)
+          L.text(hud, 'kit-figure: the breath figure in S6, S7, S8 and S13 (world px, F0)', { x: 24, y: 1060, size: 20, family: 'mono', weight: 500, fill: C.ink2, opacity: 1 })
+          const where = L.text(hud, '', { x: 1896, y: 1060, size: 22, family: 'mono', weight: 500, fill: C.ink2, anchor: 'end', opacity: 1 })
+          const fig = L.figure(world)
+          const F = L.FIGURE
+          const lerpP = (a, b, u) => ({ k: L.lerp(a.k, b.k, u), x0: L.lerp(a.x0, b.x0, u), y0: L.lerp(a.y0, b.y0, u) })
+          const sio = (x) => L.ease('sine.inOut')(L.clamp(x))
+          // in over t0 .. t0 + up, out over the next `down` (to -1), back to rest over `back`
+          const cycle = (t, t0, up = 1.2, down = 2.0, back = 0.6) => t < t0 ? 0 : t < t0 + up ? sio((t - t0) / up) : t < t0 + up + down ? 1 - 2 * sio((t - t0 - up) / down) : -1 + sio((t - t0 - up - down) / back)
+          const inOnce = (t, t0) => L.env(t, t0, 0.6, 0.2, 0.6)
+          let label = ''
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            if (t < 4) {
+              label = 'S6 TORSO'
+              const b = cycle(t, 0.2)
+              fig.draw({ ...F.S6, legs: 0, fade: F.S6.fade, breath: b, lungFill: L.clamp(b), glow: { dome: L.env(t, 0.2, 0.3, 0.6, 0.4), belly: L.env(t, 1.6, 0.3, 1.0, 0.4) } })
+            } else if (t < 6) {
+              label = 'S7 PARKED'
+              const u = L.prog(t, 4, 0.8)
+              const p = lerpP(F.S6, F.S7, u)
+              fig.draw({ ...p, a: L.lerp(1, 0.35, u) + 0.65 * L.env(t, 4.8, 0.3, 0.6, 0.3), legs: 0, fade: [L.lerp(F.S6.fade[0], F.S7.fade[0], u), L.lerp(F.S6.fade[1], F.S7.fade[1], u)], breath: inOnce(t, 4.9) })
+            } else if (t < 9.5) {
+              label = t < 7.2 ? 'S8 WHOLE, LEGS DRAWING' : 'S8 WHOLE'
+              const u = L.prog(t, 6, 1.2)
+              fig.draw({ ...lerpP(F.S7, F.S8, u), legs: L.prog(t, 6.6, 0.6), breath: cycle(t, 7.4, 0.5, 0.5, 0.2), knee: 2 * L.env(t, 8.6, 0.4, 0.5, 0.3), jaw: 4 * L.env(t, 8.6, 0.4, 0.5, 0.3) })
+            } else {
+              label = 'S13 CARD 1'
+              fig.draw({ ...F.S13, legs: 0, fade: F.S13.fade, breath: inOnce(t, 9.9) })
+            }
+            where.textContent = label
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+
+          const P = (n, x, y, tag) => { const [X, Y] = fig.at(n); return [{ name: `${tag} ${n} x`, got: X, want: x }, { name: `${tag} ${n} y`, got: Y, want: y }] }
+          const joined = (tag) => {
+            const s = fig.shape()
+            const front = s.uFront + 1.5, vf = s.domeV(s.uFront), wall = 330 + (s.bu - 330) * (vf <= 490 ? Math.sin((Math.PI / 2) * ((vf - 380) / 110)) ** 2 : Math.sin((Math.PI / 2) * ((560 - vf) / 70)) ** 2)
+            return [{ name: `${tag}: the dome's back end on the back's inner side (u 151.5)`, got: s.uBack, want: 151.5, tol: 0.01 }, { name: `${tag}: the dome's front end on the belly wall's inner side (wall u ${wall.toFixed(1)})`, got: front, want: wall, tol: 0.5 }]
+          }
+          window.__kitProbe = window.__kitProbe || {}
+          window.__kitProbe[ID] = {
+            times: [0.1, 1.4, 3.4, 7.3, 8.2, 10.5],
+            check(t) {
+              if (t === 0.1) return [...P('head', 464, 218, 'S6'), ...P('throat', 488, 339, 'S6'), ...P('lungs', 476, 505, 'S6'), ...P('domeApex', 476, 620, 'S6'), ...P('domeL', 378.25, 660.5, 'S6'), ...P('domeR', 573.75, 660.5, 'S6'), { name: 'S6 hips y 764', got: fig.at('hips')[1], want: 764 }, ...joined('S6 at rest')]
+              if (t === 1.4) return [{ name: 'S6 breathing in: belly front at u 360 (x 614)', got: fig.at('belly')[0], want: 614 }, { name: 'S6 breathing in: lungs centre v 345 (y 516.75)', got: fig.at('lungs')[1], want: 516.75 }, ...joined('S6 breathing in')]
+              if (t === 3.4) return [{ name: 'S6 breathing out: belly front at u 315 (x 562.25)', got: fig.at('belly')[0], want: 562.25 }, ...joined('S6 breathing out')]
+              if (t === 7.3) return [...P('head', 991, 199.5, 'S8'), ...P('chin', 1029.5, 238, 'S8'), ...P('throat', 1005, 273, 'S8'), ...P('shoulder', 952.5, 304.5, 'S8'), ...P('lungs', 998, 374.5, 'S8'), ...P('domeApex', 998, 444.5, 'S8'), ...P('knee', 994.5, 686, 'S8'), { name: 'S8 soles on the floor line (840)', got: fig.at('heel')[1], want: 840 }, { name: 'S8 belly front x 1061', got: fig.at('belly')[0], want: 1061 },
+                { name: 'S8 standing height (crown to soles, px)', got: fig.at('heel')[1] - fig.at('crown')[1], want: 686, tol: 1 }]
+              if (t === 8.2) return joined('S8 mid-breath')
+              return [{ name: 'S13 crown y 105', got: fig.at('crown')[1], want: 105 }, { name: 'S13 back x 1262.5', got: fig.at('back')[0], want: 1262.5 }]
+            },
+          }
+        })()
+      </script>
+    </div>
+  </div></body></html>

@@ -1,0 +1,81 @@
+// The film's clock, for every scene: cue and word times from assets/cues.js (window.CUES, written by
+// tools/cues.py) and the scene table from assets/scenes.js (window.SCENES, tools/gen-root.py).
+// This is the clock part of Lessons 1 to 4's kit (assets/lib/lesson.js), recreated with the same
+// calls; the rest of that kit (the room, marks, motion, the hosts) is the kit step's.
+//
+//   L.scene(sid)                         { start, end, title } on the film clock
+//   L.dur(sid)                           the scene's length (its root data-duration)
+//   L.at(sid, cue, edge, off)            scene time of a cue's 'start' (default) or 'end', plus off
+//                                        seconds: at('b9'), at('b9', 'end', -0.2)
+//   L.word(sid, line, which, edge, off)  scene time of a word in a line: which is an index (word 14),
+//                                        a phrase from the line ('black key', its first word; 'end'
+//                                        gives the phrase's last word's end), or a phrase with '#n'
+//                                        for its n-th occurrence ('tone#2'). Case and punctuation
+//                                        are ignored.
+//   L.clock(tl, D, draw)                 runs draw(t) on every seek of the scene's paused timeline,
+//                                        t in scene seconds, 0 to D
+//
+// In a scene, every time is one of these, or 0 (the cut) or D (the scene's end): never a typed
+// second (tools/clock-lint.py). A cue or phrase that does not exist throws, so a re-voice that
+// drops a word fails loudly instead of drawing at the wrong time.
+;(function () {
+  const L = (window.L = window.L || {})
+  const cues = () => {
+    if (!window.CUES) throw new Error('lesson.js: window.CUES is missing (load assets/cues.js first)')
+    return window.CUES.cues
+  }
+  L.scene = (sid) => {
+    const s = window.SCENES && window.SCENES[sid]
+    if (!s) throw new Error(`lesson.js: no scene ${sid} in assets/scenes.js`)
+    return s
+  }
+  L.dur = (sid) => {
+    const s = L.scene(sid)
+    return Math.round((s.end - s.start) * 1000) / 1000
+  }
+  const cue = (id) => {
+    const c = cues()[id]
+    if (!c) throw new Error(`lesson.js: no cue ${id} in cues.json`)
+    return c
+  }
+  L.at = (sid, id, edge = 'start', off = 0) => {
+    const c = cue(id)
+    if (edge !== 'start' && edge !== 'end') throw new Error(`lesson.js: at(${id}): edge is 'start' or 'end'`)
+    return c[edge] + off - L.scene(sid).start
+  }
+  const norm = (w) => w.toLowerCase().replace(/[^a-z0-9'’]/g, '').replace(/’/g, "'")
+  // [first index, last index] of a word or phrase in a line
+  L.wordIndex = (line, which) => {
+    const c = cue(line)
+    if (!c.words) throw new Error(`lesson.js: ${line} is not a line`)
+    if (typeof which === 'number') {
+      if (which < 0 || which >= c.words.length) throw new Error(`lesson.js: ${line} has no word ${which}`)
+      return [which, which]
+    }
+    let n = 1
+    let phrase = String(which)
+    const m = phrase.match(/^(.*)#(\d+)$/)
+    if (m) {
+      phrase = m[1]
+      n = Number(m[2])
+    }
+    const want = phrase.split(/\s+/).map(norm).filter(Boolean)
+    const have = c.words.map((w) => norm(w[0]))
+    for (let i = 0, seen = 0; i + want.length <= have.length; i++) {
+      if (want.every((w, k) => have[i + k] === w) && ++seen === n) return [i, i + want.length - 1]
+    }
+    throw new Error(`lesson.js: ${line} does not say "${which}"`)
+  }
+  L.word = (sid, line, which, edge = 'start', off = 0) => {
+    const [a, b] = L.wordIndex(line, which)
+    const w = cue(line).words
+    if (edge !== 'start' && edge !== 'end') throw new Error(`lesson.js: word(${line}): edge is 'start' or 'end'`)
+    return (edge === 'start' ? w[a][1] : w[b][2]) + off - L.scene(sid).start
+  }
+  L.clock = (tl, D, draw) => {
+    const st = { t: 0 }
+    tl.to(st, { t: D, duration: D, ease: 'none', onUpdate: () => draw(st.t) }, 0)
+    draw(0)
+    return tl
+  }
+})()

@@ -1,0 +1,15 @@
+{
+ "id": "lab-test-blue",
+ "note": "Production step 1's test of tools/merc-pass.mjs on this machine: Merc idle for a second, then a sung second (A3, full sound arcs). Not a film pass; kept out of merc/shots/ so merc-whole.py and merc-tags.py never see it.",
+ "variant": "blue",
+ "size": 300,
+ "quality": "medium",
+ "fps": 60,
+ "duration": 2.0,
+ "view": "front",
+ "cues": [{"t": 0, "state": "idle"}, {"t": 0.85, "state": "sing"}],
+ "voice": [{"t0": 1.0, "t1": 2.0, "level": 0.8, "cents": 0, "steady": 0.92, "midi": 57}],
+ "bias": [{"t": 0, "yaw": 0.32, "lookX": 0.35}],
+ "arcs": [{"t": 0, "v": 0}, {"t": 0.92, "v": 0}, {"t": 1.0, "v": 1}],
+ "sparkles": "none"
+}

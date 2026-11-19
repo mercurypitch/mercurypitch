@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <!-- Kit lab: the recap frame and its slide, the panel and the practise cards (recap.js, with chart.js;
+         HANDOFFS § Recap and practise, § The cuts S12 to S13 and S13 to S14). 0 to 1.6 s 13a: the frame
+         slides from F-turn's pixels (x 928 to 1824, line 153) to the recap's (x 232 to 1688, line 600),
+         power2.inOut, only Merc's line on it (as 12h); Tavi's hold draws in once it has landed (1.6 to 2.2 s),
+         where its wave keeps the wave rule (critic-kit-01 item 10); 1.6 to 3 s its labels and flag; 3.2 to 5 s the quick-check panel
+         and its two-line answer; 5.4 to 9 s the Voice Mirror card, its foot easing down as rows land, and
+         the rest card. Frame-fixed screen px (F0 from the matched cut). -->
+    <div id="kit-recap" data-composition-id="kit-recap" data-start="0" data-duration="9.5" data-width="1920" data-height="1080">
+      <div class="scene" id="kit-recap-root"></div>
+      <script>
+        ;(function () {
+          const ID = 'kit-recap', D = 9.5
+          const C = L.C, RC = L.RECAP
+          const root = document.getElementById(ID + '-root')
+          const room = L.room(root, {})
+          const world = L.stage(room.mid), hud = L.stage(room.hud)
+          L.text(hud, 'kit-recap: the recap frame, the panel and the cards (screen px)', { x: 24, y: 1060, size: 20, family: 'mono', weight: 500, fill: C.ink2, opacity: 1 })
+          const ch = L.bandChart(world, { ...RC.FROM, strip: null })
+          const labs = [L.label(world, RC.LABELS.anyOctave.text, RC.LABELS.anyOctave), L.label(world, RC.LABELS.inBand.text, RC.LABELS.inBand)]
+          const tag = L.tag(world, L.TAGS.illustration, RC.LABELS.tag)
+          const flag = L.settledFlag(world)
+          const P = RC.PANEL
+          const pn = L.panel(hud, P)
+          const q = ['The quick check, line one', 'and line two (lab text)'].map((s, i) => L.label(hud, s, { x: P.question.x, y: P.question.y[i], size: 40 }))
+          const rt = L.ringTimer(hud, { x: P.ring.x, y: P.ring.y })
+          const ans = ['A two-line answer, 56 px,', 'feet at about 466 (lab text)'].map((s, i) => L.label(hud, s, { x: P.answer2.x, y: P.answer2.y[i], size: 56, family: 'serif' }))
+          const V = RC.VM
+          const vm = L.panel(hud, { x0: V.panel.x0, y0: V.panel.y0, x1: V.panel.x1, y1: V.panel.feet[0] })
+          const vmL = [L.label(hud, V.practise.text, V.practise), L.label(hud, V.title.text, V.title), ...V.rows.map((r) => L.label(hud, r.text, { x: r.x, y: r.y, size: V.rowSize })), L.label(hud, V.keep.text, V.keep), L.label(hud, V.sore.text, V.sore), L.label(hud, V.free.text, V.free)]
+          const glyphs = V.rows.map((r) => L.glyph(hud, r.glyph, { x: 270, y: r.gy }))
+          const RS = RC.REST
+          const rest = L.panel(hud, RS.panel)
+          const restL = [...RS.question.map((s) => L.label(hud, s.text, { x: RS.x, y: s.y, size: RS.qSize, fill: C.ink2 })), L.label(hud, RS.title.text, { x: RS.x, y: RS.title.y, size: RS.title.size, family: 'serif' }), ...RS.body.map((s) => L.label(hud, s.text, { x: RS.x, y: s.y, size: RS.bodySize })), L.label(hud, RS.address.text, { x: RS.x, y: RS.address.y, size: RS.address.size })]
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const u = L.ease('power2.inOut')(L.clamp(t / 1.6))
+            const f = RC.frameAt(u)
+            ch.geo(f)
+            const a1 = 1 - L.prog(t, 3.0, 0.3)
+            // only Merc's line at the cut and through the slide; Tavi's hold draws in once the frame has landed,
+            // where the wave keeps the rule (cycle 26.5 px, 36.4 tall: 1.375)
+            const voice = L.RECAP.voiceOK(u) ? L.prog(t, 1.6, 0.6, 'none') : 0
+            ch.draw({ a: a1, band: { lit: t > 1.8 ? 1 : 0 }, merc: { w: L.RECAP.mercW(u) }, lines: voice > 0 ? [{ id: 'h', contour: 'demo', t: 10 * voice }] : [] })
+            labs.forEach((l) => l.draw({ a: a1 * L.prog(t, 1.6, 0.2) }))
+            tag.draw({ alpha: a1 * L.prog(t, 1.9, 0.2) })
+            flag.draw({ x: f.x0 + (f.x1 - f.x0) * 0.069, y: f.y0 - 35 * f.k, a: a1 * L.prog(t, 2.2, 0.2), labelA: 0 })
+            const a2 = L.prog(t, 3.2, 0.3) * (1 - L.prog(t, 5.1, 0.3))
+            pn.draw({ a: a2 }); q.forEach((l) => l.draw({ a: a2 })); rt.draw(t, 3.3, 1.0)
+            ans.forEach((l, i) => l.draw({ a: a2 * L.prog(t, 4.4 + 0.3 * i, 0.2) }))
+            const a3 = L.prog(t, 5.4, 0.3)
+            const k = Math.min(7, Math.floor(L.clamp((t - 5.6) / 0.35, 0, 7)))
+            const foot = L.lerp(V.panel.feet[Math.max(0, k - 1)], V.panel.feet[k], L.ease('power2.inOut')(L.clamp(((t - 5.6) / 0.35) % 1)))
+            vm.draw({ a: a3, y1: t < 5.6 ? V.panel.feet[0] : k >= 7 ? V.panel.feet[7] : foot })
+            vmL.forEach((l, i) => l.draw({ a: a3 * (i < 2 ? 1 : L.prog(t, 5.6 + 0.35 * (i - 2), 0.2)) }))
+            glyphs.forEach((g, i) => g.draw({ a: a3 * L.prog(t, 5.6 + 0.35 * i, 0.2) }))
+            const a4 = L.prog(t, 8.2, 0.3)
+            rest.draw({ a: a4 }); restL.forEach((l) => l.draw({ a: a4 }))
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+
+          const R = (el) => el.getBoundingClientRect()
+          window.__kitProbe = window.__kitProbe || {}
+          window.__kitProbe[ID] = {
+            times: [0.0, 2.9, 4.9, 9.4],
+            check(t) {
+              const b = R(ch.g.querySelector('.band rect'))
+              if (t === 0) return [{ name: 'at the cut only Merc\'s line shows (no voice line drawn)', got: ch.lastLine('h').length, want: 0 }, { name: 'Merc\'s line keeps F-turn\'s 5.6 px at the cut', got: +ch.merc.path.getAttribute('stroke-width'), want: 5.6, tol: 0.01 }, { name: 'slide start: frame x 928 (F-turn\'s pixels)', got: b.left, want: 928 }, { name: 'right 1824', got: b.right, want: 1824 }, { name: 'band 104', got: b.top, want: 104 }, { name: 'band foot 202', got: b.bottom, want: 202 }]
+              if (t === 2.9) return [{ name: 'the voice\'s wave keeps the rule here (k / rule k)', got: ch.waveRule().ratio, want: 1, tol: 0.05 }, { name: 'recap frame x 232', got: b.left, want: 232 }, { name: 'right 1688', got: b.right, want: 1688 }, { name: 'band 554.5', got: b.top, want: 554.5 }, { name: 'band foot 645.5', got: b.bottom, want: 645.5 }, { name: '"ILLUSTRATION" right 1688', got: R(tag.g).right, want: 1688 }, { name: '"ILLUSTRATION" centred y 500', got: R(tag.g).top + 20, want: 500 }]
+              if (t === 4.9) { const p = R(pn.g); return [{ name: 'panel x 120 to 960 (left)', got: p.left, want: 120 }, { name: 'panel right', got: p.right, want: 960 }, { name: 'panel top 140', got: p.top, want: 140 }, { name: 'panel foot 330', got: p.bottom, want: 330 }] }
+              const v = R(vm.g), r = R(rest.g)
+              return [{ name: 'Voice Mirror card x 230 to 1110 (left)', got: v.left, want: 230 }, { name: 'right', got: v.right, want: 1110 }, { name: 'top 90', got: v.top, want: 90 }, { name: 'foot at full 790', got: v.bottom, want: 790 }, { name: 'rest card x 1130 to 1690 (left)', got: r.left, want: 1130 }, { name: 'rest card y 250 to 600 (foot)', got: r.bottom, want: 600 },
+                { name: '"five notes" glyph\'s first dot (272, 448) before the drift', got: glyphs[2].dot(0)[0], want: 272 }, { name: 'its y; after the 14 px drift 434 (the tease carry\'s start)', got: glyphs[2].dot(0)[1] - RC.DRIFT, want: 434 }]
+            },
+          }
+        })()
+      </script>
+    </div>
+  </body>
+</html>

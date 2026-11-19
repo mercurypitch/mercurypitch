@@ -1,0 +1,4716 @@
+{
+ "rows": [
+  {
+   "page": "chart",
+   "t": 2,
+   "name": "the line's tail clear of the axis \"0\" (right-aligned 388, baseline 523)",
+   "got": 12,
+   "want": ">= 12",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "chart",
+   "t": 4.5,
+   "name": "S1 band x 400 to 1520 (left)",
+   "got": 400,
+   "want": 400,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 4.5,
+   "name": "S1 band right",
+   "got": 1520,
+   "want": 1520,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 4.5,
+   "name": "S1 band top (35 cents at 2.5 px)",
+   "got": 312.5,
+   "want": 312.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 4.5,
+   "name": "S1 band foot",
+   "got": 487.5,
+   "want": 487.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 4.5,
+   "name": "wave rule W 4: peak to peak 280 / W",
+   "got": 70,
+   "want": 70,
+   "tol": 1,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 4.5,
+   "name": "wave rule W 4: a cycle 203.6 / W",
+   "got": 50.92307692307675,
+   "want": 50.9,
+   "tol": 1,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 4.5,
+   "name": "wave rule ratio (cycle / height) 0.727",
+   "got": 0.727472527472525,
+   "want": 0.727,
+   "tol": 0.02,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 4.5,
+   "name": "strip hairline y 690",
+   "got": 690,
+   "want": 690,
+   "tol": 1,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 4.5,
+   "name": "\"A3\" right edge 366 (anchor end)",
+   "got": 366,
+   "want": 366,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 4.5,
+   "name": "ILLUSTRATION x 1249 to 1520 (right)",
+   "got": 1520.010009765625,
+   "want": 1520,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 4.5,
+   "name": "ILLUSTRATION left",
+   "got": 1249.31005859375,
+   "want": 1249,
+   "tol": 3,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 4.5,
+   "name": "ILLUSTRATION y 120 to 160",
+   "got": 120,
+   "want": 120,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 4.5,
+   "name": "LISTEN ONLY left 1536",
+   "got": 1536,
+   "want": 1536,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 4.5,
+   "name": "LISTEN ONLY right 1786",
+   "got": 1786.4100341796875,
+   "want": 1786,
+   "tol": 3,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 7.2,
+   "name": "at 0.78: band left 466",
+   "got": 466,
+   "want": 466,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 7.2,
+   "name": "at 0.78: band right 1340",
+   "got": 1339.5999755859375,
+   "want": 1340,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 7.2,
+   "name": "at 0.78: band top 365.5 (W 6: 1.667 px a cent)",
+   "got": 365.5025939941406,
+   "want": 365.5,
+   "tol": 2.5,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 7.2,
+   "name": "at 0.78: band foot 456.5",
+   "got": 456.5052185058594,
+   "want": 456.5,
+   "tol": 2.5,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 7.2,
+   "name": "ILLUSTRATION at 0.78: x 1128 to 1340 (left)",
+   "got": 1128.4617919921875,
+   "want": 1128,
+   "tol": 3,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 7.2,
+   "name": "LISTEN ONLY at 0.78: from 1352",
+   "got": 1352.0799560546875,
+   "want": 1352,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 7.2,
+   "name": "LISTEN ONLY at 0.78: y 192 to 224 (foot)",
+   "got": 223.79998779296875,
+   "want": 224,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 7.2,
+   "name": "thumb at 0.78 (p 100 held): x 903 is p 50; here p 100 at 1340",
+   "got": 1339.5999755859375,
+   "want": 1339.6000000000001,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 11.9,
+   "name": "S10 band top (W 10: 1 px a cent)",
+   "got": 365,
+   "want": 365,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 11.9,
+   "name": "S10 band foot",
+   "got": 435,
+   "want": 435,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 11.9,
+   "name": "wave rule W 10: peak to peak 28",
+   "got": 27.99955939381664,
+   "want": 28,
+   "tol": 1,
+   "pass": true
+  },
+  {
+   "page": "chart",
+   "t": 11.9,
+   "name": "wave rule W 10: a cycle 20.36",
+   "got": 20.365853658536295,
+   "want": 20.36,
+   "tol": 1,
+   "pass": true
+  },
+  {
+   "page": "cuts",
+   "t": 2,
+   "name": "cut 2: the carried object holds its pixels (left)",
+   "got": 737.9999389648438,
+   "want": 738,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "cuts",
+   "t": 2,
+   "name": "cut 2: top",
+   "got": 279.25,
+   "want": 279.25,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "cuts",
+   "t": 2,
+   "name": "cut 2: right",
+   "got": 1661.9998779296875,
+   "want": 1662,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "cuts",
+   "t": 2,
+   "name": "cut 2: foot",
+   "got": 730.7499389648438,
+   "want": 730.75,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "cuts",
+   "t": 2,
+   "name": "cut 2: the first frame shows the outgoing room (ghost 1, rest 0)",
+   "got": "1 / 0",
+   "want": "1.000 / 0.000",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "cuts",
+   "t": 2.15,
+   "name": "cut 2.0 + 0.15 s: halfway through the crossfade",
+   "got": 0.5,
+   "want": 0.5,
+   "tol": 0.05,
+   "pass": true
+  },
+  {
+   "page": "cuts",
+   "t": 2.3333,
+   "name": "cut + 0.33 s: the outgoing room gone (ghost S7)",
+   "got": 0,
+   "want": 0,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "page": "cuts",
+   "t": 6,
+   "name": "cut 6: the carried object holds its pixels (left)",
+   "got": 928,
+   "want": 928,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "cuts",
+   "t": 6,
+   "name": "cut 6: top",
+   "got": 104,
+   "want": 104,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "cuts",
+   "t": 6,
+   "name": "cut 6: right",
+   "got": 1824,
+   "want": 1824,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "cuts",
+   "t": 6,
+   "name": "cut 6: foot",
+   "got": 202,
+   "want": 202,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "cuts",
+   "t": 6,
+   "name": "cut 6: the first frame shows the outgoing room (ghost 1, rest 0)",
+   "got": "1 / 0",
+   "want": "1.000 / 0.000",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "cuts",
+   "t": 6.3333,
+   "name": "cut + 0.33 s: the outgoing room gone (ghost S13)",
+   "got": 0,
+   "want": 0,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 head x",
+   "got": 464.5,
+   "want": 464,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 head y",
+   "got": 217.75,
+   "want": 218,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 throat x",
+   "got": 487.5,
+   "want": 488,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 throat y",
+   "got": 338.5,
+   "want": 339,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 lungs x",
+   "got": 476,
+   "want": 476,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 lungs y",
+   "got": 505.24999999999994,
+   "want": 505,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 domeApex x",
+   "got": 476,
+   "want": 476,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 domeApex y",
+   "got": 620.25,
+   "want": 620,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 domeL x",
+   "got": 378.25,
+   "want": 378.25,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 domeL y",
+   "got": 660.5,
+   "want": 660.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 domeR x",
+   "got": 573.75,
+   "want": 573.75,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 domeR y",
+   "got": 660.5,
+   "want": 660.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 hips y 764",
+   "got": 764,
+   "want": 764,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 at rest: the dome's back end on the back's inner side (u 151.5)",
+   "got": 151.5,
+   "want": 151.5,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 0.1,
+   "name": "S6 at rest: the dome's front end on the belly wall's inner side (wall u 330.0)",
+   "got": 330,
+   "want": 330,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 1.4,
+   "name": "S6 breathing in: belly front at u 360 (x 614)",
+   "got": 614,
+   "want": 614,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 1.4,
+   "name": "S6 breathing in: lungs centre v 345 (y 516.75)",
+   "got": 516.75,
+   "want": 516.75,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 1.4,
+   "name": "S6 breathing in: the dome's back end on the back's inner side (u 151.5)",
+   "got": 151.5,
+   "want": 151.5,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 1.4,
+   "name": "S6 breathing in: the dome's front end on the belly wall's inner side (wall u 359.9)",
+   "got": 359.93588010507335,
+   "want": 359.93587989728945,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 3.4,
+   "name": "S6 breathing out: belly front at u 315 (x 562.25)",
+   "got": 562.25,
+   "want": 562.25,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 3.4,
+   "name": "S6 breathing out: the dome's back end on the back's inner side (u 151.5)",
+   "got": 151.5,
+   "want": 151.5,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 3.4,
+   "name": "S6 breathing out: the dome's front end on the belly wall's inner side (wall u 317.2)",
+   "got": 317.16334687125993,
+   "want": 317.16148356657055,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 head x",
+   "got": 991,
+   "want": 991,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 head y",
+   "got": 199.5,
+   "want": 199.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 chin x",
+   "got": 1029.5,
+   "want": 1029.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 chin y",
+   "got": 238,
+   "want": 238,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 throat x",
+   "got": 1005,
+   "want": 1005,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 throat y",
+   "got": 273,
+   "want": 273,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 shoulder x",
+   "got": 952.5,
+   "want": 952.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 shoulder y",
+   "got": 304.5,
+   "want": 304.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 lungs x",
+   "got": 998,
+   "want": 998,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 lungs y",
+   "got": 374.5,
+   "want": 374.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 domeApex x",
+   "got": 998,
+   "want": 998,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 domeApex y",
+   "got": 444.5,
+   "want": 444.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 knee x",
+   "got": 994.5,
+   "want": 994.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 knee y",
+   "got": 686,
+   "want": 686,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 soles on the floor line (840)",
+   "got": 840,
+   "want": 840,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 belly front x 1061",
+   "got": 1061,
+   "want": 1061,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 7.3,
+   "name": "S8 standing height (crown to soles, px)",
+   "got": 686,
+   "want": 686,
+   "tol": 1,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 8.2,
+   "name": "S8 mid-breath: the dome's back end on the back's inner side (u 151.5)",
+   "got": 151.5,
+   "want": 151.5,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 8.2,
+   "name": "S8 mid-breath: the dome's front end on the belly wall's inner side (wall u 325.8)",
+   "got": 325.7548234796268,
+   "want": 325.7548204992691,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 10.5,
+   "name": "S13 crown y 105",
+   "got": 105,
+   "want": 105,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "figure",
+   "t": 10.5,
+   "name": "S13 back x 1262.5",
+   "got": 1262.5,
+   "want": 1262.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 2,
+   "name": "folds box x 220",
+   "got": 220,
+   "want": 220,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 2,
+   "name": "folds box right 560",
+   "got": 560,
+   "want": 560,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 2,
+   "name": "folds box top 260",
+   "got": 260,
+   "want": 260,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 2,
+   "name": "folds box foot 600",
+   "got": 600,
+   "want": 600,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 2,
+   "name": "strip x 700",
+   "got": 700,
+   "want": 700,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 2,
+   "name": "strip right 1600",
+   "got": 1600,
+   "want": 1600,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 2,
+   "name": "strip y 320 to 540 (centre 430, h 110)",
+   "got": 320,
+   "want": 320,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 2,
+   "name": "x(t) = 700 + 562.5 t at 1.6 s",
+   "got": 1600,
+   "want": 1600,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 5.5,
+   "name": "stack row 1 centre y 250 (h 70)",
+   "got": 250,
+   "want": 250,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 5.5,
+   "name": "stack row 2 centre y 450 (h 70)",
+   "got": 450,
+   "want": 450,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 5.5,
+   "name": "stack row 3 centre y 650 (h 70)",
+   "got": 650,
+   "want": 650,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 7.9,
+   "name": "voice box x 300 to 640 (left)",
+   "got": 300,
+   "want": 300,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 7.9,
+   "name": "voice box right",
+   "got": 640,
+   "want": 640,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 7.9,
+   "name": "voice box y 190 to 510 (top)",
+   "got": 190,
+   "want": 190,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "folds",
+   "t": 7.9,
+   "name": "voice box foot",
+   "got": 510,
+   "want": 510,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 0,
+   "name": "split start: band x 466 (the chart at 0.78)",
+   "got": 466,
+   "want": 466,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 0,
+   "name": "band right 1340",
+   "got": 1340,
+   "want": 1340,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 0,
+   "name": "band top 365.5",
+   "got": 365.5,
+   "want": 365.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 0,
+   "name": "band foot 456.5",
+   "got": 456.5,
+   "want": 456.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 3.3,
+   "name": "\"push of air (not pitch)\" has an opaque ground back over the cursor",
+   "got": "#0d1117, covers true, above true",
+   "want": "opaque, covering, above",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "gauge",
+   "t": 3.3,
+   "name": "\"the lungs' own push\" has an opaque ground back over the cursor",
+   "got": "#0d1117, covers true, above true",
+   "want": "opaque, covering, above",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "gauge",
+   "t": 3.3,
+   "name": "\"what the note needs\" has an opaque ground back over the cursor",
+   "got": "#0d1117, covers true, above true",
+   "want": "opaque, covering, above",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "gauge",
+   "t": 3.3,
+   "name": "\"held back\" has an opaque ground back over the cursor",
+   "got": "#0d1117, covers true, above true",
+   "want": "opaque, covering, above",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "gauge",
+   "t": 3.3,
+   "name": "\"added\" has an opaque ground back over the cursor",
+   "got": "#0d1117, covers true, above true",
+   "want": "opaque, covering, above",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "gauge",
+   "t": 3.3,
+   "name": "\"Now: holding back\" has an opaque ground back over the cursor",
+   "got": "#0d1117, covers true, above true",
+   "want": "opaque, covering, above",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "gauge",
+   "t": 3.3,
+   "name": "\"Now: adding\" has an opaque ground back over the cursor",
+   "got": "#0d1117, covers true, above true",
+   "want": "opaque, covering, above",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "gauge",
+   "t": 3.3,
+   "name": "the chip is opaque and over the cursor",
+   "got": "1",
+   "want": "1",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "gauge",
+   "t": 5.9,
+   "name": "before the crossing: the readout says \"Now: holding back\"",
+   "got": 1,
+   "want": 1,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 5.9,
+   "name": "\"added\" not yet landed",
+   "got": 0,
+   "want": 0,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 6.3,
+   "name": "after the crossing: \"Now: adding\"",
+   "got": 1,
+   "want": 1,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 6.3,
+   "name": "\"Now: holding back\" gone",
+   "got": 0,
+   "want": 0,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 6.3,
+   "name": "\"added\" landed at the crossing",
+   "got": 1,
+   "want": 1,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 6.3,
+   "name": "\"added\" glyphs under the gold line (607.5) by 12 px or more",
+   "got": 15.5,
+   "want": ">= 12",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "gauge",
+   "t": 6.3,
+   "name": "\"added\" over the lungs' line at its left end by 12 px or more",
+   "got": 20.714311079545496,
+   "want": ">= 12",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "gauge",
+   "t": 6.3,
+   "name": "\"added\" right of the crossing (x 1376)",
+   "got": 1516.6015625,
+   "want": "> 1376",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "small band x 760 to 1640 (left)",
+   "got": 760,
+   "want": 760,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "small band right",
+   "got": 1640,
+   "want": 1640,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "small band y 160 to 240 (top)",
+   "got": 160,
+   "want": 160,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "small band foot",
+   "got": 240,
+   "want": 240,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "frame x 760",
+   "got": 760,
+   "want": 760,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "frame right 1640",
+   "got": 1640,
+   "want": 1640,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "frame top 290",
+   "got": 290,
+   "want": 290,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "frame foot 720",
+   "got": 720,
+   "want": 720,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "gold line at Loud: y 454 (centre)",
+   "got": 454,
+   "want": 454,
+   "tol": 1.5,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "tag right 1630 (9 px in from the stroke)",
+   "got": 1630.010009765625,
+   "want": 1630,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "tag top 300",
+   "got": 300,
+   "want": 300,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "Quiet chip from x 1653 (12 screen px off the stroke's outer edge at F-gauge)",
+   "got": 1653,
+   "want": 1653,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "Quiet chip y 301 to 339 (top)",
+   "got": 301,
+   "want": 301,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "Loud chip foot 391",
+   "got": 391,
+   "want": 391,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "the lungs cross Quiet at 7 s (x(7) = 1376)",
+   "got": 1376,
+   "want": 1376,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "gauge",
+   "t": 8.9,
+   "name": "the lungs cross Loud at 3 s (x(3) = 1024)",
+   "got": 1024,
+   "want": 1024,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "hook",
+   "t": 3.4,
+   "name": "long note starts at (560, 520): x",
+   "got": 560,
+   "want": 560,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hook",
+   "t": 3.4,
+   "name": "y",
+   "got": 520,
+   "want": 520,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hook",
+   "t": 3.4,
+   "name": "ends at x 1360",
+   "got": 1360,
+   "want": 1360,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hook",
+   "t": 3.4,
+   "name": "head bead centre x 560",
+   "got": 560.0059814453125,
+   "want": 560,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hook",
+   "t": 3.4,
+   "name": "head bead centre y 520",
+   "got": 520.0059967041016,
+   "want": 520,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hook",
+   "t": 3.4,
+   "name": "head bead r 22 on screen",
+   "got": 22.0001220703125,
+   "want": 22,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "hook",
+   "t": 3.4,
+   "name": "\"support\" baseline 420 at the last frame",
+   "got": 420,
+   "want": 420,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "hook",
+   "t": 3.4,
+   "name": "\"support\" anchored middle at x 960, as Lesson 4's S15 (its italic ink centre 965.7)",
+   "got": 960,
+   "want": 960,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "hook",
+   "t": 3.4,
+   "name": "\"what keeps it steady?\" baseline 680",
+   "got": 680,
+   "want": 680,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "hook",
+   "t": 3.4,
+   "name": "the long note's stroke on screen at F-hook: 4 px (Lesson 4's weight)",
+   "got": 4,
+   "want": 4,
+   "tol": 0.05,
+   "pass": true
+  },
+  {
+   "page": "hook",
+   "t": 3.4,
+   "name": "Lesson 4's s15 geometry: the note x 560 to 1360 at y 520, \"support\" 160 px at (960, 420), \"what keeps it steady?\" 96 px at (960, 680)",
+   "got": "560-1360 @ 520; 160px",
+   "want": "as s15",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "hosts",
+   "t": 1,
+   "name": "Tavi box left 1650 (x 1800, size 300)",
+   "got": 1650,
+   "want": 1650,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hosts",
+   "t": 1,
+   "name": "box top 589.2 (feet at 0.836)",
+   "got": 589.1875,
+   "want": 589.2,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hosts",
+   "t": 1,
+   "name": "feet line 840",
+   "got": 839.9875,
+   "want": 840,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hosts",
+   "t": 1,
+   "name": "reflection's sole row on 840 (flipped about it)",
+   "got": 839.98125,
+   "want": 840,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hosts",
+   "t": 1,
+   "name": "Tavi mirrored by default (scaleX(-1))",
+   "got": "scaleX(-1)",
+   "want": "scaleX(-1)",
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hosts",
+   "t": 1,
+   "name": "Merc not mirrored by default",
+   "got": "none",
+   "want": "none",
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hosts",
+   "t": 3.3,
+   "name": "after the size change: feet still on 840",
+   "got": 839.9875341796875,
+   "want": 840,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hosts",
+   "t": 3.3,
+   "name": "drawn at 240",
+   "got": 240,
+   "want": 240,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hosts",
+   "t": 3.3,
+   "name": "the reflection's sole row still on 840",
+   "got": 839.98255859375,
+   "want": 840,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hosts",
+   "t": 3.9,
+   "name": "leap: carried in from 300 px beyond (x at u)",
+   "got": -85.35000610351562,
+   "want": -85.34883720930245,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hosts",
+   "t": 3.9,
+   "name": "leap: lifted",
+   "got": 63.612475585937545,
+   "want": 63.601946998377464,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "hosts",
+   "t": 3.9,
+   "name": "its reflection stays mirrored about the floor",
+   "got": 63.581296630859356,
+   "want": 63.601946998377464,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 1.5,
+   "name": "7a end: the small band on the chart's band, x 400",
+   "got": 400.0049743652344,
+   "want": 400,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 1.5,
+   "name": "right 1520",
+   "got": 1520.0083923339844,
+   "want": 1520,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 1.5,
+   "name": "top 382.5 (470 - 87.5)",
+   "got": 382.4964599609375,
+   "want": 382.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 1.5,
+   "name": "foot 557.5",
+   "got": 557.5,
+   "want": 557.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 3.5,
+   "name": "row 0: dashed underline at y 194 under the whole row (left 360)",
+   "got": 360,
+   "want": 358.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 3.5,
+   "name": "row 0: underline right = the words' end",
+   "got": 1215.06005859375,
+   "want": 1216.5625,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 3.5,
+   "name": "row 0: its \"?\" 14 px after the last word",
+   "got": 13.99755859375,
+   "want": 14,
+   "tol": 6,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 3.5,
+   "name": "row 1: its \"ILLUSTRATION\" chip from x 360",
+   "got": 360,
+   "want": 360,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 3.5,
+   "name": "row 1: chip centred y 345",
+   "got": 345,
+   "want": 345,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 3.5,
+   "name": "row 1: the chart at 0.41, band from x 1180",
+   "got": 1180,
+   "want": 1180,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 3.5,
+   "name": "right 1639.2",
+   "got": 1639.199951171875,
+   "want": 1639.2,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 3.5,
+   "name": "top 274.1",
+   "got": 274.125,
+   "want": 274.1,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 3.5,
+   "name": "foot 345.9",
+   "got": 345.875,
+   "want": 345.9,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 4.9,
+   "name": "pair: \"easy\" x 860 to 1200",
+   "got": 860,
+   "want": 860,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 4.9,
+   "name": "\"easy\" y 570 to 790 (top)",
+   "got": 570,
+   "want": 570,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 4.9,
+   "name": "\"easy\" foot",
+   "got": 790,
+   "want": 790,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 4.9,
+   "name": "\"pressed\" x 1260 to 1600 (right)",
+   "got": 1600,
+   "want": 1600,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 4.9,
+   "name": "\"pressed\" y 652 to 708 (top)",
+   "got": 652,
+   "want": 652,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 6.9,
+   "name": "row 2 (0.5): \"easy\" from x 1180",
+   "got": 1180,
+   "want": 1180,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 6.9,
+   "name": "\"easy\" top 465",
+   "got": 465,
+   "want": 465,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 6.9,
+   "name": "\"pressed\" right 1550",
+   "got": 1550,
+   "want": 1550,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "mixup",
+   "t": 6.9,
+   "name": "row 2 names baseline 605 (26 px)",
+   "got": 605,
+   "want": 605,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 0,
+   "name": "at the cut only Merc's line shows (no voice line drawn)",
+   "got": 0,
+   "want": 0,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 0,
+   "name": "Merc's line keeps F-turn's 5.6 px at the cut",
+   "got": 5.6,
+   "want": 5.6,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 0,
+   "name": "slide start: frame x 928 (F-turn's pixels)",
+   "got": 928,
+   "want": 928,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 0,
+   "name": "right 1824",
+   "got": 1824,
+   "want": 1824,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 0,
+   "name": "band 104",
+   "got": 104,
+   "want": 104,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 0,
+   "name": "band foot 202",
+   "got": 202,
+   "want": 202,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 2.9,
+   "name": "the voice's wave keeps the rule here (k / rule k)",
+   "got": 1,
+   "want": 1,
+   "tol": 0.05,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 2.9,
+   "name": "recap frame x 232",
+   "got": 232,
+   "want": 232,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 2.9,
+   "name": "right 1688",
+   "got": 1688,
+   "want": 1688,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 2.9,
+   "name": "band 554.5",
+   "got": 554.5,
+   "want": 554.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 2.9,
+   "name": "band foot 645.5",
+   "got": 645.5,
+   "want": 645.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 2.9,
+   "name": "\"ILLUSTRATION\" right 1688",
+   "got": 1688.010009765625,
+   "want": 1688,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 2.9,
+   "name": "\"ILLUSTRATION\" centred y 500",
+   "got": 500,
+   "want": 500,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 4.9,
+   "name": "panel x 120 to 960 (left)",
+   "got": 120,
+   "want": 120,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 4.9,
+   "name": "panel right",
+   "got": 960,
+   "want": 960,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 4.9,
+   "name": "panel top 140",
+   "got": 140,
+   "want": 140,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 4.9,
+   "name": "panel foot 330",
+   "got": 330,
+   "want": 330,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 9.4,
+   "name": "Voice Mirror card x 230 to 1110 (left)",
+   "got": 230,
+   "want": 230,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 9.4,
+   "name": "right",
+   "got": 1110,
+   "want": 1110,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 9.4,
+   "name": "top 90",
+   "got": 90,
+   "want": 90,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 9.4,
+   "name": "foot at full 790",
+   "got": 790,
+   "want": 790,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 9.4,
+   "name": "rest card x 1130 to 1690 (left)",
+   "got": 1130,
+   "want": 1130,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 9.4,
+   "name": "rest card y 250 to 600 (foot)",
+   "got": 600,
+   "want": 600,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 9.4,
+   "name": "\"five notes\" glyph's first dot (272, 448) before the drift",
+   "got": 272,
+   "want": 272,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "recap",
+   "t": 9.4,
+   "name": "its y; after the 14 px drift 434 (the tease carry's start)",
+   "got": 434,
+   "want": 434,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 0.2,
+   "name": "F-cold: world (400,400) x",
+   "got": 456,
+   "want": 456,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 0.2,
+   "name": "F-cold: world (400,400) y",
+   "got": 405,
+   "want": 405,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 0.2,
+   "name": "F-cold: world (1520,400) x",
+   "got": 1464,
+   "want": 1464,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 0.2,
+   "name": "F-cold: world (1520,400) y",
+   "got": 405,
+   "want": 405,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 0.2,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 3.6,
+   "name": "F-cold end: world (400,400) x",
+   "got": 444.8000030517578,
+   "want": 444.8,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 3.6,
+   "name": "F-cold end: world (400,400) y",
+   "got": 404,
+   "want": 404,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 3.6,
+   "name": "F-cold end: world (1520,400) x",
+   "got": 1475.2000122070312,
+   "want": 1475.2,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 3.6,
+   "name": "F-cold end: world (1520,400) y",
+   "got": 404,
+   "want": 404,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 3.6,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 7,
+   "name": "F-hook: world (400,400) x",
+   "got": 560.0060119628906,
+   "want": 560,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 7,
+   "name": "F-hook: world (400,400) y",
+   "got": 520.0060119628906,
+   "want": 520,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 7,
+   "name": "F-hook: world (1520,400) x",
+   "got": 1360.0108032226562,
+   "want": 1360,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 7,
+   "name": "F-hook: world (1520,400) y",
+   "got": 520.0060119628906,
+   "want": 520,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 7,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 7.75,
+   "name": "F-bead: world (400,400) x",
+   "got": 960,
+   "want": 960,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 7.75,
+   "name": "F-bead: world (400,400) y",
+   "got": 540,
+   "want": 540,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 7.75,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 8.35,
+   "name": "F-promise-a: world (400,400) x",
+   "got": 480,
+   "want": 480,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 8.35,
+   "name": "F-promise-a: world (400,400) y",
+   "got": 400,
+   "want": 400,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 8.35,
+   "name": "F-promise-a: world (1520,400) x",
+   "got": 1600,
+   "want": 1600,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 8.35,
+   "name": "F-promise-a: world (1520,400) y",
+   "got": 400,
+   "want": 400,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 8.35,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 12.75,
+   "name": "F-promise-b: world (400,400) x",
+   "got": 320,
+   "want": 320,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 12.75,
+   "name": "F-promise-b: world (400,400) y",
+   "got": 400,
+   "want": 400,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 12.75,
+   "name": "F-promise-b: world (1520,400) x",
+   "got": 1440,
+   "want": 1440,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 12.75,
+   "name": "F-promise-b: world (1520,400) y",
+   "got": 400,
+   "want": 400,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 12.75,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 14.55,
+   "name": "F-strip: world (400,630) x",
+   "got": 176,
+   "want": 176,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 14.55,
+   "name": "F-strip: world (400,630) y",
+   "got": 182,
+   "want": 182,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 14.55,
+   "name": "F-strip: world (1520,750) x",
+   "got": 1744,
+   "want": 1744,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 14.55,
+   "name": "F-strip: world (1520,750) y",
+   "got": 350,
+   "want": 350,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 14.55,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 16.45,
+   "name": "F0: world (400,400) x",
+   "got": 400,
+   "want": 400,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 16.45,
+   "name": "F0: world (400,400) y",
+   "got": 400,
+   "want": 400,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 16.45,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 26.85,
+   "name": "F-gauge: world (760,290) x",
+   "got": 738,
+   "want": 738,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 26.85,
+   "name": "F-gauge: world (760,290) y",
+   "got": 279.25,
+   "want": 279.25,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 26.85,
+   "name": "F-gauge: world (1640,720) x",
+   "got": 1662,
+   "want": 1662,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 26.85,
+   "name": "F-gauge: world (1640,720) y",
+   "got": 730.75,
+   "want": 730.75,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 26.85,
+   "name": "near layer scale at F-gauge",
+   "got": 1.08,
+   "want": 1.08,
+   "tol": 0.005,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 26.85,
+   "name": "the push to F-gauge: least movement in any 0.5 s window (screen px, the corners' content)",
+   "got": 2.4006542184296924,
+   "want": ">= 1",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "room",
+   "t": 26.85,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 29.15,
+   "name": "F-hold: world (960,400) x",
+   "got": 960,
+   "want": 960,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 29.15,
+   "name": "F-hold: world (960,400) y",
+   "got": 530,
+   "want": 530,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 29.15,
+   "name": "F-hold: world (400,400) x",
+   "got": 232,
+   "want": 232,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 29.15,
+   "name": "F-hold: world (400,400) y",
+   "got": 530,
+   "want": 530,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 29.15,
+   "name": "F-hold: world (1520,400) x",
+   "got": 1688,
+   "want": 1688,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 29.15,
+   "name": "F-hold: world (1520,400) y",
+   "got": 530,
+   "want": 530,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 29.15,
+   "name": "near layer scale at F-hold",
+   "got": 1.48,
+   "want": 1.48,
+   "tol": 0.005,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 29.15,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 31.05,
+   "name": "CU-scoop: world (400,400) x",
+   "got": 360,
+   "want": 360,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 31.05,
+   "name": "CU-scoop: world (400,400) y",
+   "got": 520,
+   "want": 520,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 31.05,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 33.45,
+   "name": "CU-wave: world (1000,400) x",
+   "got": 960,
+   "want": 960,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 33.45,
+   "name": "CU-wave: world (1000,400) y",
+   "got": 520,
+   "want": 520,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 33.45,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 35.31,
+   "name": "F-hold (back): world (960,400) x",
+   "got": 960,
+   "want": 960,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 35.31,
+   "name": "F-hold (back): world (960,400) y",
+   "got": 530,
+   "want": 530,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 35.31,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 37.21,
+   "name": "F-turn: world (1320,590) x",
+   "got": 1376,
+   "want": 1376,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 37.21,
+   "name": "F-turn: world (1320,590) y",
+   "got": 636,
+   "want": 636,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 37.21,
+   "name": "F-turn: world (1000,210) x",
+   "got": 928,
+   "want": 928,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 37.21,
+   "name": "F-turn: world (1000,210) y",
+   "got": 104,
+   "want": 104,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 37.21,
+   "name": "near layer scale at F-turn",
+   "got": 1.64,
+   "want": 1.64,
+   "tol": 0.005,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 37.21,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 41.2,
+   "name": "F-end: world (960,540) x",
+   "got": 960,
+   "want": 960,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 41.2,
+   "name": "F-end: world (960,540) y",
+   "got": 540,
+   "want": 540,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 41.2,
+   "name": "F-end: world (400,400) x",
+   "got": 383.1999969482422,
+   "want": 383.2,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 41.2,
+   "name": "F-end: world (400,400) y",
+   "got": 395.8000030517578,
+   "want": 395.8,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 41.2,
+   "name": "the chart's chip, whenever shown (every frame of the clip): its least distance to an edge",
+   "got": 16.02409920389178,
+   "want": ">= 16",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "room",
+   "t": 41.2,
+   "name": "the frame after each lab cut lifts no bokeh (one change, LAB-CHECKS 2)",
+   "got": "none lifted",
+   "want": "none lifted",
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 41.2,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 21.65,
+   "name": "mid-push to F-gauge: layers part (far < mid < near)",
+   "got": "1.0063 / 1.0250 / 1.0400",
+   "want": "far < mid < near",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "room",
+   "t": 21.65,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 27.1,
+   "name": "after the matched cut: near scale back to 1",
+   "got": 1,
+   "want": 1,
+   "tol": 0.0005,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 27.1,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 35.56,
+   "name": "after the matched cut: near scale back to 1",
+   "got": 1,
+   "want": 1,
+   "tol": 0.0005,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 35.56,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 37.46,
+   "name": "after the matched cut: near scale back to 1",
+   "got": 1,
+   "want": 1,
+   "tol": 0.0005,
+   "pass": true
+  },
+  {
+   "page": "room",
+   "t": 37.46,
+   "name": "floor line stays at y 840 (screen space)",
+   "got": 840,
+   "want": 840,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 0,
+   "name": "carry starts at the dot (272, 434): x",
+   "got": 272,
+   "want": 272,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 0,
+   "name": "y",
+   "got": 434,
+   "want": 434,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 0,
+   "name": "r 4",
+   "got": 4,
+   "want": 4,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 1.6,
+   "name": "carry lands on C4 (420, 745): x",
+   "got": 420,
+   "want": 420,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 1.6,
+   "name": "y",
+   "got": 745,
+   "want": 745,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 1.6,
+   "name": "r 20",
+   "got": 20,
+   "want": 20,
+   "tol": 0.01,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 1.6,
+   "name": "its whole path left of x 450",
+   "got": 419.9998828123856,
+   "want": "< 450",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "tease",
+   "t": 6.9,
+   "name": "C4 bead (420, 745)",
+   "got": 745,
+   "want": 745,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 6.9,
+   "name": "G4 bead x 740",
+   "got": 740,
+   "want": 740,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 6.9,
+   "name": "G4 bead y 535",
+   "got": 535,
+   "want": 535,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 6.9,
+   "name": "A4 bead (1060, 475) y",
+   "got": 475,
+   "want": 475,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 6.9,
+   "name": "last bead x 1380",
+   "got": 1380,
+   "want": 1380,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 6.9,
+   "name": "C4's copy six rows up (y 565)",
+   "got": 565,
+   "want": 565,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 9.9,
+   "name": "end card: C4 bead at (1219, 370.5): x",
+   "got": 1219,
+   "want": 1219,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 9.9,
+   "name": "y",
+   "got": 370.50001525878906,
+   "want": 370.5,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 9.9,
+   "name": "the shrunk figure clear of the zone (left edge > 1100)",
+   "got": 1183,
+   "want": "> 1100",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "tease",
+   "t": 9.9,
+   "name": "address x 120, baseline 320",
+   "got": 320,
+   "want": 320,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 9.9,
+   "name": "free line baseline 395",
+   "got": 395,
+   "want": 395,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 9.9,
+   "name": "lockup width at h 100 (1180 x 100 / 260)",
+   "got": 453.84615384615387,
+   "want": 453.85,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "tease",
+   "t": 9.9,
+   "name": "lockup ink from x 124.6 (the orb's own 12-unit margin)",
+   "got": 124.61544036865234,
+   "want": 124.6,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "title",
+   "t": 0.3,
+   "name": "the field’s grain changes every frame (seeds)",
+   "got": "634 638 642",
+   "want": "all different",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "title",
+   "t": 0.3,
+   "name": "the field breathes: no 0.2 s window of S1's last 0.6 s with one centre colour",
+   "got": "0 still windows",
+   "want": "0 still windows",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "title",
+   "t": 1.2,
+   "name": "the field has closed into the bead (r 22 x zoom): bead width / 2",
+   "got": 22.611607142857142,
+   "want": 22.611111111111107,
+   "tol": 1.5,
+   "pass": true
+  },
+  {
+   "page": "title",
+   "t": 1.2,
+   "name": "the bead on its rest, z-mapped (x)",
+   "got": 1062.780029296875,
+   "want": 1062.7777777777778,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 5.9,
+   "name": "ring centre (1320, 590): x",
+   "got": 1320,
+   "want": 1320,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 5.9,
+   "name": "ring centre y",
+   "got": 590.0000152587891,
+   "want": 590,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 5.9,
+   "name": "ring r 160 (x 1.04 breathing at 9.8 s)",
+   "got": 160.0069313333,
+   "want": 160,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 5.9,
+   "name": "frame band x 1000 to 1640 (left)",
+   "got": 1000,
+   "want": 1000,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 5.9,
+   "name": "frame band right",
+   "got": 1640,
+   "want": 1640,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 5.9,
+   "name": "frame band y 210 to 280 (top)",
+   "got": 210,
+   "want": 210,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 5.9,
+   "name": "frame band foot",
+   "got": 280,
+   "want": 280,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 5.9,
+   "name": "playhead at 9.8 s: x 1000 + 64 t",
+   "got": 1627.199951171875,
+   "want": 1627.2,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 5.9,
+   "name": "\"Your turn.\" x 260",
+   "got": 260,
+   "want": 260,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 5.9,
+   "name": "\"Your turn.\" baseline 200",
+   "got": 200,
+   "want": 200,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 5.9,
+   "name": "care icon box top-left (260, 236): x (its 36 px box; the leaf's ink starts at 267.5)",
+   "got": 260,
+   "want": 260,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 5.9,
+   "name": "care icon box y (ink from 240.5)",
+   "got": 236,
+   "want": 236,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 5.9,
+   "name": "doctor lines broken at 700 px (count)",
+   "got": 4,
+   "want": 4,
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "turn",
+   "t": 7.6,
+   "name": "F-turn: ring centre (1376, 636): x",
+   "got": 1376,
+   "want": 1376,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 7.6,
+   "name": "F-turn: ring centre y",
+   "got": 636,
+   "want": 636,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 7.6,
+   "name": "F-turn: ring r 224",
+   "got": 224,
+   "want": 224,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 7.6,
+   "name": "F-turn: frame x 928",
+   "got": 928,
+   "want": 928,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 7.6,
+   "name": "F-turn: frame right 1824",
+   "got": 1824,
+   "want": 1824,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 7.6,
+   "name": "F-turn: band 104",
+   "got": 104,
+   "want": 104,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 7.6,
+   "name": "F-turn: band foot 202",
+   "got": 202,
+   "want": 202,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 7.6,
+   "name": "care block holds still through the push (\"Your turn.\" box left)",
+   "got": 260,
+   "want": 260,
+   "tol": 1,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 7.6,
+   "name": "the phase row and its lines are gone before the push lands",
+   "got": 0,
+   "want": 0,
+   "tol": 0.001,
+   "pass": true
+  },
+  {
+   "page": "turn",
+   "t": 7.6,
+   "name": "nothing of the turn visible under y 880 (the caption band) at F-turn",
+   "got": 867,
+   "want": "<= 880",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "type",
+   "t": 1.2,
+   "name": "chapter card centred on x 960",
+   "got": 960.5254821777344,
+   "want": 960,
+   "tol": 3,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 1.2,
+   "name": "chapter card at most 1680 px wide (t 1.2, breathing)",
+   "got": 1659.3076171875,
+   "want": "<= 1680",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "type",
+   "t": 1.95,
+   "name": "chapter card centred on x 960",
+   "got": 960.7225189208984,
+   "want": 960,
+   "tol": 3,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 1.95,
+   "name": "chapter card at most 1680 px wide (t 1.95, its breathing at its peak)",
+   "got": 1678.02001953125,
+   "want": "<= 1680",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "pill 1: text pad left (24)",
+   "got": 24.29998779296875,
+   "want": 24,
+   "tol": 1.5,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "pill 1: text pad right (24)",
+   "got": 24.29376220703125,
+   "want": 24,
+   "tol": 1.5,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "pill 1 left",
+   "got": 462,
+   "want": 462,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "pill 1 right",
+   "got": 930,
+   "want": 930,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "pill 1 top 82",
+   "got": 82,
+   "want": 82,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "pill 1 foot 134",
+   "got": 134,
+   "want": 134,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "pill 2: text pad left (24)",
+   "got": 24.6300048828125,
+   "want": 24,
+   "tol": 1.5,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "pill 2: text pad right (24)",
+   "got": 24.406982421875,
+   "want": 24,
+   "tol": 1.5,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "pill 2 left",
+   "got": 970,
+   "want": 970,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "pill 2 right",
+   "got": 1430,
+   "want": 1430,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "pill 2 top 82",
+   "got": 82,
+   "want": 82,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "pill 2 foot 134",
+   "got": 134,
+   "want": 134,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "the ticked pill is the board's second, \"Get louder and drift higher\" (its check drawn, the first's not)",
+   "got": "check opacity 0.000 / 1.000",
+   "want": "second only",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "the check in the gap: clear of the first pill (930) by",
+   "got": 9,
+   "want": ">= 8.5",
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "ring timer centre x 1480",
+   "got": 1480,
+   "want": 1480,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 3.9,
+   "name": "ring timer centre y 108",
+   "got": 108,
+   "want": 108,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "tag \"ILLUSTRATION\" width (board 271)",
+   "got": 270.69499999999994,
+   "want": 271,
+   "tol": 4,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "tag \"ILLUSTRATION\" height 40",
+   "got": 40,
+   "want": 40,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "tag \"LISTEN ONLY\" width (board 250)",
+   "got": 250.41374999999994,
+   "want": 250,
+   "tol": 4,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "tag \"LISTEN ONLY\" height 40",
+   "got": 40,
+   "want": 40,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "tag \"SLOWED · ILLUSTRATION\" width (board 453)",
+   "got": 453.21062499999994,
+   "want": 453,
+   "tol": 4,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "tag \"SLOWED · ILLUSTRATION\" height 40",
+   "got": 40,
+   "want": 40,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "ILLUSTRATION right edge 1520",
+   "got": 1520.010009765625,
+   "want": 1520,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "LISTEN ONLY left edge 1536",
+   "got": 1536,
+   "want": 1536,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "SLOWED chip x 1110 to 1563",
+   "got": 1563.2099609375,
+   "want": 1563,
+   "tol": 4,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "four words: gap 1 is 12 px",
+   "got": 11.989990234375,
+   "want": 12,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "four words: gap 2 is 12 px",
+   "got": 12.0001220703125,
+   "want": 12,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "four words: gap 3 is 12 px",
+   "got": 12,
+   "want": 12,
+   "tol": 0.5,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "four words: right edge 1800",
+   "got": 1800,
+   "want": 1800,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "four words: outline top 68",
+   "got": 68,
+   "want": 68,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "four words: outline foot 106",
+   "got": 106,
+   "want": 106,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "four words: row left edge (chosen 12 px gaps)",
+   "got": 1132.550048828125,
+   "want": 1132.550048828125,
+   "pass": true,
+   "tol": 2
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "kicker x 120",
+   "got": 120,
+   "want": 120,
+   "tol": 2,
+   "pass": true
+  },
+  {
+   "page": "type",
+   "t": 5,
+   "name": "kicker baseline 110",
+   "got": 110,
+   "want": 110,
+   "tol": 2,
+   "pass": true
+  }
+ ],
+ "errors": [],
+ "widths": {
+  "labels": [
+   {
+    "group": "band chart (world, F0)",
+    "name": "A3",
+    "text": "A3",
+    "font": "outfit 600 48",
+    "x": 366,
+    "y": 417,
+    "anchor": "end",
+    "w": 60.720123291015625,
+    "x0": 305.2798767089844,
+    "l": 305.2798767089844,
+    "r": 364.5999450683594,
+    "t": 383,
+    "b": 418
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "inBand",
+    "text": "in the band",
+    "font": "outfit 600 30",
+    "x": 366,
+    "y": 470,
+    "anchor": "end",
+    "w": 150.5398406982422,
+    "x0": 215.4601593017578,
+    "l": 216.4601593017578,
+    "r": 364.3600158691406,
+    "t": 448,
+    "b": 471
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "level",
+    "text": "level",
+    "font": "outfit 600 32",
+    "x": 400,
+    "y": 778,
+    "anchor": "start",
+    "w": 66.44816589355469,
+    "x0": 400,
+    "l": 401,
+    "r": 465.5441436767578,
+    "t": 754,
+    "b": 779
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "row",
+    "text": "in the band: within 35 cents (Lesson 3)",
+    "font": "outfit 500 34",
+    "x": 400,
+    "y": 150,
+    "anchor": "start",
+    "w": 561.78076171875,
+    "x0": 400,
+    "l": 401,
+    "r": 960.61474609375,
+    "t": 124,
+    "b": 155
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "def",
+    "text": "pressure: how hard your breath pushes on your vocal folds",
+    "font": "outfit 600 34",
+    "x": 400,
+    "y": 200,
+    "anchor": "start",
+    "w": 883.14794921875,
+    "x0": 400,
+    "l": 401,
+    "r": 1283.052001953125,
+    "t": 175,
+    "b": 207
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "q",
+    "text": "?",
+    "font": "outfit 600 64",
+    "x": 1536,
+    "y": 423,
+    "anchor": "start",
+    "w": 32.19194030761719,
+    "x0": 1536,
+    "l": 1537,
+    "r": 1566,
+    "t": 376,
+    "b": 424
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "sungEasily",
+    "text": "sung easily",
+    "font": "outfit 600 36",
+    "x": 1536,
+    "y": 470,
+    "anchor": "start",
+    "w": 176.4720916748047,
+    "x0": 1536,
+    "l": 1536,
+    "r": 1712.5360870361328,
+    "t": 443,
+    "b": 478
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "aboveBand",
+    "text": "above the band",
+    "font": "outfit 600 36",
+    "x": 1536,
+    "y": 262,
+    "anchor": "start",
+    "w": 251.56813049316406,
+    "x0": 1536,
+    "l": 1536,
+    "r": 1786.4001159667969,
+    "t": 235,
+    "b": 263
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "aboveBand5",
+    "text": "above the band",
+    "font": "outfit 600 36",
+    "x": 1536,
+    "y": 300,
+    "anchor": "start",
+    "w": 251.56813049316406,
+    "x0": 1536,
+    "l": 1536,
+    "r": 1786.4001159667969,
+    "t": 273,
+    "b": 301
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "louderHigher",
+    "text": "louder · higher",
+    "font": "outfit 600 56",
+    "x": 420,
+    "y": 268,
+    "anchor": "start",
+    "w": 357.6719665527344,
+    "x0": 420,
+    "l": 423,
+    "r": 777.3679809570312,
+    "t": 227,
+    "b": 280
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "alsoHigher",
+    "text": "also: a little higher",
+    "font": "outfit 600 36",
+    "x": 420,
+    "y": 310,
+    "anchor": "start",
+    "w": 295.16412353515625,
+    "x0": 420,
+    "l": 420,
+    "r": 715.5401306152344,
+    "t": 283,
+    "b": 318
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "mainlyLouder",
+    "text": "mainly: louder",
+    "font": "outfit 600 36",
+    "x": 420,
+    "y": 600,
+    "anchor": "start",
+    "w": 230.652099609375,
+    "x0": 420,
+    "l": 422,
+    "r": 651.0280914306641,
+    "t": 573,
+    "b": 608
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "smallType",
+    "text": "Both lines are drawings of that rule, not recordings.",
+    "font": "inter 400 34",
+    "x": 1520,
+    "y": 812,
+    "anchor": "end",
+    "w": 744.7958984375,
+    "x0": 775.2041015625,
+    "l": 777.2041015625,
+    "r": 1518.529296875,
+    "t": 787,
+    "b": 820
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "anyOctave",
+    "text": "A, any octave",
+    "font": "outfit 600 30",
+    "x": 400,
+    "y": 290,
+    "anchor": "start",
+    "w": 183.85479736328125,
+    "x0": 400,
+    "l": 400,
+    "r": 583.6248168945312,
+    "t": 268,
+    "b": 297
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "inBand10",
+    "text": "in the band",
+    "font": "outfit 600 30",
+    "x": 640,
+    "y": 290,
+    "anchor": "start",
+    "w": 150.5398406982422,
+    "x0": 640,
+    "l": 641,
+    "r": 788.8998565673828,
+    "t": 268,
+    "b": 291
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "steady",
+    "text": "steady: settles into the band and stays",
+    "font": "outfit 600 30",
+    "x": 400,
+    "y": 240,
+    "anchor": "start",
+    "w": 512.1895141601562,
+    "x0": 400,
+    "l": 400,
+    "r": 911.8695068359375,
+    "t": 218,
+    "b": 247
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "guess10",
+    "text": "steady air keeps it there?",
+    "font": "outfit 600 40",
+    "x": 400,
+    "y": 190,
+    "anchor": "start",
+    "w": 452.3595275878906,
+    "x0": 400,
+    "l": 400,
+    "r": 851.2395629882812,
+    "t": 160,
+    "b": 199
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "scoop",
+    "text": "scoop",
+    "font": "outfit 600 30",
+    "x": 400,
+    "y": 500,
+    "anchor": "middle",
+    "w": 79.5299072265625,
+    "x0": 360.23504638671875,
+    "l": 360.23504638671875,
+    "r": 439.1249694824219,
+    "t": 485,
+    "b": 507
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "vibrato",
+    "text": "small vibrato: inside the band",
+    "font": "outfit 600 30",
+    "x": 960,
+    "y": 342,
+    "anchor": "start",
+    "w": 395.9545593261719,
+    "x0": 960,
+    "l": 960,
+    "r": 1354.3145751953125,
+    "t": 320,
+    "b": 343
+   },
+   {
+    "group": "band chart (world, F0)",
+    "name": "fixedLength",
+    "text": "a comfortable, fixed length",
+    "font": "outfit 600 30",
+    "x": 960,
+    "y": 577,
+    "anchor": "middle",
+    "w": 366.7196044921875,
+    "x0": 776.6401977539062,
+    "l": 776.6401977539062,
+    "r": 1142.4998168945312,
+    "t": 555,
+    "b": 584
+   },
+   {
+    "group": "gauge (world, F0)",
+    "name": "A3",
+    "text": "A3",
+    "font": "outfit 600 36",
+    "x": 740,
+    "y": 212,
+    "anchor": "end",
+    "w": 45.540008544921875,
+    "x0": 694.4599914550781,
+    "l": 694.4599914550781,
+    "r": 739.1999969482422,
+    "t": 186,
+    "b": 213
+   },
+   {
+    "group": "gauge (world, F0)",
+    "name": "unchanged",
+    "text": "the note: unchanged",
+    "font": "outfit 600 30",
+    "x": 760,
+    "y": 140,
+    "anchor": "start",
+    "w": 276.0596923828125,
+    "x0": 760,
+    "l": 760,
+    "r": 1034.4197082519531,
+    "t": 118,
+    "b": 147
+   },
+   {
+    "group": "gauge (world, F0)",
+    "name": "pushOfAir",
+    "text": "push of air (not pitch)",
+    "font": "outfit 600 30",
+    "x": 790,
+    "y": 275,
+    "anchor": "start",
+    "w": 285.9296875,
+    "x0": 790,
+    "l": 791,
+    "r": 1075.8096923828125,
+    "t": 252,
+    "b": 282
+   },
+   {
+    "group": "gauge (world, F0)",
+    "name": "oneNote",
+    "text": "one 10-second note",
+    "font": "outfit 500 30",
+    "x": 760,
+    "y": 760,
+    "anchor": "start",
+    "w": 259.55975341796875,
+    "x0": 760,
+    "l": 760,
+    "r": 1019.5397644042969,
+    "t": 738,
+    "b": 761
+   },
+   {
+    "group": "gauge (world, F0)",
+    "name": "lungsPush",
+    "text": "the lungs' own push",
+    "font": "outfit 600 30",
+    "x": 776,
+    "y": 325,
+    "anchor": "start",
+    "w": 260.15972900390625,
+    "x0": 776,
+    "l": 776,
+    "r": 1035.2997436523438,
+    "t": 303,
+    "b": 332
+   },
+   {
+    "group": "gauge (world, F0)",
+    "name": "needs",
+    "text": "what the note needs",
+    "font": "outfit 600 30",
+    "x": 776,
+    "y": 640,
+    "anchor": "start",
+    "w": 272.939697265625,
+    "x0": 776,
+    "l": 776,
+    "r": 1048.6196899414062,
+    "t": 618,
+    "b": 641
+   },
+   {
+    "group": "gauge (world, F0)",
+    "name": "needsLoud",
+    "text": "what the note needs",
+    "font": "outfit 600 30",
+    "x": 1630,
+    "y": 440,
+    "anchor": "end",
+    "w": 272.939697265625,
+    "x0": 1357.060302734375,
+    "l": 1357.060302734375,
+    "r": 1629.6799926757812,
+    "t": 418,
+    "b": 441
+   },
+   {
+    "group": "gauge (world, F0)",
+    "name": "heldBack",
+    "text": "held back",
+    "font": "outfit 600 34",
+    "x": 860,
+    "y": 540,
+    "anchor": "middle",
+    "w": 147.18568420410156,
+    "x0": 786.4071578979492,
+    "l": 787.4071578979492,
+    "r": 933.6408767700195,
+    "t": 515,
+    "b": 541
+   },
+   {
+    "group": "gauge (world, F0)",
+    "name": "added",
+    "text": "added",
+    "font": "outfit 600 30",
+    "x": 1560,
+    "y": 645,
+    "anchor": "middle",
+    "w": 86.7899169921875,
+    "x0": 1516.6050415039062,
+    "l": 1516.6050415039062,
+    "r": 1601.7549743652344,
+    "t": 623,
+    "b": 646
+   },
+   {
+    "group": "gauge (world, F0)",
+    "name": "readout",
+    "text": "Now: holding back",
+    "font": "outfit 600 34",
+    "x": 1640,
+    "y": 275,
+    "anchor": "end",
+    "w": 281.38336181640625,
+    "x0": 1358.6166381835938,
+    "l": 1360.6166381835938,
+    "r": 1640.0480346679688,
+    "t": 250,
+    "b": 283
+   },
+   {
+    "group": "gauge (world, F0)",
+    "name": "readoutAdding",
+    "text": "Now: adding",
+    "font": "outfit 600 34",
+    "x": 1640,
+    "y": 275,
+    "anchor": "end",
+    "w": 193.2215576171875,
+    "x0": 1446.7784423828125,
+    "l": 1448.7784423828125,
+    "r": 1638.3140411376953,
+    "t": 250,
+    "b": 283
+   },
+   {
+    "group": "gauge (world, F0)",
+    "name": "lessHolding",
+    "text": "less holding back at first",
+    "font": "outfit 600 30",
+    "x": 760,
+    "y": 765,
+    "anchor": "start",
+    "w": 325.1396484375,
+    "x0": 760,
+    "l": 761,
+    "r": 1085.4696655273438,
+    "t": 743,
+    "b": 772
+   },
+   {
+    "group": "gauge (world, F0)",
+    "name": "moreAdding",
+    "text": "more adding as the air runs low",
+    "font": "outfit 600 30",
+    "x": 1640,
+    "y": 805,
+    "anchor": "end",
+    "w": 420.6145324707031,
+    "x0": 1219.3854675292969,
+    "l": 1220.3854675292969,
+    "r": 1639.9300231933594,
+    "t": 783,
+    "b": 812
+   },
+   {
+    "group": "gauge chips (world)",
+    "name": "quiet",
+    "text": "Quiet",
+    "font": "outfit 600 30",
+    "x": 1667,
+    "y": 330,
+    "anchor": "start",
+    "w": 75.44990539550781,
+    "x0": 1667,
+    "l": 1668,
+    "r": 1742.7799224853516,
+    "t": 308,
+    "b": 332
+   },
+   {
+    "group": "gauge chips (world)",
+    "name": "loud",
+    "text": "Loud",
+    "font": "outfit 600 30",
+    "x": 1667,
+    "y": 382,
+    "anchor": "start",
+    "w": 66.86991882324219,
+    "x0": 1667,
+    "l": 1669,
+    "r": 1732.2299346923828,
+    "t": 360,
+    "b": 383
+   },
+   {
+    "group": "tags (mono 500 26, .18em)",
+    "name": "illustration",
+    "text": "ILLUSTRATION",
+    "font": "mono 500 26",
+    "anchor": "start",
+    "w": 238.68016845703124,
+    "x0": 0,
+    "l": 2,
+    "r": 237.0801544189453,
+    "t": -20,
+    "b": 1
+   },
+   {
+    "group": "tags (mono 500 26, .18em)",
+    "name": "listen",
+    "text": "LISTEN ONLY",
+    "font": "mono 500 26",
+    "anchor": "start",
+    "w": 218.4001544189453,
+    "x0": 0,
+    "l": 2,
+    "r": 217.80014038085938,
+    "t": -20,
+    "b": 1
+   },
+   {
+    "group": "tags (mono 500 26, .18em)",
+    "name": "slowed",
+    "text": "SLOWED · ILLUSTRATION",
+    "font": "mono 500 26",
+    "anchor": "start",
+    "w": 421.20031005859374,
+    "x0": 0,
+    "l": 1,
+    "r": 419.60028076171875,
+    "t": -20,
+    "b": 1
+   },
+   {
+    "group": "pills (frame-fixed)",
+    "name": "pill 1",
+    "text": "Settle, steadier than before",
+    "font": "outfit 600 34",
+    "x": 494,
+    "y": 120,
+    "anchor": "start",
+    "w": 419.406005859375,
+    "x0": 494,
+    "l": 494,
+    "r": 913.0120544433594,
+    "t": 95,
+    "b": 126
+   },
+   {
+    "group": "pills (frame-fixed)",
+    "name": "pill 2",
+    "text": "Get louder and drift higher",
+    "font": "outfit 600 34",
+    "x": 994,
+    "y": 120,
+    "anchor": "start",
+    "w": 410.71905517578125,
+    "x0": 994,
+    "l": 995,
+    "r": 1404.9630737304688,
+    "t": 95,
+    "b": 128
+   },
+   {
+    "group": "four words (chips, frame-fixed)",
+    "name": "air pressure",
+    "text": "air pressure",
+    "font": "outfit 600 30",
+    "anchor": "start",
+    "w": 160.67982482910156,
+    "x0": 0,
+    "l": 0,
+    "r": 160.44984436035156,
+    "t": -22,
+    "b": 7
+   },
+   {
+    "group": "four words (chips, frame-fixed)",
+    "name": "diaphragm",
+    "text": "diaphragm",
+    "font": "outfit 600 30",
+    "anchor": "start",
+    "w": 150.31484985351562,
+    "x0": 0,
+    "l": 0,
+    "r": 149.30487060546875,
+    "t": -22,
+    "b": 7
+   },
+   {
+    "group": "four words (chips, frame-fixed)",
+    "name": "onset",
+    "text": "onset",
+    "font": "outfit 600 30",
+    "anchor": "start",
+    "w": 74.81991577148438,
+    "x0": 0,
+    "l": 0,
+    "r": 75.14993286132812,
+    "t": -21,
+    "b": 1
+   },
+   {
+    "group": "four words (chips, frame-fixed)",
+    "name": "“support”",
+    "text": "“support”",
+    "font": "outfit 600 30",
+    "anchor": "start",
+    "w": 133.6048583984375,
+    "x0": 0,
+    "l": 1,
+    "r": 132.47486877441406,
+    "t": -22,
+    "b": 7
+   },
+   {
+    "group": "turn (frame-fixed)",
+    "name": "Your turn.",
+    "text": "Your turn.",
+    "font": "serif italic 400 110",
+    "x": 260,
+    "y": 200,
+    "anchor": "start",
+    "w": 413.81964111328125,
+    "x0": 260,
+    "l": 266,
+    "r": 662.7296447753906,
+    "t": 120,
+    "b": 201
+   },
+   {
+    "group": "turn (frame-fixed)",
+    "name": "comfort 1",
+    "text": "Sore, hoarse or unwell today?",
+    "font": "outfit 700 36",
+    "x": 310,
+    "y": 262,
+    "anchor": "start",
+    "w": 485.6041259765625,
+    "x0": 310,
+    "l": 310,
+    "r": 794.64013671875,
+    "t": 235,
+    "b": 270
+   },
+   {
+    "group": "turn (frame-fixed)",
+    "name": "comfort 2",
+    "text": "Just listen along.",
+    "font": "outfit 700 36",
+    "x": 310,
+    "y": 306,
+    "anchor": "start",
+    "w": 276.6600646972656,
+    "x0": 310,
+    "l": 310,
+    "r": 584.8600463867188,
+    "t": 279,
+    "b": 314
+   },
+   {
+    "group": "turn (frame-fixed)",
+    "name": "reason 1",
+    "text": "hurts or uncomfortable · unusually hoarse or tired",
+    "font": "outfit 500 30",
+    "x": 310,
+    "y": 352,
+    "anchor": "start",
+    "w": 650.0693969726562,
+    "x0": 310,
+    "l": 311,
+    "r": 958.66943359375,
+    "t": 330,
+    "b": 358
+   },
+   {
+    "group": "turn (frame-fixed)",
+    "name": "reason 2",
+    "text": "usual notes suddenly gone · ill",
+    "font": "outfit 500 30",
+    "x": 310,
+    "y": 390,
+    "anchor": "start",
+    "w": 381.3896179199219,
+    "x0": 310,
+    "l": 311,
+    "r": 690.4296264648438,
+    "t": 368,
+    "b": 397
+   },
+   {
+    "group": "turn (frame-fixed)",
+    "name": "reason 3",
+    "text": "talking or singing is hard work",
+    "font": "outfit 500 30",
+    "x": 310,
+    "y": 428,
+    "anchor": "start",
+    "w": 394.7396240234375,
+    "x0": 310,
+    "l": 310,
+    "r": 705.4096374511719,
+    "t": 406,
+    "b": 435
+   },
+   {
+    "group": "turn (frame-fixed)",
+    "name": "listening",
+    "text": "listening along: rest your voice and watch the ring",
+    "font": "outfit 500 30",
+    "x": 260,
+    "y": 486,
+    "anchor": "start",
+    "w": 653.33935546875,
+    "x0": 260,
+    "l": 261,
+    "r": 912.08935546875,
+    "t": 464,
+    "b": 493
+   },
+   {
+    "group": "turn (frame-fixed)",
+    "name": "stop 1",
+    "text": "Stop immediately if anything",
+    "font": "outfit 600 36",
+    "x": 260,
+    "y": 548,
+    "anchor": "start",
+    "w": 468.0362548828125,
+    "x0": 260,
+    "l": 260,
+    "r": 726.1922302246094,
+    "t": 521,
+    "b": 556
+   },
+   {
+    "group": "turn (frame-fixed)",
+    "name": "stop 2",
+    "text": "feels uncomfortable.",
+    "font": "outfit 600 36",
+    "x": 260,
+    "y": 590,
+    "anchor": "start",
+    "w": 337.93212890625,
+    "x0": 260,
+    "l": 260,
+    "r": 596.3121337890625,
+    "t": 563,
+    "b": 591
+   },
+   {
+    "group": "turn (frame-fixed)",
+    "name": "Nothing listens",
+    "text": "Nothing listens",
+    "font": "outfit 600 30",
+    "x": 1000,
+    "y": 402,
+    "anchor": "start",
+    "w": 200.45977783203125,
+    "x0": 1000,
+    "l": 1002,
+    "r": 1200.1397857666016,
+    "t": 380,
+    "b": 409
+   },
+   {
+    "group": "turn (frame-fixed)",
+    "name": "Breathe in",
+    "text": "Breathe in, low and quiet",
+    "font": "outfit 600 28",
+    "x": 1640,
+    "y": 402,
+    "anchor": "end",
+    "w": 311.3472900390625,
+    "x0": 1328.6527099609375,
+    "l": 1330.6527099609375,
+    "r": 1640.1079711914062,
+    "t": 381,
+    "b": 408
+   },
+   {
+    "group": "turn (frame-fixed)",
+    "name": "A3 · Merc",
+    "text": "A3 · Merc",
+    "font": "outfit 600 30",
+    "x": 1016,
+    "y": 362,
+    "anchor": "start",
+    "w": 123.13485717773438,
+    "x0": 1016,
+    "l": 1016,
+    "r": 1139.3748779296875,
+    "t": 340,
+    "b": 363
+   },
+   {
+    "group": "turn (frame-fixed)",
+    "name": "A4 · Tavi, an octave up",
+    "text": "A4 · Tavi, an octave up",
+    "font": "outfit 600 30",
+    "x": 1202,
+    "y": 362,
+    "anchor": "start",
+    "w": 298.1846923828125,
+    "x0": 1202,
+    "l": 1202,
+    "r": 1499.544677734375,
+    "t": 340,
+    "b": 369
+   },
+   {
+    "group": "turn (frame-fixed)",
+    "name": "How did that feel?",
+    "text": "How did that feel?",
+    "font": "serif italic 400 64",
+    "x": 1000,
+    "y": 480,
+    "anchor": "start",
+    "w": 404.6712646484375,
+    "x0": 1000,
+    "l": 997,
+    "r": 1406.7593383789062,
+    "t": 431,
+    "b": 481
+   },
+   {
+    "group": "turn feel capsules (x 1000 to 1230)",
+    "name": "Easy",
+    "text": "Easy",
+    "font": "outfit 600 30",
+    "x": 1014,
+    "y": 0,
+    "anchor": "start",
+    "w": 64.61994934082031,
+    "x0": 1014,
+    "l": 1016,
+    "r": 1078.8399658203125,
+    "t": -22,
+    "b": 7
+   },
+   {
+    "group": "turn feel capsules (x 1000 to 1230)",
+    "name": "Workable",
+    "text": "Workable",
+    "font": "outfit 600 30",
+    "x": 1014,
+    "y": 0,
+    "anchor": "start",
+    "w": 131.3998565673828,
+    "x0": 1014,
+    "l": 1014,
+    "r": 1145.1698760986328,
+    "t": -22,
+    "b": 1
+   },
+   {
+    "group": "turn feel capsules (x 1000 to 1230)",
+    "name": "Effortful",
+    "text": "Effortful",
+    "font": "outfit 600 30",
+    "x": 1014,
+    "y": 0,
+    "anchor": "start",
+    "w": 115.66487121582031,
+    "x0": 1014,
+    "l": 1016,
+    "r": 1128.2548828125,
+    "t": -22,
+    "b": 1
+   },
+   {
+    "group": "turn feel capsules (x 1000 to 1230)",
+    "name": "Uncomfortable",
+    "text": "Uncomfortable",
+    "font": "outfit 600 30",
+    "x": 1014,
+    "y": 0,
+    "anchor": "start",
+    "w": 206.86477661132812,
+    "x0": 1014,
+    "l": 1015,
+    "r": 1220.6347961425781,
+    "t": -22,
+    "b": 1
+   },
+   {
+    "group": "recap Voice Mirror card",
+    "name": "Voice Mirror has you gli",
+    "text": "Voice Mirror has you glide up and down,",
+    "font": "outfit 600 34",
+    "x": 326,
+    "y": 340,
+    "anchor": "start",
+    "w": 602.9205932617188,
+    "x0": 326,
+    "l": 326,
+    "r": 927.400634765625,
+    "t": 315,
+    "b": 348
+   },
+   {
+    "group": "recap Voice Mirror card",
+    "name": "hold any comfortable not",
+    "text": "hold any comfortable note for six seconds,",
+    "font": "outfit 600 34",
+    "x": 326,
+    "y": 400,
+    "anchor": "start",
+    "w": 646.3385009765625,
+    "x0": 326,
+    "l": 327,
+    "r": 970.8184814453125,
+    "t": 375,
+    "b": 407
+   },
+   {
+    "group": "recap Voice Mirror card",
+    "name": "then sing back five note",
+    "text": "then sing back five notes it plays.",
+    "font": "outfit 600 34",
+    "x": 326,
+    "y": 460,
+    "anchor": "start",
+    "w": 499.9859619140625,
+    "x0": 326,
+    "l": 326,
+    "r": 823.9559936523438,
+    "t": 435,
+    "b": 468
+   },
+   {
+    "group": "recap Voice Mirror card",
+    "name": "free",
+    "text": "Free, no account: mercurypitch.com/mirror",
+    "font": "outfit 600 40",
+    "x": 270,
+    "y": 765,
+    "anchor": "start",
+    "w": 777.8392333984375,
+    "x0": 270,
+    "l": 272,
+    "r": 1048.479248046875,
+    "t": 735,
+    "b": 774
+   },
+   {
+    "group": "recap Voice Mirror card",
+    "name": "sore",
+    "text": "Sore, hoarse or unwell today? Just listen along.",
+    "font": "outfit 500 34",
+    "x": 270,
+    "y": 710,
+    "anchor": "start",
+    "w": 701.5204467773438,
+    "x0": 270,
+    "l": 270,
+    "r": 969.6604614257812,
+    "t": 685,
+    "b": 718
+   },
+   {
+    "group": "recap rest card (x 1160 to 1660)",
+    "name": "question 1",
+    "text": "Felt uncomfortable, or listened",
+    "font": "outfit 600 28",
+    "x": 1160,
+    "y": 296,
+    "anchor": "start",
+    "w": 388.6976318359375,
+    "x0": 1160,
+    "l": 1162,
+    "r": 1547.2335815429688,
+    "t": 275,
+    "b": 301
+   },
+   {
+    "group": "recap rest card (x 1160 to 1660)",
+    "name": "question 2",
+    "text": "along today?",
+    "font": "outfit 600 28",
+    "x": 1160,
+    "y": 332,
+    "anchor": "start",
+    "w": 164.9486846923828,
+    "x0": 1160,
+    "l": 1160,
+    "r": 1323.8646240234375,
+    "t": 311,
+    "b": 338
+   },
+   {
+    "group": "recap rest card (x 1160 to 1660)",
+    "name": "body 1",
+    "text": "Voice Mirror will be here when",
+    "font": "outfit 600 30",
+    "x": 1160,
+    "y": 470,
+    "anchor": "start",
+    "w": 403.3645324707031,
+    "x0": 1160,
+    "l": 1160,
+    "r": 1562.5045471191406,
+    "t": 448,
+    "b": 471
+   },
+   {
+    "group": "recap rest card (x 1160 to 1660)",
+    "name": "body 2",
+    "text": "your voice feels comfortable:",
+    "font": "outfit 600 30",
+    "x": 1160,
+    "y": 508,
+    "anchor": "start",
+    "w": 391.6945495605469,
+    "x0": 1160,
+    "l": 1160,
+    "r": 1550.2645568847656,
+    "t": 486,
+    "b": 515
+   },
+   {
+    "group": "recap rest card (x 1160 to 1660)",
+    "name": "address",
+    "text": "mercurypitch.com/mirror",
+    "font": "outfit 600 36",
+    "x": 1160,
+    "y": 566,
+    "anchor": "start",
+    "w": 414.52215576171875,
+    "x0": 1160,
+    "l": 1162,
+    "r": 1574.8981628417969,
+    "t": 539,
+    "b": 574
+   },
+   {
+    "group": "end card",
+    "name": "address",
+    "text": "mercurypitch.com/mirror",
+    "font": "outfit 600 72",
+    "x": 120,
+    "y": 320,
+    "anchor": "start",
+    "w": 829.0443115234375,
+    "x0": 120,
+    "l": 124,
+    "r": 948.7963256835938,
+    "t": 266,
+    "b": 335
+   },
+   {
+    "group": "end card",
+    "name": "free",
+    "text": "Voice Mirror is free, with no account",
+    "font": "outfit 500 44",
+    "x": 120,
+    "y": 395,
+    "anchor": "start",
+    "w": 695.6386108398438,
+    "x0": 120,
+    "l": 121,
+    "r": 815.0066528320312,
+    "t": 362,
+    "b": 402
+   }
+  ],
+  "checks": [
+   {
+    "line": 4,
+    "what": "\"louder\" off the swollen strip's fill (top 593)",
+    "measured": 17,
+    "need": 12,
+    "board": 18,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "line": 4,
+    "what": "\"louder\" from its branch (1010, 525) to (960, 582)",
+    "measured": 37.5623924337963,
+    "need": 12,
+    "board": 40,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "line": 4,
+    "what": "\"higher\" under the band's foot (456.5)",
+    "measured": 14.5,
+    "need": 12,
+    "board": 14,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "line": 4,
+    "what": "\"higher\" from its branch (1010, 525) to (960, 375)",
+    "measured": 64.81426483300704,
+    "need": 12,
+    "board": 66,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "line": 4,
+    "what": "the stem (from (915, 720), the lead's answer 5; 30 degrees up and right) right of \"50\"",
+    "measured": 12.154621197593766,
+    "need": 12,
+    "board": 12,
+    "pass": true,
+    "note": "\"50\" at 0.78: x 888.8 to 916.6, y 687.1 to 705.1; from (914, 717) it was 9.1"
+   },
+   {
+    "line": 5,
+    "what": "\"can’t push air out\" (30 px) starts at or right of screen x 0",
+    "measured": 64.30451660156251,
+    "need": 0,
+    "board": 24,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "line": 5,
+    "what": "\"can’t push air out\" from \"diaphragm\" (36 px assumed)",
+    "measured": 27.299999999999955,
+    "need": 12,
+    "board": 29,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "line": 6,
+    "what": "\"knees unlocked\" left of the back arrow's stroke (x 923.5)",
+    "measured": 17.668014526367188,
+    "need": 16,
+    "board": 16,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "line": 7,
+    "what": "“support” descenders over the top of Merc's line's stroke at 32.87",
+    "measured": 19.5374286173153,
+    "need": 12,
+    "board": 12,
+    "pass": true,
+    "note": "line y 460.2 at s 0.8204 (sine.inOut, pull 31.40 to 34.40), stroke 4 world px; descender foot 439.0"
+   },
+   {
+    "line": 8,
+    "what": "\"less holding back at first\" from \"more adding as the air runs low\"",
+    "measured": 142.13166141605416,
+    "need": 12,
+    "board": 12,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "line": 8,
+    "what": "\"what the note needs\" (Loud) over the gold line (454, 3 px)",
+    "measured": 12.074999999999989,
+    "need": 12,
+    "board": 12,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "line": 8,
+    "what": "\"Quiet\" and \"Loud\" chips apart (38 high, centred 320 and 372)",
+    "measured": 14.700000000000001,
+    "need": 12,
+    "board": 14.7,
+    "pass": true,
+    "note": "height-only, no width in it"
+   },
+   {
+    "line": 8,
+    "what": "the chips from the frame stroke's outer edge (1641; chips from 1653, the lead's answer 5)",
+    "measured": 12.600000000000001,
+    "need": 12,
+    "board": 12,
+    "pass": true,
+    "note": "at F-gauge (1.05); from 1652 it was 11.6"
+   },
+   {
+    "line": 8,
+    "what": "\"Quiet\" chip's right end on screen (inside 1920)",
+    "measured": 135.72759933471661,
+    "need": 0,
+    "board": 0,
+    "pass": true,
+    "note": "chip x 1675.7 to 1784.3"
+   },
+   {
+    "line": 9,
+    "what": "ILLUSTRATION to LISTEN ONLY at F-cold end (0.92)",
+    "measured": 14.72,
+    "need": 12,
+    "board": 14.7,
+    "pass": true,
+    "note": "right-aligned 1520 and left-aligned 1536: no width in it"
+   },
+   {
+    "line": 9,
+    "what": "ILLUSTRATION to LISTEN ONLY at 0.78",
+    "measured": 12.48,
+    "need": 12,
+    "board": 12.5,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "line": 9,
+    "what": "the chip under the second pill at 31.20 (pill foot 134)",
+    "measured": 12.400000000000006,
+    "need": 12,
+    "board": 12,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "line": 9,
+    "what": "\"loud ≠ high\" under LISTEN ONLY at 0.78 (to y 223.8)",
+    "measured": 18.19999999999999,
+    "need": 12,
+    "board": 19,
+    "pass": true,
+    "note": "x 1514.3 to 1741.7"
+   },
+   {
+    "line": 9,
+    "what": "pill 2: each pad, its text centred in the fixed 460 px capsule",
+    "measured": 24.640472412109375,
+    "need": 12,
+    "board": 24,
+    "pass": true,
+    "note": "text 410.7 px; L.pill centres the text when x1 is fixed"
+   },
+   {
+    "line": 9,
+    "what": "pill 1: each pad, its text centred in its 468 px capsule (x 462 to 930, DECISIONS 146)",
+    "measured": 24.2969970703125,
+    "need": 12,
+    "board": 24,
+    "pass": true,
+    "note": "text 419.4 px; at 460 px its pads were 20.3"
+   },
+   {
+    "line": 9,
+    "what": "the second pill's check (22 px, centred 20 px left of the capsule) from the first pill (930)",
+    "measured": 9,
+    "need": 12,
+    "board": 9,
+    "pass": false,
+    "note": "the board's own gap (40 px between the capsules): unchanged, 9 px; centring both 468 px capsules would make it 5"
+   },
+   {
+    "line": 9,
+    "what": "the second pill's check from its own capsule (970)",
+    "measured": 9,
+    "need": 12,
+    "board": 9,
+    "pass": false,
+    "note": "the board's place: 9 px"
+   },
+   {
+    "line": 10,
+    "what": "the definition (baseline 200) under the chip's foot (160)",
+    "measured": 15,
+    "need": 12,
+    "board": 15,
+    "pass": true,
+    "note": "x 401.0 to 1283.1"
+   },
+   {
+    "line": 10,
+    "what": "the four words' outlines (to 106) over the chip (from 120)",
+    "measured": 14,
+    "need": 12,
+    "board": 14,
+    "pass": true,
+    "note": ""
+   },
+   {
+    "line": 11,
+    "what": "the band's foot (and its 2 px edge) over the gauge chip while over it",
+    "measured": 56.69470799999999,
+    "need": 12,
+    "board": 12,
+    "pass": true,
+    "note": "L.GAUGE.split sampled every 0.001"
+   },
+   {
+    "line": 11,
+    "what": "the gauge chip from the frame's strokes (right 1630 vs 1640; top 300 vs 290)",
+    "measured": 9,
+    "need": 9,
+    "board": 9,
+    "pass": true,
+    "note": "10 px to the strokes' centres (1640, 290), 9 to their inner edges (1639, 291): the lead's place"
+   },
+   {
+    "line": 13,
+    "what": "strip chip (130 to 170) from row 1's envelope (180)",
+    "measured": 10,
+    "need": 10,
+    "board": 10,
+    "pass": true,
+    "note": "heights only"
+   },
+   {
+    "line": 13,
+    "what": "LISTEN ONLY (330 to 370) from rows 1 and 2 (320, 380)",
+    "measured": 10,
+    "need": 10,
+    "board": 10,
+    "pass": true,
+    "note": "heights only"
+   },
+   {
+    "line": 14,
+    "what": "\"SLOWED · ILLUSTRATION\" (from x 1110) clears \"settled\"",
+    "measured": 541.8677605590821,
+    "need": 12,
+    "board": 55,
+    "pass": true,
+    "note": "\"settled\" at CU-scoop x 427.8 to 568.1"
+   },
+   {
+    "line": 15,
+    "what": "\"Your turn.\" from the frame (screen x 928 at F-turn)",
+    "measured": 265.2703552246094,
+    "need": 12,
+    "board": 35,
+    "pass": true,
+    "note": "x 266.0 to 662.7, y 120.0 to 201.0; Merc's arcs need m-blue at 300"
+   },
+   {
+    "line": 15,
+    "what": "\"Your turn.\" from the ring (1376 - 231)",
+    "measured": 482.2703552246094,
+    "need": 12,
+    "board": 12,
+    "pass": true,
+    "note": ""
+   }
+  ]
+ }
+}

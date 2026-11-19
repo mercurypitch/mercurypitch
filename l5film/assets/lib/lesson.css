@@ -1,0 +1,58 @@
+/* The film's base styles: the palette (STORYBOARD § Codes), the type tokens (§ Type), the room's
+   layers (lesson.js L.room) and the few classes the generated root and the placeholder scenes use.
+   Fonts are local only (fonts.css.txt, inlined in the root by tools/gen-root.py); GSAP is the pinned
+   local copy (assets/vendor/gsap-3.14.2.min.js, first in scripts.txt). Nothing here animates: every
+   moving value is set per frame by the kit from timeline time. */
+:root {
+  /* palette (STORYBOARD § Codes; lesson.js L.C holds the same values for SVG) */
+  --ground: #0d1117;
+  --obsidian: #0d1117;
+  --ink: #e6edf3;          /* labels: 16.0:1 on the ground */
+  --ink-2: #a8b3bf;        /* secondary labels: 8.9:1 on the ground; never #6e7681 for text */
+  --chrome: #c3ccd6;       /* marks, notes that are not a host's */
+  --blue: #58a6ff;         /* Merc's sung notes in a diagram */
+  --orange: #ff7448;       /* Tavi's */
+  --aqua: #2dd4bf;         /* the chapter cards' numerals only */
+  --gold: #ffd84d;         /* the fit only: what the note needs, the together start's tick */
+  --amber: #f59e0b;        /* target: Merc's band (fill 12 %, edges 2 px at 45 %) and line */
+  --violet: #a78bfa;       /* singer: a voice's line and level strip (fill 28 %, edges 2 px at 70 %) */
+  --mint: #80ffca;         /* in tune: the band's lit edge, always beside "in the band" */
+  --brand-violet: #bc8cff; /* the room's second glow and the lockup's spectrum end, never a code */
+
+  /* type (STORYBOARD § Type; marks.js sets the same in SVG) */
+  --font-serif: 'Instrument Serif', serif;      /* big ideas, italic 64 to 160; cards 170 and 300 */
+  --font-outfit: 'Outfit', sans-serif;          /* labels 600 30 to 56; numbers 600 tabular */
+  --font-inter: 'Inter', sans-serif;            /* the doctor lines and the Voice Mirror readout */
+  --font-mono: 'JetBrains Mono', monospace;     /* kickers 500 30, tags 500 26, tracking .18em */
+  --font-music: 'Noto Music', serif;            /* clef, sharp and flat glyphs */
+  --kicker-size: 30px;
+  --tag-size: 26px;
+  --tracking-mono: 0.18em;
+  --label-min: 30px;
+  --label-max: 56px;
+}
+html, body { margin: 0; width: 1920px; height: 1080px; overflow: hidden; background: var(--ground); }
+#root { position: relative; width: 1920px; height: 1080px; overflow: hidden; background: var(--ground); }
+.scene { position: absolute; inset: 0; overflow: hidden; background: var(--ground); color: var(--ink); font-family: var(--font-outfit); }
+
+/* the room (L.room): one absolutely placed layer each, in paint order; the kit sets their transforms */
+.room { position: absolute; inset: 0; overflow: hidden; background: var(--ground); }
+.layer { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; overflow: visible; transform-origin: 0 0; }
+.layer > svg, svg.stage { position: absolute; left: 0; top: 0; overflow: visible; }
+
+/* type classes for HTML text (most of the kit's type is SVG text from marks.js) */
+.t-label { font-family: var(--font-outfit); font-weight: 600; color: var(--ink); font-variant-numeric: tabular-nums; }
+.t-label.dim { color: var(--ink-2); }
+.t-serif { font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--ink); }
+.t-mono { font-family: var(--font-mono); font-weight: 500; letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-2); }
+.t-inter { font-family: var(--font-inter); font-weight: 400; color: var(--ink); }
+.t-music { font-family: var(--font-music); }
+
+/* the placeholder scenes' classes (tools/gen-root.py's step-1 compositions), kept until each is built */
+.ground { position: absolute; left: -10%; top: -10%; width: 120%; height: 120%;
+  background: radial-gradient(ellipse at 50% 40%, #151b24 0%, var(--ground) 70%); }
+.staves { position: absolute; left: -10%; top: 300px; width: 120%; height: 480px; opacity: 0.08;
+  background: repeating-linear-gradient(to bottom, var(--chrome) 0 2px, transparent 2px 96px); }
+.kicker { position: absolute; margin: 0; font-family: var(--font-mono); font-weight: 500; font-size: var(--kicker-size);
+  letter-spacing: var(--tracking-mono); text-transform: uppercase; color: var(--ink-2); }
+.serif { margin: 0; font-family: var(--font-serif); font-style: italic; font-weight: 400; color: var(--ink); }

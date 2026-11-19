@@ -1,0 +1,82 @@
+<!doctype html>
+<!-- The probe's harness for lab/kit-src/hosts.html (lab/kit-src/probe.mjs): the kit, the fonts, the page. -->
+<html lang="en"><head><meta charset="UTF-8" />
+<script src="/assets/vendor/gsap-3.14.2.min.js"></script>
+<script src="/assets/cues.js"></script>
+<script src="/assets/scenes.js"></script>
+<script src="/assets/merc/roots.js"></script>
+<script src="/assets/lib/lesson.js"></script>
+<script src="/assets/lib/motion.js"></script>
+<script src="/assets/lib/marks.js"></script>
+<script src="/assets/lib/frames.js"></script>
+<script src="/assets/lib/chart.js"></script>
+<script src="/assets/lib/figure.js"></script>
+<script src="/assets/lib/gauge.js"></script>
+<script src="/assets/lib/mixup.js"></script>
+<script src="/assets/lib/folds.js"></script>
+<script src="/assets/lib/turn.js"></script>
+<script src="/assets/lib/recap.js"></script>
+<script src="/assets/lib/tease.js"></script>
+<script src="/assets/lib/hosts.js"></script>
+<link rel="stylesheet" href="/assets/lib/lesson.css" />
+<style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('/assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('/assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('/assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+</style></head><body><div id="root">
+    <!-- Kit lab: the hosts (hosts.js; merc/PASSES.md; HANDOFFS § Shared formulas, hosts). Tavi's S6 chunk
+         (m-orange-s06, rendered at 300, media from 20 s) at the corners' place, mirrored, its feet on the
+         floor line (840) with its 16 % reflection; 2.4 to 3.1 s a size change in place, 300 to 240
+         (power2.inOut), the feet staying on the floor (the feet line 0.836, measured). Merc's own S6 chunk
+         (m-blue-s06, media from 30 s, not mirrored) at his corner, from 3.6 s carried in by the celebrate
+         leap's numbers from the left (crouch 0.15 s, 0.43 s in the air, 300 px from beyond the edge, 70 px of arc), its
+         reflection held on the floor. Screen px; the camera never moves them. -->
+    <div id="kit-hosts" data-composition-id="kit-hosts" data-start="0" data-duration="5" data-width="1920" data-height="1080">
+      <video id="kit-tavi" data-merc="m-orange" data-merc-manual class="clip" src="/assets/merc/m-orange-s06-merc.webm" muted playsinline data-start="0" data-duration="5" data-media-start="20"></video>
+      <video id="kit-tavi-refl" data-merc-refl="m-orange" data-merc-manual class="clip" src="/assets/merc/m-orange-s06-merc.webm" muted playsinline data-start="0" data-duration="5" data-media-start="20"></video>
+      <video id="kit-merc" data-merc="m-blue" data-merc-manual class="clip" src="/assets/merc/m-blue-s06-merc.webm" muted playsinline data-start="0" data-duration="5" data-media-start="30"></video>
+      <video id="kit-merc-refl" data-merc-refl="m-blue" data-merc-manual class="clip" src="/assets/merc/m-blue-s06-merc.webm" muted playsinline data-start="0" data-duration="5" data-media-start="30"></video>
+      <div class="scene" id="kit-hosts-root"></div>
+      <script>
+        ;(function () {
+          const ID = 'kit-hosts', D = 5
+          const C = L.C, H = L.HOSTS.corners
+          const root = document.getElementById(ID + '-root')
+          const room = L.room(root, { floor: true })
+          const hud = L.stage(room.hud)
+          L.text(hud, 'kit-hosts: Merc (m-blue, S6) and Tavi (m-orange, S6, mirrored) on the floor line (screen px)', { x: 24, y: 1060, size: 20, family: 'mono', weight: 500, fill: C.ink2, opacity: 1 })
+          L.svg('rect', { x: 0, y: 839.5, width: 1920, height: 1, fill: C.aqua, 'fill-opacity': 0.5 }, hud)
+          // the passes' own defaults: Tavi mirrored, Merc not (by pass); their roots from assets/merc/roots.js
+          const tavi = L.mercGate(room.top, { start: 102.7 + 20, pass: 'm-orange', tag: 'kit-tavi', ...H.tavi, root: window.MERC_ROOTS && window.MERC_ROOTS['m-orange-s06'], moves: [{ at: 2.4, dur: 0.7, size: 240 }] })
+          const merc = L.mercGate(room.top, { start: 102.7 + 30, pass: 'm-blue', tag: 'kit-merc', ...H.merc, root: window.MERC_ROOTS && window.MERC_ROOTS['m-blue-s06'], leap: { at: 3.6, from: 'left' } })
+          let boxes = {}
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => { boxes = { tavi: tavi(t), merc: merc(t) } })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+
+          const R = (el) => el.getBoundingClientRect()
+          const box = (id) => document.getElementById(id + '-box')
+          window.__kitProbe = window.__kitProbe || {}
+          window.__kitProbe[ID] = {
+            times: [1.0, 3.3, 3.9],
+            check(t) {
+              const b = R(box('kit-tavi'))
+              const rb = R(box('kit-tavi').querySelector('.refl-box'))
+              if (t === 1.0) return [{ name: 'Tavi box left 1650 (x 1800, size 300)', got: b.left, want: 1650 }, { name: 'box top 589.2 (feet at 0.836)', got: b.top, want: 840 - 0.836 * 300 }, { name: 'feet line 840', got: b.top + L.HOSTS.FEET * b.height, want: 840 }, { name: 'reflection\'s sole row on 840 (flipped about it)', got: rb.top + (1 - L.HOSTS.FEET) * rb.height, want: 840 }, { name: 'Tavi mirrored by default (scaleX(-1))', got: box('kit-tavi').firstChild.style.transform, want: 'scaleX(-1)' }, { name: 'Merc not mirrored by default', got: box('kit-merc').firstChild.style.transform, want: 'none' }]
+              if (t === 3.3) return [{ name: 'after the size change: feet still on 840', got: b.top + L.HOSTS.FEET * b.height, want: 840 }, { name: 'drawn at 240', got: b.height, want: 240 }, { name: 'the reflection\'s sole row still on 840', got: rb.top + (1 - L.HOSTS.FEET) * rb.height, want: 840 }]
+              const mb = R(box('kit-merc')), mr = R(box('kit-merc').querySelector('.refl-box'))
+              const u = (3.9 - 3.6 - 0.15) / 0.43, lift = 70 * 4 * u * (1 - u)
+              return [{ name: 'leap: carried in from 300 px beyond (x at u)', got: mb.left + mb.width / 2, want: 110 - 300 * (1 - u) }, { name: 'leap: lifted', got: 840 - (mb.top + L.HOSTS.FEET * mb.height), want: lift }, { name: 'its reflection stays mirrored about the floor', got: (mr.top + (1 - L.HOSTS.FEET) * mr.height) - 840, want: lift }]
+            },
+          }
+        })()
+      </script>
+    </div>
+  </div></body></html>

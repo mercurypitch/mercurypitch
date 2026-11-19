@@ -1,0 +1,285 @@
+<!doctype html>
+<!-- The probe's harness for compositions/s07-support.html (lab/s05-push/probe.mjs). -->
+<html lang="en"><head><meta charset="UTF-8" />
+<script src="/assets/vendor/gsap-3.14.2.min.js"></script>
+<script src="/assets/cues.js"></script>
+<script src="/assets/scenes.js"></script>
+<script src="/assets/merc/roots.js"></script>
+<script src="/assets/lib/lesson.js"></script>
+<script src="/assets/lib/motion.js"></script>
+<script src="/assets/lib/marks.js"></script>
+<script src="/assets/lib/frames.js"></script>
+<script src="/assets/lib/chart.js"></script>
+<script src="/assets/lib/figure.js"></script>
+<script src="/assets/lib/gauge.js"></script>
+<script src="/assets/lib/mixup.js"></script>
+<script src="/assets/lib/folds.js"></script>
+<script src="/assets/lib/turn.js"></script>
+<script src="/assets/lib/recap.js"></script>
+<script src="/assets/lib/tease.js"></script>
+<script src="/assets/lib/hosts.js"></script>
+<link rel="stylesheet" href="/assets/lib/lesson.css" />
+<style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('/assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('/assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('/assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+</style></head><body><div id="root">
+    <div id="s07-support" data-composition-id="s07-support" data-start="0" data-duration="36.390" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s07-support -->
+      <video id="s07-support-m-orange" data-merc="m-orange" class="clip" muted playsinline src="/assets/merc/m-orange-s07-merc.webm" data-start="0.000" data-duration="36.422" data-media-start="0.050"></video>
+      <video id="s07-support-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="/assets/merc/m-orange-s07-merc.webm" data-start="0.000" data-duration="36.422" data-media-start="0.050"></video>
+      <video id="s07-support-m-blue" data-merc="m-blue" class="clip" muted playsinline src="/assets/merc/m-blue-s07-merc.webm" data-start="0.000" data-duration="36.422" data-media-start="0.050"></video>
+      <video id="s07-support-m-blue-refl" data-merc="m-blue" data-merc-refl class="clip" muted playsinline src="/assets/merc/m-blue-s07-merc.webm" data-start="0.000" data-duration="36.422" data-media-start="0.050"></video>
+      <div class="scene" id="s07-support-scene"></div>
+      <script>
+        ;(function () {
+          // S7, '"Support": a common mix-up' (STORYBOARD 7a to 7e; HANDOFFS § The mix-up card, § The breath figure (S7),
+          // § The cuts S6 to S7 (matched) and S7 to S8). F0 from the cut: the Loud gauge, the small band and the
+          // figure on F-gauge's pixels while the room crossfades to rest (L.roomCut); the gauge folds back and the chart
+          // reassembles; the figure parks, dimmed; the card's rows, each piece of evidence drawn large while said and then
+          // shrunk into its row; the better idea; the rows leave. Every time is a cue, a word or a duration.
+          const SID = 's07-support'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const C = L.C, P = L.prog, clamp = L.clamp, lerp = L.lerp, f2 = L.f2, G = L.GAUGE, M = L.MIXUP
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
+          const cut = L.roomCut(room, { from: 'F-gauge' })            // the room as S6 left it, crossfading to rest
+          const world = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+          const cam = L.frameRig(room, { from: 'F0' })               // F0 throughout: every move here is an object move
+
+          /* ---------------------------------------------------------------- anchors */
+          // 7a: o8
+          const O8 = at('o8')
+          const FADE_G = O8 + 0.07, FADE_G_D = 0.5                     // the gauge's marks, chips and labels fade
+          const FOLD = O8 + 0.17, FOLD_D = 1.4                         // the gauge folds back, the chart reassembles
+          const FOLD_END = FOLD + FOLD_D
+          const PARK = FOLD, PARK_D = 1.0                              // the figure dims and shrinks to its parked place
+          const KICK = word('o8', 'support')                           // "COMMON MIX-UP"
+          const ROW0 = word('o8', 'pushing'), SQZ = word('o8', 'squeezing')   // row 0; its last word and "?" on "squeezing?"
+          // 7b: b17, evidence 1 large, then into row 1. The take redraws at 2.5 times its speed; it holds whole up to
+          // 0.5 s and shrinks so that row 1 lands 0.56 s before row 2 (the board's spacing), on any clock
+          const MIXUP = word('b17', 'mix-up'), PUSHING = word('b17', 'pushing')
+          const REDRAW = PUSHING + 0.1, SPEED = 2.5, REDRAW_D = L.CONTOUR.pushed.len / SPEED
+          const SQZ2 = word('b18', 'squeezing')
+          const HOLD_D = clamp(SQZ2 - 0.56 - 0.6 - (REDRAW + REDRAW_D), 0, 0.5)
+          const SHRINK1 = REDRAW + REDRAW_D + HOLD_D, SHRINK_D = 0.6
+          const ROW1 = SHRINK1 + SHRINK_D
+          // 7c: b18, evidence 2
+          const ROW2A = Math.max(SQZ2, ROW1 + 0.4)
+          const PAIR = word('b18', 'pressed'), PAIR_D = 0.8, HEAVY = word('b18', 'heavy'), MORE_P = word('b18', 'more')
+          const SHRINK2 = word('b18', 'not', 'start', -0.35)
+          const NAMES = SHRINK2 + SHRINK_D                             // the pair's 26 px names land as it settles
+          // 7d: b19, the word
+          const ROW_IN = at('b19', 'start', -0.51), SUP = at('b19'), HOW = word('b19', 'word'), ROW_OUT = word('b19', 'as')
+          const NOONE = word('b19', 'no'), SHRINK3 = word('b19', 'meaning', 'start', -0.19)
+          // 7e: b20, the better idea
+          const BETTER = at('b20')
+          const PH = [word('b20', 'steady#2'), word('b20', 'breathe'), word('b20', 'start'), word('b20', 'flow')]
+          const BREATHE = PH[1], BREATHE_D = 1.5, EASE = BREATHE + 1.57, EASE_D = 0.8
+          // the rows leave up fast, top to bottom, 0.05 s apart where the scene's end allows; the miniatures fade
+          const OUT = at('b20', 'end', 0.05)
+          const STEP = Math.min(0.05, (D - OUT - 0.35) / 4)
+
+          /* ---------------------------------------------------------------- the hosts at 240 */
+          const Hs = L.HOSTS.small
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hs.merc })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hs.tavi })
+
+          /* ---------------------------------------------------------------- carried from S6 on F-gauge's pixels (world = screen at F0) */
+          const carry = L.svg('g', { transform: `matrix(${M.CUT.s} 0 0 ${M.CUT.s} ${M.CUT.dx} ${M.CUT.dy})` }, world)
+          const ga = L.gauge(carry)
+          const gFrame = ga.g.children[3], goldEl = gFrame.children[6]
+          const GL = G.LABELS
+          const gl = {}
+          for (const n of ['unchanged', 'pushOfAir', 'lungsPush', 'needsLoud', 'lessHolding', 'moreAdding']) gl[n] = L.label(carry, GL[n].text, { ...GL[n], back: G.BACKS.includes(n) })
+          const upArrow = L.arrow(carry, { x1: G.LEADERS.upArrow.x, y1: G.LEADERS.upArrow.y + 1, x2: G.LEADERS.upArrow.x, y2: G.LEADERS.upArrow.y - 23, color: C.ink, width: 2.5, head: 9 })
+          const lessLeader = L.leader(carry, G.LEADERS.lessHolding)
+          const moreLeader = L.leader(carry, G.LEADERS.moreAdding)
+          const quietChip = L.chip(carry, G.CHIPS.quiet.text, { x: G.CHIPS.quiet.x, y: G.CHIPS.quiet.y })
+          const loudChip = L.chip(carry, G.CHIPS.loud.text, { x: G.CHIPS.loud.x, y: G.CHIPS.loud.y })
+          const a3 = L.text(carry, 'A3', { x: 740, y: 212, size: 36, anchor: 'end', opacity: 1 })
+          const fl = {
+            lungs: L.label(carry, 'lungs', { x: 350, y: 470, size: 34, anchor: 'end' }),
+            dia: L.label(carry, 'diaphragm', { x: 350, y: 640, size: 34, anchor: 'end' }),
+            belly: L.label(carry, 'belly', { x: 640, y: 700, size: 34 }),
+          }
+          const diaLeader = L.leader(carry, { x1: 356, y1: 631, x2: 378.25, y2: 660.5 })
+          const tag = L.tag(carry, L.TAGS.illustration, G.TAG)
+          // the figure: S6's torso at rest on F-gauge's pixels (L.FIGURE.CUT), to its parked place
+          const fig = L.figure(world)
+          const FC = L.FIGURE.CUT, FS = L.FIGURE.S7
+
+          /* ---------------------------------------------------------------- the reassembled chart (7a) and evidence 1 (7b) */
+          const ch = L.bandChart(world, M.CHART)
+          const inBand = ch.label('inBand', null, { y: L.CHART.LABELS.inBand.y + (M.CHART.y0 - 400) })
+          const chTag = L.tag(ch.g, L.TAGS.illustration, M.CHART.tag)
+          // the take's centre in the band (its edge lit beside "in the band") from its entry, at least 0.4 s after the
+          // chip lands, until it climbs out (FACTS 80): in the take's own time, entry -35 c, exit +35 c
+          const PC = L.CONTOUR.pushed
+          const cross = (f, lo, hi) => { for (let i = 0; i < 40; i++) { const m = (lo + hi) / 2; if (f(m) === f(lo)) lo = m; else hi = m } return (lo + hi) / 2 }
+          const IN_T = cross((u) => PC.cents(u) > -35, 0, 0.5), OUT_T = cross((u) => PC.cents(u) > 35, 1, PC.len)
+          const LIT_ON = Math.max(REDRAW + IN_T / SPEED, PUSHING + 0.4), LIT_OFF = REDRAW + OUT_T / SPEED
+
+          /* ---------------------------------------------------------------- evidence 2: the press pair (7c) */
+          const pr = L.pressPair(world)
+
+          /* ---------------------------------------------------------------- the card (frame-fixed) */
+          const R = M.ROWS
+          const kicker = L.kicker(hud, R.kicker.text, R.kicker)
+          const g0 = L.svg('g', { class: 'row0' }, hud)                // row 0 in its own group, for its exit
+          const belief = L.beliefRow(g0)
+          // row 0's last word lands on "squeezing?": a mask over the label holds it back until then
+          const mid = L.uid('row0')
+          const mdefs = L.svg('defs', {}, hud)
+          const mask = L.svg('mask', { id: mid, maskUnits: 'userSpaceOnUse', x: -100, y: -100, width: 2200, height: 1300 }, mdefs)
+          const maskA = L.svg('rect', { x: -100, y: -100, width: 0, height: 1300, fill: '#fff' }, mask)
+          const maskB = L.svg('rect', { x: -100, y: -100, width: 2200, height: 1300, fill: '#fff', 'fill-opacity': 0 }, mask)
+          belief.label.el.setAttribute('mask', `url(#${mid})`)
+          const layoutRow0 = () => {
+            const el = belief.label.el, k = el.textContent.indexOf('squeezing')
+            const x = R.row0.x + el.getSubStringLength(0, k) - 1
+            maskA.setAttribute('width', f2(x + 100)); maskB.setAttribute('x', f2(x))
+          }
+          L.afterFonts(() => { try { layoutRow0() } catch (e) { /* measured once the font is in */ } })
+          const rows = {}
+          for (const n of ['row1', 'row2a', 'row2b', 'row2c', 'row4']) rows[n] = L.label(hud, R[n].text, R[n])
+          const row1Tag = L.tag(hud, L.TAGS.illustration, M.ROW1.tag)
+          // row 3: '"support":' and its phrase, so the large phrase lands exactly on its place in the row
+          const W = M.WORD
+          const supRow = L.label(hud, '“support”:', { x: R.row3a.x, y: R.row3a.y, size: 40 })
+          const how = L.label(hud, W.how.text, { x: R.row3a.x, y: R.row3a.y, size: 40 })
+          const noOne = L.label(hud, W.noOne.text, { x: R.row3b.x, y: R.row3b.y, size: 36 })
+          const large = L.label(hud, W.large.text, { x: W.large.x, y: W.large.y, size: W.large.size, family: 'serif' })
+          // the large word gives way to the row's '"support":' on the same place in the shrink's last 0.25 s
+          for (const e of [large.el, supRow.el]) e.setAttribute('data-layout-allow-overlap', '')
+          // row 4's four phrases, separated by middots, each landing as said
+          const phrases = [
+            L.label(hud, 'steady air, not more of it', { x: 360, y: 810, size: 40 }), L.label(hud, '· breathe in low', { x: 360, y: 810, size: 40 }),
+            L.label(hud, 'start easily', { x: 360, y: 855, size: 40 }), L.label(hud, '· let it flow out unforced', { x: 360, y: 855, size: 40 }),
+          ]
+          const measure = (str, size) => { const e = L.text(hud, str, { x: -2000, y: -2000, size, opacity: 0 }); const w = e.getComputedTextLength(); e.remove(); return w }
+          let howX = 600, supW = 180, largeW = 520
+          const layout = () => {
+            howX = R.row3a.x + measure('“support”: ', 40)
+            supW = measure('“support”', 40); largeW = large.el.getComputedTextLength() || largeW
+            phrases[1].el.setAttribute('x', f2(360 + measure('steady air, not more of it ', 40)))
+            phrases[3].el.setAttribute('x', f2(360 + measure('start easily ', 40)))
+          }
+          L.afterFonts(layout)
+          const WORDS = ['air pressure', 'diaphragm', 'onset', '“support”']
+          const row = L.chipRow(hud, WORDS, { right: 1800, y: 87, gap: 12 })
+
+          const probe = { cam, cut, ch, inBand, chTag, ga, gl, fl, tag, quietChip, loudChip, fig, pr, kicker, belief, rows, row1Tag, supRow, how, noOne, large, phrases, row, carry,
+            A: { O8, FADE_G, FOLD, FOLD_END, PARK, KICK, ROW0, SQZ, MIXUP, PUSHING, REDRAW, REDRAW_D, HOLD_D, SHRINK1, ROW1, ROW2A, PAIR, HEAVY, MORE_P, SHRINK2, NAMES, ROW_IN, SUP, HOW, ROW_OUT, NOONE, SHRINK3, BETTER, PH, BREATHE, EASE, OUT, STEP, LIT_ON, LIT_OFF, D }, boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+          const lerpPlace = (a, b, u) => ({ s: lerp(a.s, b.s, u), dx: lerp(a.dx, b.dx, u), dy: lerp(a.dy, b.dy, u) })
+          const ID = { s: 1, dx: 0, dy: 0 }
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            cut.draw(t, T)
+            dust(T)
+            probe.boxes = { merc: merc(t), tavi: tavi(t) }
+            const out = (k) => L.fade(t, null, OUT + k * STEP, { upFast: true })   // a row's exit, k-th from the top
+            const miniA = 1 - P(t, OUT, 0.4)
+
+            /* 7a: the gauge's marks and labels fade; the gauge folds back and its small band and strip glide into the
+               chart, which takes over on the same pixels */
+            const gA = 1 - P(t, FADE_G, FADE_G_D)
+            const fu = clamp((t - FOLD) / FOLD_D)
+            const r = M.REASSEMBLE(fu)
+            const handOver = P(t, FOLD_END, 0.3)
+            ga.draw({ band: { ...r.band, a: 1 - handOver }, strip: { ...r.strip, h: 0, a: 1 - handOver }, open: 1 - fu, cursor: null, drawn: 10, gold: G.GOLD.loud, goldDraw: 1, hatch: gA, lungsA: gA })
+            goldEl.setAttribute('opacity', gA.toFixed(3))
+            for (const n of Object.keys(gl)) gl[n].draw({ a: gA })
+            upArrow.draw(1, gA); lessLeader.draw(1, gA); moreLeader.draw(1, gA)
+            quietChip.draw({ alpha: gA, lit: 0 }); loudChip.draw({ alpha: gA, lit: 1 })
+            a3.setAttribute('opacity', gA.toFixed(3))
+            for (const n of Object.keys(fl)) fl[n].draw({ a: gA })
+            diaLeader.draw(1, gA)
+            tag.draw({ alpha: gA })
+
+            /* the figure: dims to 35 % and shrinks to its parked place; on "breathe in low" it comes to full and
+               breathes in once, then eases back and dims */
+            const pu = P(t, PARK, PARK_D)
+            const full = L.env(t, BREATHE, 0.3, EASE - BREATHE - 0.3, EASE_D)
+            const fb = P(t, BREATHE, BREATHE_D, 'sine.inOut') * (1 - P(t, EASE, EASE_D, 'sine.inOut'))
+            fig.draw({ k: lerp(FC.k, FS.k, pu), x0: lerp(FC.x0, FS.x0, pu), y0: lerp(FC.y0, FS.y0, pu), a: lerp(1, 0.35, pu) + 0.65 * full, legs: 0,
+              fade: [lerp(FC.fade[0], FS.fade[0], pu), lerp(FC.fade[1], FS.fade[1], pu)], breath: fb, lungFill: fb })
+
+            /* the chart, reassembled (bare), then evidence 1: the pushed take redrawn silent at 2.5 times its speed,
+               held, and shrunk into row 1 */
+            const tk = clamp((t - REDRAW) * SPEED, 0, PC.len)
+            const su = P(t, SHRINK1, SHRINK_D)
+            ch.place(lerpPlace(ID, M.ROW1, su))
+            // lit linearly over 0.4 s (an eased 0.2 s ramp put the edges' and the label's change into two frames: a pop)
+            const lit = P(t, LIT_ON, 0.4, 'none') * (1 - P(t, LIT_OFF, 0.2))
+            ch.draw({ a: handOver * miniA, band: { lit }, merc: { a: 1 },
+              lines: [{ id: 'pushed', contour: 'pushed', t: tk, a: t >= REDRAW ? 1 : 0, head: 1 - P(t, REDRAW + REDRAW_D, 0.3) }],
+              strip: { envs: [{ id: 'pushed', contour: 'pushed', t: tk, a: t >= REDRAW ? 1 : 0 }] } })
+            inBand.draw({ a: lit })
+            chTag.draw({ alpha: P(t, PUSHING, 0.2) * (1 - P(t, SHRINK1, 0.2)) })
+
+            /* evidence 2: two strips under one push of air, then into row 2 */
+            const pu2 = P(t, SHRINK2, SHRINK_D)
+            pr.draw({ a: P(t, PAIR, 0.2) * miniA, draw: P(t, PAIR, PAIR_D, 'none'), place: t >= SHRINK2 ? lerpPlace(ID, M.ROW2, pu2) : null, pressed: L.pulse(t, [HEAVY], 'chip'),
+              pushA: 1 - P(t, SHRINK2, 0.3), namesA: 1 - P(t, SHRINK2, 0.2), smallA: P(t, NAMES, 0.2) * miniA })
+
+            /* the card's rows */
+            const ko = out(0)
+            kicker.draw(t, KICK, OUT, { upFast: true })
+            const kp = L.pulse(t, [MIXUP], 'chip')
+            if (kp !== 1) kicker.g.setAttribute('transform', kicker.g.getAttribute('transform') + ` translate(${R.kicker.x} ${R.kicker.y}) scale(${kp.toFixed(4)}) translate(${-R.kicker.x} ${-R.kicker.y})`)
+            const b0 = L.fade(t, ROW0, null)
+            belief.draw({ a: b0.a * ko.a, line: P(t, ROW0, SQZ + 0.3 - ROW0, 'none'), qA: P(t, SQZ, 0.2) })
+            g0.setAttribute('transform', `translate(0 ${f2(ko.dy)})`)
+            maskB.setAttribute('fill-opacity', P(t, SQZ, 0.2).toFixed(3))
+            const o1 = out(1), o2 = out(2), o3 = out(3), o4 = out(4)
+            rows.row1.draw({ a: P(t, ROW1, 0.2) * o1.a, dy: o1.dy })
+            row1Tag.draw({ alpha: P(t, ROW1, 0.2) * o1.a, dy: o1.dy })
+            rows.row2a.draw({ a: P(t, ROW2A, 0.2) * o2.a, dy: o2.dy })
+            rows.row2c.draw({ a: P(t, PAIR, 0.2) * o2.a, dy: o2.dy })
+            rows.row2b.draw({ a: P(t, MORE_P, 0.2) * o2.a, dy: o2.dy })
+
+            /* 7d: the word large, its phrases, then into row 3 (the serif word gives way to the row's own as it lands) */
+            const s3 = P(t, SHRINK3, SHRINK_D)
+            const swap3 = P(t, SHRINK3 + SHRINK_D - 0.25, 0.25)
+            const lk = lerp(1, supW / largeW, s3)
+            large.draw({ a: P(t, SUP, 0.2) * (1 - swap3), dx: lerp(0, R.row3a.x - W.large.x, s3), dy: lerp(0, R.row3a.y - W.large.y, s3), scale: lk })
+            supRow.draw({ a: swap3 * o3.a, dy: o3.dy })
+            const hk = lerp(W.how.size / 40, 1, s3)
+            how.draw({ a: P(t, HOW, 0.2) * o3.a, dx: lerp(W.how.x, howX, s3) - R.row3a.x, dy: lerp(W.how.y - R.row3a.y, 0, s3) + o3.dy, scale: hk })
+            noOne.draw({ a: P(t, NOONE, 0.2) * o3.a, dx: lerp(W.noOne.x - R.row3b.x, 0, s3), dy: lerp(W.noOne.y - R.row3b.y, 0, s3) + o3.dy })
+
+            /* 7e: the better idea, phrase by phrase */
+            rows.row4.draw({ a: P(t, BETTER, 0.3, 'none') * o4.a, dy: o4.dy })      // linear: no two-frame pop
+            phrases.forEach((p, i) => p.draw({ a: P(t, PH[i], 0.2) * o4.a, dy: o4.dy }))
+
+            /* the four words: back for '"support"', the two lit before staying lit (DECISIONS 75) */
+            const wf = L.fade(t, ROW_IN, ROW_OUT)
+            const litS = P(t, SUP, 0.3, 'power2.out')
+            row.draw((i) => ({ alpha: wf.a, lit: i < 2 ? 1 : i === 3 ? litS : 0, underline: i < 2 ? 1 : i === 3 ? litS : 0, scale: i === 3 ? L.pulse(t, [SUP], 'chip') : 1 }))
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </div>
+<script src="/lab/s05-push/helpers.js"></script>
+<script src="/lab/s07-support/checks.js"></script></body></html>

@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <!-- Kit lab: the field's exit onto the title (lesson.js L.field and L.TITLE; HANDOFFS § The cuts S1 to S2,
+         § Carried, the title; critic-kit-01 item 5). Lab time 0 to 0.6 s is S1's last 0.6 s (the full-frame
+         field, breathing and dithered); 0.6 s is the cut to s02-title, whose first frame is the same field; it
+         shrinks into the title bead on Lesson 2's curve (0.46 s: the radius on power2.out, the centre on
+         power3.out, its soft rim closing over the first 0.1 s) onto the staff's middle line at the bead's rest
+         (1060, 640, z-mapped), the staff and the type landing as it settles, the five chimes after. Every value
+         is drawn from film time T = s02's start + (t - 0.6), so the lab runs on the film's own curves. -->
+    <div id="kit-title" data-composition-id="kit-title" data-start="0" data-duration="3.2" data-width="1920" data-height="1080">
+      <div class="scene" id="kit-title-root"></div>
+      <script>
+        ;(function () {
+          const ID = 'kit-title', D = 3.2, CUT = 0.6
+          const C = L.C, TT = L.TITLE
+          const root = document.getElementById(ID + '-root')
+          const room = L.room(root, {})
+          const world = L.stage(room.mid), top = L.stage(room.top), hud = L.stage(room.hud)
+          L.text(hud, 'kit-title: the field’s exit onto the title (the cut at 0.60)', { x: 24, y: 1060, size: 20, family: 'mono', weight: 500, fill: C.ink2, opacity: 1 })
+          const S2 = L.scene('s02-title').start
+          const staff = L.staff(world, {})
+          const notes = TT.NOTE_X.map((x, k) => L.note(world, { x, k: L.step(TT.NOTES[k]) }))
+          const kicker = L.kicker(hud, 'Lesson 05', { x: 960, y: 222 })      // Lesson 4's place (its s02-title: baseline 222)
+          kicker.el.setAttribute('text-anchor', 'middle')
+          const title = L.text(hud, 'Breath and a steady note', { x: 960, y: 380, size: 140, family: 'serif', fill: C.chrome, anchor: 'middle' })
+          const field = L.field(top, 'title-field')
+          const bead = L.bead(top, { r: 22, color: C.chrome })
+          const P = (t, t0, d, e) => L.prog(t, t0, d, e)
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = S2 + (t - CUT)
+            const s = Math.max(0, t - CUT)                      // s02's own scene time
+            const z = TT.zoom(T)
+            const rest = TT.zmap(TT.REST[0], TT.REST[1] + TT.disp(TT.REST[0], T), T)
+            const u = P(s, 0, 0.46, 'power2.out'), uc = P(s, 0, 0.46, 'power3.out'), crisp = P(s, 0, 0.1, 'power1.out')
+            const bx = L.lerp(960, rest[0], uc), by = L.lerp(540, rest[1], uc)
+            const br = L.lerp(L.lerp(L.FIELD.R, 1200, crisp), 22 * z, u)
+            field.draw({ x: bx, y: by, r: br, a: L.smooth(26, 80, br), T, soft: L.lerp(0.8, 0.95, crisp) })
+            room.vignette.style.opacity = L.smooth(0, 0.66, s).toFixed(3)     // hidden under the full field, back as it goes
+            L.bead4.place(bead, { x: bx, y: by, scale: br / 22, a: 1 - L.smooth(30, 90, br) })
+            const sa = P(s, 0.2, 0.5)
+            room.mid.style.transformOrigin = '0 0'
+            room.mid.style.transform = `matrix(${z.toFixed(5)}, 0, 0, ${z.toFixed(5)}, ${(960 * (1 - z)).toFixed(2)}, ${(540 * (1 - z)).toFixed(2)})`
+            staff.draw((x, i) => TT.disp(x, T), sa)
+            notes.forEach((n, k) => {
+              const tau = T - TT.CHIME(k)
+              n.g.setAttribute('opacity', (tau > 0 ? L.clamp(tau / 0.08) : 0).toFixed(3))
+            })
+            const tin = P(s, 0.26, 0.6, 'power3.out')
+            L.place(title, { a: tin, dy: 22 * (1 - tin) })
+            kicker.draw(s, 0.36, 99)
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+
+          window.__kitProbe = window.__kitProbe || {}
+          const seedAt = (t) => { tl.seek(t, false); return document.querySelector('#kit-title feTurbulence').getAttribute('seed') }
+          window.__kitProbe[ID] = {
+            times: [0.3, 1.2],
+            check(t) {
+              if (t === 0.3) {
+                const seeds = [0.3, 0.3 + 1 / 30, 0.3 + 2 / 30].map(seedAt)
+                const col = (t) => { tl.seek(t, false); return document.querySelector('#title-field stop').getAttribute('stop-color') }
+                let still = 0
+                for (let w = 0; w + 0.2 <= 0.6 + 1e-9; w += 1 / 30) { const c = new Set(); for (let f = 0; f <= 6; f++) c.add(col(w + f / 30)); if (c.size < 2) still++ }
+                const k0 = `${still} still windows`, k1 = ''
+                tl.seek(0.3, false)
+                return [{ name: 'the field’s grain changes every frame (seeds)', got: seeds.join(' '), want: 'all different', pass: new Set(seeds).size === 3 },
+                  { name: 'the field breathes: no 0.2 s window of S1\'s last 0.6 s with one centre colour', got: k0, want: '0 still windows', pass: k0.startsWith('0 ') }]
+              }
+              const b = bead.g.getBoundingClientRect()
+              return [{ name: 'the field has closed into the bead (r 22 x zoom): bead width / 2', got: b.width / 2 / 1.75, want: 22 * TT.zoom(S2 + 0.6), tol: 1.5 },
+                { name: 'the bead on its rest, z-mapped (x)', got: b.x + b.width / 2, want: TT.zmap(TT.REST[0], TT.REST[1], S2 + 0.6)[0], tol: 2 }]
+            },
+          }
+        })()
+      </script>
+    </div>
+  </body>
+</html>

@@ -1,0 +1,679 @@
+[
+ {
+  "t": 0,
+  "name": "first frame (S6's last, F-gauge's pixels at F0): the frame x 738 to 1662, y 279 to 731 (stroke +-1)",
+  "got": "738.0 to 1662.0, 279.3 to 730.7",
+  "want": "737 to 1663, 278 to 732",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "the gold line centred y 451.45",
+  "got": 451.45,
+  "want": 451.45,
+  "tol": 0.6,
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "the chip x 1367 to 1652, y 290 to 332",
+  "got": "1367.3 to 1651.5, 289.8 to 331.7",
+  "want": "1367 to 1652, 290 to 332",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "\"Quiet\" and \"Loud\" from x 1675",
+  "got": "1675.6, 290.8-330.7, 345.4-385.3",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "\"what the note needs\" (Loud) right edge 1652",
+  "got": 1651.51,
+  "want": 1651.5,
+  "tol": 2,
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "\"less holding back at first\" from x 738",
+  "got": 738,
+  "want": 738,
+  "tol": 2,
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "the small band x 738 to 1662, y 143 to 227",
+  "got": "738.0 to 1662.0, 142.8 to 226.7",
+  "want": "738 to 1662, 142.75 to 226.75",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "the figure at k 1.2075, x0 150, y0 100.75 (its crown)",
+  "got": "427.73, 124.90",
+  "want": "427.73, 124.90",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "the room: the outgoing framing's layers shown, the room at rest hidden",
+  "got": "1.00 / 0.00",
+  "want": "1.00 / 0.00",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "hosts at 240",
+  "got": "36.4-163.6; 1756.4-1883.6",
+  "want": "36.4-163.6; 1756.4-1883.6",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "keep-out: nearest visible text to merc's body box (\"diaphragm\")",
+  "got": 30.65,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0,
+  "name": "keep-out: nearest visible text to tavi's body box (\"more adding as the air runs low\")",
+  "got": 93.62,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.15,
+  "name": "the room's crossfade halfway at 0.15 s",
+  "got": 0.5,
+  "want": 0.5,
+  "tol": 0.06,
+  "pass": true
+ },
+ {
+  "t": 0.34,
+  "name": "the outgoing room gone by 0.33 s",
+  "got": 0,
+  "want": 0,
+  "tol": 0.001,
+  "pass": true
+ },
+ {
+  "t": 1.92,
+  "name": "7a: the chart reassembled: plot x 400 to 1520, band 382.5 to 557.5",
+  "got": "400.0 to 1520.0, 382.5 to 557.5",
+  "want": "400 to 1520, 382.5 to 557.5",
+  "pass": true
+ },
+ {
+  "t": 1.92,
+  "name": "7a: the strip's hairline centred y 700",
+  "got": 700,
+  "want": 700,
+  "tol": 1,
+  "pass": true
+ },
+ {
+  "t": 1.92,
+  "name": "7a: the gauge gone",
+  "got": "0.00",
+  "want": "0.00",
+  "pass": true
+ },
+ {
+  "t": 1.92,
+  "name": "7a: the figure parked: crown y 190, back x 215 (k 0.5, x0 140, y0 180), at 35 %",
+  "got": "190.0, 215.0, 0.35",
+  "want": "190.0, 215.0, 0.35",
+  "pass": true
+ },
+ {
+  "t": 1.92,
+  "name": "7a: the parked figure's box (board x 215 to 320, y 190 to 460)",
+  "got": "212 to 305, 190 to 680",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 1.92,
+  "name": "keep-out: nearest visible text to merc's body box (\"COMMON MIX-UP\")",
+  "got": 567.4,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 1.92,
+  "name": "keep-out: nearest visible text to tavi's body box (\"COMMON MIX-UP\")",
+  "got": 1448,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.7950000000000046,
+  "name": "7a: \"COMMON MIX-UP\" at (120, 110)",
+  "got": "119",
+  "want": "120",
+  "pass": true
+ },
+ {
+  "t": 0.7950000000000046,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 0.7950000000000046,
+  "name": "keep-out: nearest visible text to merc's body box (\"COMMON MIX-UP\")",
+  "got": 567.4,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 0.7950000000000046,
+  "name": "keep-out: nearest visible text to tavi's body box (\"COMMON MIX-UP\")",
+  "got": 1448.61,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 4.469999999999982,
+  "name": "row 0: its dashed underline at y 194 under the whole row",
+  "got": "360.0 to 1215.1",
+  "want": "358.5 to 1216.6",
+  "pass": true
+ },
+ {
+  "t": 4.469999999999982,
+  "name": "row 0: its \"?\" 14 px after the last word",
+  "got": 14,
+  "want": 14,
+  "tol": 6,
+  "pass": true
+ },
+ {
+  "t": 4.469999999999982,
+  "name": "row 0: the last word shown (its mask open)",
+  "got": "masked",
+  "want": "masked",
+  "pass": true
+ },
+ {
+  "t": 4.469999999999982,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 4.469999999999982,
+  "name": "keep-out: nearest visible text to merc's body box (\"‘support’ means pushing hard, or squeezi\")",
+  "got": 532.91,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 4.469999999999982,
+  "name": "keep-out: nearest visible text to tavi's body box (\"?\")",
+  "got": 696.18,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 7.780000000000007,
+  "name": "7b: the band lit with \"in the band\" beside it (right-aligned 366, baseline 540)",
+  "got": "1.00 366",
+  "want": "1.00 366",
+  "pass": true
+ },
+ {
+  "t": 7.780000000000007,
+  "name": "7b: \"in the band\" under the parked figure (its masked foot, y 465)",
+  "got": 45,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 7.780000000000007,
+  "name": "7b: \"ILLUSTRATION\" under the strip's right end (right 1520, centred y 790)",
+  "got": "1520.0, 790.0",
+  "want": "1520, 790",
+  "pass": true
+ },
+ {
+  "t": 7.780000000000007,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 7.780000000000007,
+  "name": "keep-out: nearest visible text to merc's body box (\"in the band\")",
+  "got": 147.79,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 7.780000000000007,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 247.71,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 8.650000000000006,
+  "name": "wave rule, the pushed take large (W 4, k 2.5): a cycle 50.9 px",
+  "got": 50,
+  "want": 50.9,
+  "tol": 5.1,
+  "pass": true
+ },
+ {
+  "t": 8.650000000000006,
+  "name": "wave rule large: peak to peak 70 px (its held start)",
+  "got": 69.94,
+  "want": 70,
+  "tol": 7,
+  "pass": true
+ },
+ {
+  "t": 8.650000000000006,
+  "name": "the line's highest point under row 0's underline (194)",
+  "got": 91,
+  "want": "board 56",
+  "pass": true
+ },
+ {
+  "t": 8.650000000000006,
+  "name": "the swollen strip over \"ILLUSTRATION\"",
+  "got": 14.1,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 8.650000000000006,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 8.650000000000006,
+  "name": "keep-out: nearest visible text to merc's body box (\"‘support’ means pushing hard, or squeezi\")",
+  "got": 532.91,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 8.650000000000006,
+  "name": "keep-out: nearest visible text to tavi's body box (\"ILLUSTRATION\")",
+  "got": 247.8,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 9.530000000000006,
+  "name": "7b: the chart at 0.41 in row 1: band x 1180 to 1639.2, y 274.1 to 345.9",
+  "got": "1180.0 to 1639.2, 274.1 to 345.9",
+  "want": "1180 to 1639.2, 274.1 to 345.9",
+  "pass": true
+ },
+ {
+  "t": 9.530000000000006,
+  "name": "7b: row 1 at x 360, baseline 300; its chip from x 360, centred y 345",
+  "got": "360; 360, 345",
+  "want": "360; 360, 345",
+  "pass": true
+ },
+ {
+  "t": 9.530000000000006,
+  "name": "7b: row 1's words left of the miniature",
+  "got": 256.5,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 9.530000000000006,
+  "name": "wave rule, row 1's miniature: a cycle 20.9 px",
+  "got": 20.5,
+  "want": 20.9,
+  "tol": 2.1,
+  "pass": true
+ },
+ {
+  "t": 9.530000000000006,
+  "name": "wave rule, row 1's miniature: peak to peak 28.7 px",
+  "got": 28.68,
+  "want": 28.7,
+  "tol": 2.9,
+  "pass": true
+ },
+ {
+  "t": 9.530000000000006,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 9.530000000000006,
+  "name": "keep-out: nearest visible text to merc's body box (\"ILLUSTRATION\")",
+  "got": 387.45,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 9.530000000000006,
+  "name": "keep-out: nearest visible text to tavi's body box (\"?\")",
+  "got": 696.18,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 12.079999999999984,
+  "name": "7c: \"easy\" x 860 to 1200, y 570 to 790",
+  "got": "860 to 1200, 570 to 790",
+  "want": "859 to 1201, 569 to 791",
+  "pass": true
+ },
+ {
+  "t": 12.079999999999984,
+  "name": "7c: \"pressed\" x 1260 to 1600, y 652 to 708",
+  "got": "1260 to 1600, 652 to 708",
+  "want": "1259 to 1601, 651 to 709",
+  "pass": true
+ },
+ {
+  "t": 12.079999999999984,
+  "name": "7c: row 2's first line and \"same push: much quieter\" shown",
+  "got": "1.00 1.00",
+  "want": "1.00 1.00",
+  "pass": true
+ },
+ {
+  "t": 12.079999999999984,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 12.079999999999984,
+  "name": "keep-out: nearest visible text to merc's body box (\"same push: much quieter\")",
+  "got": 219.67,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 12.079999999999984,
+  "name": "keep-out: nearest visible text to tavi's body box (\"pressed\")",
+  "got": 273.17,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 17.355000000000008,
+  "name": "7c: \"more pressure, not less\" landed (baseline 535)",
+  "got": "1.00",
+  "want": "1.00",
+  "pass": true
+ },
+ {
+  "t": 17.355000000000008,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 17.355000000000008,
+  "name": "keep-out: nearest visible text to merc's body box (\"same push: much quieter\")",
+  "got": 219.67,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 17.355000000000008,
+  "name": "keep-out: nearest visible text to tavi's body box (\"pressed\")",
+  "got": 273.17,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 19.050000000000008,
+  "name": "7c: the pair in row 2 (0.5): \"easy\" from x 1180, top 465",
+  "got": "1180.0, 465.0",
+  "want": "1179.5, 464.5",
+  "pass": true
+ },
+ {
+  "t": 19.050000000000008,
+  "name": "7c: \"pressed\" right 1550",
+  "got": 1550,
+  "want": 1550.5,
+  "tol": 1.5,
+  "pass": true
+ },
+ {
+  "t": 19.050000000000008,
+  "name": "7c: the row's words left of the pair",
+  "got": 355.47,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 19.050000000000008,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 19.050000000000008,
+  "name": "keep-out: nearest visible text to merc's body box (\"same push: much quieter\")",
+  "got": 219.67,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 19.050000000000008,
+  "name": "keep-out: nearest visible text to tavi's body box (\"pressed\")",
+  "got": 256.3,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 20.31000000000001,
+  "name": "7d: the four words back, \"support\" lit with the two before",
+  "got": "lit lit dim lit",
+  "want": "lit lit dim lit",
+  "pass": true
+ },
+ {
+  "t": 20.31000000000001,
+  "name": "7d: the large word at x 360, baseline 800",
+  "got": "360",
+  "want": "360",
+  "pass": true
+ },
+ {
+  "t": 20.31000000000001,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 20.31000000000001,
+  "name": "keep-out: nearest visible text to merc's body box (\"“support”\")",
+  "got": 196.4,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 20.31000000000001,
+  "name": "keep-out: nearest visible text to tavi's body box (\"pressed\")",
+  "got": 256.3,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 25.704999999999984,
+  "name": "7d: \"how singers manage the breath\" at x 980, baseline 800; \"no one agreed meaning\" at 980, 850",
+  "got": "980, 980",
+  "want": "980, 980",
+  "pass": true
+ },
+ {
+  "t": 25.704999999999984,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 25.704999999999984,
+  "name": "keep-out: nearest visible text to merc's body box (\"“support”\")",
+  "got": 196.4,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 25.704999999999984,
+  "name": "keep-out: nearest visible text to tavi's body box (\"how singers manage the breath\")",
+  "got": 152.45,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 26.714999999999996,
+  "name": "7d: row 3 from x 360, baseline 655; its phrase follows on the baseline",
+  "got": "360; 7.8 px after the colon",
+  "want": "360; a space",
+  "pass": true
+ },
+ {
+  "t": 26.714999999999996,
+  "name": "7d: the large word gone",
+  "got": "0.00",
+  "want": "0.00",
+  "pass": true
+ },
+ {
+  "t": 26.714999999999996,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 26.714999999999996,
+  "name": "keep-out: nearest visible text to merc's body box (\"no one agreed meaning\")",
+  "got": 196.4,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 26.714999999999996,
+  "name": "keep-out: nearest visible text to tavi's body box (\"pressed\")",
+  "got": 256.3,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 31.769999999999982,
+  "name": "7e: the parked figure at full, breathing in",
+  "got": "1.00 0.75",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 31.769999999999982,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 31.769999999999982,
+  "name": "keep-out: nearest visible text to merc's body box (\"The better idea:\")",
+  "got": 196.4,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 31.769999999999982,
+  "name": "keep-out: nearest visible text to tavi's body box (\"pressed\")",
+  "got": 256.3,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 34.79699999999999,
+  "name": "7e: the four phrases, the middots following on their lines",
+  "got": "360-800, 808-1078, 360-560, 568-985",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 34.79699999999999,
+  "name": "7e: the figure dimmed again",
+  "got": "0.35",
+  "want": "0.35",
+  "pass": true
+ },
+ {
+  "t": 34.79699999999999,
+  "name": "no two visible texts overlap",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 34.79699999999999,
+  "name": "keep-out: nearest visible text to merc's body box (\"The better idea:\")",
+  "got": 196.4,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 34.79699999999999,
+  "name": "keep-out: nearest visible text to tavi's body box (\"pressed\")",
+  "got": 256.3,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 36.3895,
+  "name": "last frame (S7 to S8): every row and miniature gone",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 36.3895,
+  "name": "the miniatures gone",
+  "got": "0.00 0.00",
+  "want": "0.00 0.00",
+  "pass": true
+ },
+ {
+  "t": 36.3895,
+  "name": "the dimmed figure parked: k 0.5, x0 140, y0 180, at 35 %",
+  "got": "190.0, 215.0, 0.35, breath 0.00",
+  "want": "190.0, 215.0, 0.35, breath 0.00",
+  "pass": true
+ },
+ {
+  "t": 36.3895,
+  "name": "hosts at 240",
+  "got": "36.4-163.6; 1756.4-1883.6",
+  "want": "36.4-163.6; 1756.4-1883.6",
+  "pass": true
+ }
+]

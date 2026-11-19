@@ -1,0 +1,102 @@
+<!doctype html>
+<!-- The probe's harness for lab/kit-src/tease.html (lab/kit-src/probe.mjs): the kit, the fonts, the page. -->
+<html lang="en"><head><meta charset="UTF-8" />
+<script src="/assets/vendor/gsap-3.14.2.min.js"></script>
+<script src="/assets/cues.js"></script>
+<script src="/assets/scenes.js"></script>
+<script src="/assets/merc/roots.js"></script>
+<script src="/assets/lib/lesson.js"></script>
+<script src="/assets/lib/motion.js"></script>
+<script src="/assets/lib/marks.js"></script>
+<script src="/assets/lib/frames.js"></script>
+<script src="/assets/lib/chart.js"></script>
+<script src="/assets/lib/figure.js"></script>
+<script src="/assets/lib/gauge.js"></script>
+<script src="/assets/lib/mixup.js"></script>
+<script src="/assets/lib/folds.js"></script>
+<script src="/assets/lib/turn.js"></script>
+<script src="/assets/lib/recap.js"></script>
+<script src="/assets/lib/tease.js"></script>
+<script src="/assets/lib/hosts.js"></script>
+<link rel="stylesheet" href="/assets/lib/lesson.css" />
+<style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('/assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('/assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('/assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+</style></head><body><div id="root">
+    <!-- Kit lab: the tease and the end card (tease.js; HANDOFFS § The tease and the end card, § The cuts S13
+         to S14 and S14 to S15). 0 to 1.6 s the carry: the "five notes" glyph's first dot (272, 434) grows
+         into the C4 bead (L.TEASE.carry, power2.inOut) while the rows fade in; 1.6 to 5.2 s Merc's seven
+         notes light in turn; 5.2 to 6.8 s the arrows rise and Tavi's dashed copy draws, then her "?";
+         7.0 to 8.2 s the shrink to the end card's place (L.TEASE.shrink); 8.0 to 8.8 s the lockup's
+         feathered wipe; the address and the free line land. The end card's clear zone (x 80 to 1100,
+         y 460 to 880) is outlined for the lab only. Screen px at F0. -->
+    <div id="kit-tease" data-composition-id="kit-tease" data-start="0" data-duration="10" data-width="1920" data-height="1080">
+      <div class="scene" id="kit-tease-root"></div>
+      <script>
+        ;(function () {
+          const ID = 'kit-tease', D = 10
+          const C = L.C, TE = L.TEASE
+          const root = document.getElementById(ID + '-root')
+          const room = L.room(root, {})
+          const world = L.stage(room.mid), hud = L.stage(room.hud)
+          L.text(hud, 'kit-tease: the tease and the end card (screen px); the dashed box is the clear zone (lab only)', { x: 24, y: 1060, size: 20, family: 'mono', weight: 500, fill: C.ink2, opacity: 1 })
+          const te = L.tease(world)
+          const carried = L.svg('circle', { fill: C.chrome, r: 4, opacity: 0 }, world)
+          const lk = L.lockup(hud, TE.END.lockup)
+          const E = TE.END
+          const addr = L.label(hud, E.address.text, { x: E.address.x, y: E.address.y, size: E.address.size })
+          const free = L.label(hud, E.free.text, { x: E.free.x, y: E.free.y, size: E.free.size, weight: E.free.weight })
+          const zone = L.svg('rect', { x: E.clear.x0, y: E.clear.y0, width: E.clear.x1 - E.clear.x0, height: E.clear.y1 - E.clear.y0, fill: 'none', stroke: C.ink2, 'stroke-opacity': 0.35, 'stroke-dasharray': '4 8', opacity: 0 }, hud)
+          const lit = (t, i) => L.env(t, 1.8 + TE.onset(i), 0.06, i === 6 ? 0.9 : 0.36, 0.08)
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const c = TE.carry(t, 0)
+            const arrived = t >= 1.6
+            carried.setAttribute('opacity', c && !arrived ? '1' : '0')
+            if (c) { carried.setAttribute('cx', L.f2(c.x)); carried.setAttribute('cy', L.f2(c.y)); carried.setAttribute('r', L.f2(c.r)) }
+            const u = TE.shrink(t, 7.0)
+            te.draw({ rowsA: L.prog(t, 0.3, 0.7), beads: (i) => ({ a: i === 0 ? (arrived ? 1 : 0) : L.prog(t, 1.6 + 0.06 * i, 0.2), lit: lit(t, i), scale: L.pulse(t, [1.8 + TE.onset(i)], 'bead') }), copy: L.prog(t, 5.4, 1.2, 'none'), arrows: (i) => L.prog(t, 5.2 + 0.08 * i, 0.4), qA: L.prog(t, 6.6, 0.2), qScale: L.pulse(t, [6.6], 'label'), place: u > 0 ? TE.place(u) : null })
+            lk.draw({ wipe: L.prog(t, 8.0, 0.8, 'power1.inOut'), a: t >= 8.0 ? 1 : 0 })
+            addr.draw({ a: L.prog(t, 8.6, 0.2) }); free.draw({ a: L.prog(t, 9.0, 0.2) })
+            zone.setAttribute('opacity', t >= 8.0 ? '1' : '0')
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+
+          const R = (el) => el.getBoundingClientRect()
+          const cen = (el) => { const r = R(el); return [r.x + r.width / 2, r.y + r.height / 2] }
+          window.__kitProbe = window.__kitProbe || {}
+          window.__kitProbe[ID] = {
+            times: [0.0, 1.6, 6.9, 9.9],
+            check(t) {
+              if (t === 0) { const c = TE.carry(0, 0); return [{ name: 'carry starts at the dot (272, 434): x', got: c.x, want: 272 }, { name: 'y', got: c.y, want: 434 }, { name: 'r 4', got: c.r, want: 4, tol: 0.01 }] }
+              if (t === 1.6) {
+                let maxX = 0
+                for (let s = 0; s <= 1.6; s += 0.01) maxX = Math.max(maxX, TE.carry(s, 0).x)
+                return [{ name: 'carry lands on C4 (420, 745): x', got: cen(carried)[0] || TE.carry(1.6, 0).x, want: 420 }, { name: 'y', got: TE.carry(1.6, 0).y, want: 745 }, { name: 'r 20', got: TE.carry(1.6, 0).r, want: 20, tol: 0.01 }, { name: 'its whole path left of x 450', got: maxX, want: '< 450', pass: maxX < 450 }]
+              }
+              if (t === 6.9) {
+                const b0 = cen(te.beads[0].outline), b2 = cen(te.beads[2].outline), b4 = cen(te.beads[4].outline), b6 = cen(te.beads[6].outline)
+                return [{ name: 'C4 bead (420, 745)', got: b0[1], want: 745 }, { name: 'G4 bead x 740', got: b2[0], want: 740 }, { name: 'G4 bead y 535', got: b2[1], want: 535 }, { name: 'A4 bead (1060, 475) y', got: b4[1], want: 475 }, { name: 'last bead x 1380', got: b6[0], want: 1380 },
+                  { name: 'C4\'s copy six rows up (y 565)', got: cen(te.beads[0].copy)[1], want: 565 }]
+              }
+              const b0 = cen(te.beads[0].outline)
+              const fig = R(te.g)
+              return [{ name: 'end card: C4 bead at (1219, 370.5): x', got: b0[0], want: 1219 }, { name: 'y', got: b0[1], want: 370.5 },
+                { name: 'the shrunk figure clear of the zone (left edge > 1100)', got: fig.left, want: '> 1100', pass: fig.left > 1100 },
+                { name: 'address x 120, baseline 320', got: +addr.el.getAttribute('y'), want: 320, tol: 0.5 }, { name: 'free line baseline 395', got: +free.el.getAttribute('y'), want: 395, tol: 0.5 },
+                { name: 'lockup width at h 100 (1180 x 100 / 260)', got: lk.w, want: 453.85, tol: 0.5 }, { name: 'lockup ink from x 124.6 (the orb\'s own 12-unit margin)', got: R(lk.g).left, want: 124.6, tol: 2 }]
+            },
+          }
+        })()
+      </script>
+    </div>
+  </div></body></html>

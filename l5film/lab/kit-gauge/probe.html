@@ -1,0 +1,129 @@
+<!doctype html>
+<!-- The probe's harness for lab/kit-src/gauge.html (lab/kit-src/probe.mjs): the kit, the fonts, the page. -->
+<html lang="en"><head><meta charset="UTF-8" />
+<script src="/assets/vendor/gsap-3.14.2.min.js"></script>
+<script src="/assets/cues.js"></script>
+<script src="/assets/scenes.js"></script>
+<script src="/assets/merc/roots.js"></script>
+<script src="/assets/lib/lesson.js"></script>
+<script src="/assets/lib/motion.js"></script>
+<script src="/assets/lib/marks.js"></script>
+<script src="/assets/lib/frames.js"></script>
+<script src="/assets/lib/chart.js"></script>
+<script src="/assets/lib/figure.js"></script>
+<script src="/assets/lib/gauge.js"></script>
+<script src="/assets/lib/mixup.js"></script>
+<script src="/assets/lib/folds.js"></script>
+<script src="/assets/lib/turn.js"></script>
+<script src="/assets/lib/recap.js"></script>
+<script src="/assets/lib/tease.js"></script>
+<script src="/assets/lib/hosts.js"></script>
+<link rel="stylesheet" href="/assets/lib/lesson.css" />
+<style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('/assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('/assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('/assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+</style></head><body><div id="root">
+    <!-- Kit lab: the gauge and Merc's small band (gauge.js; HANDOFFS § The gauge and Merc's small band, § The
+         cuts S6 to S7; critic-kit-01 item 2). 0 to 1.5 s the split (L.GAUGE.split, provisional curves) from the
+         chart at 0.78; 1.5 to 2.5 s the strip's box opening to the frame; 2.5 to 7.5 s the cursor's ten seconds
+         at double speed, the lungs' line and the hatches behind it, the gold line at Quiet (606). The cursor
+         passes behind every label it meets and behind the "ILLUSTRATION" chip (opaque backs, as the ground).
+         At the crossing (the cursor's 7 s, lab 6.0) the readout switches to "Now: adding" (L.swap) and
+         "added" lands inside its hatch. 7.5 to 9 s the gold line rises to Loud (454) with Loud's labels.
+         World px at F0 (the film shows it at F-gauge). -->
+    <div id="kit-gauge" data-composition-id="kit-gauge" data-start="0" data-duration="9" data-width="1920" data-height="1080">
+      <div class="scene" id="kit-gauge-root"></div>
+      <script>
+        ;(function () {
+          const ID = 'kit-gauge', D = 9
+          const C = L.C, G = L.GAUGE
+          const root = document.getElementById(ID + '-root')
+          const room = L.room(root, {})
+          const world = L.stage(room.mid), hud = L.stage(room.hud)
+          L.text(hud, 'kit-gauge: the gauge and the small band (world px, F0)', { x: 24, y: 1060, size: 20, family: 'mono', weight: 500, fill: C.ink2, opacity: 1 })
+          const ga = L.gauge(world)
+          const lab = {}
+          for (const [n, v] of Object.entries(G.LABELS)) lab[n] = L.label(world, v.text, { ...v, back: G.BACKS.includes(n) })
+          const quiet = L.chip(world, G.CHIPS.quiet.text, { x: G.CHIPS.quiet.x, y: G.CHIPS.quiet.y })
+          const loud = L.chip(world, G.CHIPS.loud.text, { x: G.CHIPS.loud.x, y: G.CHIPS.loud.y })
+          const tag = L.tag(world, L.TAGS.illustration, G.TAG)
+          const T0 = 2.5, RATE = 2                                    // the cursor's clock in lab time
+          const cx = (t) => (t < T0 ? null : Math.min(10, (t - T0) * RATE))
+          const tCross = T0 + G.cross(G.GOLD.quiet) / RATE              // lab 6.0
+          const QUIET = ['A3', 'unchanged', 'pushOfAir', 'oneNote', 'lungsPush', 'needs', 'heldBack']
+          const LOUD = ['A3', 'unchanged', 'lungsPush', 'needsLoud', 'lessHolding', 'moreAdding']
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const sp = G.split(L.clamp(t / 1.5))
+            const open = L.prog(t, 1.5, 1.0)
+            const cur = cx(t)
+            const gold = L.lerp(G.GOLD.quiet, G.GOLD.loud, L.prog(t, 7.5, 0.8))
+            ga.draw({ band: { ...sp.band, lineTo: cur == null ? null : G.x(cur) }, strip: { ...sp.strip, h: 28, a: 1 - open }, open, cursor: cur, drawn: cur || 0, gold, goldDraw: L.prog(t, 2.5, 0.6), hatch: L.prog(t, 2.6, 0.4) })
+            const loudA = L.prog(t, 7.6, 0.2)
+            for (const [n, l] of Object.entries(lab)) {
+              let a = 0
+              if (QUIET.includes(n)) a = L.prog(t, 2.6, 0.2) * (LOUD.includes(n) ? 1 : 1 - L.prog(t, 7.5, 0.2))
+              if (LOUD.includes(n) && !QUIET.includes(n)) a = loudA
+              if (n === 'added') a = L.prog(t, tCross, 0.2) * (1 - L.prog(t, 7.5, 0.2))
+              if (n === 'readout' || n === 'readoutAdding') continue
+              l.draw({ a })
+            }
+            // the readout: a label switch at the crossing (STORYBOARD § Type: it counts as a landing)
+            const [r0, r1] = L.swap(t, tCross, 0, G.LABELS.readout.text, G.LABELS.readoutAdding.text)
+            const ra = L.prog(t, 2.6, 0.2) * (1 - L.prog(t, 7.5, 0.2))
+            lab.readout.draw({ a: ra * r0.a, dy: r0.dy }); lab.readoutAdding.draw({ a: ra * r1.a, dy: r1.dy })
+            quiet.draw({ alpha: t >= 2.6 ? 1 : 0, lit: t < 7.6 ? 1 : 0 })
+            loud.draw({ alpha: t >= 2.6 ? 1 : 0, lit: t >= 7.6 ? 1 : 0 })
+            tag.draw({ alpha: 1 })
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[ID] = tl
+
+          const R = (el) => el.getBoundingClientRect()
+          const kids = () => ga.g.children
+          const cursorEl = () => kids()[4]
+          const above = (el) => !!(cursorEl().compareDocumentPosition(el) & Node.DOCUMENT_POSITION_FOLLOWING)
+          const covers = (n) => { const b = R(lab[n].back), e = R(lab[n].el); return b.left <= e.left && b.right >= e.right && b.top <= e.top && b.bottom >= e.bottom }
+          window.__kitProbe = window.__kitProbe || {}
+          window.__kitProbe[ID] = {
+            times: [0.0, 3.3, 5.9, 6.3, 8.9],
+            check(t) {
+              const band = R(kids()[1].querySelector('rect'))
+              if (t === 0) return [{ name: 'split start: band x 466 (the chart at 0.78)', got: band.left, want: 466 }, { name: 'band right 1340', got: band.right, want: 1340 }, { name: 'band top 365.5', got: band.top, want: 365.5 }, { name: 'band foot 456.5', got: band.bottom, want: 456.5 }]
+              if (t === 3.3) return G.BACKS.map((n) => ({ name: `"${G.LABELS[n].text}" has an opaque ground back over the cursor`, got: `${lab[n].back.getAttribute('fill')}, covers ${covers(n)}, above ${above(lab[n].back)}`, want: 'opaque, covering, above', pass: lab[n].back.getAttribute('fill') === C.ground && covers(n) && above(lab[n].back) }))
+                .concat([{ name: 'the chip is opaque and over the cursor', got: tag.box.getAttribute('fill-opacity'), want: '1', pass: tag.box.getAttribute('fill-opacity') === '1' && above(tag.g) }])
+              if (t === 5.9) return [{ name: 'before the crossing: the readout says "Now: holding back"', got: +lab.readout.back.parentNode.getAttribute('opacity'), want: 1, tol: 0.01 }, { name: '"added" not yet landed', got: +lab.added.back.parentNode.getAttribute('opacity'), want: 0, tol: 0.01 }]
+              if (t === 6.3) {
+                // the glyphs' own box (canvas metrics in the real font), not the font's line box
+                const cv = document.createElement('canvas').getContext('2d'); cv.font = "600 30px 'Outfit'"
+                const m = cv.measureText('added'), bx = R(lab.added.el)
+                const ad = { left: bx.left, right: bx.right, top: 645 - m.actualBoundingBoxAscent, bottom: 645 + m.actualBoundingBoxDescent }
+                const lungsAt = (x) => G.lungs((x - 760) / 88)
+                return [{ name: 'after the crossing: "Now: adding"', got: +lab.readoutAdding.back.parentNode.getAttribute('opacity'), want: 1, tol: 0.01 }, { name: '"Now: holding back" gone', got: +lab.readout.back.parentNode.getAttribute('opacity'), want: 0, tol: 0.01 },
+                  { name: '"added" landed at the crossing', got: +lab.added.back.parentNode.getAttribute('opacity'), want: 1, tol: 0.01 },
+                  { name: '"added" glyphs under the gold line (607.5) by 12 px or more', got: ad.top - 607.5, want: '>= 12', pass: ad.top - 607.5 >= 12 }, { name: '"added" over the lungs\' line at its left end by 12 px or more', got: lungsAt(ad.left) - ad.bottom, want: '>= 12', pass: lungsAt(ad.left) - ad.bottom >= 12 }, { name: '"added" right of the crossing (x 1376)', got: ad.left, want: '> 1376', pass: ad.left > 1376 }]
+              }
+              const fr = kids()[3].querySelectorAll(':scope > rect')
+              const frame = R(fr[0]), gold = R(fr[1])
+              return [
+                { name: 'small band x 760 to 1640 (left)', got: band.left, want: 760 }, { name: 'small band right', got: band.right, want: 1640 }, { name: 'small band y 160 to 240 (top)', got: band.top, want: 160 }, { name: 'small band foot', got: band.bottom, want: 240 },
+                { name: 'frame x 760', got: frame.left, want: 760 }, { name: 'frame right 1640', got: frame.right, want: 1640 }, { name: 'frame top 290', got: frame.top, want: 290 }, { name: 'frame foot 720', got: frame.bottom, want: 720 },
+                { name: 'gold line at Loud: y 454 (centre)', got: gold.top + gold.height / 2, want: 454, tol: 1.5 },
+                { name: 'tag right 1630 (9 px in from the stroke)', got: R(tag.g).right, want: 1630 }, { name: 'tag top 300', got: R(tag.g).top, want: 300 },
+                { name: 'Quiet chip from x 1653 (12 screen px off the stroke\'s outer edge at F-gauge)', got: R(quiet.g.querySelector('rect')).left, want: 1653 }, { name: 'Quiet chip y 301 to 339 (top)', got: R(quiet.g.querySelector('rect')).top, want: 301 }, { name: 'Loud chip foot 391', got: R(loud.g.querySelector('rect')).bottom, want: 391 },
+                { name: 'the lungs cross Quiet at 7 s (x(7) = 1376)', got: G.x(G.cross(G.GOLD.quiet)), want: 1376, tol: 0.5 }, { name: 'the lungs cross Loud at 3 s (x(3) = 1024)', got: G.x(G.cross(G.GOLD.loud)), want: 1024, tol: 0.5 },
+              ]
+            },
+          }
+        })()
+      </script>
+    </div>
+  </div></body></html>

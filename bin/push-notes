@@ -91,6 +91,19 @@ for f in l17/PLAN-B.md l19/PLAN.md l19/SPEC-NOTES.md l23/PLAN.md l22/PLAN.md \
   [ -f "$S/$f" ] && FILES+=("$f")
 done
 
+# The Lesson 5 film's sources (text and code: docs, kit, scenes, tools, labs' notes, critics'
+# reports) and its briefs. Media (passes, voices, renders, models) are made again by its tools.
+while IFS= read -r f; do FILES+=("$f"); done < <(cd "$S" && {
+  find l5film \( -name '.venv' -o -name '.node' -o -name 'node_modules' -o -name '__pycache__' \
+      -o -name 'work-*' -o -name 'compiled' -o -path 'l5film/renders' -o -path 'l5film/models' \
+      -o -path 'l5film/assets/merc' -o -path 'l5film/assets/voice' -o -path 'l5film/assets/voice-kokoro' \
+      -o -path 'l5film/assets/audio' -o -path 'l5film/assets/fonts' \) -prune -o -type f \
+      \( -name '*.md' -o -name '*.json' -o -name '*.js' -o -name '*.mjs' -o -name '*.py' -o -name '*.html' \
+      -o -name '*.css' -o -name '*.txt' -o -name '*.sh' -o -name '*.svg' -o -name '*.srt' -o -name '*.vtt' \) \
+      -size -1000k -print
+  ls briefs/l5-*.md briefs/polish-2.md 2>/dev/null
+} | sort)
+
 # The Lesson 4 film's text files live in its gitignored working folder; copy them in first.
 L4=/home/user/mercurypitch/output/motion/lesson-04
 for f in BRIEF.md FACTS.md script.json SCRIPT-DRAFT.md SCRIPT.md DECISIONS.md LEDGER.md tools/script-draft.py tools/gen-root.py tools/mix.py tools/captions.py tools/script-md.py review/script-01/REPORT.md review/script-02/REPORT.md review/script-03/REPORT.md STORYBOARD.md HANDOFFS.md review/storyboard-01/REPORT.md review/storyboard-02/REPORT.md review/storyboard-03/REPORT.md study/RULES.md study/lesson-01/NOTES.md study/lesson-02/NOTES.md study/lesson-01/events.md study/lesson-02/events.md assets/lib/frames.js assets/lib/stairs.js assets/lib/scripts.txt lab/kit-src/stairs.html BUILD-GUIDE.md tools/board-cues.json tools/board-clock.py tools/merc-shots.py tools/CHANGES.md tools/chapters.py assets/lib/hosts.js tools/merc-whole.py tools/merc-pass.mjs assets/merc/whole.js lab/s04-recall/s04-src.html lab/s03-promise/s03-src.html compositions/s01-cold-open.html compositions/s02-title.html compositions/s03-promise.html compositions/s04-recall.html compositions/s05-steps.html compositions/s06-groups.html compositions/s07-predict.html compositions/s08-anywhere.html compositions/s09-names.html compositions/s10-ti.html compositions/s11-why.html compositions/s12-sing.html compositions/s13-your-turn.html compositions/s14-recap.html compositions/s15-next.html compositions/s16-end.html lab/s01-cold-open/BUILD-NOTES.md lab/s05-steps/BUILD-NOTES.md lab/s07-predict/BUILD-NOTES.md lab/s09-names/BUILD-NOTES.md lab/s12-sing/BUILD-NOTES.md lab/s14-recap/BUILD-NOTES.md captions/chapters.json tools/merc-tags.py assets/merc/intro.js merc/intros.json review/component-B-01/REPORT.md; do
