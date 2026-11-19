@@ -1082,7 +1082,7 @@ on a visit a Season 2 link sends to the main app, as it does for Season 1's.
     is C minor; the scale type says which list names the do, A♭ major but G♯ minor (`keyNameFor`,
     `src/lib/key-names.ts:118-122`). The stored name stays ASCII and is shown with a real sign
     (`keyDisplayName`, `:125-130`), and a name from before, an old melody's A sharp or a link's C
-    flat, is read as the same pitch's name on the list (`keyName`, `src/stores/app-store.ts:44-52`).
+    flat, is read as the same pitch's name on the list (`keyName`, `src/stores/app-store.ts:45-53`).
     The phone stage's picker, the Sing room's and the library's melody form list the same twelve.
     The sheet view takes its signature from them, six signs at most (`signatureKeyFor`,
     `src/lib/key-names.ts:132-139`), and spells each note by the key's letters, F♯ major's seventh

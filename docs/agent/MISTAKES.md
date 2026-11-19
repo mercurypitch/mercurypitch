@@ -2789,3 +2789,10 @@ that scoped formatting and lint both pass. Do not rerun every local gate.
 **Cause:** the build inlines an imported asset under 4 KB as a `data:` address, and `decodePicture` fetched whatever address it was handed. The web's policy lets a fetch reach the site, https and blob addresses only (`connect-src`, `public/_headers`), and that header exists only on a deployed site: the dev server, `serve` and the e2e build send none. The `<img>` fallback then loaded the picture, so nothing looked wrong.
 **Rule:** code that fetches an imported asset's address takes a `data:` address apart itself (`inlineBlob`) and never fetches it. After changing what a page loads, read the console of the deployed dev site once, since the policy is only there.
 **See:** `src/components/room-kit/canvas-picture.ts`, `src/tests/csp-headers.test.ts`, `public/_headers`
+
+### A box in the flow reads `bottom: 0px`, not `auto`
+
+**Symptom:** the Singing and Piano stages' transport bars published their room for the notices (`publishFootSpace`), and the mic notice still lay over their buttons on an upright phone: the room published was the bar's height alone, the tab bar under it left out.
+**Cause:** `publishFootSpace` reads a fixed bar's computed `bottom` as its gap from the window's foot, and falls back to what lies below only when that is not a number. A `position: relative` (or static) box with no `bottom` set computes `bottom: 0px`, not `auto`, so the bar in the stage's flow read as standing on the window's foot.
+**Rule:** read `bottom` as a gap only for a box out of the flow (`fixed`, `absolute`, `sticky`); for one in the flow, measure what stands below it. A unit test of a foot-space reader sets `style.bottom = '0px'` on its relative box, as the browser reports it.
+**See:** `src/lib/foot-space.ts`, `src/lib/foot-space.test.ts`
