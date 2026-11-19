@@ -118,8 +118,15 @@
  {
   "t": 9.66,
   "name": "DECISIONS 170, o1 over, the \"?\" landed (t 9.66): Merc's line / the easy take / the guess's head / the guess",
-  "got": "0.00 / 1.00 / 0.00 / 1.00",
-  "want": "0.00 / 1.00 / 0.00",
+  "got": "0.00 / 0.50 / 0.00 / 1.00",
+  "want": "0.00 / 0.50 / 0.00",
+  "pass": true
+ },
+ {
+  "t": 10.41,
+  "name": "DECISIONS 233 (t 10.41): the chart's labels and chips in a composited layer (will-change) that follows the mid layer to the 1/1000 px: a / e / f",
+  "got": "transform 0.90466 / 91.525 / 42.902",
+  "want": "transform 0.90466 / 91.525 / 42.902",
   "pass": true
  },
  {
@@ -132,8 +139,29 @@
  {
   "t": 24.73,
   "name": "\"LISTEN ONLY\" on screen x (board 1488 to 1720)",
-  "got": "1489.1 to 1719.0, y 146.9 to 183.6",
+  "got": "1489.1 to 1719.1, y 146.9 to 183.6",
   "want": "1488-1720, 146-184",
+  "pass": true
+ },
+ {
+  "t": 26.2,
+  "name": "DECISIONS 230: the easy take while the guess shows, 8.33 to the ghost (21.03), every frame: its opacity least / most",
+  "got": "0.500 / 0.500",
+  "want": "0.500 / 0.500",
+  "pass": true
+ },
+ {
+  "t": 26.2,
+  "name": "then to the reveal (26.22): the take and its ghost together (the ghost's stroke at 35 %), most",
+  "got": 0.5,
+  "want": "<= 0.5",
+  "pass": true
+ },
+ {
+  "t": 26.2,
+  "name": "the guess's dash on screen, every frame it shows (537): least / most px",
+  "got": "4.000 / 4.000",
+  "want": "4.000 / 4.000",
   "pass": true
  },
  {
@@ -169,7 +197,7 @@
  {
   "t": 26.66,
   "name": "keep-out: nearest visible text to merc's body box (\"level\")",
-  "got": 103.86,
+  "got": 103.85,
   "want": ">= 20",
   "pass": true
  },
@@ -248,7 +276,7 @@
  },
  {
   "t": 31.493333333333332,
-  "name": "the check's ink to the \"ILLUSTRATION\" chip, nearest over its 140 frames (t 29.993)",
+  "name": "the check's ink to the \"ILLUSTRATION\" chip, nearest over its 140 frames (t 30.360)",
   "got": 27.4,
   "want": ">= 12",
   "pass": true
@@ -261,6 +289,13 @@
   "pass": true
  },
  {
+  "t": 31.845,
+  "name": "DECISIONS 233 (t 31.84): the chart's labels and chips in a composited layer (will-change) that follows the mid layer to the 1/1000 px: a / e / f",
+  "got": "transform 0.84893 / 145.030 / 104.506",
+  "want": "transform 0.84893 / 145.030 / 104.506",
+  "pass": true
+ },
+ {
   "t": 32.047,
   "name": "LAB-CHECKS 7: '\"support\"' descenders over the top of Merc's line's stroke (t 32.05)",
   "got": 15.06,
@@ -270,8 +305,8 @@
  {
   "t": 32.144999999999996,
   "name": "DECISIONS 173, the pull at 50 % (t 32.14): the band's fill / its edges / \"A3\" / the label row / the chip",
-  "got": "1.00 / 0.00 / 1.00 / 0.00 / 0.00",
-  "want": "1.00 / 0.00 / 1.00 / 0.00 / 0.00",
+  "got": "0.00 / 0.00 / 1.00 / 0.00 / 0.00",
+  "want": "0.00 / 0.00 / 1.00 / 0.00 / 0.00",
   "pass": true
  },
  {
@@ -282,10 +317,24 @@
   "pass": true
  },
  {
+  "t": 32.647,
+  "name": "'\"support\"' in its own composited layer, its ease a CSS translate (t 32.65; y px, the scene's own)",
+  "got": "transform 4.331",
+  "want": "transform 4.331",
+  "pass": true
+ },
+ {
   "t": 33.045,
   "name": "DECISIONS 173, the pull at 80 % (t 33.05): the band's fill / its edges / \"A3\" / the label row / the chip",
-  "got": "0.74 / 0.00 / 0.88 / 0.00 / 0.00",
-  "want": "fading (last third) / 0.00 / fading / 0.00 / 0.00",
+  "got": "0.00 / 0.00 / 0.88 / 0.00 / 0.00",
+  "want": "0.00 / 0.00 / fading / 0.00 / 0.00",
+  "pass": true
+ },
+ {
+  "t": 33.63333333333333,
+  "name": "DECISIONS 229: '\"support\"' against the band's fill and edges, every frame 31.60 to 33.63 (62): frames with both on screen / the band's last frame / the word's first",
+  "got": "0 / 31.933 / 32.067",
+  "want": "0 (or 12 px apart), the band gone first",
   "pass": true
  },
  {

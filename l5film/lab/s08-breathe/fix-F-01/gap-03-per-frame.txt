@@ -1,0 +1,31 @@
+# The ink gap (px) between the card's ink (its "03" and title) and the figure's ink, per film frame, 209.40 to 210.30
+# (Chromium seeks of compositions/s08-breathe.html; masks: the card alone and the figure alone against neither, any channel over 12)
+# scene t, film t | before F-01 (power2.inOut) | after F-01 (power3.inOut)
+1.515 209.400 120.0 120.0
+1.548 209.433 120.0 120.0
+1.582 209.467 120.0 120.0
+1.615 209.500 119.0 119.0
+1.648 209.533 119.0 119.0
+1.682 209.567 119.0 119.0
+1.715 209.600 119.0 119.0
+1.748 209.633 119.0 119.0
+1.782 209.667 119.0 119.0
+1.815 209.700 119.0 119.0
+1.848 209.733 119.0 119.0
+1.882 209.767 119.0 119.0
+1.915 209.800 118.0 119.0
+1.948 209.833 117.0 119.0
+1.982 209.867 115.0 118.0
+2.015 209.900 111.0 117.0
+2.048 209.933 105.0 114.0
+2.082 209.967 97.0 110.0
+2.115 210.000 86.0 104.0
+2.148 210.033 72.0 96.0
+2.182 210.067 55.6 84.1
+2.215 210.100 38.0 71.4
+2.248 210.133 card-gone card-gone
+2.282 210.167 card-gone card-gone
+2.315 210.200 card-gone card-gone
+2.348 210.233 card-gone card-gone
+2.382 210.267 card-gone card-gone
+2.415 210.300 card-gone card-gone

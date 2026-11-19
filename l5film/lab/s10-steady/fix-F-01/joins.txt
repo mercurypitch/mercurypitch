@@ -1,0 +1,4 @@
+S7 to S8: outside the hosts' squares largest change 22 of 255, mean 0.011, pixels over 24: 0
+S8 to S9: outside the hosts' squares largest change 5 of 255, mean 0.000, pixels over 24: 0
+S9 to S10: outside the hosts' squares largest change 8 of 255, mean 0.000, pixels over 24: 0
+S10 to S11 (the matched cut on sing): cutprobe.mjs, band 1000.00 210.01 1640.00 280.01 against 1000.00 210.00 1640.00 280.00, Merc's line 245.00; best shift (0, 0), residual 1.14; measure.py on cut/cut-s10-s11.mp4: no single-frame event

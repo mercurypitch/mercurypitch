@@ -493,6 +493,17 @@ World px (the band chart's plot and formulas above, y0 400), with the screen pla
   the frame's slide starts once her line has gone (about b33 + 1.46) and the voice box draws 0.4 s
   into it.
 
+- **The chart as the lead subject** **[F-01 fix: 235]**: S10 keeps the cents scale at 2.5 world px a cent
+  while the window widens from 4 s to 10 s (the wave rule's exception: k 2.5, W 10; a cycle 26.5 px and
+  91 px peak to peak at F-hold, 36.7 and 126 at the close-ups). At F-hold (y' = 1.3 y + 10) the band is
+  y 361.65 to 589.15 (227.5 px), x 232 to 1688; Merc's line and the dashed guess world y 358 (screen
+  475.4); row 1 baseline 277.8, the chip centred 263.5, "steady: ..." 221.9, her guess 158.2 (underline
+  176.4, strike 145.2); the flag x 334.5, y 340.85 to 361.65, "settled" 331.75; the "stays" bracket y
+  334.2 from x 399.3; axis ticks 691.2 to 701.6, labels 725; the length bracket 753.6, its label 796.5;
+  SLOWED frame-fixed x 1110 to 1563, y 212 to 252. The scoop's deep part (her first 0.45 s) fades by its
+  distance to Merc's body during the truck and the pull. 10h's slide shrinks this chart into the hold
+  frame (end frame unchanged). The full table is in `lab/s10-steady/BUILD-NOTES.md` (Fix round F-01).
+
 ### The hold frame at the right half (S10h to S12; screen px)
 
 Drawn at F-hold in S10h, so world = `((x' + 288) / 1.3, (y' - 10) / 1.3)`; from 364.73 (S11) world

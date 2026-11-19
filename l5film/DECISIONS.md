@@ -1818,3 +1818,14 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      60 fps "9 px after hop 2" was the page's microsecond time against the old 1e-6 margin, cured by
      the same function. Every scene's probe passes (1556), every `check` 0 errors. HANDOFFS § Hosts
      records `L.passFrame`; s13's lab check `mercSeen` moves to it in group E's round.
+
+## The lead's call on group C's full-film fix round, 19 November
+
+235. **Group C's F-01 round is accepted** (the lead looked at S10 at 19.58 and 29.84 before and after).
+     S10's band stands 227.5 px tall at F-hold (91 before) over the 1456 px plot, both edges in frame in
+     the close-ups, every label 13 px or more from every stroke (probed at 23 times, moves included);
+     the take keeps FACTS' proportions (the vibrato 28 c of the band's 70 c). S9's trace box draws with
+     its first trace; S8's "03" was never touching (38 px at worst) and now clears by 71 px; S8's
+     kicker leaves over 0.3 s; S10's type step is gone. Two holds of 0.3 to 0.4 s stay, mostly in
+     pauses (S8 8.80, S9 45.60), for the final passes. Probes 66, 88 and 209; root check 0 errors; the
+     joins and the cut on `sing` hold. HANDOFFS § The hold chart follows ([F-01 fix: 235]).

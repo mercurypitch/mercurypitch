@@ -12,10 +12,17 @@
     g1: A.GUESS + 0.25, g2: A.GUESS + 0.6, g3: at('o1', 'end', 0.6), g4: A.HIGHER + 0.7,
     lineOut0: A.HOOK + 0.35, lineOut1: A.HOOK + 0.65,
     pull50: A.PULL + 0.5 * A.PULL_D, pull80: A.PULL + 0.8 * A.PULL_D, linesGone: A.LINES_OUT + A.LINES_D, slid: A.SLIDE + A.SLIDE_D,
+    // fix round F-01: the layers the moving type is drawn in (233), at the drift and mid-pull
+    fl0: at('b1', 'start', 1.0), fl1: A.PULL + 0.4 * A.PULL_D, fl2: A.SUPPORT + 0.6,
   }
   // every frame from '"support"' landing to the cut: no line under the word (DECISIONS 173); and every frame of the
   // approach (171): the bead's radius, its blur, how much it grows a frame
   const frames = (a, b) => { const out = []; for (let k = Math.ceil(a * 30 - 1e-6); k / 30 <= b + 1e-9; k++) out.push(k / 30); return out }
+  // fix round F-01: the guess's whole showing (DECISIONS 230), every frame; '"support"' against the band's fill and
+  // edges, every frame of the critic's window (32.1 to 33.5) and of the pull (229)
+  const GUESSWIN = frames(A.GUESS + 0.3, A.HIGHER + 0.06), BANDWIN = frames(Math.min(32.1, A.BAND_OUT), Math.max(33.5, A.PULL_END))
+  const gw = { main: [Infinity, -Infinity], before: 0, after: -Infinity, strength: -Infinity, dash: [Infinity, -Infinity], n: 0 }
+  const bw = { gap: Infinity, t: null, both: 0, lastBand: null, firstWord: null }
   const LINESWEEP = frames(A.SUPPORT, A.D), APPROACH = frames(A.PUSH, A.PUSH + A.PUSH_D + 1 / 30)   // to the first frame after it
   const lineMax = { v: 0, what: '', t: null }
   const ap = []
@@ -31,7 +38,7 @@
   const plot = (t) => { const a = S.cam.map(400, 400, t), b = S.cam.map(1520, 400, t); return { x0: a[0], x1: b[0], y: a[1] } }
   const supportInk = () => H.ink('“support”', "italic 400 160px 'Instrument Serif'", 'middle')   // measured once the fonts are in
   window.__groupA = {
-    times: [...new Set([...Object.values(T), ...SWEEP, ...LINESWEEP, ...APPROACH])].sort((a, b) => a - b),
+    times: [...new Set([...Object.values(T), ...SWEEP, ...LINESWEEP, ...APPROACH, ...GUESSWIN, ...BANDWIN])].sort((a, b) => a - b),
     check(t) {
       const out = []
       const ko = () => H.keepout(root, S.boxes)
@@ -76,7 +83,7 @@
       if (t === T.g1 || t === T.g2 || t === T.g3 || t === T.g4) {
         const merc = op(S.ch.merc.g), easy = op(easyLine()), head = op(S.guessHead), gd = op(S.guess.g)
         const tag = t === T.g1 ? 'the guess half drawn' : t === T.g2 ? 'the guess drawn, its "?" landing' : t === T.g3 ? 'o1 over, the "?" landed' : 'the reveal ("higher.")'
-        const want = t === T.g1 ? [0.5, null, 1] : t === T.g2 ? [0, 0.5, null] : t === T.g3 ? [0, 1, 0] : [1, null, 0]
+        const want = t === T.g1 ? [0.5, null, 1] : t === T.g2 ? [0, 0.5, null] : t === T.g3 ? [0, 0.5, 0] : [1, null, 0]
         out.push({ name: `DECISIONS 170, ${tag} (t ${t.toFixed(2)}): Merc's line / the easy take / the guess's head / the guess`, got: `${merc.toFixed(2)} / ${easy.toFixed(2)} / ${head.toFixed(2)} / ${gd.toFixed(2)}`,
           want: want.map((v) => (v == null ? '-' : v.toFixed(2))).join(' / ') + (t === T.g4 ? ' / 0.00' : ''),
           pass: (want[0] == null || Math.abs(merc - want[0]) < 0.02) && (want[1] == null || Math.abs(easy - want[1]) < 0.02) && (want[2] == null || Math.abs(head - want[2]) < 0.02) && (t !== T.g4 || gd < 0.01) })
@@ -91,8 +98,45 @@
         const band = op(S.ch.g.querySelector('.band')), edges = S.bandEdges.map((e) => +e.getAttribute('fill-opacity'))
         out.push({ name: `DECISIONS 173, the pull at ${t === T.pull50 ? '50' : '80'} % (t ${t.toFixed(2)}): the band's fill / its edges / "A3" / the label row / the chip`,
           got: `${band.toFixed(2)} / ${Math.max(...edges).toFixed(2)} / ${H.alpha(S.lab.A3.el).toFixed(2)} / ${H.alpha(S.lab.row.el).toFixed(2)} / ${H.alpha(S.ill.g).toFixed(2)}`,
-          want: t === T.pull50 ? '1.00 / 0.00 / 1.00 / 0.00 / 0.00' : 'fading (last third) / 0.00 / fading / 0.00 / 0.00',
-          pass: (t === T.pull50 ? band > 0.99 && H.alpha(S.lab.A3.el) > 0.99 : band > 0.05 && band < 0.95) && Math.max(...edges) < 0.005 && H.alpha(S.lab.row.el) < 0.01 && H.alpha(S.ill.g) < 0.01 })
+          want: t === T.pull50 ? '0.00 / 0.00 / 1.00 / 0.00 / 0.00' : '0.00 / 0.00 / fading / 0.00 / 0.00',
+          pass: band < 0.005 && (t === T.pull50 ? H.alpha(S.lab.A3.el) > 0.99 : true) && Math.max(...edges) < 0.005 && H.alpha(S.lab.row.el) < 0.01 && H.alpha(S.ill.g) < 0.01 })
+      }
+      if (GUESSWIN.includes(t)) {
+        const main = op(easyLine()), ghost = op(S.ch.g.querySelector('.lines').children[1]) * 0.35
+        if (t < A.GHOST) { gw.main[0] = Math.min(gw.main[0], main); gw.main[1] = Math.max(gw.main[1], main) }
+        gw.strength = Math.max(gw.strength, main + ghost)
+        if (op(S.guess.g) > 0.01) { const w = +S.guess.path.getAttribute('stroke-width') * S.cam.scale(t); gw.dash[0] = Math.min(gw.dash[0], w); gw.dash[1] = Math.max(gw.dash[1], w); gw.n++ }
+        if (t === GUESSWIN[GUESSWIN.length - 1]) {
+          out.push({ name: `DECISIONS 230: the easy take while the guess shows, ${GUESSWIN[0].toFixed(2)} to the ghost (${A.GHOST.toFixed(2)}), every frame: its opacity least / most`, got: `${gw.main[0].toFixed(3)} / ${gw.main[1].toFixed(3)}`, want: '0.500 / 0.500', pass: Math.abs(gw.main[0] - 0.5) < 0.005 && Math.abs(gw.main[1] - 0.5) < 0.005 },
+            { name: `then to the reveal (${(A.HIGHER + 0.06).toFixed(2)}): the take and its ghost together (the ghost's stroke at 35 %), most`, got: gw.strength, want: '<= 0.5', pass: gw.strength <= 0.505 },
+            { name: `the guess's dash on screen, every frame it shows (${gw.n}): least / most px`, got: `${gw.dash[0].toFixed(3)} / ${gw.dash[1].toFixed(3)}`, want: '4.000 / 4.000', pass: Math.abs(gw.dash[0] - 4) < 0.01 && Math.abs(gw.dash[1] - 4) < 0.01 })
+        }
+      }
+      if (BANDWIN.includes(t)) {
+        const band = op(S.ch.g.querySelector('.band')), edgeA = Math.max(...S.bandEdges.map((e) => +e.getAttribute('fill-opacity')))
+        const wordA = H.alpha(S.support)
+        if (band > 0.002 || edgeA > 0.002) bw.lastBand = t
+        if (wordA > 0.002 && bw.firstWord == null) bw.firstWord = t
+        if (wordA > 0.002 && (band > 0.002 || edgeA > 0.002)) {
+          bw.both++
+          const ink = supportInk(), base = 406 + S.supportDy
+          const w = { left: 960 + ink.l, right: 960 + ink.r, top: base - ink.up, bottom: base + ink.down }
+          const r = H.R(S.ch.g.querySelector('.band > rect'))
+          const g = H.gap(w, { left: r.left, right: r.right, top: r.top - 1, bottom: r.bottom + 1 })
+          if (g < bw.gap) { bw.gap = g; bw.t = t }
+        }
+        if (t === BANDWIN[BANDWIN.length - 1]) out.push({ name: `DECISIONS 229: '"support"' against the band's fill and edges, every frame ${BANDWIN[0].toFixed(2)} to ${BANDWIN[BANDWIN.length - 1].toFixed(2)} (${BANDWIN.length}): frames with both on screen / the band's last frame / the word's first`,
+          got: `${bw.both} / ${bw.lastBand == null ? '-' : bw.lastBand.toFixed(3)} / ${bw.firstWord == null ? '-' : bw.firstWord.toFixed(3)}`, want: '0 (or 12 px apart), the band gone first', pass: (bw.both === 0 || bw.gap >= 12) && bw.lastBand != null && bw.firstWord != null && bw.lastBand < bw.firstWord })
+      }
+      if (t === T.fl2) {
+        const sl = S.supportType.div, sm = new DOMMatrix(getComputedStyle(sl).transform)
+        out.push({ name: `'"support"' in its own composited layer, its ease a CSS translate (t ${t.toFixed(2)}; y px, the scene's own)`, got: `${getComputedStyle(sl).willChange} ${sm.f.toFixed(3)}`, want: `transform ${S.supportDy.toFixed(3)}`, pass: getComputedStyle(sl).willChange === 'transform' && Math.abs(sm.f - S.supportDy) < 0.001 && S.support.closest('.float-type') === sl && Math.abs(S.supportDy) > 1 })
+      }
+      if (t === T.fl0 || t === T.fl1) {
+        const L0 = S.worldType.div, m = S.cam.matrix(t, 'mid'), cs = getComputedStyle(L0), mm = new DOMMatrix(cs.transform)
+        out.push({ name: `DECISIONS 233 (t ${t.toFixed(2)}): the chart's labels and chips in a composited layer (will-change) that follows the mid layer to the 1/1000 px: a / e / f`,
+          got: `${cs.willChange} ${mm.a.toFixed(5)} / ${mm.e.toFixed(3)} / ${mm.f.toFixed(3)}`, want: `transform ${m.a.toFixed(5)} / ${m.e.toFixed(3)} / ${m.f.toFixed(3)}`,
+          pass: cs.willChange === 'transform' && Math.abs(mm.a - m.a) < 1e-5 && Math.abs(mm.e - m.e) < 0.001 && Math.abs(mm.f - m.f) < 0.001 && S.lab.inBand.el.closest('.float-type') === L0 && S.ill.g.closest('.float-type') === L0 })
       }
       if (LINESWEEP.includes(t)) {
         const cands = [['the band\'s edges', Math.max(...S.bandEdges.map((e) => +e.getAttribute('fill-opacity')))], ['the takes', Math.max(...[...S.ch.g.querySelector('.lines').children].map(op))],
@@ -128,7 +172,7 @@
           { name: 'the first pill\'s stroke dimmed, the second\'s bright', got: `${S.pills[0].box.getAttribute('stroke-opacity')} / ${S.pills[1].box.getAttribute('stroke-opacity')}`, want: '0.28 / 1', pass: +S.pills[0].box.getAttribute('stroke-opacity') < 0.3 && +S.pills[1].box.getAttribute('stroke-opacity') > 0.99 }, ...ko())
       }
       if (t === T.s0 || t === T.s1 || t === T.pull) {
-        const base = 406 + H.dyOf(S.support), foot = base + supportInk().down
+        const base = 406 + S.supportDy, foot = base + supportInk().down
         const lineTop = plot(t).y - 2
         out.push({ name: `LAB-CHECKS 7: '"support"' descenders over the top of Merc's line's stroke (t ${t.toFixed(2)})`, got: lineTop - foot, want: '>= 12', pass: lineTop - foot >= 12 })
         if (t === T.pull) out.push({ name: '"support" on Lesson 4\'s baseline 420 as the pull lands', got: base, want: 420, tol: 1 })
@@ -139,7 +183,7 @@
           { name: 'its stroke 4 px on screen (Lesson 4\'s weight)', got: S.cam.scale(t) * +S.ch.merc.path.getAttribute('stroke-width'), want: 4, tol: 0.05 },
           { name: 'head bead centre (560, 520): x', got: b.x + b.width / 2, want: 560, tol: 1 }, { name: 'y', got: b.y + b.height / 2, want: 520, tol: 1 },
           { name: 'head bead r 22 on screen (when not pulsing)', got: b.width / 2, want: t === T.hook ? 22 : '22 x pulse', pass: t !== T.hook || Math.abs(b.width / 2 - 22) < 0.6 },
-          { name: '"support" 160 px centred x 960, baseline 420', got: `${S.support.getAttribute('x')}, ${(406 + H.dyOf(S.support)).toFixed(1)}`, want: '960, 420.0' },
+          { name: '"support" 160 px centred x 960, baseline 420', got: `${S.support.getAttribute('x')}, ${(406 + S.supportDy).toFixed(1)}`, want: '960, 420.0' },
           { name: '"what keeps it steady?" 96 px centred x 960, baseline 680', got: `${S.steady.getAttribute('x')}, ${S.steady.getAttribute('y')}`, want: '960, 680' }, ...ko())
       }
       if (t === T.bead) {

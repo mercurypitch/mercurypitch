@@ -135,6 +135,19 @@
           const lab = {}
           for (const k of ['A3', 'inBand', 'level', 'row', 'sungEasily', 'aboveBand', 'louderHigher', 'smallType']) lab[k] = ch.label(k)
           const ill = ch.tag('illustration'), lis = ch.tag('listen')
+          // Type that moves slowly is drawn in its own composited layer (DECISIONS 233, as the kit's chapter card): its
+          // glyphs are rastered once and the layer moves by a CSS transform at sub-pixel positions, instead of the glyphs
+          // snapping a whole pixel each time the drift or an ease carries their baseline across a row (measure.py's jumps
+          // at 6.27, 10.80, 13.93, 17.80, 19.73, 24.27, 27.87 and 33.03 in film-draft-01). The chart's labels and chips
+          // (its labels group, the bead put back in the chart) follow the camera's mid layer; '"support"' its own ease.
+          const floatLayer = (host, before = null) => {
+            const d = L.el('div', { class: 'layer float-type', 'data-layout-allow-overflow': '' })
+            Object.assign(d.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', transformOrigin: '0 0', willChange: 'transform', pointerEvents: 'none' })
+            host.insertBefore(d, before)
+            return { div: d, svg: L.stage(d) }
+          }
+          const worldType = floatLayer(room.near.parentNode, room.near)
+          worldType.svg.appendChild(ch.gLabels)
           // the swollen part of the pushed take's strip, lit to 40 % violet on "Louder," (an overlay over the kit's 28 %)
           const swell = L.svg('path', { fill: C.violet, 'fill-opacity': 0, stroke: 'none' })
           ch.g.insertBefore(swell, ch.g.querySelector('.strip').nextSibling)
@@ -154,6 +167,7 @@
           const arrow = L.arrow(ch.g, { x1: ch.x(2.75), y1: ch.y(35) - ARROW_UP, x2: 1520, y2: ch.y(60) - ARROW_UP, via: [ch.x(3.375), ch.y(47.5) - ARROW_UP - 30], color: C.ink, width: 3, head: 14 })
           const rings = L.echoRings(ch.g, {})
           const bead = ch.bead(30.8)                                   // the long note's head bead, world (400, 400)
+          ch.g.appendChild(bead.g)                                     // back in the chart: it is no type, and the push scales it
           const beadRings = L.echoRings(ch.g, {})
 
           /* ---------------------------------------------------------------- frame-fixed type (hud) */
@@ -165,7 +179,8 @@
           const TICK_X = 1430 + 1 + 12 + 13
           const tick = L.check(hud, { x: TICK_X, y: 108, size: 22, color: C.ink, width: 4 })
           const ring = L.ringTimer(hud, { x: 1480, y: 108, r: 18 })
-          const support = L.text(hud, '“support”', { x: 960, y: 406, size: 160, family: 'serif', anchor: 'middle' })
+          const supportType = floatLayer(room.hud)
+          const support = L.text(supportType.svg, '“support”', { x: 960, y: 406, size: 160, family: 'serif', anchor: 'middle' })
           const steady = L.text(hud, 'what keeps it steady?', { x: 960, y: 680, size: 96, family: 'serif', anchor: 'middle' })
 
           /* ---------------------------------------------------------------- the field (screen space, over everything) */
@@ -191,8 +206,8 @@
           swell.setAttribute('d', swellPath())
 
           // the lab's handle (lab/s01-cold-open/probe.mjs): the objects its checks measure
-          const probe = { cam, ch, lab, ill, lis, pills, tick, support, steady, bead, field, guess, guessHead, arrow, bandEdges, critLayer,
-            A: { HOOK, PULL, PULL_D, PULL_END, SUPPORT, PUSH, PUSH_D, HIGHER, GUESS, LINES_OUT, LINES_D, SLIDE, SLIDE_D, D }, boxes: {} }
+          const probe = { cam, ch, lab, ill, lis, pills, tick, support, steady, bead, field, guess, guessHead, arrow, bandEdges, critLayer, worldType, supportType, supportDy: 0,
+            A: { HOOK, PULL, PULL_D, PULL_END, SUPPORT, PUSH, PUSH_D, HIGHER, GUESS, GHOST, BAND_OUT, BAND_D, LINES_OUT, LINES_D, SLIDE, SLIDE_D, D }, boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
 
@@ -200,25 +215,29 @@
           L.clock(tl, D, (t) => {
             const T = T0 + t
             cam.apply(t)
+            const cm = cam.matrix(t, 'mid')
+            worldType.div.style.transform = `matrix(${cm.a.toFixed(6)}, 0, 0, ${cm.a.toFixed(6)}, ${cm.e.toFixed(3)}, ${cm.f.toFixed(3)})`
             dust(T)
             probe.boxes = { merc: merc(t), tavi: tavi(t) }
             room.setFloor(1 - P(t, SLIDE, SLIDE_D, 'power2.in'))
 
             /* the chart's groups as 1g takes them away: the takes and the strip, then the band and the label row */
             const takesA = 1 - P(t, TOLD, 0.5)
-            const bandA = 1 - P(t, PULL + (PULL_D * 2) / 3, PULL_D / 3)      // the fill rides the pull, out over its last third
-            const edgeA = 1 - P(t, BAND_OUT, BAND_D)                         // its edges go with the label row
+            // the band's fill and edges leave with the label row, gone before '"support"' lands over their place
+            // (DECISIONS 229: the word 12 px or more from them on every frame); "A3" rides the pull
+            const bandA = 1 - P(t, BAND_OUT, BAND_D)
+            const edgeA = bandA
             const tE = easyTake(t), tP = pushedTake(t)
             const ghostU = P(t, GHOST, 0.4)
             const lit = P(t, LIT_ON, 0.2) * (1 - P(t, LIT_OFF, 0.2))
             // the guess leaves and Merc's line returns over 0.5 s (sine.inOut): over 0.3 s the line's middle frames
             // changed fast enough for measure.py to call them a pop (26.37)
             const guessOut = P(t, HIGHER + 0.06, 0.5, 'sine.inOut')
-            // DECISIONS 170: Merc's line fades out as the guess draws and returns at the reveal; the easy take dims to
-            // 50 % while the guess draws and comes back once the "?" has landed (as o1 ends)
+            // DECISIONS 170: Merc's line fades out as the guess draws and returns at the reveal; DECISIONS 230: the easy
+            // take stays at 50 % while the guess shows (it ghosts at the predict's end, under it)
             const gU = P(t, GUESS, 0.5, 'none')
             const mercDim = gU * (1 - guessOut)
-            const easyDim = 0.5 * P(t, GUESS, 0.3) * (1 - P(t, at('o1', 'end'), 0.5))
+            const easyDim = 0.5 * P(t, GUESS, 0.3) * (1 - guessOut)
             const run = L.run(t, word('b1', 'same'), 0.6)
             // the approach (1h): the bead's radius on screen
             const sty = word('o2', 'steady')
@@ -264,6 +283,7 @@
             const qIn = P(t, GUESS + 0.5, 0.2, 'power2.out')
             const breathe = 1 + 0.035 * Math.sin((2 * Math.PI * (t - at('predict'))) / 1.0) * L.env(t, at('predict'), 0.3, at('predict', 'end') - at('predict') - 0.3, 0.3)
             guess.draw(gU, ga, qIn * ga, L.pulse(t, [word('b1', 'harder'), word('b1', 'harder#2')], 'label') * breathe)
+            guess.path.setAttribute('stroke-width', (4 / scale).toFixed(4))       // the dash 4 px on screen (DECISIONS 230)
             guessHead.setAttribute('transform', `translate(${f2(lerp(ch.x(0.5), 1520, gU))} 400)`)
             guessHead.setAttribute('opacity', ((gU > 0 ? 1 : 0) * (1 - qIn) * ga).toFixed(3))
             const af = L.fade(t, word('b3', 'moves'), OUT + 0.18, { upFast: true })
@@ -291,7 +311,9 @@
             // Lesson 4's 420 with the pull (sine.inOut), so the clearance only grows (LAB-CHECKS 7)
             const linesOut = { dOut: LINES_D, up: 16, easeOut: 'power3.in' }   // up fast in 0.2 s (DECISIONS 171)
             const sf = L.fade(t, SUPPORT, LINES_OUT, linesOut)
-            L.place(support, { a: sf.a, dy: 14 * P(t, SUPPORT, PULL_END - SUPPORT, 'sine.inOut') + sf.dy })
+            probe.supportDy = 14 * P(t, SUPPORT, PULL_END - SUPPORT, 'sine.inOut') + sf.dy
+            support.setAttribute('opacity', clamp(sf.a).toFixed(3))
+            supportType.div.style.transform = `translate(0px, ${probe.supportDy.toFixed(3)}px)`
             const kf = L.fade(t, word('o2', 'what'), LINES_OUT, linesOut)
             L.place(steady, { a: kf.a, dy: kf.dy })
 

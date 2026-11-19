@@ -110,7 +110,42 @@ The critic's report is `review/critic-C-01/REPORT.md`; the calls are DECISIONS 1
 - Holds after the fixes: 5.7 s inside the film (3.0 s per 30 s), longest 0.4 s (5.8 before); they go to the passes
   step (DECISIONS 201).
 
+## Fix round F-01 (19 November)
+
+The full-film critic's report is `review/critic-F-01/REPORT.md`; the calls are DECISIONS 226 and 227 (brief
+`briefs/l5-fix-F-01.md`, group C). Proof in `fix-F-01/` (pairs against the C-01 clip, whose stills and measure are kept
+in `fix-F-01/c01-clip/`; contact sheets; a dense sheet; `joins.txt`).
+
+- **226, the trace box comes with its first trace** (`compositions/s09-onset.html` lines 53 to 56): the strip (its
+  lit lane, hairline and "ILLUSTRATION" chip) draws on from `start-air` - 0.3 (15.33, film 243.60) over 0.6 s, left to
+  right ahead of the first trace's head (at + 0.10 s its edge at x 1469.5, the head at 756.2), its chip from 15.63;
+  before, from 3.70 (film 231.97), an empty box for 11.6 s under "onset: how a note starts" and "Air first" (critic:
+  233.0 to 243.9). The right half under the title now stays clear until the start is heard. Pairs
+  `fix-F-01/pair-7.00.png`, `pair-11.48.png`, `pair-16.49.png`; `fix-F-01/dense/dense-015.60s-30fps.jpg`;
+  `clip-still-15.20.png`, `clip-still-15.45.png`, `clip-still-15.73.png`.
+- **227, holds inside words** (lines 75 to 78, 316): the C-01 clip held still 0.4 s at 47.2 inside "teachers aim"
+  (this round's first render, 0.3 s). Nothing on screen is named there, so the stack moves on: rows 1 and 2 dim from
+  "aim" ("aim for the third"; 47.36, 0.6 s linear, to 35 %), and the third lights on "the third" (47.98) as before (the
+  dim was on "the third" too). That hold is 0.2 s now (`fix-F-01/aim-dim-46.72-48.97.png`). Holds after the fixes: 5.5 s
+  inside the film (2.9 s per 30 s), longest 0.4 s; of 0.3 s or more: 6.80 (0.3 s, in the pause after "onset." to "A"),
+  45.60 (0.3 s, in the pause after "note," 45.50, 0.14 s into "many" from 45.76; nothing on screen is named there),
+  50.00 (0.4 s, in the pause after "start." 49.85 to "It's" 50.45). These are pauses, which 227 leaves to the final
+  passes with the hosts' stillness.
+
+**F-01 proof**: probe 88 of 88 (`probe.json`; all three in `../s10-steady/probe-groupC.log`), new: the trace box not
+shown under the title (7.15) or just before it draws (15.31), the strip's edge ahead of the head (15.73, 15.88), the dim
+half way at "aim" + 0.3 and done by "the third" + 0.3 with row 3 unchanged. `check lab/s09-onset/proj
+--at=7.00,15.45,15.73,16.49,34.60,47.70,53.16`: 0 errors, contrast 31/31, layout one info (17.86, "Air first" and "A
+catch" in one place during the title's switch, as intended). clock-lint silent; `merc-tags.py s09-onset --check`: 4
+tags, 0 stale, 0 problems. `measure.py render` (`measure/summary.md`): holds above; single-frame events 33.100 (jump,
+0.37 %, the folds' last vibration, as before), 47.767, 53.267, 55.767 (pops, 0.03 to 0.05 % of pixels, blinks in the
+hosts' squares; 47.767's mean is higher with the dim running under it); gone: 1.467 (the card) and 14.867. Integrated
+-20.0 LUFS, true peak -2.7 dBTP. The joins (`fix-F-01/joins.txt`): S8 to S9 largest change 5 of 255 outside the hosts'
+squares, S9 to S10 8; no pixel over 24.
+
 ## Proof
+
+(C-01's proof; where F-01 changed a number, § Fix round F-01 above has it.)
 
 - Probe (`probe.json`, `probe-*.png`; checks in `checks.js`, run by `../s05-push/probe.mjs`; all three scenes in
   `../s10-steady/probe-groupC.log`): 82 of 82 pass after C-01. The first frame on S8's last (crown (991, 154), belly

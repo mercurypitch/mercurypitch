@@ -4592,3 +4592,11 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   errors. HANDOFFS notes the rule; group E's brief section now also moves s13's mercSeen check to it.
 - FULL-FILM FIX ROUND: GROUP A STARTED (in the kit builder's slot). Heavy now: groups C and A.
   Queue: group D, group B, group E; then film-draft-02, the lead's check, the owner's look.
+
+## 18:44 UTC, 19 Nov
+- GROUP C F-01 ROUND HANDED BACK and ACCEPTED (DECISIONS 235; lead looked at S10 pairs 19.58 and
+  29.84): S10 band 227.5 px at F-hold (91 before), plot 1456 px, labels 13 px+ from strokes; S9 box
+  with its trace; S8 "03" 71 px clear; kicker 0.3 s; probes 66/88/209. HANDOFFS § The hold chart
+  ([F-01 fix: 235]; backup $S/handoffs-pre235.md).
+- GROUP D F-01 ROUND STARTED. Heavy now: groups A and D. Queue: group B, group E; then
+  film-draft-02, the lead's check, the owner's look.

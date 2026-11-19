@@ -132,7 +132,78 @@ in `fix-C-01/` (before-and-after pairs against the critic's crops, contact sheet
 - **195**: the first frame follows S9's (the easy start under "Together", "LISTEN ONLY" under "A catch").
 - Holds after the fixes: 1.7 s inside the film (0.8 s per 30 s), longest 0.2 s (2.3 s and 1.1 s before).
 
+## Fix round F-01 (19 November)
+
+The full-film critic's report is `review/critic-F-01/REPORT.md`; the calls are DECISIONS 226, 227 and 233 (brief
+`briefs/l5-fix-F-01.md`, group C). Proof in `fix-F-01/` (before-and-after pairs against the C-01 clip, whose stills
+and measure are kept in `fix-F-01/c01-clip/`; contact sheets; dense sheets; `root-check.log`; `joins.txt`). Screen px
+at F-hold are `x' = 1.3 x - 288`, `y' = 1.3 y + 10`; at the close-ups `x' = 1.8 x + ox`, `y' = 1.8 y - 200`.
+
+- **226, the hold chart as the lead subject** (`compositions/s10-steady.html` lines 121 to 139, 146 to 148, 168 to 200,
+  226 to 230, 260 to 264, 277; the scoop's deep part lines 59, 285 to 299, 317 to 318): the cents scale stays at the 4 s chart's 2.5 world px a cent as the window widens
+  (k = 10 / W before, 1.0 at W 10), and Merc's line moves from world y 400 to 358 so that at the close-ups the band
+  keeps both edges in frame and its bottom edge clear of the hosts' keep-outs. From the push in (2.42) to "No." (51.31)
+  the band stands **227.5 px** at F-hold (91 before), y 361.65 to 589.15, and the plot spans **1456 px** (x 232 to
+  1688, unchanged); at CU-scoop and CU-wave the band is 315 px, y 286.9 to 601.9, both edges in frame. The take, its
+  scoop and its vibrato grow with it: a cycle 26.5 px and 91 px peak to peak at F-hold (36.4 before), 36.7 and 126
+  at the close-ups (50.4 before), ratio 3.44 (the wave rule's 1.375 gives way here, 226); the scoop's low point (-60 c)
+  at world y 508, screen 670.4 at F-hold, (360, 714.4) at CU-scoop. Every label re-placed, 12 px or more from every
+  stroke at its framing (the probe measures every visible label's ink against every visible stroke at 23 times from
+  10b to 10g, the moves included; the nearest is 13.0 px, the axis's "0" over the length bracket):
+
+  | Item | World | Screen at F-hold |
+  | ---- | ----- | ---------------- |
+  | Band (W 4 and W 10 alike, k 2.5) | y 270.5 to 445.5 | y 361.65 to 589.15 |
+  | Merc's line; Tavi's dashed guess (10b) | y 358 | y 475.4 |
+  | The guess's "?" (x 1536) | baseline 381 | x 1708.8 to 1750.6, baseline 505.3 |
+  | Tavi's -60 c start | y 508 | y 670.4 |
+  | Row 1: "A, any octave" (x 400), "in the band" (x 640) | baseline 206 | baseline 277.8; x 232, 544 |
+  | "ILLUSTRATION" right-aligned 1520 | centred y 195 | x to 1688, centred y 263.5 |
+  | "steady: settles into the band and stays" (x 400) | baseline 163 | baseline 221.9 |
+  | Her guess "steady air keeps it there?" (x 400), underline 14 under, strike 10 over | baseline 114 | baseline 158.2; line 176.4; strike 145.2 |
+  | "settled" flag (x 478.8, 16 tall on the top edge); its label | y 254.5 to 270.5; baseline 247.5 | x 334.5, y 340.85 to 361.65; baseline 331.75 |
+  | The "stays" bracket (line, ticks to) | y 249.4 (255.5), x from 528.6 | y 334.2 (342.2), x 399.3 to 1688 |
+  | Time axis: ticks; "0" (left-aligned 400), "4 s" / "10 s" (right-aligned 1520) | ticks y 524 to 532; baseline 550 | ticks y 691.2 to 701.6; baseline 725 |
+  | The length bracket (ticks up 10); "a comfortable, fixed length" centred 960 | y 572; baseline 605 | y 753.6; baseline 796.5 (ink to 803) |
+  | "scoop" centred x 400 (CU-scoop) | baseline 540 | CU-scoop (360, 772) |
+  | "small vibrato: inside the band" x 960 (CU-wave) | baseline 253 | CU-wave (888, 255.4) |
+  | The vibrato's hairlines (CU-wave) | y 321 and 395 | CU-wave y 377.8 and 511, x 1124.4 to 1364.4 |
+  | The chart's chip at CU-wave | | x 1408.8 to 1896, y 115 to 187 |
+  | "SLOWED · ILLUSTRATION", frame-fixed (screen) | | x 1110 to 1563, y 212 to 252 (380 to 420 before) |
+
+  The "stays" bracket now starts 12 px right of "settled" ink to ink (13.7 measured; its tick's half stroke had put it
+  at 10.7). The scoop's deep part (her first 0.45 s, under -40 c) is drawn on its own: the truck and the pull carry it
+  across Merc's keep-out (at k 2.5 it reaches y 715 at CU), so it fades by its distance to his body box (gone at 20 px,
+  full from 44; out in the truck's first 0.4 s, back as the pull lands, `fix-F-01/deep-scoop-truck-pull.png`,
+  `fix-F-01/dense/dense-031.20s-10fps.jpg`); every stroke stays 20 px or more from both body boxes at every time
+  tested (nearest 29.2). 10h's slide is unchanged in form: from this geometry (k 2.5) into the hold frame at the right
+  half, 52.77 to 53.87, the voice box's drawn outline 225 px or more from the band as it draws on; the last frame and
+  the cut on `sing` are unchanged (below). Pairs: `fix-F-01/pair-3.97.png` (10b), `pair-19.58.png` (the whole take),
+  `pair-25.20.png` and `pair-29.84.png` (CU-scoop), `pair-33.95.png` (CU-wave), `pair-42.81.png`, `pair-44.39.png`,
+  `pair-48.93.png` (10f, 10g); `fix-F-01/clip-sheet-1.png` to `clip-sheet-3.png`.
+- **233, the type step at 326.93** (lines 160 to 163, 340 to 347): the settled flag's pulse on "settles" scaled the
+  whole flag group, its label too; the scale's slow tail stepped the label's type at its end (clip 41.567, jump
+  0.05 %). Now the pole and pennant scale 1.2 and "settled" never does: no event there (`fix-F-01/dense/dense-041.59s-30fps.jpg`).
+- **The light along the wave on "waves"** (lines 300 to 304, 316): on the taller wave the kit's run light, up in 0.1 s,
+  changed 0.15 % of the frame in one frame (a jump at 20.80 in this round's first render); it comes up over 0.3 s now
+  (`fix-F-01/dense/dense-020.80s-30fps.jpg`).
+- Holds after the fixes: 2.2 s inside the film (1.1 s per 30 s), longest 0.2 s (C-01's clip: 1.7 s, 0.8 per 30 s): no
+  hold of 0.3 s or more, inside a word or not (227 asks nothing here).
+
+**F-01 proof**: probe 209 of 209 (`probe.json`; all three in `probe-groupC.log`, 363 of 363). `check lab/s10-steady/proj
+--at=3.97,19.58,25.55,31.64,33.95,42.81,48.93,52.02,53.30,59.09`: 0 errors, contrast 25/25, layout one info (the "4 s"
+and "10 s" swap, as before); root `check` (`fix-F-01/root-check.log`): passed, 0 errors, contrast 67/67, the same one
+info. clock-lint silent; `merc-tags.py s10-steady --check`: 4 tags, 0 stale, 0 problems. `measure.py render`
+(`measure/summary.md`): holds above; single-frame events 6.467 and 46.333 (pops, 0.05 %, blinks in the hosts'
+squares), 33.300 (jump, 0.03 %, as before); gone: 1.467 (the card, now the kit's layer) and 41.567 (233). Integrated
+-20.5 LUFS, true peak -1.6 dBTP. The joins and the cut (`fix-F-01/joins.txt`): S9 to S10 largest change 8 of 255
+outside the hosts' squares, no pixel over 24; the matched cut on `sing` (`cutprobe.mjs`): the band x 1000 to 1640,
+y 210.01 to 280.01 against 210.00 to 280.00, Merc's line 245.00 on both, best shift (0, 0), residual 1.14; no
+single-frame event in `cut/cut-s10-s11.mp4`.
+
 ## Proof
+
+(C-01's proof; where F-01 changed a number, § Fix round F-01 above has it.)
 
 - Probe (`probe.json`, `probe-*.png`; checks in `checks.js`; the last run of all three probes in `probe-groupC.log`):
   134 of 134 pass after C-01. The first frame on S9's last; 10a at 25 %; the stack's exit at the card's; the stack gone

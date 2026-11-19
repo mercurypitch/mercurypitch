@@ -68,7 +68,45 @@ The critic's report is `review/critic-C-01/REPORT.md`; the calls are DECISIONS 1
 - Holds after the fixes: 2.6 s inside the film (3.8 s per 30 s), longest 0.4 s, unchanged; they fall in Merc's pauses
   and go to the passes step (DECISIONS 201: the talk cycle at 240 px).
 
+## Fix round F-01 (19 November)
+
+The full-film critic's report is `review/critic-F-01/REPORT.md`; the calls are DECISIONS 227, 229 and 233 (brief
+`briefs/l5-fix-F-01.md`, group C). Proof in `fix-F-01/` (the film's frames before, pairs against the C-01 clip whose
+stills and measure are kept in `fix-F-01/c01-clip/`, a contact sheet, dense sheets, `joins.txt`).
+
+- **229, the card's "03" and the parked figure** (`compositions/s08-breathe.html` lines 41 to 45, 147): measured on
+  every film frame from 209.40 to 210.30 (`fix-F-01/gap-03-per-frame.txt`: the card's ink alone and the figure's ink
+  alone, from Chromium seeks), the two never touched: 119 px apart while the figure is parked and brightens (209.50 to
+  209.75), closing as the figure starts up under the leaving card to 86 px at 210.00 and 38 px at 210.10, the card's
+  last frame (at 11 %). The figure now starts up on power3.inOut (power2.inOut before), same start (the card's exit,
+  196) and same landing (3.05): it moves less while the card shows, so the gap is 104 px at 210.00 and 71.4 px at
+  210.10, the least on any frame; the probe's font-box measure is 49.3 px or more. Before: the film's frames
+  `fix-F-01/before-03-209.4-210.2.png`; after: `fix-F-01/pair-03-2.15.png`, `fix-F-01/dense/dense-002.10s-30fps.jpg`.
+- **233, the kicker's exit** (lines 48, 179 to 182): it left over 0.2 s, power2.in (the kit's), measured as a pop at
+  film 219.93; now 0.3 s, linear, from `b21`'s end (11.885): half way at 12.035, gone at 12.185
+  (`fix-F-01/dense/dense-012.05s-30fps.jpg`). No event there.
+- **227, holds inside words** (lines 51, 62 to 65, 171 to 173): the C-01 clip held still 0.4 s at 7.7 to 8.1, inside
+  "knees unlocked" (the knee's 2 degrees do not register). "unlocked" names "knees unlocked", so the label takes the
+  board's settle on it (7.94): 0.15 s up, 0.6 s back, 1.08 (a 36 px label, as S9's names), about its right end where
+  its leader leaves (its right edge stays at 907, 16 px or more from the back arrow), its way back linear so its type
+  never steps (233). That hold is 0.2 s now (`clip-still-8.11.png`). Holds after the fixes: 2.6 s inside the film (3.8 s
+  per 30 s), longest 0.4 s; of 0.3 s or more: 0.00 (S7's last frame, before `act3`), 5.80 (in the pause after
+  "easy." 5.65 to "If" 6.17), 8.80 (0.4 s: in the pause after "unlocked." 8.48 to "Let" 9.05, then 0.15 s into "Let";
+  "Let" names nothing and the jaw moves on "jaw", 9.64), 14.00 (in the pause after "quietly," 13.88 to "and" 14.25).
+  These are pauses, which 227 leaves to the final passes with the hosts' stillness.
+
+**F-01 proof**: probe 66 of 66 (`probe.json`; all three in `../s10-steady/probe-groupC.log`), new: the card's "03" 12 px
+or more from the figure at 1.60 and 0.10 to 0.37 s into the move (49.3 px least), the kicker half way and gone, the
+settle at 1.08 about the right end. `check lab/s08-breathe/proj --at=1.85,2.15,8.11,12.03,18.83`: 0 errors, contrast
+20/20, layout 0 errors. clock-lint silent; `merc-tags.py s08-breathe --check`: 4 tags, 0 stale, 0 problems. `measure.py
+render` (`measure/summary.md`): holds above; single-frame events 6.767 and 11.300 (pops, 0.04 %, blinks in the hosts'
+squares); gone: 1.467 and 1.667 (the card, now the kit's layer). Integrated -19.9 LUFS, true peak -2.1 dBTP. The joins
+(`fix-F-01/joins.txt`): S7 to S8 largest change 22 of 255 outside the hosts' squares (mean 0.011), S8 to S9 5; no pixel
+over 24.
+
 ## Proof
+
+(C-01's proof; where F-01 changed a number, § Fix round F-01 above has it.)
 
 - Probe (`probe.json`, `probe-*.png`; checks in `checks.js`, run by `../s05-push/probe.mjs`): 55 of 55 pass after
   C-01 (the opening's three checks added; all three probes in `../s10-steady/probe-groupC.log`). The first frame on S7's last (crown (255, 190), back x 215, 35 %, nothing labelled); the card within 1680 px
