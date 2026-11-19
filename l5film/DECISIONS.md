@@ -1612,3 +1612,45 @@ numbered 132 to 135 too, are 160 to 163 now, so no number appears twice).
      The builder's other question: **"the easy start" stays at 40 px** under the 36 px "Together":
      it is the scene's payoff, and in the still the two read as one two-line name; the owner's
      final polish may set it to 36. HANDOFFS carries the round's numbers (marked [C-01 fix: 212]).
+
+## The lead's calls on group D's fix round and group E's build, 19 November
+
+213. **Group D's fix round is accepted** (no second critic, the owner's rule; the lead looked at
+     the ring on "seconds", the doctor lines at 64.72 and 70.00 with both underlines on their
+     words, the ring above the floor and the phase row, and read the numbers). The ring is on
+     screen from 11b (33.4 s longer than before); the six reasons leave on b38; the four answers
+     light, then the feel block dims to 35 % as the doctor lines rise, seven lines broken at phrase
+     ends, their ink ending at x 846 (154 px from the capsules); the chart's labels leave with the
+     ring; "rest for a few easy breaths" is the page's; the phase row lights one word with a mark.
+     Probes 62 and 137, root check 0 errors, the cuts on `sing`, b38 and `recap` unchanged.
+     Accepted as built:
+     - **The ring is smaller** (world centre (1320, 572), r 136; at F-turn (1376, 610.8), r 190.4,
+       about 381 px across, not 448 or 420): with "Breathe in, low and quiet" kept on the line of
+       "Nothing listens" and the floor rule (203) applied to the phase row too, r 141 is the most
+       that fits. The phase row and its two lines rose to baselines 747, 785, 820 ("stop sooner if
+       you need to" had crossed the floor horizon). HANDOFFS § The turn, § Framings and the board
+       follow ([D-01 fix: 213]).
+     - The label stays and the ring moves for 207 (the tick 20.5 px from the label's ink).
+     - The bracket line leaves with its labels (one object on the board).
+     - s12's length warning (370 lines) stands, as 202's did: one sub-composition, as BUILD-GUIDE
+       has it.
+214. **Group E's build goes to critic E-01 with these calls on its questions:**
+     - **The ten line is one line** (Inter 32, ink-2, baseline 820, x 270 to 1146; the board's two
+       lines would put the floor horizon through the second): accepted. Its ink sits only 6 px
+       under the Voice Mirror panel's foot (y 790), which reads cramped: at integration the kit's
+       `L.RECAP.VM.panel.feet` rises 10 px or more so the line has 16 px under the panel, the
+       panel's lines keeping their padding.
+     - **Card 3's redraw must finish before the frame leaves, on any voice**: the redraw from
+       "settles" takes 2.4 s or less, ending at least 0.3 s before the clean break starts
+       (`at('break')`), its speed computed from the clock (the scratch b54 leaves 2.235 s, so it
+       draws at about 10 / 1.9 now). In E's fix round.
+     - **Merc's root offset** (`L.mercGate` counts its index from the root table about 1.4 frames
+       behind the frame the renderer shows, which snapped Merc 50 px for 3 frames at hop 2):
+       accepted as E's local fix (`rootFromTag`) for now; at integration `L.mercGate` takes the
+       root's start from the video tag for every scene, and every scene's root snaps are
+       re-checked.
+     - s13's length warning (352 lines) stands, as for s12. The q3 break after "which start" and
+       the tease's arrows leaving with the rows are accepted.
+     - **Provisional values confirmed**: the "settled" flag in card 3 by group C's rule (entry
+       0.704 s, x 334.5, at the line's 1.204 s); the hop height is the pass's (the sole rises 22 px
+       in the film). HANDOFFS § Provisional values follows.

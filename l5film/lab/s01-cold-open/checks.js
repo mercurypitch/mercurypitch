@@ -10,6 +10,7 @@
     bead: A.PUSH + A.PUSH_D, last: A.D - 0.001,
     // the fix round (critic A-01): the guess (DECISIONS 170), the pull (173), the hook's exits (171)
     g1: A.GUESS + 0.25, g2: A.GUESS + 0.6, g3: at('o1', 'end', 0.6), g4: A.HIGHER + 0.7,
+    lineOut0: A.HOOK + 0.35, lineOut1: A.HOOK + 0.65,
     pull50: A.PULL + 0.5 * A.PULL_D, pull80: A.PULL + 0.8 * A.PULL_D, linesGone: A.LINES_OUT + A.LINES_D, slid: A.SLIDE + A.SLIDE_D,
   }
   // every frame from '"support"' landing to the cut: no line under the word (DECISIONS 173); and every frame of the
@@ -99,6 +100,7 @@
         for (const [what, v] of cands) if (v > lineMax.v) { lineMax.v = v; lineMax.what = what; lineMax.t = t }
         if (t === LINESWEEP[LINESWEEP.length - 1]) out.push({ name: `DECISIONS 173: no line under '"support"' from its landing to the cut (${LINESWEEP.length} frames; the band's edges, the takes, the strip, the arrow, the guess): the most seen`, got: lineMax.v, want: 0, tol: 0.005 })
       }
+      if (t === T.lineOut0 || t === T.lineOut1) out.push({ name: `DECISIONS 178: Merc's amber line at hook + ${t === T.lineOut0 ? '0.35 (its fade starts, linear, 0.3 s)' : '0.65 (gone, before the disc softens)'}`, got: op(S.ch.merc.g), want: t === T.lineOut0 ? 1 : 0, tol: 0.0005 })
       if (t === T.linesGone) out.push({ name: 'DECISIONS 171: the hook\'s two lines gone at hook + 0.24', got: `${H.alpha(S.support).toFixed(2)} / ${H.alpha(S.steady).toFixed(2)}`, want: '0.00 / 0.00', pass: H.alpha(S.support) < 0.01 && H.alpha(S.steady) < 0.01 })
       if (t === T.slid) {
         const b = S.boxes
@@ -107,13 +109,14 @@
       }
       if (APPROACH.includes(t)) {
         const f = S.critLayer.style.filter, blur = f && f !== 'none' ? parseFloat(f.replace(/[^\d.]/g, '')) : 0
-        ap.push({ t, rb: S.rb, blur })
+        ap.push({ t, rb: S.rb, blur, line: op(S.ch.merc.g) })
         if (t === APPROACH[APPROACH.length - 1]) {
           const small = ap.filter((p, i) => i > 0 && p.rb < 300).map((p, i) => p.rb / ap[ap.indexOf(p) - 1].rb)
           const firstSoft = ap.find((p) => p.blur > 0)
           out.push({ name: `DECISIONS 171: the approach (${A.PUSH.toFixed(2)} to ${(A.PUSH + A.PUSH_D).toFixed(2)}, ${ap.length} frames to the first after it): the bead's r on screen on its first frame / after it (the frame's half-diagonal is 1101)`, got: `${ap[0].rb.toFixed(1)} / ${ap[ap.length - 1].rb.toFixed(1)}`, want: '22 to 25 / >= 1101', pass: ap[0].rb >= 21.5 && ap[0].rb < 25 && ap[ap.length - 1].rb >= 1101 },
             { name: 'log scale while the disc is small (r < 300): its growth a frame, least / most', got: `${Math.min(...small).toFixed(2)}x / ${Math.max(...small).toFixed(2)}x`, want: 'one steady ratio, eased from rest', pass: Math.max(...small) < 1.6 },
-            { name: 'crisp until r 300: the radius on the first frame with any blur', got: firstSoft ? firstSoft.rb : 'none', want: '>= 300', pass: !!firstSoft && firstSoft.rb >= 300 })
+            { name: 'crisp until r 300: the radius on the first frame with any blur', got: firstSoft ? firstSoft.rb : 'none', want: '>= 300', pass: !!firstSoft && firstSoft.rb >= 300 },
+            { name: 'DECISIONS 178: Merc\'s amber line on the frames where the disc has softened (any blur): its most opacity', got: Math.max(...ap.filter((p) => p.blur > 0).map((p) => p.line)), want: 0, tol: 0.0005 })
         }
       }
       if (t === T.tick) {

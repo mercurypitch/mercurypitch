@@ -1,0 +1,43 @@
+s13-recap: the board's 0.4 s rule over the landings (scene time, from the clock)
+
+    0.150  kicker "QUICK CHECK"
+    1.725  panel and question 1 (0.3 s)
+    2.275  card 1: the figure draws on (0.8 s)
+    6.470  answer 1 "Breathing in." (and the figure breathes, 1.2 s)
+    7.895  question 3 in (a swap: the old out 0.12 s first)
+    8.350  card 2: the three traces with names, 0.1 s apart (one stagger, board)
+   16.495  row 3 lights, its tick scales; answer 3
+   19.065  question 4 in (a swap)
+   19.480  the frame back to full with its labels (0.6 s)
+   25.105  Tavi's line starts its silent redraw
+   25.274  the mint edge and "in the band" light (0.2 s)   <-- 0.169 s after the last
+   25.394  the "settled" flag stands (0.25 s)   <-- 0.120 s after the last
+   25.855  answer 4 "It settles into the band / and stays there."
+   29.560  the Voice Mirror panel and "Practise it."
+   30.855  "Voice Mirror" and its rule
+   31.975  row 1: its glyph, its words 0.25 s later (one row)
+   33.880  row 2: its glyph, its words 0.25 s later (one row)
+   36.850  row 3: its glyph, its words 0.25 s later (one row)
+   39.000  the hold's readout
+   40.200  "Keep the glides comfortable."
+   41.880  "Sore, hoarse or unwell today? Just listen along."
+   46.555  "Free, no account: mercurypitch.com/mirror"
+   47.965  the address underlined (0.5 s, the free line's own)
+   50.185  the ten line
+   50.805  the rest card's panel and question
+   54.330  the rest card's title
+   55.815  the rest card's body
+   59.465  the rest card's address (its underline 0.2 s on)
+   64.255  the carried bead takes over from the glyph's first dot (0.1 s)
+
+moves and leaves (not landings):
+    0.110  the frame slides down and widens (1.2 s, power2.inOut), then dims (0.3 s)
+   27.340  the clean break: kicker +0.06, panel +0.13, answer +0.2, frame +0.26 (leaves, up fast)
+   27.940  hop 1 (the pass's crouch, then the air 0.41 s)
+   28.590  hop 2
+   62.475  both cards drift up 14 px over `card`
+   64.155  the cards' lines leave in turn, 0.03 s apart, 0.2 s each
+
+29 landings, 2 closer than 0.4 s, each the board's own or not:
+  25.105 -> 25.274 (0.169 s): the board's (board 13d: the redraw 504.93, the mint edge at the line's 0.69 s, 505.10)
+  25.274 -> 25.394 (0.120 s): the board's (board 13d: the mint edge 505.10, the flag 505.21, both by the page's rule at 10 / 2.4)

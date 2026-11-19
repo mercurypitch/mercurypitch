@@ -9,7 +9,7 @@
     f0: 0, ghost: 0.15, gone: 0.34, dim: A.DIM + A.DIM_D + 0.05, card: A.CARD_IN + 0.9, full: A.UNDIM + A.UNDIM_D + 0.02,
     yt: A.YT + 0.4, br: A.BR + A.BR_D + 0.3, noth: A.NOTH + 0.3, doc: A.DOC + 0.4, sore: A.SORE + 0.3, just: A.JUST + 0.3,
     r1: A.RS[0] + 0.3, r2: A.RS[1] + 0.3, r3: A.RS[2] + 0.3, r4: A.RS[3] + 0.3, r5: A.RS[4] + 0.3,
-    ring: A.RING + A.RING_D + 0.1, listening: A.LISTENING + 0.3, pulse: A.RING_P + 0.15, last: A.D - 0.0005,
+    ringOn: A.RING + 0.02, ring: A.RING + A.RING_D + 0.1, listening: A.LISTENING + 0.3, pulse: A.RING_P + 0.15, last: A.D - 0.0005,
   }
   const root = document.getElementById(sid + '-scene')
   const R = H.R
@@ -37,6 +37,11 @@
     return { name: 'no two visible texts overlap', got: bad.length ? bad.join('; ') : 'none', want: 'none', pass: !bad.length }
   }
   const visTexts = () => H.texts(root, 0.05).map((x) => x.text)
+  // DECISIONS 203 (188 for every line): no visible type within 12 px of the floor horizon (y 840)
+  const floorRule = () => {
+    const foot = Math.max(...[...root.querySelectorAll('text')].filter((e) => H.alpha(e) >= 0.05 && e.textContent.trim()).map((e) => inkOf(e).bottom))
+    return { name: 'no visible type within 12 px of the floor horizon (ink foot)', got: foot, want: '<= 828', pass: foot <= 828 }
+  }
   const careFoot = () => {
     const els = [S.title.el, ...S.comfort.map((l) => l.el), ...S.reasons.map((p) => p.lab.el), S.listening.el, ...S.doc]
     const vis = els.filter((e) => H.alpha(e) > 0.05 && e.textContent)
@@ -104,22 +109,27 @@
         }
         if (i === 4) out.push(...careFoot())
       })
+      if (t === T.ringOn) {
+        out.push({ name: '11b (DECISIONS 204): the ring starts to draw on on "seconds" (the ten seconds\' clock), under the bracket', got: `${S.ring.g.getAttribute('opacity')} / dashoffset ${S.ring.g.querySelector('circle').getAttribute('stroke-dashoffset')}`, want: '1.000 / ~1 (just begun)', pass: S.ring.g.getAttribute('opacity') === '1.000' && +S.ring.g.querySelector('circle').getAttribute('stroke-dashoffset') > 0.9 },
+          { name: '"Nothing listens" not yet (it lands 0.4 s after the ring)', got: H.alpha(S.nothing.el).toFixed(3), want: '0.000' })
+      }
       if (t === T.ring) {
         const tr = R(S.ring.g.querySelector('circle'))
-        out.push({ name: '11e: the ring centre (1320, 590), r 160 (track 10 px)', got: `${((tr.left + tr.right) / 2).toFixed(1)}, ${((tr.top + tr.bottom) / 2).toFixed(1)}, r ${(tr.width / 2).toFixed(1)} (the circle's geometry)`, want: '1320, 590, r 160', pass: Math.abs((tr.left + tr.right) / 2 - 1320) < 1 && Math.abs((tr.top + tr.bottom) / 2 - 590) < 1 && Math.abs(tr.width / 2 - 160) < 1 },
+        out.push({ name: '11b: the ring drawn: centre (1320, 572), r 136 (DECISIONS 208; track 10 px, 35 %)', got: `${((tr.left + tr.right) / 2).toFixed(1)}, ${((tr.top + tr.bottom) / 2).toFixed(1)}, r ${(tr.width / 2).toFixed(1)} (the circle's geometry); dashoffset ${S.ring.g.querySelector('circle').getAttribute('stroke-dashoffset')}`, want: '1320, 572, r 136; 0', pass: Math.abs((tr.left + tr.right) / 2 - 1320) < 1 && Math.abs((tr.top + tr.bottom) / 2 - 572) < 1 && Math.abs(tr.width / 2 - 136) < 1 && +S.ring.g.querySelector('circle').getAttribute('stroke-dashoffset') === 0 },
           { name: 'no counter, no word inside', got: [...S.ring.g.querySelectorAll('text')].filter((e) => H.alpha(e) > 0.01).length, want: 0 },
-          { name: 'the ring under the frame\'s labels (track top 425 against "Nothing listens" foot)', got: tr.top - inkOf(S.nothing.el).bottom, want: '>= 12', pass: tr.top - inkOf(S.nothing.el).bottom >= 12 })
+          { name: 'its stroke under "Nothing listens" (stroke top 431 against its ink foot)', got: tr.top - 5 - inkOf(S.nothing.el).bottom, want: '>= 12', pass: tr.top - 5 - inkOf(S.nothing.el).bottom >= 12 },
+          { name: 'its stroke above the floor horizon (y 840)', got: 840 - (tr.bottom + 5), want: '>= 8', pass: 840 - (tr.bottom + 5) >= 8 })
       }
       if (t === T.listening) { const r = inkOf(S.listening.el); out.push({ name: '11e: the listening line x 260, baseline 486, within 960', got: fmt(r), want: 'x 261 to 912', pass: Math.abs(r.left - 261) < 3 && r.right <= 960 }) }
-      if (t === T.pulse) out.push({ name: '11e: the ring scales about 1.05 on "the ring."', got: S.ring.g.querySelector('g').getAttribute('transform') || 'none', want: 'scale about (1320, 590)', pass: /scale\(1\.0[2-5]/.test(S.ring.g.querySelector('g').getAttribute('transform') || '') })
+      if (t === T.pulse) out.push({ name: '11e: the ring scales about 1.05 on "the ring."', got: S.ring.g.querySelector('g').getAttribute('transform') || 'none', want: 'scale about (1320, 572)', pass: /scale\(1\.0[2-5]/.test(S.ring.g.querySelector('g').getAttribute('transform') || '') })
       if (t === T.last) {
         const b = R(bandEl())
         out.push({ name: 'last frame (HANDOFFS § S11 to S12): the band on its pixels', got: fmt(b), want: '1000 to 1640, 210 to 280', pass: near(b, 1000, 210, 1640, 280, 0.5) },
           { name: 'the care block "Your turn." to the listening line, the doctor lines small; the bracket, "0", "10 s", "Nothing listens"', got: visTexts().length, want: 12 + S.doc.filter((e) => e.textContent).length, pass: visTexts().length === 12 + S.doc.filter((e) => e.textContent).length },
           { name: 'the ring at 35 %, drawn, at rest (scale 1), no counter', got: `${S.ring.g.getAttribute('opacity')} / ${S.ring.g.querySelector('circle').getAttribute('stroke-opacity')} / ${S.ring.g.querySelector('g').getAttribute('transform') || 'none'}`, want: '1.000 / 0.350 / none' },
-          ...careFoot(), overlaps(), ...H.keepout(root, S.boxes))
+          ...careFoot(), overlaps(), floorRule(), ...H.keepout(root, S.boxes))
       }
-      if (t === T.doc || t === T.r5 || t === T.listening) out.push(overlaps(), ...H.keepout(root, S.boxes))
+      if (t === T.doc || t === T.r5 || t === T.listening) out.push(overlaps(), floorRule(), ...H.keepout(root, S.boxes))
       return out
     },
   }

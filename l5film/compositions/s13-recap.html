@@ -130,8 +130,15 @@
 
           /* ---------------------------------------------------------------- the practise cards (hud): each card a group
              that drifts in `card`; every line the page's (DECISIONS 100; L.RECAP.VM and .REST) */
-          const vmG = L.svg('g', { class: 'vm-card' }, hud)
-          const restG = L.svg('g', { class: 'rest-card' }, hud)
+          // the cards drift 14 px in `card`: Chrome snaps text baselines to whole pixels inside an SVG, so a group translated
+          // by sub-pixel steps moves its type a pixel at a time (measure.py found 3.3 to 3.9 % of the frame jumping every
+          // 0.1 s); the cards stand in their own HTML layer instead, moved by a composited translate3d, which the raster
+          // does not step (HANDOFFS § Recap and practise: "draw at sub-pixel positions")
+          const cardsLayer = L.el('div', { class: 'cards-layer', 'data-layout-allow-overflow': '' }, room.hud)
+          Object.assign(cardsLayer.style, { position: 'absolute', left: '0', top: '0', width: '1920px', height: '1080px', pointerEvents: 'none', willChange: 'transform', transform: 'translate3d(0px, 0px, 0px)' })
+          const cards = L.stage(cardsLayer)
+          const vmG = L.svg('g', { class: 'vm-card' }, cards)
+          const restG = L.svg('g', { class: 'rest-card' }, cards)
           const vmPanel = L.panel(vmG, { x0: VM.panel.x0, y0: VM.panel.y0, x1: VM.panel.x1, y1: VM.panel.feet[0] })
           const practise = L.label(vmG, VM.practise.text, VM.practise)
           const vmTitle = L.label(vmG, VM.title.text, VM.title)
@@ -189,10 +196,20 @@
             { at: HOP1 + L.HOP.crouch, dur: L.HOP.air, x: HOP_X[0], ease: 'power1.in' },
             { at: HOP2 + L.HOP.crouch, dur: L.HOP.air, x: HOP_X[1], ease: 'power1.in' },
           ]
-          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hc.merc, moves: mercMoves })
+          // the root is cancelled on the pass frame the renderer shows: video time is the tag's data-media-start plus the
+          // scene time past its data-start, so the shown frame runs about 1.4 frames ahead of the frame index mercGate counts
+          // from the root table's t0 (lab/s13-recap/events: at hop 2's start, where the root snaps from 0.38 back to 0, that
+          // put Merc 50 px left for 3 film frames). Reading the tag keeps the two on one frame.
+          const rootFromTag = (tag, key) => {
+            const v = document.getElementById(tag), r = window.MERC_ROOTS && window.MERC_ROOTS[key]
+            if (!v || !r) return undefined
+            const ds = parseFloat(v.getAttribute('data-start')), ms = parseFloat(v.getAttribute('data-media-start'))
+            return { frames: r.frames, fps: r.fps || 30, t0: T0 + ds - ms }
+          }
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hc.merc, moves: mercMoves, root: rootFromTag(SID + '-m-blue', 'm-blue-' + SID.slice(0, 3)) })
           const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hc.tavi })
 
-          const probe = { cam, ch, bandRects, anyOct, inBand, tag, flag, fig, traces, traceNames, kicker, panel, ring, Qs, ans1, ans3, ans4,
+          const probe = { cam, ch, cardsLayer, bandRects, anyOct, inBand, tag, flag, fig, traces, traceNames, kicker, panel, ring, Qs, ans1, ans3, ans4,
             vmG, restG, vmPanel, practise, vmTitle, vmRule, rows, readout, keep, sore, free, freeUl, ten, restPanel, restQ, restTitle, restBody, restAddr, restUl, bead,
             A: { SLIDE, SLIDE_D, DIM, DIM_D, KICK, Q1, FIG, FIG_D, ANS1, BREATH_D, Q3, TRACES, TRACES_D, TOG, Q4, BACK, BACK_D, SETTLES, LINE_K, ENTRY, SETTLED, LIT, FLAG, ANS4,
               BREAK, OUT, HOP1, HOP2, PRACT, VMT, ROWS, GLYPH_LEAD, READ, KEEP, SORE, FREE, UL, TEN, REST, RTITLE, RBODY, RADDR, DRIFT, DRIFT_D, LEAVE, LEAVE_STEP, LEAVE_D, CARRY0, D, T0 },
@@ -281,8 +298,7 @@
 
             /* 13e, 13f: the Voice Mirror card under its own name, its foot easing down as its rows land */
             const drift = -RC.DRIFT * P(t, DRIFT, DRIFT_D, 'sine.inOut')
-            vmG.setAttribute('transform', `translate(0 ${drift.toFixed(3)})`)
-            restG.setAttribute('transform', `translate(0 ${drift.toFixed(3)})`)
+            cardsLayer.style.transform = `translate3d(0px, ${drift.toFixed(3)}px, 0px)`
             const foot = L.track(t, VM.panel.feet[0], FEET.slice(1).map((tf, i) => ({ at: tf, dur: 0.3, to: VM.panel.feet[i + 1], ease: 'power2.out' })))
             const lv = (k) => { const o = leaveOf(t, k); return { a: 1 - o, dy: -12 * o } }
             const live = (tIn, k, d = 0.25) => { const o = lv(k); return { a: fadeIn(t, tIn, d) * o.a, dy: o.dy } }

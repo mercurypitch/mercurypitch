@@ -477,10 +477,26 @@
   "pass": true
  },
  {
+  "t": 37.96,
+  "name": "DECISIONS 178: Merc's amber line at hook + 0.35 (its fade starts, linear, 0.3 s)",
+  "got": 1,
+  "want": 1,
+  "tol": 0.0005,
+  "pass": true
+ },
+ {
   "t": 38.06,
   "name": "DECISIONS 171: the hosts slid out by hook + 0.45: Merc's body box right edge / Tavi's left edge",
   "got": "-18.7 / 1938.7",
   "want": "<= 0 / >= 1920",
+  "pass": true
+ },
+ {
+  "t": 38.26,
+  "name": "DECISIONS 178: Merc's amber line at hook + 0.65 (gone, before the disc softens)",
+  "got": 0,
+  "want": 0,
+  "tol": 0.0005,
   "pass": true
  },
  {
@@ -534,6 +550,14 @@
   "name": "crisp until r 300: the radius on the first frame with any blur",
   "got": 338.71,
   "want": ">= 300",
+  "pass": true
+ },
+ {
+  "t": 38.666666666666664,
+  "name": "DECISIONS 178: Merc's amber line on the frames where the disc has softened (any blur): its most opacity",
+  "got": 0,
+  "want": 0,
+  "tol": 0.0005,
   "pass": true
  },
  {

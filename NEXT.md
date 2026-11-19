@@ -4477,3 +4477,24 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Heavy now: group D fix + group E. Queue: leftovers (briefs/l5-leftovers.md: part 1 to group A's
   builder, part 2 to group B's, one after the other in one slot) when a slot frees; critic E-01
   after E; integration.
+
+## 14:55 UTC, 19 Nov
+- GROUP D FIX ROUND HANDED BACK (14:37) and ACCEPTED (DECISIONS 213; lead looked at the ring on
+  "seconds", doctor lines 64.72/70.00/75.16 with both underlines, ring above the floor, phase
+  row). Ring now world (1320, 572) r 136 (F-turn r 190.4); phase row 747/785/820. HANDOFFS § The
+  turn, § Framings and the board updated ([D-01 fix: 213]; backups $S/handoffs-pre213.md,
+  $S/storyboard-pre213.md). LEDGER D-01 filled.
+- GROUP E HANDED BACK (14:45): s13/s14/s15 built; probes 205/90/48, root check 0 errors, cuts
+  recap/next/end under 0.3 px. Calls DECISIONS 214: ten line one line OK (kit panel foot up 10 px
+  at integration); card 3's redraw must end 0.3 s before `break` on any voice (E's fix round);
+  L.mercGate root from the video tag at integration (E fixed locally); settled flag x 334.5 and
+  hop height 22 px confirmed in HANDOFFS.
+- CRITIC E-01 LAUNCHED (fresh motion-critic, xhigh) -> l5film/review/critic-E-01/REPORT.md.
+- LEFTOVERS: part 1 sent to group A's builder (14:39, S1 amber line; it is rendering), part 2 sent
+  to group B's builder (14:47, S6/S7 throat line). Both heavy slots: A + B leftovers.
+- NEXT: when critic E-01 returns, the lead's calls (DECISIONS 215+), then E's fix round (include
+  214's card 3 redraw rule). When both leftovers hand back, check stills, move B's baselines into
+  HANDOFFS § The breath figure (S6). Then INTEGRATION: kit fixes (STACK `h` key, card glyph snaps,
+  bokeh lift on slow moves, L.mercGate from the video tag, RECAP.VM panel foot +10 px, kit offers),
+  root render, full-film critic. Later: sound step, final passes (host idle in pauses, talk cycle
+  at 240/300, S6/S7 eye turn), final voices.

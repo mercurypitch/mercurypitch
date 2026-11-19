@@ -821,7 +821,7 @@
  {
   "t": 28.259999999999998,
   "name": "his box carried through the air",
-  "got": "230.1",
+  "got": "222.1",
   "want": "110 to 700",
   "pass": true
  },
@@ -863,7 +863,7 @@
  {
   "t": 28.909999999999975,
   "name": "his box carried through the air",
-  "got": "818.1",
+  "got": "814.1",
   "want": "700 to 1290",
   "pass": true
  },
@@ -954,7 +954,7 @@
  {
   "t": 29.910000000000004,
   "name": "keep-out: nearest visible text to merc's body box (\"Practise it.\")",
-  "got": 893.34,
+  "got": 893.33,
   "want": ">= 20",
   "pass": true
  },

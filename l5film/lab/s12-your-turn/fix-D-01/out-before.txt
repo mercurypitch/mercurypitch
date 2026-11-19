@@ -1,0 +1,35 @@
+[heavy] slot 1: node lab/s12-your-turn/fix-D-01/evalpage.mjs lab/s12-your-turn/fix-D-01/geomshots.js s12-your-turn
+{
+ "times": {
+  "breath": 24.639600000000005,
+  "hold": 30.79000000000002,
+  "echo": 36.09000000000002,
+  "f0": 17.935000000000002
+ },
+ "maxBreath": {
+  "t": 24.639600000000005,
+  "s": 1.08
+ },
+ "ringF0": {
+  "cx": 1320,
+  "cy": 590,
+  "r": 160
+ },
+ "ringFturn": {
+  "cx": 1376,
+  "cy": 636,
+  "r": 224
+ },
+ "inside": [
+  {
+   "text": "Sing",
+   "base": 577.2,
+   "size": 56
+  },
+  {
+   "text": "5",
+   "base": 722.8,
+   "size": 112
+  }
+ ]
+}

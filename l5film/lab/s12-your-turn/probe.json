@@ -50,9 +50,23 @@
  },
  {
   "t": 0,
-  "name": "nothing visible below y 896 (ink)",
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
   "got": 771,
-  "want": "<= 896",
+  "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 0.5400000000000387,
+  "name": "12a (DECISIONS 204): the six reasons gone on \"Otherwise,\"",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 0.5400000000000387,
+  "name": "kept: \"Your turn.\", the comfort line and its icon, the listening line, the small doctor lines",
+  "got": 9,
+  "want": 9,
   "pass": true
  },
  {
@@ -113,14 +127,14 @@
  },
  {
   "t": 3.0050000000000407,
-  "name": "nothing visible below y 896 (ink)",
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
   "got": 771,
-  "want": "<= 896",
+  "want": "<= 828",
   "pass": true
  },
  {
   "t": 4.155000000000018,
-  "name": "12b: \"LISTEN · BREATHE · SING\" centred x 1320, baseline 790 (advance boxes)",
+  "name": "12b: \"LISTEN · BREATHE · SING\" centred x 1320, baseline 747 (advance boxes)",
   "got": "1071.4 to 1568.7 (centre 1320.0)",
   "want": "centre 1320",
   "pass": true
@@ -134,23 +148,37 @@
  },
  {
   "t": 4.155000000000018,
-  "name": "\"Listen\" lit to ink",
-  "got": "rgb(230,237,243)",
-  "want": "rgb(230,237,243)",
+  "name": "\"Listen\" lit: ink at full; the others ink-2 at 60 % (DECISIONS 209)",
+  "got": "rgb(230,237,243) 1.000; rgb(168,179,191) 0.600; rgb(168,179,191) 0.600",
+  "want": "ink 1.000; ink-2 0.600 x2",
+  "pass": true
+ },
+ {
+  "t": 4.155000000000018,
+  "name": "a small chrome mark under \"Listen\" (centred, under its baseline)",
+  "got": "1134.4 vs 1134.4; 24 x 3 at y 754.0",
+  "want": "centred, 24 x 3, y 754",
   "pass": true
  },
  {
   "t": 4.155000000000018,
   "name": "the row under the ring (gap from the track's foot)",
-  "got": 14,
+  "got": 13,
   "want": ">= 12",
   "pass": true
  },
  {
+  "t": 5.865000000000032,
+  "name": "12b: \"Breathe\" lit, its mark under it; \"Listen\" back to ink-2 at 60 %",
+  "got": "0.600 1.000 0.600; mark 1341.9 vs 1341.9",
+  "want": "0.600 1.000 0.600; centred",
+  "pass": true
+ },
+ {
   "t": 10.650000000000023,
-  "name": "12b: \"Breathe\" lit; \"at about speaking volume\" centred 1320, baseline 828",
-  "got": "rgb(230,237,243); 1149.7 to 1490.3, 806.0 to 835.0",
-  "want": "ink; centre 1320",
+  "name": "12b: \"Sing\" lit, its mark under it; \"at about speaking volume\" centred 1320, baseline 785",
+  "got": "0.600 0.600 1.000; mark 1527.5 vs 1527.5; 1149.7 to 1490.3, 763.0 to 792.0",
+  "want": "0.600 0.600 1.000; centred; centre 1320",
   "pass": true
  },
  {
@@ -162,16 +190,16 @@
  },
  {
   "t": 15.635000000000037,
-  "name": "12b: \"stop sooner if you need to\" baseline 864: its ink above 896",
-  "got": "1149.9 to 1489.2, 842.0 to 870.0",
-  "want": "foot <= 896",
+  "name": "12b: \"stop sooner if you need to\" baseline 820: its ink 12 px or more above the floor horizon (DECISIONS 203)",
+  "got": "1149.9 to 1489.2, 798.0 to 826.0",
+  "want": "foot <= 828",
   "pass": true
  },
  {
   "t": 15.635000000000037,
-  "name": "all three phase words lit",
-  "got": "rgb(230,237,243) rgb(230,237,243) rgb(230,237,243)",
-  "want": "ink x3",
+  "name": "only \"Sing\" lit",
+  "got": "0.600 0.600 1.000",
+  "want": "0.600 0.600 1.000",
   "pass": true
  },
  {
@@ -197,9 +225,9 @@
  },
  {
   "t": 15.635000000000037,
-  "name": "nothing visible below y 896 (ink)",
-  "got": 870,
-  "want": "<= 896",
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
+  "got": 826,
+  "want": "<= 828",
   "pass": true
  },
  {
@@ -239,9 +267,9 @@
  },
  {
   "t": 17.835,
-  "name": "nothing visible below y 896 (ink)",
-  "got": 870,
-  "want": "<= 896",
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
+  "got": 826,
+  "want": "<= 828",
   "pass": true
  },
  {
@@ -305,9 +333,23 @@
  },
  {
   "t": 21.41000000000001,
-  "name": "the ring centre (1376, 636), r 224",
-  "got": "1376.0, 636.0, r 224.0",
-  "want": "1376, 636, r 224",
+  "name": "the ring centre (1376, 610.8), r 190.4 on screen (DECISIONS 208)",
+  "got": "1376.0, 610.8, r 190.4",
+  "want": "1376, 610.8, r 190.4",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "at rest its stroke 8 px or more above the floor horizon (y 840)",
+  "got": 31.8,
+  "want": ">= 8",
+  "pass": true
+ },
+ {
+  "t": 21.41000000000001,
+  "name": "at rest its stroke 12 px or more under \"Nothing listens\" (its ink foot)",
+  "got": 30.8,
+  "want": ">= 12",
   "pass": true
  },
  {
@@ -334,7 +376,7 @@
  {
   "t": 21.41000000000001,
   "name": "LAB-CHECKS 15: \"Your turn.\" from the ring",
-  "got": 484.27,
+  "got": 517.87,
   "want": ">= 12",
   "pass": true
  },
@@ -355,7 +397,7 @@
  {
   "t": 21.41000000000001,
   "name": "the ring's right edge from Tavi's keep-out (1700)",
-  "got": 95,
+  "got": 126.6,
   "want": ">= 0",
   "pass": true
  },
@@ -382,16 +424,16 @@
  },
  {
   "t": 21.41000000000001,
-  "name": "nothing visible below y 896 (ink)",
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
   "got": 771,
-  "want": "<= 896",
+  "want": "<= 828",
   "pass": true
  },
  {
   "t": 21.850000000000012,
-  "name": "12d: \"Listen\" inside the ring, 56 px on screen, centred x 1376, baseline 577",
-  "got": "1302.4 to 1450.3, 536.6 to 578.6, base 577.2",
-  "want": "centre 1376, base 577",
+  "name": "12d: \"Listen\" inside the ring, 56 px on screen, centred x 1376, baseline 552",
+  "got": "1302.4 to 1450.3, 511.4 to 553.4, base 552.0",
+  "want": "centre 1376, base 552",
   "pass": true
  },
  {
@@ -447,22 +489,51 @@
  {
   "t": 24.420000000000005,
   "name": "keep-out: nearest visible text to tavi's body box (\"Breathe\")",
-  "got": 242.4,
+  "got": 249.72,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 24.420000000000005,
-  "name": "nothing visible below y 896 (ink)",
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
   "got": 771,
-  "want": "<= 896",
+  "want": "<= 828",
   "pass": true
  },
  {
   "t": 24.650000000000006,
-  "name": "12d: the ring breathes to 1.08 at its middle",
-  "got": "1.0800",
-  "want": "1.08",
+  "name": "12d: the ring breathes to 1.08 (its largest)",
+  "got": 1.08,
+  "want": 1.08,
+  "tol": 0.0005,
+  "pass": true
+ },
+ {
+  "t": 24.650000000000006,
+  "name": "at its largest the stroke above the floor horizon (y 840)",
+  "got": 16.01,
+  "want": "> 0",
+  "pass": true
+ },
+ {
+  "t": 24.650000000000006,
+  "name": "at its largest 12 px or more from \"Breathe in, low and quiet\" (its circle; its tick)",
+  "got": "23.9; 17.5",
+  "want": ">= 12 each",
+  "pass": true
+ },
+ {
+  "t": 24.650000000000006,
+  "name": "at its largest its tick's top 12 px or more under the foot of \"Breathe\" (no tick tucked under the label)",
+  "got": 12.82,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 24.650000000000006,
+  "name": "at its largest clear of \"Nothing listens\" (stroke top under its ink foot)",
+  "got": 15.01,
+  "want": "> 0",
   "pass": true
  },
  {
@@ -474,16 +545,16 @@
  },
  {
   "t": 26.339999999999996,
-  "name": "12e: the counter at \"0\" (baseline 706 on screen, 112 px)",
+  "name": "12e: the counter at \"0\" (baseline 680.8 on screen, 112 px)",
   "got": "Sing, 0",
   "want": "Sing, 0",
   "pass": true
  },
  {
   "t": 30.59000000000002,
-  "name": "12e (board 433.00): the counter at \"4\", 112 px, baseline 706 (screen)",
-  "got": "1343.6 to 1408.0, 626.2 to 706.0, base 706.0",
-  "want": "base 706",
+  "name": "12e (board 433.00): the counter at \"4\", 112 px, baseline 680.8 (screen)",
+  "got": "1343.6 to 1408.0, 601.0 to 680.8, base 680.8",
+  "want": "base 680.8",
   "pass": true
  },
  {
@@ -532,15 +603,15 @@
  {
   "t": 30.59000000000002,
   "name": "keep-out: nearest visible text to tavi's body box (\"Sing\")",
-  "got": 295,
+  "got": 300.78,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 30.59000000000002,
-  "name": "nothing visible below y 896 (ink)",
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
   "got": 771,
-  "want": "<= 896",
+  "want": "<= 828",
   "pass": true
  },
  {
@@ -562,6 +633,20 @@
   "name": "12f: the ring, its word, the counter, the playhead and \"Your turn.\" gone",
   "got": "0.000 0.000 0.000",
   "want": "0.000 0.000 0.000",
+  "pass": true
+ },
+ {
+  "t": 36.60000000000005,
+  "name": "12f (DECISIONS 206): the bracket, \"0\", \"10 s\", \"A3 · Merc\", \"A4 · Tavi, an octave up\" gone with it",
+  "got": "0.000 0.000 0.000 0.000 0.000",
+  "want": "0.000 0.000 0.000 0.000 0.000",
+  "pass": true
+ },
+ {
+  "t": 36.60000000000005,
+  "name": "the band, Merc's line and \"Nothing listens\" stay",
+  "got": "1.000 1.000",
+  "want": "1 1.000",
   "pass": true
  },
  {
@@ -594,16 +679,16 @@
  },
  {
   "t": 36.99000000000003,
-  "name": "keep-out: nearest visible text to tavi's body box (\"A4 · Tavi, an octave up\")",
-  "got": 333.41,
+  "name": "keep-out: nearest visible text to tavi's body box (\"How did that feel?\")",
+  "got": 346.9,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 36.99000000000003,
-  "name": "nothing visible below y 896 (ink)",
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
   "got": 771,
-  "want": "<= 896",
+  "want": "<= 828",
   "pass": true
  },
  {
@@ -643,16 +728,16 @@
  },
  {
   "t": 40.68000000000005,
-  "name": "keep-out: nearest visible text to tavi's body box (\"A4 · Tavi, an octave up\")",
-  "got": 333.41,
+  "name": "keep-out: nearest visible text to tavi's body box (\"How did that feel?\")",
+  "got": 346.9,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 40.68000000000005,
-  "name": "nothing visible below y 896 (ink)",
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
   "got": 771,
-  "want": "<= 896",
+  "want": "<= 828",
   "pass": true
  },
  {
@@ -685,9 +770,9 @@
  },
  {
   "t": 45.985000000000014,
-  "name": "\"rest a few easy breaths\" x 1260, baseline 579",
-  "got": "1261.0 to 1567.6, 557.0 to 585.0",
-  "want": "from 1260",
+  "name": "\"rest for a few easy breaths\" (the page's words, DECISIONS 209) x 1260, baseline 579, left of x 1630",
+  "got": "rest for a few easy breaths: 1261.0 to 1614.6, 557.0 to 585.0",
+  "want": "from 1260, to <= 1630",
   "pass": true
  },
  {
@@ -707,7 +792,7 @@
  {
   "t": 55.33000000000003,
   "name": "the feel block left of x 1630 and above y 730",
-  "got": "1600.2, 730.0",
+  "got": "1614.6, 730.0",
   "want": "<= 1630, <= 731",
   "pass": true
  },
@@ -734,9 +819,9 @@
  },
  {
   "t": 55.33000000000003,
-  "name": "nothing visible below y 896 (ink)",
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
   "got": 771,
-  "want": "<= 896",
+  "want": "<= 828",
   "pass": true
  },
  {
@@ -748,16 +833,16 @@
  },
  {
   "t": 58.975000000000016,
-  "name": "12h: the doctor lines full size (Inter 40, ink), broken where the font puts them within 700 px",
-  "got": 6,
-  "want": 6,
+  "name": "12h (DECISIONS 205): the doctor lines full size (Inter 40, ink), broken by hand at phrase ends",
+  "got": "If hoarseness or discomfort lasts | more than a couple of weeks, | see a doctor (a GP or an ear, | nose and throat specialist). | If it’s very painful, | or breathing or swallowing is hard, | get help straight away.",
+  "want": "7 lines, none ending \"(a\", the last not \"away.\" alone",
   "pass": true
  },
  {
   "t": 58.975000000000016,
   "name": "within x 260 to 960 (ink), baselines from 430, 50 apart",
-  "got": "260.0 to 954.4; 430, 480, 530, 580, 630, 680",
-  "want": ">= 258, <= 960",
+  "got": "261.0 to 846.2; 430, 480, 530, 580, 630, 680, 730",
+  "want": ">= 258, <= 960; 430 to 730",
   "pass": true
  },
  {
@@ -784,7 +869,7 @@
  {
   "t": 58.975000000000016,
   "name": "clear of the answers (x 1000)",
-  "got": 45.64,
+  "got": 153.78,
   "want": ">= 12",
   "pass": true
  },
@@ -797,36 +882,57 @@
  },
  {
   "t": 58.975000000000016,
-  "name": "keep-out: nearest visible text to merc's body box (\"away.\")",
+  "name": "keep-out: nearest visible text to merc's body box (\"or breathing or swallowing is hard,\")",
   "got": 70.5,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 58.975000000000016,
-  "name": "keep-out: nearest visible text to tavi's body box (\"rest before you sing again\")",
-  "got": 118.8,
+  "name": "keep-out: nearest visible text to tavi's body box (\"Nothing listens\")",
+  "got": 575.92,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 58.975000000000016,
-  "name": "nothing visible below y 896 (ink)",
-  "got": 726,
-  "want": "<= 896",
+  "name": "no visible type within 12 px of the floor horizon, y 840 (ink foot; DECISIONS 203)",
+  "got": 739,
+  "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 59.07500000000001,
+  "name": "12h (DECISIONS 205): the feel block dimmed to 35 % (question, capsules, lines, bracket)",
+  "got": "0.350 to 0.350",
+  "want": "0.350",
+  "pass": true
+ },
+ {
+  "t": 59.07500000000001,
+  "name": "all four still lit (dimmed with the block, not unlit)",
+  "got": "1.000 1.000 1.000 1.000",
+  "want": "1.000 1.000 1.000 1.000",
+  "pass": true
+ },
+ {
+  "t": 59.07500000000001,
+  "name": "the doctor lines at full",
+  "got": "1.000",
+  "want": "1.000",
   "pass": true
  },
  {
   "t": 64.72,
   "name": "12h: \"see a doctor\" underlined (segments)",
-  "got": "679.2-894.1 @490",
+  "got": "260.0-475.0 @540",
   "want": "under its words",
   "pass": true
  },
  {
   "t": 75.15500000000002,
   "name": "12h: \"get help straight away\" underlined (segments)",
-  "got": "593.8-874.5 @640; 260.0-348.3 @690",
+  "got": "260.0-638.9 @740",
   "want": "under its words",
   "pass": true
  },

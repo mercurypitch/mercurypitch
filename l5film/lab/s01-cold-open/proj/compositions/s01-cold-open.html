@@ -192,11 +192,12 @@
             const mercDim = gU * (1 - guessOut)
             const easyDim = 0.5 * P(t, GUESS, 0.3) * (1 - P(t, at('o1', 'end'), 0.5))
             const run = L.run(t, word('b1', 'same'), 0.6)
-            // the approach (1h): the bead's radius on screen, and how far it has defocused (0 to r 300, 1 at R_END)
+            // the approach (1h): the bead's radius on screen
             const sty = word('o2', 'steady')
             const rb = 22 * Math.pow(R_END / 22, approachG(t)) * L.pulse(t, [sty], 'bead')
-            const soft = L.smooth(300, R_END, rb)
-            const hookOut = soft                                         // the amber line goes as the disc defocuses over it
+            // Merc's amber line fades out over the approach's start, linear, gone by hook + 0.65, before the disc
+            // softens (r 300), so it never shows through the softening disc (DECISIONS 178; 1h's "fades under the glow")
+            const hookOut = P(t, HOOK + 0.35, 0.3, 'none')
             const scale = cam.scale(t)
             ch.draw({
               band: { a: bandA, lit },

@@ -1,0 +1,9 @@
+lab/s12-your-turn/cut-b38/sheet.png
+out in pixels changed > 24: 0 largest: 10
+   care block               >24:     0, largest 0
+   frame and labels         >24:     0, largest 9
+   ring (1320, 572), r 136  >24:     0, largest 9
+out60 in60 pixels changed > 24: 0 largest: 12
+   care block               >24:     0, largest 9
+   frame and labels         >24:     0, largest 11
+   ring (1320, 572), r 136  >24:     0, largest 12

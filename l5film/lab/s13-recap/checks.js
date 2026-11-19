@@ -41,9 +41,10 @@
   }
   // Merc's body on screen: mercGate's box less the root it cancels (the renderer draws him that far right in the frame)
   const mercSeen = (t) => {
-    const b = S.boxes.merc, rt = window.MERC_ROOTS && window.MERC_ROOTS['m-blue-s13']
+    // the frame the renderer shows: the tag's data-media-start plus the scene time past its data-start
+    const b = S.boxes.merc, rt = window.MERC_ROOTS && window.MERC_ROOTS['m-blue-s13'], v = document.getElementById('s13-recap-m-blue')
     if (!b || !rt) return b
-    const i = Math.floor((A.T0 + t - rt.t0) * rt.fps + 1e-6), fr = rt.frames[Math.max(0, Math.min(rt.frames.length - 1, i))]
+    const i = Math.floor((t - parseFloat(v.getAttribute('data-start')) + parseFloat(v.getAttribute('data-media-start'))) * rt.fps + 1e-6), fr = rt.frames[Math.max(0, Math.min(rt.frames.length - 1, i))]
     const dx = fr[0] * L.ROOT_PX * (b.x1 - b.x0) / 0.53
     return { x0: b.x0 + dx, x1: b.x1 + dx, y0: b.y0, y1: b.y1 }
   }
@@ -215,8 +216,8 @@
           { name: 'its foot 28 px or more over Merc\'s keep-out (box top 648, keep-out 628)', got: S.boxes.merc ? (S.boxes.merc.y0 - 20 - p.bottom).toFixed(1) : 'none', want: '>= 28', pass: !!S.boxes.merc && S.boxes.merc.y0 - 20 - p.bottom >= 27.5 }, ...common())
       }
       if (t === T.drift) {
-        const d = S.rows[2].glyph.dot(0), m = S.vmG.getAttribute('transform')
-        const dy = +(/translate\(0 ([-\d.]+)\)/.exec(m) || [0, 0])[1]
+        const d = S.rows[2].glyph.dot(0), m = S.cardsLayer.style.transform
+        const dy = +(/translate3d\(0px, ([-\d.]+)px/.exec(m) || [0, 0])[1]
         out.push({ name: 'the carry starts on the "five notes" glyph\'s first dot: its place now (272, 434 after the drift)', got: `${d[0]}, ${(d[1] + dy).toFixed(2)}`, want: '272, 434', pass: d[0] === 272 && near(d[1] + dy, 434, 1) },
           { name: 'the bead\'s carry from there (L.TEASE.carry at its start)', got: (() => { const c = L.TEASE.carry(A.T0 + t + 1e-6, A.T0 + A.CARRY0); return c ? `${c.x.toFixed(1)}, ${c.y.toFixed(1)}, r ${c.r.toFixed(2)}` : 'none' })(), want: '272.0, 434.0, r 4.00' }, ...common())
       }

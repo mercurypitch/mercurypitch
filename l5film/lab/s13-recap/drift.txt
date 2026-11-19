@@ -1,0 +1,51 @@
+-0.100 s into card: layer    0.000 px; drawn shift    -0.00 px; error -0.00
+-0.050 s into card: layer    0.000 px; drawn shift    -0.00 px; error -0.00
+ 0.000 s into card: layer    0.000 px; drawn shift    -0.00 px; error -0.00
+ 0.050 s into card: layer   -0.022 px; drawn shift    -0.00 px; error +0.02
+ 0.100 s into card: layer   -0.086 px; drawn shift    -0.06 px; error +0.03
+ 0.150 s into card: layer   -0.193 px; drawn shift    -0.18 px; error +0.01
+ 0.200 s into card: layer   -0.343 px; drawn shift    -0.32 px; error +0.02
+ 0.250 s into card: layer   -0.533 px; drawn shift    -0.50 px; error +0.03
+ 0.300 s into card: layer   -0.763 px; drawn shift    -0.76 px; error +0.00
+ 0.350 s into card: layer   -1.032 px; drawn shift    -1.00 px; error +0.03
+ 0.400 s into card: layer   -1.337 px; drawn shift    -1.32 px; error +0.02
+ 0.450 s into card: layer   -1.677 px; drawn shift    -1.62 px; error +0.06
+ 0.500 s into card: layer   -2.050 px; drawn shift    -2.00 px; error +0.05
+ 0.550 s into card: layer   -2.454 px; drawn shift    -2.44 px; error +0.01
+ 0.600 s into card: layer   -2.886 px; drawn shift    -2.88 px; error +0.01
+ 0.650 s into card: layer   -3.343 px; drawn shift    -3.32 px; error +0.02
+ 0.700 s into card: layer   -3.822 px; drawn shift    -3.82 px; error +0.00
+ 0.750 s into card: layer   -4.321 px; drawn shift    -4.32 px; error +0.00
+ 0.800 s into card: layer   -4.837 px; drawn shift    -4.82 px; error +0.02
+ 0.850 s into card: layer   -5.366 px; drawn shift    -5.32 px; error +0.05
+ 0.900 s into card: layer   -5.905 px; drawn shift    -5.88 px; error +0.03
+ 0.950 s into card: layer   -6.451 px; drawn shift    -6.44 px; error +0.01
+ 1.000 s into card: layer   -7.000 px; drawn shift    -7.00 px; error +0.00
+ 1.050 s into card: layer   -7.549 px; drawn shift    -7.50 px; error +0.05
+ 1.100 s into card: layer   -8.095 px; drawn shift    -8.06 px; error +0.04
+ 1.150 s into card: layer   -8.634 px; drawn shift    -8.62 px; error +0.01
+ 1.200 s into card: layer   -9.163 px; drawn shift    -9.12 px; error +0.04
+ 1.250 s into card: layer   -9.679 px; drawn shift    -9.62 px; error +0.06
+ 1.300 s into card: layer  -10.178 px; drawn shift   -10.12 px; error +0.06
+ 1.350 s into card: layer  -10.657 px; drawn shift   -10.62 px; error +0.04
+ 1.400 s into card: layer  -11.114 px; drawn shift   -11.06 px; error +0.05
+ 1.450 s into card: layer  -11.546 px; drawn shift   -11.50 px; error +0.05
+ 1.500 s into card: layer  -11.950 px; drawn shift   -11.94 px; error +0.01
+ 1.550 s into card: layer  -12.323 px; drawn shift   -12.32 px; error +0.00
+ 1.600 s into card: layer  -12.663 px; drawn shift   -12.62 px; error +0.04
+ 1.650 s into card: layer  -12.968 px; drawn shift   -12.94 px; error +0.03
+ 1.700 s into card: layer  -13.237 px; drawn shift   -13.20 px; error +0.04
+ 1.750 s into card: layer  -13.467 px; drawn shift   -15.52 px; error -2.05
+ 1.800 s into card: layer  -13.657 px; drawn shift   -15.14 px; error -1.48
+ 1.850 s into card: layer  -13.807 px; drawn shift   -15.10 px; error -1.29
+ 1.900 s into card: layer  -13.914 px; drawn shift   -14.56 px; error -0.65
+ 1.950 s into card: layer  -13.978 px; drawn shift   -14.54 px; error -0.56
+ 2.000 s into card: layer  -14.000 px; drawn shift   -14.54 px; error -0.54
+ 2.050 s into card: layer  -14.000 px; drawn shift   -14.54 px; error -0.54
+ 2.100 s into card: layer  -14.000 px; drawn shift    -0.50 px; error +13.50
+
+Read: "layer" is the cards layer's translate3d offset (the drift, -14 px over `card`, sine.inOut); "drawn shift" is
+where a card line's ink was measured in the frame against its place before the drift. From 0 to 1.70 s into card the
+two agree within 0.06 px (the old SVG baselines snapped to whole pixels, 13 jumps of 3.3 to 3.9 % in measure.py).
+From 1.68 s (LEAVE = card end - 0.32) the lines leave up 12 px in turn and fade, so the drawn shift there holds the
+leave as well as the drift; at 2.10 s the measured line has gone.

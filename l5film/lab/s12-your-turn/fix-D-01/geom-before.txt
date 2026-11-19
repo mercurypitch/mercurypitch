@@ -1,0 +1,30 @@
+== breath
+  ring     ink x 1126 to 1625, y 376 to 885; -46 px rows clear above the floor horizon (y 840)
+  breathe  ink x 1391 to 1823, y 344 to 380; 459 px rows clear above the floor horizon (y 840)
+  nothing  ink x 931 to 1207, y 342 to 381; 458 px rows clear above the floor horizon (y 840)
+  the ring's top row 376 against the foot row of "Breathe in," 373: 2 rows between
+  gap ring / breathe: 13.9 px
+  gap ring / nothing: 64.9 px
+  gap breathe / nothing: 184.0 px
+== hold
+  ring     ink x 1145 to 1615, y 395 to 875; -36 px rows clear above the floor horizon (y 840)
+  nothing  ink x 931 to 1207, y 342 to 381; 458 px rows clear above the floor horizon (y 840)
+  gap ring / nothing: 83.5 px
+== echo
+  echo     ink x 1101 to 1650, y 361 to 910; -71 px rows clear above the floor horizon (y 840)
+== f0
+  ring     ink x 1155 to 1484, y 418 to 754; 85 px rows clear above the floor horizon (y 840)
+  row      ink x 1074 to 1566, y 769 to 799; 40 px rows clear above the floor horizon (y 840)
+  line1    ink x 1150 to 1489, y 806 to 834; 5 px rows clear above the floor horizon (y 840)
+  line2    ink x 1150 to 1489, y 842 to 869; -30 px rows clear above the floor horizon (y 840)
+  nothing  ink x 1002 to 1199, y 380 to 408; 431 px rows clear above the floor horizon (y 840)
+  gap ring / row: 15.0 px
+  gap ring / line1: 52.0 px
+  gap ring / line2: 88.0 px
+  gap ring / nothing: 59.6 px
+  gap row / line1: 17.0 px
+  gap row / line2: 53.0 px
+  gap row / nothing: 361.0 px
+  gap line1 / line2: 14.1 px
+  gap line1 / nothing: 404.1 px
+  gap line2 / nothing: 439.8 px

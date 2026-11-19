@@ -1,0 +1,4 @@
+The clear zone (x 80 to 1100, y 460 to 880) in the clip stills: luminance of the room there (0 to 255)
+  clip-still-1.20.png: mean 21.1, 99.9th percentile 44, max 60; pixels over 60: 0 of 428400; the ground outside it (x 80 to 1100, y 900 to 1060) mean 19.9
+  clip-still-3.00.png: mean 21.1, 99.9th percentile 44, max 59; pixels over 60: 0 of 428400; the ground outside it (x 80 to 1100, y 900 to 1060) mean 19.8
+  clip-still-6.17.png: mean 21.1, 99.9th percentile 44, max 63; pixels over 60: 2 of 428400; the ground outside it (x 80 to 1100, y 900 to 1060) mean 19.8

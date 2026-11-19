@@ -16,21 +16,21 @@ def word(sid, line, phrase, edge='start', off=0):
     raise KeyError(phrase)
 rows = {}
 s = 's11-sing'
-SING = at(s, 'sing'); BR = word(s, 'b34', 'ten')
+SING = at(s, 'sing'); BR = word(s, 'b34', 'ten'); RING = word(s, 'b34', 'seconds')
 rows[s] = [('card "Sing it"', SING + 0.22), ('"Your turn."', word(s, 'b34', 'Your')), ('the bracket, "0", "10 s"', BR),
-  ('"Nothing listens"', max(word(s, 'b34', 'seconds'), BR + 0.4)), ('the doctor lines, small', word(s, 'b35', 'care lines')),
+  ('the ring (drawn on, DECISIONS 204)', RING), ('"Nothing listens"', RING + 0.4), ('the doctor lines, small', word(s, 'b35', 'care lines')),
   ('the icon, "Sore, hoarse or unwell today?"', word(s, 'b36', 'Sore')), ('"Just listen along."', word(s, 'b36', 'Just')),
   ('"hurts or uncomfortable"', word(s, 'b37', 'hurts')), ('"· unusually hoarse or tired"', word(s, 'b37', 'unusually')),
   ('"usual notes suddenly gone"', word(s, 'b37', 'suddenly')), ('"· ill"', word(s, 'b37', 'ill')), ('"talking or singing is hard work"', word(s, 'b37', 'talking')),
-  ('the ring (drawn on)', word(s, 'b37a', 'Listening', off=0.05)), ('the listening line', word(s, 'b37a', 'Rest'))]
+  ('the listening line', word(s, 'b37a', 'Rest')), ('the ring scales 1.05', word(s, 'b37a', 'the ring'))]
 s = 's12-your-turn'
 LISTEN = at(s, 'listen'); TICKIN = at(s, 'tick-in'); HOLD = at(s, 'hold'); ALL = at(s, 'b46a')
-rows[s] = [('"A3 · Merc"', word(s, 'b38', 'my A')), ('"A4 · Tavi, an octave up"', word(s, 'b38', 'an octave')), ('the phase row', at(s, 'b39')),
+rows[s] = [('the reasons leave (a fade, not a landing)', word(s, 'b38', 'Otherwise')), ('"A3 · Merc"', word(s, 'b38', 'my A')), ('"A4 · Tavi, an octave up"', word(s, 'b38', 'an octave')), ('the phase row', at(s, 'b39')),
   ('"at about speaking volume"', word(s, 'b39', 'at about')), ('"stop sooner if you need to"', word(s, 'b40', 'stop sooner')), ('the stop line', at(s, 'b41')),
   ('"Listen" (ring)', LISTEN), ('"Breathe" (switch)', at(s, 'b42')), ('"Breathe in, low and quiet"', word(s, 'b42', 'in')), ('"Sing" (switch)', TICKIN),
   ('the counter "0"', TICKIN + 0.4)] + [(f'the counter "{k}" (switch)', HOLD + k) for k in range(1, 11)] + [
   ('"How did that feel?"', at(s, 'b43')), ('"Easy"', word(s, 'b43', 'Easy')), ('"Workable"', word(s, 'b43', 'workable')), ('"Effortful"', word(s, 'b43', 'effortful')),
-  ('"Uncomfortable"', word(s, 'b43', 'uncomfortable')), ('the bracket, "rest a few easy breaths"', word(s, 'b44', 'Rest')), ('"rest before you sing again"', word(s, 'b45', 'rest')),
+  ('"Uncomfortable"', word(s, 'b43', 'uncomfortable')), ('the bracket, "rest for a few easy breaths"', word(s, 'b44', 'Rest')), ('"rest before you sing again"', word(s, 'b45', 'rest')),
   ('"enough singing for today"', word(s, 'b46', 'enough')), ('the doctor lines, full size', ALL + 0.5)]
 for sid, rs in rows.items():
     rs.sort(key=lambda r: r[1])

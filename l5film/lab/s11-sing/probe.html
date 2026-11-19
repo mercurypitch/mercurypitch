@@ -43,8 +43,8 @@
           // S10 to S11 (matched) and S11 to S12). F0 from the cut on `sing`: S10's empty hold frame on its pixels (x 1000 to
           // 1640, band 210 to 280, Merc's line y 245) while the room crossfades from F-hold to rest (L.roomCut); the frame
           // dims under the card "Sing it" and comes back as it leaves; the care block builds on the left (frame-fixed),
-          // the frame's bracket and "Nothing listens" on the right (world), and the ring draws on under the frame. Every
-          // time is a cue, a word or a duration.
+          // the frame's bracket, the ring under it (on "ten seconds,", DECISIONS 204) and "Nothing listens" on the right
+          // (world). Every time is a cue, a word or a duration.
           const SID = 's11-sing'
           const D = L.dur(SID)
           const T0 = L.scene(SID).start
@@ -80,21 +80,33 @@
             })
             o.nothing = L.label(world, T.NOTHING.text, T.NOTHING)
             o.breatheIn = L.label(world, T.BREATHE_IN.text, T.BREATHE_IN)
-            o.ring = L.ring(world, T.RING)
-            // the phase row (mono 28, ink-2, as the kit's lab sets it: uppercase, tracking .18em), each word its own
-            // text so it can light to ink, laid out from the whole row's measured advance, centred x 1320
+            // the ring (DECISIONS 207, 208): centre (1320, 572), r 136 in the world, so at F-turn (1376, 610.8), r 190.4
+            // on screen; at rest its stroke clears the floor horizon (y 840) and "Nothing listens" at F0 and at F-turn;
+            // at its largest breath (1.08) it touches neither and its tick stays 12 px or more under the foot of
+            // "Breathe in, low and quiet"; at F0 the phase row keeps 12 px or more under it
+            o.RING = { cx: 1320, cy: 572, r: 136 }
+            o.ring = L.ring(world, o.RING)
+            // the phase row (mono 28, as the kit's lab sets it: uppercase, tracking .18em) under the ring, each word its
+            // own text, laid out from the whole row's measured advance, centred x 1320; the unlit words ink-2 at 60 %, the
+            // lit one ink with a small chrome mark under it (DECISIONS 209). Its two lines under it, the last one's ink
+            // 12 px or more above the floor horizon (DECISIONS 203)
+            o.ROWY = [747, 785, 820]
             const ROWW = T.ROW.texts[0].split(' · ')
             const rowFont = { size: 28, family: 'mono', weight: 500, fill: C.ink2, tracking: 0.18, upper: true }
             o.rowG = L.svg('g', { opacity: 0, class: 'phase-row' }, world)
-            o.rowWords = ROWW.map((s) => L.text(o.rowG, s, { ...rowFont, x: T.ROW.x, y: T.ROW.y[0], opacity: 1 }))
-            o.rowDots = [0, 1].map(() => L.text(o.rowG, '·', { ...rowFont, x: T.ROW.x, y: T.ROW.y[0], opacity: 1 }))
+            o.rowWords = ROWW.map((s) => L.text(o.rowG, s, { ...rowFont, x: T.ROW.x, y: o.ROWY[0], opacity: 0.6 }))
+            o.rowDots = [0, 1].map(() => L.text(o.rowG, '·', { ...rowFont, x: T.ROW.x, y: o.ROWY[0], opacity: 0.6 }))
+            o.rowMark = L.svg('rect', { x: T.ROW.x - 12, y: o.ROWY[0] + 7, width: 24, height: 3, rx: 1.5, fill: C.chrome }, o.rowG)
+            o.rowCx = [T.ROW.x, T.ROW.x, T.ROW.x]
             const rowLayout = () => {
               const probe = L.text(o.rowG, T.ROW.texts[0], { ...rowFont, opacity: 0 })
-              const full = probe.getComputedTextLength() - 0.18 * 28      // no tracking after the last glyph
+              const tr = 0.18 * 28                                        // no tracking after a word's last glyph
+              const full = probe.getComputedTextLength() - tr
               const adv = (s) => { probe.textContent = s.toUpperCase(); return probe.getComputedTextLength() }
               let x = T.ROW.x - full / 2
               ROWW.forEach((s, i) => {
                 o.rowWords[i].setAttribute('x', L.f2(x))
+                o.rowCx[i] = x + (adv(s) - tr) / 2
                 x += adv(s + ' ')
                 if (i < 2) { o.rowDots[i].setAttribute('x', L.f2(x)); x += adv('· ') }
               })
@@ -102,9 +114,10 @@
             }
             rowLayout()
             L.afterFonts(rowLayout)
-            o.rowLines = [1, 2].map((i) => L.label(world, T.ROW.texts[i], { x: T.ROW.x, y: T.ROW.y[i], size: 30, weight: 500, anchor: 'middle' }))
+            o.rowLines = [1, 2].map((i) => L.label(world, T.ROW.texts[i], { x: T.ROW.x, y: o.ROWY[i], size: 30, weight: 500, anchor: 'middle' }))
             o.playhead = L.playhead(world)
-            o.echo = L.echoRings(world, { dur: 0.6, grow: 1.25, max: 1 })
+            // the close's echo: to 1.16 times the ring's radius, so it stays above the floor horizon at F-turn
+            o.echo = L.echoRings(world, { dur: 0.6, grow: 1.16, max: 1 })
             // hud: the care block (HANDOFFS § The turn, Frame-fixed; every line the page's words, L.TURN.CARE)
             o.title = L.label(hud, K.title.text, K.title)
             o.icon = L.icon(hud, K.icon.name, K.icon)
@@ -149,14 +162,15 @@
           const YT = word('b34', 'Your')                                // "Your turn."
           const COMF = word('b34', 'comfortable')                       // the frame's band glows
           const BR = word('b34', 'ten'), BR_D = 0.5                     // the bracket with "0" and "10 s" (one object)
-          const NOTH = Math.max(word('b34', 'seconds'), BR + 0.4)       // "Nothing listens"
+          // the ring draws on under them as the ten seconds' clock (35 %, its tick, no counter; DECISIONS 204)
+          const RING = word('b34', 'seconds'), RING_D = 0.8
+          const NOTH = RING + 0.4                                       // "Nothing listens"
           // 11c: b35, b36
           const DOC = word('b35', 'care lines')                         // the doctor lines, small
           const SORE = word('b36', 'Sore'), JUST = word('b36', 'Just')  // the comfort line, its two halves; the icon with the first
           // 11d: b37, each reason on its word
           const RS = [word('b37', 'hurts'), word('b37', 'unusually'), word('b37', 'suddenly'), word('b37', 'ill'), word('b37', 'talking')]
           // 11e: b37a
-          const RING = word('b37a', 'Listening', 'start', 0.05), RING_D = 0.8   // the ring draws on (35 %, its tick, no counter)
           const LISTENING = word('b37a', 'Rest')                        // "listening along: rest your voice and watch the ring"
           const RING_P = word('b37a', 'the ring')                       // the ring scales 1.05 once
 
@@ -187,11 +201,13 @@
             O.ch.draw({ a: frameA, band: { fill: 0.12 + 0.12 * glow }, merc: { a: 1, w: 4 } })
             card.draw(t)
 
-            /* 11b: the task, the bracket, "Nothing listens" */
+            /* 11b: the task, the bracket, the ring under it (the ten seconds' clock), "Nothing listens"; 11e: on "the
+               ring." the ring scales 1.05 once */
             O.title.life(t, YT, null, { dIn: 0.3, easeIn: 'none' })
             O.br.draw(P(t, BR, BR_D, 'power2.out'), 1)
             const brL = L.fade(t, BR + 0.3, null).a                    // "0" and "10 s" arrive with the bracket's ends
             O.br0.draw({ a: brL }); O.br10.draw({ a: brL })
+            O.ring.draw({ a: t >= RING ? 1 : 0, draw: P(t, RING, RING_D, 'power2.inOut'), trackA: 0.35, scale: L.pulse(t, [RING_P], 'ring') })
             O.nothing.life(t, NOTH, null)
 
             /* 11c: the doctor lines, small; the comfort line beside its icon */
@@ -203,8 +219,7 @@
             /* 11d: the reasons, each on its word */
             O.reasons.forEach((p, i) => p.lab.life(t, RS[i], null))
 
-            /* 11e: the ring draws on under the frame; the listening line; the ring scales 1.05 once */
-            O.ring.draw({ a: t >= RING ? 1 : 0, draw: P(t, RING, RING_D, 'power2.inOut'), trackA: 0.35, scale: L.pulse(t, [RING_P], 'ring') })
+            /* 11e: the listening line */
             O.listening.life(t, LISTENING, null)
 
             /* not yet in this scene */

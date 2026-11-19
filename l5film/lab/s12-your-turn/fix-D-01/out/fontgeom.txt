@@ -1,0 +1,235 @@
+[heavy] slot 2: node lab/s12-your-turn/fix-D-01/evalpage.mjs lab/s12-your-turn/fix-D-01/fontgeom.js
+{
+ "breathe": {
+  "s": "Breathe in, low and quiet",
+  "w": 311.3,
+  "left": -2,
+  "right": 311.5,
+  "asc": 21,
+  "desc": 6
+ },
+ "breathePart": [
+  {
+   "s": "Breathe",
+   "w": 102.3,
+   "left": -2,
+   "right": 102.2,
+   "asc": 21,
+   "desc": 1
+  },
+  {
+   "s": "Breathe in,",
+   "w": 138.3,
+   "left": -2,
+   "right": 137.5,
+   "asc": 21,
+   "desc": 5
+  },
+  {
+   "s": "Breathe in, low and q",
+   "w": 263.9,
+   "left": -2,
+   "right": 262.4,
+   "asc": 21,
+   "desc": 6
+  }
+ ],
+ "nothing": {
+  "s": "Nothing listens",
+  "w": 200.5,
+  "left": -2,
+  "right": 200.1,
+  "asc": 22,
+  "desc": 7
+ },
+ "rowCaps": {
+  "s": "LISTEN · BREATHE · SING",
+  "w": 502.3,
+  "left": -3,
+  "right": 495.5,
+  "asc": 21,
+  "desc": 1
+ },
+ "rowLines": [
+  {
+   "s": "at about speaking volume",
+   "w": 340.6,
+   "left": 0,
+   "right": 340.6,
+   "asc": 22,
+   "desc": 7
+  },
+  {
+   "s": "stop sooner if you need to",
+   "w": 340.2,
+   "left": 0,
+   "right": 339.3,
+   "asc": 22,
+   "desc": 6
+  }
+ ],
+ "feel": [
+  {
+   "s": "rest for a few easy breaths",
+   "w": 355.5,
+   "left": -1,
+   "right": 354.6,
+   "asc": 22,
+   "desc": 6
+  },
+  {
+   "s": "rest a few easy breaths",
+   "w": 308.5,
+   "left": -1,
+   "right": 307.6,
+   "asc": 22,
+   "desc": 6
+  },
+  {
+   "s": "rest before you sing again",
+   "w": 341.7,
+   "left": -1,
+   "right": 340.2,
+   "asc": 22,
+   "desc": 7
+  },
+  {
+   "s": "enough singing for today",
+   "w": 330.4,
+   "left": 0,
+   "right": 330.8,
+   "asc": 22,
+   "desc": 7
+  }
+ ],
+ "feel28": {
+  "s": "rest for a few easy breaths",
+  "w": 331.8,
+  "left": -1,
+  "right": 331.8,
+  "asc": 21,
+  "desc": 6
+ },
+ "doc": [
+  {
+   "s": "If hoarseness or discomfort lasts",
+   "w": 561.1,
+   "left": -2,
+   "right": 560.1,
+   "asc": 30,
+   "desc": 1
+  },
+  {
+   "s": "If hoarseness or discomfort lasts more",
+   "w": 660.6,
+   "left": -2,
+   "right": 660.1,
+   "asc": 30,
+   "desc": 1
+  },
+  {
+   "s": "more than a couple of weeks,",
+   "w": 508.6,
+   "left": -2,
+   "right": 506.8,
+   "asc": 30,
+   "desc": 9
+  },
+  {
+   "s": "more than a couple of weeks, see a doctor",
+   "w": 733.6,
+   "left": -2,
+   "right": 733.7,
+   "asc": 30,
+   "desc": 9
+  },
+  {
+   "s": "see a doctor (a GP or an ear,",
+   "w": 490.3,
+   "left": -1,
+   "right": 488.5,
+   "asc": 31,
+   "desc": 6
+  },
+  {
+   "s": "see a doctor (a GP or an ear, nose",
+   "w": 584.5,
+   "left": -1,
+   "right": 584.1,
+   "asc": 31,
+   "desc": 6
+  },
+  {
+   "s": "nose and throat specialist).",
+   "w": 463.5,
+   "left": -2,
+   "right": 461.7,
+   "asc": 31,
+   "desc": 9
+  },
+  {
+   "s": "If it’s very painful,",
+   "w": 296.9,
+   "left": -2,
+   "right": 295.1,
+   "asc": 30,
+   "desc": 9
+  },
+  {
+   "s": "If it’s very painful, or breathing",
+   "w": 516.3,
+   "left": -2,
+   "right": 514.6,
+   "asc": 30,
+   "desc": 9
+  },
+  {
+   "s": "or breathing or swallowing is hard,",
+   "w": 588,
+   "left": -1,
+   "right": 586.2,
+   "asc": 30,
+   "desc": 9
+  },
+  {
+   "s": "or swallowing is hard,",
+   "w": 368.7,
+   "left": -1,
+   "right": 366.9,
+   "asc": 30,
+   "desc": 9
+  },
+  {
+   "s": "swallowing is hard, get help straight away.",
+   "w": 721.5,
+   "left": -1,
+   "right": 719.7,
+   "asc": 30,
+   "desc": 9
+  },
+  {
+   "s": "get help straight away.",
+   "w": 387.7,
+   "left": -1,
+   "right": 385.9,
+   "asc": 30,
+   "desc": 9
+  },
+  {
+   "s": "or swallowing is hard, get help straight away.",
+   "w": 766.3,
+   "left": -1,
+   "right": 764.5,
+   "asc": 30,
+   "desc": 9
+  }
+ ],
+ "docAuto": [
+  "If hoarseness or discomfort lasts more",
+  "than a couple of weeks, see a doctor (a",
+  "GP or an ear, nose and throat specialist).",
+  "If it’s very painful, or breathing or",
+  "swallowing is hard, get help straight",
+  "away."
+ ]
+}

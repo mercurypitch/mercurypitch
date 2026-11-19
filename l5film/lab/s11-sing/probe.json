@@ -110,14 +110,14 @@
   "pass": true
  },
  {
-  "t": 6.119999999999993,
+  "t": 6.519999999999993,
   "name": "11b: \"Nothing listens\" from x 1000, baseline 402 (ink)",
   "got": "1002.0 to 1200.1, 380.0 to 409.0",
   "want": "x 1002 to 1200, y 380 to 409",
   "pass": true
  },
  {
-  "t": 6.119999999999993,
+  "t": 6.519999999999993,
   "name": "\"Nothing listens\" under \"0\" (gap)",
   "got": 57,
   "want": ">= 12",
@@ -156,6 +156,13 @@
   "name": "no two visible texts overlap",
   "got": "none",
   "want": "none",
+  "pass": true
+ },
+ {
+  "t": 7.98299999999997,
+  "name": "no visible type within 12 px of the floor horizon (ink foot)",
+  "got": 771,
+  "want": "<= 828",
   "pass": true
  },
  {
@@ -265,6 +272,13 @@
  },
  {
   "t": 31.725000000000012,
+  "name": "no visible type within 12 px of the floor horizon (ink foot)",
+  "got": 771,
+  "want": "<= 828",
+  "pass": true
+ },
+ {
+  "t": 31.725000000000012,
   "name": "keep-out: nearest visible text to merc's body box (\"If hoarseness or discomfort lasts more t\")",
   "got": 70.5,
   "want": ">= 20",
@@ -278,24 +292,45 @@
   "pass": true
  },
  {
-  "t": 36.23499999999998,
-  "name": "11e: the ring centre (1320, 590), r 160 (track 10 px)",
-  "got": "1320.0, 590.0, r 160.0 (the circle's geometry)",
-  "want": "1320, 590, r 160",
+  "t": 5.839999999999993,
+  "name": "11b (DECISIONS 204): the ring starts to draw on on \"seconds\" (the ten seconds' clock), under the bracket",
+  "got": "1.000 / dashoffset 0.9999",
+  "want": "1.000 / ~1 (just begun)",
   "pass": true
  },
  {
-  "t": 36.23499999999998,
+  "t": 5.839999999999993,
+  "name": "\"Nothing listens\" not yet (it lands 0.4 s after the ring)",
+  "got": "0.000",
+  "want": "0.000",
+  "pass": true
+ },
+ {
+  "t": 6.719999999999993,
+  "name": "11b: the ring drawn: centre (1320, 572), r 136 (DECISIONS 208; track 10 px, 35 %)",
+  "got": "1320.0, 572.0, r 136.0 (the circle's geometry); dashoffset 0.0000",
+  "want": "1320, 572, r 136; 0",
+  "pass": true
+ },
+ {
+  "t": 6.719999999999993,
   "name": "no counter, no word inside",
   "got": 0,
   "want": 0,
   "pass": true
  },
  {
-  "t": 36.23499999999998,
-  "name": "the ring under the frame's labels (track top 425 against \"Nothing listens\" foot)",
-  "got": 21,
+  "t": 6.719999999999993,
+  "name": "its stroke under \"Nothing listens\" (stroke top 431 against its ink foot)",
+  "got": 22,
   "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 6.719999999999993,
+  "name": "its stroke above the floor horizon (y 840)",
+  "got": 127,
+  "want": ">= 8",
   "pass": true
  },
  {
@@ -310,6 +345,13 @@
   "name": "no two visible texts overlap",
   "got": "none",
   "want": "none",
+  "pass": true
+ },
+ {
+  "t": 37.124999999999986,
+  "name": "no visible type within 12 px of the floor horizon (ink foot)",
+  "got": 771,
+  "want": "<= 828",
   "pass": true
  },
  {
@@ -329,8 +371,8 @@
  {
   "t": 38.37999999999996,
   "name": "11e: the ring scales about 1.05 on \"the ring.\"",
-  "got": "translate(1320 590) scale(1.0500) translate(-1320 -590)",
-  "want": "scale about (1320, 590)",
+  "got": "translate(1320 572) scale(1.0500) translate(-1320 -572)",
+  "want": "scale about (1320, 572)",
   "pass": true
  },
  {
@@ -373,6 +415,13 @@
   "name": "no two visible texts overlap",
   "got": "none",
   "want": "none",
+  "pass": true
+ },
+ {
+  "t": 39.1695,
+  "name": "no visible type within 12 px of the floor horizon (ink foot)",
+  "got": 771,
+  "want": "<= 828",
   "pass": true
  },
  {

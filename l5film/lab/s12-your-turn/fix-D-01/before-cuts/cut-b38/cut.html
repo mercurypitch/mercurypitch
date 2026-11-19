@@ -1,0 +1,560 @@
+<!doctype html>
+<!-- lab/s11-sing/cutprobe.mjs's harness (b38): s11-sing, then s12-your-turn. -->
+<html lang="en"><head><meta charset="UTF-8" />
+<script src="/assets/vendor/gsap-3.14.2.min.js"></script>
+<script src="/assets/cues.js"></script>
+<script src="/assets/scenes.js"></script>
+<script src="/assets/merc/roots.js"></script>
+<script src="/assets/lib/lesson.js"></script>
+<script src="/assets/lib/motion.js"></script>
+<script src="/assets/lib/marks.js"></script>
+<script src="/assets/lib/frames.js"></script>
+<script src="/assets/lib/chart.js"></script>
+<script src="/assets/lib/figure.js"></script>
+<script src="/assets/lib/gauge.js"></script>
+<script src="/assets/lib/mixup.js"></script>
+<script src="/assets/lib/folds.js"></script>
+<script src="/assets/lib/turn.js"></script>
+<script src="/assets/lib/recap.js"></script>
+<script src="/assets/lib/tease.js"></script>
+<script src="/assets/lib/hosts.js"></script>
+<link rel="stylesheet" href="/assets/lib/lesson.css" />
+<style>
+      /* The film's fonts, all SIL Open Font Licence 1.1 (assets/fonts/OFL-*.txt), inlined in the root
+         with root-relative paths (PRODUCTION-PIPELINE trap 1). Written once; tools/gen-root.py reads it. */
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+      @font-face { font-family: 'Instrument Serif'; src: url('/assets/fonts/InstrumentSerif-Italic.ttf') format('truetype'); font-weight: 400; font-style: italic; }
+      @font-face { font-family: 'Outfit'; src: url('/assets/fonts/Outfit-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'Inter'; src: url('/assets/fonts/Inter-opsz-wght.ttf') format('truetype'); font-weight: 100 900; font-style: normal; }
+      @font-face { font-family: 'JetBrains Mono'; src: url('/assets/fonts/JetBrainsMono-wght.ttf') format('truetype'); font-weight: 100 800; font-style: normal; }
+      @font-face { font-family: 'Noto Music'; src: url('/assets/fonts/NotoMusic-Regular.ttf') format('truetype'); font-weight: 400; font-style: normal; }
+
+.merc { display: none !important; }
+#a, #b { position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; }
+</style></head><body>
+<div id="a">
+    <div id="s11-sing" data-composition-id="s11-sing" data-start="0" data-duration="39.170" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s11-sing -->
+      <video id="s11-sing-m-orange" data-merc="m-orange" class="clip" muted playsinline src="/assets/merc/m-orange-s11-merc.webm" data-start="0.000" data-duration="39.197" data-media-start="0.050"></video>
+      <video id="s11-sing-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="/assets/merc/m-orange-s11-merc.webm" data-start="0.000" data-duration="39.197" data-media-start="0.050"></video>
+      <video id="s11-sing-m-blue" data-merc="m-blue" class="clip" muted playsinline src="/assets/merc/m-blue-s11-merc.webm" data-start="0.000" data-duration="39.197" data-media-start="0.050"></video>
+      <video id="s11-sing-m-blue-refl" data-merc="m-blue" data-merc-refl class="clip" muted playsinline src="/assets/merc/m-blue-s11-merc.webm" data-start="0.000" data-duration="39.197" data-media-start="0.050"></video>
+      <div class="scene" id="s11-sing-scene"></div>
+      <script>
+        ;(function () {
+          // S11, "Sing it" (STORYBOARD 11a to 11e; HANDOFFS § The hold frame at the right half, § The turn, § The cuts
+          // S10 to S11 (matched) and S11 to S12). F0 from the cut on `sing`: S10's empty hold frame on its pixels (x 1000 to
+          // 1640, band 210 to 280, Merc's line y 245) while the room crossfades from F-hold to rest (L.roomCut); the frame
+          // dims under the card "Sing it" and comes back as it leaves; the care block builds on the left (frame-fixed),
+          // the frame's bracket and "Nothing listens" on the right (world), and the ring draws on under the frame. Every
+          // time is a cue, a word or a duration.
+          const SID = 's11-sing'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const C = L.C, P = L.prog
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
+          const cut = L.roomCut(room, { from: 'F-hold' })             // the room as S10 left it, crossfading to rest
+          const world = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+          const cam = L.frameRig(room, { from: 'F0' })               // F0 throughout
+
+          /* ---------------------------------------------------------------- the turn's objects (the same block in
+             s11-sing and s12-your-turn: the kit gives their places, L.TURN, and the ring; this builds the rest of the
+             block once from those places, so both scenes draw the same pixels on either side of the cut on b38) */
+          const turnObjects = (world, hud) => {
+            const T = L.TURN, K = T.CARE
+            const o = {}
+            // world: the hold frame (L.CHART.FRAME), its bracket with "0" and "10 s", the voices, "Nothing listens",
+            // "Breathe in, low and quiet", the ring, the phase row under it, the playhead and the ring's echo
+            o.ch = L.bandChart(world, T.FRAME)
+            o.br = L.bracket(world, { x1: T.BRACKET.x0, x2: T.BRACKET.x1, y: T.BRACKET.y, dir: 'up', tick: T.BRACKET.tick })
+            o.br0 = L.label(world, '0', { x: T.BRACKET.x0, y: T.BRACKET.labels.y, size: T.BRACKET.labels.size, fill: C.ink2 })
+            o.br10 = L.label(world, '10 s', { x: T.BRACKET.x1, y: T.BRACKET.labels.y, size: T.BRACKET.labels.size, fill: C.ink2, anchor: 'end' })
+            o.voices = T.VOICES.map((v) => {
+              const g = L.svg('g', { opacity: 0, class: 'voice' }, world)
+              L.svg('circle', { cx: v.dot + 6, cy: T.voicesY - 10, r: 6, fill: v.color }, g)
+              const el = L.text(g, v.text, { x: v.x, y: T.voicesY, size: 30, opacity: 1 })
+              return { g, el, draw: ({ a = 1, scale = 1 } = {}) => L.place(g, { a, scale, ox: v.dot, oy: T.voicesY }) }
+            })
+            o.nothing = L.label(world, T.NOTHING.text, T.NOTHING)
+            o.breatheIn = L.label(world, T.BREATHE_IN.text, T.BREATHE_IN)
+            o.ring = L.ring(world, T.RING)
+            // the phase row (mono 28, ink-2, as the kit's lab sets it: uppercase, tracking .18em), each word its own
+            // text so it can light to ink, laid out from the whole row's measured advance, centred x 1320
+            const ROWW = T.ROW.texts[0].split(' · ')
+            const rowFont = { size: 28, family: 'mono', weight: 500, fill: C.ink2, tracking: 0.18, upper: true }
+            o.rowG = L.svg('g', { opacity: 0, class: 'phase-row' }, world)
+            o.rowWords = ROWW.map((s) => L.text(o.rowG, s, { ...rowFont, x: T.ROW.x, y: T.ROW.y[0], opacity: 1 }))
+            o.rowDots = [0, 1].map(() => L.text(o.rowG, '·', { ...rowFont, x: T.ROW.x, y: T.ROW.y[0], opacity: 1 }))
+            const rowLayout = () => {
+              const probe = L.text(o.rowG, T.ROW.texts[0], { ...rowFont, opacity: 0 })
+              const full = probe.getComputedTextLength() - 0.18 * 28      // no tracking after the last glyph
+              const adv = (s) => { probe.textContent = s.toUpperCase(); return probe.getComputedTextLength() }
+              let x = T.ROW.x - full / 2
+              ROWW.forEach((s, i) => {
+                o.rowWords[i].setAttribute('x', L.f2(x))
+                x += adv(s + ' ')
+                if (i < 2) { o.rowDots[i].setAttribute('x', L.f2(x)); x += adv('· ') }
+              })
+              probe.remove()
+            }
+            rowLayout()
+            L.afterFonts(rowLayout)
+            o.rowLines = [1, 2].map((i) => L.label(world, T.ROW.texts[i], { x: T.ROW.x, y: T.ROW.y[i], size: 30, weight: 500, anchor: 'middle' }))
+            o.playhead = L.playhead(world)
+            o.echo = L.echoRings(world, { dur: 0.6, grow: 1.25, max: 1 })
+            // hud: the care block (HANDOFFS § The turn, Frame-fixed; every line the page's words, L.TURN.CARE)
+            o.title = L.label(hud, K.title.text, K.title)
+            o.icon = L.icon(hud, K.icon.name, K.icon)
+            o.comfort = K.comfort.map((c) => L.label(hud, c.text, c))
+            // the reasons: five phrases on three lines, each landing on its own word; a phrase after a middot carries
+            // the middot, and stands where the whole line would set it (measured once the fonts are in)
+            const rFont = { size: K.reasonSize, weight: K.reasonWeight }
+            o.reasons = []
+            K.reasons.forEach((r) => {
+              const parts = r.text.split(' · ')
+              parts.forEach((s, j) => o.reasons.push({ line: r, j, lab: L.label(hud, j ? '· ' + s : s, { ...rFont, x: K.comfort[0].x, y: r.y }), prefix: parts.slice(0, j).join(' · ') + (j ? ' ' : '') }))
+            })
+            const reasonLayout = () => {
+              const probe = L.text(hud, '', { ...rFont, opacity: 0 })
+              for (const p of o.reasons) {
+                probe.textContent = p.prefix
+                p.lab.el.setAttribute('x', L.f2(K.comfort[0].x + (p.j ? probe.getComputedTextLength() : 0)))
+              }
+              probe.remove()
+            }
+            reasonLayout()
+            L.afterFonts(reasonLayout)
+            o.listening = L.label(hud, K.listening.text, K.listening)
+            o.stop = K.stop.map((s) => L.label(hud, s.text, { x: K.x, y: s.y, size: K.stopSize }))
+            // the doctor lines, small (Inter 30, ink-2, five lines broken where the font puts them within 700 px)
+            const DS = K.doctorSmall
+            o.docG = L.svg('g', { opacity: 0, class: 'doctor-small' }, hud)
+            o.doc = DS.y.map((y) => L.text(o.docG, '', { x: K.x, y, size: DS.size, family: DS.family, weight: 400, fill: DS.fill, opacity: 1 }))
+            L.afterFonts(() => L.TURN.breakLines(hud, K.doctor, DS).forEach((s, i) => { if (o.doc[i]) o.doc[i].textContent = s }))
+            return o
+          }
+          const O = turnObjects(world, hud)
+          const K = L.TURN.CARE
+
+          /* ---------------------------------------------------------------- anchors */
+          // 11a: sing (the cut is 0.15 s before the mark)
+          const SING = at('sing')
+          const DIM = SING, DIM_D = 0.2                                 // the empty frame dims to 25 % (linear)
+          const CARD_IN = SING + 0.22, CARD_OUT = at('b34', 'start', -0.5)
+          const UNDIM = CARD_OUT, UNDIM_D = 0.38                        // back to full as the card leaves (linear)
+          // 11b: b34
+          const YT = word('b34', 'Your')                                // "Your turn."
+          const COMF = word('b34', 'comfortable')                       // the frame's band glows
+          const BR = word('b34', 'ten'), BR_D = 0.5                     // the bracket with "0" and "10 s" (one object)
+          const NOTH = Math.max(word('b34', 'seconds'), BR + 0.4)       // "Nothing listens"
+          // 11c: b35, b36
+          const DOC = word('b35', 'care lines')                         // the doctor lines, small
+          const SORE = word('b36', 'Sore'), JUST = word('b36', 'Just')  // the comfort line, its two halves; the icon with the first
+          // 11d: b37, each reason on its word
+          const RS = [word('b37', 'hurts'), word('b37', 'unusually'), word('b37', 'suddenly'), word('b37', 'ill'), word('b37', 'talking')]
+          // 11e: b37a
+          const RING = word('b37a', 'Listening', 'start', 0.05), RING_D = 0.8   // the ring draws on (35 %, its tick, no counter)
+          const LISTENING = word('b37a', 'Rest')                        // "listening along: rest your voice and watch the ring"
+          const RING_P = word('b37a', 'the ring')                       // the ring scales 1.05 once
+
+          /* ---------------------------------------------------------------- the hosts at 300 in the corners */
+          const Hc = L.HOSTS.corners
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hc.merc })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hc.tavi })
+
+          /* ---------------------------------------------------------------- the card */
+          const card = L.chapterCard(hud, { num: null, title: 'Sing it', tIn: CARD_IN, tOut: CARD_OUT })
+
+          const probe = { cam, cut, card, ...O,
+            A: { SING, DIM, DIM_D, CARD_IN, CARD_OUT, UNDIM, UNDIM_D, YT, COMF, BR, BR_D, NOTH, DOC, SORE, JUST, RS, RING, RING_D, LISTENING, RING_P, D }, boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            cut.draw(t, T)
+            dust(T)
+            probe.boxes = { merc: merc(t), tavi: tavi(t) }
+
+            /* 11a: the frame on S10's pixels, dimmed under the card, back to full as it leaves; 11b: its band glows */
+            const frameA = 1 - 0.75 * P(t, DIM, DIM_D, 'none') + 0.75 * P(t, UNDIM, UNDIM_D, 'none')
+            const glow = L.glow(t, [COMF], { up: 0.3, hold: 0.5, down: 0.8 })
+            O.ch.draw({ a: frameA, band: { fill: 0.12 + 0.12 * glow }, merc: { a: 1, w: 4 } })
+            card.draw(t)
+
+            /* 11b: the task, the bracket, "Nothing listens" */
+            O.title.life(t, YT, null, { dIn: 0.3, easeIn: 'none' })
+            O.br.draw(P(t, BR, BR_D, 'power2.out'), 1)
+            const brL = L.fade(t, BR + 0.3, null).a                    // "0" and "10 s" arrive with the bracket's ends
+            O.br0.draw({ a: brL }); O.br10.draw({ a: brL })
+            O.nothing.life(t, NOTH, null)
+
+            /* 11c: the doctor lines, small; the comfort line beside its icon */
+            O.docG.setAttribute('opacity', L.fade(t, DOC, null, { dIn: 0.3, easeIn: 'none' }).a.toFixed(3))
+            const soreA = O.comfort[0].life(t, SORE, null)
+            O.icon.setAttribute('opacity', soreA.toFixed(3))
+            O.comfort[1].life(t, JUST, null)
+
+            /* 11d: the reasons, each on its word */
+            O.reasons.forEach((p, i) => p.lab.life(t, RS[i], null))
+
+            /* 11e: the ring draws on under the frame; the listening line; the ring scales 1.05 once */
+            O.ring.draw({ a: t >= RING ? 1 : 0, draw: P(t, RING, RING_D, 'power2.inOut'), trackA: 0.35, scale: L.pulse(t, [RING_P], 'ring') })
+            O.listening.life(t, LISTENING, null)
+
+            /* not yet in this scene */
+            O.voices.forEach((v) => v.draw({ a: 0 }))
+            O.breatheIn.draw({ a: 0 })
+            O.rowG.setAttribute('opacity', '0'); O.rowLines.forEach((l) => l.draw({ a: 0 }))
+            O.stop.forEach((l) => l.draw({ a: 0 }))
+            O.playhead.draw({ a: 0 })
+            O.echo.draw(t, [])
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </div>
+<div id="b">
+    <div id="s12-your-turn" data-composition-id="s12-your-turn" data-start="0" data-duration="76.780" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s12-your-turn -->
+      <video id="s12-your-turn-m-orange" data-merc="m-orange" class="clip" muted playsinline src="/assets/merc/m-orange-s12-merc.webm" data-start="0.000" data-duration="76.827" data-media-start="0.050"></video>
+      <video id="s12-your-turn-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="/assets/merc/m-orange-s12-merc.webm" data-start="0.000" data-duration="76.827" data-media-start="0.050"></video>
+      <video id="s12-your-turn-m-blue" data-merc="m-blue" class="clip" muted playsinline src="/assets/merc/m-blue-s12-merc.webm" data-start="0.000" data-duration="76.827" data-media-start="0.050"></video>
+      <video id="s12-your-turn-m-blue-refl" data-merc="m-blue" data-merc-refl class="clip" muted playsinline src="/assets/merc/m-blue-s12-merc.webm" data-start="0.000" data-duration="76.827" data-media-start="0.050"></video>
+      <div class="scene" id="s12-your-turn-scene"></div>
+      <script>
+        ;(function () {
+          // S12, "Your turn: ten seconds" (STORYBOARD 12a to 12h; HANDOFFS § The turn, § Framings F-turn, § Camera moves,
+          // § The cuts S11 to S12 and S12 to S13 (matched)). F0 from the cut on b38, the care block, the frame and the ring
+          // as S11 left them; the voices; the page's briefing under the ring; the stop line; the block thins and the phase
+          // row leaves; the push to F-turn (1.4x), landed before `listen`; both hosts sing the model note; one breath; the
+          // viewer's ten seconds (the ring a clock: an even arc, a seconds counter, a playhead, nothing listening); the
+          // feeling question and its four answers; the doctor lines full size; every mark but the frame's band and Merc's
+          // line leaves before the matched cut on `recap`. Every time is a cue, a word or a duration.
+          const SID = 's12-your-turn'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const C = L.C, P = L.prog, clamp = L.clamp, f2 = L.f2
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
+          const world = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+
+          /* ---------------------------------------------------------------- the turn's objects (the same block in
+             s11-sing and s12-your-turn: the kit gives their places, L.TURN, and the ring; this builds the rest of the
+             block once from those places, so both scenes draw the same pixels on either side of the cut on b38) */
+          const turnObjects = (world, hud) => {
+            const T = L.TURN, K = T.CARE
+            const o = {}
+            // world: the hold frame (L.CHART.FRAME), its bracket with "0" and "10 s", the voices, "Nothing listens",
+            // "Breathe in, low and quiet", the ring, the phase row under it, the playhead and the ring's echo
+            o.ch = L.bandChart(world, T.FRAME)
+            o.br = L.bracket(world, { x1: T.BRACKET.x0, x2: T.BRACKET.x1, y: T.BRACKET.y, dir: 'up', tick: T.BRACKET.tick })
+            o.br0 = L.label(world, '0', { x: T.BRACKET.x0, y: T.BRACKET.labels.y, size: T.BRACKET.labels.size, fill: C.ink2 })
+            o.br10 = L.label(world, '10 s', { x: T.BRACKET.x1, y: T.BRACKET.labels.y, size: T.BRACKET.labels.size, fill: C.ink2, anchor: 'end' })
+            o.voices = T.VOICES.map((v) => {
+              const g = L.svg('g', { opacity: 0, class: 'voice' }, world)
+              L.svg('circle', { cx: v.dot + 6, cy: T.voicesY - 10, r: 6, fill: v.color }, g)
+              const el = L.text(g, v.text, { x: v.x, y: T.voicesY, size: 30, opacity: 1 })
+              return { g, el, draw: ({ a = 1, scale = 1 } = {}) => L.place(g, { a, scale, ox: v.dot, oy: T.voicesY }) }
+            })
+            o.nothing = L.label(world, T.NOTHING.text, T.NOTHING)
+            o.breatheIn = L.label(world, T.BREATHE_IN.text, T.BREATHE_IN)
+            o.ring = L.ring(world, T.RING)
+            // the phase row (mono 28, ink-2, as the kit's lab sets it: uppercase, tracking .18em), each word its own
+            // text so it can light to ink, laid out from the whole row's measured advance, centred x 1320
+            const ROWW = T.ROW.texts[0].split(' · ')
+            const rowFont = { size: 28, family: 'mono', weight: 500, fill: C.ink2, tracking: 0.18, upper: true }
+            o.rowG = L.svg('g', { opacity: 0, class: 'phase-row' }, world)
+            o.rowWords = ROWW.map((s) => L.text(o.rowG, s, { ...rowFont, x: T.ROW.x, y: T.ROW.y[0], opacity: 1 }))
+            o.rowDots = [0, 1].map(() => L.text(o.rowG, '·', { ...rowFont, x: T.ROW.x, y: T.ROW.y[0], opacity: 1 }))
+            const rowLayout = () => {
+              const probe = L.text(o.rowG, T.ROW.texts[0], { ...rowFont, opacity: 0 })
+              const full = probe.getComputedTextLength() - 0.18 * 28      // no tracking after the last glyph
+              const adv = (s) => { probe.textContent = s.toUpperCase(); return probe.getComputedTextLength() }
+              let x = T.ROW.x - full / 2
+              ROWW.forEach((s, i) => {
+                o.rowWords[i].setAttribute('x', L.f2(x))
+                x += adv(s + ' ')
+                if (i < 2) { o.rowDots[i].setAttribute('x', L.f2(x)); x += adv('· ') }
+              })
+              probe.remove()
+            }
+            rowLayout()
+            L.afterFonts(rowLayout)
+            o.rowLines = [1, 2].map((i) => L.label(world, T.ROW.texts[i], { x: T.ROW.x, y: T.ROW.y[i], size: 30, weight: 500, anchor: 'middle' }))
+            o.playhead = L.playhead(world)
+            o.echo = L.echoRings(world, { dur: 0.6, grow: 1.25, max: 1 })
+            // hud: the care block (HANDOFFS § The turn, Frame-fixed; every line the page's words, L.TURN.CARE)
+            o.title = L.label(hud, K.title.text, K.title)
+            o.icon = L.icon(hud, K.icon.name, K.icon)
+            o.comfort = K.comfort.map((c) => L.label(hud, c.text, c))
+            // the reasons: five phrases on three lines, each landing on its own word; a phrase after a middot carries
+            // the middot, and stands where the whole line would set it (measured once the fonts are in)
+            const rFont = { size: K.reasonSize, weight: K.reasonWeight }
+            o.reasons = []
+            K.reasons.forEach((r) => {
+              const parts = r.text.split(' · ')
+              parts.forEach((s, j) => o.reasons.push({ line: r, j, lab: L.label(hud, j ? '· ' + s : s, { ...rFont, x: K.comfort[0].x, y: r.y }), prefix: parts.slice(0, j).join(' · ') + (j ? ' ' : '') }))
+            })
+            const reasonLayout = () => {
+              const probe = L.text(hud, '', { ...rFont, opacity: 0 })
+              for (const p of o.reasons) {
+                probe.textContent = p.prefix
+                p.lab.el.setAttribute('x', L.f2(K.comfort[0].x + (p.j ? probe.getComputedTextLength() : 0)))
+              }
+              probe.remove()
+            }
+            reasonLayout()
+            L.afterFonts(reasonLayout)
+            o.listening = L.label(hud, K.listening.text, K.listening)
+            o.stop = K.stop.map((s) => L.label(hud, s.text, { x: K.x, y: s.y, size: K.stopSize }))
+            // the doctor lines, small (Inter 30, ink-2, five lines broken where the font puts them within 700 px)
+            const DS = K.doctorSmall
+            o.docG = L.svg('g', { opacity: 0, class: 'doctor-small' }, hud)
+            o.doc = DS.y.map((y) => L.text(o.docG, '', { x: K.x, y, size: DS.size, family: DS.family, weight: 400, fill: DS.fill, opacity: 1 }))
+            L.afterFonts(() => L.TURN.breakLines(hud, K.doctor, DS).forEach((s, i) => { if (o.doc[i]) o.doc[i].textContent = s }))
+            return o
+          }
+          const O = turnObjects(world, hud)
+          const K = L.TURN.CARE, F = L.TURN.FEEL
+
+          /* ---------------------------------------------------------------- anchors */
+          // 12a: b38
+          const MYA = word('b38', 'my A')                               // "A3 · Merc"; Merc's line glows
+          const OCT = word('b38', 'an octave')                          // "A4 · Tavi, an octave up"
+          // 12b: b39, b40
+          const ROW = at('b39')                                         // the phase row lands, "Listen" lit
+          const LIT = [at('b39'), word('b39', 'Breathe'), word('b39', 'sing')]
+          const VOL = word('b39', 'at about')                           // "at about speaking volume"
+          const TICK = word('b40', 'ring closes')                       // the ring's 12 o'clock tick brightens
+          const SOONER = word('b40', 'stop sooner')                     // "stop sooner if you need to"
+          // 12c: b41; the push lands 0.14 s before `listen` (DECISIONS 112), the block thins 0.5 s before it starts
+          const STOP = at('b41')                                        // the stop line
+          const LISTEN = at('listen'), LISTEN_END = at('listen', 'end')
+          const PUSH_D = 1.1, PUSH = LISTEN - 0.14 - PUSH_D             // F0 to F-turn, power2.inOut
+          const THIN = PUSH - 0.5, THIN_D = 0.3                         // the care block thins; the phase row leaves up fast
+          // 12d: listen, b42, breathe
+          const BREATHE = at('b42')                                     // "Listen" switches to "Breathe"
+          const BREATHE_IN = word('b42', 'in')                          // "Breathe in, low and quiet"
+          const TICKIN = at('tick-in')                                  // "Breathe" switches to "Sing"; the breath ends
+          const BREATH0 = at('b42', 'start', -0.04)                     // the ring breathes once, to 1.08 and back
+          // 12e: tick-in, hold, tick-out (the viewer's ten seconds)
+          const HOLD = at('hold'), HOLD_END = at('hold', 'end')         // the arc: angle = 36 t over the hold
+          const COUNT0 = TICKIN + 0.4                                   // the counter fades in at "0"
+          // 12f: b43, feel
+          const RING_OUT = at('b43', 'start', -0.4), RING_OUT_D = 0.4   // the ring, its word, the counter, the playhead, "Your turn."
+          const Q = at('b43')                                           // "How did that feel?"
+          const ANS = [word('b43', 'Easy'), word('b43', 'workable'), word('b43', 'effortful'), word('b43', 'uncomfortable')]
+          const FEEL = at('feel'), FEEL_D = at('feel', 'end') - at('feel')   // the small ring timer beside the question
+          // 12g: b44, b45, b46: each answer lights as Merc names it, the one before dimming its stroke
+          const L1 = word('b44', 'Easy'), LINE1 = word('b44', 'Rest')
+          const L2 = word('b45', 'Effortful'), LINE2 = word('b45', 'rest')
+          const L3 = word('b46', 'Uncomfortable'), LINE3 = word('b46', 'enough')
+          // 12h: b46a
+          const ALL = at('b46a')                                        // all four light together
+          const STOP_OUT = ALL + 0.05, STOP_OUT_D = 0.4                 // the stop line fades
+          const DOCX = ALL + 0.2                                        // the doctor lines to full size (0.8 s): small out, full in rising 12 px
+          const U1 = word('b46a', 'see a doctor'), U2 = word('b46a', 'get help')   // their words underline
+          const END = at('b46a', 'end', 0.06), END_D = 0.5              // every mark but the band and Merc's line
+
+          /* ---------------------------------------------------------------- the camera: the push to F-turn does not
+             come back; the scene ends on it, at the matched cut on `recap` */
+          const cam = L.frameRig(room, { from: 'F0' })
+          cam.to(PUSH, PUSH_D, 'F-turn', 'power2.inOut')
+
+          /* ---------------------------------------------------------------- the hosts at 300 in the corners */
+          const Hc = L.HOSTS.corners
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hc.merc })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hc.tavi })
+
+          /* ---------------------------------------------------------------- the feel block (frame-fixed) */
+          const question = L.label(hud, F.question.text, F.question)
+          const feelRing = L.ringTimer(hud, F.ring)
+          const caps = F.capsules.texts.map((s, i) => L.pill(hud, s, { x: F.capsules.x0, x1: F.capsules.x1, y: F.capsules.y[i], size: F.capsules.size, h: F.capsules.h }))
+          const feelLines = F.lines.map((l) => L.label(hud, l.text, { x: F.linesX, y: l.y, size: F.linesSize, weight: 500 }))
+          // the bracket from the first two capsules to their line: vertical at x 1240, its ticks pointing back at them
+          const feelBr = L.bracket(hud, { x1: F.bracket.y0, x2: F.bracket.y1, y: F.bracket.x, vertical: true, dir: 'down', tick: 6 })
+          // a capsule lit (its stroke to full, a chrome tint), dimmed (its stroke to 0.28, its label stays ink)
+          const capDraw = (c, { a, lit, dim, scale }) => {
+            c.draw({ alpha: a, scale })
+            c.box.setAttribute('stroke-opacity', clamp(0.7 + 0.3 * lit - 0.42 * dim).toFixed(3))
+            c.box.setAttribute('fill', L.mixHex(C.ground, C.chrome, 0.18 * clamp(lit)))
+          }
+          const CAP_LIT = [[L1, L2, ALL], [L1, L2, ALL], [L2, L3, ALL], [L3, null, null]]   // lit from, dimmed from, lit again
+
+          /* ---------------------------------------------------------------- the doctor lines full size (12h; Inter 40, ink,
+             six lines broken where the font puts them within 700 px) and the underlines of their two calls to act */
+          const DF = K.doctorFull
+          const docFullG = L.svg('g', { opacity: 0, class: 'doctor-full' }, hud)
+          const docFull = DF.y.map((y) => L.text(docFullG, '', { x: K.x, y, size: DF.size, family: DF.family, weight: 400, fill: DF.fill, opacity: 1 }))
+          const ULS = ['see a doctor', 'get help straight away'].map(() => ({ g: L.svg('g', { opacity: 0 }, hud), segs: [], rects: [] }))
+          const underlineLayout = (lines) => {
+            // each phrase's character range in the whole text, mapped onto the lines it falls on, measured in the font
+            const starts = []
+            let s0 = 0
+            for (const ln of lines) { starts.push(s0); s0 += ln.length + 1 }
+            ;['see a doctor', 'get help straight away'].forEach((ph, k) => {
+              const a = K.doctor.indexOf(ph), b = a + ph.length, U = ULS[k]
+              U.segs = []
+              lines.forEach((ln, i) => {
+                const lo = Math.max(a, starts[i]), hi = Math.min(b, starts[i] + ln.length)
+                if (hi <= lo || !docFull[i]) return
+                const el = docFull[i]
+                const x0 = K.x + (lo > starts[i] ? el.getSubStringLength(0, lo - starts[i]) : 0)
+                const x1 = K.x + el.getSubStringLength(0, hi - starts[i])
+                U.segs.push({ x0, x1, y: DF.y[i] + 10 })
+              })
+              U.rects.forEach((r) => r.remove())
+              U.rects = U.segs.map((sg) => L.svg('rect', { x: f2(sg.x0), y: f2(sg.y), width: 0, height: 2, fill: C.chrome }, U.g))
+            })
+          }
+          L.afterFonts(() => {
+            const lines = L.TURN.breakLines(hud, K.doctor, DF)
+            lines.forEach((s, i) => { if (docFull[i]) docFull[i].textContent = s })
+            underlineLayout(lines)
+          })
+          const underlineDraw = (U, u, a) => {
+            const total = U.segs.reduce((s, sg) => s + sg.x1 - sg.x0, 0)
+            let left = clamp(u) * total
+            U.segs.forEach((sg, i) => { const w = Math.min(sg.x1 - sg.x0, Math.max(0, left)); left -= w; U.rects[i].setAttribute('width', f2(w)) })
+            U.g.setAttribute('opacity', (u > 0 ? clamp(a) : 0).toFixed(3))
+          }
+
+          // the swaps in place (DECISIONS 183): the old out, then the new in, never glyph on glyph
+          const swapSeq = (t, t0, dOut, dIn, from, to) => {
+            const uo = P(t, t0, dOut, 'none'), ui = P(t, t0 + dOut, dIn, 'power2.out')
+            return [{ text: from, a: 1 - uo, dy: -12 * uo }, { text: to, a: ui, dy: 12 * (1 - ui) }]
+          }
+          // the ring's word: "Listen" lands on `listen`, switches to "Breathe" on b42 and to "Sing" on the first tick
+          const ringWords = (t) => {
+            if (t < BREATHE) return [{ text: 'Listen', a: P(t, LISTEN, 0.2, 'power2.out'), dy: 0 }]
+            if (t < TICKIN) return swapSeq(t, BREATHE, 0.1, 0.15, 'Listen', 'Breathe')
+            return swapSeq(t, TICKIN, 0.1, 0.15, 'Breathe', 'Sing')
+          }
+          // the counter: "0" at COUNT0, then each second of the hold a 0.15 s switch (the old out in 0.06 s, the new in
+          // over the next 0.09 s, landing on the second itself)
+          const counts = (t) => {
+            if (t < COUNT0) return []
+            let n = 0
+            for (let k = 1; k <= 10; k++) if (t >= HOLD + k - 0.06) n = k
+            if (n === 0) return [{ text: '0', a: P(t, COUNT0, 0.2, 'none'), dy: 0 }]
+            const tn = HOLD + n
+            const uo = P(t, tn - 0.06, 0.06, 'none'), ui = P(t, tn, 0.09, 'power2.out')
+            return [{ text: String(n - 1), a: 1 - uo, dy: -12 * uo }, { text: String(n), a: ui, dy: 12 * (1 - ui) }]
+          }
+
+          const probe = { cam, ...O, question, feelRing, caps, feelLines, feelBr, docFull, docFullG, ULS,
+            A: { MYA, OCT, ROW, LIT, VOL, TICK, SOONER, STOP, LISTEN, LISTEN_END, PUSH, PUSH_D, THIN, THIN_D, BREATHE, BREATHE_IN, TICKIN, BREATH0, HOLD, HOLD_END, COUNT0,
+              RING_OUT, RING_OUT_D, Q, ANS, FEEL, FEEL_D, L1, LINE1, L2, LINE2, L3, LINE3, ALL, STOP_OUT, DOCX, U1, U2, END, END_D, D }, boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            dust(T)
+            probe.boxes = { merc: merc(t), tavi: tavi(t) }
+            const endA = 1 - P(t, END, END_D, 'none')                 // 12h: every mark of the turn but the band and Merc's line
+            const ringA = 1 - P(t, RING_OUT, RING_OUT_D, 'none')      // 12f: the ring, its word, the counter, the playhead, "Your turn."
+
+            /* the frame: Merc's line glows on "my A,"; its band brightens while both hosts sing their A (12d) */
+            const lineGlow = L.glow(t, [MYA], { up: 0.3, hold: 0.6, down: 0.8 })
+            const bright = L.env(t, LISTEN, 0.3, Math.max(0, LISTEN_END - LISTEN - 0.7), 0.4)
+            O.ch.draw({ a: 1, band: { fill: 0.12 + 0.1 * bright }, merc: { a: 1, w: 4, glow: lineGlow } })
+            O.br.draw(1, endA)
+            O.br0.draw({ a: endA }); O.br10.draw({ a: endA })
+            O.nothing.draw({ a: endA })
+
+            /* 12a: the voices, each with its dot; both scale 1.08 as the hosts sing them (12d) */
+            const vPulse = L.pulse(t, [LISTEN], 'chip')
+            O.voices[0].draw({ a: L.fade(t, MYA, null).a * endA, scale: vPulse })
+            O.voices[1].draw({ a: L.fade(t, OCT, null).a * endA, scale: vPulse })
+
+            /* 12b: the phase row under the ring, each word lighting to ink as Merc says it, and its two lines; all three
+               leave up fast with the block's thinning, before the push (12c) */
+            const rowOut = P(t, THIN, THIN_D, 'power3.in')
+            O.rowG.setAttribute('opacity', (L.fade(t, ROW, null).a * (1 - rowOut)).toFixed(3))
+            O.rowG.setAttribute('transform', `translate(0 ${f2(-16 * rowOut)})`)
+            O.rowWords.forEach((el, i) => el.setAttribute('fill', L.mixHex(C.ink2, C.ink, P(t, LIT[i], 0.2, 'power2.out'))))
+            O.rowLines[0].draw({ a: L.fade(t, VOL, null).a * (1 - rowOut), dy: -16 * rowOut })
+            O.rowLines[1].draw({ a: L.fade(t, SOONER, null).a * (1 - rowOut), dy: -16 * rowOut })
+
+            /* the ring: at 35 % from S11; its tick brightens on "ring closes,"; its word (12d, 12e); one breath to 1.08
+               and back (12d); the arc fills clockwise at an even pace over the hold, the counter counts the seconds, and
+               at the second tick it closes and sends one echo ring (12e); it fades before the question (12f) */
+            const breathU = (t - BREATH0) / Math.max(0.01, TICKIN - BREATH0)
+            const breath = t > BREATH0 && t < TICKIN ? Math.sin(Math.PI * L.ease('sine.inOut')(clamp(breathU))) : 0
+            O.ring.draw({
+              a: ringA, draw: 1, trackA: 0.35,
+              arc: P(t, HOLD, HOLD_END - HOLD, 'none'),
+              tick: L.glow(t, [TICK], { up: 0.25, hold: 0.8, down: 0.6 }),
+              scale: 1 + 0.08 * breath,
+              words: t >= LISTEN ? ringWords(t) : [],
+              counts: counts(t),
+            })
+            O.echo.draw(t, [{ t: HOLD_END, x: L.TURN.RING.cx, y: L.TURN.RING.cy, r: L.TURN.RING.r }])
+            // the playhead sweeps the frame's ten seconds in step with the arc (64 world px a second)
+            const band = O.ch.band()
+            O.playhead.draw({ x: L.TURN.playhead(clamp(t - HOLD, 0, HOLD_END - HOLD)), y0: band.top, y1: band.bot, a: P(t, HOLD, 0.3, 'none') * ringA })
+
+            /* 12d: "Breathe in, low and quiet" on the "Nothing listens" line, right-aligned to the frame's end; it leaves
+               at the first tick (linear) */
+            O.breatheIn.draw({ a: L.fade(t, BREATHE_IN, TICKIN, { easeOut: 'none' }).a })
+
+            /* the care block (frame-fixed): as S11 left it; the stop line lands (12c); the comfort line, its icon, the
+               reasons and the listening line thin before the push; "Your turn." stays through the ten seconds (12f) */
+            const thinA = 1 - P(t, THIN, THIN_D, 'none')
+            O.title.draw({ a: ringA })
+            O.icon.setAttribute('opacity', thinA.toFixed(3))
+            O.comfort.forEach((l) => l.draw({ a: thinA }))
+            O.reasons.forEach((p) => p.lab.draw({ a: thinA }))
+            O.listening.draw({ a: thinA })
+            const stopA = L.fade(t, STOP, STOP_OUT, { dIn: 0.3, easeIn: 'none', dOut: STOP_OUT_D, easeOut: 'none' }).a
+            O.stop.forEach((l) => l.draw({ a: stopA }))
+            // the doctor lines: small from S11; to full size on "Whatever you chose:" (small out, then full in, rising 12 px).
+            // The rise is linear over its first 0.2 s, a pixel a 60 fps frame: eased to rest over 0.5 s, the type stepped a
+            // whole pixel every other frame near the end, which measure.py flagged as jumps (1.2 % of the frame each)
+            O.docG.setAttribute('opacity', (1 - P(t, DOCX, 0.3, 'none')).toFixed(3))
+            const fullA = P(t, DOCX + 0.3, 0.5, 'none'), fullRise = P(t, DOCX + 0.3, 0.2, 'none')
+            docFullG.setAttribute('opacity', (fullA * endA).toFixed(3))
+            docFullG.setAttribute('transform', `translate(0 ${f2(12 * (1 - fullRise))})`)
+            underlineDraw(ULS[0], P(t, U1, 0.5, 'power2.out'), endA)
+            underlineDraw(ULS[1], P(t, U2, 0.6, 'power2.out'), endA)
+
+            /* 12f to 12h: the feel block */
+            question.draw({ a: L.fade(t, Q, null, { dIn: 0.3, easeIn: 'none' }).a * endA })
+            feelRing.draw(t, FEEL, FEEL_D)
+            caps.forEach((c, i) => {
+              const [on, off, again] = CAP_LIT[i]
+              const lit = P(t, on, 0.25, 'none') - (off == null ? 0 : P(t, off, 0.25, 'none')) + (again == null ? 0 : P(t, again, 0.25, 'none'))
+              const dim = off == null ? 0 : P(t, off, 0.25, 'none') - P(t, again, 0.25, 'none')
+              capDraw(c, { a: L.fade(t, ANS[i], null).a * endA, lit, dim, scale: L.pulse(t, [on, again], 'pill') })
+            })
+            feelBr.draw(P(t, LINE1, 0.4, 'power2.out'), endA)
+            feelLines[0].draw({ a: L.fade(t, LINE1, null).a * endA })
+            feelLines[1].draw({ a: L.fade(t, LINE2, null).a * endA })
+            feelLines[2].draw({ a: L.fade(t, LINE3, null).a * endA })
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </div>
+</body></html>

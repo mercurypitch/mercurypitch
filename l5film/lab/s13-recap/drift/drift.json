@@ -1,0 +1,227 @@
+[
+ {
+  "k": -6,
+  "t": 62.37500000000002,
+  "layer": "translate3d(0px, 0px, 0px)"
+ },
+ {
+  "k": -3,
+  "t": 62.425000000000026,
+  "layer": "translate3d(0px, 0px, 0px)"
+ },
+ {
+  "k": 0,
+  "t": 62.47500000000002,
+  "layer": "translate3d(0px, 0px, 0px)"
+ },
+ {
+  "k": 3,
+  "t": 62.52500000000002,
+  "layer": "translate3d(0px, -0.022px, 0px)"
+ },
+ {
+  "k": 6,
+  "t": 62.575000000000024,
+  "layer": "translate3d(0px, -0.086px, 0px)"
+ },
+ {
+  "k": 9,
+  "t": 62.62500000000002,
+  "layer": "translate3d(0px, -0.193px, 0px)"
+ },
+ {
+  "k": 12,
+  "t": 62.675000000000026,
+  "layer": "translate3d(0px, -0.343px, 0px)"
+ },
+ {
+  "k": 15,
+  "t": 62.72500000000002,
+  "layer": "translate3d(0px, -0.533px, 0px)"
+ },
+ {
+  "k": 18,
+  "t": 62.77500000000002,
+  "layer": "translate3d(0px, -0.763px, 0px)"
+ },
+ {
+  "k": 21,
+  "t": 62.825000000000024,
+  "layer": "translate3d(0px, -1.032px, 0px)"
+ },
+ {
+  "k": 24,
+  "t": 62.87500000000002,
+  "layer": "translate3d(0px, -1.337px, 0px)"
+ },
+ {
+  "k": 27,
+  "t": 62.925000000000026,
+  "layer": "translate3d(0px, -1.677px, 0px)"
+ },
+ {
+  "k": 30,
+  "t": 62.97500000000002,
+  "layer": "translate3d(0px, -2.05px, 0px)"
+ },
+ {
+  "k": 33,
+  "t": 63.02500000000002,
+  "layer": "translate3d(0px, -2.454px, 0px)"
+ },
+ {
+  "k": 36,
+  "t": 63.075000000000024,
+  "layer": "translate3d(0px, -2.886px, 0px)"
+ },
+ {
+  "k": 39,
+  "t": 63.12500000000002,
+  "layer": "translate3d(0px, -3.343px, 0px)"
+ },
+ {
+  "k": 42,
+  "t": 63.175000000000026,
+  "layer": "translate3d(0px, -3.822px, 0px)"
+ },
+ {
+  "k": 45,
+  "t": 63.22500000000002,
+  "layer": "translate3d(0px, -4.321px, 0px)"
+ },
+ {
+  "k": 48,
+  "t": 63.27500000000002,
+  "layer": "translate3d(0px, -4.837px, 0px)"
+ },
+ {
+  "k": 51,
+  "t": 63.325000000000024,
+  "layer": "translate3d(0px, -5.366px, 0px)"
+ },
+ {
+  "k": 54,
+  "t": 63.37500000000002,
+  "layer": "translate3d(0px, -5.905px, 0px)"
+ },
+ {
+  "k": 57,
+  "t": 63.425000000000026,
+  "layer": "translate3d(0px, -6.451px, 0px)"
+ },
+ {
+  "k": 60,
+  "t": 63.47500000000002,
+  "layer": "translate3d(0px, -7px, 0px)"
+ },
+ {
+  "k": 63,
+  "t": 63.52500000000002,
+  "layer": "translate3d(0px, -7.549px, 0px)"
+ },
+ {
+  "k": 66,
+  "t": 63.575000000000024,
+  "layer": "translate3d(0px, -8.095px, 0px)"
+ },
+ {
+  "k": 69,
+  "t": 63.62500000000002,
+  "layer": "translate3d(0px, -8.634px, 0px)"
+ },
+ {
+  "k": 72,
+  "t": 63.675000000000026,
+  "layer": "translate3d(0px, -9.163px, 0px)"
+ },
+ {
+  "k": 75,
+  "t": 63.72500000000002,
+  "layer": "translate3d(0px, -9.679px, 0px)"
+ },
+ {
+  "k": 78,
+  "t": 63.77500000000002,
+  "layer": "translate3d(0px, -10.178px, 0px)"
+ },
+ {
+  "k": 81,
+  "t": 63.825000000000024,
+  "layer": "translate3d(0px, -10.657px, 0px)"
+ },
+ {
+  "k": 84,
+  "t": 63.87500000000002,
+  "layer": "translate3d(0px, -11.114px, 0px)"
+ },
+ {
+  "k": 87,
+  "t": 63.925000000000026,
+  "layer": "translate3d(0px, -11.546px, 0px)"
+ },
+ {
+  "k": 90,
+  "t": 63.97500000000002,
+  "layer": "translate3d(0px, -11.95px, 0px)"
+ },
+ {
+  "k": 93,
+  "t": 64.02500000000002,
+  "layer": "translate3d(0px, -12.323px, 0px)"
+ },
+ {
+  "k": 96,
+  "t": 64.07500000000002,
+  "layer": "translate3d(0px, -12.663px, 0px)"
+ },
+ {
+  "k": 99,
+  "t": 64.12500000000003,
+  "layer": "translate3d(0px, -12.968px, 0px)"
+ },
+ {
+  "k": 102,
+  "t": 64.17500000000003,
+  "layer": "translate3d(0px, -13.237px, 0px)"
+ },
+ {
+  "k": 105,
+  "t": 64.22500000000002,
+  "layer": "translate3d(0px, -13.467px, 0px)"
+ },
+ {
+  "k": 108,
+  "t": 64.27500000000002,
+  "layer": "translate3d(0px, -13.657px, 0px)"
+ },
+ {
+  "k": 111,
+  "t": 64.32500000000002,
+  "layer": "translate3d(0px, -13.807px, 0px)"
+ },
+ {
+  "k": 114,
+  "t": 64.37500000000003,
+  "layer": "translate3d(0px, -13.914px, 0px)"
+ },
+ {
+  "k": 117,
+  "t": 64.42500000000003,
+  "layer": "translate3d(0px, -13.978px, 0px)"
+ },
+ {
+  "k": 120,
+  "t": 64.47500000000002,
+  "layer": "translate3d(0px, -14px, 0px)"
+ },
+ {
+  "k": 123,
+  "t": 64.52500000000002,
+  "layer": "translate3d(0px, -14px, 0px)"
+ },
+ {
+  "k": 126,
+  "t": 64.57500000000002,
+  "layer": "translate3d(0px, -14px, 0px)"
+ }
+]

@@ -1,0 +1,11 @@
+s15-end: the board's 0.4 s rule over the landings (scene time, from the clock)
+
+    0.140  the lockup's wipe (0.5 s)
+    0.540  "mercurypitch.com/mirror" (0.2 s)
+    0.940  "Voice Mirror is free, with no account" (0.2 s)
+
+moves and leaves (not landings):
+    0.000  the camera F-turn to F-end over the scene (sine.inOut); the shrink carries on from S14
+    0.040  Merc grows to 400 in place; Tavi grows and hops to 1610 (0.7 s)
+
+3 landings, 0 closer than 0.4 s, each the board's own or not:

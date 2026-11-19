@@ -527,14 +527,21 @@ to 575.5 to:
 | "A3 · Merc" (blue dot r 6 at x 1000, text from 1016) and "A4 · Tavi, an octave up" (orange dot at 1186, text from 1202), Outfit 600 30 ink | baseline 362 | baseline 317 |
 | "Nothing listens" Outfit 600 30 ink, x 1000 to about 1225 | baseline 402 | baseline 373, x 928 to 1243 |
 | "Breathe in, low and quiet" Outfit 600 28 ink, right-aligned 1640, from about 1278 (426.57 to 428.30) | baseline 402 | baseline 373, x 1317 to 1824: 74 px right of "Nothing listens" |
-| The ring: track chrome 35 %, stroke 10; arc chrome 100 % with a soft glow, clockwise from 12 o'clock, `angle = 36 t` over the hold; 12 o'clock tick 4 x 24 | centre (1320, 590), r 160: x 1160 to 1480, y 430 to 750 | centre (1376, 636), r 224: x 1152 to 1600, y 412 to 860 |
-| The phase word inside the ring ("Listen", "Breathe", "Sing"), Outfit 600 40, ink, centred | baseline 548 | baseline 577, 56 px |
-| The counter, Outfit 600 80 tabular, ink, centred ("0" at 428.50, then 1 to 10) | baseline 640 | baseline 706, 112 px |
-| "Listen · Breathe · Sing" mono 28 ink-2; "at about speaking volume" and "stop sooner if you need to" Outfit 500 30 ink, centred x 1320 | baselines 790, 828, 864 | gone (they leave up fast 422.30 to 422.60, before the push **[v3: 4]**) |
+| The ring: track chrome 35 %, stroke 10; arc chrome 100 % with a soft glow, clockwise from 12 o'clock, `angle = 36 t` over the hold; 12 o'clock tick 4 x 24 | centre (1320, 572), r 136: x 1184 to 1456, y 436 to 708 **[D-01 fix: 213]** | centre (1376, 610.8), r 190.4: x 1185.6 to 1566.4, y 420.4 to 801.2 |
+| The phase word inside the ring ("Listen", "Breathe", "Sing"), Outfit 600 40, ink, centred | baseline 530 **[D-01 fix: 213]** | baseline 552, 56 px |
+| The counter, Outfit 600 80 tabular, ink, centred ("0" at 428.50, then 1 to 10) | baseline 622 **[D-01 fix: 213]** | baseline 680.8, 112 px |
+| "Listen · Breathe · Sing" mono 28: the named word at ink, the other two ink-2 at 60 %, a 24 x 3 chrome mark at baseline + 7 under the named word, sliding to the next in 0.25 s; "at about speaking volume" and "stop sooner if you need to" Outfit 500 30 ink, centred x 1320 | baselines 747, 785, 820 (the last ink 14 px over the floor horizon) **[D-01 fix: 213]** | gone (they leave up fast 422.30 to 422.60, before the push **[v3: 4]**) |
 | The playhead, 3 px chrome, the band's height | `x = 1000 + 64 t` | `x = 928 + 89.6 t` |
 
-The ring's breath: scale 1 to 1.08 and back about its centre, 426.10 to 428.10. Tavi's keep-out at
-F-turn starts at x 1700 (the ring ends at 1600) and y 628 (the frame's labels end at 373).
+The ring's breath: scale 1 to 1.08 and back about its centre, 426.10 to 428.10; its echo grows to
+1.16 of the radius. At rest at F-turn its ink is 23 px over the floor horizon and 30.8 px under
+"Nothing listens"; at the largest breath 16 px and 15 px, and its tick 20.5 px from "Breathe in,
+low and quiet" (the label unmoved). Signature 3's "448 px across" is 381 px now: the labels' line
+and the floor rule hold the ring to r 141 at most **[D-01 fix: 213]**. Tavi's keep-out at
+F-turn starts at x 1700 (the ring ends at 1566.4) and y 628 (the frame's labels end at 373).
+The ring draws on in 11b on "seconds" (at 35 %, no counter) and "Nothing listens" lands 0.4 s
+after it; after the close, the bracket, "0", "10 s", "A3 · Merc" and "A4 · Tavi, an octave up"
+fade with the ring, and the band, Merc's line and "Nothing listens" stay **[D-01 fix: 213]**.
 
 **Frame-fixed** (screen px, never scaled):
 
@@ -557,15 +564,20 @@ F-turn starts at x 1700 (the ring ends at 1600) and y 628 (the frame's labels en
   under its foot); "How did that feel?" (x 1000, baseline 480) lands only at 439.00, when it has
   gone; it is 322 px over the stop line's cap top (522). On the left through the turn, then: "Your
   turn.", the stop line and the small doctor lines **[v3: 4, 7]**. **Full size** (12h): the stop line fades (459.85 to 460.25) and the
-  doctor lines become Inter 40, ink, six lines at baselines 430, 480, 530, 580, 630 and 680, within
-  x 260 to 960, a cross-fade rising 12 px (460.00 to 460.80); at F-turn nothing of the frame's is
+  doctor lines become Inter 40, ink, seven lines broken by hand at phrase ends, baselines 430 to
+  730 (50 apart: "If hoarseness or discomfort lasts" / "more than a couple of weeks," / "see a
+  doctor (a GP or an ear," / "nose and throat specialist)." / "If it's very painful," / "or
+  breathing or swallowing is hard," / "get help straight away."), ink to x 846, within
+  x 260 to 960 **[D-01 fix: 213]**, a cross-fade rising 12 px (460.00 to 460.80); at F-turn nothing of the frame's is
   left of x 1000 below y 373, so they stand clear. Merc's body ends at x 190 and his talking arcs
-  reach about x 225 (to be measured on m-blue at 300: **provisional**), so x 260 keeps 35 px.
+  reach x 229.3 at most (measured on m-blue-s12, DECISIONS 202), so x 260 keeps 30.7 px.
 - **Feel** (12f to 12h, at F-turn): "How did that feel?" serif italic 64, ink, x 1000, baseline
   480; a ring timer at (1660, 458), r 16; capsules x 1000 to 1230, 44 high, centred y 540, 596, 652,
   708 (Outfit 600 30); lines Outfit 500 30, ink, x 1260: "rest for a few easy breaths" (the page's words **[D-01: 209]**) baseline 579 (a
   2 px chrome bracket from the first two capsules at x 1240), "rest before you sing again" 663,
-  "enough singing for today" 719. All of it left of x 1630 and above y 730.
+  "enough singing for today" 719. All of it left of x 1630 and above y 730. On "Whatever you
+  chose:" all four answers light; then the feel block (question, capsules, lines, bracket) dims to
+  35 % from b46a + 0.5 over 0.6 s, the capsules lit within it, and stays so to the end fade **[D-01 fix: 213]**.
 
 ### Recap and practise (S13; F0 from the matched cut; frame-fixed)
 
@@ -648,7 +660,7 @@ F-turn starts at x 1700 (the ring ends at 1600) and y 628 (the frame's labels en
 | F-hold (new) | 1.3 | -288 | 10 | world (960, 400) to screen (960, 530) | 304.90 to 324.60, 342.20 to 364.73 | § The hold chart: plot x 232 to 1688, band 484.5 to 575.5 at W 10; label rows 322 and 387; axis 690; bracket 712 |
 | CU-scoop | 1.8 | -360 | -200 | world (400, 400) to screen (360, 520) | 326.10 to 331.90 | the first 1.5 s at x 360 to 662, the wave running right across the frame (to about 7.7 s at its right edge); the band y 457 to 583; "scoop" at (360, 700) **[kit-01: 9]** |
 | CU-wave (new) | 1.8 | -840 | -200 | world (1000, 400) to screen (960, 520) | 333.90 to 340.74 | the held wave from x 888 to the edge, band y 457 to 583; the vibrato hairlines x 1124 to 1364 **[C-01 fix: 212]** |
-| F-turn (new) | 1.4 | -472 | -190 | world (1180, 475) | 423.90 to 478.09 **[v3: 4]** | § The turn: frame x 928 to 1824, band 104 to 202; ring centre (1376, 636), r 224; labels at baselines 261, 317, 373 |
+| F-turn (new) | 1.4 | -472 | -190 | world (1180, 475) | 423.90 to 478.09 **[v3: 4]** | § The turn: frame x 928 to 1824, band 104 to 202; ring centre (1376, 610.8), r 190.4 **[D-01 fix: 213]**; labels at baselines 261, 317, 373 |
 | F-end | 1.03 | -28.8 | -16.2 | world (960, 540) | 562.01 | the room and the tease figure 3 % closer |
 
 v1's F-line, F-wide, F-chest and F-stack are gone (DECISIONS 87, 98).
@@ -774,9 +786,12 @@ at its own 16 ms readings: entry 0.704 s into the take, the flag at 1.204 s, wor
 Confirmed by group D (DECISIONS 202): Merc's arc reach beside the care block, x 229.3 at most on
 every frame of m-blue-s12, so the block at x 260 keeps 30.7 px.
 
+Confirmed by group E (DECISIONS 214): the "settled" flag in card 3 by the same rule, entry 0.704 s,
+x 334.5 (y 538.5 to 554.5, no label), at the line's 1.204 s; the hop height is the pass's, the sole
+rising 22 px in the film (20 px on the pass frames).
+
 Still provisional: the bead's flight S2 to S3; the chart's split from 0.78 (6b) and the strip's
-opening (6e); the together start's onset (sound round); the hop height of Merc's two hops (at the clean break the floor is empty,
-DECISIONS 190). Since v3 the
+opening (6e); the together start's onset (sound round). Since v3 the
 split's curve carries one constraint (the band passes 12 px or more above the gauge's
 "ILLUSTRATION" chip), and every v3 clearance that rests on a type width is an estimate until the
 lab still measures it (LAB-CHECKS.md) **[v3: 3, 9]**.

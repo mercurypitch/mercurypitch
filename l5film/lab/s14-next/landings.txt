@@ -1,0 +1,29 @@
+s14-next: the board's 0.4 s rule over the landings (scene time, from the clock)
+
+    0.150  kicker "NEXT TIME"
+    0.530  the faint rows fade in (0.6 s), the six outlines (0.5 s)   <-- 0.380 s after the last
+    0.830  the carried bead lands on C4 (squash) and hands to bead 0   <-- 0.300 s after the last
+    1.740  bead 0 lights on its note (0.2 s), its echo ring
+    2.240  bead 1 lights on its note (0.2 s), its echo ring
+    2.740  bead 2 lights on its note (0.2 s), its echo ring
+    3.240  bead 3 lights on its note (0.2 s), its echo ring
+    3.740  bead 4 lights on its note (0.2 s), its echo ring
+    4.240  bead 5 lights on its note (0.2 s), its echo ring
+    4.740  bead 6 lights on its note (0.2 s), its echo ring
+    5.960  the tease line
+    6.430  the arrows rise, 0.08 s apart (one stagger)
+    6.730  the dashed copy draws bead by bead (0.56 s, with the arrows)   <-- 0.300 s after the last
+    7.390  the copy's "?"
+    9.835  the hook, line 1
+   13.675  the hook, line 2
+
+moves and leaves (not landings):
+   -0.770  the carry (from S13, film time)
+    9.455  the tease line and the kicker leave up fast
+   15.510  the hook leaves up fast
+   15.560  the shrink starts; the rows and arrows fade (0.4 s)
+
+16 landings, 3 closer than 0.4 s, each the board's own or not:
+  0.150 -> 0.530 (0.380 s): the board's (board 14a: the kicker 540.62, the rows 541.00)
+  0.530 -> 0.830 (0.300 s): the board's (board 14a: the rows 541.00, the bead 541.30 (a carried object, in flight since S13))
+  6.430 -> 6.730 (0.300 s): the board's (board 14b: the arrows and the copy are one beat, the copy drawing as each arrow arrives)

@@ -26,7 +26,7 @@ Runs where the mean change is below 0.35. Not an automatic fail: a critic looks 
 
 | Starts | Length | Largest change | Note |
 | --- | --- | --- | --- |
-| 0.00 s | 0.6 s | 14 | nothing visible moves |
+| 0.00 s | 0.6 s | 15 | nothing visible moves |
 | 0.70 s | 0.3 s | 6 | nothing visible moves, runs to the end |
 
 0 shorter run(s) totalling 0.0 s are not listed; `motion.csv` has every sample.
@@ -39,7 +39,7 @@ None found.
 
 ## Loop seam
 
-From the last frame back to the first: 0.85 on the scale of `frames.csv`, against a median frame change of 0.010, a 95th percentile of 0.16 and a largest of 0.17 at 0.700 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
+From the last frame back to the first: 0.81 on the scale of `frames.csv`, against a median frame change of 0.008, a 95th percentile of 0.16 and a largest of 0.17 at 0.700 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
 
 ## Loudness
 
