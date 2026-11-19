@@ -9,8 +9,8 @@
 // the question is spent and listening again is how the verdict lands,
 // so it is never limited. Nothing replays over a sound already playing.
 //
-// Only the native room (EAR_LAB_WITH_MERC) offers the button; the web's
-// stages never call it.
+// Only Merc's room (EAR_LAB_WITH_MERC: the web, a phone test build) offers
+// the button; the older bench's stages, the store build's, never call it.
 // ============================================================
 
 /** The honesty rules a run is under. A Today's short run is practice

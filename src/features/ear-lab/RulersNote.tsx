@@ -1,7 +1,7 @@
 // ============================================================
 // Why there is no percent here — the rulers, in two paragraphs.
-// The rack's panel says it on the web; the native room's "?" says
-// it too, in the same words.
+// The older bench's rack says it (the store build); Merc's room's "?"
+// says it too, in the same words.
 // ============================================================
 
 import type { JSX } from 'solid-js'

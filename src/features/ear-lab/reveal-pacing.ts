@@ -7,11 +7,11 @@
 // switch on while parked resumes the run after one hold, so nobody
 // is stranded on a verdict with the Next pad gone.
 //
-// The native room (EAR_LAB_WITH_MERC) has no switch in its header. It
-// paces by Merc's rule instead: a right answer moves on after the hold,
-// a wrong one waits for Next, and touching the replay or the instrument
-// pauses a hold that was counting down. The room sets the rule while it
-// is up; the web's stages never change it.
+// Merc's room (EAR_LAB_WITH_MERC: the web, a phone test build) has no
+// switch in its header. It paces by Merc's rule instead: a right answer
+// moves on after the hold, a wrong one waits for Next, and touching the
+// replay or the instrument pauses a hold that was counting down. The room
+// sets the rule while it is up; the older bench's stages never change it.
 //
 // useLastCall is the view's half: the verdict snapshot the Last call
 // plate keeps until the next one.

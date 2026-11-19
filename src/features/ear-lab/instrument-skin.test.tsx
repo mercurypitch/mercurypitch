@@ -1,5 +1,5 @@
 // An instrument a stage may draw its own way (instrument-skin.ts): the
-// web's drawing where the stage has none, the stage's own where it has
+// older drawing where the stage has none, the stage's own where it has
 // one, with the props the drill passed either way.
 
 import { cleanup, render, screen } from '@solidjs/testing-library'

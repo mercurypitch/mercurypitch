@@ -112,10 +112,10 @@ export interface EarStageProps {
    *  phase opening), so a keyboard user is already on the console. */
   focusConsole?: () => boolean
   /** What the native room needs beyond the stage's own props. Built
-   *  only behind EAR_LAB_WITH_MERC; the web's stage ignores it. */
+   *  only behind EAR_LAB_WITH_MERC; the older bench's stage ignores it. */
   room?: StageRoom
   /** A chip the native room shows under its header while no run is on:
-   *  the Field Book's key. The web's bar has the progress line. */
+   *  the Field Book's key. The older bench's bar has the progress line. */
   chip?: () => { label: string; value: string } | null
 }
 
@@ -237,7 +237,7 @@ export function AutoAdvanceSwitch(props: AutoAdvanceSwitchProps): JSX.Element {
  * keyup can tell a key the browser took from one pressed before the pads
  * armed. A keyup with no keydown behind it is a key something upstream
  * swallowed — an extension binding the digits — and the console says so,
- * once. The web's stage and the native room both work their keys here.
+ * once. The older bench's stage and Merc's room both work their keys here.
  */
 export function useStageKeys(
   keys: () => StageKey[] | undefined,
@@ -306,11 +306,11 @@ export interface StageSkin {
   MicPad?: Component<MicPadProps>
 }
 
-/** Provided by the room only; the web's stage never sees one. */
+/** Provided by the room only; the older bench's stage never sees one. */
 export const StageSkinContext = createContext<StageSkin | null>(null)
 
-/** The web's stage: the bar, the instrument, the console. The views
- *  render it through stage-switch.tsx, which picks it or the room. */
+/** The older bench's stage (the store build's): bar, instrument, console.
+ *  The views render it through stage-switch.tsx, which picks it or the room. */
 export function BenchStage(props: EarStageProps): JSX.Element {
   let consoleEl: HTMLDivElement | undefined
   const reserve = (): StageReserve | null => props.reserve?.() ?? null
@@ -542,8 +542,8 @@ export interface MicPadProps extends PlayPadProps {
   level: () => number
 }
 
-/** A sung answer's pad. The web draws its lead pad as it always has, the
- *  mic on it; the room draws the room kit's mic in place of the keys
+/** A sung answer's pad. The older bench's stage draws its lead pad as it
+ *  always has, the mic on it; the room draws the kit's mic in place of the keys
  *  (the mock-ups' "Answering by voice"). */
 export function MicPad(props: MicPadProps): JSX.Element {
   const skin = useContext(StageSkinContext)

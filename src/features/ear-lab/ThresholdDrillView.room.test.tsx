@@ -55,7 +55,6 @@ describe("a staircase's room", () => {
           answerHint=""
           levelLabel={() => '4 notes'}
           levelCaption="Length"
-          formatValue={(value) => value.toFixed(0)}
           unitLabel="notes"
           unitShort=" notes"
           latestValue={() => null}
@@ -91,7 +90,6 @@ describe("a staircase's room", () => {
           answerHint=""
           levelLabel={() => '4 notes'}
           levelCaption="Length"
-          formatValue={(value) => value.toFixed(0)}
           unitLabel="notes"
           unitShort=" notes"
           latestValue={() => null}

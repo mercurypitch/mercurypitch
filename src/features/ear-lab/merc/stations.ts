@@ -24,7 +24,7 @@ import type { Instrument } from '@/features/ear-lab/instruments'
 import { instrumentReading, INSTRUMENTS, wildMeanRating, } from '@/features/ear-lab/instruments'
 import { fieldBookSessions } from '@/features/ear-lab/wild-store'
 import type { FacultyId } from '@/lib/ear/drills'
-import { FACULTY_LABEL, findIdentificationDrill, findThresholdDrill, } from '@/lib/ear/drills'
+import { FACULTY_LABEL, findIdentificationDrill, findThresholdDrill, formatThresholdReading, } from '@/lib/ear/drills'
 import { isProvisional } from '@/lib/ear/elo'
 import { earPlayerRating, latestCalibration, latestThresholdReading, } from '@/stores/ear-lab-store'
 
@@ -136,7 +136,7 @@ function thresholdStation(
   const instrument = INSTRUMENTS.find((i) => i.drillId === drillId)
   const shown = instrument ? instrumentReading(instrument) : null
   return {
-    value: shown?.value ?? reading.value.toFixed(1),
+    value: shown?.value ?? formatThresholdReading(drillId, reading.value),
     unit: shown?.unit ?? '',
     status: sealed ? 'sealed' : 'practice',
     source,

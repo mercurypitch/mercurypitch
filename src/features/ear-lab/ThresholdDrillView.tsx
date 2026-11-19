@@ -22,7 +22,7 @@
 import type { JSX } from 'solid-js'
 import { createEffect, createSignal, onMount, Show, untrack } from 'solid-js'
 import { calibrationDueAt } from '@/lib/ear/calibration'
-import { findThresholdDrill } from '@/lib/ear/drills'
+import { findThresholdDrill, formatThresholdReading } from '@/lib/ear/drills'
 import { EAR_LAB_WITH_MERC } from '@/lib/native-build'
 import { useArmingCue } from './arming-cue'
 import { IconPlay, IconSeal } from './ear-icons'
@@ -64,8 +64,6 @@ interface ThresholdDrillViewProps {
   levelLabel: () => string
   /** Caption for that level, e.g. "Gap" or "Offset". */
   levelCaption: string
-  /** A reading formatted for display (no unit). */
-  formatValue: (value: number) => string
   /** Unit shown under the reading, e.g. "cents". */
   unitLabel: string
   /** Unit shown inline, e.g. "¢" or " ms". */
@@ -124,6 +122,11 @@ export function ThresholdDrillView(
   const ritual = () => props.ritual === true
   const compact = useCompactStage()
 
+  /** A reading, or a level in the reading's unit, as every place that
+   *  shows a reading writes it (formatThresholdReading). */
+  const formatValue = (value: number): string =>
+    formatThresholdReading(props.drillId, value)
+
   const name = () => (ritual() ? 'Calibration' : props.title)
   const mode = () => {
     if (ritual()) return props.title
@@ -139,7 +142,7 @@ export function ThresholdDrillView(
       const latest = props.latestValue()
       return latest === null
         ? 'Unmeasured'
-        : `Latest reading ${props.formatValue(latest)}${props.unitShort}`
+        : `Latest reading ${formatValue(latest)}${props.unitShort}`
     }
     const left = `about ${props.run.questionsLeft()} questions left`
     if (calibrating()) {
@@ -191,8 +194,8 @@ export function ThresholdDrillView(
       ? `Track ${TRACK_NAMES[props.run.activeTrack()] ?? ''} · `
       : ''
     const unit = props.unitShort
-    const now = props.formatValue(props.run.level())
-    const then = props.formatValue(next)
+    const now = formatValue(props.run.level())
+    const then = formatValue(next)
     return now === then
       ? `${track}${props.levelCaption} holds at ${now}${unit}`
       : `${track}${props.levelCaption} ${now}${unit} → ${then}${unit}`
@@ -298,7 +301,7 @@ export function ThresholdDrillView(
       return {
         kind: 'threshold',
         value: reading?.value ?? null,
-        format: props.formatValue,
+        format: formatValue,
         unit: props.unitLabel,
         unitShort: props.unitShort,
         lowerIsBetter,
@@ -558,7 +561,7 @@ export function ThresholdDrillView(
               <EndPlate
                 kicker={marked() !== undefined ? 'Sealed' : 'Reading'}
                 sealed={marked() !== undefined}
-                value={props.formatValue(reading().value)}
+                value={formatValue(reading().value)}
                 unit={`${props.unitLabel}${
                   marked() !== undefined
                     ? ' · pooled from three tracks'
@@ -602,7 +605,7 @@ export function ThresholdDrillView(
                 <Show when={pooled()}>
                   {(spread) => (
                     <PlateLine>
-                      ± {props.formatValue(spread())}
+                      ± {formatValue(spread())}
                       {props.unitShort} across 3 pooled tracks
                     </PlateLine>
                   )}

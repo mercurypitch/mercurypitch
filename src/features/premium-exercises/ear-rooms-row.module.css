@@ -160,3 +160,15 @@
     sans-serif;
   color: rgb(var(--room-a));
 }
+
+/* On Merc's bench laid out as a desk ("A wide window" in
+   features/ear-lab/merc/bench.module.css): every room in one row, as wide
+   as the stations under it. The nearest container is the bench's column,
+   which holds no more than 560 px but as a desk, where it holds 748 px or
+   more. It is asked unnamed because a CSS module scopes a container's name
+   to its own file. */
+@container (min-width: 700px) {
+  .cards {
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  }
+}

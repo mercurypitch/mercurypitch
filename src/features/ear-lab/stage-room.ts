@@ -1,15 +1,15 @@
 // ============================================================
-// The native room's seam into the stage (EAR_LAB_WITH_MERC).
+// Merc's drill room's seam into the stage (EAR_LAB_WITH_MERC).
 //
-// On a phone build with the switch on, EarStage hands its props to the
-// room (features/ear-lab/merc, a lazy chunk) instead of drawing the
-// web's stage. The room draws its own chrome: a header, the run line,
-// the world and Merc's console. What it needs beyond the stage's props
-// the views pass as `room`, built only behind the switch, so the web and
-// the store build carry none of it. The console's parts (the pads, the
-// lead pads, the tap pad, the plate, the answer-mode toggle) are still
-// the drills' own: under the room, each asks the skin below for the
-// room's version of itself.
+// Where the switch is on (the web, and a phone test build), EarStage hands
+// its props to the room (features/ear-lab/merc, a lazy chunk) instead of
+// drawing the older bench's stage, which only the store build still shows.
+// The room draws its own chrome: a header, the run line, the world and
+// Merc's console. What it needs beyond the stage's props the views pass as
+// `room`, built only behind the switch, so the store build carries none of
+// it. The console's parts (the pads, the lead pads, the tap pad, the plate,
+// the answer-mode toggle) are still the drills' own: under the room, each
+// asks the skin below for the room's version of itself.
 //
 // Types only, plus the one-shot start request a station row or Today's
 // button leaves for the drill it opens, and the builder of the plates a

@@ -1161,6 +1161,13 @@ import handler, issue #813.
 **Rule:** a step (or any phone/desk pair: a fold behind Options, a toast's place) asks the same question its target's component asks. `WalkthroughStep.viewport` names it: `mobile`/`desktop` for `isPhoneStage`, `narrow`/`wide` for `isNarrow`. Walk the tours at 844x390 too (`MOBILE=1 VIEWPORT=844x390 node scripts/walk-tours.mjs`).
 **See:** `src/stores/app-store.ts` (`showsLayout`), `src/stores/app-store.tour-layout.test.ts`, `scripts/walk-tours.mjs`
 
+### Query a container named in another CSS module unnamed, or not at all
+
+**Symptom:** the Ear rooms row stayed two to a row on Merc's bench laid out as a desk, though its `@container merc-desk (min-width: 860px)` rule was in the page and the bench's own rules under the same name applied.
+**Cause:** the build's CSS modules (lightningcss) scope a container's name to its file, as they do a class: `merc-desk` in `ear-rooms-row.module.css` became `dObBhG_merc-desk`, a container no element is.
+**Rule:** a container is queried by name only from the module that names it. From another module, query the nearest container unnamed, and say in a comment which one it is and what width it holds; or have the owning module pass a class down.
+**See:** `src/features/premium-exercises/ear-rooms-row.module.css` (its last rule), `src/features/ear-lab/merc/bench.module.css` ("A wide window")
+
 ## Performance
 
 ### Preserve physical material units when baking decoded geometry

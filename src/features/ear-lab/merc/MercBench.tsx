@@ -234,6 +234,21 @@ export function MercBench(props: MercBenchProps): JSX.Element {
       id="ear-lab-panel"
     >
       <div class={styles.column}>
+        {/* Over the hero on a phone; a row of its own over the desk on a
+            wide window (bench.module.css). */}
+        <div class={styles.topBar}>
+          <h1 class={styles.tabTitle}>Ear Lab</h1>
+          <button
+            type="button"
+            class={styles.round}
+            aria-label="About the bench, and why there is no percent"
+            data-testid="merc-bench-help"
+            data-tour="ear.rulers"
+            onClick={() => setHelp(true)}
+          >
+            <IconQuestion size={20} />
+          </button>
+        </div>
         <div class={styles.hero}>
           <img
             class={styles.painting}
@@ -244,19 +259,6 @@ export function MercBench(props: MercBenchProps): JSX.Element {
           />
           <div class={styles.heroNight} aria-hidden="true" />
           <div class={styles.heroShade} aria-hidden="true" />
-          <div class={styles.topBar}>
-            <h1 class={styles.tabTitle}>Ear Lab</h1>
-            <button
-              type="button"
-              class={styles.round}
-              aria-label="About the bench, and why there is no percent"
-              data-testid="merc-bench-help"
-              data-tour="ear.rulers"
-              onClick={() => setHelp(true)}
-            >
-              <IconQuestion size={20} />
-            </button>
-          </div>
           <div class={styles.mercGlow} aria-hidden="true" />
           <div class={styles.deskShadow} aria-hidden="true" />
           <div class={styles.mercOnDesk}>
@@ -274,171 +276,175 @@ export function MercBench(props: MercBenchProps): JSX.Element {
         </div>
 
         <div class={styles.sections}>
-          <div data-tour="ear.index">
-            <div class={styles.indexHead}>
-              <p class={styles.kicker}>Mercury Index</p>
-              <span class={styles.badge} data-testid="merc-index-badge">
-                {sealed() === null ? 'Not sealed' : 'Sealed'}
-              </span>
+          {/* The Index and Today: under the hero on a phone, beside it on
+              a wide window. */}
+          <div class={styles.deskSide}>
+            <div data-tour="ear.index">
+              <div class={styles.indexHead}>
+                <p class={styles.kicker}>Mercury Index</p>
+                <span class={styles.badge} data-testid="merc-index-badge">
+                  {sealed() === null ? 'Not sealed' : 'Sealed'}
+                </span>
+              </div>
+              <h2 class={styles.headline} data-testid="ear-bench-title">
+                <Show when={sealed()} fallback={line().lead}>
+                  {(seal) => (
+                    <>
+                      <span class={styles.srOnly}>{line().lead}</span>
+                      <span class={styles.number} aria-hidden="true">
+                        {seal().index}
+                      </span>
+                      <Show when={indexMove()}>
+                        {(move) => (
+                          <span
+                            class={styles.indexMove}
+                            classList={{ [styles.indexUp]: move().up }}
+                            aria-hidden="true"
+                          >
+                            {move().text}
+                          </span>
+                        )}
+                      </Show>
+                    </>
+                  )}
+                </Show>
+              </h2>
+              <p class={styles.lede}>{line().rest}</p>
+              <div class={styles.glassRow}>
+                <Glass
+                  sealed={sealed()?.index ?? null}
+                  sealedOn={sealed() ? dateLabel(sealed()?.at ?? 0) : null}
+                  estimate={estimate()}
+                />
+                <button
+                  type="button"
+                  class={styles.calibrate}
+                  data-testid="merc-calibrate"
+                  data-tour="ear.actions"
+                  onClick={calibrate}
+                >
+                  Calibrate
+                </button>
+              </div>
+              <p class={styles.caption}>
+                {glassCaption({
+                  sealed: sealed()?.index ?? null,
+                  sealedOn: sealed() ? dateLabel(sealed()?.at ?? 0) : null,
+                  estimate: estimate(),
+                })}
+              </p>
             </div>
-            <h2 class={styles.headline} data-testid="ear-bench-title">
-              <Show when={sealed()} fallback={line().lead}>
-                {(seal) => (
-                  <>
-                    <span class={styles.srOnly}>{line().lead}</span>
-                    <span class={styles.number} aria-hidden="true">
-                      {seal().index}
-                    </span>
-                    <Show when={indexMove()}>
-                      {(move) => (
-                        <span
-                          class={styles.indexMove}
-                          classList={{ [styles.indexUp]: move().up }}
-                          aria-hidden="true"
+
+            <section
+              class={styles.card}
+              classList={{
+                [styles.lit]:
+                  lit() !== null && returning?.origin.kind === 'today',
+              }}
+              aria-labelledby="merc-today"
+              ref={todayCard}
+              data-testid="merc-today"
+              data-tour="ear.sprint"
+            >
+              <div class={styles.cardHead}>
+                <h2 id="merc-today" class={styles.h2}>
+                  Today
+                </h2>
+                <span class={styles.count}>
+                  {plan().length - remaining().length} of {plan().length}
+                  {remaining().length === plan().length
+                    ? ' · about 3 min'
+                    : ' done'}
+                </span>
+                <span class={styles.days}>{benchDays(Math.max(1, day()))}</span>
+              </div>
+              <ul class={styles.todayList}>
+                <For each={plan()}>
+                  {(segment) => {
+                    const finished = () => done().has(segment.drillId)
+                    const instrument = INSTRUMENTS.find(
+                      (entry) => entry.drillId === segment.drillId,
+                    )
+                    const reading = () =>
+                      instrument === undefined
+                        ? null
+                        : instrumentReading(instrument)
+                    return (
+                      <li
+                        class={styles.todayRow}
+                        classList={{
+                          [styles.todayDone]: finished(),
+                          [styles.lit]: finished() && lit() === segment.drillId,
+                        }}
+                        data-testid="merc-today-row"
+                        data-drill={segment.drillId}
+                      >
+                        <Show
+                          when={finished()}
+                          fallback={
+                            <span
+                              class={styles.todayDot}
+                              classList={{
+                                [styles.todayDotNext]:
+                                  nextSegment()?.drillId === segment.drillId,
+                              }}
+                              aria-hidden="true"
+                            />
+                          }
                         >
-                          {move().text}
+                          <span class={styles.todayCheck}>
+                            <IconCheck size={12} />
+                            <span class={styles.srOnly}>Done:</span>
+                          </span>
+                        </Show>
+                        <span class={styles.todayName}>
+                          {drillName(segment.drillId)}
                         </span>
-                      )}
-                    </Show>
-                  </>
+                        <span>
+                          <Show
+                            when={finished() && reading()}
+                            fallback={`${TASK[segment.drillId] ?? ''} · ${segmentLength(segment)}`}
+                          >
+                            {(now) =>
+                              `${now().value}${now().unit === '' ? '' : ` ${now().unit}`}${
+                                now().settling ? ' · settling' : ''
+                              }`
+                            }
+                          </Show>
+                        </span>
+                      </li>
+                    )
+                  }}
+                </For>
+              </ul>
+              <Show
+                when={start()}
+                fallback={
+                  <button
+                    type="button"
+                    class={styles.quiet}
+                    data-testid="merc-today-close"
+                    onClick={() => setDayDone(true)}
+                  >
+                    All three done. See the day
+                  </button>
+                }
+              >
+                {(next) => (
+                  <button
+                    type="button"
+                    class={styles.primary}
+                    data-testid="merc-today-start"
+                    onClick={() => startToday(next().segment)}
+                  >
+                    <IconPlay size={18} />
+                    {next().label}
+                    <small>· {next().sub}</small>
+                  </button>
                 )}
               </Show>
-            </h2>
-            <p class={styles.lede}>{line().rest}</p>
-            <div class={styles.glassRow}>
-              <Glass
-                sealed={sealed()?.index ?? null}
-                sealedOn={sealed() ? dateLabel(sealed()?.at ?? 0) : null}
-                estimate={estimate()}
-              />
-              <button
-                type="button"
-                class={styles.calibrate}
-                data-testid="merc-calibrate"
-                data-tour="ear.actions"
-                onClick={calibrate}
-              >
-                Calibrate
-              </button>
-            </div>
-            <p class={styles.caption}>
-              {glassCaption({
-                sealed: sealed()?.index ?? null,
-                sealedOn: sealed() ? dateLabel(sealed()?.at ?? 0) : null,
-                estimate: estimate(),
-              })}
-            </p>
+            </section>
           </div>
-
-          <section
-            class={styles.card}
-            classList={{
-              [styles.lit]:
-                lit() !== null && returning?.origin.kind === 'today',
-            }}
-            aria-labelledby="merc-today"
-            ref={todayCard}
-            data-testid="merc-today"
-            data-tour="ear.sprint"
-          >
-            <div class={styles.cardHead}>
-              <h2 id="merc-today" class={styles.h2}>
-                Today
-              </h2>
-              <span class={styles.count}>
-                {plan().length - remaining().length} of {plan().length}
-                {remaining().length === plan().length
-                  ? ' · about 3 min'
-                  : ' done'}
-              </span>
-              <span class={styles.days}>{benchDays(Math.max(1, day()))}</span>
-            </div>
-            <ul class={styles.todayList}>
-              <For each={plan()}>
-                {(segment) => {
-                  const finished = () => done().has(segment.drillId)
-                  const instrument = INSTRUMENTS.find(
-                    (entry) => entry.drillId === segment.drillId,
-                  )
-                  const reading = () =>
-                    instrument === undefined
-                      ? null
-                      : instrumentReading(instrument)
-                  return (
-                    <li
-                      class={styles.todayRow}
-                      classList={{
-                        [styles.todayDone]: finished(),
-                        [styles.lit]: finished() && lit() === segment.drillId,
-                      }}
-                      data-testid="merc-today-row"
-                      data-drill={segment.drillId}
-                    >
-                      <Show
-                        when={finished()}
-                        fallback={
-                          <span
-                            class={styles.todayDot}
-                            classList={{
-                              [styles.todayDotNext]:
-                                nextSegment()?.drillId === segment.drillId,
-                            }}
-                            aria-hidden="true"
-                          />
-                        }
-                      >
-                        <span class={styles.todayCheck}>
-                          <IconCheck size={12} />
-                          <span class={styles.srOnly}>Done:</span>
-                        </span>
-                      </Show>
-                      <span class={styles.todayName}>
-                        {drillName(segment.drillId)}
-                      </span>
-                      <span>
-                        <Show
-                          when={finished() && reading()}
-                          fallback={`${TASK[segment.drillId] ?? ''} · ${segmentLength(segment)}`}
-                        >
-                          {(now) =>
-                            `${now().value}${now().unit === '' ? '' : ` ${now().unit}`}${
-                              now().settling ? ' · settling' : ''
-                            }`
-                          }
-                        </Show>
-                      </span>
-                    </li>
-                  )
-                }}
-              </For>
-            </ul>
-            <Show
-              when={start()}
-              fallback={
-                <button
-                  type="button"
-                  class={styles.quiet}
-                  data-testid="merc-today-close"
-                  onClick={() => setDayDone(true)}
-                >
-                  All three done. See the day
-                </button>
-              }
-            >
-              {(next) => (
-                <button
-                  type="button"
-                  class={styles.primary}
-                  data-testid="merc-today-start"
-                  onClick={() => startToday(next().segment)}
-                >
-                  <IconPlay size={18} />
-                  {next().label}
-                  <small>· {next().sub}</small>
-                </button>
-              )}
-            </Show>
-          </section>
 
           {props.rooms}
 
@@ -559,7 +565,7 @@ export function MercBench(props: MercBenchProps): JSX.Element {
           </section>
 
           <section
-            class={styles.card}
+            class={`${styles.card} ${styles.pathCard}`}
             aria-labelledby="merc-path"
             data-tour="ear.path"
           >
@@ -583,7 +589,10 @@ export function MercBench(props: MercBenchProps): JSX.Element {
             </p>
           </section>
 
-          <section class={styles.card} data-tour="ear.report">
+          <section
+            class={`${styles.card} ${styles.reportCard}`}
+            data-tour="ear.report"
+          >
             <button
               type="button"
               class={styles.link}

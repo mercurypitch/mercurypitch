@@ -13,6 +13,7 @@ import type { JSX } from 'solid-js'
 import { createEffect, createSignal, Show } from 'solid-js'
 import { useEngines } from '@/contexts/EngineContext'
 import { DESK_BANDS } from '@/lib/ear/desk'
+import { formatThresholdReading } from '@/lib/ear/drills'
 import { DESK_TIMING } from '@/lib/ear/timing'
 import { earPlayerRating, latestThresholdReading } from '@/stores/ear-lab-store'
 import type { UvrSession } from '@/stores/uvr-store'
@@ -113,7 +114,9 @@ export function DeskView(props: DeskViewProps): JSX.Element {
 
   const dbWord = (id: string) => {
     const reading = latestThresholdReading(id)
-    return reading ? `${reading.value.toFixed(1)} dB` : 'unmeasured'
+    return reading
+      ? `${formatThresholdReading(id, reading.value)} dB`
+      : 'unmeasured'
   }
   const ratingWord = () => {
     const rating = earPlayerRating('desk-critique')

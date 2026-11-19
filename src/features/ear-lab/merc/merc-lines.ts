@@ -3,7 +3,7 @@
 // Merc says that the drills did not already say, in one place.
 //
 // The drills keep their words: a prompt, a verdict and a reading are
-// said exactly as the web says them. These are Merc's: the line on the
+// said exactly as the older stage says them. These are Merc's: the line on the
 // bench tied to its one action, the one over a plate, and the few the
 // room needs that no drill had (ending a run, the sound stopping, the
 // sealed protocol, a day's three done). Dry and warm. No exclamation

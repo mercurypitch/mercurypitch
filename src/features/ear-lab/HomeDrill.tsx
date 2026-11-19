@@ -650,7 +650,7 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
                   />
                 }
               >
-                {/* Answered by voice: the web's lamp, the room's mic. */}
+                {/* Answered by voice: the old stage's lamp, the room's mic. */}
                 <MicPad
                   mic={sungMicState(phase())}
                   level={() => levelFromRms(f0?.latestLevel() ?? 0)}
@@ -671,8 +671,8 @@ export function HomeDrill(props: HomeDrillProps): JSX.Element {
             />
           </Show>
           {/* Answered by voice, the room's mic stands in for the keys (the
-              mock-ups), and its orb shows the answer; the web keeps them,
-              stilled, to show it. */}
+              mock-ups), and its orb shows the answer; the old stage keeps
+              them, stilled, to show it. */}
           <Show when={!(EAR_LAB_WITH_MERC && controller.mode() === 'mic')}>
             <Pads
               columns={Math.min(copy.columns, set.degrees.length)}

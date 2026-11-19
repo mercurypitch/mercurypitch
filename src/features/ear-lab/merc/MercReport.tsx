@@ -2,8 +2,8 @@
 // The Ear Report in the room's light (docs/plans/ear-lab-native-look.md,
 // "The Ear Report", from the mock-ups on the Ear Lab Native Bench
 // canvas): what moved, and what the ear mixes up, drawn as the native tab
-// draws everything else. The web's report (EarReport.tsx) keeps its
-// engraved plates; both read the same data (report-data.ts).
+// draws everything else. The older report (EarReport.tsx), which only the
+// store build shows, keeps its engraved plates; both read report-data.ts.
 //
 //   the bar      a round back button, the title and its line, staying
 //                at the top while the report scrolls under it
@@ -28,7 +28,7 @@ import { Dynamic } from 'solid-js/web'
 import { MercPresence } from '@/components/room-kit/MercPresence'
 import type { ConfusionMatrix, TopConfusion } from '@/lib/ear/confusion-report'
 import { buildConfusionMatrix, topConfusions } from '@/lib/ear/confusion-report'
-import { findThresholdDrill } from '@/lib/ear/drills'
+import { findThresholdDrill, formatThresholdReading } from '@/lib/ear/drills'
 import type { CalibrationRunEntry } from '@/stores/ear-lab-store'
 import { calibrationHistory, earConfusions, thresholdHistory, } from '@/stores/ear-lab-store'
 import { registerRoomBack } from '@/stores/native-shell-store'
@@ -190,7 +190,7 @@ export function MercReport(props: MercReportProps): JSX.Element {
           onCalibrate={calibrate}
         />
 
-        <section aria-labelledby="merc-report-moved">
+        <section class={styles.moved} aria-labelledby="merc-report-moved">
           <SectionHead
             id="merc-report-moved"
             title="What moved"
@@ -199,7 +199,7 @@ export function MercReport(props: MercReportProps): JSX.Element {
           <Moved from={from()} to={now()} inRange={inRange} />
         </section>
 
-        <section aria-labelledby="merc-report-mixups">
+        <section class={styles.mixups} aria-labelledby="merc-report-mixups">
           <SectionHead
             id="merc-report-mixups"
             title="What your ear mixes up"
@@ -406,13 +406,14 @@ function TraceCard(props: {
   // eslint-disable-next-line solid/reactivity -- a card is made for one drill
   const drillId = props.drillId
   const drill = findThresholdDrill(drillId)
-  const decimals = drill?.unitShort === 'ms' ? 0 : 1
   const unit = drill?.unitShort ?? ''
-  const format = (value: number): string =>
-    `${value.toFixed(decimals)} ${unit}`.trim()
+  // A reading as the plate and the bench write it (formatThresholdReading).
+  const reading = (value: number): string =>
+    formatThresholdReading(drillId, value)
+  const format = (value: number): string => `${reading(value)} ${unit}`.trim()
   // The axis prints its round ends without a trailing nought: "10 ¢".
   const tick = (value: number): string =>
-    `${Number(value.toFixed(decimals))} ${unit}`.trim()
+    `${Number(reading(value))} ${unit}`.trim()
   const name = drill?.name ?? drillId
   const faculty = stationOf(drillId) ?? 'resolution'
   const history = () => thresholdHistory(drillId)
@@ -444,7 +445,7 @@ function TraceCard(props: {
         </span>
         <span class={styles.reading}>
           <span class={styles.small}>
-            <b class={styles.readingValue}>{latest().toFixed(decimals)}</b>{' '}
+            <b class={styles.readingValue}>{reading(latest())}</b>{' '}
             <b class={styles.readingUnit}>{unit}</b>
           </span>
           <span class={styles.small}>best {format(best())}</span>

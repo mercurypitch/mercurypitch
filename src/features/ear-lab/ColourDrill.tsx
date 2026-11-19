@@ -123,7 +123,6 @@ export function ColourDrill(props: DeskDrillProps): JSX.Element {
       answerHint="Which band was boosted?"
       levelCaption="Boost"
       levelLabel={() => `${run.level().toFixed(1)} dB`}
-      formatValue={(value) => value.toFixed(1)}
       unitLabel="dB boost"
       unitShort=" dB"
       latestValue={() => latestThresholdReading('desk-colour')?.value ?? null}

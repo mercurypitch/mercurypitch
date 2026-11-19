@@ -3,8 +3,8 @@
 // and the pads carry the lamps that say which tone is sounding, since
 // the upright loupe lights no line. The stage is a stand-in that draws
 // the instrument and the console under a skin holding the loupe alone,
-// so every other part is the web's own; or under no skin, as a stage
-// outside the room would (drills.test.tsx holds the web's Hairline to
+// so every other part is the older stage's own; or under no skin, as a
+// stage outside the room would (drills.test.tsx holds the older Hairline to
 // its loupe, with no lamp on a pad).
 // ============================================================
 
@@ -141,8 +141,8 @@ describe('Hairline in the room', () => {
     expect(screen.getByTestId('loupe-magnification').textContent).toBe('×1')
   })
 
-  it('lights no pad beside the web loupe, in a build that has the room', async () => {
-    // A stage outside the room draws the web's loupe, which lights its own
+  it('lights no pad beside the older loupe, in a build that has the room', async () => {
+    // A stage outside the room draws the older loupe, which lights its own
     // hairlines: lamps on the pads would say it twice.
     stage.room = false
     render(() => (

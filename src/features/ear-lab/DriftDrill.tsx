@@ -153,7 +153,6 @@ export function DriftDrill(props: DriftDrillProps): JSX.Element {
       answerHint="Did the tempo hold steady, gain, or lose?"
       levelCaption="Drift"
       levelLabel={percent}
-      formatValue={(value) => (value < 3 ? value.toFixed(1) : value.toFixed(0))}
       unitLabel="% tempo"
       unitShort="%"
       latestValue={() => latestThresholdReading('drift')?.value ?? null}

@@ -1,7 +1,7 @@
 // ============================================================
-// Tap or sing: a drill's choice of how its answers are taken. The web's
-// stage shows it on the idle console, where the drill puts it; the native
-// app offers it on the station's sheet, before the run
+// Tap or sing: a drill's choice of how its answers are taken. The older
+// bench's stage (the store build's) shows it on the idle console, where the
+// drill puts it; Merc's bench offers it on the station's sheet, before the run
 // (merc/answer-choice.ts). A station row starts a run as the room opens,
 // and the room draws no idle console.
 // ============================================================
@@ -15,7 +15,7 @@ export const ANSWER_MODES: ReadonlyArray<{ id: AnswerMode; label: string }> = [
   { id: 'mic', label: 'Sing or play' },
 ]
 
-/** The toggle a drill puts on its idle console: the web's. */
+/** The toggle a drill puts on its idle console: the older bench's. */
 export function answerToggle(
   label: string,
   mode: () => AnswerMode,

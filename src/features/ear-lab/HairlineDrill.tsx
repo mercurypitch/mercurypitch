@@ -35,7 +35,7 @@ interface HairlineDrillProps {
 }
 
 /** The loupe as the stage draws it: the room's own where it has one,
- *  the web's everywhere else. */
+ *  the older bench's everywhere else. */
 function Loupe(props: VernierLoupeProps): JSX.Element {
   const skin = useContext(StageSkinContext)
   return createComponent(skin?.VernierLoupe ?? VernierLoupe, props)
@@ -51,7 +51,7 @@ interface HairlinePadsProps {
 
 /** The two pads. Beside the room's upright loupe, which lights no
  *  hairline (a lit one would show which was higher), each carries a lamp
- *  for the tone it names; beside the web's, which lights its own, none
+ *  for the tone it names; beside the older one, which lights its own, none
  *  does. The skin the loupe comes from decides. */
 function HairlinePads(props: HairlinePadsProps): JSX.Element {
   const upright = useContext(StageSkinContext)?.VernierLoupe !== undefined
@@ -166,7 +166,6 @@ export function HairlineDrill(props: HairlineDrillProps): JSX.Element {
       answerHint="Which tone was higher, the first or the second?"
       levelCaption="Gap"
       levelLabel={gap}
-      formatValue={(value) => value.toFixed(1)}
       unitLabel="cents"
       unitShort="¢"
       // The longer verdict, a wrong answer, at the starting gap: the
