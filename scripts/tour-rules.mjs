@@ -14,6 +14,13 @@
 //
 // scripts/walk-tours.mjs applies both to the Guide's spotlight tours, and
 // src/e2e/coach-tours.spec.ts to Merc's.
+//
+// - standsClear: the Guide's tooltip, unlike Merc's bubble, can stand beside
+//   a tall target (Walkthrough.tsx, walkthrough-place.ts), and a tall target
+//   it stands clear of is a thing the step is about, not the page: the
+//   drawer's Load a Melody (253 x 342) and the piano roll's keys (74 x 342)
+//   on a phone on its side, 844x390, where 70% of the height is 273 px. The
+//   walk lets a tall spotlight pass when the tooltip takes none of it.
 
 /** The share of the window's height a ringed target may take. */
 export const TARGET_MAX_SHARE = 0.7
@@ -28,6 +35,25 @@ export const TARGET_MAX_SHARE = 0.7
  */
 export function targetFits(rect, viewport) {
   return rect.height <= viewport.height * TARGET_MAX_SHARE
+}
+
+/**
+ * Whether a tooltip takes none of a spotlight: their boxes meet nowhere.
+ *
+ * @param {{ x: number, y: number, width: number, height: number }} spot the
+ *   spotlight's box
+ * @param {{ x: number, y: number, width: number, height: number } | null}
+ *   tooltip the tooltip's box; none proves nothing, so it fails
+ * @returns {boolean}
+ */
+export function standsClear(spot, tooltip) {
+  if (tooltip === null) return false
+  return (
+    tooltip.x >= spot.x + spot.width ||
+    spot.x >= tooltip.x + tooltip.width ||
+    tooltip.y >= spot.y + spot.height ||
+    spot.y >= tooltip.y + tooltip.height
+  )
 }
 
 /**
