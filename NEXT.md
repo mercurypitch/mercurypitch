@@ -4264,3 +4264,23 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   voice on every clip, S1 lost its audio stream). Sent to the group A builder (resumed). NO second
   critic for group A: the lead checks the stills. LEDGER row filled.
 - FOR GROUP C's BRIEF: DECISIONS 170 applies to 10b (Merc's line to 0 under the guess).
+
+## 08:49 UTC, 19 Nov
+- Overnight: both film agents (group A fix round, group B) stopped at ~23:15 on the WEEKLY usage
+  limit (reset 01:00 UTC); the worker restarted. Status now "allowed" (five_hour window).
+- #1471 VERIFIED ON DEV 34747e6c0 ($S/dev/polish/run.log, sheet $S/dev/polish/sheet.png): sideways
+  notices 844 [356,301,836,380], 932 [444,341,924,420], 740 [288,209,732,288] = the PR's table,
+  over nothing; Karaoke header 0 scroll, Options last at every phone size; Warmup Start on screen
+  at 844/932/740; upright 390 notice still over the transport (polish-2 item 1); production none.
+- #1467: light gates on ac49a8928 clean (check 0 / 11 warnings, no files changed; index; cites
+  308; validate; metrics; unit 590/75). PUSHED 08:48 with lease over 5c041bb6a. Main moved to
+  9efbcd37d (studio spec only; trial merge clean). Re-subscribed. Check-in trig_011qu5dzM9tvEx8n1N6e6ddb
+  at 09:40 (empty count 0). Then squash-merge, verify on dev 1440x900 + 390x844, tell polish-2 item 8.
+- Merc passes (P2) DONE: all 27 chunks re-rendered; joins 23/23; hops in the card pause
+  (523.29/523.94), floor marks off via the stops light slot, listen capped at 3 s; contact sheet
+  rows checked by the lead. DECISIONS preamble at the kit fix round fixed (no duplicates now).
+  FOR GROUP E: 13f's two lines (baselines 822/862, x 230 to ~800) sit on Merc's new hop path in
+  the card pause: they must leave or move before hop 1 (card + 0.345).
+- RESUMED group A (fix round). POLISH-2 BUILDER LAUNCHED (brief $S/briefs/polish-2.md; worktree
+  modes, branch feat/phone-polish-2; items 1-7 now, 8 after #1467). Group B PAUSED until group A
+  ends (two heavy agents max), then resume it with SendMessage.
