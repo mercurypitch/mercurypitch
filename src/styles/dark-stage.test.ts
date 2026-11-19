@@ -193,6 +193,21 @@ describe('dark stage theme contract', () => {
     },
   )
 
+  it('gives the mic hint pill a complete local dark scope, readable on its fill', () => {
+    // The pill is a fixed dark fill (MicInsightHint.tsx) over the notes
+    // canvas, which is dark in the light theme too. It read the light
+    // theme's ink, and its words read 1.04:1.
+    expect(source('src/components/MicInsightHint.tsx')).toContain(
+      "'mic-insight-hint mp-dark-stage'",
+    )
+    // Its fill, rgba(20, 20, 24, 0.92), over white: the lightest it can be.
+    const fill = '#27272a'
+    expect(contrast(contractToken('--text-primary'), fill)).toBeGreaterThan(4.5)
+    expect(
+      contrast(contractToken('--text-secondary'), fill),
+    ).toBeGreaterThanOrEqual(4.5)
+  })
+
   it('keeps bridged destructive actions readable on the stage danger fill', () => {
     expect(source('src/components/ConfirmDialog.module.css')).toMatch(
       /\.delete\s*\{[\s\S]*?color:\s*var\(--on-danger,\s*var\(--bg-primary,\s*#0d1117\)\);/,
