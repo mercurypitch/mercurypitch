@@ -9,6 +9,374 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.31] - 2026-11-19
+
+404 commits since `v0.9.30` (1b8320bd3) before these notes: 403 commits and
+#1408's merge, from 75 PRs merged after the tag (#1351, #1354, #1356, and
+#1401 to #1473 but #1434, which never merged). By scope: 195 Studio (194
+`studio`, 1 `studio-fx`), 140 lessons, 19 exercises, 8 SEO, 8 module-index
+regenerations, 5 lesson browser tests (`e2e`), 3 Ear Lab, 3 piano, 3 with no
+scope, and the rest one or two each.
+
+Three things a production visitor sees for the first time: Studio, which
+this release PR switches on (below), the exercise rooms and Merc's Ear Lab,
+which `WEB_ROOMS` gives every web build (`src/lib/native-build.ts`: true
+when `__NATIVE_BUILD__` is false), and three new drills with more in the
+old ones. Season 2's lessons stay drafts: `assert-draft-lessons` on a
+production build of 3b120f1f1 reads "drafts held back by default, lesson 5
+... 28". No lesson goes live, so no lesson or film date moves.
+
+### Studio comes out from behind its switch
+
+Studio has sat behind its switch since 0.9.26: off on mercurypitch.com, on
+for the dev deploy, PR previews, `build:e2e` and the unit tests. Earlier
+entries record its history under "Studio, switched off on
+mercurypitch.com"; this one records what the window added and what the
+release changes.
+
+The release PR carries two more changes beside these notes:
+
+- **Studio on by default in the production web build.** Studio gets a
+  default of its own: `ON_IN_PRODUCTION` in
+  `src/lib/experimental-feature-defaults.ts` names it, and every web build
+  has a feature on that list on and listed, whatever
+  `VITE_EXPERIMENTAL_FEATURES` says. That variable stays 0 in production,
+  so the next experimental feature still starts off there. The production
+  build lists Studio as it lists any room: the nav link in every entry
+  page and the 404, `sitemap.xml`, `llms.txt`, and `index, follow` on
+  `studio-night.html`, which also gains the WebApplication node the other
+  rooms carry. The owner's switch at `/admin/features` still turns Studio
+  off for an environment without a release. A runtime switch cannot move
+  the static listing, so Studio switched off in production stays listed
+  and its address opens Home. The console now names each feature's own
+  default. The native app keeps Studio off: the store leaves the list out
+  of a native build, whose entry never reads the switches. With Studio
+  available, the last nav group is named Create and lists Studio first
+  (`CREATE_GROUP`, `src/features/tabs/constants.ts`).
+- **Backups report in the app's notifications.** The outcome was a line of
+  text in the top corner of the Studio's page. It is
+  now a notification on one channel, so a second backup's notice replaces
+  the first's, with the file name in quotes. A backup handed to the
+  browser's downloads says so too, and the two failure lines are error
+  notifications. The file name has no spaces:
+  `Window-seat-2026-11-19-1230.mpstudio`.
+
+The user entry describes Studio as a whole, from its tour
+(`src/lib/studio-tour.ts`) and its panels: songs kept in this browser,
+takes and audio files brought in, several lanes recorded at once, monitor
+through the lane's effects, comping, clip editing, volume and pan lines,
+Mix, MIDI lanes and files, the Sound panel's flavours and five dials, WAV
+export with loudness, and the backup. Left out of it for length: Undo and
+Redo naming the edit, Repeat and Punch on a ruler range, the Inputs view,
+count-in, click and the line-up offset, Compare's Before and After, the
+playback quality tiers, Audio storage's Full quality and Save space, and
+that moving, trimming and fading clips wants a tablet or a computer (the
+phone tour's own words).
+
+What the window added, by PR:
+
+- **Comping** (#1351, #1436, #1449). A loop take keeps every pass; Comp lays
+  the passes as rows under the lane, newest on top, and a swipe along a
+  pass uses that stretch, snapped to the grid (Alt places it freely). Keys:
+  Left and Right move the pick, Shift widens it, Up and Down change pass,
+  Enter uses it. A phone gets a row per pass with a 44 px cell per bar.
+  Joins play with an equal-power crossfade. #1436: a split at a comp join
+  crosses as the join was crossed instead of dipping, the comp pick
+  survives an edit, a MIDI loop take stays one whole pass, a second finger
+  lets a swipe go. #1449: the selected clip's lift stays off the Comp bar,
+  the hint draws over the playhead and range, a phone's comp cells are
+  named as the ruler counts ("Bar 4, from 0:06"), and every comp cell in a
+  sheet has one width.
+- **Monitoring through the lane's effects** (#1356, #1450, #1453, #1455,
+  #1457). Each armed lane plays its input through its own chain at a
+  monitor profile in which nothing adds delay (`fx-profile.ts`), then its
+  volume, balance and pan, as REAPER plays an armed track's FX. Takes stay
+  dry. #1450 sends the monitor through the master, so a voice moves with a
+  song that Export or Compare lifted (before, the backing got louder in the
+  headphones and the voice did not), and Compare's Before side takes the
+  voice's effects out. #1453 and #1455 play the compressor, de-esser and
+  dynamic EQ at their own settings with no lookahead, on a worklet, in
+  place of passing them straight through; the limiter keeps its input gain
+  and ceiling. #1457 counts monitored lanes in Auto's choice of playback
+  tier, and makes an echo render to the bit on every build by adding at
+  most two signals at each node.
+- **Inputs and several lanes** (#1401, #1403, #1404, #1437, #1452). The
+  Inputs view lists every input, its channels and levels, MIDI keyboards
+  and pads with a light while they play, and every lane's input. The
+  recorder holds several arms and one Record records every armed lane on
+  one song clock. #1437: lanes of one press move by one reading of the
+  output latency (Chromium's wandered 53 to 73 ms in 8 s, so two lanes
+  could land 48 frames apart), a re-arm after the browser ended the
+  microphone opens it afresh instead of recording 6 s of silence, and a
+  lane joining a flowing microphone is heard at once. #1452: the meter
+  follows a re-arm onto a new microphone from the press, and lanes waiting
+  on a settling microphone rise with it.
+- **MIDI lanes** (#1402, then the series in `docs/plans/studio-midi.md`:
+  A1 #1405, A2 #1413, B1 #1414, D1 #1419, B2 #1420, C #1421, D2 #1424,
+  E #1433, then #1439, #1447, #1451, #1454, #1458). A lane's input can be a
+  MIDI port; the lane plays its instrument's sound, records it as an
+  ordinary take and keeps the notes in the song (document version 2). A
+  render service keeps each MIDI clip's audio in step with its notes, and
+  export and freeze wait for it. The notes show in glass on the lane and
+  open in a note editor, a drawer under the lanes or the whole screen on a
+  phone, which edits a piano roll or a drum grid by finger, mouse, pen and
+  keys, each edit one undo step. #1451: New lane offers Audio, Piano and
+  Drums, a double-click makes a clip, and a clip lengthens past its notes.
+  #1454: Standard MIDI Files out (the song from Export, one clip from Clip
+  details) and in (Add takes and a drop, each file's tracks as new lanes,
+  one undo step). #1458: right-click and an Erase tool delete notes, the
+  roll's ruler seeks, and the keys and drum names sound when pressed.
+  #1447: a MIDI lane's first note after an arm is as loud as the rest (the
+  piano's fallback synth's new limiter started as if compressing hard,
+  1.5 to 1.8 dB down; it now runs a one-second attack for its first
+  quarter second, within 0.06 dB), and a disarm fades the lane's sound.
+  #1439: a clip too short for its tags drops one whole.
+- **Polish** (#1354, #1449). Track details' buttons and fields take a 44 px
+  press on a phone, the voice pill sits in a collapsed rail's empty foot
+  on every tab (`1df7166a7`: it ran 11 px past a computer's 40 px rail,
+  onto a lane's role plate) and in Studio's open sidebar's foot, and the
+  selected lane's Solo, gain and pan hold 4.5:1 in light. #1449 also
+  carries three app-wide fixes listed under the phone on its side below.
+  #1354 carries `c4de7cfe8` (app-check reads every colour through a
+  canvas).
+
+Shared code the Studio work moved or added, which nothing else shows: the
+audio-input meters and tag (`src/lib/audio-input/`), the latency check for
+a named input, one mapping from an input event's timestamp to the audio
+clock and the piano instruments playing into a node their host names, with
+an exported MIDI parser (all #1402), an offline synth and grand that keep
+every voice a render schedules ahead (#1414), the transcription roll's
+geometry in `src/lib` (#1413), and the `studio-fx` monitor profile
+(#1356).
+
+### The exercise rooms and Merc's Ear Lab on the web
+
+The owner's decision of 15 November 2026 (`docs/plans/web-rooms.md`): the
+web's exercises are to be as good as the native app's, with Merc and his
+voice, free. The store build carries none of it (`web-rooms-fold.test.ts`,
+`ear-lab/merc/fold.test.ts`), and the native app's own gates are unchanged.
+
+- **Seven rooms** (#1423): Long note, Echo, Lip roll, Ng slides, Home note,
+  Leap and Harmony, under "Sing with Merc" on the Exercises tab, from the
+  native picker's catalogue. `WebRoomHost` gives a room the whole window on
+  the dark stage, a bar with Back, its name and the level pill's slot, and
+  Back, Escape and the room's Done as ways out. `/exercises/harmony-line`
+  opens Harmony. Drum Night's first-paint ceiling goes from 523,000 to
+  525,000 bytes.
+- **The Warm-up** (#1463), the eighth room: its path opens each stop's room
+  in the same frame. First note stays native, so the web's routine is four
+  stops, about three minutes, then "Sing a song", which opens Karaoke
+  Night. No padlock and no offer. Lesson 6's first-paint budget moves from
+  156 to 157 KB.
+- **Merc's Ear Lab** (#1460, #1467). The bench (the Mercury Index, Today's
+  three, the Ear rooms, six stations, the Ear Path, the Ear Report) and his
+  room for every drill, behind `EAR_LAB_WITH_MERC`, which is
+  `KARAOKE_IMPORT || WEB_ROOMS`. The Ear Lab's tour walks the bench in
+  eight steps. #1467
+  lays the bench out as a desk from 860 px of tab and gives a threshold
+  reading one rounding by the drill's unit. What a web visitor loses,
+  against the older bench (`docs/plans/ear-lab-native-look.md`, "On the
+  web too"): the room picker and its glass slider, so the Glasshouse Bench
+  and the supporters' Transit Observatory and Bell Loft no longer show in
+  the Ear Lab; Auto-advance and the hold after a verdict; Stop; the round
+  trip on the bench's chip; why each of today's three was picked; the next
+  calibration date on the bench; the keycaps on the answer pads; the Ear
+  Path's orbs as a way in; and the rack's one-screen list. The user entry
+  says only that the room picker is gone.
+- **Notices in the room's pill** (#1466). Over a room, notices are the
+  native app's pill under the room's bar, one at a time, and the toasts
+  draw nothing until the room closes. The pill moved to
+  `src/components/notice-pill/`; the native shell imports it from there.
+- **A room's inlined picture** (#1443). The build inlines a picture under
+  4 KB as a `data:` address, which `connect-src` refuses to fetch, so Ng
+  slides logged two CSP errors per picture on the dev site (the `<img>`
+  fallback drew it). A data address is now read from itself.
+
+### The drills
+
+- **One stage** (#1425). The eighteen drills that are not rooms share one
+  shell: the booth behind, a sheet of dark glass, Merc beside it
+  (`StageCoach`), his bubble holding the brief and then the run's
+  instruction, Start a pill with a microphone, the grade in a ring.
+  Follow-ups inside the window, so not in the user notes: #1438 holds the
+  sheet still while an example's line shows (it jumped 59 px in Name the
+  Cadence on a phone), #1446 fades what scrolls under the pinned Start,
+  #1459 keeps Try Again in sight off a phone (marking a sheet
+  `data-stacked`), and #1432 lets Slide's two dials wrap on a phone (489 px
+  in a 362 px sheet).
+- **Notices in Merc's bubble** (#1442, #1431). While a drill's stage is up,
+  the app's notices show one at a time in the bubble and the toast host
+  draws nothing; unlocks of one moment are one notice. "Keep this take?"
+  became such a notice (#1431), and a keep no longer raises a toast.
+- **Read the Note** (#1426): a note on the treble or bass staff, up to two
+  ledger lines, answered on seven letters; no microphone. A voice whose
+  range starts below C3 opens on the bass clef. `/exercises/read-the-note`
+  (#1429).
+- **Name the Cadence** (#1427, #1432): perfect, imperfect, plagal and
+  interrupted cadences in a key that changes each round; the plagal from
+  level 4, the interrupted from level 7. Its setup shows a round's figure
+  and plays a perfect cadence in C.
+- **Sing It in Time** (#1440): Merc gives do, one bar is counted in, and
+  the singer reads two bars of 4/4 off the staff, three tunes a run, 50 to
+  96 BPM by level. Pitch is scored by pitch class; timing is shown, never
+  scored. The click under the singing is off at first.
+- **Hear it first** (#1428, #1430, and the new drills): fifteen drills
+  have an example under Start (counted by `demo={` in
+  `src/features/exercises`). Interval Trainer answers a round with a missed
+  note before the next one (under 50, or not heard).
+- **More in the old drills**: Scale Runner's Harmonic Minor, Melodic Minor
+  (down as the natural minor) and Minor Pentatonic, and six slugs for
+  Lessons 20, 23, 24 and 25 (#1422); Chord Stacker's four triads beside
+  its five sevenths, inversions, and `/exercises/triads`; Drone
+  Intonation's Pure tuning, the target the pure interval over the drone
+  (#1441); Sight-Singing's Hear do, its clef by range and a Clef picker, a
+  key signature and spelling by the key (#1445).
+- **An address for an Ear Lab drill on a lesson's set** (#1444). A slug of
+  the `ear-drill` kind opens Leap, Stack, The Chart, Subdivide or Gravity
+  on its items, rated on a track of its own. Season 2's five sets are its
+  only users, and they are drafts, so it is not in the user notes.
+
+### Singing and the phone on its side
+
+- **Twelve keys** (#1464). Playback Setup listed eight major keys; it
+  lists twelve round the circle of fifths, and their relative minors under
+  a minor scale. The phone stage's, the Sing room's and the melody form's
+  pickers list the same. A stored key reads as one of the twelve names (an
+  old "A#" reads "Bb"), and the sheet view spells by the key (F sharp
+  major's seventh is E sharp). `#/singing/sheet?key=&scale=` opens the
+  sheet view in a key; Season 2's drafts are its users.
+- **A phone on its side** (#1469, #1471, and #1449's `178f79e40` and
+  `612cd5259`).
+  The Singing tab picks its phone stage with `isPhoneStage()`, as Karaoke
+  does, and lays it in two columns. On a touch screen in landscape at most
+  500 px tall the sidebar is the menu's drawer on every tab, the header row
+  is at least 48 px, and the tabs, the heart and the docked mic each take a
+  44 px press. Notices stand at the foot's right end, two at most. Tour
+  steps ask for the phone layout instead of a width, so at 844x390 and
+  932x430 all 132 steps light. Karaoke with no song folds its header behind
+  Options, and the Guided Warmup puts its routine and dial behind their
+  button.
+- **Notices on a phone's transport, and the rest of the phone on its side**
+  (#1473). The Singing, Piano and Karaoke phone stages' transport bars
+  publish the room they take while they span the window's foot
+  (`--page-dock-space`, `src/lib/foot-space.ts`), so notices stand on them
+  instead of over their buttons. The mic-off pill takes the dark stage's
+  palette in both themes (light: its words from 1.04:1 to 12.83:1).
+  Karaoke's upload header wraps on a tablet instead of scrolling 181 px
+  sideways. Merc's coach tours start on the layout the screen shows, with
+  steps marked narrow or wide, and the jam room's tour names its menu button
+  only where the header folds behind one. The Guide's tooltip stands beside
+  a target too tall for above and below, and a target as wide as the window
+  is not scrolled sideways. From 769 px wide a drill's stage reaches the
+  window's foot. The Ear Lab bench stands its art beside its column on a
+  phone on its side, and Hairline's console keeps the right safe-area inset.
+- **Smaller** (#1449's `4bee65725`): the light theme's phone tab bar
+  label (More) and the header's Drums link hold their contrast.
+
+### Lessons held as drafts on mercurypitch.com
+
+Shown on the dev deploy, PR previews and `build:e2e`; the production worker
+holds them back (`LESSON_DRAFTS` "0"), and the admin console publishes a
+lesson at run time. Each page went into `kit/drafts.ts` with what it waits
+on:
+
+- **Lesson 16, Sing what you see** (#1406); **Lesson 18, Read and sing a
+  whole line** (#1407); **Lessons 20, 25, 27, 26 and 28** (#1408, a merge
+  of #1409 to #1412: Lesson 20's pentatonic staircase, Lesson 25 Minor,
+  properly, Lesson 27 Seventh chords and inversions, Lesson 26 A second
+  voice, Lesson 28 Cadences, form and a song in two parts). Their kit
+  additions: the staircase draws other scales and turns into the staff,
+  the staff toy reads along a written line and writes chords, the ring of
+  rooms and the chord levels join the kit, a score on two staffs, and the
+  in-time reader hears another voice's part.
+- **Kit fixes** (#1416, #1418, and fixes inside the page PRs): Done for
+  today keeps Lesson 22's rest card after "Effortful"; a play in a step's
+  text shows its own step first on Lessons 20, 24, 25 and 27; the step deck
+  stops a tall step at its own head; the staircase lands a move of no time
+  at once instead of turning NaN; a sharp or flat stands clear of the note
+  before it; the staff lights a line that comes back down on its own
+  notes. The step-deck change reaches Lessons 1 to 4 too, where no step is
+  taller than the room under the masthead.
+- **Practice cards** (#1465). Season 2's cards (Lessons 15 to 28 but 22)
+  link the drills that shipped. Season 1's released Lessons 2 and 4 change
+  "then tap Leap" to "then tap Shape, then Leap", since the bench now holds
+  six stations; their sitemap dates moved to 2026-11-18 with it. Left out
+  of the user notes for length.
+- `/learn/` was re-dated as each draft joined the hub (its last date is
+  2026-11-14).
+
+### Builds, tests and docs only
+
+- #1415 runs the browser jobs on Ubuntu 24.04 for Playwright 1.60; #1470
+  carries the browsers' apt packages in the Actions cache and gives apt
+  ten minutes.
+- #1448 lets `pnpm check` finish its type check and lint and fail when a
+  step crashes; #1462 replaces npm-run-all with `&&` and pnpm's own
+  parallel run.
+- #1461 updates wrangler to 4.164.0, so a deploy killed by a signal fails.
+- #1417: IndexNow sends the whole sitemap only with `--all`.
+- #1435, #1472 (Studio specs), #1456 (a disposed staff toy clears its
+  timers; the recorder's test mocks keep to its type), #1468 (Season 2's
+  documents read the lesson marker as shipped), and the module-index
+  regenerations.
+
+### Native
+
+The app ships on its own `mp-v*` tags, and this release changes none of
+its gates: Studio stays off there, `WEB_ROOMS` folds to false, and the
+store build still carries no room. Shared code it now imports from new
+places: the notice pill (`src/components/notice-pill/`, #1466) and the
+Warm-up's stop hand-over (`src/features/warm-up/warm-up-stop.ts`, #1463).
+The Settings changelog is not in the native app
+(`SettingsNativeBilling.test.tsx`), so this entry's user half is the
+web's alone.
+
+### Release steps
+
+1. **Migrations:** none. Nothing under `workers/` changed.
+2. **Secrets, variables and bindings:** none new; `wrangler.jsonc` is
+   unchanged.
+3. **Worker code.** Site worker: only through the lesson lists it imports
+   (`kit/drafts.ts` gains Lessons 16, 18, 20 and 25 to 28 as drafts). DB
+   worker: one comment in `src/lib/experimental-features.ts`, which it
+   compiles in, now says Studio is on in production; its code does not
+   change, and `/api/features` and the admin switch serve Studio as
+   before. Jam worker: unchanged.
+4. **Local database:** Dexie goes from v14 to v16 for every visitor, Studio
+   or not. v15 added `studioTakeNotes` (#1402) and v16 removed it again
+   and added `studioProjectSnapshots` (#1405), a song's record kept once
+   per schema version before its first migration. Neither step carries an
+   upgrade function. A second tab still open on v14 meets the existing
+   handling in `database-lifecycle.ts` (`installDatabaseLifecycle`), as
+   every schema raise has.
+5. **Links into about.mercurypitch.com** (prod-upd step 0c): none new. The
+   draft pages link only the landing's Privacy, Terms and Imprint.
+6. **Social cards:** `pnpm run og:versions` stamped all 13 cards with no
+   change.
+7. **What's New** is untouched: 0.9.31 is a patch.
+8. **Version files:** `package.json` goes from 0.9.30 to 0.9.31. Nothing
+   else 0.9.30 touched applies: no lesson or film goes live, so no
+   `datePublished`, no `uploadDate` and no watch page changes.
+9. **Sitemap.** Listing Studio changed 17 documents: 16 gained the Studio
+   link, and Studio's own page its robots line and app node. The Studio
+   commit dates those 17 URLs 2026-11-19, and those dates are what
+   announce Studio on release: that commit's IndexNow dry run since
+   3b120f1f1 sent 16 URLs, `/studio-night` among them. On a production
+   build of the release PR, `pnpm run sitemap:check` reads 26 URLs, every
+   `<lastmod>` matching its page.
+10. **Production asserts.** `pnpm build` and `build:tours` still end in
+    `assert-experimental-features.mjs dist --off`, which now checks each
+    page against what its feature gets. On 3b120f1f1 it read "off,
+    unlisted, still served"; on a production build of the release PR it
+    reads "switch off; listed /studio-night; unlisted none; every page
+    served".
+11. **Tag gate:** the tag goes on a `main` commit whose own PR Gate push run
+    passed, after Release Tours passes on it. `build:tours` ends in the
+    same `--off` assert, so whether the walk covers Studio's tour depends
+    on how the Studio commit sets the tours build.
+12. **After the deploy:** IndexNow for `/studio-night`, `/learn/`,
+    `/learn/02` and `/learn/04`. In Search Console, `/studio-night`.
+
 ## [0.9.30] - 2026-11-08
 
 60 commits since `v0.9.29` (fb51e24d9) before these notes, from 14 PRs:

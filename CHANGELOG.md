@@ -5,6 +5,67 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.31] - 2026-11-19
+
+Studio opens: record, arrange and mix your takes into a song. Merc's rooms
+and his Ear Lab come to the web, and the Exercises tab gains three drills.
+
+### Added
+
+- **Studio is open.** Build a song from your takes and audio files, saved in
+  this browser. It is the first tab under Create, the group that was called
+  Studio.
+- **Record several lanes at once.** Arm the lanes you want and one press of
+  Record takes them all, each from its own input or interface channel.
+- **Hear yourself through the effects.** With Monitor through headphones on,
+  an armed lane plays you back through its own sound. The take stays dry.
+- **Keep the best of each pass.** Record over a repeated range and Comp lays
+  the passes under the lane. Drag along the stretch you want from each.
+- **Arrange and mix.** Move, trim, split and fade clips, draw volume and pan
+  lines, and balance every track in Mix.
+- **Piano and drum lanes.** Play a MIDI keyboard into a lane, or draw notes
+  on a piano roll or a drum grid. MIDI files come in and go out.
+- **Shape the sound, then export.** Pick a flavour such as Warm or Lo-fi and
+  turn its five dials, then export a WAV with its loudness measured.
+- **Back up a song.** One file holds the song and its audio. Opening a
+  backup adds it as a new song.
+- **Sing with Merc on the web.** Eight rooms open free from the Exercises
+  tab: Long note, Echo, Lip roll, Ng slides, Home note, Leap, Harmony and
+  the Warm-up.
+- **Merc runs the Ear Lab.** His bench holds today's three drills, six
+  stations, the Ear Path and the Ear Report. The room picker is gone.
+- **Three new drills.** _Read the Note_: name a note on the staff. _Name the
+  Cadence_: hear how a phrase ends and name it. _Sing It in Time_: read a
+  short tune off the staff and sing it on the beat.
+- **Hear it first.** Fifteen drills can play an example before you start.
+  In Interval Trainer, an interval you missed plays again with its name.
+- **More in the drills you know.** Chord Stacker adds triads and
+  inversions, Drone Intonation a Pure tuning, Scale Runner three minor
+  scales, and Sight-Singing reads in a key on your clef.
+
+### Changed
+
+- **Every drill on one stage.** A dark stage, with Merc beside the sheet and
+  the brief in his bubble. On a phone, Start stays at the sheet's edge.
+- **Notices wait their turn.** Over a drill or a room, notices come one at a
+  time from Merc's bubble or under the room's bar, not over the controls. On
+  a phone, Singing, Piano and Karaoke show them above the playback controls.
+- **Twelve keys.** The key pickers list all twelve major keys, and their
+  relative minors when a minor scale is chosen.
+- **A phone on its side.** The Singing tab shows the phone stage in two
+  columns, the sidebar becomes a drawer, and the guided tours light every
+  step.
+
+### Fixed
+
+- **Smaller things.** Piano Night's Mercury Felt Synth plays its first note
+  as loud as the rest. The voice pill sits inside a collapsed sidebar. The
+  light theme's More label, Drums icon and mic-off pill are easier to read.
+  Karaoke, the Ear Lab and the Guided Warmup fit a phone on its side, and
+  Karaoke's upload header no longer scrolls sideways on a tablet. A drill's
+  stage reaches the foot of the window. Tours follow the layout on screen,
+  and the Guide's tip stands beside a tall target.
+
 ## [0.9.30] - 2026-11-08
 
 Find Your Pitch opens Lessons 3 and 4, each with its film, and Jam keeps the
