@@ -4609,3 +4609,15 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - GROUP B F-01 ROUND STARTED. Heavy now: groups D and B. Queue: group E; then film-draft-02 (the
   production builder resumed as part 2 of briefs/l5-integration.md -> renders/film-draft-02.mp4),
   the lead's check (measure, contact sheet, a look), and the owner's look.
+
+## 19:13 UTC, 19 Nov
+- GROUP D F-01 ROUND HANDED BACK and ACCEPTED (DECISIONS 237; lead looked at the doctor lines
+  lighting and the band at 50 %): feel block dim 55 % (50 % measured 4.23:1 on capsule labels);
+  probes 64/146; recap cut proven against E's real S13. HANDOFFS ([F-01 fix: 237]; backup
+  $S/handoffs-pre237.md).
+- GROUP E F-01 ROUND STARTED (the last group). Heavy now: groups B and E. NEXT: when both hand back
+  and are accepted, film-draft-02: resume the production builder ((builder)) with part 2 of
+  briefs/l5-integration.md but writing renders/film-draft-02.mp4 and review/film-02/ (measure, cuts
+  table, contact sheet); then the lead's check (compare with draft-01's numbers; look at the sheet)
+  and the owner's look (send the contact sheet and the mp4 path; summarise what changed and what
+  still waits: sound step, final voices, final passes for host motion/holds, 60 fps).

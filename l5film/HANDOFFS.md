@@ -603,6 +603,16 @@ fade with the ring, and the band, Merc's line and "Nothing listens" stay **[D-01
   chose:" all four answers light; then the feel block (question, capsules, lines, bracket) dims to
   35 % from b46a + 0.5 over 0.6 s, the capsules lit within it, and stays so to the end fade **[D-01 fix: 213]**.
 
+- **Group D's full-film fix round** **[F-01 fix: 237]**: the full doctor lines rise whole at ink-2 and
+  each lights to ink on its first word (b46a: 'if hoarseness', 'more than', 'see a doctor', 'nose and',
+  "If it's", 'or breathing', 'get help'), 0.3 s linear, staying lit; the stop line's second line waits
+  at ink-2 for "feels" (b41). The band and Merc's line dim to 50 % from `at('b43','start',-0.4)` over
+  0.4 s and come back to full from `at('b46a','end',0.06)`, 0.59 s before `recap` ("Nothing listens"
+  stays at full; the last frame unchanged). The dimmed feel block is at 55 % (its capsule labels
+  4.80:1; 50 % measured 4.23). The ring and its word draw in their own layer, the breath a scale of
+  that layer about the ring's centre (centre and radius unchanged). S11: "usual notes suddenly gone"
+  on `word('b37','have')`; "hurts or uncomfortable" settles (1.06) on `word('b37','singing')`.
+
 ### Recap and practise (S13; F0 from the matched cut; frame-fixed)
 
 - **The frame's slide** (13a, an object move, 478.20 to 479.40, power2.inOut): from F-turn's pixels

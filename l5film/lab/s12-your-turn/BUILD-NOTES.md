@@ -77,7 +77,7 @@ after the "0" (`lab/s12-your-turn/tools/landings.py`).
    crossed it by 71 rows in the first build) and 103 px clear of Tavi's keep-out (1700).
 6. **The doctor lines own the end** (DECISIONS 205): with the hand breaks the lines end at x 846.2 (154 px left of
    the capsules, 151 px of the question's ink), and the feel block dims to 35 % as they rise (58.45 to 59.05) and stays
-   so to the end fade. All four capsules stay lit inside the dimmed block.
+   so to the end fade (55 % since fix F-01, DECISIONS 231: 4.8:1 or better on every text). All four capsules stay lit inside the dimmed block.
 7. **Fades made linear for measure.py** (DECISIONS 179): the reasons out (0.5 s); the stop line in (0.3 s) and out (0.4 s); the thinning (0.3 s);
    "Breathe in, low and quiet" out (0.2 s); the ring's group out (0.4 s); "How did that feel?" in (0.3 s); the feel
    block's dim (0.6 s); the last fade (0.5 s); the small doctor lines out (0.3 s).
@@ -107,8 +107,8 @@ after the "0" (`lab/s12-your-turn/tools/landings.py`).
 
 ## Proof
 
-- Probe (`probe.json`; checks in `checks.js`, run by `lab/s05-push/probe.mjs`): 137 of 137 pass after fix D-01 (122 of
-  122 in the first build; the fix round's checks are named for their DECISIONS). The first frame as S11's last (16
+- Probe (`probe.json`; checks in `checks.js`, run by `lab/s05-push/probe.mjs`): 146 of 146 pass after fix F-01 (137 of 137
+  after fix D-01, 122 of 122 in the first build; the fix round's checks are named for their DECISIONS). The first frame as S11's last (16
   texts, the ring at 35 % at rest); the six reasons gone by 0.54 (on "Otherwise,"), the comfort line, its icon, the
   listening line and the small doctor lines kept; "A3 · Merc" from x 1016 with its dot at 1000 to
   1012, 12 px or more under "0"; "A4 · Tavi, an octave up" from 1202, its dot from 1186; the phase row centred on 1320
@@ -133,7 +133,7 @@ after the "0" (`lab/s12-your-turn/tools/landings.py`).
   481; the capsules x 1000 to 1230, centred 540, 596, 652 and 708, 37 px under the question, each word 10 px or more
   inside; the small ring timer at (1660, 458); the lit and dimmed strokes (1.0, 0.28) in each state the board names;
   the bracket x 1234 to 1240, y 540 to 596; the feel block to x 1600.2 and y 730; the full doctor lines seven, broken at phrase ends, ink x 258 to 846.2, baselines 430 to 730, word for word, clear of
-  "Nothing listens" and the answers; the feel block at 35 % from 59.05 (question, capsules, lines, bracket), all four
+  "Nothing listens" and the answers; the feel block at 55 % from 59.05 (question, capsules, lines, bracket; 35 % until fix F-01), all four
   still lit; both underlines one segment under their words (x 260 to 475 at y 540; 260 to 638.9 at 740); nothing
   but the band and Merc's line at 76.30; the last frame as HANDOFFS § S12 to S13. No two visible texts overlap at any
   time tested; the keep-out 70.5 px (Merc, the doctor lines) and 118.8 px or more (Tavi).
@@ -173,36 +173,38 @@ after the "0" (`lab/s12-your-turn/tools/landings.py`).
   0.5 s, the stand-in's first 0.5 s; `sheet.png`): `measure/summary.md` finds no single-frame event; the frame is still
   across it (hosts hidden in the probe, the labels gone by 76.29): a 0.4 s hold, then S13's slide (board 478.20).
   Re-proved after fix D-01: the same numbers (band 0.89, line 0.12, edges 5.82; 60 fps pair 0.91, 0.13, 5.82), no
+  single-frame event. Re-proved after fix F-01 against the stand-in (the same numbers) and, new, against group E's
+  real `s13-recap.html` (`cut-recap-real/`, `REAL=1 ../s11-sing/cutprobe.mjs recap`): the same boxes either side and
+  residuals 0.00, 0.00 and 0.00 (60 fps pair 0.02, 0.01, 0.00): S13 now draws the edges at S12's weight; no
   single-frame event.
-- **The plain cut on b38** (`cut-b38/`, `../s11-sing/cutprobe.mjs b38`; re-proved after fix D-01, `proof.txt`): S11's
+- **The plain cut on b38** (`cut-b38/`, `../s11-sing/cutprobe.mjs b38`; re-proved after fix D-01 and fix F-01, `proof.txt`): S11's
   last frame against S12's first, the same 16 texts, the band, the line and the ring (1320, 572), r 136 on the same
   pixels; no pixel of the frame changes by more than 24 (the largest change 10, 12 on the 60 fps pair: the dust); the
   reasons start to leave 0.02 s after it. `measure/summary.md` finds no single-frame event.
-- Clip (fix D-01; the first build's clip, stills and measure in `fix-D-01/before/`): `clip.mp4` (30 fps draft, the whole
-  scene, 76.8 s, with the scratch voice; MIX=voice); stills `clip-still-*.png` at 0, 0.30, 0.60 (the reasons leaving),
-  1.18, 3.01, 4.16 ("LISTEN" lit, its mark), 5.80 (the mark moving), 6.20 ("BREATHE" lit), 8.70 ("SING" lit), 10.65,
-  13.96, 15.64, 17.84, 20.16, 20.86 (mid-push), 21.41 (landed), 21.85, 22.05, 24.42, 24.65 (the largest breath),
-  25.99, 26.34, 30.59, 35.91, 36.10 (the echo), 36.40 (the labels leaving with the ring), 36.75, 38.48, 40.68, 42.47,
-  45.99, 50.23, 55.33, 58.10 (all four lit), 58.23, 58.60 (the doctor lines mid-change), 58.98, 59.20 (the feel block
-  at 35 %), 64.72, 70.00, 75.16, 76.30, 76.75 (the last frame). The first build's eased-rise render is in `round0/`.
-- `measure.py render` (`measure/summary.md`, fix D-01): holds 4.5 s inside the clip (1.8 s per 30 s; 4.3 s and 1.7 in
-  the first build), longest 0.2 s; none in the viewer's ten seconds (the arc, the counter and the playhead each
-  register); against the voice (`tools/holds.py`), 2.6 s in Merc's pauses (0.24 to 2.54 s long; two in the `feel`
-  pause, where only the small ring timer moves) and 2.2 s inside words (holds.py counts the final hold too) (his mouth under the measure's threshold at 320 px; DECISIONS 189). **The turn at F-turn** (21.41 to
-  76.78, 55.4 s on the scratch clock, no camera drift added, DECISIONS 171 and the brief): 21 holds, 2.5 s in all (1.35 s
-  per 30 s), the longest 0.2 s, as in the first build; before the push lands, 17 holds, 2.0 s (16, 1.8: the reasons
-  gone from the block). Final hold 0.3 s (76.40, the frame alone before the cut). Single-frame events: 15.067, 39.267,
-  42.467 and 73.133 (pops, 0.05 to 0.07 % of pixels: the hosts' blinks, with the small ring timer and dust at 42.467),
-  69.900 (jump, 0.04 %: the hosts and dust), and two new ones inside the breath, 24.533 and 25.467 (jumps, 0.12 and
-  0.10 %): the ring's breath, whose pixels change on nearly every frame from 23.6 to 25.7 (median 2,472 a frame in
-  its region; Merc 513 at 24.533); these are its last larger steps before the scale turns at its peak (24.65) and as
-  it comes to rest (25.69), where the change drops to a few hundred pixels; neither differs from both neighbours. The first build's 54.867 jump is gone. Integrated -19.8 LUFS, true peak -1.3 dBTP.
-- `check lab/s12-your-turn/proj --at=4.16,17.84,21.41,24.65,30.59,45.99` and `--at=36.40,58.98,59.20,64.72,75.16`
-  (`check.log`, `check-2.log`, fix D-01; the phase row lit with its mark, the row above the floor, F-turn landed, the
-  largest breath, the hold, the feel block; the labels leaving, the doctor lines full size, the feel block at 35 %,
-  the first underline, the second): both passed, contrast 79/79 and 78/78 (the dimmed feel block included), layout 0
-  issues, runtime and motion 0, lint 0 errors (warnings: the kit's duplicated host video entry; the file's 370 lines,
-  337 in the first build).
+- Clip (fix F-01; fix D-01's clip, stills and measure in `fix-F-01/before/`, the first build's in `fix-D-01/before/`):
+  `clip.mp4` (30 fps draft, the whole scene, 76.8 s, with the scratch voice; MIX=voice); stills `clip-still-*.png` at 0,
+  0.60 (the reasons leaving), 4.16 ("LISTEN" lit, its mark), 8.70 ("SING" lit), 15.64, 17.84 (the stop line, its second
+  line at ink-2), 19.90 (lit on "feels"), 21.41 (landed), 22.05, 24.54 and 25.48 (the breath's two former steps), 24.65
+  (the largest breath), 30.59, 36.10 (the echo), 36.40 (the labels leaving, the band dimming), 36.80 (the band at 50
+  %), 45.99, 58.10 (all four lit), 58.98 (the full lines risen at ink-2), 59.20 (the feel block at 55 %), 60.10 (the
+  first line lit), 62.60, 64.47, 64.72, 70.00, 71.69, 75.16 (all seven lit), 75.95 (the band coming back), 76.20 (at
+  full), 76.75 (the last frame). The first build's eased-rise render is in `round0/`.
+- `measure.py render` (`measure/summary.md`, fix F-01): holds 3.8 s inside the clip (1.5 s per 30 s; fix D-01 4.5 s and
+  1.8, the first build 4.3 s and 1.7), longest 0.2 s; none in the viewer's ten seconds; against the voice
+  (`tools/holds.py`, which counts the final hold too), 2.3 s in Merc's pauses and 1.8 s inside words, none of 0.3 s or
+  more inside a word (his mouth under the measure's threshold at 320 px; DECISIONS 189). **The turn at F-turn** (21.41
+  to 76.78): 19 holds, 2.2 s (1.19 s per 30 s; fix D-01 21 holds, 2.5 s, 1.35), the longest 0.2 s; before the push
+  lands 15 holds, 1.6 s (17, 2.0). Final hold 0.3 s (76.40, the frame alone before the cut). Single-frame events:
+  15.067, 39.267, 42.467 and 73.133 (pops, 0.05 to 0.07 % of pixels: the hosts' blinks, with the small ring timer and
+  dust at 42.467), 54.867 (jump, 0.03 %: Merc's pass in the left corner, 112 to 775 pixels a frame there against 0 to
+  6 in the rest of the frame, `fix-F-01/dense-54.867/`; the first build had it, fix D-01 not) and 69.900 (jump, 0.04
+  %: the hosts and dust). The breath's two jumps (24.533 and 25.467, 0.12 and 0.10 %) are gone (fix F-01, item 4).
+  Integrated -19.8 LUFS, true peak -1.3 dBTP.
+- `check lab/s12-your-turn/proj --at=4.16,17.84,21.41,24.65,30.59,45.99` and `--at=36.80,59.20,62.60,64.72,71.69,75.16`
+  (`check.log`, `check-2.log`, fix F-01; the phase row, the stop line's second line at ink-2, F-turn landed, the largest
+  breath on its layer, the hold, the band at 50 % beside the feel block; the band dimmed, the feel block at 55 % and
+  the full lines at ink-2, one, three and six lines lit, all seven): both passed, contrast 79/79 and 72/72, layout 0
+  issues, runtime and motion 0, lint 0 errors (warnings: the kit's duplicated host video entry; the file's 402 lines).
 - **LAB-CHECKS 21 for these lines** (real widths, the probe): the stop line 260.0 to 726.2 and 260.0 to 596.3; "Breathe
   in, low and quiet" 1390.9 to 1824.2 on screen; "How did that feel?" 997.0 to 1406.8; the capsules' words inside x 1000
   to 1230 ("Uncomfortable" the widest, its ink 12.6 and 11.8 px from the capsule's ends); the answers' lines to 1600.2;
@@ -216,7 +218,7 @@ after the "0" (`lab/s12-your-turn/tools/landings.py`).
 
 ## Fix round D-01 (critic D-01; DECISIONS 204 to 210)
 
-What changed in `compositions/s12-your-turn.html` (line numbers as the file stands), the numbers before and after, and
+What changed in `compositions/s12-your-turn.html` (line numbers as the file stood after fix D-01), the numbers before and after, and
 the crop that shows each; the first build's clip, stills and measure are in `fix-D-01/before/`, its cut probes in
 `fix-D-01/before-cuts/`. The shared builder `turnObjects` (lines 37 to 122) is the same text in s11-sing.
 
@@ -271,3 +273,82 @@ frame sheet and the b38 pixel diff), `crops.py` (the before and after crops).
   this round's renders): check passed, lint 0 errors and 23 warnings (this group's: the kit's duplicated host video
   entry in both scenes, s12-your-turn's 370 lines), runtime 0, layout 0 errors and 0 warnings (one info at film
   293.54, another group's time axis), motion 0, contrast 67/67.
+
+## Fix round F-01 (critic F-01; DECISIONS 225 to 235)
+
+What changed in `compositions/s12-your-turn.html` (line numbers as the file stands), the numbers before and after, and
+the crop that shows each (`fix-F-01/`, made by `fix-F-01/crops.py` from fix D-01's stills in `fix-F-01/before/` and
+this round's). Film times are scene time + 385.59. S11's items are in `../s11-sing/BUILD-NOTES.md`.
+
+1. **228, blocks light as said.**
+   - The full doctor lines (they rise whole, 58.15 to 58.95) rise at ink-2 and light to ink line by line, a 0.3 s
+     linear change on each line's first word, staying lit (anchors line 189, draw line 376): "if hoarseness" 59.71,
+     "more than" 62.22, "see a doctor" 64.12, "nose and" 67.32, "If it's" 69.88, "or breathing" 71.34, "get help" 74.36
+     (film 445.30 to 459.94). Before: all seven at ink from their rise, no change until the underlines. The two
+     underlines are unchanged (64.12 and 74.35). The probe reads 2222222 at 58.98, 1112222 at 64.47, 1111112 at 71.69,
+     1111111 at 75.16. `fix-F-01/1-doctor-lines-light-as-said.png` (64.72 before, 64.47 after).
+   - The stop line (two lines shown at once on b41): its first line at ink, its second at ink-2 until "feels" (19.55,
+     film 405.14; lines 160 and 368). Before: both at ink on "Stop". `fix-F-01/1b-stop-line-second-line.png` (17.84).
+   - The care block's reasons: each landed on its own word in S11, so none was shown before it was said; S12 carries
+     them over the cut (all said) and they leave on "Otherwise," (0.02 to 0.52), as before. The small doctor lines stay
+     at ink-2 (their words are said only in b46a, where the full lines replace them). The feel block's question,
+     capsules and lines each land on their words already.
+2. **226, the band after the hold.** The band and Merc's line dim to 50 % with the ring's exit, 36.19 to 36.59 (0.4 s,
+   linear; film 421.78 to 422.18), while the feel block and the doctor lines are the subject, and come back to full
+   with the end fade, 75.79 to 76.19 (0.4 s, linear; film 461.38 to 461.78), 0.59 s before the matched cut on `recap`
+   (76.78, film 462.37) (lines 192 to 194 and 302). "Nothing listens" stays at full. Before: at full from the close to
+   the cut. `fix-F-01/2-band-dims-after-the-hold.png` (45.99), `fix-F-01/2b-band-back-before-recap.png` (75.16 before,
+   76.20 after). The ring keeps its size (DECISIONS 226): centre (1320, 572), r 136, as after fix D-01.
+3. **231, the dimmed feel block keeps 4.5:1.** It dims to 55 %, not 35 % (lines 187 and 382): measured on pixels, each
+   text shown and hidden on the same frame (`fix-F-01/contrastshots.js`, `contrast.py`, boxes in `contrast-boxes.json`),
+   at 64.72 and 70.00:
+
+   | Dim | "How did that feel?" | the capsules' lines | capsule labels ("Easy", "Uncomfortable") |
+   | --- | --- | --- | --- |
+   | 35 % (before) | 2.93:1 | 2.89 to 3.03:1 | 2.70, 2.84:1 |
+   | 50 % | 4.73:1 | 4.67 to 4.81:1 | 4.23, 4.37:1 (on their lit tint) |
+   | 55 % (after) | 5.41:1 | 5.35 to 5.49:1 | 4.80, 4.92:1 |
+
+   At the brief's 50 % the capsule labels fall under 4.5:1 on their chrome tint, so the dim is 55 %, the first 5 %
+   step that keeps every text over 4.5:1 (`contrast-35.txt`, `contrast-50.txt`, `contrast.txt`). All four capsules
+   stay lit within it. `fix-F-01/3-feel-block-contrast.png` (70.00).
+4. **233, the ring and "Breathe" stepping** (film 410.13 and 411.07; measure.py's jumps at 24.533 and 25.467, 0.12 and
+   0.10 % of pixels). The ring and its word draw in their own div layer (the shared builder, lines 59 to 68, the same
+   text in s11) in the world's layer, so the camera carries them; the breath is a CSS scale of that layer about the
+   ring's centre (line 346; the scale was the ring's own laid-out transform), and the layer is composited (`will-change:
+   transform`) from the push's landing (21.41) to the end, so the stroke and the word are rastered once and move
+   sub-pixel. At F0 the layer has no transform and is not composited, so the cut on b38 is unchanged. After: no event
+   at 24.533 or 25.467 (none in the breath); the layer's switch at 21.41 changes the ring's region by 3 and then 13
+   pixels, no event. `fix-F-01/4-ring-breath-composited.png` (24.65; the stills match, the steps are gone in time).
+   **227, holds inside words**: none of 0.3 s or more inside a word in S12 (the longest 0.2 s); S11's two are filled
+   (s11's notes).
+5. **The cuts, re-proved.** On `sing` (S10 with group C's larger hold chart against S11): the same boxes, residuals
+   1.97, 8.09 and 4.42 (D-01: 2.08, 8.72, 4.42), no single-frame event. On b38: the same 16 texts and the ring on the
+   same pixels, no pixel changing by more than 24 (the largest 10; 12 on the 60 fps pair), no event. On `recap`: the
+   band back at full 0.59 s before it; against the stand-in the same numbers as D-01 (band 0.89, line 0.12, edges
+   5.82); against group E's real S13 (`cut-recap-real/`) residuals 0.00, 0.00 and 0.00 (60 fps pair 0.02, 0.01,
+   0.00), the band x 928 to 1824, y 104 to 202, Merc's line y 153, 5.6 px, no labels on either side; no event.
+   The cut probe takes `REAL=1` for the real S13 (`../s11-sing/cutprobe.mjs`).
+
+Landings (`tools/landings.py`, updated with this round's): the closest pairs are still 0.40 s; the stop line's second
+line lights 2.11 s after the stop line lands, the doctor lines 1.46 s or more apart.
+
+**Proof after fix F-01**: the probes (`lab/s05-push/probe.mjs s11-sing s12-your-turn`, `fix-F-01/probe.log`): s11 64 of
+64, s12 146 of 146 (new: the ring's layer not composited at F0 and composited at 1.08 at 24.65, the stop line's second
+line, the band at 50 % at 36.60 and 59.08 and back at 1.000 by 76.20, 0.59 s before the cut, the feel block at 0.550,
+the full lines' lit patterns). clock-lint silent; `merc-tags.py s11-sing s12-your-turn --check` 8 tags, 0 stale, 0
+problems. `check` on both proj folders passed (contrast 79/79 and 72/72, layout 0 issues, runtime and motion 0); the
+root check (`root-check.log`) passed: lint 0 errors and 24 warnings (this group's: the kit's duplicated host video
+entry in both scenes, this file's 402 lines), runtime 0, layout 0 errors and 0 warnings (one info at film 293.54,
+group C's time axis), motion 0, contrast 67/67. measure.py: holds 3.8 s (1.5 s per 30 s), longest 0.2 s, final hold
+0.3 s; events in the Proof above.
+
+**For HANDOFFS § The turn (S12) and § S12 to S13**:
+- The band and Merc's line dim to 50 % from `at('b43', 'start', -0.4)` over 0.4 s, linear (film 421.78 to 422.18), and
+  return to full from `at('b46a', 'end', 0.06)` over 0.4 s, linear (film 461.38 to 461.78), 0.59 s before the matched
+  cut on `recap`; "Nothing listens" stays at full. The last frame is unchanged (the band at full).
+- The feel block dims to **55 %** (not 35 or 50): every text 4.80:1 or better.
+- The stop line's second line lights on `word('b41', 'feels')`; the full doctor lines rise at ink-2 and light on
+  `word('b46a', ...)`: 'if hoarseness', 'more than', 'see a doctor', 'nose and', "If it's", 'or breathing', 'get help'.
+- The ring keeps its size: centre (1320, 572), r 136 (F-turn (1376, 610.8), r 190.4). It and its word draw in their
+  own layer, composited from the push's landing; the breath (1.08) is a CSS scale of that layer about the ring's centre.

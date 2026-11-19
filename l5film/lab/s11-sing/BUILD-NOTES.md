@@ -64,7 +64,7 @@ other landing is 1.36 s or more from its neighbours (`lab/s12-your-turn/tools/la
 
 ## Proof
 
-- Probe (`probe.json`; checks in `checks.js`, run by `lab/s05-push/probe.mjs`): 62 of 62 pass after fix D-01 (55 of 55 in the first build). The first
+- Probe (`probe.json`; checks in `checks.js`, run by `lab/s05-push/probe.mjs`): 64 of 64 pass after fix F-01 (62 of 62 after fix D-01, 55 of 55 in the first build). The first
   frame: the band x 1000 to 1640, y 210 to 280, Merc's line at y 245, 4 px, x 1000 to 1640, no labels; the room's ghost
   at 1 over the room at rest, 0.5 at 0.15 s, gone by 0.34 s; the frame at 25 % under the card, back to full by 2.25;
   "Sing it" centred x 961.9, its top 29 px under the band's foot; "Your turn." ink x 266.0 to 662.7, y 120 to 201; the
@@ -90,23 +90,26 @@ other landing is 1.36 s or more from its neighbours (`lab/s12-your-turn/tools/la
   first after the cut; `sheet.png` the eight frames round it): `measure/summary.md` finds no single-frame event (no pop,
   no flash, no empty frame), one 0.1 s hold (hosts hidden in the probe). Re-proved after fix D-01 with group C's fixed
   `s10-steady.html`: the same numbers to the hundredth (band 2.08, line 8.72, edges 4.42; 60 fps pair 2.12, 8.71,
-  4.42), no single-frame event.
-- Clip (fix D-01; the first build's in `fix-D-01/before/`): `clip.mp4` (30 fps draft, the whole scene, with the scratch
-  voice; MIX=voice); stills `clip-still-*.png` at 0, 0.15, 0.40, 1.27, 2.25, 2.77, 4.20 (the band's glow), 5.50 (the
-  bracket drawn), 5.90 (the ring drawing on), 6.30 ("Nothing listens" landing), 6.80 (the ring drawn), 7.98, 13.17,
-  15.70, 19.07, 23.51, 28.35, 31.73, 36.23, 37.12, 38.38 (the ring at 1.05), 39.15 (the last frame). Hosts at 300 on every still; Merc's talking arcs reach x 210 to 229 beside the
-  doctor lines at x 260.
-- `measure.py render` (`measure/summary.md`, fix D-01): holds 3.5 s inside the clip (2.7 s per 30 s), longest 0.5 s
-  (19.50, inside "singing has"), the same as the first build; mapped against the voice
-  (`../s12-your-turn/tools/holds.py`), 1.6 s fall in Merc's pauses (0.39 to 0.64 s long) and 1.9 s inside words, where his mouth moves under the measure's 16-level threshold at 320 px (DECISIONS 189: the final
-  passes' idles). Single-frame events: 0.800 and 1.467 (jumps, 0.29 and 0.25 % of pixels, inside the card "Sing it":
-  the kit card's breathing scale snapping its glyph edges, as S10's card at 1.467), 0.033 (jump, 0.04 %, the room's
-  crossfade starting), 10.833 and 32.267 (pops, 0.05 and 0.06 %, the hosts' blinks), 17.067 (jump, 0.09 %, the hosts
-  and a dust mote). Integrated -20.0 LUFS, true peak -1.2 dBTP.
-- `check lab/s11-sing/proj --at=1.27,6.30,6.80,13.17,31.73,37.12` (`check.log`, fix D-01; the card, the ring drawing
-  on and "Nothing listens" landing, the ring drawn, the comfort line, the reasons, the listening line): check passed,
-  contrast 34/34, layout 0 issues, runtime and motion 0, lint 0 errors (one warning: the kit's duplicated host video
-  entry). The first build's: contrast 45/45 at five other times.
+  4.42), no single-frame event. Re-proved after fix F-01, with group C's S10 drawing its hold chart larger: the same
+  boxes either side; band 1.97, line 8.09, edges 4.42 (60 fps pair 2.02, 8.14, 4.42), no single-frame event.
+- Clip (fix F-01; fix D-01's clip, stills and measure in `fix-F-01/before/`, the first build's in `fix-D-01/before/`):
+  `clip.mp4` (30 fps draft, the whole scene, with the scratch voice; MIX=voice); stills `clip-still-*.png` at 0, 0.40,
+  1.27, 2.25, 4.20 (the band's glow), 5.90 (the ring drawing on), 6.80 (the ring drawn), 7.98, 13.17, 15.70, 18.90
+  ("hurts or uncomfortable" landing), 19.70 (its settle at 1.06 on "singing"), 20.30, 23.51, 27.80 ("usual notes
+  suddenly gone" landing on "have"), 28.35, 31.73, 33.58, 36.23, 38.38 (the ring at 1.05), 39.15 (the last frame). Hosts
+  at 300 on every still; Merc's talking arcs reach x 210 to 229 beside the doctor lines at x 260.
+- `measure.py render` (`measure/summary.md`, fix F-01): holds 2.7 s inside the clip (2.1 s per 30 s), longest 0.4 s
+  (21.50, in the 0.60 s pause after "uncomfortable,"); fix D-01 had 3.5 s (2.7 per 30 s), longest 0.5 s at 19.50 inside
+  "singing has". Mapped against the voice (`../s12-your-turn/tools/holds.py`): 1.7 s in Merc's pauses, 1.0 s inside
+  words, none of 0.3 s or more inside a word (the longest 0.2 s at 27.90, inside "have suddenly"; DECISIONS 227). His
+  mouth moves under the measure's 16-level threshold at 320 px (DECISIONS 189). Single-frame events: 0.033 (jump, 0.04
+  %, the room's crossfade starting), 10.833 and 32.267 (pops, 0.05 and 0.06 %, the hosts' blinks), 17.067 (jump, 0.09
+  %, the hosts and a dust mote); the card's two jumps (0.800 and 1.467) are gone with the kit's composited card
+  (DECISIONS 224). Integrated -20.0 LUFS, true peak -1.2 dBTP.
+- `check lab/s11-sing/proj --at=1.27,6.80,19.70,27.80,31.73,37.12` (`check.log`, fix F-01; the card, the ring drawn,
+  the settle, the "have" landing, the reasons, the listening line): check passed, contrast 45/45, layout 0 issues across
+  6 samples, runtime and motion 0, lint 0 errors (one warning: the kit's duplicated host video entry). Fix D-01's:
+  contrast 34/34 at six other times.
 - **LAB-CHECKS 21 for these lines** (real widths, measured in the probe with the film's fonts): "Your turn." ink x 266.0
   to 662.7; "Sore, hoarse or unwell today?" 310.0 to 794.6; the reasons' first line to 958.7 (1.3 px inside the block's
   960), the second to 690.4, the third to 705.4; the listening line 261.0 to 912.1; the doctor lines 547.5 to 686.4 px
@@ -119,7 +122,7 @@ other landing is 1.36 s or more from its neighbours (`lab/s12-your-turn/tools/la
 
 ## Fix round D-01 (critic D-01; DECISIONS 204 to 210)
 
-What changed in `compositions/s11-sing.html`, with the numbers before and after; the crops are in `fix-D-01/`, the first
+What changed in `compositions/s11-sing.html` (line numbers as the file stood after fix D-01), with the numbers before and after; the crops are in `fix-D-01/`, the first
 build's clip, stills and measure in `fix-D-01/before/`.
 
 - **204, the turn's first minute gets a picture.** The ring draws on in 11b, on "seconds" (5.82, line 138), under the
@@ -138,3 +141,49 @@ build's clip, stills and measure in `fix-D-01/before/`.
   this round's renders): check passed, lint 0 errors and 23 warnings (this group's: the kit's duplicated host video
   entry in both scenes, s12-your-turn's 370 lines), runtime 0, layout 0 errors and 0 warnings (one info at film
   293.54, another group's time axis), motion 0, contrast 67/67.
+
+## Fix round F-01 (critic F-01; DECISIONS 225 to 235)
+
+What changed in `compositions/s11-sing.html` (line numbers as the file stands), the numbers before and after, and the
+crop that shows each; fix D-01's clip, stills and measure are in `fix-F-01/before/`. S12's items, the cuts and the
+contrast measurements are in `../s12-your-turn/BUILD-NOTES.md`.
+
+1. **227, holds inside words** (S11 had 2.6 s per 30 s in the film): the two holds of 0.3 s or more inside a word are
+   filled.
+   - 19.50 to 20.00 (0.5 s, inside "singing has"): "hurts or uncomfortable", the reason Merc is saying, settles on
+     "singing" (19.55, film 365.97): scale 1.06 about its left baseline (310, 352), 0.15 s up, 0.6 s back (the kit's
+     `L.pulse` 'label'), lines 165 to 166 and 215. It is drawn in its own div layer with `will-change: transform` (lines
+     108 to 122), so the scale moves its glyphs sub-pixel, as the kit's chapter card does (DECISIONS 224, 233).
+     `fix-F-01/5-settle-fills-the-hold.png` (19.07 before, 19.70 after).
+   - 27.70 to 28.00 (0.3 s, inside "reach have"): "usual notes suddenly gone" lands on "have" (27.75, film 374.17; was
+     "suddenly", 28.05), line 165. It reads with "have suddenly gone".
+   After: holds 2.7 s in the clip (2.1 s per 30 s; was 3.5 s, 2.7), longest 0.4 s (was 0.5); 1.7 s in Merc's pauses and
+   1.0 s inside words (was 1.6 and 1.9), the longest inside a word 0.2 s. The two left of 0.3 s or more are pauses:
+   21.50 (0.4 s, after "uncomfortable,") and 30.50 (0.3 s, after "ill,").
+2. **228, blocks light as said**: nothing in S11 needed it. Each reason lands on its own word (18.78, 23.21, 27.75,
+   29.80, 31.43), so none is shown before it is said; the comfort line, "Just listen along." and the listening line
+   each land on their words. The small doctor lines (7.58) stand at ink-2 for all of S11: none of their words is said
+   until b46a in S12, where the full lines replace them and light line by line.
+3. **233, the ring's layer** (the shared builder, lines 60 to 69, the same text in s12): the ring now draws in its own
+   div layer over the world's (so the camera still carries it). In S11 the layer has no transform and is not
+   composited, so S11's pixels and the cut on b38 are unchanged (no pixel of the frame changes by more than 24 across
+   the cut). Why: S12's breath, in s12's notes.
+4. Landings (`../s12-your-turn/tools/landings.py`): the closest pairs are still 0.40 s (the bracket and the ring, the
+   ring and "Nothing listens"); the settle is 0.77 s after "hurts or uncomfortable" lands, the "have" landing 2.05 s
+   before "· ill".
+
+**Proof after fix F-01**: the probes 64 of 64 for s11 (the settle: 1.0600 at 19.70 with `will-change: transform` and
+origin 310px 352px, 1.0000 by 20.35) and 146 of 146 for s12; clock-lint silent; `merc-tags.py s11-sing s12-your-turn
+--check` 8 tags, 0 stale, 0 problems; `check` passed (contrast 45/45, layout 0 issues, runtime and motion 0); the
+measure above (no single-frame event but the hosts', the room's crossfade and a dust mote; the card's two jumps gone
+with the kit's fix). The cut on `sing` against group C's S10 with its larger hold chart: the same boxes (band x 1000 to
+1640, y 210.01 to 280.01 against 210 to 280; Merc's line y 245, 4 px; no labels), residuals 1.97, 8.09 and 4.42 (D-01:
+2.08, 8.72, 4.42), no single-frame event (`cut-sing/`). The cut on b38: the same 16 texts and the ring on the same
+pixels, the largest change 10 (12 on the 60 fps pair), no event (`../s12-your-turn/cut-b38/`). The root check after
+this round's renders (`../s12-your-turn/root-check.log`): passed, lint 0 errors and 24 warnings (this group's: the
+kit's duplicated host video entry in both scenes, s12-your-turn's 402 lines), runtime 0, layout 0 errors and 0
+warnings (one info at film 293.54, group C's time axis), motion 0, contrast 67/67.
+
+**For HANDOFFS § The turn (S11)**: "usual notes suddenly gone" lands on `word('b37', 'have')`; "hurts or
+uncomfortable" settles (1.06, the kit's label pulse) on `word('b37', 'singing')`; the ring draws in its own layer
+(centre (1320, 572), r 136, unchanged since fix D-01).

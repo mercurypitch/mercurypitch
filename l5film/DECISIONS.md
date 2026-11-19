@@ -1839,3 +1839,15 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      above the captions' 896, which with the bead's fixed landing bounds it); the type steps in S1, S2
      and S4 are gone (composited layers). No hold reaches 0.3 s in S1 to S4. Probes 85, 54, 35, 52;
      root check 0 errors; the joins S1 to S5 hold. HANDOFFS follows ([F-01 fix: 236]).
+
+## The lead's call on group D's full-film fix round, 19 November
+
+237. **Group D's F-01 round is accepted** (the lead looked at the doctor lines lighting and the band at
+     50 %). The doctor lines light line by line as said (the probe reads them lighting in order); the
+     stop line's second line waits for its word; the band dims to 50 % after the hold and is back at
+     full 0.59 s before `recap`; the feel block's dim is 55 %, not about 50 %, because at 50 % its
+     capsule labels measured 4.23:1 (now 4.80); the ring's breath no longer steps type; S11's holds
+     inside words are gone (2.1 s per 30 s, 1.7 s of it in Merc's pauses, to the final passes). The
+     care block's reasons need no lighting: each lands on its own word. Probes 64 and 146; checks 0
+     errors; the cuts on `sing`, b38 and `recap` (now proved against group E's real S13 too) hold.
+     HANDOFFS § The turn follows ([F-01 fix: 237]).
