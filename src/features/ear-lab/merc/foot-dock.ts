@@ -22,12 +22,12 @@
 // ============================================================
 
 import { onCleanup } from 'solid-js'
-import { publishFootSpace } from '@/lib/foot-space'
+import { PAGE_DOCK_SPACE, publishFootSpace } from '@/lib/foot-space'
 import { IS_NATIVE_BUILD, WEB_ROOMS } from '@/lib/native-build'
 import { presentNoticesInPill } from '@/stores/notifications-store'
 
 /** What the toasts on a phone stand on, beside the app's own bars. */
-export const PAGE_DOCK_SPACE = '--page-dock-space'
+export { PAGE_DOCK_SPACE }
 
 /** The room's stage, as a `ref`: publishes what stands under it for as
  *  long as the room is up. */

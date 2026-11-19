@@ -200,6 +200,75 @@ for (const phone of PHONES) {
       expect(under44(await controlsIn(page, STAGE))).toEqual([])
     })
 
+    // A notice stood on the tab bar's room, which the stage covers, and
+    // lay over the bar's play button upright (722 to 780 against a bar from
+    // 766, at 390x844); on its side it stood at the foot's right end, 60%
+    // of the window wide, over the key at 780x360. The bar is the page's
+    // dock upright and says how wide its column is on its side.
+    test("raises a notice clear of the bar's controls", async ({ page }) => {
+      await page.evaluate(() => {
+        const pp = (
+          window as unknown as {
+            __pp: {
+              appStore: {
+                showNotification: (
+                  message: string,
+                  type: string,
+                  options: { durationMs: number },
+                ) => void
+              }
+            }
+          }
+        ).__pp
+        pp.appStore.showNotification(
+          'Your mic is off. Turn it on to be heard and scored.',
+          'info',
+          { durationMs: 60_000 },
+        )
+      })
+      const notice = page
+        .getByRole('region', { name: 'Notifications' })
+        .locator('> div')
+        .first()
+      await expect(notice).toBeVisible()
+      await notice.evaluate((el) =>
+        Promise.all(el.getAnimations({ subtree: true }).map((a) => a.finished)),
+      )
+
+      const covered = await notice.evaluate((el, sel) => {
+        const n = el.getBoundingClientRect()
+        // The bar holds the times, the scrubber and the transport.
+        const bar = document.querySelector(
+          `${sel} [class*="times"]`,
+        )?.parentElement
+        const controls = [
+          ...(bar?.querySelectorAll<HTMLElement>('button, [role="slider"]') ??
+            []),
+        ]
+        if (controls.length < 5) throw new Error('the bar has no controls')
+        return controls
+          .filter((control) => {
+            const r = control.getBoundingClientRect()
+            return (
+              r.width > 0 &&
+              r.left < n.right &&
+              n.left < r.right &&
+              r.top < n.bottom &&
+              n.top < r.bottom
+            )
+          })
+          .map(
+            (control) =>
+              control.getAttribute('aria-label') ??
+              control.textContent?.trim() ??
+              '',
+          )
+      }, STAGE)
+
+      expect(covered).toEqual([])
+      await expect(notice).toBeInViewport({ ratio: 1 })
+    })
+
     test('does not offer the mixer tour on the stage, and keeps the offer', async ({
       page,
     }) => {
