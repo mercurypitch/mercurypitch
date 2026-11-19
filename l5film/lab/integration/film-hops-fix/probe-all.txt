@@ -1,0 +1,17 @@
+[heavy] slot 1: bash lab/integration/probe-all.sh /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film
+s01-cold-open   78/78
+s02-title       50/50
+s03-promise     24/24
+s04-recall      40/40
+s05-push        75/75
+s06-diaphragm   250/250
+s07-support     110/110
+s08-breathe     55/55
+s09-onset       82/82
+s10-steady      209/209
+s11-sing        62/62
+s12-your-turn   137/137
+s13-recap       229/229
+s14-next        107/107
+s15-end         48/48
+total 1556 / 1556

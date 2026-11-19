@@ -40,11 +40,25 @@
                         exists; else { frames: [[x, y], ...], t0, fps = 30 }: the chunk's renderer root (its sidecar's
                         `root`, `t0` the film time of frames[0]); its x is cancelled (0.4353 x size px
                         a world unit, PASSES.md), so a carried hop lands exactly where the scene puts it.
-                        The frame it reads is the pass frame the renderer shows: video time from the tag
-                        (data-media-start + t - data-start), so `t0` is used only for a tag with no timing
-                        (DECISIONS 214: t0 ran about 1.4 frames behind the shown frame)
+                        The frame it reads is the pass frame the renderer shows, L.passFrame from the
+                        tag's timing, so `t0` is used only for a tag with no timing (DECISIONS 214: t0 ran
+                        about 1.4 frames behind the shown frame; DECISIONS 225: video time from the tag,
+                        floor((data-media-start + t - data-start) x fps), read one frame late in the film,
+                        where a scene starts on a fraction of a frame)
         glow            { rgb: '88,166,255', a = 1 } a soft key glow behind the host (S1)
         floor           ignored: the floor is the room's, full width (room.setFloor); no local patch
+     L.passFrame(t, ds, ms, pf = 30) -> the pass frame the renderer shows at scene time t for a tag with
+                        data-start ds and data-media-start ms. The producer cuts a pass into frames once,
+                        at the render's fps F (ffmpeg -noaccurate_seek -ss ms, pts less 0.5 ms, fps=F with
+                        round=up), and shows cut frame k = floor((t - ds) x F) of its own exact frame time;
+                        a pass's own frames sit on whole milliseconds (webm). So the frame is the last i
+                        whose time, round(1000 i / pf) ms, is at most 1000 ms + 0.5 + 1000 k / F:
+                        floor(ms x pf) + floor((t - ds) x pf) when F is the pass's fps. F is the render's
+                        (window.__HF_EXPORT_RENDER_SEEK_CONFIG.fps), else the pass's: a preview or a probe
+                        reads what a render at the pass's fps shows. The page's t comes rounded to the
+                        microsecond ((t - ds) x F up to 2e-5 frames off a whole frame at 60 fps), so k takes
+                        a 1e-3 frame margin: a start in whole ms puts (t - ds) x F on a whole frame or at
+                        least F / 1000 frames off one
      L.HOP              { crouch: 0.12, air: 0.41 } Merc's hop (PASSES.md: air from 0.12 s after the hop's
                         start, for 0.41 s) and L.LEAP { crouch: 0.15, air: 0.43 }
 */
@@ -72,6 +86,17 @@
   L.HOP = { crouch: 0.12, air: 0.41 }
   L.LEAP = { crouch: 0.15, air: 0.43 }
   L.ROOT_PX = 0.4353          // screen px a renderer world unit, per px of shown size (PASSES.md)
+
+  // The pass frame the renderer shows (see the header): F the render's fps, else the pass's own
+  L.passFrame = (t, ds, ms, pf = 30) => {
+    const cfg = window.__HF_EXPORT_RENDER_SEEK_CONFIG
+    const F = cfg && Number(cfg.fps) > 0 ? Number(cfg.fps) : pf
+    const k = Math.floor((t - ds) * F + 1e-3)
+    const lim = 1000 * ms + 0.5 + (1000 * k) / F + 1e-6
+    let i = Math.floor((lim / 1000) * pf) + 1
+    while (i > 0 && Math.round((i * 1000) / pf) > lim) i--
+    return i
+  }
 
   L.mercBox = (x, feetY, size) => ({ x0: x - 0.265 * size, x1: x + 0.265 * size, y0: feetY - 0.64 * size, y1: feetY })
 
@@ -147,8 +172,8 @@
         lift = (leap.lift ?? 70) * 4 * u * (1 - u)
       }
       if (root && root.frames && root.frames.length) {
-        // the pass frame the renderer shows: video time from the tag; the table's t0 only for an untimed tag
-        const i = Math.floor((rootFromTag ? t - ds + ms : S0 + t - root.t0) * (root.fps || 30) + 1e-6)
+        // the pass frame the renderer shows (L.passFrame); the table's t0 only for an untimed tag
+        const i = rootFromTag ? L.passFrame(t, ds, ms, root.fps || 30) : Math.floor((S0 + t - root.t0) * (root.fps || 30) + 1e-6)
         const fr = root.frames[Math.max(0, Math.min(root.frames.length - 1, i))]
         if (i >= 0 && fr) X -= (mirror ? -1 : 1) * fr[0] * L.ROOT_PX * S
       }

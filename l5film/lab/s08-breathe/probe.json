@@ -81,8 +81,15 @@
  },
  {
   "t": 2.1500000000000226,
+  "name": "229: the card's \"03\" (its font box) 12 px or more from the figure while the card shows (+0.30 s from the move)",
+  "got": 80.35,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.1500000000000226,
   "name": "196: 0.3 s into the move (info): crown, strength, the card leaving",
-  "got": "301.0,187.8, a 1.00, card 0.612",
+  "got": "278.0,188.9, a 1.00, card 0.612",
   "want": "info",
   "pass": true
  },
@@ -406,6 +413,78 @@
   "name": "last frame: the card and kicker gone",
   "got": "0.000 / 0.000",
   "want": "0.000 / 0.000",
+  "pass": true
+ },
+ {
+  "t": 1.6000000000000227,
+  "name": "229: the card's \"03\" (its font box) 12 px or more from the figure while the card shows (+-0.25 s from the move)",
+  "got": 105.07,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 1.9500000000000228,
+  "name": "229: the card's \"03\" (its font box) 12 px or more from the figure while the card shows (+0.10 s from the move)",
+  "got": 103.68,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.050000000000023,
+  "name": "229: the card's \"03\" (its font box) 12 px or more from the figure while the card shows (+0.20 s from the move)",
+  "got": 99.31,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.1500000000000226,
+  "name": "229: the card's \"03\" (its font box) 12 px or more from the figure while the card shows (+0.30 s from the move)",
+  "got": 80.35,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.1500000000000226,
+  "name": "196: 0.3 s into the move (info): crown, strength, the card leaving",
+  "got": "278.0,188.9, a 1.00, card 0.612",
+  "want": "info",
+  "pass": true
+ },
+ {
+  "t": 2.200000000000023,
+  "name": "229: the card's \"03\" (its font box) 12 px or more from the figure while the card shows (+0.35 s from the move)",
+  "got": 60.2,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 2.220000000000023,
+  "name": "229: the card's \"03\" (its font box) 12 px or more from the figure while the card shows (+0.37 s from the move)",
+  "got": 49.31,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 8.085000000000003,
+  "name": "227: \"knees unlocked\" settles on \"unlocked\" (1.08 at 0.15 s, about its right end, 907)",
+  "got": "1.0800; right 907.0",
+  "want": "1.0800; 907",
+  "pass": true
+ },
+ {
+  "t": 12.03500000000002,
+  "name": "233: the kicker leaves over 0.3 s, linear (half way)",
+  "got": 0.5,
+  "want": 0.5,
+  "tol": 0.01,
+  "pass": true
+ },
+ {
+  "t": 12.18500000000002,
+  "name": "233: the kicker leaves over 0.3 s, linear (gone)",
+  "got": 0,
+  "want": 0,
+  "tol": 0.01,
   "pass": true
  }
 ]

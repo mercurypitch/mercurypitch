@@ -2,12 +2,15 @@
 // S9), the dim and the figure's exit, the folds' growth from the throat (provisional, 9b), the folds, the strip, its
 // title, chips and tags (HANDOFFS § The folds and the traces), the three starts, the stack and its chips (LAB-CHECKS 13
 // at the board's 290.00), the circles and their labels, the last frame (S9 to S10), overlaps, keep-out, the 0.4 s rule.
+// Fix round F-01 (DECISIONS 226): the strip (its lane, hairline and chip) not shown before its first trace, drawn on
+// from 0.3 s before it, ahead of the trace's head.
 ;(function () {
   const H = window.__H, sid = 's09-onset'
   const S = window.__sceneProbe[sid], A = S.A
   const root = document.getElementById(sid + '-scene')
   const R = H.R
   const T = {
+    aim1: A.AIM + 0.3, aim2: A.THIRD + 0.3, under: A.TITLE + 0.5, preStrip: A.STRIP - 0.02, head1: A.S_AIR + 0.1, head2: A.S_AIR + 0.25,
     f0: 0, dim: A.ACT + 0.25, pre: A.FOLD0 - 0.05, ring: A.FOLD0 + 0.02, grown: A.FOLD0 + A.GROW_D, grow: A.SLIDE + 0.3, folds: A.FOLD_L + 0.05, strip: A.STRIP + 0.95, row: A.ONSET + 0.4,
     ghostA: A.CATCH + 1.5, mid1: (A.CATCH + A.S_CATCH) / 2, wipeA: A.S_CATCH + 0.8, ghostC: A.TOG + 1.0, mid2: (A.MEET + A.S_TOG) / 2, wipeC: A.S_TOG + 0.8,
     fsh: A.STACK + A.FSH_D + 0.02, preNames: A.NAMES[0] - 0.02,
@@ -58,6 +61,20 @@
     times: Object.values(T),
     check(t) {
       const out = []
+      if (t === T.aim1 || t === T.aim2) {
+        // the wave's stroke at 1 - 0.65 dim (L.trace): half way at "aim" + 0.3, at 35 % by "the third" + 0.3
+        const so = (i) => +[...S.rowTr[i].g.querySelectorAll('path')].find((p) => p.hasAttribute('stroke-opacity')).getAttribute('stroke-opacity')
+        const want = t === T.aim1 ? 0.675 : 0.35
+        out.push({ name: `227: rows 1 and 2 dim from "aim" (${A.AIM.toFixed(2)}, 0.6 s linear; on "the third", ${A.THIRD.toFixed(2)}, before): ${t === T.aim1 ? 'half way' : 'done'}`, got: `${so(0).toFixed(3)} ${so(1).toFixed(3)}; row 3 ${so(2).toFixed(3)}`, want: `${want} ${want}; row 3 1`, pass: Math.abs(so(0) - want) < 0.01 && Math.abs(so(1) - want) < 0.01 && so(2) === 1 })
+      }
+      if (t === T.under || t === T.preStrip) {
+        const lane = +S.lane.getAttribute('opacity'), hair = H.alpha(S.baseTr.g.querySelector('rect')), tag = +S.stripTag.g.getAttribute('opacity'), w = +S.clipRect.getAttribute('width')
+        out.push({ name: `226: the trace box not shown before its first trace (${t === T.under ? 'under "onset: how a note starts"' : 'just before it draws on'})`, got: `lane ${lane}, hairline ${hair.toFixed(2)}, chip ${tag}, drawn ${w}`, want: 'all 0', pass: lane === 0 && hair === 0 && tag === 0 && w === 0 })
+      }
+      if (t === T.head1 || t === T.head2) {
+        const edge = +S.clipRect.getAttribute('x') + +S.clipRect.getAttribute('width'), head = 700 + (900 * (t - A.S_AIR)) / 1.6
+        out.push({ name: `226: the strip draws on ahead of the first trace's head (+${(t - A.S_AIR).toFixed(2)} s; from ${A.STRIP.toFixed(2)}, the start ${A.S_AIR.toFixed(2)})`, got: `edge ${edge.toFixed(1)}, head ${head.toFixed(1)}`, want: 'edge >= head + 12', pass: edge >= head + 12 && +S.lane.getAttribute('opacity') === 1 })
+      }
       if (t === T.f0) {
         out.push({ name: 'first frame (S8\'s last): the figure at S8\'s placement, breathed out to rest (breath 0), jaw 4 px', got: `crown ${S.fig.at('crown').map((v) => v.toFixed(1))}, belly ${S.fig.at('belly')[0].toFixed(2)}, chin ${S.fig.at('chin')[1].toFixed(2)}, a ${figA()}`, want: 'crown 991,154, belly 1061.00, chin 242.00, a 1', pass: Math.abs(S.fig.at('belly')[0] - 1061) < 0.05 && Math.abs(S.fig.at('chin')[1] - 242) < 0.05 && figA() === 1 },
           { name: 'every cue label at full', got: Object.values(S.cueL).concat(S.singers).every((l) => H.alpha(l.el) > 0.999), want: true },

@@ -657,6 +657,9 @@ fade with the ring, and the band, Merc's line and "Nothing listens" stay **[D-01
   1100, y 460 to 880, nothing drawn and no glow (YouTube's next-video element and Subscribe).
   F-end: the room and the tease figure ride a 3 % push about (960, 540); the type is frame-fixed.
 
+- **Merc's root** **[234]**: `L.mercGate` reads the root on `L.passFrame(t, ds, ms, pf)`, the pass frame the
+  renderer shows (F the render's fps, a 1e-3 frame margin); a preview reads what a 30 fps render shows.
+
 ## Framings
 
 | Framing | s | ox | oy | About | Used | What it holds (screen px) |

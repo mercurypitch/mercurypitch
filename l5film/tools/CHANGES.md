@@ -20,6 +20,43 @@ rest (mix.py reads only Echo samples there, which this film does not use).
 Every heavy run (a render, a Chromium pass, the Merc bundle, the Kokoro run) goes through the
 scratchpad's heavy helper on this shared machine, one at a time.
 
+## 2026-11-19 (Lesson 5, integration: Merc's root on the shown pass frame in the film, DECISIONS 225)
+
+No tool changed. One kit file changed, by an atomic rename; proofs and the copy before are in
+`lab/integration/film-hops-fix/` (README.md, `base/hosts.js`).
+
+- **assets/lib/hosts.js: `L.passFrame(t, ds, ms, pf = 30)`, new (lines 90 to 99; header lines 50 to
+  61), and `L.mercGate` reads Merc's root with it.**
+  - **Before** (line 151): `const i = Math.floor((rootFromTag ? t - ds + ms : S0 + t - root.t0) * (root.fps || 30) + 1e-6)`.
+  - **After** (line 176): `const i = rootFromTag ? L.passFrame(t, ds, ms, root.fps || 30) : Math.floor((S0 + t - root.t0) * (root.fps || 30) + 1e-6)`.
+  - **The header's `root` entry** says so (lines 43 to 47).
+  - **Why the old reading failed.** The renderer cuts a pass once, at the render's fps F (ffmpeg
+    `-ss data-media-start`, pts 0.5 ms early, `fps=F:round=up`), and shows cut frame
+    `floor((T - start) x F)` of the frame's exact time. Where a scene starts on a fraction of a frame
+    (s13 at film frame 13871.1), video time from the tag reads one pass frame late. That gave
+    film-draft-01's 49.6 px at 490.933 and the 4 px in the air.
+  - **What the new function does.** It takes F from the render
+    (`window.__HF_EXPORT_RENDER_SEEK_CONFIG.fps`; the pass's own fps with no render, as in a probe or
+    a preview). It gives k a 1e-3 frame margin, because the page's time comes rounded to the
+    microsecond.
+  - **What the margin fixes.** That rounding is also DECISIONS 224's "9 px after hop 2" in the lab at
+    60 fps: the old 1e-6 margin read one frame early on 650 of 3901 frames. The proposed
+    `floor(ms x fps) + floor((t - ds) x fps)` would have done so on 650 of 1951 at 30 fps, and on
+    every odd frame at 60.
+  - **What changes on screen.**
+    - The film at 30 fps: Merc's body moves +4.0 px through both carries, -49.6 px at 14728, and
+      -0.4 to -9.6 px at 14748 to 14758 (the ease back after hop 2).
+    - The film at 60 fps: unchanged, byte for byte.
+    - s13 alone at 60 fps: the 2 frames that jumped after hop 2 (29.283 and 29.383) move back onto the ease, 1280.8 to 1290.3 and 1282.5 to 1288.5.
+    - s13 alone at 30 fps: unchanged.
+    - Every other host: unchanged, since its root x is 0.
+  - **Proof.**
+    - Film frames 488 to 496 s rendered with the producer's own plan at 30 and 60 fps, before and
+      after: `hops-30.txt`, `hops-60.txt` and `hops-film-fix.png`.
+    - The ffmpeg model: `ffmpeg-model/`.
+    - Debug renders of the page's time and the frame read.
+    - Every scene's probe, the kit probe and every `check` again.
+
 ## 2026-11-19 (Lesson 5, integration part 2: the whole film, film-draft-01)
 
 Part 1's log is at the end of this file. No existing tool changed; `gen-root.py` was not run (no

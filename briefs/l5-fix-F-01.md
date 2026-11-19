@@ -66,14 +66,16 @@ Do only your group's section. Every fix keys off the clock (cues and words), nev
    light line by line as said.
 2. **Type steps** (233): s13's drift at 471.27 and the cards at 525.23 and 526.50; s14's hook
    starting to rise at 543.03. **Holds inside words** (227).
-3. Re-prove the cuts on `recap`, `next` and `end`.
+3. Your lab check `lab/s13-recap/checks.js` (`mercSeen`) reads Merc's root with the old index; switch it
+   to the kit's `L.passFrame` (DECISIONS 234).
+4. Re-prove the cuts on `recap`, `next` and `end`.
 
 ## Rules (every group)
 - Every render and probe through `$S/bin/heavy`, one at a time; other groups render beside you.
 - Edit only your compositions and their lab folders. Do not edit `assets/lib/`, other groups' scenes,
   the passes, HANDOFFS, LAB-CHECKS, DECISIONS or the board; name the numbers a document should carry.
-- The kit's `L.mercGate` is being fixed (DECISIONS 225) while you work; it changes only Merc's place
-  in s13's hops.
+- The kit's `L.mercGate` now reads the root on `L.passFrame` (DECISIONS 234); it changed only Merc's
+  place in s13's hops.
 - Re-render your clips with the scratch voice mix; `check` (0 errors), clock-lint, `merc-tags
   --check` and your probes after the fixes; measure.py on each clip (holds per 30 s, the longest,
   the events).

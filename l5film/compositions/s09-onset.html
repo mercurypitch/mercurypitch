@@ -43,7 +43,6 @@
           const GROW_D = 0.5, SLIDE = FOLD0 + 0.4, SLIDE_D = 1.0       // grows 0.5 s (0.9 before C-01); slides to the left place (power2.inOut)
           const FS = 1.35                                              // the folds' box at 1.35 about its centre (DECISIONS 192): x 160.5 to 619.5, y 200.5 to 659.5
           const FOLD_L = SLIDE + SLIDE_D                               // "vocal folds, from above" as they arrive
-          const STRIP = FOLD_L + 0.45, STRIP_D = 0.6                   // the strip draws in with its chip
           const ONSET = word('b24', 'onset'), ROW_IN = ONSET - 0.41, ROW_OUT = at('b24', 'end', -0.1)
           const TITLE = word('b24', 'onset', 'end')                    // "onset: how a note starts"
           const THREE = word('b24', 'three'), CHIPS = [THREE, THREE + 0.4, THREE + 0.8]
@@ -52,6 +51,9 @@
           const AIR = word('b25', 'air first')
           const LEN = TR.len                                           // each start is 1.6 s (FACTS 80)
           const S_AIR = at('start-air'), AIR_L = S_AIR + 0.56          // "air, no note" (board 255.30)
+          // the strip (its lane, hairline and chip) draws in with its first trace (DECISIONS 226), not 12 s before it
+          // under the title and "Air first": from 0.3 s before the start, drawn on over 0.6 s ahead of the trace's head
+          const STRIP = S_AIR - 0.3, STRIP_D = 0.6                     // (FOLD_L + 0.45 before F-01)
           // 9d: b26, start-catch
           const CATCH = word('b26', 'catch'), LISTEN = CATCH + 0.43, PRESSED = word('b26', 'pressed')
           const S_CATCH = at('start-catch'), CATCH_L = S_CATCH + 0.29  // "the catch" (board 265.90)
@@ -71,6 +73,9 @@
           const CIRC = [SR[0] + LEN + 0.23, SR[1] + LEN + 0.23], NEITHER = SR[2] + LEN + 0.13   // board 283.20, 285.00, 286.70
           // 9g: b28
           const THIRD = word('b28', 'the third'), EASY = word('b28', 'the easy'), SOFT = word('b28', 'soft'), ONLY = word('b28', 'only')
+          // DECISIONS 227: the clip held still 0.3 s or more inside "teachers aim" (47.2 to 47.5); the stack moves on there:
+          // rows 1 and 2 dim from "aim" ("aim for the third"), and the third lights on "the third", as before
+          const AIM = word('b28', 'aim')
 
           /* ---------------------------------------------------------------- the hosts at 240 */
           const Hs = L.HOSTS.small
@@ -232,9 +237,9 @@
           const row = L.chipRow(hud, WORDS, { right: 1800, y: 87, gap: 12 })
 
           const probe = { cam, fig, cueL, singers, backArrow, level, lead, fo, foLabel, baseTr, airTr, catchTr, togTr, movG, tick, stripTag, titles, listen1, chips, airLbl, catchLbl,
-            rowTr, names, puff, click, neither, easy, hGlyph, hLine, listen2, card, kicker, row, foldsAt, lane, airWipe, catchWipe, hStops, hMaskId,
+            rowTr, names, puff, click, neither, easy, hGlyph, hLine, listen2, card, kicker, row, foldsAt, lane, clipRect, airWipe, catchWipe, hStops, hMaskId,
             A: { ACT, CARD_IN, CARD_OUT, O10, FOLD0, GROW_D, SLIDE, FOLD_L, STRIP, ROW_IN, ONSET, ROW_OUT, TITLE, CHIPS, JUST, AIR, S_AIR, AIR_L, CATCH, LISTEN, PRESSED, S_CATCH, CATCH_L, TOG, MEET, S_TOG,
-              B27A, OUT1, STACK, FSH_D, TMV, TMV_D, STACK_D, NAMES, NPULSE, ROW3_OUT, STARTS, SR, CIRC, NEITHER, THIRD, EASY, SOFT, ONLY, D, FS }, boxes: {} }
+              B27A, OUT1, STACK, FSH_D, TMV, TMV_D, STACK_D, NAMES, NPULSE, ROW3_OUT, STARTS, SR, CIRC, NEITHER, THIRD, AIM, EASY, SOFT, ONLY, D, FS }, boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
 
@@ -308,7 +313,7 @@
             const rowsA = [P(t, TMV, TMV_D, 'none'), P(t, TMV, TMV_D, 'none'), landed ? 1 : 0]
             // linear over 0.6 s: an eased 0.3 s light over the row's whole area put its change into two frames (a pop)
             const lit3 = P(t, THIRD, 0.6, 'none')
-            const dim12 = P(t, THIRD, 0.6, 'none')
+            const dim12 = P(t, AIM, 0.6, 'none')                       // from "aim" (on "the third" before F-01)
             rowTr.forEach((tr, i) => {
               const tt = clamp(t - SR[i], 0, LEN)
               tr.draw({ kind: KINDS[i], t: tt, a: rowsA[i], lit: Math.max(L.env(t, SR[i], 0.15, LEN - 0.15, 0.3), i === 2 ? lit3 : 0),

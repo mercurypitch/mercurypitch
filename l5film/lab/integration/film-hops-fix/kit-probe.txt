@@ -1,0 +1,2 @@
+[heavy] slot 1: node lab/kit-src/probe.mjs
+382/382 pass; 0 console messages; lab/kit-probe/RESULTS.md

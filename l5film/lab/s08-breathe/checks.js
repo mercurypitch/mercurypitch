@@ -2,7 +2,9 @@
 // § The cuts S7 to S8: the parked figure at k 0.5, x0 140, y0 180, 35 %), the dim under the card, the figure whole at
 // S8's placement (HANDOFFS § The breath figure, S8), every cue label and leader in its place, LAB-CHECKS 6 ("knees
 // unlocked" 16 px or more left of the back arrow's stroke), the breath, overlaps between visible texts, the keep-out,
-// the 0.4 s landing rule, and the last frame (S8 to S9).
+// the 0.4 s landing rule, and the last frame (S8 to S9). Fix round F-01: the card's "03" 12 px or more from the figure
+// while the card shows (DECISIONS 229), the kicker's exit linear over 0.3 s (233), "knees unlocked" settling on
+// "unlocked" about its right end (227).
 ;(function () {
   const H = window.__H, sid = 's08-breathe'
   const S = window.__sceneProbe[sid], A = S.A
@@ -10,6 +12,12 @@
     f0: 0, dim: A.ACT + 0.25, card: A.CARD_IN + 0.9, up: A.STAND - 0.3, go: A.STAND + 0.001, go2: A.STAND + 0.3, mid: A.STAND + 0.6, whole: A.STAND + A.STAND_D + 0.05, lungs: A.LUNGS_Q + 0.4,
     tall: A.TALL + 0.6, knees: A.KNEES + 0.6, jaw: A.JAW + 0.8, inq: A.IN_Q + 0.4, held: A.LET + A.IN_D + 0.1, shoulders: A.SHOULDERS + 0.5,
     much: A.TAKING + 0.4, singers: A.SINGERS + 0.5, last: A.D - 0.0005,
+    c0: A.STAND - 0.25, c1: A.STAND + 0.1, c2: A.STAND + 0.2, c3: A.STAND + 0.3, c4: A.STAND + 0.35, c5: A.STAND + 0.37,
+    unl: A.UNLOCKED + 0.15, kick1: A.KICK_OUT + A.KICK_D / 2, kick2: A.KICK_OUT + A.KICK_D,
+  }
+  const cardGap = (t) => {
+    const f = R(S.fig.g), n = R(S.card.numEl), a = +S.card.g.getAttribute('opacity')
+    return { name: `229: the card's "03" (its font box) 12 px or more from the figure while the card shows (+${(t - A.STAND).toFixed(2)} s from the move)`, got: a > 0.01 ? H.gap(f, n) : `card ${a}`, want: '>= 12', pass: a <= 0.01 || H.gap(f, n) >= 12 }
   }
   const root = document.getElementById(sid + '-scene')
   const R = H.R
@@ -62,6 +70,12 @@
           { name: 'hosts at 240', got: `${S.boxes.merc && S.boxes.merc.x0}-${S.boxes.merc && S.boxes.merc.x1}; ${S.boxes.tavi && S.boxes.tavi.x0}-${S.boxes.tavi && S.boxes.tavi.x1}`, want: '36.4-163.6; 1756.4-1883.6' },
           landings())
       }
+      if ([T.c0, T.c1, T.c2, T.c3, T.c4, T.c5].includes(t)) out.push(cardGap(t))
+      if (t === T.unl) {
+        const sc = /scale\(([\d.]+)\)/.exec(S.cueL.knees.el.getAttribute('transform') || '')
+        out.push({ name: '227: "knees unlocked" settles on "unlocked" (1.08 at 0.15 s, about its right end, 907)', got: `${sc ? sc[1] : 'none'}; right ${R(S.cueL.knees.el).right.toFixed(1)}`, want: '1.0800; 907', pass: !!sc && Math.abs(+sc[1] - 1.08) < 0.002 && Math.abs(R(S.cueL.knees.el).right - 907) < 1 })
+      }
+      if (t === T.kick1 || t === T.kick2) out.push({ name: `233: the kicker leaves over 0.3 s, linear (${t === T.kick1 ? 'half way' : 'gone'})`, got: +S.kicker.g.getAttribute('opacity'), want: t === T.kick1 ? 0.5 : 0, tol: 0.01 })
       if (t === T.dim) out.push({ name: '8a: the figure dimmed to 25 % under the card', got: figA(), want: 0.25, tol: 0.001 })
       if (t === T.card) {
         const c = S.card.g.getBoundingClientRect()

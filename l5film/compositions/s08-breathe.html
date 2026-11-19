@@ -38,13 +38,17 @@
           // to leave, overlapping its exit, and the figure is at full strength from its start (DECISIONS 196): it comes
           // up from 25 % over the 0.25 s before (linear), while the card is still up and nothing changes shape
           const O9 = at('o9')
-          const STAND = CARD_OUT, STAND_D = 1.2, FULL_D = 0.25         // power2.inOut (the board's 218.75 to 219.95 before)
+          const STAND = CARD_OUT, STAND_D = 1.2, FULL_D = 0.25         // (the board's 218.75 to 219.95 before)
+          // power3.inOut (power2.inOut before F-01): the figure starts up slowly while the card's "03" rises and fades
+          // beside it, so the two stay apart while the card shows (DECISIONS 229: 38 px at the card's last 11 % before,
+          // 12 px the floor), and it lands at the same moment
+          const STAND_EASE = 'power3.inOut'
           const LEGS = STAND + 0.65, LEGS_D = STAND_D - 0.65           // the legs draw down from the hips as it lands
           const LUNGS_Q = word('o9', 'breathe')
-          const KICK_OUT = at('b21', 'end')
+          const KICK_OUT = at('b21', 'end'), KICK_D = 0.3
           // 8c: b21, the posture cues
           const TALL = word('b21', 'tall'), ARROW_D = 0.5
-          const KNEES = word('b21', 'knees')
+          const KNEES = word('b21', 'knees'), UNLOCKED = word('b21', 'unlocked')
           const JAW = word('b21', 'jaw')
           // 8d: b22, the breath in, as instructions only
           const IN_Q = word('b22', 'in')                               // "breathe in quietly, low" (the board's 229.93)
@@ -55,6 +59,10 @@
           const OUT0 = TAKING + 0.06                                   // the breath out to rest (board 234.30 to 236.30)
           const IN_D = Math.min(2.0, OUT0 - LET), OUT_D = Math.min(2.0, D - OUT0)
           const SINGERS = TAKING + 0.56                                // "Singers breathe in different ways." (board: 0.56 s after)
+          // DECISIONS 227: where a hold of 0.3 s or more fell inside a word, the label that word names takes the board's
+          // settle, 0.15 s up and 0.6 s back (1.08 for a 36 px label, as S9's names), its way back linear so its type
+          // never steps a pixel at the end (DECISIONS 233), about the end its leader leaves from
+          const settle = (t, t0) => 1 + L.PULSE.chip * L.env(t, t0, 0.15, 0, 0.6, 'none')
 
           /* ---------------------------------------------------------------- the hosts at 240 */
           const Hs = L.HOSTS.small
@@ -123,7 +131,7 @@
           const kicker = L.kicker(hud, '03 · Breathing in')
 
           const probe = { cam, fig, cueL, singers, backArrow, level, lead, card, kicker, CUE, ARROW, LEVEL,
-            A: { ACT, CARD_IN, CARD_OUT, O9, STAND, STAND_D, LEGS, LUNGS_Q, TALL, KNEES, JAW, IN_Q, LET, DROP, SHOULDERS, TAKING, OUT0, IN_D, OUT_D, SINGERS, KICK_OUT, D }, boxes: {} }
+            A: { ACT, CARD_IN, CARD_OUT, O9, STAND, STAND_D, LEGS, LUNGS_Q, TALL, KNEES, JAW, IN_Q, LET, DROP, SHOULDERS, TAKING, OUT0, IN_D, OUT_D, SINGERS, KICK_OUT, KICK_D, UNLOCKED, D }, boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
 
@@ -136,7 +144,7 @@
 
             /* 8a, 8b: the figure dims from S7's 35 % to 25 % under the card (linear, no two-frame pop), comes back to
                full and stands up whole at the centre (an object move), the legs drawing down from the hips */
-            const su = P(t, STAND, STAND_D, 'power2.inOut')
+            const su = P(t, STAND, STAND_D, STAND_EASE)
             const lg = P(t, LEGS, LEGS_D, 'power2.out')
             const dimA = lerp(0.35, 0.25, P(t, ACT, 0.2, 'none'))
             const a = lerp(dimA, 1, P(t, STAND - FULL_D, FULL_D, 'none'))
@@ -161,12 +169,17 @@
               const la = cueL[n].life(t, t0, null)
               if (lead[n]) lead[n].draw(P(t, t0, 0.3, 'power2.out'), la)
             }
+            // "unlocked" names "knees unlocked" (the hold at 7.7 to 8.1 in the C-01 clip fell inside "knees unlocked")
+            L.place(cueL.knees.el, { a: L.fade(t, KNEES, null).a, scale: settle(t, UNLOCKED), ox: CUE.knees.x, oy: CUE.knees.y })
             level.draw(P(t, SHOULDERS, 0.4, 'power2.out'), P(t, SHOULDERS, 0.2))
             for (const s of singers) s.life(t, SINGERS, null)
 
             /* frame-fixed */
             card.draw(t)
-            kicker.draw(t, O9, KICK_OUT)
+            // the kicker leaves over 0.3 s, linear (DECISIONS 233): the kit's 0.2 s eased exit put its change into one
+            // frame (a pop at 219.93)
+            kicker.draw(t, O9, null)
+            kicker.g.setAttribute('opacity', (+kicker.g.getAttribute('opacity') * (1 - P(t, KICK_OUT, KICK_D, 'none'))).toFixed(3))
           })
           window.__timelines = window.__timelines || {}
           window.__timelines[SID] = tl

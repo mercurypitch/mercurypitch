@@ -1,5 +1,47 @@
 [
  {
+  "t": 47.65799999999997,
+  "name": "227: rows 1 and 2 dim from \"aim\" (47.36, 0.6 s linear; on \"the third\", 47.98, before): half way",
+  "got": "0.675 0.675; row 3 1.000",
+  "want": "0.675 0.675; row 3 1",
+  "pass": true
+ },
+ {
+  "t": 48.28299999999997,
+  "name": "227: rows 1 and 2 dim from \"aim\" (47.36, 0.6 s linear; on \"the third\", 47.98, before): done",
+  "got": "0.350 0.350; row 3 1.000",
+  "want": "0.35 0.35; row 3 1",
+  "pass": true
+ },
+ {
+  "t": 7.149999999999977,
+  "name": "226: the trace box not shown before its first trace (under \"onset: how a note starts\")",
+  "got": "lane 0, hairline 0.00, chip 0, drawn 0",
+  "want": "all 0",
+  "pass": true
+ },
+ {
+  "t": 15.309999999999995,
+  "name": "226: the trace box not shown before its first trace (just before it draws on)",
+  "got": "lane 0, hairline 0.00, chip 0, drawn 0",
+  "want": "all 0",
+  "pass": true
+ },
+ {
+  "t": 15.729999999999995,
+  "name": "226: the strip draws on ahead of the first trace's head (+0.10 s; from 15.33, the start 15.63)",
+  "got": "edge 1469.5, head 756.2",
+  "want": "edge >= head + 12",
+  "pass": true
+ },
+ {
+  "t": 15.879999999999995,
+  "name": "226: the strip draws on ahead of the first trace's head (+0.25 s; from 15.33, the start 15.63)",
+  "got": "edge 1601.9, head 840.6",
+  "want": "edge >= head + 12",
+  "pass": true
+ },
+ {
   "t": 0,
   "name": "first frame (S8's last): the figure at S8's placement, breathed out to rest (breath 0), jaw 4 px",
   "got": "crown 991.0,154.0, belly 1061.00, chin 242.00, a 1",
@@ -105,21 +147,21 @@
   "pass": true
  },
  {
-  "t": 4.649999999999994,
+  "t": 16.279999999999994,
   "name": "192: the lit lane x 700 to 1600, y 320 to 540, chrome at 6 %",
   "got": "700.0 to 1600.0, 320.0 to 540.0, 0.06 x 1.000",
   "want": "700 to 1600, 320 to 540, 0.06 x 1.000",
   "pass": true
  },
  {
-  "t": 4.649999999999994,
+  "t": 16.279999999999994,
   "name": "9b: the strip's hairline x 700 to 1600, y 430",
   "got": "700.0 to 1600.0, 430.0",
   "want": "700 to 1600, 430",
   "pass": true
  },
  {
-  "t": 4.649999999999994,
+  "t": 16.279999999999994,
   "name": "9b: its \"ILLUSTRATION\" right-aligned 1600, centred y 270",
   "got": "1329.3 to 1600.0, 250.0 to 290.0",
   "want": "1329 to 1600, 250 to 290",

@@ -57,39 +57,38 @@
  },
  {
   "t": 3.9700000000000224,
-  "name": "10b: F-hold, W 4: the plot x 232 to 1688, band y 416 to 644",
-  "got": "232.0 to 1688.0, 416.3 to 643.8",
-  "want": "232 to 1688, 416 to 644",
+  "name": "10b: F-hold, W 4: the plot x 232 to 1688, band y 361.65 to 589.15 (226: world 270.5 to 445.5, Merc's line 358)",
+  "got": "232.0 to 1688.0, 361.6 to 589.2",
+  "want": "232 to 1688, 361.65 to 589.15",
   "pass": true
  },
  {
   "t": 3.9700000000000224,
-  "name": "10b: Merc's line y 530",
-  "got": 530,
-  "want": 530,
+  "name": "10b: Merc's line y 475.4",
+  "got": 475.4,
+  "want": 475.4,
   "tol": 0.6,
   "pass": true
  },
  {
   "t": 3.9700000000000224,
-  "name": "10b: \"A, any octave\" from x 232, baseline 387",
-  "got": "232.0, 387.0",
-  "want": "232, 387",
+  "name": "10b: \"A, any octave\" from x 232, baseline 277.8 (world 206)",
+  "got": "232.0, 277.8",
+  "want": "232, 277.8",
   "pass": true
  },
  {
   "t": 3.9700000000000224,
-  "name": "10b: \"ILLUSTRATION\" right-aligned 1688",
-  "got": 1688.01,
-  "want": 1688,
-  "tol": 2,
+  "name": "10b: \"ILLUSTRATION\" right-aligned 1688, centred y 263.5 (world 195)",
+  "got": "1688.0, 263.5",
+  "want": "1688, 263.5",
   "pass": true
  },
  {
   "t": 3.9700000000000224,
-  "name": "10b: the axis's \"0\" from x 232 (left-aligned 400), its baseline 690",
-  "got": "232.0, 689.9",
-  "want": "232, 690",
+  "name": "10b: the axis's \"0\" from x 232 (left-aligned 400), its baseline 725 (world 550)",
+  "got": "232.0, 725.0",
+  "want": "232, 725",
   "pass": true
  },
  {
@@ -114,16 +113,37 @@
   "pass": true
  },
  {
-  "t": 6.148000000000013,
-  "name": "10b: the dashed guess along y 530, x 232 to 1688",
-  "got": "232.0 to 1688.0, 530.0 to 530.0",
-  "want": "232 to 1688, about 530",
+  "t": 3.9700000000000224,
+  "name": "226: the lead subject at F-hold at W 4 (10b): the band 220 px or more, the plot 1150 or more",
+  "got": "band 227.5, plot 1456.0 (232.0 to 1688.0, 361.6 to 589.2)",
+  "want": ">= 220, >= 1150",
+  "pass": true
+ },
+ {
+  "t": 3.9700000000000224,
+  "name": "226: every label 12 px or more from every stroke, at W 4 (10b) (nearest: ILLUSTRATION chip / the band's edge)",
+  "got": 70.85,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.9700000000000224,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: the band's edge / tavi)",
+  "got": 66.09,
+  "want": ">= 20",
   "pass": true
  },
  {
   "t": 6.148000000000013,
-  "name": "10b: its \"?\" right of the plot (x 1709 on, y 514 to 560)",
-  "got": "1708.8 to 1750.6, 476.9 to 581.9",
+  "name": "10b: the dashed guess along y 475.4, x 232 to 1688",
+  "got": "232.0 to 1688.0, 475.4 to 475.4",
+  "want": "232 to 1688, about 475.4",
+  "pass": true
+ },
+ {
+  "t": 6.148000000000013,
+  "name": "10b: its \"?\" right of the plot (x 1709 on), clear of Tavi's keep-out (from y 628)",
+  "got": "1708.8 to 1750.6, 422.3 to 527.3",
   "want": "info",
   "pass": true
  },
@@ -149,10 +169,31 @@
   "pass": true
  },
  {
+  "t": 6.148000000000013,
+  "name": "226: the lead subject at F-hold under the guess (10b): the band 220 px or more, the plot 1150 or more",
+  "got": "band 227.5, plot 1456.0 (232.0 to 1688.0, 361.6 to 589.2)",
+  "want": ">= 220, >= 1150",
+  "pass": true
+ },
+ {
+  "t": 6.148000000000013,
+  "name": "226: every label 12 px or more from every stroke, under the guess (10b) (nearest: ILLUSTRATION chip / the band's edge)",
+  "got": 70.85,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 6.148000000000013,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: the band's edge / tavi)",
+  "got": 66.09,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
   "t": 8.926999999999998,
-  "name": "10b: W 10: the band y 484.5 to 575.5",
-  "got": "232.0 to 1688.0, 484.5 to 575.5",
-  "want": "232 to 1688, 484.5 to 575.5",
+  "name": "226: W 10: the band unchanged as the window widens (k 2.5), y 361.65 to 589.15",
+  "got": "232.0 to 1688.0, 361.6 to 589.2",
+  "want": "232 to 1688, 361.65 to 589.15",
   "pass": true
  },
  {
@@ -170,32 +211,95 @@
   "pass": true
  },
  {
+  "t": 8.926999999999998,
+  "name": "226: the lead subject at F-hold at W 10: the band 220 px or more, the plot 1150 or more",
+  "got": "band 227.5, plot 1456.0 (232.0 to 1688.0, 361.6 to 589.2)",
+  "want": ">= 220, >= 1150",
+  "pass": true
+ },
+ {
+  "t": 8.926999999999998,
+  "name": "226: every label 12 px or more from every stroke, at W 10 (nearest: ILLUSTRATION chip / the band's edge)",
+  "got": 70.85,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 8.926999999999998,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: the band's edge / tavi)",
+  "got": 66.09,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
   "t": 10.629000000000023,
-  "name": "10c: the mint edge and \"in the band\" (x 544, baseline 387) lit once",
+  "name": "10c: the mint edge and \"in the band\" (x 544, baseline 277.8) lit once",
   "got": "544.0, a 1.00",
   "want": "544, 1",
   "pass": true
  },
  {
-  "t": 11.029000000000023,
-  "name": "10c (provisional, settled): the flag on the band's top edge at the entry (screen x 334.5 for world 478.8; y 464 to 484.5)",
-  "got": "334.5, 463.7 to 484.5",
-  "want": "about 332, 464 to 484.5",
+  "t": 10.629000000000023,
+  "name": "226: the lead subject at F-hold as she enters the band (10c): the band 220 px or more, the plot 1150 or more",
+  "got": "band 227.5, plot 1456.0 (232.0 to 1688.0, 361.6 to 589.2)",
+  "want": ">= 220, >= 1150",
+  "pass": true
+ },
+ {
+  "t": 10.629000000000023,
+  "name": "226: every label 12 px or more from every stroke, as she enters the band (10c) (nearest: axis \"0\" / her line)",
+  "got": 23.43,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 10.629000000000023,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: her line / merc)",
+  "got": 39.9,
+  "want": ">= 20",
   "pass": true
  },
  {
   "t": 11.029000000000023,
-  "name": "10c: \"settled\" over it, baseline 455 (screen)",
-  "got": 454.6,
-  "want": 455,
+  "name": "10c (settled): the flag on the band's top edge at the entry (screen x 334.5 for world 478.8; y 340.85 to 361.65)",
+  "got": "334.5, 340.9 to 361.6",
+  "want": "about 334.5, 340.85 to 361.65",
+  "pass": true
+ },
+ {
+  "t": 11.029000000000023,
+  "name": "10c: \"settled\" over it, baseline 331.75 (screen; world 247.5)",
+  "got": 331.75,
+  "want": 331.75,
   "tol": 1,
   "pass": true
  },
  {
   "t": 11.029000000000023,
   "name": "\"settled\" box",
-  "got": "283.0 to 386.0, 420.6 to 463.6",
+  "got": "283.0 to 386.0, 297.8 to 340.8",
   "want": "info",
+  "pass": true
+ },
+ {
+  "t": 11.029000000000023,
+  "name": "226: the lead subject at F-hold at the flag (10c): the band 220 px or more, the plot 1150 or more",
+  "got": "band 227.5, plot 1456.0 (232.0 to 1688.0, 361.6 to 589.2)",
+  "want": ">= 220, >= 1150",
+  "pass": true
+ },
+ {
+  "t": 11.029000000000023,
+  "name": "226: every label 12 px or more from every stroke, at the flag (10c) (nearest: axis \"0\" / her line)",
+  "got": 23.43,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 11.029000000000023,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: her line / merc)",
+  "got": 39.9,
+  "want": ">= 20",
   "pass": true
  },
  {
@@ -207,7 +311,7 @@
  },
  {
   "t": 19.575000000000024,
-  "name": "wave rule at F-hold (1.3): one cycle 26.5 px (within 10 %)",
+  "name": "the wave at F-hold (1.3): one cycle 26.5 px (within 10 %)",
   "got": 26.52,
   "want": 26.5,
   "tol": 2.6500000000000004,
@@ -215,17 +319,18 @@
  },
  {
   "t": 19.575000000000024,
-  "name": "wave rule at F-hold (1.3): peak to peak 36.4 px",
-  "got": 36.4,
-  "want": 36.4,
-  "tol": 3.64,
+  "name": "the wave at F-hold (1.3): peak to peak 91 px (226: 2.5 world px a cent)",
+  "got": 91,
+  "want": 91,
+  "tol": 9.1,
   "pass": true
  },
  {
   "t": 19.575000000000024,
-  "name": "wave rule at F-hold (1.3): ratio 1.30 to 1.45",
-  "got": 1.37,
-  "want": "1.30 to 1.45",
+  "name": "the wave at F-hold (1.3): ratio 3.44 (226)",
+  "got": 3.43,
+  "want": 3.44,
+  "tol": 0.2,
   "pass": true
  },
  {
@@ -250,17 +355,38 @@
   "pass": true
  },
  {
-  "t": 25.198000000000025,
-  "name": "10d: CU-scoop: the band y 457 to 583",
-  "got": "360.0 to 2376.0, 457.0 to 583.0",
-  "want": "y 457 to 583",
+  "t": 19.575000000000024,
+  "name": "226: the lead subject at F-hold her whole take: the band 220 px or more, the plot 1150 or more",
+  "got": "band 227.5, plot 1456.0 (232.0 to 1688.0, 361.6 to 589.2)",
+  "want": ">= 220, >= 1150",
+  "pass": true
+ },
+ {
+  "t": 19.575000000000024,
+  "name": "226: every label 12 px or more from every stroke, her whole take (nearest: axis \"0\" / her line)",
+  "got": 23.43,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 19.575000000000024,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: her line / merc)",
+  "got": 39.9,
+  "want": ">= 20",
   "pass": true
  },
  {
   "t": 25.198000000000025,
-  "name": "10d: the scoop's low point (the take's start, -60 c) at (360, 628)",
-  "got": "360.0, 628.0",
-  "want": "360, 628",
+  "name": "10d: CU-scoop: the band y 286.9 to 601.9",
+  "got": "360.0 to 2376.0, 286.9 to 601.9",
+  "want": "y 286.9 to 601.9",
+  "pass": true
+ },
+ {
+  "t": 25.198000000000025,
+  "name": "10d: the scoop's low point (the take's start, -60 c) at (360, 714.4)",
+  "got": "360.0, 714.4",
+  "want": "360, 714.4",
   "pass": true
  },
  {
@@ -272,7 +398,7 @@
  },
  {
   "t": 25.198000000000025,
-  "name": "wave rule at CU-scoop (1.8): one cycle 36.7 px (within 10 %)",
+  "name": "the wave at CU-scoop (1.8): one cycle 36.7 px (within 10 %)",
   "got": 36.72,
   "want": 36.7,
   "tol": 3.6700000000000004,
@@ -280,45 +406,88 @@
  },
  {
   "t": 25.198000000000025,
-  "name": "wave rule at CU-scoop (1.8): peak to peak 50.4 px",
-  "got": 50.4,
-  "want": 50.4,
-  "tol": 5.04,
+  "name": "the wave at CU-scoop (1.8): peak to peak 126 px (226: 2.5 world px a cent)",
+  "got": 126,
+  "want": 126,
+  "tol": 12.600000000000001,
   "pass": true
  },
  {
   "t": 25.198000000000025,
-  "name": "wave rule at CU-scoop (1.8): ratio 1.30 to 1.45",
-  "got": 1.37,
-  "want": "1.30 to 1.45",
+  "name": "the wave at CU-scoop (1.8): ratio 3.44 (226)",
+  "got": 3.43,
+  "want": 3.44,
+  "tol": 0.2,
   "pass": true
  },
  {
   "t": 25.198000000000025,
   "name": "keep-out: nearest visible text to merc's body box (\"settled\")",
-  "got": 326.65,
+  "got": 458.93,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 25.198000000000025,
   "name": "keep-out: nearest visible text to tavi's body box (\"in the band\")",
-  "got": 727.86,
+  "got": 804.39,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 25.198000000000025,
+  "name": "226: the band's edges in frame at CU-scoop",
+  "got": "285.1 to 603.7 (band 315.0 px)",
+  "want": "within 0 to 1080",
+  "pass": true
+ },
+ {
+  "t": 25.198000000000025,
+  "name": "226: every label 12 px or more from every stroke, at CU-scoop (nearest: settled / the mint edge)",
+  "got": 36.9,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 25.198000000000025,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: the mint edge / tavi)",
+  "got": 43.4,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 25.548000000000027,
-  "name": "LAB-CHECKS 14 at 326.20 + 0.3: SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 380 to 420",
-  "got": "1110.0 to 1563.2, 380.0 to 420.0",
-  "want": "1110 to 1563, 380 to 420",
+  "name": "LAB-CHECKS 14 at 326.20 + 0.3: SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 212 to 252 (226; y 380 to 420 before)",
+  "got": "1110.0 to 1563.2, 212.0 to 252.0",
+  "want": "1110 to 1563, 212 to 252",
   "pass": true
  },
  {
   "t": 25.548000000000027,
   "name": "LAB-CHECKS 14 at 326.20 + 0.3: nothing passes under it (nearest: the band's top)",
-  "got": 37,
+  "got": 34.9,
   "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 25.548000000000027,
+  "name": "226: the band's edges in frame under SLOWED",
+  "got": "285.1 to 603.7 (band 315.0 px)",
+  "want": "within 0 to 1080",
+  "pass": true
+ },
+ {
+  "t": 25.548000000000027,
+  "name": "226: every label 12 px or more from every stroke, under SLOWED (nearest: SLOWED / the mint edge)",
+  "got": 32.2,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 25.548000000000027,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: the mint edge / tavi)",
+  "got": 43.4,
+  "want": ">= 20",
   "pass": true
  },
  {
@@ -330,9 +499,9 @@
  },
  {
   "t": 29.84200000000003,
-  "name": "10d: \"scoop\" centred (360, 700 baseline), 54 px on screen",
-  "got": "360.0, 700.0",
-  "want": "360, 700",
+  "name": "10d: \"scoop\" centred (360, 772 baseline; world (400, 540)), 54 px on screen, under the low point",
+  "got": "360.0, 772.0",
+  "want": "360, 772",
   "pass": true
  },
  {
@@ -352,21 +521,42 @@
  {
   "t": 29.84200000000003,
   "name": "keep-out: nearest visible text to tavi's body box (\"SLOWED · ILLUSTRATION\")",
-  "got": 285.7,
+  "got": 432.83,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 29.84200000000003,
+  "name": "226: the band's edges in frame with \"scoop\"",
+  "got": "285.1 to 603.7 (band 315.0 px)",
+  "want": "within 0 to 1080",
+  "pass": true
+ },
+ {
+  "t": 29.84200000000003,
+  "name": "226: every label 12 px or more from every stroke, with \"scoop\" (nearest: scoop / her line)",
+  "got": 27,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 29.84200000000003,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: the mint edge / tavi)",
+  "got": 43.4,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 31.14,
-  "name": "LAB-CHECKS 14 mid-truck (+0.50 s): SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 380 to 420",
-  "got": "1110.0 to 1563.2, 380.0 to 420.0",
-  "want": "1110 to 1563, 380 to 420",
+  "name": "LAB-CHECKS 14 mid-truck (+0.50 s): SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 212 to 252 (226; y 380 to 420 before)",
+  "got": "1110.0 to 1563.2, 212.0 to 252.0",
+  "want": "1110 to 1563, 212 to 252",
   "pass": true
  },
  {
   "t": 31.14,
   "name": "LAB-CHECKS 14 mid-truck (+0.50 s): nothing passes under it (nearest: the band's top)",
-  "got": 37,
+  "got": 34.9,
   "want": ">= 12",
   "pass": true
  },
@@ -378,16 +568,37 @@
   "pass": true
  },
  {
+  "t": 31.14,
+  "name": "226: the band's edges in frame mid-truck (+0.50 s)",
+  "got": "285.1 to 603.7 (band 315.0 px)",
+  "want": "within 0 to 1080",
+  "pass": true
+ },
+ {
+  "t": 31.14,
+  "name": "226: every label 12 px or more from every stroke, mid-truck (+0.50 s) (nearest: SLOWED / the mint edge)",
+  "got": 32.2,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 31.14,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: the mint edge / tavi)",
+  "got": 43.4,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
   "t": 31.64,
-  "name": "LAB-CHECKS 14 mid-truck (+1.00 s): SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 380 to 420",
-  "got": "1110.0 to 1563.2, 380.0 to 420.0",
-  "want": "1110 to 1563, 380 to 420",
+  "name": "LAB-CHECKS 14 mid-truck (+1.00 s): SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 212 to 252 (226; y 380 to 420 before)",
+  "got": "1110.0 to 1563.2, 212.0 to 252.0",
+  "want": "1110 to 1563, 212 to 252",
   "pass": true
  },
  {
   "t": 31.64,
   "name": "LAB-CHECKS 14 mid-truck (+1.00 s): nothing passes under it (nearest: the band's top)",
-  "got": 37,
+  "got": 34.9,
   "want": ">= 12",
   "pass": true
  },
@@ -399,16 +610,37 @@
   "pass": true
  },
  {
+  "t": 31.64,
+  "name": "226: the band's edges in frame mid-truck (+1.00 s)",
+  "got": "285.1 to 603.7 (band 315.0 px)",
+  "want": "within 0 to 1080",
+  "pass": true
+ },
+ {
+  "t": 31.64,
+  "name": "226: every label 12 px or more from every stroke, mid-truck (+1.00 s) (nearest: SLOWED / the mint edge)",
+  "got": 32.2,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 31.64,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: the mint edge / merc)",
+  "got": 43.4,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
   "t": 32.14,
-  "name": "LAB-CHECKS 14 mid-truck (+1.50 s): SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 380 to 420",
-  "got": "1110.0 to 1563.2, 380.0 to 420.0",
-  "want": "1110 to 1563, 380 to 420",
+  "name": "LAB-CHECKS 14 mid-truck (+1.50 s): SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 212 to 252 (226; y 380 to 420 before)",
+  "got": "1110.0 to 1563.2, 212.0 to 252.0",
+  "want": "1110 to 1563, 212 to 252",
   "pass": true
  },
  {
   "t": 32.14,
   "name": "LAB-CHECKS 14 mid-truck (+1.50 s): nothing passes under it (nearest: the band's top)",
-  "got": 37,
+  "got": 34.9,
   "want": ">= 12",
   "pass": true
  },
@@ -420,16 +652,37 @@
   "pass": true
  },
  {
-  "t": 32.59,
-  "name": "LAB-CHECKS 14 mid-truck (+1.95 s): SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 380 to 420",
-  "got": "1110.0 to 1563.2, 380.0 to 420.0",
-  "want": "1110 to 1563, 380 to 420",
+  "t": 32.14,
+  "name": "226: the band's edges in frame mid-truck (+1.50 s)",
+  "got": "285.1 to 603.7 (band 315.0 px)",
+  "want": "within 0 to 1080",
+  "pass": true
+ },
+ {
+  "t": 32.14,
+  "name": "226: every label 12 px or more from every stroke, mid-truck (+1.50 s) (nearest: SLOWED / the mint edge)",
+  "got": 32.2,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 32.14,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: her line / merc)",
+  "got": 29.18,
+  "want": ">= 20",
   "pass": true
  },
  {
   "t": 32.59,
-  "name": "LAB-CHECKS 14 mid-truck (+1.95 s): nothing passes under it (nearest: the band's top)",
-  "got": 37,
+  "name": "LAB-CHECKS 14 mid-truck (+1.95 s): SLOWED · ILLUSTRATION frame-fixed at x 1110 to 1563, y 212 to 252 (226; y 380 to 420 before)",
+  "got": "1110.0 to 1563.2, 212.0 to 252.0",
+  "want": "1110 to 1563, 212 to 252",
+  "pass": true
+ },
+ {
+  "t": 32.59,
+  "name": "LAB-CHECKS 14 mid-truck (+1.95 s): nothing passes under it (nearest: ILLUSTRATION)",
+  "got": 29.75,
   "want": ">= 12",
   "pass": true
  },
@@ -441,10 +694,31 @@
   "pass": true
  },
  {
+  "t": 32.59,
+  "name": "226: the band's edges in frame mid-truck (+1.95 s)",
+  "got": "285.1 to 603.7 (band 315.0 px)",
+  "want": "within 0 to 1080",
+  "pass": true
+ },
+ {
+  "t": 32.59,
+  "name": "226: every label 12 px or more from every stroke, mid-truck (+1.95 s) (nearest: SLOWED / the mint edge)",
+  "got": 32.2,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 32.59,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: her line / merc)",
+  "got": 32.96,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
   "t": 32.69,
-  "name": "10e: CU-wave: the chart's chip at x 1408 to 1896, centred y 304, at full",
-  "got": "1408.8 to 1896.0, 268.0 to 340.0, a 1.000",
-  "want": "1408 to 1896, 284 to 324, a 1",
+  "name": "10e: CU-wave: the chart's chip at x 1408 to 1896, centred y 151, at full",
+  "got": "1408.8 to 1896.0, 115.0 to 187.0, a 1.000",
+  "want": "1408 to 1896, 131 to 171, a 1",
   "pass": true
  },
  {
@@ -456,14 +730,14 @@
  },
  {
   "t": 32.69,
-  "name": "10e: the band y 457 to 583",
-  "got": "-120.0 to 1896.0, 457.0 to 583.0",
-  "want": "y 457 to 583",
+  "name": "10e: the band y 286.9 to 601.9",
+  "got": "-120.0 to 1896.0, 286.9 to 601.9",
+  "want": "y 286.9 to 601.9",
   "pass": true
  },
  {
   "t": 32.69,
-  "name": "wave rule at CU-wave (1.8): one cycle 36.7 px (within 10 %)",
+  "name": "the wave at CU-wave (1.8): one cycle 36.7 px (within 10 %)",
   "got": 36.72,
   "want": 36.7,
   "tol": 3.6700000000000004,
@@ -471,51 +745,73 @@
  },
  {
   "t": 32.69,
-  "name": "wave rule at CU-wave (1.8): peak to peak 50.4 px",
-  "got": 50.4,
-  "want": 50.4,
-  "tol": 5.04,
+  "name": "the wave at CU-wave (1.8): peak to peak 126 px (226: 2.5 world px a cent)",
+  "got": 126,
+  "want": 126,
+  "tol": 12.600000000000001,
   "pass": true
  },
  {
   "t": 32.69,
-  "name": "wave rule at CU-wave (1.8): ratio 1.30 to 1.45",
-  "got": 1.37,
-  "want": "1.30 to 1.45",
+  "name": "the wave at CU-wave (1.8): ratio 3.44 (226)",
+  "got": 3.43,
+  "want": 3.44,
+  "tol": 0.2,
   "pass": true
  },
  {
   "t": 32.69,
   "name": "keep-out: nearest visible text to merc's body box (\"in the band\")",
-  "got": 335.33,
+  "got": 479.27,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 32.69,
   "name": "keep-out: nearest visible text to tavi's body box (\"SLOWED · ILLUSTRATION\")",
-  "got": 285.7,
+  "got": 432.83,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 32.69,
+  "name": "226: the band's edges in frame at CU-wave",
+  "got": "285.1 to 603.7 (band 315.0 px)",
+  "want": "within 0 to 1080",
+  "pass": true
+ },
+ {
+  "t": 32.69,
+  "name": "226: every label 12 px or more from every stroke, at CU-wave (nearest: SLOWED / the mint edge)",
+  "got": 32.2,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 32.69,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: her line / merc)",
+  "got": 33.28,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 33.952,
   "name": "199: the vibrato's height as two ink hairlines, 240 px long, under the label's middle",
-  "got": "1124.4 to 1364.4, 486.2 to 496.2 / 1124.4 to 1364.4, 543.8 to 553.8; label middle 1244.4",
+  "got": "1124.4 to 1364.4, 372.8 to 382.8 / 1124.4 to 1364.4, 506.0 to 516.0; label middle 1244.4",
   "want": "240 px each, centred on the label",
   "pass": true
  },
  {
   "t": 33.952,
   "name": "199: at the crest and trough heights (the line's outer edges), ticks 10 px across the ends",
-  "got": "top line y 491.2 (crest edge 491.2), bottom line y 548.8 (trough edge 548.8); ticks 10.0, 10.0",
+  "got": "top line y 377.8 (crest edge 377.8), bottom line y 511.0 (trough edge 511.0); ticks 10.0, 10.0",
   "want": "within 1.5 px; ticks 10 across",
   "pass": true
  },
  {
   "t": 33.952,
   "name": "199: ink, 1.5 px on screen, clear of the band's edges",
-  "got": "#e6edf3, 1.5 (non-scaling); 29.2 and 29.2 px from the edges",
+  "got": "#e6edf3, 1.5 (non-scaling); 85.9 and 85.9 px from the edges",
   "want": ">= 12 from the edges",
   "pass": true
  },
@@ -528,9 +824,9 @@
  },
  {
   "t": 33.952,
-  "name": "10e: \"small vibrato: inside the band\" from (888, 416)",
-  "got": "888.0, 415.6",
-  "want": "888, 416",
+  "name": "10e: \"small vibrato: inside the band\" from (888, 255.4) (world (960, 253)), over the band's top edge",
+  "got": "888.0, 255.4",
+  "want": "888, 255.4",
   "pass": true
  },
  {
@@ -543,29 +839,92 @@
  {
   "t": 33.952,
   "name": "keep-out: nearest visible text to merc's body box (\"in the band\")",
-  "got": 335.33,
+  "got": 479.27,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 33.952,
   "name": "keep-out: nearest visible text to tavi's body box (\"small vibrato: inside the band\")",
-  "got": 249.09,
+  "got": 397.1,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 33.952,
+  "name": "226: the band's edges in frame with the vibrato's marks",
+  "got": "285.1 to 603.7 (band 315.0 px)",
+  "want": "within 0 to 1080",
+  "pass": true
+ },
+ {
+  "t": 33.952,
+  "name": "226: every label 12 px or more from every stroke, with the vibrato's marks (nearest: small vibrato / the mint edge)",
+  "got": 27,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 33.952,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: her line / merc)",
+  "got": 33.28,
   "want": ">= 20",
   "pass": true
  },
  {
   "t": 38.30300000000002,
   "name": "10e: the mint edge glows, \"in the band\" scales 1.08 (rising)",
-  "got": " translate(640.00 290.00) scale(1.0800) translate(-640.00 -290.00)",
+  "got": " translate(640.00 206.00) scale(1.0800) translate(-640.00 -206.00)",
   "want": "info",
   "pass": true
  },
  {
+  "t": 38.30300000000002,
+  "name": "226: the band's edges in frame as the edge glows",
+  "got": "285.1 to 603.7 (band 315.0 px)",
+  "want": "within 0 to 1080",
+  "pass": true
+ },
+ {
+  "t": 38.30300000000002,
+  "name": "226: every label 12 px or more from every stroke, as the edge glows (nearest: small vibrato / the mint edge)",
+  "got": 27,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 38.30300000000002,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: her line / merc)",
+  "got": 33.28,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
   "t": 40.62000000000005,
-  "name": "10f: back at F-hold, band 484.5 to 575.5",
-  "got": "232.0 to 1688.0, 484.5 to 575.5",
-  "want": "232 to 1688, 484.5 to 575.5",
+  "name": "10f: back at F-hold, band 361.65 to 589.15",
+  "got": "232.0 to 1688.0, 361.6 to 589.2",
+  "want": "232 to 1688, 361.65 to 589.15",
+  "pass": true
+ },
+ {
+  "t": 40.62000000000005,
+  "name": "226: the lead subject at F-hold after the pull (10f): the band 220 px or more, the plot 1150 or more",
+  "got": "band 227.5, plot 1456.0 (232.0 to 1688.0, 361.6 to 589.2)",
+  "want": ">= 220, >= 1150",
+  "pass": true
+ },
+ {
+  "t": 40.62000000000005,
+  "name": "226: every label 12 px or more from every stroke, after the pull (10f) (nearest: axis \"0\" / her line)",
+  "got": 23.43,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 40.62000000000005,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: her line / merc)",
+  "got": 39.9,
+  "want": ">= 20",
   "pass": true
  },
  {
@@ -583,24 +942,45 @@
   "pass": true
  },
  {
+  "t": 41.310000000000045,
+  "name": "226: the lead subject at F-hold as they return: the band 220 px or more, the plot 1150 or more",
+  "got": "band 227.5, plot 1456.0 (232.0 to 1688.0, 361.6 to 589.2)",
+  "want": ">= 220, >= 1150",
+  "pass": true
+ },
+ {
+  "t": 41.310000000000045,
+  "name": "226: every label 12 px or more from every stroke, as they return (nearest: axis \"0\" / her line)",
+  "got": 23.43,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 41.310000000000045,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: her line / merc)",
+  "got": 39.9,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
   "t": 42.813,
-  "name": "10f: \"steady: settles into the band and stays\" at (232, 322)",
-  "got": "232.0, 322.0",
-  "want": "232, 322",
+  "name": "10f: \"steady: settles into the band and stays\" at (232, 221.9) (world baseline 163)",
+  "got": "232.0, 221.9",
+  "want": "232, 221.9",
   "pass": true
  },
  {
   "t": 42.813,
   "name": "199: the \"stays\" bracket 16 px or more above the mint edge (its ticks' ends to the edge's top)",
-  "got": "398.0 to 1688.0, 457.0 to 465.1; 16.2 px ink to ink",
+  "got": "399.3 to 1688.0, 334.2 to 342.2; 16.2 px ink to ink",
   "want": ">= 16",
   "pass": true
  },
  {
   "t": 42.813,
-  "name": "199: the bracket from 12 px right of \"settled\" to the plot's end (1688)",
-  "got": "12.0 px after \"settled\"; to 1688.0",
-  "want": "12; 1688",
+  "name": "199: the bracket from 12 px right of \"settled\" (its ink; F-01: the tick's half stroke beyond) to the plot's end (1688)",
+  "got": "13.7 px ink to ink after \"settled\"; to 1688.0",
+  "want": ">= 12; 1688",
   "pass": true
  },
  {
@@ -611,17 +991,38 @@
   "pass": true
  },
  {
-  "t": 44.389000000000024,
-  "name": "10f: the bracket under the plot, 0 to 10 s, y 712",
-  "got": "232.0 to 1688.0, 699.0 to 712.0",
-  "want": "232 to 1688, 699 to 712",
+  "t": 42.813,
+  "name": "226: the lead subject at F-hold with the \"stays\" bracket: the band 220 px or more, the plot 1150 or more",
+  "got": "band 227.5, plot 1456.0 (232.0 to 1688.0, 361.6 to 589.2)",
+  "want": ">= 220, >= 1150",
+  "pass": true
+ },
+ {
+  "t": 42.813,
+  "name": "226: every label 12 px or more from every stroke, with the \"stays\" bracket (nearest: settled / the \"stays\" bracket)",
+  "got": 13.68,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 42.813,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: her line / merc)",
+  "got": 39.9,
+  "want": ">= 20",
   "pass": true
  },
  {
   "t": 44.389000000000024,
-  "name": "10f: \"a comfortable, fixed length\" centred 960, baseline 760",
-  "got": "960.0, 760.1",
-  "want": "960, 760",
+  "name": "10f: the bracket under the plot, 0 to 10 s, y 753.6 (world 572)",
+  "got": "232.0 to 1688.0, 740.6 to 753.6",
+  "want": "232 to 1688, 740.6 to 753.6",
+  "pass": true
+ },
+ {
+  "t": 44.389000000000024,
+  "name": "10f: \"a comfortable, fixed length\" centred 960, baseline 796.5 (world 605), its ink above the caption band (896)",
+  "got": "960.0, 796.5; ink to 805.6",
+  "want": "960, 796.5; < 896",
   "pass": true
  },
  {
@@ -646,10 +1047,31 @@
   "pass": true
  },
  {
+  "t": 44.389000000000024,
+  "name": "226: the lead subject at F-hold with the length bracket: the band 220 px or more, the plot 1150 or more",
+  "got": "band 227.5, plot 1456.0 (232.0 to 1688.0, 361.6 to 589.2)",
+  "want": ">= 220, >= 1150",
+  "pass": true
+ },
+ {
+  "t": 44.389000000000024,
+  "name": "226: every label 12 px or more from every stroke, with the length bracket (nearest: axis \"0\" / the length bracket)",
+  "got": 13,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 44.389000000000024,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: the length bracket / tavi)",
+  "got": 31.2,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
   "t": 48.93000000000003,
-  "name": "10g: her guess at (232, 257), its dashed underline and \"?\"",
-  "got": "232.0, 257.0; line 232.0 to 820.1, 275.2 to 275.2; ? 838.3 to 880.1, 174.0 to 279.0",
-  "want": "232, 257",
+  "name": "10g: her guess at (232, 158.2) (world baseline 114), its dashed underline and \"?\"",
+  "got": "232.0, 158.2; line 232.0 to 820.1, 176.4 to 176.4; ? 838.3 to 880.1, 75.2 to 180.2",
+  "want": "232, 158.2",
   "pass": true
  },
  {
@@ -671,13 +1093,118 @@
   "name": "keep-out: nearest visible text to tavi's body box (\"10 s\")",
   "got": 32.5,
   "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 48.93000000000003,
+  "name": "226: the lead subject at F-hold with her second guess (10g): the band 220 px or more, the plot 1150 or more",
+  "got": "band 227.5, plot 1456.0 (232.0 to 1688.0, 361.6 to 589.2)",
+  "want": ">= 220, >= 1150",
+  "pass": true
+ },
+ {
+  "t": 48.93000000000003,
+  "name": "226: every label 12 px or more from every stroke, with her second guess (10g) (nearest: axis \"0\" / the length bracket)",
+  "got": 13,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 48.93000000000003,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: the length bracket / tavi)",
+  "got": 31.2,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 40.96000000000004,
+  "name": "233: on \"settles\" the flag scales 1.2 (pole and pennant) while \"settled\" never scales (its type step at 326.93)",
+  "got": "flag scaled, label none, group none",
+  "want": "flag scaled, label none, group none",
+  "pass": true
+ },
+ {
+  "t": 3.1700000000000226,
+  "name": "226: every label 12 px or more from every stroke, mid-push to F-hold (nearest: ILLUSTRATION chip / the band's edge)",
+  "got": 62.67,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 3.1700000000000226,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: the band's edge / tavi)",
+  "got": 174.21,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 24.398000000000025,
+  "name": "226: every label 12 px or more from every stroke, mid-push to CU-scoop (nearest: settled / the mint edge)",
+  "got": 31.78,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 24.398000000000025,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: the mint edge / tavi)",
+  "got": 50.15,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 39.87000000000004,
+  "name": "226: every label 12 px or more from every stroke, mid-pull to F-hold (nearest: ILLUSTRATION chip / the mint edge)",
+  "got": 83.7,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 39.87000000000004,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: her line / merc)",
+  "got": 37.9,
+  "want": ">= 20",
+  "pass": true
+ },
+ {
+  "t": 53.37,
+  "name": "10h: the voice box (drawing on) clear of the sliding band (+0.20 s after it starts)",
+  "got": 225.49,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 53.62,
+  "name": "10h: the voice box (drawing on) clear of the sliding band (+0.45 s after it starts)",
+  "got": 322.34,
+  "want": ">= 12",
   "pass": true
  },
  {
   "t": 52.02,
   "name": "198: \"No.\": the ink strike through her guess and its \"?\" (drawn 0.3 s), held 0.4 s, nothing else gone yet",
-  "got": "strike 224.2 to 888.0, 244.0 to 244.0 a 1.000; guess 232.0 to 820.1, 205.0 to 271.0; ? to 880.1; \"steady\" 1.00, her line drawn",
+  "got": "strike 224.2 to 888.0, 145.2 to 145.2 a 1.000; guess 232.0 to 820.1, 106.2 to 172.2; ? to 880.1; \"steady\" 1.00, her line drawn",
   "want": "strike across both at full",
+  "pass": true
+ },
+ {
+  "t": 52.02,
+  "name": "226: the lead subject at F-hold at \"No.\" (10g): the band 220 px or more, the plot 1150 or more",
+  "got": "band 227.5, plot 1456.0 (232.0 to 1688.0, 361.6 to 589.2)",
+  "want": ">= 220, >= 1150",
+  "pass": true
+ },
+ {
+  "t": 52.02,
+  "name": "226: every label 12 px or more from every stroke, at \"No.\" (10g) (nearest: axis \"0\" / the length bracket)",
+  "got": 13,
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 52.02,
+  "name": "keep-out: every stroke 20 px or more from the hosts' body boxes (nearest: the length bracket / tavi)",
+  "got": 31.2,
+  "want": ">= 20",
   "pass": true
  },
  {

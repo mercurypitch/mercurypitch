@@ -1,0 +1,16 @@
+root True lint 0/23; runtime 0/0; layout 0/0; contrast 0/0
+s01-cold-open True lint 0/1; runtime 0/0; layout 0/0; contrast 0/0
+s02-title True lint 0/0; runtime 0/0; layout 0/0; contrast 0/0
+s03-promise True lint 0/3; runtime 0/0; layout 0/0; contrast 0/0
+s04-recall True lint 0/3; runtime 0/0; layout 0/0; contrast 0/0
+s05-push True lint 0/1; runtime 0/0; layout 0/0; contrast 0/0
+s06-diaphragm True lint 0/2; runtime 0/0; layout 0/0; contrast 0/0
+s07-support True lint 0/1; runtime 0/0; layout 0/0; contrast 0/0
+s08-breathe True lint 0/1; runtime 0/0; layout 0/0; contrast 0/0
+s09-onset True lint 0/2; runtime 0/0; layout 0/0; contrast 0/0
+s10-steady True lint 0/2; runtime 0/0; layout 0/0; contrast 0/0
+s11-sing True lint 0/1; runtime 0/0; layout 0/0; contrast 0/0
+s12-your-turn True lint 0/2; runtime 0/0; layout 0/0; contrast 0/0
+s13-recap True lint 0/2; runtime 0/0; layout 0/0; contrast 0/0
+s14-next True lint 0/1; runtime 0/0; layout 0/0; contrast 0/0
+s15-end True lint 0/1; runtime 0/0; layout 0/0; contrast 0/0

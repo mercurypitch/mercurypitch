@@ -1804,3 +1804,17 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      (a composited layer or a transform, as the chapter card now does) in each scene that has it;
      S8's kicker leaves over 0.2 s or more, linear. S5's mint edge (87.27, 88.33) stays (the
      critic read it as fine).
+
+## The lead's call on the root fix, 19 November
+
+234. **Merc's root fix is accepted** (225; the lead read the proof). The kit reads the root on the
+     pass frame the renderer shows, through a new `L.passFrame(t, ds, ms, pf)` modelled on how the
+     renderer cuts a pass (once, at the render's fps, `fps=F:round=up`, the cut frame
+     `floor((T - start) * F)`) and checked against that ffmpeg command on a synthetic pass at 30 and
+     60 fps. In a window of the root rendered at the film's own timing, the jump at 490.933 and the
+     4 px lag in the air are gone, and the hops land at 700 and 1290 at 30 and 60 fps (the two agree
+     to 4.1 px, the pose step between pass frames). The proposed one-line index was not used: it is
+     one frame early on every odd frame at 60 fps, and in the lab on a third of the frames. 224's
+     60 fps "9 px after hop 2" was the page's microsecond time against the old 1e-6 margin, cured by
+     the same function. Every scene's probe passes (1556), every `check` 0 errors. HANDOFFS § Hosts
+     records `L.passFrame`; s13's lab check `mercSeen` moves to it in group E's round.

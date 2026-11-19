@@ -21,10 +21,11 @@ A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes
 | 5.30 s | 0.2 s |  |
 | 5.80 s | 0.3 s |  |
 | 6.30 s | 0.1 s |  |
-| 7.70 s | 0.4 s |  |
-| 8.90 s | 0.3 s |  |
+| 7.70 s | 0.2 s |  |
+| 8.80 s | 0.4 s |  |
 | 9.50 s | 0.1 s |  |
 | 10.20 s | 0.1 s |  |
+| 10.60 s | 0.1 s |  |
 | 10.80 s | 0.1 s |  |
 | 14.00 s | 0.3 s |  |
 | 17.50 s | 0.2 s |  |
@@ -37,11 +38,11 @@ Runs where the mean change is below 0.35. Not an automatic fail: a critic looks 
 
 | Starts | Length | Largest change | Note |
 | --- | --- | --- | --- |
-| 0.00 s | 0.3 s | 12 | nothing visible moves |
+| 0.00 s | 0.3 s | 13 | nothing visible moves |
 | 1.50 s | 0.4 s | 43 |  |
-| 3.00 s | 12.2 s | 160 | small element moving |
+| 2.90 s | 12.3 s | 179 | small element moving |
 | 15.30 s | 3.0 s | 149 | small element moving |
-| 18.40 s | 1.9 s | 156 | small element moving, runs to the end |
+| 18.40 s | 1.9 s | 155 | small element moving, runs to the end |
 
 0 shorter run(s) totalling 0.0 s are not listed; `motion.csv` has every sample.
 
@@ -51,14 +52,12 @@ From every frame at the film's own rate, by the share of pixels that change by m
 
 | Time | Kind | Mean change | Pixels changed |
 | --- | --- | --- | --- |
-| 1.467 s | jump | 0.34 | 0.54% |
-| 1.667 s | jump | 0.13 | 0.06% |
 | 6.767 s | pop | 0.05 | 0.04% |
 | 11.300 s | pop | 0.05 | 0.04% |
 
 ## Loop seam
 
-From the last frame back to the first: 4.14 on the scale of `frames.csv`, against a median frame change of 0.025, a 95th percentile of 0.48 and a largest of 2.80 at 2.167 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
+From the last frame back to the first: 4.14 on the scale of `frames.csv`, against a median frame change of 0.026, a 95th percentile of 0.44 and a largest of 2.73 at 2.167 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
 
 ## Loudness
 

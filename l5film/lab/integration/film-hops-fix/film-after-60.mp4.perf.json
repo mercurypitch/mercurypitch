@@ -1,0 +1,18 @@
+{
+  "planHash": "c50b33827c367a41db8b7146b79e4ff84e58e15b90dc56a6780e271c412a97bc",
+  "chunkIndex": 61,
+  "startFrame": 29280,
+  "endFrame": 29760,
+  "framesEncoded": 480,
+  "durationMs": 64232,
+  "planHashMs": 1397,
+  "sessionBootMs": 2660,
+  "captureStageMs": 53499,
+  "encodeStageMs": 6628,
+  "workers": 1,
+  "captureMode": "beginframe",
+  "sha256": "8487ace3142f84c2120c8a25bba9fd077b182e45592198d3d2b66c51b6bc5417",
+  "outputKind": "file",
+  "producerVersion": "0.0.0-unknown",
+  "ffmpegVersion": "ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers"
+}

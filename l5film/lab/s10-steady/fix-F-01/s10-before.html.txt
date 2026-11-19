@@ -1,0 +1,351 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s10-steady" data-composition-id="s10-steady" data-start="0" data-duration="61.080" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s10-steady -->
+      <video id="s10-steady-m-orange" data-merc="m-orange" class="clip" muted playsinline src="assets/merc/m-orange-s10-merc.webm" data-start="0.000" data-duration="61.110" data-media-start="0.050"></video>
+      <video id="s10-steady-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m-orange-s10-merc.webm" data-start="0.000" data-duration="61.110" data-media-start="0.050"></video>
+      <video id="s10-steady-m-blue" data-merc="m-blue" class="clip" muted playsinline src="assets/merc/m-blue-s10-merc.webm" data-start="0.000" data-duration="61.110" data-media-start="0.050"></video>
+      <video id="s10-steady-m-blue-refl" data-merc="m-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m-blue-s10-merc.webm" data-start="0.000" data-duration="61.110" data-media-start="0.050"></video>
+      <div class="scene" id="s10-steady-scene"></div>
+      <script>
+        ;(function () {
+          // S10, chapter 5 "A steady note" (STORYBOARD 10a to 10h; HANDOFFS § The hold chart, § The hold frame at the
+          // right half, § The wave rule, § Framings F-hold, CU-scoop and CU-wave, § Camera moves, § The cuts S9 to S10 and
+          // S10 to S11). S9's stack dims under the card and leaves from dim; the push to F-hold onto the hold chart as it
+          // fades in at a 4 s window; Tavi's straight guess; the window widens to 10 s; her hold, the lit edge and the
+          // settled flag; push-and-return 2 (CU-scoop, the slowed first second under "SLOWED · ILLUSTRATION", the truck to
+          // CU-wave, the pull back); what steady means; her second guess; the frame slides to the right half beside the
+          // voice box, the silent line and the slider; the empty frame carried across the matched cut on `sing`. Every time
+          // is a cue, a word, a duration or the take's own time.
+          const SID = 's10-steady'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const C = L.C, P = L.prog, clamp = L.clamp, lerp = L.lerp, f2 = L.f2, FO = L.FOLDS, TR = L.TRACE, LB = L.CHART.LABELS
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
+          const world = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+
+          /* ---------------------------------------------------------------- anchors */
+          // 10a: act5
+          const ACT = at('act5')
+          const CARD_IN = ACT + 0.22, CARD_OUT = at('o11', 'start', -0.5)
+          // the stack leaves from dim, up fast, as the card starts to leave (DECISIONS 196; the board's 303.10 before)
+          const STACK_OUT = CARD_OUT
+          // 10b: o11, b29
+          const O11 = at('o11'), PUSH = O11 + 0.07, PUSH_D = 1.5       // push to F-hold (board 303.40 to 304.90)
+          // the hold chart is at full strength before the push starts (DECISIONS 200): it fades in (linear) as the stack
+          // has gone and the card is nearly out, full 0.02 s before the push; the hosts go back to 300 with the push (0.6 s)
+          const CH_IN = STACK_OUT + 0.3, CH_IN_D = 0.25, HOST_D = 0.6
+          const KICK = PUSH + 0.4, KICK_OUT = at('b29', 'end')
+          const GUESS = word('o11', 'perfectly'), GUESS_END = word('o11', 'line')
+          const WIDEN = word('b29', 'ten'), WIDEN_D = 0.8              // the window widens, 4 s to 10 s (power2.inOut)
+          // 10c: demo, in the take's own time. The page's rule (FACTS 80): read every 16 ms, settled from the first
+          // reading from which the line stays within 35 cents for 0.5 s
+          const DEMO = at('demo'), DC = L.CONTOUR.demo
+          const { entry: ENTRY, settled: SETTLED } = L.settled(DC)      // the page's rule, the kit's (entry 0.704, settled 1.204)
+          const LIT = DEMO + ENTRY, FLAG = DEMO + SETTLED              // the edge and "in the band"; the flag and "settled"
+          const GUESS_OUT = DEMO + 2.0, GUESS_OUT_D = 0.5              // the guess fades as her line passes 2 s; Merc's returns
+          // 10d: o12, b30
+          const SCOOPED = word('o12', 'scooped'), WAVES = word('o12', 'waves')
+          const PUSH2 = word('b30', 'is', 'start', 0.03), PUSH2_D = 1.5   // push to CU-scoop (board 324.60 to 326.10)
+          const SLOW0 = PUSH2 + 1.6, SLOW_K = 3, SLOW_SPAN = 1.5       // the first 1.5 s redrawn at a third of their speed
+          const SCOOP_L = word('b30', 'a scoop')
+          // 10e: b31
+          const TRUCK = at('b31') + 0.08, TRUCK_D = 2.0                // truck to CU-wave (sine.inOut)
+          const SMALL = word('b31', 'small'), INSIDE = word('b31', 'the band')
+          // 10f: b32
+          const PULL = at('b32'), PULL_D = 1.46                        // pull back to F-hold
+          const AXIS_BACK = PULL + PULL_D - 0.2, ANY_BACK = AXIS_BACK + 0.25
+          const SET_BACK = Math.max(word('b32', 'settles'), ANY_BACK + 0.21)   // returns staggered 0.2 to 0.3 s (§ Type)
+          const STAYS = word('b32', 'stays'), COMF = word('b32', 'comfortable')
+          // 10g: o13
+          const AIRQ = word('o13', 'steady air')
+          // 10h: b33
+          // "No." answers the guess, not the chart (DECISIONS 198): an ink strike through her guess (0.3 s), held 0.4 s,
+          // then the rest clears in turn, 0.05 s apart, each over 0.3 s (linear): the guess, the chart's labels, the chip
+          // and the axis, the marks, her line last
+          const NO = at('b33'), STRIKE = NO + 0.06, STRIKE_D = 0.3
+          const CLR0 = STRIKE + STRIKE_D + 0.4, CLR_STEP = 0.05, CLR_D = 0.3
+          const CLR = {}
+          ;['guess', 'steady', 'any', 'inBand', 'settled', 'fixed', 'chip', 'marks', 'line'].forEach((k, i) => { CLR[k] = CLR0 + i * CLR_STEP })
+          const SLIDE = CLR.line + CLR_D, SLIDE_D = 1.1                // the frame slides once her line has gone (power2.inOut)
+          const BOX = SLIDE + 0.4, BOX_D = 1.0                         // the voice box draws on as the frame leaves its place
+          const VB_L = Math.max(word('b33', 'voice box'), BOX)         // "voice box" lands with its box
+          const SET = word('b33', 'set'), NEEDS = word('b33', 'needs')
+          // 10h's demonstration (DECISIONS 193): the slider from "needs" (0.4 s after its line lands), the silent line's
+          // head drawing from 0.3 s later to the end; on "because", "a change in the air moves it" and one push, 50 to 100
+          // and back (two legs of 0.9 s, sine.inOut), then the thumb at 50 while the line runs on; everything but the
+          // empty frame fades over 0.4 s (linear), gone 0.13 s before the cut (HANDOFFS § The cuts, 364.60)
+          const SLID0 = NEEDS + 0.4, LINE0 = SLID0 + 0.3, ILL10 = LINE0 + 0.45
+          const BECAUSE = word('b33', 'because'), PUSH_LEG = 0.9, PUSH_TOP = 100
+          const END_D = 0.4, END_FADE = D - 0.13 - END_D
+
+          /* ---------------------------------------------------------------- the camera */
+          const cam = L.frameRig(room, { from: 'F0' })
+          cam.to(PUSH, PUSH_D, 'F-hold', 'power2.inOut')
+          cam.to(PUSH2, PUSH2_D, 'CU-scoop', 'power2.inOut')
+          cam.to(TRUCK, TRUCK_D, 'CU-wave', 'sine.inOut')
+          cam.to(PULL, PULL_D, 'F-hold', 'power2.inOut')
+
+          /* ---------------------------------------------------------------- the hosts: 240 small, back to 300 (10b) */
+          const Hs = L.HOSTS.small, Hc = L.HOSTS.corners
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hs.merc, moves: [{ at: PUSH, dur: HOST_D, x: Hc.merc.x, size: Hc.merc.size }] })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hs.tavi, moves: [{ at: PUSH, dur: HOST_D, x: Hc.tavi.x, size: Hc.tavi.size }] })
+
+          /* ---------------------------------------------------------------- carried from S9: the stack as s09-onset leaves
+             it (the same block, drawn at S9's last frame) */
+          const ST = TR.STACK, ROW_H = 70, NAME_X = 660
+          const stackWrap = L.svg('g', { class: 'stack' }, world)          // the strokes: dim to 25 %, then leave up fast
+          const stackLab = L.svg('g', { class: 'stack-labels' }, world)    // the names, labels and chips: hidden while dim
+          const fo = L.folds(stackWrap)
+          fo.draw({ cx: FO.SMALL.cx, cy: FO.SMALL.cy, s: FO.SMALL.s, grow: 1, state: { from: 'slit', to: 'apart', u: 1 }, vib: 0 })
+          const rowTr = ST.rows.map((y, i) => L.trace(stackWrap, { y, h: ROW_H, seed: 75 + i }))
+          const KINDS = ['air', 'catch', 'together']
+          const names = ST.names.texts.map((s, i) => L.label(stackLab, s, { x: NAME_X, y: ST.names.y[i], size: ST.names.size, anchor: 'end' }))
+          const stackLabels = [
+            ...names,
+            L.label(stackLab, ST.puff.text, { ...ST.puff, y: 148 }), L.label(stackLab, ST.click.text, { ...ST.click, x: 812 }),
+            L.label(stackLab, ST.neither.text, ST.neither), L.label(stackLab, ST.easy.text, { ...ST.easy, x: NAME_X, y: 714, anchor: 'end' }),
+            L.label(stackLab, ST.hLine.text, ST.hLine),
+          ]
+          // S9's last frame since C-01 (DECISIONS 195): "the easy start" under "Together", "LISTEN ONLY" under "A catch"
+          const stackTags = [L.tag(stackLab, L.TAGS.illustration, ST.tag), L.tag(stackLab, L.TAGS.listen, { x: NAME_X, y: 495, anchor: 'end' })]
+
+          /* ---------------------------------------------------------------- the hold chart (world px; HANDOFFS § The hold
+             chart): a 4 s window, no strip, widening to 10 s */
+          const ch = L.bandChart(world, { ...L.CHART.S10, W: 4 })
+          const G0 = { x0: ch.G.x0, x1: ch.G.x1, y0: ch.G.y0 }
+          // 10h's frame in world px at F-hold: screen x 1000 to 1640, line y 245, 1.0 px a cent (L.CHART.FRAME, where
+          // s11-sing draws it at F0)
+          const FH = L.FRAMES['F-hold'], FR = L.CHART.FRAME
+          const FRW = { x0: (FR.x0 - FH.ox) / FH.s, x1: (FR.x1 - FH.ox) / FH.s, y0: (FR.y0 - FH.oy) / FH.s, k: FR.k / FH.s }
+          const litGlows = [...ch.g.querySelectorAll('.band g rect')].slice(0, 2)   // the lit edge's two glows (10e's glow)
+          const anyOct = ch.label('anyOctave'), inBand = ch.label('inBand10')
+          const chipW = L.tag(ch.gLabels, L.TAGS.illustration, { x: 1520, y: 280, anchor: 'end' })
+          const ax = L.timeAxis(ch.g, {})
+          // the axis's "0" left-aligned at x 400 (HANDOFFS § The hold chart); the kit's default, right-aligned 12 px left of
+          // the plot (x 388), stands at screen x 193 to 216 at F-hold, 3 px from Merc's body box at 300 (to x 190); her line
+          // leaves at -60 cents (y 460), 42 px over this "0". The "0" stands for its tick, as "4 s" and "10 s" do for the
+          // last one (the kit fades the tick at the plot's end): the first tick, which would cut into the "0"'s top, is
+          // not drawn
+          const zeroEl = ax.g.querySelector('text'), tick0 = ax.g.querySelector('rect')
+          zeroEl.setAttribute('text-anchor', 'start')
+          // "0" and "10 s" stand inside the hosts' video squares at F-hold, over their transparent part: 42 and 32 px from
+          // the body boxes (the keep-out is 20), so the layout audit's occlusion is marked as intended
+          ax.end(4); ax.end(10)
+          for (const e of ax.g.querySelectorAll('text')) e.setAttribute('data-layout-allow-occlusion', '')
+          const flag = L.settledFlag(ch.gLabels)
+          let setW = 79                                                 // "settled" (Outfit 600 26), measured once the fonts are in
+          L.afterFonts(() => { try { const el = flag.label.el || flag.label, w = el.getComputedTextLength(); if (w > 0) setW = w } catch (e) { /* the estimate stands */ } })
+          // Tavi's straight guess (L.GUESS), dead flat along the band's centre, its "?" right of the plot, its travelling
+          // head (DECISIONS 170)
+          const guess = L.guess(ch.g, { points: [[400, 400], [1520, 400]], q: { x: LB.q.x, y: LB.q.y } })
+          const guessHead = L.svg('g', { opacity: 0, class: 'guess-head' }, ch.g)
+          L.svg('circle', { r: 14, fill: C.ink2, 'fill-opacity': 0.18 }, guessHead)
+          L.svg('circle', { r: 7, fill: C.ink2 }, guessHead)
+          const scoop = ch.label('scoop')
+          const vibrato = ch.label('vibrato')
+          // the vibrato's height (DECISIONS 199): two ink hairlines (1.5 px on screen) at its crest and trough, the line's
+          // outer edges, each 240 px long at CU-wave under the label's middle, with a 10 px tick across each end
+          const CUW = L.FRAMES['CU-wave']
+          const vibG = L.svg('g', { opacity: 0, class: 'vibrato-height' }, ch.g)
+          const vibHi = L.svg('path', { fill: 'none', stroke: C.ink, 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, vibG)
+          const vibLo = L.svg('path', { fill: 'none', stroke: C.ink, 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, vibG)
+          let vibMid = LB.vibrato.x + 395.6 / 2
+          L.afterFonts(() => { try { const w = vibrato.el.getComputedTextLength(); if (w > 0) vibMid = LB.vibrato.x + w / 2 } catch (e) { /* the estimate stands */ } })
+          const steady = ch.label('steady')
+          // the bracket along the band's top, from just right of "settled" to the plot's end, drawn on from the left
+          // (0.6 s); its ticks end 16 px (screen, F-hold) over the mint edge's top (DECISIONS 199; 7 px before C-01)
+          const topBr = L.svg('path', { fill: 'none', stroke: C.chrome, 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', pathLength: 1, 'stroke-dasharray': '1 1', opacity: 0 }, ch.g)
+          const lenBr = L.bracket(ch.g, { x1: 400, x2: 1520, y: 540, dir: 'up', tick: 10 })
+          const fixedLen = ch.label('fixedLength')
+          // her second guess (10g): Outfit 600 40 ink-2, a dashed underline 14 px under its baseline and its "?" 14 px after
+          const g10 = ch.label('guess10')
+          const g10Line = L.svg('path', { d: 'M400 204 L900 204', fill: 'none', stroke: L.GUESS.stroke, 'stroke-width': L.GUESS.width, 'stroke-dasharray': L.GUESS.dash, opacity: 0 }, ch.gLabels)
+          const g10Q = L.label(ch.gLabels, '?', { x: 914, y: LB.guess10.y, size: L.GUESS.q, fill: L.GUESS.stroke })
+          // "No.": an ink strike through the guess and its "?", at the x-height's middle (baseline - 10), drawn on (0.3 s)
+          const strike = L.svg('path', { d: `M394 ${LB.guess10.y - 10} L950 ${LB.guess10.y - 10}`, fill: 'none', stroke: C.ink, 'stroke-width': 3, 'stroke-linecap': 'round', pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1, opacity: 0 }, ch.gLabels)
+          L.afterFonts(() => {
+            try {
+              const w = g10.el.getComputedTextLength()
+              if (w > 0) {
+                g10Line.setAttribute('d', `M400 204 L${f2(400 + w)} 204`); g10Q.el.setAttribute('x', f2(400 + w + 14))
+                const qw = g10Q.el.getComputedTextLength() || 30
+                strike.setAttribute('d', `M394 ${LB.guess10.y - 10} L${f2(400 + w + 14 + qw + 6)} ${LB.guess10.y - 10}`)
+              }
+            } catch (e) { /* measured again once the fonts are in */ }
+          })
+
+          /* ---------------------------------------------------------------- 10h: in screen px at F-hold (a world group
+             under F-hold's inverse, so it rides the world while the camera holds F-hold) */
+          const scr = L.svg('g', { transform: `matrix(${(1 / FH.s).toFixed(6)} 0 0 ${(1 / FH.s).toFixed(6)} ${f2(-FH.ox / FH.s)} ${f2(-FH.oy / FH.s)})` }, world)
+          const vb = L.voiceBox(scr)
+          const VBL = {
+            name: { text: 'voice box', x: 300, y: 170, size: 32 },
+            set: { text: 'muscles here set the note', x: 260, y: 570, size: 36 },
+            needs: { text: 'a steady note needs steady air too', x: 260, y: 680, size: 40 },
+            moves: { text: 'a change in the air moves it', x: 260, y: 740, size: 40 },
+          }
+          const vbl = {}
+          for (const [n, c] of Object.entries(VBL)) vbl[n] = L.label(scr, c.text, c)
+          const slider = L.pushSlider(scr, L.CHART.SLIDER10H)
+          // the silent line: the frame at a 6 s window (106.7 px a second, 1.0 px a cent: 19.4 px a cycle, 28 px peak
+          // to peak), following the slider by Push's rule (FACTS 73), its wave from its start
+          const pushP = (t) => 50 + (PUSH_TOP - 50) * (P(t, BECAUSE, PUSH_LEG, 'sine.inOut') - P(t, BECAUSE + PUSH_LEG, PUSH_LEG, 'sine.inOut'))
+          const SILENT = L.CONTOUR.from((tt) => L.CONTOUR.pushCents(pushP(LINE0 + tt)), () => 0, 0)
+          const lineCh = L.bandChart(scr, { x0: FR.x0, x1: FR.x1, y0: FR.y0, W: 6, k: 1.0, strip: null })
+          const ill10 = L.tag(hud, L.TAGS.illustration, { x: FR.x1, y: 176, anchor: 'end' })
+
+          /* ---------------------------------------------------------------- frame-fixed */
+          const card = L.chapterCard(hud, { num: 5, title: 'A steady note', tIn: CARD_IN, tOut: CARD_OUT })
+          const kicker = L.kicker(hud, '05 · A steady note')
+          const slowed = L.tag(hud, L.TAGS.slowed, { x: 1110, y: 400, anchor: 'start' })
+
+          const probe = { cam, ch, lineCh, anyOct, inBand, chipW, ax, flag, guess, guessHead, scoop, vibrato, vibG, vibHi, vibLo, steady, topBr, lenBr, fixedLen, g10, g10Line, g10Q, strike, pushP,
+            vb, vbl, slider, ill10, card, kicker, slowed, fo, rowTr, stackWrap, stackLabels, stackTags, FRW,
+            A: { ACT, CARD_IN, CARD_OUT, STACK_OUT, O11, PUSH, PUSH_D, KICK, KICK_OUT, GUESS, GUESS_END, WIDEN, DEMO, ENTRY, SETTLED, LIT, FLAG, GUESS_OUT, SCOOPED, WAVES, PUSH2, PUSH2_D, SLOW0,
+              SCOOP_L, TRUCK, TRUCK_D, SMALL, INSIDE, PULL, PULL_D, AXIS_BACK, ANY_BACK, SET_BACK, STAYS, COMF, AIRQ, NO, STRIKE, STRIKE_D, CLR0, CLR_STEP, CLR_D, CLR, SLIDE, SLIDE_D, BOX, VB_L, SET, NEEDS,
+              SLID0, BECAUSE, PUSH_LEG, PUSH_TOP, LINE0, ILL10, END_FADE, END_D, CH_IN, CH_IN_D, D }, boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            dust(T)
+            probe.boxes = { merc: merc(t), tavi: tavi(t) }
+
+            /* 10a: the stack and the small folds dim to 25 % (their names, circles, labels and chips hidden while dim),
+               then leave from dim, up fast, as the card clears */
+            const dimU = P(t, ACT, 0.2, 'none')
+            const outU = P(t, STACK_OUT, 0.3, 'power3.in')
+            stackWrap.setAttribute('opacity', (lerp(1, 0.25, dimU) * (1 - outU)).toFixed(3))
+            stackWrap.setAttribute('transform', outU > 0 ? `translate(0 ${f2(-16 * outU)})` : '')
+            rowTr.forEach((tr, i) => tr.draw({ kind: KINDS[i], t: TR.len, a: 1, lit: i === 2 ? 1 : 0, dim: i < 2 ? 1 : 0, circle: i < 2 ? 1 - dimU : 0, tick: i === 2 ? 1 : 0 }))
+            stackLab.setAttribute('opacity', (1 - dimU).toFixed(3))
+            for (const l of stackLabels) l.draw({ a: 1 })
+            for (const g of stackTags) g.draw({ alpha: 1 })
+
+            /* the chart's geometry: the window widens (10b); the frame slides to the right half (10h) */
+            const wu = P(t, WIDEN, WIDEN_D, 'power2.inOut')
+            const W = lerp(4, 10, wu)
+            const su = P(t, SLIDE, SLIDE_D, 'power2.inOut')
+            ch.geo({ W })
+            if (su > 0) ch.geo({ x0: lerp(G0.x0, FRW.x0, su), x1: lerp(G0.x1, FRW.x1, su), y0: lerp(G0.y0, FRW.y0, su), k: lerp(10 / W, FRW.k, su) })
+            else ch.geo({ x0: G0.x0, x1: G0.x1, y0: G0.y0, k: 10 / W })
+            const band = ch.band()
+
+            /* fades */
+            const chA = P(t, CH_IN, CH_IN_D, 'none')                   // the chart fades in as the stack goes, full before the push
+            const clr = (k) => 1 - P(t, CLR[k], CLR_D, 'none')         // 10h: "No.", each in its turn
+
+            /* 10b: the dashed guess draws on with its head, its "?" lands; Merc's line goes to 0 under it and returns
+               as her line passes 2 s (DECISIONS 170) */
+            const gU = P(t, GUESS, GUESS_END - GUESS, 'none')
+            const gOut = P(t, GUESS_OUT, GUESS_OUT_D, 'sine.inOut')
+            const qIn = P(t, GUESS_END, 0.2, 'power2.out')
+            guess.draw(gU, (gU > 0 ? 1 : 0) * (1 - gOut), qIn * (1 - gOut))
+            guessHead.setAttribute('transform', `translate(${f2(lerp(400, 1520, gU))} 400)`)
+            guessHead.setAttribute('opacity', ((gU > 0 ? 1 : 0) * (1 - qIn) * (1 - gOut)).toFixed(3))
+            const mercA = 1 - gU * (1 - gOut)
+
+            /* 10c, 10d: her hold, drawn as she sings; the first 1.5 s fade and redraw at a third of their speed */
+            const tk = clamp(t - DEMO, 0, DC.len)
+            const singing = t >= DEMO
+            const tS = clamp((t - SLOW0) / SLOW_K, 0, SLOW_SPAN)
+            const firstA = 1 - P(t, SLOW0 - 0.2, 0.2, 'none')
+            const run = L.run(t, WAVES, 1.2)
+            const headA = 1 - P(t, DEMO + DC.len, 0.3)
+            const lit = P(t, LIT, 0.4, 'none') * clr('inBand')         // the mint edge and "in the band", once (linear)
+            const lineA = clr('line')
+            ch.draw({
+              a: chA,
+              band: { lit },
+              merc: { a: mercA, w: lerp(4, 4 / FH.s, su) },
+              lines: [
+                { id: 'first', contour: 'demo', t0: 0, t: Math.min(tk, SLOW_SPAN), a: singing ? firstA * lineA : 0, head: tk < SLOW_SPAN ? 1 : 0,
+                  glow: L.glow(t, [SCOOPED], { up: 0.25, hold: 0.5, down: 0.6 }), glowFrom: 0, glowTo: 1.0 },
+                { id: 'held', contour: 'demo', t0: SLOW_SPAN, t: tk, a: tk > SLOW_SPAN ? lineA : 0, head: headA,
+                  glow: run ? run.a : 0, glowFrom: run ? SLOW_SPAN + 8 * run.u - 0.4 : 0, glowTo: run ? SLOW_SPAN + 8 * run.u + 0.6 : 0 },
+                { id: 'slow', contour: 'demo', t0: 0, t: tS, a: t >= SLOW0 ? lineA : 0, head: tS < SLOW_SPAN ? 1 : 1 - P(t, SLOW0 + SLOW_K * SLOW_SPAN, 0.3) },
+              ],
+            })
+            const glowE = L.glow(t, [INSIDE], { up: 0.25, hold: 0.4, down: 0.6 })   // 10e: the mint edge glows
+            for (const r of litGlows) r.setAttribute('fill-opacity', (0.4 + 0.5 * glowE).toFixed(3))
+
+            /* the chart's labels and marks */
+            // "A, any octave" leaves as the truck starts and returns after the pull (10e, 10f)
+            anyOct.draw({ a: (t < ANY_BACK ? chA * (1 - P(t, TRUCK, 0.2)) : P(t, ANY_BACK, 0.2, 'power2.out')) * clr('any') })
+            inBand.draw({ a: lit, scale: L.pulse(t, [INSIDE], 'chip') })
+            // the chart's chip: it leaves over the push to CU-scoop's first 0.5 s (linear), before the push would carry it
+            // out of frame; it comes back by the edge rule as the truck lands at CU-wave, where it stands 24 px from the
+            // frame's right edge (HANDOFFS x 1408 to 1896): a ramp of 8 px past the 16 px margin puts it at full there
+            const cb = { x0: chipW.x0, y0: 260, x1: chipW.x1, y1: 300 }
+            const chipEdge = t < TRUCK ? 1 - P(t, PUSH2, 0.5, 'none') : cam.edgeAlpha(cb, t, 'mid', { margin: 16, ramp: 8 })
+            chipW.draw({ alpha: chA * chipEdge * clr('chip') })
+            const axA = chA * (1 - P(t, PUSH2, 0.2, 'none')) + P(t, AXIS_BACK, 0.2, 'none')
+            ax.draw({ a: Math.min(1, axA) * clr('chip'), W, X0: ch.G.x0, X1: ch.G.x1, swap: L.swap(t, WIDEN, 0, '4 s', '10 s') })
+            zeroEl.setAttribute('x', f2(ch.G.x0)); tick0.setAttribute('opacity', '0')
+            const fx = ch.x(ENTRY), fy = band.top
+            // "settled" and its flag leave as the truck starts (linear 0.3 s) and come back together on "settles", the flag
+            // scaling 1.2 (10e, 10f)
+            const flagA = t < SET_BACK ? P(t, FLAG, 0.3) * (1 - P(t, TRUCK, 0.3, 'none')) : P(t, SET_BACK, 0.3, 'none')
+            flag.draw({ x: fx, y: fy, a: flagA * clr('settled'), scale: L.pulse(t, [SET_BACK], 'label'), labelA: 1 })
+            scoop.draw({ a: L.fade(t, SCOOP_L, TRUCK).a })
+            vibrato.draw({ a: L.fade(t, SMALL, PULL).a })
+            // the vibrato's height: calipers at the line's outer edges (stroke 4), drawn out from their middle (0.4 s)
+            const vu = P(t, SMALL, 0.4, 'power2.out'), vh = (120 / CUW.s) * vu, vt = 5 / CUW.s
+            const yHi = Math.min(ch.y(14), ch.y(-14)) - 2, yLo = Math.max(ch.y(14), ch.y(-14)) + 2
+            const hair = (y) => `M${f2(vibMid - vh)} ${f2(y - vt)} L${f2(vibMid - vh)} ${f2(y + vt)} M${f2(vibMid - vh)} ${f2(y)} L${f2(vibMid + vh)} ${f2(y)} M${f2(vibMid + vh)} ${f2(y - vt)} L${f2(vibMid + vh)} ${f2(y + vt)}`
+            vibHi.setAttribute('d', hair(yHi)); vibLo.setAttribute('d', hair(yLo))
+            vibG.setAttribute('opacity', (vu > 0 ? L.fade(t, SMALL, PULL).a : 0).toFixed(3))
+            steady.draw({ a: L.fade(t, STAYS, null).a * clr('steady') })
+            // the "stays" bracket: from 12 px (screen) right of "settled" to the plot's end; its ticks end 16 px over the mint
+            // edge's top, ink to ink (the edge 3 px, the bracket 2), its line 8 px higher (F-hold's scale)
+            const FS_ = FH.s, tb = P(t, STAYS, 0.6, 'power2.inOut')
+            const tyEnd = band.top - 1.5 - 1 - 16.2 / FS_, ty = tyEnd - 8 / FS_
+            const bx0 = fx + setW / 2 + 12 / FS_
+            topBr.setAttribute('d', `M${f2(bx0)} ${f2(tyEnd)} L${f2(bx0)} ${f2(ty)} L${f2(ch.G.x1)} ${f2(ty)} L${f2(ch.G.x1)} ${f2(tyEnd)}`)
+            topBr.setAttribute('stroke-dashoffset', (1 - tb).toFixed(4))
+            topBr.setAttribute('opacity', (tb > 0 ? clr('marks') : 0).toFixed(3))
+            lenBr.set({ x1: ch.G.x0, x2: ch.G.x1 })
+            lenBr.draw(P(t, COMF, 0.6, 'power2.out'), clr('marks'))
+            fixedLen.draw({ a: L.fade(t, COMF, null).a * clr('fixed') })
+            const g10A = L.fade(t, AIRQ, null, { dIn: 0.3, easeIn: 'none' }).a * clr('guess')   // linear: an eased 0.2 s fade of the label,
+            // its 64 px "?" and its line put the change into two frames (a pop, DECISIONS 179)
+            g10.draw({ a: g10A }); g10Q.draw({ a: g10A }); g10Line.setAttribute('opacity', g10A.toFixed(3))
+            strike.setAttribute('stroke-dashoffset', (1 - P(t, STRIKE, STRIKE_D, 'power2.out')).toFixed(4))
+            strike.setAttribute('opacity', (t >= STRIKE ? g10A : 0).toFixed(3))
+
+            /* 10h: the voice box, its labels, the slider and the silent line, in screen px at F-hold */
+            const endA = 1 - P(t, END_FADE, END_D, 'none')
+            vb.draw({ a: (t >= BOX ? 1 : 0) * endA, draw: P(t, BOX, BOX_D, 'power2.inOut'), glow: L.glow(t, [SET], { up: 0.3, hold: 0.6, down: 0.6 }), T })
+            vbl.name.draw({ a: L.fade(t, VB_L, null).a * endA })
+            vbl.set.draw({ a: L.fade(t, SET, null).a * endA })
+            vbl.needs.draw({ a: L.fade(t, NEEDS, null).a * endA })
+            vbl.moves.draw({ a: L.fade(t, BECAUSE, null).a * endA })
+            const lt = t - LINE0
+            slider.draw({ a: (t >= SLID0 ? 1 : 0) * endA, p: pushP(t), draw: P(t, SLID0, 0.4, 'power2.out') })
+            lineCh.draw({ band: { a: 0 }, merc: { a: 0 }, lines: [{ id: 'silent', contour: SILENT, t: clamp(lt, 0, 6), a: lt > 0 ? endA : 0, head: 1 }] })
+            ill10.draw({ alpha: L.fade(t, ILL10, null).a * endA })
+
+            /* frame-fixed */
+            card.draw(t)
+            kicker.draw(t, KICK, KICK_OUT, { outDur: 0.4 })            // a 0.2 s eased exit measured as a pop here
+            slowed.draw({ alpha: L.fade(t, SLOW0, TRUCK + TRUCK_D, { dOut: 0.3, easeOut: 'none' }).a })   // a linear exit (no pop)
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

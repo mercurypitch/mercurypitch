@@ -84,6 +84,7 @@
           const SCOOPED = word('o12', 'scooped'), WAVES = word('o12', 'waves')
           const PUSH2 = word('b30', 'is', 'start', 0.03), PUSH2_D = 1.5   // push to CU-scoop (board 324.60 to 326.10)
           const SLOW0 = PUSH2 + 1.6, SLOW_K = 3, SLOW_SPAN = 1.5       // the first 1.5 s redrawn at a third of their speed
+          const DEEP = 0.45                                            // its scoop's deep part (under -40 c), drawn on its own
           const SCOOP_L = word('b30', 'a scoop')
           // 10e: b31
           const TRUCK = at('b31') + 0.08, TRUCK_D = 2.0                // truck to CU-wave (sine.inOut)
@@ -148,19 +149,34 @@
 
           /* ---------------------------------------------------------------- the hold chart (world px; HANDOFFS § The hold
              chart): a 4 s window, no strip, widening to 10 s */
-          const ch = L.bandChart(world, { ...L.CHART.S10, W: 4 })
+          // The hold chart is the lead subject from the push in to "No." (DECISIONS 226): the cents scale stays at the
+          // 4 s chart's 2.5 world px a cent as the window widens to 10 s (k no longer follows 10 / W), so the band stands
+          // 175 world px, 227.5 on screen at F-hold (y 416 to 644), on the 1456 px plot; the take, its scoop and its
+          // vibrato grow with it (at F-hold a cycle 26.5 px and 91 px peak to peak: the wave rule's 1.375 gives way here)
+          const K = 2.5
+          // Merc's line at y 358 (400 before): at CU-scoop and CU-wave the band (y 287 to 602 on screen) keeps both
+          // edges in frame, and its bottom edge and the scoop's last dip (-38 c, at CU-wave x 13, y 619) stay clear of
+          // the hosts' keep-outs (from y 628), which the plot runs past at the close-ups
+          const Y0 = 358
+          // every label re-placed around it, 12 px (screen) or more from every stroke at its framing: world baselines
+          // (F-hold's 12 px is 9.2 world px, CU's 6.7). Row 1 ("A, any octave", "in the band") clears "settled" over its
+          // flag; row 2 ("steady: ...") and her guess (its underline 14 under its baseline) stack over it; the axis
+          // stands under the scoop's low point (-60 c, y 508, the head's dot to 515), the length bracket under the axis
+          // and its label under that, above the caption band (y 896 on screen)
+          const PL = { row1: 206, chip: 195, steady: 163, guess: 114, vibrato: 253, scoop: 540, tick: 524, axis: 550, lenBr: 572, fixed: 605 }
+          const ch = L.bandChart(world, { ...L.CHART.S10, W: 4, k: K, y0: Y0 })
           const G0 = { x0: ch.G.x0, x1: ch.G.x1, y0: ch.G.y0 }
           // 10h's frame in world px at F-hold: screen x 1000 to 1640, line y 245, 1.0 px a cent (L.CHART.FRAME, where
           // s11-sing draws it at F0)
           const FH = L.FRAMES['F-hold'], FR = L.CHART.FRAME
           const FRW = { x0: (FR.x0 - FH.ox) / FH.s, x1: (FR.x1 - FH.ox) / FH.s, y0: (FR.y0 - FH.oy) / FH.s, k: FR.k / FH.s }
           const litGlows = [...ch.g.querySelectorAll('.band g rect')].slice(0, 2)   // the lit edge's two glows (10e's glow)
-          const anyOct = ch.label('anyOctave'), inBand = ch.label('inBand10')
-          const chipW = L.tag(ch.gLabels, L.TAGS.illustration, { x: 1520, y: 280, anchor: 'end' })
-          const ax = L.timeAxis(ch.g, {})
+          const anyOct = ch.label('anyOctave', null, { y: PL.row1 }), inBand = ch.label('inBand10', null, { y: PL.row1 })
+          const chipW = L.tag(ch.gLabels, L.TAGS.illustration, { x: 1520, y: PL.chip, anchor: 'end' })   // centred on row 1's capitals
+          const ax = L.timeAxis(ch.g, { y: PL.tick, labelY: PL.axis })
           // the axis's "0" left-aligned at x 400 (HANDOFFS § The hold chart); the kit's default, right-aligned 12 px left of
-          // the plot (x 388), stands at screen x 193 to 216 at F-hold, 3 px from Merc's body box at 300 (to x 190); her line
-          // leaves at -60 cents (y 460), 42 px over this "0". The "0" stands for its tick, as "4 s" and "10 s" do for the
+          // the plot (x 388), would stand inside Merc's keep-out at F-hold; her line leaves at -60 cents (y 508, the head's
+          // dot to 515), 13 world px (17 on screen) over this "0"'s top. The "0" stands for its tick, as "4 s" and "10 s" do for the
           // last one (the kit fades the tick at the plot's end): the first tick, which would cut into the "0"'s top, is
           // not drawn
           const zeroEl = ax.g.querySelector('text'), tick0 = ax.g.querySelector('rect')
@@ -170,16 +186,19 @@
           ax.end(4); ax.end(10)
           for (const e of ax.g.querySelectorAll('text')) e.setAttribute('data-layout-allow-occlusion', '')
           const flag = L.settledFlag(ch.gLabels)
+          // its pole and pennant (the kit's draw scales the whole group, its label too: a scale's slow tail on the label
+          // stepped its type a whole pixel at its end, 326.93, DECISIONS 233); here the flag scales and "settled" never does
+          const flagMarks = [flag.g.querySelector('rect'), flag.g.querySelector('path')]
           let setW = 79                                                 // "settled" (Outfit 600 26), measured once the fonts are in
           L.afterFonts(() => { try { const el = flag.label.el || flag.label, w = el.getComputedTextLength(); if (w > 0) setW = w } catch (e) { /* the estimate stands */ } })
           // Tavi's straight guess (L.GUESS), dead flat along the band's centre, its "?" right of the plot, its travelling
           // head (DECISIONS 170)
-          const guess = L.guess(ch.g, { points: [[400, 400], [1520, 400]], q: { x: LB.q.x, y: LB.q.y } })
+          const guess = L.guess(ch.g, { points: [[400, Y0], [1520, Y0]], q: { x: LB.q.x, y: Y0 + LB.q.y - 400 } })
           const guessHead = L.svg('g', { opacity: 0, class: 'guess-head' }, ch.g)
           L.svg('circle', { r: 14, fill: C.ink2, 'fill-opacity': 0.18 }, guessHead)
           L.svg('circle', { r: 7, fill: C.ink2 }, guessHead)
-          const scoop = ch.label('scoop')
-          const vibrato = ch.label('vibrato')
+          const scoop = ch.label('scoop', null, { y: PL.scoop })   // centred under the scoop's low point (CU-scoop)
+          const vibrato = ch.label('vibrato', null, { y: PL.vibrato })   // over the band's top edge, under the chip (CU-wave)
           // the vibrato's height (DECISIONS 199): two ink hairlines (1.5 px on screen) at its crest and trough, the line's
           // outer edges, each 240 px long at CU-wave under the label's middle, with a 10 px tick across each end
           const CUW = L.FRAMES['CU-wave']
@@ -188,25 +207,25 @@
           const vibLo = L.svg('path', { fill: 'none', stroke: C.ink, 'stroke-width': 1.5, 'vector-effect': 'non-scaling-stroke', 'stroke-linecap': 'round', 'stroke-linejoin': 'round' }, vibG)
           let vibMid = LB.vibrato.x + 395.6 / 2
           L.afterFonts(() => { try { const w = vibrato.el.getComputedTextLength(); if (w > 0) vibMid = LB.vibrato.x + w / 2 } catch (e) { /* the estimate stands */ } })
-          const steady = ch.label('steady')
+          const steady = ch.label('steady', null, { y: PL.steady })
           // the bracket along the band's top, from just right of "settled" to the plot's end, drawn on from the left
           // (0.6 s); its ticks end 16 px (screen, F-hold) over the mint edge's top (DECISIONS 199; 7 px before C-01)
           const topBr = L.svg('path', { fill: 'none', stroke: C.chrome, 'stroke-width': 2, 'stroke-linecap': 'round', 'stroke-linejoin': 'round', pathLength: 1, 'stroke-dasharray': '1 1', opacity: 0 }, ch.g)
-          const lenBr = L.bracket(ch.g, { x1: 400, x2: 1520, y: 540, dir: 'up', tick: 10 })
-          const fixedLen = ch.label('fixedLength')
+          const lenBr = L.bracket(ch.g, { x1: 400, x2: 1520, y: PL.lenBr, dir: 'up', tick: 10 })
+          const fixedLen = ch.label('fixedLength', null, { y: PL.fixed })
           // her second guess (10g): Outfit 600 40 ink-2, a dashed underline 14 px under its baseline and its "?" 14 px after
-          const g10 = ch.label('guess10')
-          const g10Line = L.svg('path', { d: 'M400 204 L900 204', fill: 'none', stroke: L.GUESS.stroke, 'stroke-width': L.GUESS.width, 'stroke-dasharray': L.GUESS.dash, opacity: 0 }, ch.gLabels)
-          const g10Q = L.label(ch.gLabels, '?', { x: 914, y: LB.guess10.y, size: L.GUESS.q, fill: L.GUESS.stroke })
+          const g10 = ch.label('guess10', null, { y: PL.guess })
+          const g10Line = L.svg('path', { d: `M400 ${PL.guess + 14} L900 ${PL.guess + 14}`, fill: 'none', stroke: L.GUESS.stroke, 'stroke-width': L.GUESS.width, 'stroke-dasharray': L.GUESS.dash, opacity: 0 }, ch.gLabels)
+          const g10Q = L.label(ch.gLabels, '?', { x: 914, y: PL.guess, size: L.GUESS.q, fill: L.GUESS.stroke })
           // "No.": an ink strike through the guess and its "?", at the x-height's middle (baseline - 10), drawn on (0.3 s)
-          const strike = L.svg('path', { d: `M394 ${LB.guess10.y - 10} L950 ${LB.guess10.y - 10}`, fill: 'none', stroke: C.ink, 'stroke-width': 3, 'stroke-linecap': 'round', pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1, opacity: 0 }, ch.gLabels)
+          const strike = L.svg('path', { d: `M394 ${PL.guess - 10} L950 ${PL.guess - 10}`, fill: 'none', stroke: C.ink, 'stroke-width': 3, 'stroke-linecap': 'round', pathLength: 1, 'stroke-dasharray': '1 1', 'stroke-dashoffset': 1, opacity: 0 }, ch.gLabels)
           L.afterFonts(() => {
             try {
               const w = g10.el.getComputedTextLength()
               if (w > 0) {
-                g10Line.setAttribute('d', `M400 204 L${f2(400 + w)} 204`); g10Q.el.setAttribute('x', f2(400 + w + 14))
+                g10Line.setAttribute('d', `M400 ${PL.guess + 14} L${f2(400 + w)} ${PL.guess + 14}`); g10Q.el.setAttribute('x', f2(400 + w + 14))
                 const qw = g10Q.el.getComputedTextLength() || 30
-                strike.setAttribute('d', `M394 ${LB.guess10.y - 10} L${f2(400 + w + 14 + qw + 6)} ${LB.guess10.y - 10}`)
+                strike.setAttribute('d', `M394 ${PL.guess - 10} L${f2(400 + w + 14 + qw + 6)} ${PL.guess - 10}`)
               }
             } catch (e) { /* measured again once the fonts are in */ }
           })
@@ -234,10 +253,12 @@
           /* ---------------------------------------------------------------- frame-fixed */
           const card = L.chapterCard(hud, { num: 5, title: 'A steady note', tIn: CARD_IN, tOut: CARD_OUT })
           const kicker = L.kicker(hud, '05 · A steady note')
-          const slowed = L.tag(hud, L.TAGS.slowed, { x: 1110, y: 400, anchor: 'start' })
+          // SLOWED, frame-fixed at CU-scoop between "in the band" (row 1) and the band's top edge (y 287 on screen), clear
+          // of the chart's chip as the truck brings it in (y 115 to 187): x 1110 to 1563, centred y 232 (y 400 before 226)
+          const slowed = L.tag(hud, L.TAGS.slowed, { x: 1110, y: 232, anchor: 'start' })
 
           const probe = { cam, ch, lineCh, anyOct, inBand, chipW, ax, flag, guess, guessHead, scoop, vibrato, vibG, vibHi, vibLo, steady, topBr, lenBr, fixedLen, g10, g10Line, g10Q, strike, pushP,
-            vb, vbl, slider, ill10, card, kicker, slowed, fo, rowTr, stackWrap, stackLabels, stackTags, FRW,
+            vb, vbl, slider, ill10, card, kicker, slowed, fo, rowTr, stackWrap, stackLabels, stackTags, FRW, K, Y0, PL, flagMarks,
             A: { ACT, CARD_IN, CARD_OUT, STACK_OUT, O11, PUSH, PUSH_D, KICK, KICK_OUT, GUESS, GUESS_END, WIDEN, DEMO, ENTRY, SETTLED, LIT, FLAG, GUESS_OUT, SCOOPED, WAVES, PUSH2, PUSH2_D, SLOW0,
               SCOOP_L, TRUCK, TRUCK_D, SMALL, INSIDE, PULL, PULL_D, AXIS_BACK, ANY_BACK, SET_BACK, STAYS, COMF, AIRQ, NO, STRIKE, STRIKE_D, CLR0, CLR_STEP, CLR_D, CLR, SLIDE, SLIDE_D, BOX, VB_L, SET, NEEDS,
               SLID0, BECAUSE, PUSH_LEG, PUSH_TOP, LINE0, ILL10, END_FADE, END_D, CH_IN, CH_IN_D, D }, boxes: {} }
@@ -267,8 +288,8 @@
             const W = lerp(4, 10, wu)
             const su = P(t, SLIDE, SLIDE_D, 'power2.inOut')
             ch.geo({ W })
-            if (su > 0) ch.geo({ x0: lerp(G0.x0, FRW.x0, su), x1: lerp(G0.x1, FRW.x1, su), y0: lerp(G0.y0, FRW.y0, su), k: lerp(10 / W, FRW.k, su) })
-            else ch.geo({ x0: G0.x0, x1: G0.x1, y0: G0.y0, k: 10 / W })
+            if (su > 0) ch.geo({ x0: lerp(G0.x0, FRW.x0, su), x1: lerp(G0.x1, FRW.x1, su), y0: lerp(G0.y0, FRW.y0, su), k: lerp(K, FRW.k, su) })
+            else ch.geo({ x0: G0.x0, x1: G0.x1, y0: G0.y0, k: K })
             const band = ch.band()
 
             /* fades */
@@ -281,7 +302,7 @@
             const gOut = P(t, GUESS_OUT, GUESS_OUT_D, 'sine.inOut')
             const qIn = P(t, GUESS_END, 0.2, 'power2.out')
             guess.draw(gU, (gU > 0 ? 1 : 0) * (1 - gOut), qIn * (1 - gOut))
-            guessHead.setAttribute('transform', `translate(${f2(lerp(400, 1520, gU))} 400)`)
+            guessHead.setAttribute('transform', `translate(${f2(lerp(400, 1520, gU))} ${Y0})`)
             guessHead.setAttribute('opacity', ((gU > 0 ? 1 : 0) * (1 - qIn) * (1 - gOut)).toFixed(3))
             const mercA = 1 - gU * (1 - gOut)
 
@@ -289,8 +310,26 @@
             const tk = clamp(t - DEMO, 0, DC.len)
             const singing = t >= DEMO
             const tS = clamp((t - SLOW0) / SLOW_K, 0, SLOW_SPAN)
+            // the scoop's deep part (her first DEEP s, under -40 c, to y 510): it stands clear of Merc at F-hold and
+            // CU-scoop, but the truck and the pull carry it across his keep-out (226 grew it 2.5 times). It fades by its
+            // distance to his body box, gone 20 px from it and full from 44, as a chip fades by its distance to the
+            // frame's edge: out in the truck's first 0.4 s, back as the pull lands
+            let deepA = 1
+            const mb = probe.boxes.merc
+            if (mb && t >= SLOW0) {
+              let gap = Infinity
+              const sc = cam.state(t).s
+              for (let tt = 0; tt <= DEEP + 1e-9; tt += 0.015) {
+                const [X, Y] = cam.map(ch.x(tt), ch.y(DC.c(tt)), t)
+                gap = Math.min(gap, Math.hypot(Math.max(mb.x0 - X, 0, X - mb.x1), Math.max(mb.y0 - Y, 0, Y - mb.y1)) - 2 * sc)
+              }
+              deepA = clamp((gap - 20) / 24)
+            }
             const firstA = 1 - P(t, SLOW0 - 0.2, 0.2, 'none')
             const run = L.run(t, WAVES, 1.2)
+            // the light comes up over 0.3 s (the kit's run, 0.1 s): on the taller wave its first frame changed 0.15 % of
+            // the frame at once (a jump at 20.80, F-01)
+            const runA = L.env(t, WAVES, 0.3, 0.9, 0.2)
             const headA = 1 - P(t, DEMO + DC.len, 0.3)
             const lit = P(t, LIT, 0.4, 'none') * clr('inBand')         // the mint edge and "in the band", once (linear)
             const lineA = clr('line')
@@ -302,8 +341,9 @@
                 { id: 'first', contour: 'demo', t0: 0, t: Math.min(tk, SLOW_SPAN), a: singing ? firstA * lineA : 0, head: tk < SLOW_SPAN ? 1 : 0,
                   glow: L.glow(t, [SCOOPED], { up: 0.25, hold: 0.5, down: 0.6 }), glowFrom: 0, glowTo: 1.0 },
                 { id: 'held', contour: 'demo', t0: SLOW_SPAN, t: tk, a: tk > SLOW_SPAN ? lineA : 0, head: headA,
-                  glow: run ? run.a : 0, glowFrom: run ? SLOW_SPAN + 8 * run.u - 0.4 : 0, glowTo: run ? SLOW_SPAN + 8 * run.u + 0.6 : 0 },
-                { id: 'slow', contour: 'demo', t0: 0, t: tS, a: t >= SLOW0 ? lineA : 0, head: tS < SLOW_SPAN ? 1 : 1 - P(t, SLOW0 + SLOW_K * SLOW_SPAN, 0.3) },
+                  glow: run ? runA : 0, glowFrom: run ? SLOW_SPAN + 8 * run.u - 0.4 : 0, glowTo: run ? SLOW_SPAN + 8 * run.u + 0.6 : 0 },
+                { id: 'slowDeep', contour: 'demo', t0: 0, t: Math.min(tS, DEEP), a: t >= SLOW0 ? lineA * deepA : 0, head: tS < DEEP ? 1 : 0 },
+                { id: 'slow', contour: 'demo', t0: DEEP, t: tS, a: t >= SLOW0 ? lineA : 0, head: tS < SLOW_SPAN ? 1 : 1 - P(t, SLOW0 + SLOW_K * SLOW_SPAN, 0.3) },
               ],
             })
             const glowE = L.glow(t, [INSIDE], { up: 0.25, hold: 0.4, down: 0.6 })   // 10e: the mint edge glows
@@ -326,7 +366,12 @@
             // "settled" and its flag leave as the truck starts (linear 0.3 s) and come back together on "settles", the flag
             // scaling 1.2 (10e, 10f)
             const flagA = t < SET_BACK ? P(t, FLAG, 0.3) * (1 - P(t, TRUCK, 0.3, 'none')) : P(t, SET_BACK, 0.3, 'none')
-            flag.draw({ x: fx, y: fy, a: flagA * clr('settled'), scale: L.pulse(t, [SET_BACK], 'label'), labelA: 1 })
+            flag.draw({ x: fx, y: fy, a: flagA * clr('settled'), scale: 1, labelA: 1 })
+            const fsc = L.pulse(t, [SET_BACK], 'label')
+            for (const el of flagMarks) {
+              if (fsc > 1 + 1e-4) el.setAttribute('transform', `translate(${f2(fx)} ${f2(fy)}) scale(${fsc.toFixed(4)}) translate(${f2(-fx)} ${f2(-fy)})`)
+              else el.removeAttribute('transform')
+            }
             scoop.draw({ a: L.fade(t, SCOOP_L, TRUCK).a })
             vibrato.draw({ a: L.fade(t, SMALL, PULL).a })
             // the vibrato's height: calipers at the line's outer edges (stroke 4), drawn out from their middle (0.4 s)
@@ -336,11 +381,12 @@
             vibHi.setAttribute('d', hair(yHi)); vibLo.setAttribute('d', hair(yLo))
             vibG.setAttribute('opacity', (vu > 0 ? L.fade(t, SMALL, PULL).a : 0).toFixed(3))
             steady.draw({ a: L.fade(t, STAYS, null).a * clr('steady') })
-            // the "stays" bracket: from 12 px (screen) right of "settled" to the plot's end; its ticks end 16 px over the mint
-            // edge's top, ink to ink (the edge 3 px, the bracket 2), its line 8 px higher (F-hold's scale)
+            // the "stays" bracket: from 12 px (screen) right of "settled" to the plot's end, ink to ink (its tick's 1 px half
+            // stroke beyond the 12, F-01); its ticks end 16 px over the mint edge's top, ink to ink (the edge 3 px, the
+            // bracket 2), its line 8 px higher (F-hold's scale)
             const FS_ = FH.s, tb = P(t, STAYS, 0.6, 'power2.inOut')
             const tyEnd = band.top - 1.5 - 1 - 16.2 / FS_, ty = tyEnd - 8 / FS_
-            const bx0 = fx + setW / 2 + 12 / FS_
+            const bx0 = fx + setW / 2 + 12 / FS_ + 1
             topBr.setAttribute('d', `M${f2(bx0)} ${f2(tyEnd)} L${f2(bx0)} ${f2(ty)} L${f2(ch.G.x1)} ${f2(ty)} L${f2(ch.G.x1)} ${f2(tyEnd)}`)
             topBr.setAttribute('stroke-dashoffset', (1 - tb).toFixed(4))
             topBr.setAttribute('opacity', (tb > 0 ? clr('marks') : 0).toFixed(3))

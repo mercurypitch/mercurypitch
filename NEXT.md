@@ -4585,3 +4585,10 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   with "do Group X of briefs/l5-fix-F-01.md". Then film-draft-02 (production builder (builder),
   same as part 2 of briefs/l5-integration.md, to renders/film-draft-02.mp4), the lead's check, the
   owner's look.
+
+## 18:29 UTC, 19 Nov
+- ROOT FIX HANDED BACK and ACCEPTED (DECISIONS 234): L.passFrame in hosts.js; the hop jump and lag
+  gone at 30 and 60 fps on the film's own timing (landings 700/1290); probes 1556/1556, check 0
+  errors. HANDOFFS notes the rule; group E's brief section now also moves s13's mercSeen check to it.
+- FULL-FILM FIX ROUND: GROUP A STARTED (in the kit builder's slot). Heavy now: groups C and A.
+  Queue: group D, group B, group E; then film-draft-02, the lead's check, the owner's look.

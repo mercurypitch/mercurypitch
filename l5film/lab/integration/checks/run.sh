@@ -1,6 +1,9 @@
 #!/bin/bash
 # every scene's check on the live project after the integration kit fixes, then the root's (0 errors each)
+# run.sh <project> [<out dir> = lab/integration/checks]
 cd "$1"
+O=${2:-lab/integration/checks}
+mkdir -p "$O"
 declare -A A=(
   [s01-cold-open]=31.8,32.05,32.2,33.0,36.9 [s02-title]=1.5,2.2 [s03-promise]=2.3,5,8.4,9.7 [s04-recall]=3.3,8.3,10.9,12.0,13.6
   [s05-push]=1.2,10.92,21.0,23.25,33.62,35.55 [s06-diaphragm]=1.2,26.16,29.38,34.20,35.37,45.00,66.65 [s07-support]=0,1.92,7.80,12.08,19.05,34.00
@@ -10,8 +13,8 @@ declare -A A=(
 )
 for sid in s01-cold-open s02-title s03-promise s04-recall s05-push s06-diaphragm s07-support s08-breathe s09-onset s10-steady s11-sing s12-your-turn s13-recap s14-next s15-end; do
   node tools/lab.mjs $sid > /dev/null 2>&1
-  npx --yes hyperframes@0.8.97 check lab/$sid/proj --at=${A[$sid]} --json --max-issues=200 > lab/integration/checks/$sid.json 2> lab/integration/checks/$sid.err
+  npx --yes hyperframes@0.8.97 check lab/$sid/proj --at=${A[$sid]} --json --max-issues=200 > $O/$sid.json 2> $O/$sid.err
   echo "$sid exit $?"
 done
-npx --yes hyperframes@0.8.97 check --json --max-issues=200 > lab/integration/checks/root.json 2> lab/integration/checks/root.err
+npx --yes hyperframes@0.8.97 check --json --max-issues=200 > $O/root.json 2> $O/root.err
 echo "root exit $?"

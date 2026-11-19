@@ -1,5 +1,5 @@
-film 488-493 s at 30 fps (151 frames): L.passFrame differs from the renderer on 0; floor(30 ms) + floor(30 (t - ds)) on 0; floor(30 (t - ds + ms)) (before) on 151
-s13 alone, 0-65 s at 30 fps: L.passFrame differs from the renderer on 0 frames
-film 488-493 s at 60 fps (301 frames): L.passFrame differs from the renderer on 0; floor(30 ms) + floor(30 (t - ds)) on 151; floor(30 (t - ds + ms)) (before) on 0
-s13 alone, 0-65 s at 60 fps: L.passFrame differs from the renderer on 0 frames
-no render config (probe, preview), s13 alone at 30 fps: differs from the old reading on 0 frames
+film, 488 to 493 s at 30 fps (151 frames): frames read off the renderer's: L.passFrame 0 (page time to the microsecond: 0); before, floor((t - ds + ms) x 30) 151 (151); the proposal floor(30 ms) + floor(30 (t - ds)) (0)
+film, 488 to 493 s at 60 fps (301 frames): frames read off the renderer's: L.passFrame 0 (page time to the microsecond: 0); before, floor((t - ds + ms) x 30) 0 (0); the proposal floor(30 ms) + floor(30 (t - ds)) (151)
+s13 alone, 0 to 65 s at 30 fps (1951 frames): frames read off the renderer's: L.passFrame 0 (page time to the microsecond: 0); before, floor((t - ds + ms) x 30) 0 (0); the proposal floor(30 ms) + floor(30 (t - ds)) (650)
+s13 alone, 0 to 65 s at 60 fps (3901 frames): frames read off the renderer's: L.passFrame 0 (page time to the microsecond: 0); before, floor((t - ds + ms) x 30) 0 (650); the proposal floor(30 ms) + floor(30 (t - ds)) (2600)
+no render config (a probe, a preview), s13 alone at 30 fps: L.passFrame off a 30 fps render on 0 frames
