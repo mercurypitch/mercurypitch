@@ -4653,3 +4653,15 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   When it hands back and is accepted: DECISIONS 239 (E's round + follow-up, the calls above),
   HANDOFFS (drift 1.2 s from card end -0.32 -1.2; readout lights at plays + i(Keep-plays)/3;
   rest body lights on "Voice" and "your voice"; subLayers), then film-draft-02.
+
+## 20:13 UTC, 19 Nov
+- GROUP E FOLLOW-UP HANDED BACK and ACCEPTED, with E's round (DECISIONS 239; lead looked at
+  feet/after-readout.png and after-leave.png): foot steps end as their marks land (STEP_D 0.3, from
+  0.3 s before), panels lift with their last line; probe T.edges over 5,697 frames, none under 12 px.
+  HANDOFFS ([F-01 fix: 239]: the drift line rewritten, a group E paragraph before § The tease;
+  backup $S/handoffs-pre239.md). Every group's F-01 round is now accepted (234-239).
+- FILM-DRAFT-02 STARTED: production builder (builder) resumed with briefs/l5-film-draft-02.md
+  (renders/film-draft-02.mp4, review/film-02/, film-02-measure/, COMPARE.md). NEXT when it hands
+  back: the lead's check (COMPARE.md, the contact sheet, the cuts, a look at a few spots), fill
+  LEDGER's critic-F-01 "After", then the owner's look: send a small contact sheet + the mp4 path,
+  say what changed since draft-01 and what still waits (sound step, final voices and passes, 60 fps).

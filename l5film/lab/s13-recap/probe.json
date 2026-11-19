@@ -1933,5 +1933,61 @@
   "got": 813,
   "want": "<= 896",
   "pass": true
+ },
+ {
+  "t": 65.02350000000001,
+  "name": "the Voice Mirror card's foot steps end as the glyph or line they make room for lands (step, done, lands)",
+  "got": "31.675 31.975 31.975; 33.580 33.880 33.880; 36.550 36.850 36.850; 38.700 39.000 39.000; 39.900 40.200 40.200; 41.580 41.880 41.880; 46.255 46.555 46.555",
+  "want": "done <= lands",
+  "pass": true
+ },
+ {
+  "t": 65.02350000000001,
+  "name": "DECISIONS 229 on every frame: 5697 frames (the lab's 30 fps and the film's 30 and 60 fps) from 1.73 to 65.03",
+  "got": 5697,
+  "want": "> 0",
+  "pass": true
+ },
+ {
+  "t": 65.02350000000001,
+  "name": "the quick check's panel: its edges 12 px or more from every mark showing inside it (and the card's foot from the ten line), on each of its 2357 frames",
+  "got": "29.3 px, least at 7.897 (do many singing teachers aim for?)",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 65.02350000000001,
+  "name": "the quick check's panel: the frames under 12 px",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 65.02350000000001,
+  "name": "the Voice Mirror card: its edges 12 px or more from every mark showing inside it (and the card's foot from the ten line), on each of its 3178 frames",
+  "got": "12.0 px, least at 63.033 (the address's underline)",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 65.02350000000001,
+  "name": "the Voice Mirror card: the frames under 12 px",
+  "got": "none",
+  "want": "none",
+  "pass": true
+ },
+ {
+  "t": 65.02350000000001,
+  "name": "the rest card: its edges 12 px or more from every mark showing inside it (and the card's foot from the ten line), on each of its 1252 frames",
+  "got": "13.1 px, least at 64.413 (question line 1)",
+  "want": ">= 12",
+  "pass": true
+ },
+ {
+  "t": 65.02350000000001,
+  "name": "the rest card: the frames under 12 px",
+  "got": "none",
+  "want": "none",
+  "pass": true
  }
 ]

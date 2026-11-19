@@ -104,7 +104,10 @@
           const DRIFT_D = 1.2, DRIFT = LEAVE - DRIFT_D
           // S13 to S14: the bead's carry, one curve both scenes draw from film time (L.TEASE.carry's own start)
           const CARRY0 = at('next', 'start', -0.92)
-          const FEET = [PRACT, ...ROWS.map((r) => r - GLYPH_LEAD), READ, KEEP, SORE, FREE]   // the card's foot steps, VM.panel.feet
+          // the card's foot steps (VM.panel.feet), each 0.3 s, power2.out, done before the line it makes room for shows, so the
+          // foot never sweeps through a landing line (DECISIONS 229: 12 px on every frame): a row's step ends as its glyph lands
+          const STEP_D = 0.3
+          const FEET = [PRACT, ...ROWS.map((r) => r - GLYPH_LEAD - STEP_D), READ - STEP_D, KEEP - STEP_D, SORE - STEP_D, FREE - STEP_D]
 
           /* ---------------------------------------------------------------- the frame (world): from F-turn's pixels to the
              recap frame (L.RECAP), only Merc's line on it until it has landed (L.RECAP.voiceOK) */
@@ -238,7 +241,7 @@
           const probe = { cam, ch, cardsLayer, bandRects, anyOct, inBand, tag, flag, fig, traces, traceNames, trTag, kicker, panel, ring, Qs, ans1, ans3, ans4,
             nameLayers, vmG, restG, vmPanel, practise, vmTitle, vmRule, rows, readout, keep, sore, free, freeUl, ten, restPanel, restQ, restTitle, restBody, restAddr, restUl, bead,
             A: { SLIDE, SLIDE_D, DIM, DIM_D, KICK, Q1, FIG, FIG_D, ANS1, BREATH_D, Q3, TRACES, TRACES_D, TOG, Q4, BACK, BACK_D, SETTLES, LINE_K, ENTRY, SETTLED, LIT, FLAG, ANS4,
-              BREAK, CASCADE, REDRAW, DONE, HOLD_MIN, DIM_TO, TR_OUT, TR_OUT_D, FIG_K, FIG_X0, FIG_Y0, FIG_FADE, TR_S, TR_DX, TR_DY, OUT, HOP1, HOP2, PRACT, VMT, ROWS, GLYPH_LEAD, READ, READ_LIT, LIT_D, KEEP, SORE, FREE, UL, TEN, REST, RTITLE, RBODY, RBODY_LIT, RADDR, DRIFT, DRIFT_D, LEAVE, LEAVE_STEP, LEAVE_D, CARRY0, D, T0 },
+              BREAK, CASCADE, REDRAW, DONE, HOLD_MIN, DIM_TO, TR_OUT, TR_OUT_D, FIG_K, FIG_X0, FIG_Y0, FIG_FADE, TR_S, TR_DX, TR_DY, OUT, HOP1, HOP2, PRACT, VMT, ROWS, GLYPH_LEAD, STEP_D, FEET, READ, READ_LIT, LIT_D, KEEP, SORE, FREE, UL, TEN, REST, RTITLE, RBODY, RBODY_LIT, RADDR, DRIFT, DRIFT_D, LEAVE, LEAVE_STEP, LEAVE_D, CARRY0, D, T0 },
             boxes: {} }
           window.__sceneProbe = window.__sceneProbe || {}
           window.__sceneProbe[SID] = probe
@@ -327,11 +330,13 @@
             /* 13e, 13f: the Voice Mirror card under its own name, its foot easing down as its rows land */
             const drift = -RC.DRIFT * P(t, DRIFT, DRIFT_D, 'sine.inOut')
             cardsLayer.style.transform = `translate3d(0px, ${drift.toFixed(3)}px, 0px)`
-            const foot = L.track(t, VM.panel.feet[0], FEET.slice(1).map((tf, i) => ({ at: tf, dur: 0.3, to: VM.panel.feet[i + 1], ease: 'power2.out' })))
+            const foot = L.track(t, VM.panel.feet[0], FEET.slice(1).map((tf, i) => ({ at: tf, dur: STEP_D, to: VM.panel.feet[i + 1], ease: 'power2.out' })))
             const lv = (k) => { const o = leaveOf(t, k); return { a: 1 - o, dy: -12 * o } }
             const live = (tIn, k, d = 0.25) => { const o = lv(k); return { a: fadeIn(t, tIn, d) * o.a, dy: o.dy } }
             const vmOut = panelLeave(t, 'practise', 'ten')
-            vmPanel.draw({ a: fadeIn(t, PRACT, 0.3) * (1 - vmOut), y1: foot, dy: -12 * vmOut })
+            // each panel fades over its lines' sweep but lifts with its last line, so its foot never closes on a line still
+            // standing (DECISIONS 229)
+            vmPanel.draw({ a: fadeIn(t, PRACT, 0.3) * (1 - vmOut), y1: foot, dy: lv('free').dy })
             practise.draw(live(PRACT, 'practise'))
             const ti = live(VMT, 'title')
             vmTitle.draw(ti)
@@ -354,7 +359,7 @@
 
             /* 13g: the rest card beside it, b58's words; then both drift in `card` and leave in turn */
             const restOut = panelLeave(t, 'rq0', 'raddr')
-            restPanel.draw({ a: fadeIn(t, REST, 0.3) * (1 - restOut), dy: -12 * restOut })
+            restPanel.draw({ a: fadeIn(t, REST, 0.3) * (1 - restOut), dy: lv('raddr').dy })
             restQ.forEach((l, i) => l.draw(live(REST, 'rq' + i)))
             restTitle.draw(live(RTITLE, 'rtitle'))
             restBody.forEach((l, i) => { l.draw(live(RBODY, 'rb' + i)); l.el.setAttribute('fill', L.mixHex(C.ink2, C.ink, P(t, RBODY_LIT[i], LIT_D, 'none'))) })

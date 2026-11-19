@@ -12,13 +12,11 @@ File: `lab/s13-recap/parts/part-c-46.2-65.025.mp4`
 
 A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes by 16 or more. Target: at most about 1 s per 30 s in total and none longer than about 0.5 s; a hold that runs to the end (the final call to action) is reported separately and exempt.
 
-**Inside the film:** 1.6 s (2.5 s per 30 s), longest 0.4 s.
+**Inside the film:** 1.3 s (2.1 s per 30 s), longest 0.4 s.
 **Final hold:** none.
 
 | Starts | Length | Note |
 | --- | --- | --- |
-| 0.10 s | 0.2 s |  |
-| 3.20 s | 0.1 s |  |
 | 4.40 s | 0.1 s |  |
 | 5.70 s | 0.1 s |  |
 | 6.70 s | 0.1 s |  |
@@ -36,8 +34,8 @@ Runs where the mean change is below 0.35. Not an automatic fail: a critic looks 
 
 | Starts | Length | Largest change | Note |
 | --- | --- | --- | --- |
-| 0.00 s | 0.4 s | 43 |  |
-| 0.60 s | 4.0 s | 164 | small element moving |
+| 0.00 s | 0.4 s | 42 |  |
+| 0.60 s | 4.0 s | 165 | small element moving |
 | 5.00 s | 11.8 s | 166 | small element moving |
 
 1 shorter run(s) totalling 0.1 s are not listed; `motion.csv` has every sample.
@@ -46,11 +44,13 @@ Runs where the mean change is below 0.35. Not an automatic fail: a critic looks 
 
 From every frame at the film's own rate, by the share of pixels that change by more than 24 (at 960 px wide) against the changes either side. A jump changes once and stays: a large one is a cut, a small one is usually a whole-pixel snap in a slow move, and equal snaps come out as equal jumps. A pop differs from both of its neighbours: a flash, a missing element or a one-frame glitch. Look at each on a frame-exact sheet.
 
-None found.
+| Time | Kind | Mean change | Pixels changed |
+| --- | --- | --- | --- |
+| 1.167 s | pop | 0.08 | 0.06% |
 
 ## Loop seam
 
-From the last frame back to the first: 6.19 on the scale of `frames.csv`, against a median frame change of 0.034, a 95th percentile of 0.68 and a largest of 1.20 at 17.467 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
+From the last frame back to the first: 6.19 on the scale of `frames.csv`, against a median frame change of 0.036, a 95th percentile of 0.68 and a largest of 1.20 at 17.467 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
 
 ## Loudness
 

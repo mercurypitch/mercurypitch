@@ -1866,3 +1866,27 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      1.5 and S7 2.5 s per 30 s remain, every hold of 0.3 s or more in a pause, for the final passes
      (227). Probes 75, 307 and 112; checks 0 errors; the joins S5 to S6 and S7 to S8 and the S6 to S7
      cut hold. HANDOFFS § The gauge and § The mix-up card follow ([F-01 fix: 238]).
+
+## The lead's call on group E's full-film fix round, 19 November
+
+239. **Group E's F-01 round and its follow-up are accepted** (the lead looked at the readout and the
+     rest body lighting, pulled the readout's landing frame by frame from the clip and from draft-01,
+     and looked at the follow-up's frames through every foot step and the leave).
+     - The practise card's readout, which no voice reads, lands at ink-2 on "plays." and lights line
+       by line through the silence before "Keep" (0.3 s each, all lit before "Keep"). The rest card's
+       body lights on "Voice" and "your voice". Answers 3 and 4 stay as they land: their second lines
+       are said 0.5 and 0.89 s later, which is reading time, not a block shown whole.
+     - The type steps are gone: s13's trace names and s14's tease line and hook move in composited
+       layers. s13's cards drift 14 px over 1.2 s (sine.inOut, ending at `card`'s end - 0.32), not
+       the board's 2 s: at 2 s the layer still stepped, and six other curves were tried, each with
+       events.
+     - The lead's check found the Voice Mirror card's foot sweeping through each new line as it
+       landed, for about five frames each; draft-01 is the same (229). Each foot step now ends as
+       its mark lands, and each panel lifts with its last line as it leaves. The probe measures every
+       panel edge against every mark on every frame (5,697 frames at 30 and 60 fps); none is under
+       12 px.
+     - `mercSeen` reads `L.passFrame`. No hold of 0.3 s or more falls inside a word (s13 1.6 and s14
+       1.1 s per 30 s; s15, 6 s with no voice, 0.6 s). The 467.633 pop and the 477.467 jump (the
+       hosts' boxes and the timer's row) stand for the film's measure.
+     - Probes 283, 123 and 48; root check 0 errors; the cuts on `recap`, `next` and `end` hold.
+       HANDOFFS § Recap and practise follows ([F-01 fix: 239]).

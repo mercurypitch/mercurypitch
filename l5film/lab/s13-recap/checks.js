@@ -16,6 +16,7 @@
     rest: A.RADDR + 0.8, drift: A.CARRY0, leave: A.LEAVE + 0.5, last: A.D - 0.0005,
     nameRise: A.TRACES + 0.2 + 0.1 * 2, read1: A.READ + 0.31, readAll: A.READ_LIT[2] + A.LIT_D + 0.005, body1: A.RBODY + 0.35, bodyAll: A.RBODY_LIT[1] + A.LIT_D + 0.005,
     driftPre: A.DRIFT - 0.005, driftMid: A.DRIFT + A.DRIFT_D / 2, driftEnd: A.LEAVE - 0.0005,
+    edges: A.D - 0.0015,
   }
   const root = document.getElementById(sid + '-scene')
   const R = H.R
@@ -60,6 +61,56 @@
   const chartA = () => +S.ch.g.getAttribute('opacity')
   const panelBox = (p) => R(p.g)
   const ringBox = () => { const c = S.ring.g.querySelector('circle'); return R(c) }
+  // DECISIONS 229 on every frame: each panel's edges (the stroke's line) 12 px or more from the ink of every mark that
+  // shows inside it (its type, the rows' glyphs, the underlines), and the Voice Mirror card's foot from the ten line under
+  // it. "Shows" is any opacity at all: the SVG attributes and the HTML layers' CSS, multiplied once each.
+  const shown = (el) => {
+    let a = 1
+    for (let e = el; e && e.nodeType === 1; e = e.parentNode) {
+      if (e.getAttribute('display') === 'none') return 0
+      if (e instanceof SVGElement) { if (e.hasAttribute('opacity')) a *= +e.getAttribute('opacity') } else a *= +getComputedStyle(e).opacity
+    }
+    return a
+  }
+  const EDGE_MIN = 12
+  const edgeSets = () => [
+    { box: 'the quick check\'s panel', p: S.panel.g, inside: S.Qs.flat().map((l) => ({ k: l.el.textContent, el: l.el, text: true })) },
+    { box: 'the Voice Mirror card', p: S.vmPanel.g, inside: [
+      { k: 'Practise it.', el: S.practise.el, text: true }, { k: 'Voice Mirror', el: S.vmTitle.el, text: true },
+      ...S.rows.flatMap((r, i) => [{ k: 'row ' + (i + 1), el: r.lab.el, text: true }, { k: 'row ' + (i + 1) + '\'s glyph', el: r.glyph.g }]),
+      ...S.readout.map((l, i) => ({ k: 'readout line ' + (i + 1), el: l.el, text: true })),
+      { k: 'Keep', el: S.keep.el, text: true }, { k: 'Sore', el: S.sore.el, text: true }, { k: 'Free', el: S.free.el, text: true }, { k: 'the address\'s underline', el: S.freeUl }],
+    under: [{ k: 'the ten line', el: S.ten.el, text: true }] },
+    { box: 'the rest card', p: S.restPanel.g, inside: [
+      ...S.restQ.map((l, i) => ({ k: 'question line ' + (i + 1), el: l.el, text: true })), { k: 'Rest today', el: S.restTitle.el, text: true },
+      ...S.restBody.map((l, i) => ({ k: 'body line ' + (i + 1), el: l.el, text: true })), { k: 'the address', el: S.restAddr.el, text: true }, { k: 'the address\'s underline', el: S.restUl }] },
+  ]
+  const edgeGaps = (t, worst) => {
+    for (const s of edgeSets()) {
+      if (shown(s.p) <= 0) continue
+      const b = R(s.p), w = worst[s.box] || (worst[s.box] = { gap: Infinity, at: null, what: '', n: 0, under: [] })
+      w.n++
+      const look = (it, gap) => {
+        if (gap < w.gap) { w.gap = gap; w.at = t; w.what = it.k }
+        if (gap < EDGE_MIN - 0.05) w.under.push({ t, k: it.k, gap })
+      }
+      for (const it of s.inside) {
+        if (shown(it.el) <= 0) continue
+        const r = it.text ? inkOf(it.el) : R(it.el)
+        if (!(r.width > 0)) continue
+        look(it, r.top - b.top); look(it, b.bottom - r.bottom)
+      }
+      for (const it of s.under || []) if (shown(it.el) > 0) look(it, inkOf(it.el).top - b.bottom)
+    }
+  }
+  // the frames: the lab's own (k / 30) and the film's (k / 60 less the scene's film start, which also gives its 30 fps
+  // frames), from the quick check's panel to the cards' last frame
+  const sweepFrames = (() => {
+    const f = new Set(), lo = A.Q1, hi = A.D
+    for (let k = Math.ceil(lo * 30); k / 30 <= hi; k++) f.add(+(k / 30).toFixed(6))
+    for (let n = Math.ceil((A.T0 + lo) * 60); n / 60 - A.T0 <= hi; n++) f.add(+(n / 60 - A.T0).toFixed(6))
+    return [...f].sort((a, b) => a - b)
+  })()
   window.__groupB = {
     times: Object.values(T),
     check(t) {
@@ -276,6 +327,25 @@
         const want = t === T.driftPre ? 0 : t === T.driftMid ? -7 : -14
         out.push({ name: `13g: the cards' drift (1.2 s, sine.inOut, ending as the leave starts; DECISIONS 233): ${t === T.driftPre ? 'not yet' : t === T.driftMid ? 'half way' : 'done'}`, got: d.toFixed(3), want: want.toFixed(3), pass: Math.abs(d - want) < 0.05 },
           { name: 'the drift\'s timing from the clock: from the leave less 1.2 s to the leave', got: `${A.DRIFT.toFixed(3)} to ${(A.DRIFT + A.DRIFT_D).toFixed(3)}; leave ${A.LEAVE.toFixed(3)}`, want: 'ends at the leave', pass: Math.abs(A.DRIFT + A.DRIFT_D - A.LEAVE) < 1e-9 }, ...common())
+      }
+      if (t === T.edges) {
+        const tl = window.__timelines[sid], worst = {}
+        for (const f of sweepFrames) { tl.seek(f, false); edgeGaps(f, worst) }
+        tl.seek(t, false)
+        // each foot step done before the mark it makes room for shows: a row's glyph, the readout, Keep, Sore, Free
+        const shows = [...A.ROWS.map((r) => r - A.GLYPH_LEAD), A.READ, A.KEEP, A.SORE, A.FREE]
+        out.push({ name: 'the Voice Mirror card\'s foot steps end as the glyph or line they make room for lands (step, done, lands)', got: A.FEET.slice(1).map((f, i) => `${f.toFixed(3)} ${(f + A.STEP_D).toFixed(3)} ${shows[i].toFixed(3)}`).join('; '), want: 'done <= lands', pass: A.FEET.slice(1).every((f, i) => f + A.STEP_D <= shows[i] + 1e-9) })
+        out.push({ name: `DECISIONS 229 on every frame: ${sweepFrames.length} frames (the lab's 30 fps and the film's 30 and 60 fps) from ${A.Q1.toFixed(2)} to ${A.D.toFixed(2)}`, got: sweepFrames.length, want: '> 0', pass: sweepFrames.length > 0 })
+        for (const [box, w] of Object.entries(worst)) {
+          out.push({ name: `${box}: its edges ${EDGE_MIN} px or more from every mark showing inside it (and the card's foot from the ten line), on each of its ${w.n} frames`, got: `${w.gap.toFixed(1)} px, least at ${w.at != null ? w.at.toFixed(3) : '-'} (${w.what})`, want: `>= ${EDGE_MIN}`, pass: w.gap >= EDGE_MIN - 0.05 })
+          // the frames under it, as runs (from, to, what, least gap)
+          const runs = []
+          for (const u of w.under) {
+            const r = runs[runs.length - 1]
+            if (r && r.k === u.k && u.t - r.to < 0.04) { r.to = u.t; r.gap = Math.min(r.gap, u.gap) } else runs.push({ from: u.t, to: u.t, k: u.k, gap: u.gap })
+          }
+          out.push({ name: `${box}: the frames under ${EDGE_MIN} px`, got: runs.length ? runs.map((r) => `${r.from.toFixed(3)}-${r.to.toFixed(3)} ${r.k} ${r.gap.toFixed(1)}`).join('; ') : 'none', want: 'none' })
+        }
       }
       if (t === T.last) {
         const c = L.TEASE.carry(A.T0 + t, A.T0 + A.CARRY0), b = R(S.bead.core)

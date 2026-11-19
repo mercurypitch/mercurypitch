@@ -668,8 +668,9 @@ fade with the ring, and the band, Merc's line and "Nothing listens" stay **[D-01
   baselines 296 and 332 (528.01); "Rest today" serif italic 72, ink, 416 (530.59); "Voice Mirror
   will be here when" / "your voice feels comfortable:" Outfit 500 30, ink, 470 and 508 (531.46);
   "mercurypitch.com/mirror" Outfit 600 36, 566, underlined at y 576 (535.77).
-- **The drift** (card): both cards and their lines move up 14 px together, 537.92 to 539.92,
-  sine.inOut (whole-pixel steps are not allowed: draw at sub-pixel positions).
+- **The drift** (card): both cards and their lines move up 14 px together, sine.inOut (whole-pixel
+  steps are not allowed: draw at sub-pixel positions). **[F-01 fix: 239]** It runs 1.2 s, not 2 s,
+  ending at `card`'s end - 0.32 (film 525.325 to 526.525); the cards stand for `card`'s first 0.48 s.
 
 - **Group E's fix round** **[E-01 fix: 223]**: the recap's figure at k 0.9 (x 1300.5 to 1489.5, crown
   y 63, masked by 531) and its traces at 1.2 times (x 1136 to 1688, centres 170, 314, 458; names
@@ -679,6 +680,17 @@ fade with the ring, and the band, Merc's line and "Nothing listens" stay **[D-01
   0.5 s; the clean break's cascade starts at `break` + 0.2, the kicker, panel, answer and frame
   0.07 s apart, 0.3 s each, the recap gone before hop 1's apex. S14's rows and outlines fade in
   from its first frame over 0.6 s; the carried bead stays filled until its note lights it.
+
+- **Group E's full-film fix round** **[F-01 fix: 239]** (film times):
+  - The readout lands at ink-2 on "plays." and lights line by line to ink at plays + i (Keep -
+    plays) / 3 (501.37, 501.77, 502.17), 0.3 s linear each, staying lit. No voice reads it.
+  - The rest card's body lands at ink-2 on "Voice"; line 1 lights then (518.185), line 2 on "your
+    voice" (519.975).
+  - The card's foot steps (each row's glyph, the readout, "Keep", "Sore", "Free") last 0.3 s and
+    end as the mark they make room for lands. At the leave each panel lifts with its last line
+    (Voice Mirror card 527.005 to 527.205, rest card 526.885 to 527.085). No panel edge comes
+    within 12 px of a mark inside it on any frame.
+  - s13's trace names and s14's tease line and hook move in their own composited layers.
 
 ### The tease and the end card
 

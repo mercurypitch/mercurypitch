@@ -141,11 +141,86 @@ Proof is in each `cut-<which>/`: `cutdiff.txt`, `steps.txt` and `sheet.png`. She
 
 The `recap` window's 0.4 s hold is S12's last 0.4 s, which stands still once the band is back at full, with the hosts hidden in the probe.
 
+### 5. Follow-up: the Voice Mirror card's foot (DECISIONS 229)
+
+The lead's calls on this round's questions:
+- The drift at 1.2 s is accepted.
+- The readout lighting through the silence before "Keep" is accepted.
+- Answers 3 and 4 stay: a lead of under a second is reading time.
+- The 467.633 pop and the 477.467 jump stand; the film's measure lists them.
+
+The coordinator's call. In s13, the card's foot steps (`FEET`) started on the same frame as the type they make room for (READ, KEEP, SORE and FREE). The rows' glyphs landed on their step too. So the panel's bottom edge swept down through each new line as it faded in.
+
+The fix starts each step early, keyed off the clock: the step is done as the mark it makes room for lands. The type does not move.
+- `compositions/s13-recap.html` lines 107 to 110 (the comment and the two constants): `STEP_D = 0.3`; `FEET = [PRACT, ...ROWS.map((r) => r - GLYPH_LEAD - STEP_D), READ - STEP_D, KEEP - STEP_D, SORE - STEP_D, FREE - STEP_D]`.
+- Line 333: the step's duration is `STEP_D`.
+- The readout still lands on "plays." (39.00) and still lights at 39.00, 39.40 and 39.80, all lit before "Keep" (40.20).
+
+| Step | Scene time | Film time | Lands |
+| --- | --- | --- | --- |
+| row 1 (300 to 360) | 31.675 to 31.975 | 494.045 to 494.345 | its glyph 31.975, its words 32.23 |
+| row 2 (to 420) | 33.580 to 33.880 | 495.950 to 496.250 | glyph 33.88, words 34.13 |
+| row 3 (to 480) | 36.550 to 36.850 | 498.920 to 499.220 | glyph 36.85, words 37.10 |
+| the readout (to 617) | 38.700 to 39.000 | 501.070 to 501.370 | 39.00 |
+| Keep (to 674) | 39.900 to 40.200 | 502.270 to 502.570 | 40.20 |
+| Sore (to 719) | 41.580 to 41.880 | 503.950 to 504.250 | 41.88 |
+| Free (to 777) | 46.255 to 46.555 | 508.625 to 508.925 | 46.555 |
+
+**The leave** had the same fault. Each panel lifted 12 px over its lines' whole sweep, so the Voice Mirror card's foot closed on "Free" and its underline while they still stood (64.163 to 64.713, down to 3.9 px).
+- Now each panel fades as before but lifts with its last line: lines 339 and 362, `dy: lv('free').dy` and `lv('raddr').dy`.
+- The Voice Mirror card lifts from 64.635 to 64.835 (film 527.005 to 527.205); the rest card from 64.515 to 64.715 (film 526.885 to 527.085).
+
+**Every other moving edge in s13 to s15:**
+- The quick check's panel never moves. Its questions swap 12 px inside it; the least gap is 29.3 px.
+- The rest card is a fixed size. Its only motion is the leave; its least gap is 13.1 px (15.8 before).
+- s13's traces have no box; their ILLUSTRATION chip is a static pill.
+- s14 and s15 have no panels: the tease figure scales whole, and the lockup is revealed by its wipe.
+
+**The probe** (`lab/s13-recap/checks.js`, `T.edges`) seeks every frame from the quick check's panel (1.73) to the last frame: the lab's 30 fps and the film's 30 and 60 fps, 5697 frames. On each it measures every panel's edges (the stroke's line) against the ink of every mark that shows inside it at any opacity (type, glyphs, underlines), and the card's foot against the ten line under it.
+
+| Box | Before | After |
+| --- | --- | --- |
+| The Voice Mirror card | Under 12 px at 31.980 to 32.133 (row 1's glyph, -39.0), 33.897 to 34.000 (row 2's glyph, -26.5), 36.863 to 36.947 (row 3's glyph, -24.4), 32.23 and 37.11 (rows 1 and 3, 11.8 and 11.9), 39.013 to 39.233 (the readout, -106.5), 40.213 to 40.467 (Keep, -37.7), 41.897 to 42.147 (Sore, -25.9), 46.563 to 46.730 (Free, -37.3), 64.163 to 64.713 (Free and its underline, 3.9) | No frame under 12 px. Least 12.0 px: the address's underline at rest (763 to 765 against the foot at 777) |
+| The rest card | Least 15.8 px | Least 13.1 px (question line 1 rising in the leave) |
+| The quick check's panel | Least 29.3 px | Least 29.3 px |
+
+- Logs: `fix-F-01/edges-before.log` and `edges-after.log`. The renders and checks after it are in `fix-F-01/feet/proof.sh` and `proof-run.log`, and its logs are in `fix-F-01/feet/`. The old clip, measures and parts are in `fix-F-01/feet/old/`.
+- The probe also checks each step's times against its landing.
+- Frames every 1/30 s through each growth and the leave, before and after: `lab/s13-recap/fix-F-01/feet/before-<step>.png` and `after-<step>.png`, for row1, row2, row3, readout, keep, sore, free and leave (`tools/stepframes.py`, picked by frame number).
+
+**After the follow-up** (s13 rendered again with the scratch voice; parts cut from it):
+
+| Check | Result |
+| --- | --- |
+| Probe, s13 | 283 checks, 0 FAIL (275 before, plus the step times, the sweep and its runs) |
+| Root `check` | 0 errors; Check passed; 67/67 text checks AA. Warnings as before, s13 now 385 lines |
+| Contrast, s13 at 31.9, 38.85, 39.05, 40.05, 46.6 | 34/34 AA, layout 0 issues |
+| clock-lint | silent (exit 0) |
+| `merc-tags --check` | 12 tags, 0 stale, 0 problems |
+
+measure.py:
+
+| Clip | Holds | Events |
+| --- | --- | --- |
+| s13 | 3.4 s (1.6 s per 30 s), longest 0.2 s; was 3.8 s (1.8), longest 0.3 s | as before, plus 47.367 pop 0.06 %: in the hosts' boxes (x 1194 to 1816, y 662 to 802), not the cards; it came and went between renders before (E-01) |
+| part a | unchanged in code; 1.3 s per 30 s, longest 0.2 s; -20.0 LUFS | as before |
+| part b | 1.6 s per 30 s, longest 0.3 s, final 0.1 s; -19.7 LUFS; was 1.7 s | none (the trim's 19.233 jump is gone) |
+| part c | 2.1 s per 30 s, longest 0.4 s (55.40, the pause before "Voice", as before); -20.1 LUFS; was 2.5 s | 1.167 (47.367) pop 0.06 %, the hosts' |
+
+There is still no hold of 0.3 s or more inside a word (`fix-F-01/holds.txt`).
+
+**The cuts:**
+- Part a's code is unchanged, so `recap` stands as proved.
+- `next` was proved again, since s13's last 0.5 s now lift the panels differently. The bead moves 0.280 px; the steps are 17.58, 19.40 | 20.75, 22.25, 21.49 px; no event (`lab/s14-next/cut-next/`).
+- `end` is untouched.
+
+The probe stills and clip stills were made again, with new clip stills at 31.80, 32.10, 38.85, 40.05, 41.73, 46.40, 46.60 and 64.60.
+
 ### After the fixes
 
 | Check | Result |
 | --- | --- |
-| Probes | 275 (s13) + 123 (s14) + 48 (s15), 0 FAIL |
+| Probes | 275 (s13; 283 after the follow-up, item 5) + 123 (s14) + 48 (s15), 0 FAIL |
 | Root `check` | 0 errors; Check passed; 67/67 text checks AA. My warnings are as before: `duplicate_media_discovery_risk` on all three, and `composition_file_too_large` on s13, now 380 lines. |
 | Contrast, s14 at 1.9, 7.7, 10.3, 14.2, 15.6 | 12/12 AA |
 | Contrast, s15 at 1.2, 3.0, 6.1 | 15/15 AA, layout 0 issues |
@@ -425,7 +500,7 @@ The camera stays at F0; every move belongs to an object.
 | 13d | "It settles into the band / and stays there." | `word('b54','band')` |
 | 13e | The clean break: the kicker, panel, answer and frame leave up fast in turn, 0.07 s apart | `at('break','start',0.2)` |
 | 13e | Hop 1 to (700, 840) and hop 2 to (1290, 840): the pass's crouch, then power1.in | `at('break','start',0.6)`, `at('break','start',1.25)` |
-| 13e | The Voice Mirror panel and "Practise it." The panel's foot steps through `VM.panel.feet` (0.3 s each, power2.out). | `word('b55','Practise')` |
+| 13e | The Voice Mirror panel and "Practise it." The panel's foot steps through `VM.panel.feet` (0.3 s each, power2.out), each step done as the glyph or line it makes room for lands (F-01 follow-up) | `word('b55','Practise')`; each step at its mark's landing - 0.3 |
 | 13e | "Voice Mirror" and its rule | the panel + 0.4 |
 | 13e | Three rows, each glyph 0.25 s before its words | `word('b55','glide' / 'hold' / 'then')` |
 | 13e | The hold's readout (Inter 32, three lines at 523, 560, 597), landing whole at ink-2 | `word('b55','plays')` |
@@ -438,7 +513,7 @@ The camera stays at F0; every move belongs to an object.
 | 13g | The rest card: its panel and question, title, body and address | `word('b58', 'Felt' / 'Rest' / 'Voice' / 'mercurypitch')` |
 | 13g | The body lands whole at ink-2; line 1 lights as it lands, line 2 on "your voice" (0.3 s linear each; F-01, DECISIONS 228) | `word('b58','Voice')`, `word('b58','your voice')` |
 | 13g | Both cards drift up 14 px (sine.inOut, 1.2 s, ending as the lines leave; F-01) in a composited HTML layer | `at('card','end',-0.32)` - 1.2 |
-| 13g | The cards' lines leave up 12 px in turn, 0.03 s apart. Each panel fades over its lines' sweep. | `at('card','end',-0.32)` |
+| 13g | The cards' lines leave up 12 px in turn, 0.03 s apart. Each panel fades over its lines' sweep and lifts with its last line (F-01 follow-up). | `at('card','end',-0.32)` |
 | carry | The glyph's first dot hands over to the chrome bead in 0.1 s, which follows `L.TEASE.carry` in film time | `at('next','start',-0.92)` |
 
 ### Stills and clips

@@ -1,0 +1,8 @@
+row1 31.633 32.333 230,280,1110,380 row 1: its glyph lands 31.975, its words 32.23; the foot 300 to 360
+row2 33.533 34.233 230,340,1110,440 row 2: its glyph lands 33.88, its words 34.13; the foot 360 to 420
+row3 36.500 37.200 230,400,1110,500 row 3: its glyph lands 36.85, its words 37.10; the foot 420 to 480
+readout 38.667 39.333 230,440,1110,640 the readout lands 39.00; the foot 480 to 617
+keep 39.867 40.500 230,590,1110,690 Keep lands 40.20; the foot 617 to 674
+sore 41.533 42.167 230,635,1110,735 Sore lands 41.88; the foot 674 to 719
+free 46.233 46.833 230,690,1110,790 Free lands 46.555; the foot 719 to 777
+leave 64.133 64.900 230,560,1700,840 the leave from 64.155: each panel lifts with its last line
