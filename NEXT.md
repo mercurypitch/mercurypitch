@@ -4751,3 +4751,8 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 
 ## 17:52 UTC, 20 Nov
 - Lesson 6 script critic ((builder)) DIED on (model)-hour limit (resets 17:00 UTC); worker restarted (several times). Owner said "Continue". RESUMED the critic at 17:52 via SendMessage. Nothing else in flight. Lesson 5 still waits on the owner (voices yes; listen).
+
+## 18:04 UTC, 20 Nov
+- L6 SCRIPT CRITIC 01 RETURNED: ONE MORE PASS (saved verbatim to l6film/review/script-01/REPORT.md; it could not write). Top items: the turn leads a resting viewer into a second higher turn (care); Merc seems to correct Tavi when right; ch5 never sounds the fifth; the swap heard once; cold open spends its tension; ch3 re-proves the cold open; practise card has no single action.
+- LEAD CALLS written: l6film/LEAD-ANSWERS.md section "Calls on script round 01" (all taken; practise card in two beats; tease words stay the owner series text; length under 9:20).
+- WRITER FIX ROUND STARTED: resumed (builder). NEXT: lead checks the fix, then script critic 02 (the LAST before the storyboard), then storyboard.
