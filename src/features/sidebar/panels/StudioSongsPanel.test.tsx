@@ -115,32 +115,88 @@ describe('Studio songs rail', () => {
     ).not.toHaveAttribute('aria-current')
   })
 
-  it('says why it cannot switch, and holds every row until it can', () => {
-    const [hold, setHold] = createSignal<string | null>(
-      'Stop the take to switch songs.',
-    )
+  it('says why it cannot switch in a live region that stays mounted, and holds every other row until it can', () => {
+    const [hold, setHold] = createSignal<string | null>(null)
     const loan = lend({ hold })
     render(() => <StudioSongsPanel />)
+    const status = screen.getByRole('status')
+    expect(status).toHaveTextContent('')
 
-    expect(screen.getByRole('status')).toHaveTextContent(
-      'Stop the take to switch songs.',
-    )
+    setHold('Stop the take to switch songs.')
+    // The same element, now with the reason: a live region that appears
+    // with its text is often not read out.
+    expect(screen.getByRole('status')).toBe(status)
+    expect(status).toHaveTextContent('Stop the take to switch songs.')
     const row = screen.getByRole('button', { name: /^Harbour lights,/ })
-    expect(row).toBeDisabled()
+    expect(row).toHaveAttribute('aria-disabled', 'true')
     fireEvent.click(row)
     expect(loan.open).not.toHaveBeenCalled()
+    // The open song only comes forward, which nothing holds.
+    const open = screen.getByRole('button', { name: /^Window seat,/ })
+    expect(open).not.toHaveAttribute('aria-disabled')
+    fireEvent.click(open)
+    expect(loan.open).toHaveBeenCalledWith('one')
 
     setHold(null)
-    expect(screen.queryByRole('status')).toBeNull()
-    expect(row).toBeEnabled()
+    expect(status).toHaveTextContent('')
+    expect(row).not.toHaveAttribute('aria-disabled')
   })
 
-  it('holds the rows without a reason while a song opens', () => {
-    lend({ opening: () => true })
+  it('keeps the focus on a row pressed while a hold arrives, and stays held', () => {
+    const [opening, setOpening] = createSignal(false)
+    // The page's switch is still waiting: the open song has not changed.
+    const loan = lend({ opening, open: vi.fn(async () => {}) })
     render(() => <StudioSongsPanel />)
+    const row = screen.getByRole('button', { name: /^Sketch,/ })
+    row.focus()
 
-    expect(screen.getByRole('button', { name: /^Sketch,/ })).toBeDisabled()
-    expect(screen.queryByRole('status')).toBeNull()
+    fireEvent.click(row)
+    setOpening(true)
+
+    expect(row).not.toBeDisabled()
+    expect(row).toHaveAttribute('aria-disabled', 'true')
+    expect(document.activeElement).toBe(row)
+    expect(screen.getByRole('status')).toHaveTextContent('')
+    fireEvent.click(row)
+    expect(loan.open).toHaveBeenCalledOnce()
+  })
+
+  it('keeps each row, and its focus, when a save hands over a fresh list', () => {
+    const fresh = () => [
+      song('one', 'Window seat', 222, 1),
+      song('two', 'Harbour lights', 96, 4),
+    ]
+    const [songs, setSongs] = createSignal(fresh())
+    lend({ songs })
+    render(() => <StudioSongsPanel />)
+    const row = screen.getByRole('button', { name: /^Harbour lights,/ })
+    row.focus()
+
+    // A save of the open song: the same order, every summary a new object.
+    setSongs([fresh()[0], song('two', 'Harbour lights', 97, 5)])
+
+    const after = screen.getByRole('button', { name: /^Harbour lights,/ })
+    expect(after).toBe(row)
+    expect(document.activeElement).toBe(row)
+    expect(row).toHaveTextContent('5 lanes')
+  })
+
+  it('keeps the tour target in the page while the section is collapsed', () => {
+    localStorage.setItem('sidebar-studio-songs-open', 'false')
+    lend()
+    const { container } = render(() => <StudioSongsPanel />)
+
+    expect(
+      container.querySelector('[data-tour="studio.rail-songs"]'),
+    ).not.toBeNull()
+    expect(
+      screen.queryByRole('navigation', { name: 'Studio songs' }),
+    ).toBeNull()
+    expect(
+      container.querySelector(
+        '[data-tour="studio.rail-songs"] [data-collapsible="sidebar-studio-songs-open"]',
+      ),
+    ).not.toBeNull()
   })
 
   it('renders nothing without a Studio page, or without songs', () => {

@@ -10,7 +10,7 @@
 // of the shell chunk.
 
 import type { Component } from 'solid-js'
-import { For, Show } from 'solid-js'
+import { createMemo, For, Show } from 'solid-js'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
 import type { StudioProjectSummary } from '@/lib/studio/model/types'
 import { isPhoneStage } from '@/lib/use-viewport'
@@ -34,10 +34,14 @@ const SongGlyph: Component = () => (
 const SongRow: Component<{
   song: StudioProjectSummary
   loan: StudioSongsLoan
-  disabled: boolean
   onOpen: (id: string) => void
 }> = (props) => {
   const isOpen = () => props.song.id === props.loan.openId()
+  // A held switch waits on every other song; the open one only comes
+  // forward, which nothing holds. aria-disabled rather than disabled, so a
+  // row pressed with Enter keeps the focus when the hold arrives.
+  const held = () =>
+    !isOpen() && (props.loan.hold() !== null || props.loan.opening())
   const edited = () => songEdited(props.song.updatedAt)
   const length = () =>
     props.song.clipCount > 0 ? songDuration(props.song.durationFrames) : 'Empty'
@@ -57,9 +61,11 @@ const SongRow: Component<{
         class={styles.row}
         aria-label={label()}
         aria-current={isOpen() ? 'true' : undefined}
-        disabled={props.disabled}
+        aria-disabled={held() ? 'true' : undefined}
         title={props.song.title}
-        onClick={() => props.onOpen(props.song.id)}
+        onClick={() => {
+          if (!held()) props.onOpen(props.song.id)
+        }}
       >
         <span class={styles.glyph}>
           <SongGlyph />
@@ -100,40 +106,64 @@ const StudioSongsPanel: Component = () => {
 
   return (
     <Show when={studioSongs()}>
-      {(loan) => (
-        <Show when={loan().songs().length > 0}>
-          <CollapsibleSection
-            title="Your songs"
-            storageKey="sidebar-studio-songs-open"
-          >
-            <div class={styles.panel} data-tour="studio.rail-songs">
-              <Show when={loan().hold()}>
-                {(reason) => (
+      {(loan) => {
+        // Rows are keyed by song id: each save hands the page a fresh list
+        // of summaries, and keying by object would rebuild every row,
+        // dropping the focus and replaying the hover.
+        const byId = createMemo(
+          () =>
+            new Map(
+              loan()
+                .songs()
+                .map((song) => [song.id, song]),
+            ),
+        )
+        const ids = createMemo(() =>
+          loan()
+            .songs()
+            .map((song) => song.id),
+        )
+        return (
+          <Show when={ids().length > 0}>
+            {/* The tour's target holds the whole section, header included,
+                so it is there while the section is collapsed; the step's
+                reveal opens it. */}
+            <div data-tour="studio.rail-songs">
+              <CollapsibleSection
+                title="Your songs"
+                storageKey="sidebar-studio-songs-open"
+              >
+                <div class={styles.panel}>
+                  {/* Mounted with the section, empty until a hold: a live
+                      region that appears with its text is often not read. */}
                   <p class={styles.hold} role="status">
-                    {reason()}
+                    {loan().hold() ?? ''}
                   </p>
-                )}
-              </Show>
-              <Show when={listOnScreen()}>
-                <nav aria-label="Studio songs">
-                  <ul class={styles.list}>
-                    <For each={loan().songs()}>
-                      {(song) => (
-                        <SongRow
-                          song={song}
-                          loan={loan()}
-                          disabled={loan().hold() !== null || loan().opening()}
-                          onOpen={(id) => open(loan(), id)}
-                        />
-                      )}
-                    </For>
-                  </ul>
-                </nav>
-              </Show>
+                  <Show when={listOnScreen()}>
+                    <nav aria-label="Studio songs">
+                      <ul class={styles.list}>
+                        <For each={ids()}>
+                          {(id) => (
+                            <Show when={byId().get(id)}>
+                              {(song) => (
+                                <SongRow
+                                  song={song()}
+                                  loan={loan()}
+                                  onOpen={(picked) => open(loan(), picked)}
+                                />
+                              )}
+                            </Show>
+                          )}
+                        </For>
+                      </ul>
+                    </nav>
+                  </Show>
+                </div>
+              </CollapsibleSection>
             </div>
-          </CollapsibleSection>
-        </Show>
-      )}
+          </Show>
+        )
+      }}
     </Show>
   )
 }

@@ -7,16 +7,21 @@
 .panel {
   display: flex;
   flex-direction: column;
-  gap: 8px;
 }
 
-/* Why the page cannot switch now: said once above the rows it disables. */
+/* Why the page cannot switch now: said once above the rows it holds. The
+   live region stays mounted and takes no room while it is empty. */
 .hold {
   margin: 0;
-  padding: 2px 4px;
+  padding: 0 4px;
   font-size: 0.75rem;
   line-height: 1.45;
   color: var(--text-secondary);
+}
+
+.hold:not(:empty) {
+  margin-bottom: 8px;
+  padding: 2px 4px;
 }
 
 .list {
@@ -88,7 +93,7 @@
   transform: none;
 }
 
-.row:disabled {
+.row[aria-disabled='true'] {
   cursor: default;
   opacity: 0.55;
 }
@@ -191,48 +196,48 @@
    Under reduced motion the surface still marks the row, at once, and
    nothing moves. */
 @media (hover: hover) {
-  .row:hover:not(:disabled)::before {
+  .row:hover:not([aria-disabled='true'])::before {
     opacity: 1;
     transform: none;
   }
 }
 
 @media (hover: hover) and (prefers-reduced-motion: no-preference) {
-  .row:hover:not(:disabled) .glyph {
+  .row:hover:not([aria-disabled='true']) .glyph {
     transform: translateY(-1px) scale(1.06);
   }
 
-  .row:hover:not(:disabled) .body {
+  .row:hover:not([aria-disabled='true']) .body {
     transform: translateX(2px);
   }
 
-  .row:hover:not(:disabled) .glyph rect:nth-child(1) {
+  .row:hover:not([aria-disabled='true']) .glyph rect:nth-child(1) {
     transform: scaleY(1.6);
   }
 
-  .row:hover:not(:disabled) .glyph rect:nth-child(2) {
+  .row:hover:not([aria-disabled='true']) .glyph rect:nth-child(2) {
     transform: scaleY(0.5);
     transition-delay: 15ms;
   }
 
-  .row:hover:not(:disabled) .glyph rect:nth-child(3) {
+  .row:hover:not([aria-disabled='true']) .glyph rect:nth-child(3) {
     transform: scaleY(3.4);
     transition-delay: 30ms;
   }
 
-  .row:hover:not(:disabled) .glyph rect:nth-child(4) {
+  .row:hover:not([aria-disabled='true']) .glyph rect:nth-child(4) {
     transform: scaleY(0.6);
     transition-delay: 45ms;
   }
 
-  .row:hover:not(:disabled) .glyph rect:nth-child(5) {
+  .row:hover:not([aria-disabled='true']) .glyph rect:nth-child(5) {
     transform: scaleY(1.4);
     transition-delay: 30ms;
   }
 }
 
 @media (prefers-reduced-motion: no-preference) {
-  .row:active:not(:disabled) .glyph {
+  .row:active:not([aria-disabled='true']) .glyph {
     transform: scale(0.96);
   }
 }
