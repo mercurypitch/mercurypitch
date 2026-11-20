@@ -4684,3 +4684,22 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   -> 60 fps final render (check frame 0) -> deliverables. Weekly usage at "allowed_warning"
   (resets Thu 26 Nov 01:00 UTC): start nothing big before the owner's notes.
 - Hourly check-in DISABLED while waiting (nothing in flight); re-enable when work resumes.
+
+## 12:09 UTC, 20 Nov
+- OWNER: "Continue it did reset I guess, so now we have a lot of limits". Session still reports
+  seven_day "allowed_warning" (resets Thu 26 Nov 01:00 UTC) for (model); (model)'s weekly reset 19 Nov.
+  So: AGENTS ON (model) xhigh from now (Agent model "(model)"), the lead stays (model) max (owner's 18 Nov
+  instruction), lean lead turns.
+- S4 55.27/55.67: lead looked at frames 55.20-55.70 (e-check/s4/labels.png): no visible step,
+  ends of the landing moves. Closed (DECISIONS 241).
+- SOUND STEP STARTED (DECISIONS 242): (model) agent (builder) with $S/briefs/l5-sound.md
+  (mix.py sound_for for 13 sounds per FACTS 79/80 from the kit's own numbers, bed on A per 81,
+  pad through break + hop landing sounds, whooshes at 8 act marks, stings, ticks, captions, measure
+  to review/sound-01/, review cut renders/film-draft-02-sound.mp4, MIX=full gen-root + check).
+  NEXT when it hands back: the lead checks the tables + spectrogram spots; send the review cut to
+  the owner to LISTEN.
+- ASKED THE OWNER: final voices from their ElevenLabs voices (Merc "Merc V1 Gentle Whimsical D2",
+  Tavi's Orange Merc as Lesson 4), 5,640 characters (Merc 4,757 in 56 lines, Tavi 883 in 15), so
+  about 6k credits a pass plus retakes. Needs their yes (credits). Then re-time, final passes,
+  60 fps final render (check frame 0).
+- Hourly check-in RE-ENABLED.

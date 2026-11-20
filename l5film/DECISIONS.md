@@ -1905,3 +1905,18 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
        its swatch rise 12 px over 0.27 s): to the owner's polish list.
      - **S10's hold at 320.70** (0.3 s, 0.12 s of it inside "regular") goes to the final passes, with
        S8's and S9's (235).
+
+## The sound step begins, 20 November
+
+241. **S4's two label landings need no fix** (240's second item): the lead pulled draft-02's frames
+     55.20 to 55.70 at full size and 2x. "whisper" and "about speaking volume" hold their pixels from
+     frame to frame; the frames measure.py flags (55.267, 55.667) are the last steps of their landing
+     moves (1,984 and 3,837 pixels over 24, against 134 and 770 the frame after), not a type step.
+     Closed.
+242. **The sound step starts on the scratch voices** (the owner: "Continue"): the examples, the bed,
+     the effects, the stings, the mix and the captions, built in `tools/mix.py` and
+     `tools/captions.py` from FACTS 79 to 81 and 96 to 98 (brief `briefs/l5-sound.md`), every sound
+     keyed off `cues.json` so it re-times with the owner's voices. The review cut is draft-02's
+     picture with the new mix, not a new render. The builders now run on (model) at extra high effort:
+     this session's weekly (model) allowance is at its warning level until 26 November, and (model)'s has
+     reset.
