@@ -4807,3 +4807,19 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - App note for the owner (not acted on): Ear Lab has two things named "Leap", the tapped
   listening drill (Shape station) and a singing ear room.
 - Evidence in l6film/review/dev-walk-01/.
+
+## 20 Nov 20:27 UTC: storyboard critic 01 back (ONE MORE PASS); fix round started
+- CRITIC 01 ((builder)) returned ONE MORE PASS: 18 items + small ones, none structural
+  (answer complete only 0.32 s in the cold open; evidence type 24-30 px vs MASTER-PLAN's 48;
+  8i's eight events in 5 s; empty halves in 9b-9e, recap, tease; 12 px misses; frame 0 rings).
+  Saved verbatim: l6film/review/storyboard-01/REPORT.md (+ its work/ scripts).
+- LEAD'S CALLS 40-47 in LEAD-ANSWERS.md: all taken as proposed except: 48 px essential labels
+  (44 only where 48 cannot fit), nothing under 30; frame 0 filled chrome beads, no line/arrows;
+  recall stays off-screen voice; card order range-note above "then tap"; SECOND push-and-return
+  at chapter 4 `compare`; hook/fourth-fifth pauses unchanged; o14->end 0.6 s beat at RE-TIME
+  step; b29 wording stays; FACTS 87/93/§4/96 corrected in the fix round.
+- FIX ROUND: resumed the storyboard agent (builder) ((model) xhigh) with the round's
+  brief (in the SendMessage; keep its check scripts in l6film/tools/ this time). NEXT: lead
+  reads its hand-back, then STORYBOARD CRITIC 02 = THE LAST (fresh motion-critic, verification:
+  previous report path review/storyboard-01/REPORT.md, report to review/storyboard-02/), then
+  the lead's calls and the KIT STEP (seven new modules, STORYBOARD "For the kit step").
