@@ -4784,3 +4784,17 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - MODELS: lead (model) max; agents (model) xhigh ((model) weekly at warning until 26 Nov 01:00 UTC;
   (model) has a 5-hour limit: resume agents with SendMessage after it resets).
 - HEREDOCS: quote the delimiter when the text has backticks (a `break` got executed once).
+
+## 20 Nov 19:52 UTC: Lesson 6 storyboard back; storyboard critic 01 launched
+- STORYBOARD v1 HANDED BACK ((builder)): l6film/STORYBOARD.md (104 shot rows, groups A to
+  E), HANDOFFS.md, tools/board-cues.json (frozen, 530.640 s), DECISIONS 64-83. Paper only; root
+  not regenerated (scene table unchanged).
+- LEAD'S CALLS 25-37 in l6film/LEAD-ANSWERS.md: every recommendation taken (frame 0 = L5 tease
+  figure, outline beads, no line; hosts in corners; gold = the gaps that stay, BRIEF amended,
+  backup $S/l6-brief-pre-board.md; still camera ch 1/3/4/5; specimen; letter ladder; note
+  counter; recall asked off screen; three practise cards; title two sizes; staircase redrawn).
+- STORYBOARD CRITIC 01 LAUNCHED ((model) xhigh, motion-critic) (builder), brief
+  briefs/l6-storyboard-critic-01.md -> l6film/review/storyboard-01/REPORT.md (save verbatim if
+  it cannot write). NEXT: the lead's calls on it; a board fix round by the storyboard agent
+  (resume (builder)); critic 02 = the LAST (owner's two-turn rule); then the kit step.
+- If the critic stops on (model)'s 5-hour limit: resume it with SendMessage after the reset.
