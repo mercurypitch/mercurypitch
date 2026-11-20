@@ -1,0 +1,85 @@
+| Scene | Pass | Pass fps | Render fps | Film frames | Nearest pass-frame boundary | On another pass frame | Cut index from a whole frame |
+| ----- | ---- | -------- | ---------- | ----------- | --------------------------- | --------------------- | ---------------------------- |
+| s01-cold-open | m01-blue | 60 | 60 | 2308 | 7.83 ms | 0 | 0.0010 |
+| s01-cold-open | m01-orange | 60 | 60 | 2308 | 7.83 ms | 0 | 0.0010 |
+| s03-promise | m-orange | 60 | 60 | 83 | 7.83 ms | 0 | 0.4810 |
+| s04-recall | m-orange | 60 | 60 | 818 | 7.50 ms | 0 | 0.2010 |
+| s04-recall | m-blue | 60 | 60 | 454 | 7.83 ms | 0 | 0.4810 |
+| s05-push | m-orange | 60 | 60 | 2173 | 7.50 ms | 0 | 0.1010 |
+| s05-push | m-blue | 60 | 60 | 2173 | 7.50 ms | 0 | 0.1010 |
+| s06-diaphragm | m-orange | 60 | 60 | 4126 | 7.50 ms | 0 | 0.1990 |
+| s06-diaphragm | m-blue | 60 | 60 | 4126 | 7.50 ms | 0 | 0.1990 |
+| s07-support | m-orange | 60 | 60 | 2184 | 7.50 ms | 0 | 0.3010 |
+| s07-support | m-blue | 60 | 60 | 2184 | 7.50 ms | 0 | 0.3010 |
+| s08-breathe | m-orange | 60 | 60 | 1223 | 7.50 ms | 0 | 0.0990 |
+| s08-breathe | m-blue | 60 | 60 | 1223 | 7.50 ms | 0 | 0.0990 |
+| s09-onset | m-orange | 60 | 60 | 3424 | 7.50 ms | 0 | 0.1990 |
+| s09-onset | m-blue | 60 | 60 | 3424 | 7.50 ms | 0 | 0.1990 |
+| s10-steady | m-orange | 60 | 60 | 3665 | 7.50 ms | 0 | 0.3990 |
+| s10-steady | m-blue | 60 | 60 | 3665 | 7.50 ms | 0 | 0.3990 |
+| s11-sing | m-orange | 60 | 60 | 2350 | 7.50 ms | 0 | 0.1990 |
+| s11-sing | m-blue | 60 | 60 | 2350 | 7.50 ms | 0 | 0.1990 |
+| s12-your-turn | m-orange | 60 | 60 | 4607 | 7.50 ms | 0 | 0.3990 |
+| s12-your-turn | m-blue | 60 | 60 | 4607 | 7.50 ms | 0 | 0.3990 |
+| s13-recap | m-orange | 60 | 60 | 3901 | 7.50 ms | 0 | 0.1990 |
+| s13-recap | m-blue | 60 | 60 | 3901 | 7.50 ms | 0 | 0.1990 |
+| s14-next | m-orange | 60 | 60 | 952 | 7.50 ms | 0 | 0.3010 |
+| s14-next | m-blue | 60 | 60 | 952 | 7.50 ms | 0 | 0.3010 |
+| s15-end | m-orange | 60 | 60 | 372 | 7.50 ms | 0 | 0.1010 |
+| s15-end | m-blue | 60 | 60 | 372 | 7.50 ms | 0 | 0.1010 |
+60 fps passes in a 60 fps render: 63925 film frames over 27 tags, the nearest boundary 7.50 ms away, 0 on another pass frame
+54 Merc tags, 54 stale, 0 problems
+  stale: s01-cold-open: m01-blue
+  stale: s01-cold-open: m01-blue
+  stale: s01-cold-open: m01-orange
+  stale: s01-cold-open: m01-orange
+  stale: s03-promise: m-orange
+  stale: s03-promise: m-orange
+  stale: s04-recall: m-orange
+  stale: s04-recall: m-orange
+  stale: s04-recall: m-blue
+  stale: s04-recall: m-blue
+  stale: s05-push: m-orange
+  stale: s05-push: m-orange
+  stale: s05-push: m-blue
+  stale: s05-push: m-blue
+  stale: s06-diaphragm: m-orange
+  stale: s06-diaphragm: m-orange
+  stale: s06-diaphragm: m-blue
+  stale: s06-diaphragm: m-blue
+  stale: s07-support: m-orange
+  stale: s07-support: m-orange
+  stale: s07-support: m-blue
+  stale: s07-support: m-blue
+  stale: s08-breathe: m-orange
+  stale: s08-breathe: m-orange
+  stale: s08-breathe: m-blue
+  stale: s08-breathe: m-blue
+  stale: s09-onset: m-orange
+  stale: s09-onset: m-orange
+  stale: s09-onset: m-blue
+  stale: s09-onset: m-blue
+  stale: s10-steady: m-orange
+  stale: s10-steady: m-orange
+  stale: s10-steady: m-blue
+  stale: s10-steady: m-blue
+  stale: s11-sing: m-orange
+  stale: s11-sing: m-orange
+  stale: s11-sing: m-blue
+  stale: s11-sing: m-blue
+  stale: s12-your-turn: m-orange
+  stale: s12-your-turn: m-orange
+  stale: s12-your-turn: m-blue
+  stale: s12-your-turn: m-blue
+  stale: s13-recap: m-orange
+  stale: s13-recap: m-orange
+  stale: s13-recap: m-blue
+  stale: s13-recap: m-blue
+  stale: s14-next: m-orange
+  stale: s14-next: m-orange
+  stale: s14-next: m-blue
+  stale: s14-next: m-blue
+  stale: s15-end: m-orange
+  stale: s15-end: m-orange
+  stale: s15-end: m-blue
+  stale: s15-end: m-blue

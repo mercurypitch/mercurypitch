@@ -1,0 +1,2 @@
+[heavy] slot 1: python3 lab/passes-proto/coded.py make lab/passes-proto/final60/merc/m-blue-s04-merc.webm lab/passes-proto/final60/merc-coded/m-blue-s04-merc.webm
+lab/passes-proto/final60/merc-coded/m-blue-s04-merc.webm: 456 frames at 60 fps, 225x225; frame times the same as lab/passes-proto/final60/merc/m-blue-s04-merc.webm: True; every frame time is round(1000 i / 60) ms: True

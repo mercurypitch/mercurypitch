@@ -1,0 +1,59 @@
+| Scene | Pass | Pass fps | Render fps | Film frames | Nearest pass-frame boundary | On another pass frame | Cut index from a whole frame |
+| ----- | ---- | -------- | ---------- | ----------- | --------------------------- | --------------------- | ---------------------------- |
+| s01-cold-open | m01-blue | 30 | 30 | 1154 | 15.50 ms | 0 | 0.0010 |
+| s01-cold-open | m01-blue | 30 | 60 | 2307 | 0.50 ms | 1153 | 0.0010 |
+| s01-cold-open | m01-orange | 30 | 30 | 1154 | 15.50 ms | 0 | 0.0010 |
+| s01-cold-open | m01-orange | 30 | 60 | 2307 | 0.50 ms | 1153 | 0.0010 |
+| s03-promise | m-orange | 30 | 30 | 42 | 15.50 ms | 0 | 0.4890 |
+| s03-promise | m-orange | 30 | 60 | 84 | 0.50 ms | 84 | 0.0210 |
+| s04-recall | m-orange | 30 | 30 | 409 | 15.83 ms | 0 | 0.3990 |
+| s04-recall | m-orange | 30 | 60 | 818 | 0.17 ms | 818 | 0.2010 |
+| s04-recall | m-blue | 30 | 30 | 228 | 15.50 ms | 0 | 0.4910 |
+| s04-recall | m-blue | 30 | 60 | 455 | 0.50 ms | 227 | 0.0190 |
+| s05-push | m-orange | 30 | 30 | 1086 | 15.83 ms | 0 | 0.4490 |
+| s05-push | m-orange | 30 | 60 | 2173 | 0.17 ms | 2173 | 0.1010 |
+| s05-push | m-blue | 30 | 30 | 1086 | 15.83 ms | 0 | 0.4490 |
+| s05-push | m-blue | 30 | 60 | 2173 | 0.17 ms | 2173 | 0.1010 |
+| s06-diaphragm | m-orange | 30 | 30 | 2063 | 15.83 ms | 0 | 0.4010 |
+| s06-diaphragm | m-orange | 30 | 60 | 4126 | 0.17 ms | 2063 | 0.1990 |
+| s06-diaphragm | m-blue | 30 | 30 | 2063 | 15.83 ms | 0 | 0.4010 |
+| s06-diaphragm | m-blue | 30 | 60 | 4126 | 0.17 ms | 2063 | 0.1990 |
+| s07-support | m-orange | 30 | 30 | 1092 | 15.83 ms | 0 | 0.1510 |
+| s07-support | m-orange | 30 | 60 | 2184 | 0.17 ms | 1092 | 0.3010 |
+| s07-support | m-blue | 30 | 30 | 1092 | 15.83 ms | 0 | 0.1510 |
+| s07-support | m-blue | 30 | 60 | 2184 | 0.17 ms | 1092 | 0.3010 |
+| s08-breathe | m-orange | 30 | 30 | 612 | 15.83 ms | 0 | 0.4510 |
+| s08-breathe | m-orange | 30 | 60 | 1223 | 0.17 ms | 611 | 0.0990 |
+| s08-breathe | m-blue | 30 | 30 | 612 | 15.83 ms | 0 | 0.4510 |
+| s08-breathe | m-blue | 30 | 60 | 1223 | 0.17 ms | 611 | 0.0990 |
+| s09-onset | m-orange | 30 | 30 | 1712 | 15.83 ms | 0 | 0.0990 |
+| s09-onset | m-orange | 30 | 60 | 3424 | 0.17 ms | 3424 | 0.1990 |
+| s09-onset | m-blue | 30 | 30 | 1712 | 15.83 ms | 0 | 0.0990 |
+| s09-onset | m-blue | 30 | 60 | 3424 | 0.17 ms | 3424 | 0.1990 |
+| s10-steady | m-orange | 30 | 30 | 1832 | 15.83 ms | 0 | 0.1990 |
+| s10-steady | m-orange | 30 | 60 | 3665 | 0.17 ms | 3665 | 0.3990 |
+| s10-steady | m-blue | 30 | 30 | 1832 | 15.83 ms | 0 | 0.1990 |
+| s10-steady | m-blue | 30 | 60 | 3665 | 0.17 ms | 3665 | 0.3990 |
+| s11-sing | m-orange | 30 | 30 | 1175 | 15.83 ms | 0 | 0.4010 |
+| s11-sing | m-orange | 30 | 60 | 2350 | 0.17 ms | 1175 | 0.1990 |
+| s11-sing | m-blue | 30 | 30 | 1175 | 15.83 ms | 0 | 0.4010 |
+| s11-sing | m-blue | 30 | 60 | 2350 | 0.17 ms | 1175 | 0.1990 |
+| s12-your-turn | m-orange | 30 | 30 | 2304 | 15.83 ms | 0 | 0.3010 |
+| s12-your-turn | m-orange | 30 | 60 | 4607 | 0.17 ms | 2303 | 0.3990 |
+| s12-your-turn | m-blue | 30 | 30 | 2304 | 15.83 ms | 0 | 0.3010 |
+| s12-your-turn | m-blue | 30 | 60 | 4607 | 0.17 ms | 2303 | 0.3990 |
+| s13-recap | m-orange | 30 | 30 | 1950 | 15.83 ms | 0 | 0.0990 |
+| s13-recap | m-orange | 30 | 60 | 3901 | 0.17 ms | 3901 | 0.1990 |
+| s13-recap | m-blue | 30 | 30 | 1950 | 15.83 ms | 0 | 0.0990 |
+| s13-recap | m-blue | 30 | 60 | 3901 | 0.17 ms | 3901 | 0.1990 |
+| s14-next | m-orange | 30 | 30 | 476 | 15.83 ms | 0 | 0.1510 |
+| s14-next | m-orange | 30 | 60 | 952 | 0.17 ms | 476 | 0.3010 |
+| s14-next | m-blue | 30 | 30 | 476 | 15.83 ms | 0 | 0.1510 |
+| s14-next | m-blue | 30 | 60 | 952 | 0.17 ms | 476 | 0.3010 |
+| s15-end | m-orange | 30 | 30 | 186 | 15.83 ms | 0 | 0.0510 |
+| s15-end | m-orange | 30 | 60 | 372 | 0.17 ms | 186 | 0.1010 |
+| s15-end | m-blue | 30 | 30 | 186 | 15.83 ms | 0 | 0.0510 |
+| s15-end | m-blue | 30 | 60 | 372 | 0.17 ms | 186 | 0.1010 |
+30 fps passes in a 30 fps render: 31963 film frames over 27 tags, the nearest boundary 15.50 ms away, 0 on another pass frame
+30 fps passes in a 60 fps render: 63925 film frames over 27 tags, the nearest boundary 0.17 ms away, 45573 on another pass frame
+54 Merc tags, 0 stale, 0 problems

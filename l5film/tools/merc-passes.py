@@ -8,14 +8,25 @@ mirrors a pass.
 Reads merc/shots/*.json, the sidecars (and their roots, which tools/merc-roots.py writes to assets/merc/roots.js) assets/merc/<out>-merc.json (from merc-pass.mjs), the dumped
 frames in lab/merc/dump/ (the feet), cues.json and assets/scenes.js. Run it after the passes render,
 and again after every re-render (the 60 fps passes too).
+
+A lab's passes (merc/PASSES.md untouched): `--shots=<dir>` the shot files, `--merc=<dir>` the chunks'
+sidecars, `--dump=<dir>` the dumped frames, `--out=<file>` the guide. Without them nothing changes.
+The guide follows the shots: for the final passes (`profile: final`, tools/merc-shots.py --final) it
+gives their fps, the talk cycle, the breath in and the blinks, and the one-to-one frame timing.
 """
 import glob
 import json
 import os
 import statistics
+import sys
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.dirname(HERE)
+_opt = lambda name, default: next((a[len(name) + 3:] for a in sys.argv[1:] if a.startswith(f'--{name}=')), default)
+SHOTS_DIR = os.path.abspath(_opt('shots', os.path.join(ROOT, 'merc', 'shots')))
+MERC_DIR = os.path.abspath(_opt('merc', os.path.join(ROOT, 'assets', 'merc')))
+DUMP_DIR = os.path.abspath(_opt('dump', os.path.join(ROOT, 'lab', 'merc', 'dump')))
+OUT = os.path.abspath(_opt('out', os.path.join(ROOT, 'merc', 'PASSES.md')))
 CUES = json.load(open(os.path.join(ROOT, 'cues.json')))
 C = CUES['cues']
 _sj = open(os.path.join(ROOT, 'assets/scenes.js')).read()
@@ -33,7 +44,7 @@ def covered(a, b):
 
 
 def side(out_id):
-    p = os.path.join(ROOT, 'assets', 'merc', out_id + '-merc.json')
+    p = os.path.join(MERC_DIR, out_id + '-merc.json')
     return json.load(open(p)) if os.path.exists(p) else None
 
 
@@ -41,7 +52,7 @@ def feet():
     """Measured from every dumped frame whose root is at rest: the lowest opaque row (alpha >= 128),
     the body's opaque columns, as fractions of the frame, by drawn size."""
     by = {}
-    for path in glob.glob(os.path.join(ROOT, 'lab', 'merc', 'dump', '*.rgba')):
+    for path in glob.glob(os.path.join(DUMP_DIR, '*.rgba')):
         stem = os.path.basename(path)[:-5]
         out_id, f = stem.rsplit('-f', 1)
         s = side(out_id)
@@ -64,8 +75,10 @@ def sole_line(fb=None):
 
 
 def main():
-    shots = [json.load(open(p)) for p in sorted(glob.glob(os.path.join(ROOT, 'merc', 'shots', '*.json')))]
+    shots = [json.load(open(p)) for p in sorted(glob.glob(os.path.join(SHOTS_DIR, '*.json')))]
     shots.sort(key=lambda s: (s['filmStart'], s['id']))
+    final = bool(shots) and all(s.get('profile') == 'final' for s in shots)
+    pass_fps = shots[0]['fps'] if shots else 30
     L = []
     w = L.append
     w('# Merc\'s passes: a guide for the scene builders')
@@ -79,8 +92,13 @@ def main():
     w('')
     w('Three performances (STORYBOARD § Merc performances). Every pass is a straight-alpha VP9 WebM at')
     w('the pass\'s fps, its drawn square three quarters of its `size` (`medium`): 225 px for 300, 300 for')
-    w('400, 315 for 420. Pass frame i is film frame round(filmStart x fps) + i exactly. These are 30 fps')
-    w('passes on the scratch clock; the final 60 fps passes come after the final voices.')
+    if final:
+        w(f'400, 315 for 420. Pass frame i is film frame round(filmStart x fps) + i exactly. These are the')
+        w(f'final passes, at {pass_fps} fps (`tools/merc-shots.py --final`; DECISIONS 189, 201, 203, 225); what')
+        w('each host does in every pause, and what was moved at the cuts, is in `merc/final-report.md`.')
+    else:
+        w('400, 315 for 420. Pass frame i is film frame round(filmStart x fps) + i exactly. These are 30 fps')
+        w('passes on the scratch clock; the final 60 fps passes come after the final voices.')
     w('')
     w('| Pass | Host | Film span | Frames | Rendered at | Mirror in the scene | Files |')
     w('| ---- | ---- | --------- | ------ | ----------- | ------------------- | ----- |')
@@ -165,6 +183,14 @@ def main():
     w('  open and held on the speaker, until the line ends (DECISIONS 161).')
     w('- Idle, turned to the drawing, through every sound neither makes (easy, pushed, push, the starts,')
     w('  starts, the other\'s sounds), the pauses, and the viewer\'s breathe, ticks and hold: no arcs.')
+    if final:
+        w('- Talk in a cycle: the mouth opens and shuts with each syllable (5.5 times a second from each')
+        w('  word\'s start), never as wide as a sung note; the arcs pulse with it (DECISIONS 201).')
+        w('- Breathe in before a phrase: the mouth opens 0.15 s before the first word after every pause of')
+        w('  0.25 s or more. Blink in the pauses: the talker as the voice stops, the listener after, wherever')
+        w('  the renderer\'s blinks reach (DECISIONS 189; the list is `merc/final-report.md`).')
+        w('- Keep their eyes at rest across every cut: nothing moves an eye from 0.2 s before a scene')
+        w('  boundary to 0.2 s after it; a `listen` that would start on a cut starts 0.2 s after it (DECISIONS 203).')
     w('')
     # feet
     fb = feet()
@@ -238,17 +264,22 @@ def main():
     w('  box in, it is off frame: Tavi from beyond the right edge, Merc from beyond the left; both land')
     w('  in their corners 0.80 s before their first word (HANDOFFS: `leapDx` 300 px, the carry in the air).')
     w('- **Size changes and moves** are the scene\'s, in screen space (the passes never change size).')
-    w('- **Timing.** A 30 fps pass in the 60 fps master shows each pass frame on two film frames; the')
-    w('  tags are on the pass\'s frame grid: 60 fps film frame n shows pass frame floor(n / 2) - P, P the')
-    w('  pass\'s first frame on the 30 fps grid (round(filmStart x 30)).')
+    if pass_fps == 60:
+        w('- **Timing.** A 60 fps pass in the 60 fps master: film frame n shows pass frame n - P, P the')
+        w('  pass\'s first frame (round(filmStart x 60)). The tags sit half a pass frame from every rounding')
+        w('  edge, so no film frame falls on a pass-frame boundary: `python3 tools/merc-tags.py --margins`')
+        w('  gives the nearest boundary for every tag (6.8 ms or more; `--check` fails under 4 ms).')
+    else:
+        w('- **Timing.** A 30 fps pass in the 60 fps master shows each pass frame on two film frames; the')
+        w('  tags are on the pass\'s frame grid: 60 fps film frame n shows pass frame floor(n / 2) - P, P the')
+        w('  pass\'s first frame on the 30 fps grid (round(filmStart x 30)).')
     w('- **The sidecar** (`assets/merc/<file>-merc.json`): `from`, `to`, `frames`, `fps`, `filmStart`,')
     w('  `size`, `drawn`, the render\'s `msPerFrame`, `renderSeconds` and `prerollSeconds`, `crescentFixed`')
     w('  (frames the crescent guard re-rendered, trap 10), the `pin` (Chromium, Playwright, the bundle\'s')
     w('  sha256 and commit) and `root`, one [x, y] a frame.')
     w('')
-    path = os.path.join(ROOT, 'merc', 'PASSES.md')
-    open(path, 'w').write('\n'.join(L) + '\n')
-    print(f'merc/PASSES.md written ({total_frames} frames rendered)')
+    open(OUT, 'w').write('\n'.join(L) + '\n')
+    print(f'{os.path.relpath(OUT, ROOT)} written ({total_frames} frames rendered)')
 
 
 if __name__ == '__main__':

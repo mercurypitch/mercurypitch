@@ -18,6 +18,9 @@
 //   --dump=<frame>,...   also writes those pass frames' straight-alpha RGBA,
 //        upright, to lab/merc/dump/<out>-f<frame>.rgba and .png (the join proof)
 //   --no-video           renders and dumps, encodes nothing
+//   --out=<dir>          writes the WebM and its sidecar there instead of assets/merc/ (a lab's
+//        chunks: lab/passes-proto/merc/), the --stills there instead of lab/merc/, and the dumps in
+//        <dir>/dump/ unless --dump-dir=<dir> names another place. Without it, nothing changes.
 //
 // Chunks join exactly (Lesson 5, DECISIONS 129). A frame is a pure function of
 // the simulation's step count and the state changes before it: the sim steps
@@ -103,6 +106,9 @@ const chunkArg = opt('chunk')
 const fromArg = opt('from')
 const toArg = opt('to')
 const dumps = new Set((opt('dump') ?? '').split(',').filter(Boolean).map(Number))
+// --out and --dump-dir: where a lab's outputs go, so the film's own passes are never written over
+const outArg = opt('out')
+const dumpArg = opt('dump-dir')
 const noVideo = args.includes('--no-video')
 // A tall render's padding in drawn px above and below the pass's square: a multiple of 8, so its
 // quarter- and eighth-size glow buffers keep their grid. At a 225 px square it holds a drop's whole
@@ -178,7 +184,7 @@ for (const file of files) {
   const n = to - from + 1
   const size = chunk?.size ?? shot.size
   const outId = chunk ? chunk.id : from > 0 || (to < N - 1 && until === Infinity) ? `${shot.id}-${from}-${to}` : shot.id
-  const outDir = join(ROOT, 'assets/merc')
+  const outDir = outArg ? resolve(outArg) : join(ROOT, 'assets/merc')
   mkdirSync(outDir, { recursive: true })
   const base = join(outDir, outId + (tall ? '-tall' : '') + (draft ? '-draft' : ''))
   // The drawn square (quality's scale times size) and, for a tall render, the canvas whose middle
@@ -374,7 +380,7 @@ for (const file of files) {
 
   if (stills) {
     // Lab stills: straight-alpha frames composited over #0d1117, flipped upright.
-    const labDir = join(ROOT, 'lab/merc')
+    const labDir = outArg ? resolve(outArg) : join(ROOT, 'lab/merc')
     mkdirSync(labDir, { recursive: true })
     for (const T of stills) {
       await page.evaluate((T) => window.__preroll(T), T * k)
@@ -436,7 +442,7 @@ for (const file of files) {
   // (0.55 s of simulation time) from each drop cue (src/lib/merc/sim-choreo.ts).
   const falls = (shot.cues ?? []).filter((c) => c.state === 'drop').map((c) => c.t)
   const falling = (T) => falls.some((t0) => T >= t0 && T < t0 + 0.55)
-  const dumpDir = join(ROOT, 'lab/merc/dump')
+  const dumpDir = dumpArg ? resolve(dumpArg) : outArg ? join(resolve(outArg), 'dump') : join(ROOT, 'lab/merc/dump')
   if (dumps.size) mkdirSync(dumpDir, { recursive: true })
   const dump = async (i, buf) => {
     // upright straight-alpha RGBA, raw (for a byte compare) and as a PNG (to look at)

@@ -1,0 +1,206 @@
+[heavy] slot 1: python3 lab/passes-proto/holds.py lab/passes-proto/s08-after/clip.mp4 --scene s08-breathe --hosts small --csv lab/passes-proto/s08-after/holds.csv
+lab/passes-proto/s08-after/clip.mp4: 203 samples 0.100 s apart; holds 1.2 s
+    t   mean largest  merc  tavi  rest  hold  said
+  0.00  0.016      7     7     7     4  HOLD  between b20 and o9
+  0.10  0.022      9     9     5     5  HOLD  between b20 and o9
+  0.20  0.022      6     6     5     5  HOLD  between b20 and o9
+  0.30  0.825     58     4     6    58        between b20 and o9
+  0.40  2.505    185     6     9   185        between b20 and o9
+  0.50  2.317    222    10   150   222        between b20 and o9
+  0.60  1.295    134   120   127   134        between b20 and o9
+  0.70  0.686    124    20   124    78        between b20 and o9
+  0.80  0.509    126   126    11    49        between b20 and o9
+  0.90  0.469     52    12     9    52        between b20 and o9
+  1.00  0.485     55    12     9    55        between b20 and o9
+  1.10  0.492     62     9     9    62        between b20 and o9
+  1.20  0.470     58     8     7    58        between b20 and o9
+  1.30  0.428     47     6     7    47        between b20 and o9
+  1.40  0.371     41     6     6    41        between b20 and o9
+  1.50  0.298     35     5     5    35        between b20 and o9
+  1.60  0.266     32     7    32    28        between b20 and o9
+  1.70  0.195     38    22    38    24        between b20 and o9
+  1.80  0.089     43    43    13    12        between b20 and o9
+  1.90  0.828     81    15    11    81        between b20 and o9
+  2.00  3.727    238     8    10   238        between b20 and o9
+  2.10  3.744    198    10    45   198        between b20 and o9
+  2.20  1.394     81    10    34    81        between b20 and o9
+  2.30  0.589     83    63    22    83        between b20 and o9
+  2.40  0.834    100    63    41   100        o9 (orange) "How"
+  2.50  1.156     99    65    33    99        o9 (orange) "How"
+  2.60  1.236    128   128    70    90        o9 (orange) between "How" and "should" (0.07 s)
+  2.70  1.033    101   101    52    95        o9 (orange) "should"
+  2.80  0.834     97    78    14    97        o9 (orange) between "should" and "I" (0.05 s)
+  2.90  0.220     32    23    18    32        o9 (orange) "I"
+  3.00  0.066     45    29    45     5        o9 (orange) between "I" and "breathe" (0.08 s)
+  3.10  0.115     50    20    50    18        o9 (orange) "breathe"
+  3.20  0.074     26     8    26    18        o9 (orange) "breathe"
+  3.30  0.052     82     5    82     4        o9 (orange) "breathe"
+  3.40  0.047     88     7    88     5        o9 (orange) between "breathe" and "in?" (0.05 s)
+  3.50  0.039     75     8    75     5        o9 (orange) "in?"
+  3.60  0.051     48     9    48     5        o9 (orange) "in?"
+  3.70  0.019     14    11    14     6  HOLD  o9 (orange) "in?"
+  3.80  0.060     64    16    64     7        o9 (orange) "in?"
+  3.90  0.212    135   135    17    10        between o9 and b21
+  4.00  0.200    124   124    15    11        between o9 and b21
+  4.10  0.137     85    73    85     9        b21 (blue) "Start"
+  4.20  0.098     61    61    55     5        b21 (blue) "Start"
+  4.30  0.172    157    71   157    12        b21 (blue) "Start"
+  4.40  0.152    106    80   106     5        b21 (blue) "Start"
+  4.50  0.324    148    65    94   148        b21 (blue) "tall"
+  4.60  0.194    155    50    43   155        b21 (blue) "tall"
+  4.70  0.168    138    72    26   138        b21 (blue) "tall"
+  4.80  0.129    140    61    23   140        b21 (blue) between "tall" and "but" (0.05 s)
+  4.90  0.072    133    36    12   133        b21 (blue) "but"
+  5.00  0.036     54    54     7    11        b21 (blue) between "but" and "easy." (0.09 s)
+  5.10  0.029     49    49     5     4        b21 (blue) "easy."
+  5.20  0.042     34    34     9     5        b21 (blue) "easy."
+  5.30  0.022     41    41     7     5        b21 (blue) "easy."
+  5.40  0.025     37    37     9     4        b21 (blue) "easy."
+  5.50  0.022     11    11     9     5  HOLD  b21 (blue) "easy."
+  5.60  0.022     22    22     9     4        b21 (blue) between "easy." and "If" (0.52 s)
+  5.70  0.016     11    11     8     5  HOLD  b21 (blue) between "easy." and "If" (0.52 s)
+  5.80  0.022     11    11     6     5  HOLD  b21 (blue) between "easy." and "If" (0.52 s)
+  5.90  0.030     31    31     5     5        b21 (blue) between "easy." and "If" (0.52 s)
+  6.00  0.016     23    23     6     5        b21 (blue) between "easy." and "If" (0.52 s)
+  6.10  0.038     43    43     2     4        b21 (blue) between "easy." and "If" (0.52 s)
+  6.20  0.041     33    33     2     4        b21 (blue) between "If" and "you're" (0.05 s)
+  6.30  0.051     50    50     2     4        b21 (blue) "you're"
+  6.40  0.030     29    29     3     4        b21 (blue) between "you're" and "standing," (0.07 s)
+  6.50  0.031     23    23     8     5        b21 (blue) "standing,"
+  6.60  0.028     22    22     7     7        b21 (blue) "standing,"
+  6.70  0.030     58    58     6     4        b21 (blue) "standing,"
+  6.80  0.036     50    50     8     4        b21 (blue) "standing,"
+  6.90  0.035     33    33    12     5        b21 (blue) "standing,"
+  7.00  0.037     57    57    13     4        b21 (blue) between "standing," and "keep" (0.07 s)
+  7.10  0.205    155    43   155    12        b21 (blue) "keep"
+  7.20  0.179    128    47   128     6        b21 (blue) "keep"
+  7.30  0.083     68    39    68     6        b21 (blue) between "keep" and "your" (0.05 s)
+  7.40  0.076     38    34    38     4        b21 (blue) "your"
+  7.50  0.311    161    40    43   161        b21 (blue) "knees"
+  7.60  0.118     42    40    26    42        b21 (blue) "knees"
+  7.70  0.053     38    38     4    14        b21 (blue) "knees"
+  7.80  0.036     39    39     3     9        b21 (blue) between "knees" and "unlocked." (0.10 s)
+  7.90  0.155    181    37     4   181        b21 (blue) "unlocked."
+  8.00  0.179    178    19    12   178        b21 (blue) "unlocked."
+  8.10  0.110    101    16    61   101        b21 (blue) "unlocked."
+  8.20  0.145    143    19   143    96        b21 (blue) "unlocked."
+  8.30  0.297    155    31   155   103        b21 (blue) "unlocked."
+  8.40  0.151     87    58    13    87        b21 (blue) "unlocked."
+  8.50  0.167    132   132    10    96        b21 (blue) between "unlocked." and "Let" (0.57 s)
+  8.60  0.132    123   123     7    75        b21 (blue) between "unlocked." and "Let" (0.57 s)
+  8.70  0.067     94    94     9    12        b21 (blue) between "unlocked." and "Let" (0.57 s)
+  8.80  0.034     21    21     7     5        b21 (blue) between "unlocked." and "Let" (0.57 s)
+  8.90  0.013      5     3     5     5  HOLD  b21 (blue) between "unlocked." and "Let" (0.57 s)
+  9.00  0.015     24    24     6     6        b21 (blue) "Let"
+  9.10  0.019     20    20     7     6        b21 (blue) "Let"
+  9.20  0.054     65    65     4     6        b21 (blue) "Let"
+  9.30  0.039     75    75     7     4        b21 (blue) "Let"
+  9.40  0.071     67    67     7     4        b21 (blue) "your"
+  9.50  0.036     31    31     8     6        b21 (blue) between "your" and "jaw," (0.10 s)
+  9.60  0.296    139    27    11   139        b21 (blue) "jaw,"
+  9.70  0.157     94    19     9    94        b21 (blue) "jaw,"
+  9.80  0.074    101    40    11   101        b21 (blue) "jaw,"
+  9.90  0.055     93    23    14    93        b21 (blue) "jaw,"
+ 10.00  0.048     92    46    15    92        b21 (blue) "jaw,"
+ 10.10  0.039     28    28    10     6        b21 (blue) "jaw,"
+ 10.20  0.028     17    17     8     5        b21 (blue) between "jaw," and "tongue" (0.09 s)
+ 10.30  0.051     45    45     8     5        b21 (blue) "tongue"
+ 10.40  0.029     43    17     8    43        b21 (blue) "tongue"
+ 10.50  0.031     38    26     6    38        b21 (blue) "tongue"
+ 10.60  0.027     26    26     6     5        b21 (blue) between "tongue" and "and" (0.05 s)
+ 10.70  0.024     34    34     5     4        b21 (blue) between "and" and "neck" (0.05 s)
+ 10.80  0.025     47    47     9     4        b21 (blue) "neck"
+ 10.90  0.049     77    76    77     6        b21 (blue) "neck"
+ 11.00  0.099    145    47   145    12        b21 (blue) between "neck" and "go" (0.13 s)
+ 11.10  0.101    158    53   158    12        b21 (blue) "go"
+ 11.20  0.080    119    36   119     5        b21 (blue) "go"
+ 11.30  0.071     56    45    56     6        b21 (blue) "loose."
+ 11.40  0.067    153    30   153     9        b21 (blue) "loose."
+ 11.50  0.020     16    16     9     6        b21 (blue) "loose."
+ 11.60  0.039     35    35     6     5        b21 (blue) "loose."
+ 11.70  0.029     30    30     6     4        b21 (blue) "loose."
+ 11.80  0.036     47    47     6     5        b21 (blue) "loose."
+ 11.90  0.091     39    39     3    38        between b21 and b22
+ 12.00  0.073     39    13     7    39        between b21 and b22
+ 12.10  0.094     60    23    60    32        between b21 and b22
+ 12.20  0.048     52    19    52     5        b22 (blue)
+ 12.30  0.083     50    39    50     4        b22 (blue) "Then"
+ 12.40  0.100     83    13    83     4        b22 (blue) "Then"
+ 12.50  0.142    136    37   136    11        b22 (blue) "breathe"
+ 12.60  0.132    103    36   103     4        b22 (blue) "breathe"
+ 12.70  0.108     72    41    72     5        b22 (blue) "breathe"
+ 12.80  0.044     28    28    24     4        b22 (blue) "breathe"
+ 12.90  0.308    142    25    29   142        b22 (blue) "in"
+ 13.00  0.157     57    57    15    54        b22 (blue) "in"
+ 13.10  0.033     41    41     9    11        b22 (blue) between "in" and "quietly," (0.10 s)
+ 13.20  0.030     27    27     6     5        b22 (blue) "quietly,"
+ 13.30  0.027     28    28     9     4        b22 (blue) "quietly,"
+ 13.40  0.062     68    68     8     5        b22 (blue) "quietly,"
+ 13.50  0.050     59    59     9     5        b22 (blue) "quietly,"
+ 13.60  0.047     67    67    12     6        b22 (blue) "quietly,"
+ 13.70  0.022     45    45     8     5        b22 (blue) "quietly,"
+ 13.80  0.025     42    42     8     5        b22 (blue) "quietly,"
+ 13.90  0.062    132   132     6     7        b22 (blue) between "quietly," and "and" (0.37 s)
+ 14.00  0.020      9     9     6     5  HOLD  b22 (blue) between "quietly," and "and" (0.37 s)
+ 14.10  0.050    128   128     4     7        b22 (blue) between "quietly," and "and" (0.37 s)
+ 14.20  0.014     29    29     4     4        b22 (blue) "and"
+ 14.30  0.033     41    41     4     4        b22 (blue) "and"
+ 14.40  0.054     42    42     1     8        b22 (blue) between "and" and "let" (0.05 s)
+ 14.50  0.057     44    44     3     7        b22 (blue) "let"
+ 14.60  0.048     78    78     5    13        b22 (blue) between "let" and "the" (0.09 s)
+ 14.70  0.044     56    56     5    13        b22 (blue) "the"
+ 14.80  0.055     36    36     7    22        b22 (blue) "breath"
+ 14.90  0.061     60    60     7    28        b22 (blue) "breath"
+ 15.00  0.068     50    50    11    30        b22 (blue) "breath"
+ 15.10  0.091     58    58     9    28        b22 (blue) between "breath" and "drop" (0.08 s)
+ 15.20  0.487    161    17   153   161        b22 (blue) "drop"
+ 15.30  0.326    136    71   136    43        b22 (blue) "drop"
+ 15.40  0.159    107    26   107    33        b22 (blue) "drop"
+ 15.50  0.106     47    47    37    41        b22 (blue) between "drop" and "low," (0.06 s)
+ 15.60  0.116     58    58    38    30        b22 (blue) "low,"
+ 15.70  0.088     36    23    36    31        b22 (blue) "low,"
+ 15.80  0.068     42    42    13    36        b22 (blue) "low,"
+ 15.90  0.059     44    44     2    23        b22 (blue) "low,"
+ 16.00  0.047     20    20     5    19        b22 (blue) "low,"
+ 16.10  0.031     27    27     4    16        b22 (blue) between "low," and "shoulders" (0.13 s)
+ 16.20  0.101     50    15     9    50        b22 (blue) between "low," and "shoulders" (0.13 s)
+ 16.30  0.304    150    77   150   120        b22 (blue) "shoulders"
+ 16.40  0.093    147    20   147    52        b22 (blue) "shoulders"
+ 16.50  0.050     93    17    93    37        b22 (blue) "shoulders"
+ 16.60  0.132     24    24    11     5        b22 (blue) "shoulders"
+ 16.70  0.024     15    15    10     6  HOLD  b22 (blue) "shoulders"
+ 16.80  0.025     19    19     8     5        b22 (blue) "still,"
+ 16.90  0.025     40    40     8     5        b22 (blue) "still,"
+ 17.00  0.041     65    65     6     4        b22 (blue) "still,"
+ 17.10  0.034     49    49     7     5        b22 (blue) "still,"
+ 17.20  0.059     44    44     7     4        b22 (blue) "still,"
+ 17.30  0.038     69    69     4     4        b22 (blue) between "still," and "taking" (0.46 s)
+ 17.40  0.041     97    97     5     9        b22 (blue) between "still," and "taking" (0.46 s)
+ 17.50  0.060    129   129     9     9        b22 (blue) between "still," and "taking" (0.46 s)
+ 17.60  0.019     22    22     6     4        b22 (blue) between "still," and "taking" (0.46 s)
+ 17.70  0.197     89    28    13    89        b22 (blue) between "still," and "taking" (0.46 s)
+ 17.80  0.250    101    39     9   101        b22 (blue) "taking"
+ 17.90  0.081     72    72    10    11        b22 (blue) "taking"
+ 18.00  0.057     36    36    13    16        b22 (blue) "taking"
+ 18.10  0.065     41    41    12    20        b22 (blue) between "taking" and "as" (0.05 s)
+ 18.20  0.064     30    30    14    17        b22 (blue) "as"
+ 18.30  0.473    112    41     9   112        b22 (blue) "much"
+ 18.40  0.195     40    39    11    40        b22 (blue) "much"
+ 18.50  0.057     36    36     6    29        b22 (blue) between "much" and "as" (0.05 s)
+ 18.60  0.045     28    27     8    28        b22 (blue) "as"
+ 18.70  0.046     37    18     7    37        b22 (blue) between "as" and "feels" (0.10 s)
+ 18.80  0.045     31    12     5    31        b22 (blue) "feels"
+ 18.90  0.061     41    25     8    41        b22 (blue) "feels"
+ 19.00  0.048     38    10    10    38        b22 (blue) "feels"
+ 19.10  0.115    153    22   153    32        b22 (blue) "feels"
+ 19.20  0.094    145    24   145    35        b22 (blue) between "feels" and "easy." (0.07 s)
+ 19.30  0.082     96    38    96    29        b22 (blue) "easy."
+ 19.40  0.104    155     9   155    19        b22 (blue) "easy."
+ 19.50  0.087    150    14   150    18        b22 (blue) "easy."
+ 19.60  0.049     54    21    54    16        b22 (blue) "easy."
+ 19.70  0.069     48    33    48    12        b22 (blue) "easy."
+ 19.80  0.055     36    36    23     7        between b22 and o10
+ 19.90  0.019      7     6     7     5  HOLD  between b22 and o10
+ 20.00  0.023     14    14    13     4  HOLD  between b22 and o10
+ 20.10  0.025     28    28    10     5        between b22 and o10
+ 20.20  0.018     18    18     4     4        between b22 and o10

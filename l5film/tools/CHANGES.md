@@ -20,6 +20,72 @@ rest (mix.py reads only Echo samples there, which this film does not use).
 Every heavy run (a render, a Chromium pass, the Merc bundle, the Kokoro run) goes through the
 scratchpad's heavy helper on this shared machine, one at a time.
 
+## 2026-11-20 (Lesson 5, the final passes proved on two scenes: DECISIONS 189, 201, 203, 224, 225, 227, 234)
+
+Six tools changed; `merc-joins.py`, `merc-whole.py` and `merc-sheet.py` did not. Nothing the film
+reads was written: `merc/shots/`, `assets/merc/`, `compositions/` and `index.html` keep the hashes
+taken before the work (`lab/passes-proto/tools-before/film-files.sha256`), and each tool, run as it
+was run before, writes what it wrote before (`merc-shots.py --check`: 0 shots would change;
+`merc-tags.py --check`: 0 stale; `merc-queue.py --list`, `merc-roots.py` and `merc-passes.py`: byte
+for byte, written aside and compared; `merc-pass.mjs`: three frames of today's m-blue rendered
+aside equal the film's dumps byte for byte). The copies before: `lab/passes-proto/tools-before/`.
+The proofs: `lab/passes-proto/` (README.md). Nothing to regenerate now. The final run, after the
+final voices and `tools/cues.py`: `python3 tools/merc-shots.py --final`, read `merc/final-report.md`,
+`python3 tools/merc-queue.py --order=final` (detached, as its header says), then `merc-roots.py`,
+`merc-joins.py`, `merc-passes.py`, `merc-tags.py` (every scene) and `merc-tags.py --check --margins`.
+
+- **merc-shots.py: the final passes' profile, `--final`** (lines 53 to 72, 86 to 89, 97 to 143, 248 to 250,
+  310 to 319, 384 to 387, 466 to 898, 910, 914 to 1017). Without `--final` the tool is today's. With it (60 fps unless
+  `--fps=<n>`; `--out=<dir>` writes the shots elsewhere, the talk envelopes in `<dir>/../talk/` and
+  the report as `<dir>/../final-report.md`):
+  - **A talk cycle** (DECISIONS 201; `TALK`, line 110; `talk_env`, line 537). Before: each line's
+    envelope fed `sing` as it was (`gain` 0.55), so a held vowel held one mouth shape. After: the
+    envelope is written again at 240 samples a second as `merc/talk/<line>.env.json`: from each
+    word's start (voiced stretches less than 0.06 s apart) the mouth is open for the first 0.70 of
+    every 1 / 5.5 s at 0.55 x loudness ^ 0.6 and shut for the rest. `gain` stays 0.55 (the loudest O
+    stays 0.75 of a sung note's); `power` 0.6 is new (was 1); the shot's voice entry carries
+    `gain: 1` and the new file. The arcs stay at 0.5 (`SPEECH_ARCS_FINAL`), now keyed over each
+    phrase instead of the whole line (line 318), so a pause and a breath in show none.
+  - **A breath in** (DECISIONS 189; `BREATH_IN` 0.15, `BREATH_LEVEL` 0.05, lines 114 and 115). The
+    mouth opens to its smallest shape 0.15 s before the first word after every pause of
+    `PAUSE_MIN` 0.25 s or more; a line that opens on one starts `sing` 0.20 s before it (was 0.05).
+  - **A blink in the pauses** (DECISIONS 189; `find_pauses`, line 515; `Track.blink_in`, line 668;
+    `plan_final`, line 781). A state's blinks run from its start (`sing` 2.7 s in, `idle` 1.1 s), so
+    a cue of the state a host is already in restarts them: one `sing` cue 2.7 s before puts the
+    talker's blink `BLINK_AFTER` 0.10 s after the voice stops; one `idle` cue 1.1 s before puts the
+    listener's `BLINK_PAIR` 0.03 s after that, in a pause of `PAIR_MIN` 0.50 s or more or when the
+    talker has none. Pauses up to `LONG_PAUSE` 1.2 s come first, the longest first. A cue of `idle`
+    goes only where it steps the breath by 0.7 % or less (`BREATH_STEP`, line 135: restarting the
+    breath at its top showed as a 3 px jolt at 240 px); a cue of `sing` goes anywhere (1.2 % at most).
+  - **Eyes at rest across every cut** (DECISIONS 203; `CUT_CLEAR` 0.20, line 142; `clear_cuts`,
+    line 790; `Track.recue`, line 738). A `listen` that would start or end within 0.2 s of a scene
+    boundary starts 0.2 s after it; a blink or a glance that would cross one is moved by a cue of
+    its state; a blink a later cue would cut short is finished or moved.
+  - **S14's chunks at S15's size** (DECISIONS 225; `CHUNK_SIZE_FINAL`, line 250; `chunks`, line
+    910). Before: `{'s15-end': 400}`. After, with `--final`: `{'s14-next': 400, 's15-end': 400}`.
+  - **`merc/final-report.md`** (`final_report`, line 972): every pause of 0.25 s or more with what
+    each host does in it or why not, what was moved at the cuts, and any eye move left on one.
+- **merc-pass.mjs: `--out=<dir>` and `--dump-dir=<dir>`** (lines 21 to 23, 109 to 111, 187, 383,
+  445). The WebM, its sidecar, the `--stills` and the dumps go there instead of `assets/merc/`,
+  `lab/merc/` and `lab/merc/dump/`. Nothing else changed: the renderer's pin holds, and the talk
+  cycle, the breath in and the blinks are the shot's cues and envelopes.
+- **merc-tags.py: `--shots=<dir>`, `--scenes=<dir>`, `--src=<prefix>`, and `--margins`** (lines 61
+  to 76, 88 to 99, 118, 136, 145, 150 to 185, 190, 225, 252 to 254, 270, 275, 292 to 302, 322 to 332). The first three point the tool
+  at a lab's shots and scene copies. `margins()` models the renderer's cut for every film frame a
+  tag shows and gives the distance to the nearest pass-frame boundary; `--margins` prints it, and
+  `--check` now fails a pass at the film's fps whose margin is under `MARGIN_MS` 4 ms or whose film
+  frame would show another pass frame (this step's 30 fps passes are reported, not failed).
+- **merc-queue.py: `--order=final`, `--plan`, `--shots=<dir>`, `--out=<dir>`, `--log=<file>`** (lines
+  16 to 26, 38 to 48, 54, 65 to 68, 72 to 100, 116 to 127, 139). The default order and the default files are today's.
+  `--order=final` renders the checks first (m-blue-s04, both s15, m-blue-s13), then scene by scene,
+  Merc's chunk and Tavi's together; `--plan` prints that list with frames and time
+  (`MS_PER_FRAME`, line 48).
+- **merc-roots.py: `--shots=<dir>`, `--merc=<dir>`, `--out=<file>`** (lines 19 to 34, 40, 46, 65, 67).
+- **merc-passes.py: `--shots=<dir>`, `--merc=<dir>`, `--dump=<dir>`, `--out=<file>`, and the final
+  profile's text** (lines 11 to 29, 47, 55, 78 to 81, 95 to 101, 186 to 193, 267 to 275, 281 to 282): for
+  shots with `profile: final` the guide gives their fps, the talk cycle, the breath in, the blinks
+  and the cuts, and the one-to-one frame timing; for today's shots it is unchanged.
+
 ## 2026-11-20 (Lesson 5, the sound step, DECISIONS 242)
 
 Two tools changed and two are new. Regenerate, in this order: `.venv/bin/python tools/mix.py` (it

@@ -1,0 +1,2 @@
+[heavy] slot 1: python3 lab/passes-proto/coded.py read lab/passes-proto/f60-s04/clip.mp4 --left -40 --top 589.2 --shown 300 --drawn 225 --film-frame 3172 --pass-first 3537 --from 400
+lab/passes-proto/f60-s04/clip.mp4: 60 fps; clip frames 400 to 818: 419 show their own pass frame, 0 show another, 0 not read (the row not on screen); read from clip frame 400 to 818

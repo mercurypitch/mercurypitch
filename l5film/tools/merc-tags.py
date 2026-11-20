@@ -58,6 +58,22 @@ Run after every re-time (tools/cues.py, gen-root.py, merc-shots.py).
 `--check` exits 1 if any tag is stale or a pass misses its scene. Scene ids as
 arguments limit both to those scenes, so a scene builder touches only their own
 files: `python3 tools/merc-tags.py s14-sing [--check]`.
+
+A lab's copy of a scene with a lab's chunks (the film's own files untouched):
+`--shots=<dir>` reads the shot files there instead of merc/shots/,
+`--scenes=<dir>` rewrites the scene files there instead of compositions/, and
+`--src=<prefix>` writes each tag's `src` as <prefix><chunk>-merc.webm instead
+of assets/merc/<chunk>-merc.webm. Without them nothing changes.
+
+No film frame on a pass-frame boundary (DECISIONS 224, 225, 234). The
+half-frame rule above is what guarantees it, at any pass fps: `margins()`
+models the renderer's cut (assets/lib/hosts.js, L.passFrame: cut frame k of a
+render at F fps shows the last pass frame whose time, in whole ms, is at most
+1000 media-start + 0.5 + 1000 k / F) for every film frame a tag shows, and
+gives the smallest distance from that limit to a pass frame's time, on either
+side. `--margins` prints it for every tag at the film's 60 fps (and at the
+pass's own fps for a lab render); `--check` fails if any is under MARGIN_MS,
+or if a film frame would show a pass frame other than n - P.
 """
 import glob
 import json
@@ -69,6 +85,18 @@ import sys
 FPS = 60  # the master's frame rate: a shot without `fps` is at it (this step's passes are at 30)
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def _opt(name, default):
+    """--name=<value> from the command line (a directory is taken from where the tool is run)."""
+    v = next((a[len(name) + 3:] for a in sys.argv[1:] if a.startswith(f'--{name}=')), None)
+    return default if v is None else v
+
+
+SHOTS_DIR = os.path.abspath(_opt('shots', os.path.join(ROOT, 'merc', 'shots')))          # the shot files
+SCENES_DIR = os.path.abspath(_opt('scenes', os.path.join(ROOT, 'compositions')))        # the scenes rewritten
+SRC = _opt('src', 'assets/merc/')                                                       # a tag's src, before <chunk>-merc.webm
+MARGIN_MS = 4.0   # the least a film frame's sample may sit from a pass-frame boundary (half a 60 fps frame is 8.3 ms)
 SCENES = json.loads(re.search(r'window\.SCENES\s*=\s*(\{.*\})', open(os.path.join(ROOT, 'assets/scenes.js')).read(), re.S).group(1))
 TAG = re.compile(r'<video\b[^>]*\bdata-merc="([^"]+)"[^>]*>', re.S)
 INTROS_PATH = os.path.join(ROOT, 'merc', 'intros.json')
@@ -87,7 +115,7 @@ def window(pass_id, scene_id, lead=0.0):
     """(data-start, data-duration, data-media-start, src) for one tag, in seconds,
     or None when the pass misses the scene. See the module docstring. Raises
     ValueError when a chunked pass has no chunk that holds the tag's frames."""
-    shot = json.load(open(os.path.join(ROOT, 'merc', 'shots', pass_id + '.json')))
+    shot = json.load(open(os.path.join(SHOTS_DIR, pass_id + '.json')))
     fps = shot.get('fps', FPS)
     sc = SCENES[scene_id]
     P = round(shot['filmStart'] * fps)              # film frame of pass frame 0
@@ -105,7 +133,7 @@ def window(pass_id, scene_id, lead=0.0):
     vc = math.ceil((sc['start'] + ds) * fps - 1e-6)  # the film frame the renderer counts from
     assert vc == n0, (pass_id, scene_id, vc, n0)
     dur = round((min(s1 + 1, last) + 0.5) / fps - (sc['start'] + ds), 3)   # see the docstring
-    src, first = f'assets/merc/{pass_id}-merc.webm', 0
+    src, first = f'{SRC}{pass_id}-merc.webm', 0
     if shot.get('chunks'):
         # the pass frames this tag shows: n0 to the frame after the scene (or the pass's last)
         need = (n0 - P + k, min(s1 + 1, last) - P + k)
@@ -114,16 +142,52 @@ def window(pass_id, scene_id, lead=0.0):
         if not fits:
             raise ValueError(f'no chunk of {pass_id} holds pass frames {need[0]} to {need[1]}')
         ch = (mine or fits)[0]
-        src, first = f"assets/merc/{ch['id']}-merc.webm", ch['from']
+        src, first = f"{SRC}{ch['id']}-merc.webm", ch['from']
     media = round((n0 - P + k - first + 0.5) / fps, 3)
     return ds, dur, media, src
+
+
+def margins(pass_id, scene_id, render_fps, lead=0.0):
+    """How far a tag's film frames sit from a pass-frame boundary in a render at `render_fps`, or None
+    when the pass misses the scene: (film frames, the least distance in ms from the cut's limit to a
+    pass frame's time on either side, the film frames that would show another pass frame than their
+    own, the least distance in frames of the cut's index from a whole frame). The model is the kit's
+    (assets/lib/hosts.js, L.passFrame; lab/integration/film-hops-fix/README.md): cut frame
+    k = floor((t - data-start) x F + 1e-3) shows the last pass frame whose time, round(1000 i / fps)
+    ms (a WebM's frames sit on whole ms), is at most 1000 data-media-start + 0.5 + 1000 k / F."""
+    w = window(pass_id, scene_id, lead)
+    if w is None:
+        return None
+    ds, dur, media, src = w
+    shot = json.load(open(os.path.join(SHOTS_DIR, pass_id + '.json')))
+    pf = shot.get('fps', FPS)
+    P = round(shot['filmStart'] * pf)
+    first = next((c['from'] for c in shot.get('chunks', []) if src.endswith('/' + c['id'] + '-merc.webm') or src == f"{SRC}{c['id']}-merc.webm"), 0)
+    sc = SCENES[scene_id]
+    F = render_fps
+    least, wrong, frames, edge = 1e9, 0, 0, 1.0
+    n = math.ceil((sc['start'] + ds) * F - 1e-6)
+    while n / F < min(sc['end'], sc['start'] + ds + dur) - 1e-9:
+        x = (n / F - sc['start'] - ds) * F
+        k = math.floor(x + 1e-3)
+        edge = min(edge, abs((x + 1e-3) - round(x + 1e-3)))
+        lim = 1000 * media + 0.5 + 1000 * k / F
+        i = math.floor(lim / 1000 * pf) + 1
+        while i > 0 and math.floor(i * 1000 / pf + 0.5) > lim + 1e-6:
+            i -= 1
+        least = min(least, lim - math.floor(i * 1000 / pf + 0.5), math.floor((i + 1) * 1000 / pf + 0.5) - lim)
+        want = math.floor(n * pf / F + 1e-9) - P - first + round(lead * pf)
+        wrong += i != want
+        frames += 1
+        n += 1
+    return frames, least, wrong, edge
 
 
 def seg_window(seg, scene_id):
     """(data-start, data-duration, data-media-start) for one intro segment's tag in a scene, or None.
     The tag runs from a frame before the segment shows to a frame after it hands over, within the
     segment's video and the scene, on the same half-frame grid as window()."""
-    shot = json.load(open(os.path.join(ROOT, 'merc', 'shots', seg['shot'] + '.json')))
+    shot = json.load(open(os.path.join(SHOTS_DIR, seg['shot'] + '.json')))
     fps = shot.get('fps', FPS)
     sc = SCENES[scene_id]
     P = round(shot['filmStart'] * fps)              # film frame of the video's frame 0
@@ -158,7 +222,7 @@ def add_segments(html, scene_id, bad):
         refl = re.search(r'<video\b[^>]*\bid="' + re.escape(tag_id) + r'-refl"[^>]*>\s*</video>', html)
         lines = []
         for i, seg in enumerate(INTROS[pass_id], 1):
-            if not os.path.exists(os.path.join(ROOT, 'merc', 'shots', seg['shot'] + '.json')):
+            if not os.path.exists(os.path.join(SHOTS_DIR, seg['shot'] + '.json')):
                 bad.append(f'{scene_id}: {pass_id} intro {i}: unknown shot {seg["shot"]}')
                 continue
             if seg_window(seg, scene_id) is None:
@@ -185,7 +249,9 @@ def tags(html):
 
 def main(check, only=()):
     stale, bad, total = [], [], 0
-    for path in sorted(glob.glob(os.path.join(ROOT, 'compositions', 's*.html'))):
+    report = '--margins' in sys.argv
+    rows = []
+    for path in sorted(glob.glob(os.path.join(SCENES_DIR, 's*.html'))):
         scene_id = os.path.basename(path)[:-5]
         if scene_id not in SCENES or (only and scene_id not in only):
             continue
@@ -201,12 +267,12 @@ def main(check, only=()):
                 seg = INTROS[sm.group(1)][int(sm.group(2)) - 1]
                 w = seg_window(seg, scene_id)
                 start, dur, media = w
-                new = attr(new, 'src', f'assets/merc/{seg["shot"]}{"-tall" if seg["tall"] else ""}-merc.webm')
+                new = attr(new, 'src', f'{SRC}{seg["shot"]}{"-tall" if seg["tall"] else ""}-merc.webm')
                 new = attr(new, 'data-start', f'{start:.3f}')
                 new = attr(new, 'data-duration', f'{dur:.3f}')
                 new = attr(new, 'data-media-start', f'{media:.3f}')
             elif 'data-merc-manual' not in tag:
-                if not os.path.exists(os.path.join(ROOT, 'merc', 'shots', pass_id + '.json')):
+                if not os.path.exists(os.path.join(SHOTS_DIR, pass_id + '.json')):
                     bad.append(f'{scene_id}: unknown pass {pass_id}')
                 else:
                     lm = re.search(r'\sdata-merc-lead="([^"]+)"', tag)
@@ -223,6 +289,17 @@ def main(check, only=()):
                         new = attr(new, 'data-start', f'{start:.3f}')
                         new = attr(new, 'data-duration', f'{dur:.3f}')
                         new = attr(new, 'data-media-start', f'{media:.3f}')
+                        # no film frame on a pass-frame boundary: a pass at the film's fps is held to
+                        # MARGIN_MS; a slower one (this step's 30 fps passes) is reported, not failed
+                        pf = json.load(open(os.path.join(SHOTS_DIR, pass_id + '.json'))).get('fps', FPS)
+                        if 'data-merc-refl' not in tag and (report or pf == FPS):
+                            ld = float(lm.group(1)) if lm else 0.0
+                            for F in sorted({FPS, pf}):
+                                n, least, wrong, edge = margins(pass_id, scene_id, F, ld)
+                                rows.append((scene_id, pass_id, pf, F, n, least, wrong, edge))
+                                if pf == FPS and F == FPS and (least < MARGIN_MS or wrong):
+                                    bad.append(f'{scene_id}: {pass_id} at {F} fps: {wrong} film frames on another pass frame, '
+                                               f'the nearest boundary {least:.2f} ms away (under {MARGIN_MS})')
             for need in ('id=', 'class="clip', 'muted', 'playsinline'):
                 if need not in new:
                     bad.append(f'{scene_id}: {pass_id} tag lacks {need.rstrip("=")}')
@@ -242,6 +319,17 @@ def main(check, only=()):
                 stale.append(f'{scene_id}: intro tags')
             if not check:
                 open(path, 'w').write(final)
+    if report:
+        print('| Scene | Pass | Pass fps | Render fps | Film frames | Nearest pass-frame boundary | On another pass frame | Cut index from a whole frame |')
+        print('| ----- | ---- | -------- | ---------- | ----------- | --------------------------- | --------------------- | ---------------------------- |')
+        for scene_id, pass_id, pf, F, n, least, wrong, edge in rows:
+            print(f'| {scene_id} | {pass_id} | {pf} | {F} | {n} | {least:.2f} ms | {wrong} | {edge:.4f} |')
+        by = {}
+        for r in rows:
+            by.setdefault((r[2], r[3]), []).append(r)
+        for (pf, F), rs in sorted(by.items()):
+            print(f'{pf} fps passes in a {F} fps render: {sum(r[4] for r in rs)} film frames over {len(rs)} tags, '
+                  f'the nearest boundary {min(r[5] for r in rs):.2f} ms away, {sum(r[6] for r in rs)} on another pass frame')
     verb = 'stale' if check else 'updated'
     print(f'{total} Merc tags, {len(stale)} {verb}, {len(bad)} problems')
     for s in stale:

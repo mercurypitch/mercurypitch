@@ -1945,3 +1945,25 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      S15's size (225) and 60 fps with no frame on a pass boundary. S8 and S14 are rendered at 30 fps
      on today's clock in `lab/passes-proto/`, with the film's own passes untouched, so the final run
      after the owner's voices is one run.
+245. **The final passes' profile is accepted** (the lead looked at the idle and talk strips;
+     `lab/passes-proto/README.md`, `final-report.md`, `final60/plan.md`). `merc-shots.py --final`:
+     - a breath in (the mouth opens 0.15 s before the first word after every pause of 0.25 s or
+       more);
+     - a blink for the talker 0.10 s after the voice stops, and for the listener 0.03 s later in
+       pauses of 0.50 s or more;
+     - the talk cycle at 5.5 a second from each word's start (open 0.70, gain 0.55, power 0.6; arcs
+       0.5 per phrase);
+     - no eye move within 0.2 s of a cut;
+     - S14's chunks at 400 (300 px drawn), 60 fps, every tag 7.5 ms or more from a pass-frame
+       boundary.
+     S8's holds fall from 3.8 to 1.8 s per 30 s, and its talk at 225 px now changes by 37 to 39 a
+     sample (6 to 10 before).
+     Added by the lead:
+     - a breath in before each host's own sung sound (`gauge`, `demo`, `listen`, `twinkle`) and in
+       `breathe`, where the hosts breathe in with the viewer;
+     - S14's two `L.mercGate` calls take `base` 400, as S15 draws (the lab copy measured the `end`
+       cut at under 1 %); applied in the final run with the cut proved.
+     Not pulled: a blink after every cut, a looser listening idle and a larger breath in the bundle
+     (128). The final film's holds are measured first.
+     The builder ran `merc-joins.py` outside the heavy helper by mistake; it rewrote
+     `review/merc/joins.md` from the unchanged passes (23 of 23 boundaries join).

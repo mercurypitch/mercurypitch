@@ -4719,3 +4719,17 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   characters a pass). Then: voices -> re-time (cues.py) -> final passes at 60 fps (per the
   prototype) -> final render (check frame 0) -> deliverables (music-only sibling render, contact
   sheet, DELIVERY.md, captions).
+
+## 15:16 UTC, 20 Nov
+- PASSES PROTOTYPE HANDED BACK and ACCEPTED (DECISIONS 245; lead looked at item1-idle.png and
+  item2-talk.png): merc-shots.py --final = breath in 0.15 s after pauses >= 0.25 s, blinks after
+  the voice stops, talk cycle 5.5/s, cut clear 0.2 s, S14 at 400, 60 fps margins. S8 holds 3.8 -> 1.8
+  per 30 s. Lead added: breath in before gauge/demo/listen/twinkle and in breathe; S14 gates base
+  400 at the final run. FINAL RUN PLAN: l5film/lab/passes-proto/final60/plan.md (27 jobs, 63,998
+  frames, about 4.2 h, order via merc-queue.py --order=final). Waits on the final voices.
+- LESSON 6 FILM PRE-PRODUCTION STARTED (the next video, per the owner's 18 Nov "continue with next
+  video"): (model) agent (builder) with briefs/l6-preproduction.md -> l6film/ (scaffold from
+  l5film, BRIEF, FACTS, script.json, SCRIPT.md, scratch clock). NEXT when it hands back: the lead
+  reads the script and answers its questions; then a fresh motion-critic (script round) on it, at
+  most two review turns.
+- STILL WAITING ON THE OWNER: the final voices' yes (Lesson 5), and their listen to the sound cut.

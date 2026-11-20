@@ -1,0 +1,28 @@
+m-blue-s04       456 frames  x +0.0000 to +0.0000  y +0.0000 to +0.2219  x at rest throughout
+m-blue-s05     not rendered
+m-blue-s06     not rendered
+m-blue-s07     not rendered
+m-blue-s08     not rendered
+m-blue-s09     not rendered
+m-blue-s10     not rendered
+m-blue-s11     not rendered
+m-blue-s12     not rendered
+m-blue-s13     not rendered
+m-blue-s14     not rendered
+m-blue-s15     not rendered
+m-orange-s03   not rendered
+m-orange-s04   not rendered
+m-orange-s05   not rendered
+m-orange-s06   not rendered
+m-orange-s07   not rendered
+m-orange-s08   not rendered
+m-orange-s09   not rendered
+m-orange-s10   not rendered
+m-orange-s11   not rendered
+m-orange-s12   not rendered
+m-orange-s13   not rendered
+m-orange-s14   not rendered
+m-orange-s15   not rendered
+m01-blue       not rendered
+m01-orange     not rendered
+lab/passes-proto/final60/merc-coded/roots.js: 1 chunks, 3 KB

@@ -1,0 +1,10 @@
+[heavy] slot 1: python3 lab/passes-proto/cutbox.py lab/passes-proto/cut-end-a/clip.mp4 --cut 477 --label cut-end-a --pair lab/passes-proto/cut-end-a/pair.png
+cut-end-a: frames 476 (before the cut) and 477 (after)
+| Host | Frame | Body box (x0, y0, x1, y1) | Width x height | Mean gradient | Fine detail | Crown edge step |
+| ---- | ----- | ------------------------- | -------------- | ------------- | ----------- | --------------- |
+| Merc | before | 1217, 660, 1360, 844 | 143 x 184 | 7.44 | 14.16 | 69.8 |
+| Merc | after | 1217, 660, 1360, 844 | 143 x 184 | 7.33 | 13.20 | 52.0 |
+| Tavi | before | 1727, 661, 1875, 844 | 148 x 183 | 7.12 | 13.07 | 47.6 |
+| Tavi | after | 1728, 659, 1874, 844 | 146 x 185 | 7.07 | 12.20 | 45.0 |
+Across the cut (after against before). Merc: mean gradient -1.4 %, fine detail -6.8 %, the square's mean change 1.18 levels; Tavi: mean gradient -0.7 %, fine detail -6.6 %, the square's mean change 2.56 levels.
+lab/passes-proto/cut-end-a/pair.png
