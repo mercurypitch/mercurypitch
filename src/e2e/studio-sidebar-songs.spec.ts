@@ -252,3 +252,28 @@ for (const collapsed of [true, false]) {
     expect(await railChoice(page)).toBe(collapsed ? 'false' : 'true')
   })
 }
+
+test('The Studio tour keeps its Switch songs step when Your songs is collapsed, opens it, and folds it back after', async ({
+  page,
+}) => {
+  test.setTimeout(90_000)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await page.addInitScript(() => {
+    localStorage.setItem('pitchperfect_page_tour_offered_studio', 'true')
+  })
+  await openArrangement(page)
+  await page
+    .getByRole('button', { name: 'Expand sidebar', exact: true })
+    .click()
+  const section = page.locator('[data-collapsible="sidebar-studio-songs-open"]')
+  await section.click()
+  await expect(rail(page)).toHaveCount(0)
+
+  const step = await tourToSwitchSongs(page, false)
+  await expect(rail(page)).toBeVisible()
+  await page.keyboard.press('Escape')
+
+  await expect(step).toHaveCount(0)
+  await expect(rail(page)).toHaveCount(0)
+  await expect(section).toBeVisible()
+})

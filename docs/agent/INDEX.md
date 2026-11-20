@@ -76,7 +76,7 @@ These are the rules that break things when ignored.
 |---|---|---|---|
 | `lessons` | [staff-draw.ts](../../src/features/lessons/kit/staff-draw.ts) | 124.5k | Staff drawing — staves, clefs, notes and the pitch line, engraved as SVG The staff toy's picture (staff.ts; Lesson 15's WEB-SPEC, Toys 1... |
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
-| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 37.3k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
+| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 37.4k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
 | `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 32.6k | The room's lit instruments, by the name each of the older stage's instruments exports itself under (instrument-skin.ts). |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
 | `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 24.4k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
@@ -118,9 +118,9 @@ These are the rules that break things when ignored.
 | `mercury-sing` | [mercury-sing-engine.ts](../../src/features/mercury-sing/mercury-sing-engine.ts) | 1.6k | Mercury Sing engine — listen, match, decide, hand off The headless controller behind the stage: owns its own AudioEngine + LivePitchBuffe... |
 | `practice-intelligence` | [weakness-analyzer.ts](../../src/features/practice-intelligence/weakness-analyzer.ts) | 1.5k | Weakness Analyzer — Detect problem areas from practice history Scans exercise history and session results to identify: - Low-scoring exer... |
 | `premium-exercises` | [ExercisePicker.tsx](../../src/features/premium-exercises/ExercisePicker.tsx) | 1.5k | The exercise picker: every premium exercise, one card each A kit Sheet the Sing room owns, as it owns its song and take sheets. |
+| `sidebar` | [sidebar-registry.ts](../../src/features/sidebar/sidebar-registry.ts) | 1.3k | ── Sidebar panel registry One AppSidebar shell; WHAT it shows is this file's decision, per tab. |
 | `tours` | [TourScreenHost.tsx](../../src/features/tours/TourScreenHost.tsx) | 1.3k | TourScreenHost — what a tour asks before it changes the screen Draws the question a door asks before a tour closes what the singer has op... |
 | `playback` | [usePlaybackController.ts](../../src/features/playback/usePlaybackController.ts) | 1.2k | usePlaybackController — the Singing tab's transport Start/stop/seek across the three playback modes (free practice, session, backing track). |
-| `sidebar` | [sidebar-registry.ts](../../src/features/sidebar/sidebar-registry.ts) | 1.2k | ── Sidebar panel registry One AppSidebar shell; WHAT it shows is this file's decision, per tab. |
 | `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 1.1k | DestinationGallery — the Home page's card grid `HOME_DESTINATIONS` is the content; the component is the renderer. |
 | `session-drummer` | [session-drummer-engine.ts](../../src/features/session-drummer/session-drummer-engine.ts) | 1.1k | A session-scoped drummer borrows the room graph and either scheduled score beats or one manual-tempo clock. |
 | `falling-notes` | [useFallingNotesController.ts](../../src/features/falling-notes/useFallingNotesController.ts) | 1.0k | useFallingNotesController — Game logic for Synthesia-style piano practice |
