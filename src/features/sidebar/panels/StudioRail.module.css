@@ -1,0 +1,251 @@
+/* Studio rail — the song list. Each row is a song's title, when it was
+   last edited, and its length and lanes as pills; the open song carries a
+   filled glyph and an Open pill. Pointing at a row lifts its surface in
+   and makes the glyph's level bars jump to a new reading: transform and
+   opacity only, so nothing around it moves. */
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* Why the page cannot switch now: said once above the rows it disables. */
+.hold {
+  margin: 0;
+  padding: 2px 4px;
+  font-size: 0.75rem;
+  line-height: 1.45;
+  color: var(--text-secondary);
+}
+
+.list {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  /* A long library scrolls inside the panel, not the whole rail. Its
+     foot cuts through a row (seven and a half rows of 52 px and their
+     2 px gaps), so a list that ends on a row's edge never looks like the
+     whole library. */
+  max-height: min(52vh, 405px);
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}
+
+.row {
+  --row-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  appearance: none;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 7px 8px;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+}
+
+/* The hover surface: its own layer, faded and grown in, so the row's box
+   never changes. */
+.row::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: inherit;
+  background: var(--bg-hover);
+  opacity: 0;
+  transform: scale(0.97);
+  transition:
+    opacity 160ms var(--row-ease),
+    transform 160ms var(--row-ease);
+  content: '';
+}
+
+.row[aria-current='true']::before {
+  background: color-mix(in srgb, var(--accent) 12%, transparent);
+  opacity: 1;
+  transform: none;
+}
+
+.row:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: -2px;
+}
+
+.row:focus-visible::before {
+  opacity: 1;
+  transform: none;
+}
+
+.row:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.glyph {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--accent-surface);
+  color: var(--accent-text);
+  transition: transform 160ms var(--row-ease);
+}
+
+.glyph rect {
+  fill: currentColor;
+  transform-box: fill-box;
+  transform-origin: center;
+  transition: transform 160ms var(--row-ease);
+}
+
+.row[aria-current='true'] .glyph {
+  background: var(--accent);
+  color: var(--text-inverse);
+}
+
+.body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+  transition: transform 160ms var(--row-ease);
+}
+
+.titleLine {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  min-width: 0;
+}
+
+.title {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.25;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.edited {
+  flex: none;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  min-width: 0;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  height: 18px;
+  padding: 0 6px;
+  border-radius: var(--radius-pill, 999px);
+  background: color-mix(in srgb, var(--text-primary) 7%, transparent);
+  color: var(--text-secondary);
+  font-size: 0.68rem;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+}
+
+.pillTime {
+  font-variant-numeric: tabular-nums;
+}
+
+/* The accent is the pill's ground, not its text: accent text on the open
+   row's tint measured 4.3:1 in both themes, the primary text 11:1. */
+.pillOpen {
+  background: var(--accent-surface);
+  color: var(--text-primary);
+  font-weight: 600;
+}
+
+/* Pointing at a row: the surface comes in, the glyph lifts and its bars
+   jump, one after the other, and the text leans a step toward it. A touch
+   screen gets none of it (no sticky hover); the row's tap still opens.
+   Under reduced motion the surface still marks the row, at once, and
+   nothing moves. */
+@media (hover: hover) {
+  .row:hover:not(:disabled)::before {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .row:hover:not(:disabled) .glyph {
+    transform: translateY(-1px) scale(1.06);
+  }
+
+  .row:hover:not(:disabled) .body {
+    transform: translateX(2px);
+  }
+
+  .row:hover:not(:disabled) .glyph rect:nth-child(1) {
+    transform: scaleY(1.6);
+  }
+
+  .row:hover:not(:disabled) .glyph rect:nth-child(2) {
+    transform: scaleY(0.5);
+    transition-delay: 15ms;
+  }
+
+  .row:hover:not(:disabled) .glyph rect:nth-child(3) {
+    transform: scaleY(3.4);
+    transition-delay: 30ms;
+  }
+
+  .row:hover:not(:disabled) .glyph rect:nth-child(4) {
+    transform: scaleY(0.6);
+    transition-delay: 45ms;
+  }
+
+  .row:hover:not(:disabled) .glyph rect:nth-child(5) {
+    transform: scaleY(1.4);
+    transition-delay: 30ms;
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .row:active:not(:disabled) .glyph {
+    transform: scale(0.96);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .row::before,
+  .glyph,
+  .glyph rect,
+  .body {
+    transition: none;
+  }
+
+  .row::before {
+    transform: none;
+  }
+}

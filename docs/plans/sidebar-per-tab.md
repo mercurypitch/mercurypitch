@@ -13,6 +13,10 @@ groups + setlists move into the rail (§4) · the rail is THE jam roster
 batch runs; the Analysis take-picker stays in the dashboard for now; Guitar
 adopts the rail per the matrix; Daily Routine stays per-tab as in the matrix.
 
+Studio joined the rail on 2026-11-20 with its song list (§4): the Studio
+page lends the rail its list and its switch while it is mounted, so the
+rail switches songs only through the checks the page itself makes.
+
 ## 1. The problem
 
 `AppSidebar.tsx` renders the same nine sections on every tab:
@@ -120,6 +124,7 @@ Universal (every tab): **Learn/Guide/Tour** (top) · **Mic & Sensitivity**
 | **Compose**       | Library · Playback Setup (transposes — already special-cased) · Note list                                                                                                                                                  | as today minus Character                   |
 | **Karaoke**       | **Session groups / setlists** (lift `SessionGroupTabs` + playlist gallery entry points out of the panel body) · **Queue status** (mini mirror of the setlist queue: N waiting / current track %) · **Credits + mode** chip | the big win; frees in-panel vertical space |
 | **Jam**           | **Room card** (room id, mode, share/copy — from `jam-store`) · **Peers roster** (who's in, roles, mic state) · **Jam catalog shortcut**                                                                                    | the second big win                         |
+| **Studio**        | **Your songs** (every Studio song with its length, lanes and last edit; a row switches songs through the page's own switch, lent by `studio-songs-store` while the page is mounted)                                        | new, lazy                                  |
 | **Community**     | **Your profile card** (`ProfileView` exists in `features/community`) · **Filters** (instrument/type) · Activity°                                                                                                           | reuses ProfileView                         |
 | **Leaderboard**   | **Your rank card** · **League/week picker**                                                                                                                                                                                | new, small                                 |
 | **Challenges**    | **Weekly challenge card** (target, your best, attempts left) · Activity°                                                                                                                                                   | new, small                                 |

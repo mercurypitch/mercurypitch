@@ -46,6 +46,7 @@ export type SidebarPanelId =
   | 'karaoke-groups'
   | 'karaoke-setlists'
   | 'jam-room'
+  | 'studio-songs'
 
 export const SIDEBAR_PANELS: Record<SidebarPanelId, Component> = {
   character: CharacterPanel,
@@ -63,13 +64,14 @@ export const SIDEBAR_PANELS: Record<SidebarPanelId, Component> = {
   'karaoke-groups': lazy(() => import('./panels/KaraokeGroupsPanel')),
   'karaoke-setlists': lazy(() => import('./panels/KaraokeSetlistsPanel')),
   'jam-room': lazy(() => import('./panels/JamRoomPanel')),
+  'studio-songs': lazy(() => import('./panels/StudioSongsPanel')),
 }
 
 /**
  * The plan's §4 matrix. Character only where a voice character drives the
  * engine; Library only where the melody library feeds the surface;
  * Playback Setup only on musical tabs. Karaoke carries its queue, groups
- * and set lists in the rail, and Jam its room card.
+ * and set lists in the rail, Jam its room card, and Studio its songs.
  * The three dev surfaces keep the historical full list — nobody is
  * cleaning up a hidden lab.
  */
@@ -116,7 +118,9 @@ export const SIDEBAR_LAYOUT: Record<ActiveTab, readonly SidebarPanelId[]> = {
   [TAB_LEADERBOARD]: ['mic'],
   [TAB_CHALLENGES]: ['mic', 'activity'],
   [TAB_COMPOSE]: ['library', 'playback-setup', 'mic', 'note-list'],
-  [TAB_STUDIO_NIGHT]: [],
+  // The open Studio page lends the rail its song list (studio-songs-store),
+  // so a song is one tap away from inside another.
+  [TAB_STUDIO_NIGHT]: ['studio-songs', 'mic'],
   [TAB_ANALYSIS]: ['mic', 'display'],
   [TAB_SETTINGS]: ['mic'],
   [TAB_PITCH_TEST]: DEV_SURFACE_LAYOUT,

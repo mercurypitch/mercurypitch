@@ -4,8 +4,12 @@ export interface StudioTourStep {
   title: string
   targetSelector: string
   description: string
-  placement: 'bottom' | 'top'
+  placement: 'bottom' | 'top' | 'right'
   whenPresent?: true
+  /** The target is in the sidebar: the phone's drawer opens for the step. */
+  inSidebar?: true
+  /** A collapsed sidebar section to expand for the step. */
+  reveal?: string
 }
 
 export const STUDIO_LIBRARY_TOUR_STEPS: StudioTourStep[] = [
@@ -47,6 +51,16 @@ export const STUDIO_WORKSPACE_TOUR_STEPS: StudioTourStep[] = [
       'Name this song, download a complete backup, make a copy, or return to your song library. Audio storage sets how new audio is kept on this device: Full quality, or Save space to fit more takes in a song. Changes save in this browser.',
     placement: 'bottom',
     whenPresent: true,
+  },
+  {
+    title: 'Switch songs',
+    targetSelector: '[data-tour="studio.rail-songs"]',
+    description:
+      'Every song on this device, with its length, lanes and last edit. Pick one to open it here. A save in progress lands first, and a take that is recording holds the switch until you stop it.',
+    placement: 'right',
+    whenPresent: true,
+    inSidebar: true,
+    reveal: '[data-collapsible="sidebar-studio-songs-open"]',
   },
   {
     title: 'Bring in your takes',
