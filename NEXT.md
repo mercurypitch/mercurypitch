@@ -4756,3 +4756,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - L6 SCRIPT CRITIC 01 RETURNED: ONE MORE PASS (saved verbatim to l6film/review/script-01/REPORT.md; it could not write). Top items: the turn leads a resting viewer into a second higher turn (care); Merc seems to correct Tavi when right; ch5 never sounds the fifth; the swap heard once; cold open spends its tension; ch3 re-proves the cold open; practise card has no single action.
 - LEAD CALLS written: l6film/LEAD-ANSWERS.md section "Calls on script round 01" (all taken; practise card in two beats; tease words stay the owner series text; length under 9:20).
 - WRITER FIX ROUND STARTED: resumed (builder). NEXT: lead checks the fix, then script critic 02 (the LAST before the storyboard), then storyboard.
+
+## 18:20 UTC, 20 Nov
+- L6 WRITER FIX ROUND HANDED BACK: draft 2 at 9:14.5 scratch (74 lines, 976 words; Merc 60/833, Tavi 14/143); word-rate est 9:38.8. Lead calls 13-15 in l6film/LEAD-ANSWERS.md (no cut now; keep o13a; accept the rest).
+- SCRIPT CRITIC 02 LAUNCHED (verification, the LAST before the storyboard): (builder) -> l6film/review/script-02/REPORT.md. NEXT: save it if needed, the lead calls, a short writer touch-up if any, then the STORYBOARD (brief to write: l6film STORYBOARD.md + HANDOFFS.md, on L5 model; storyboard critic per skill, max two turns).
