@@ -4733,3 +4733,18 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   reads the script and answers its questions; then a fresh motion-critic (script round) on it, at
   most two review turns.
 - STILL WAITING ON THE OWNER: the final voices' yes (Lesson 5), and their listen to the sound cut.
+
+## 15:55 UTC, 20 Nov
+- LESSON 6 PRE-PRODUCTION HANDED BACK (l6film/: BRIEF, FACTS, script.json, SCRIPT-DRAFT.md,
+  SCRIPT.md, PACING.md, DECISIONS.md (writer's), tools/CHANGES.md, tools/facts-check.py). Scratch
+  clock 9:04.6 (word rate 9:24.5); 67 lines, 1,000 words (Merc 53/822, Tavi 14/178).
+  SOURCE NOTE: the primary checkout's docs/plans is 19 Oct (3962d2f53), STALE. Read the series
+  from the fix worktree (b5ddaf2d7; checked vs origin/main 60a28e807: Lesson 6 FACTS differs in two
+  code line numbers only) or git show origin/main:<path>.
+- LEAD READ THE SCRIPT and answered the writer's 8 questions (l6film/LEAD-ANSWERS.md: main as
+  source; one sung line; care as drafted (coach confirms); app addresses + first-visit line (walk on
+  dev before the card); keep the hook; bed on C as specified; one timbre; length for the critic).
+- SCRIPT CRITIC 01 LAUNCHED (fresh motion-critic on (model) xhigh) -> l6film/review/script-01/REPORT.md.
+  NEXT: the lead's calls on its report (l6film/DECISIONS or LEAD-ANSWERS), the writer's fix round
+  (resume (builder)), at most one more critic (owner's two-turn rule), then the storyboard.
+- Lesson 5 still waits on the owner (voices' yes; their listen).
