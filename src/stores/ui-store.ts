@@ -133,12 +133,53 @@ export const [sidebarOpen, setSidebarOpen] = createSignal(false)
 export const [sidebarCollapsed, setSidebarCollapsed] =
   createPersistedSignal<boolean>('pitchperfect_sidebar_collapsed', false)
 
-// Studio keeps its own rail state: the arrangement wants the width, so the
-// sidebar starts collapsed there on each app load, whatever the other tabs
-// chose, and stays as the person leaves it until the next load.
-// Store-backed for the tour, which expands it for the Studio's sidebar steps.
-export const [studioSidebarExpanded, setStudioSidebarExpanded] =
-  createSignal(false)
+/** Where the Studio's sidebar choice is kept on this device. */
+export const STUDIO_SIDEBAR_KEY = 'sidebar-studio-rail-open'
+
+// Studio keeps its own rail state, apart from the other tabs': the
+// arrangement wants the width, so a first visit starts collapsed. Once the
+// person expands or collapses it, that choice is remembered on this device
+// (a key without the synced `pitchperfect_` prefix, as the sidebar's
+// sections keep theirs: how wide a rail should be is the screen's question,
+// not the account's). createPersistedSignal reads and writes inside
+// try/catch, so storage that throws or is empty leaves it collapsed.
+const [studioRailChoice, setStudioRailChoice] = createPersistedSignal<boolean>(
+  STUDIO_SIDEBAR_KEY,
+  false,
+  { validator: (value): value is boolean => typeof value === 'boolean' },
+)
+// A tour's sidebar step shows the rail without making that the person's
+// choice: null when no tour holds it.
+const [studioRailTour, setStudioRailTour] = createSignal<boolean | null>(null)
+
+/** Whether the Studio's sidebar is expanded: a tour's hold, else the person's choice. */
+export const studioSidebarExpanded = (): boolean =>
+  studioRailTour() ?? studioRailChoice()
+
+/** The person expands or collapses the Studio's sidebar: remembered on this device. */
+export function setStudioSidebarExpanded(
+  next: boolean | ((expanded: boolean) => boolean),
+): void {
+  const value =
+    typeof next === 'function' ? next(untrack(studioSidebarExpanded)) : next
+  setStudioRailTour(null)
+  setStudioRailChoice(value)
+}
+
+/**
+ * A tour step in the Studio's sidebar: show the rail without writing it as
+ * the person's choice. True when the tour had to open it.
+ */
+export function revealStudioSidebarForTour(): boolean {
+  if (untrack(studioSidebarExpanded)) return false
+  setStudioRailTour(true)
+  return true
+}
+
+/** The tour is over: the Studio's sidebar is as the person left it. */
+export function releaseStudioSidebarFromTour(): void {
+  setStudioRailTour(null)
+}
 
 // Editor view within the Editor tab. 'split' shows the piano roll and a live
 // sheet-music strip together.
