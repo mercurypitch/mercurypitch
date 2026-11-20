@@ -4708,7 +4708,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - SOUND STEP HANDED BACK and ACCEPTED (DECISIONS 243; lead measured the review cut at -16.1 LUFS,
   4.8 LU, and checked the pad (110/165/220 Hz in hook and break), the landing (E4 + E6) and the
   room tone (flat in hold) by spectrum). FACTS 81, BRIEF § Audio, STORYBOARD § Sounds and captions
-  now carry  (backups $S/{facts,brief,storyboard}-pre243.md). Root takes full.wav now.
+  now carry the break beat (backups $S/{facts,brief,storyboard}-pre243.md). Root takes full.wav now.
   SENT the owner renders/film-draft-02-sound.mp4 to LISTEN (their list: the ooh, the starts back to
   back, listen's two voices, the ticks, the pad in pauses and break, the landings, whooshes, chimes,
   the 10 s of room tone, captions, phone speakers).
