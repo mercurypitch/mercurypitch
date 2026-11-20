@@ -4823,3 +4823,9 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   reads its hand-back, then STORYBOARD CRITIC 02 = THE LAST (fresh motion-critic, verification:
   previous report path review/storyboard-01/REPORT.md, report to review/storyboard-02/), then
   the lead's calls and the KIT STEP (seven new modules, STORYBOARD "For the kit step").
+
+## 20 Nov 22:52 UTC: fix round resumed after (model)'s 5-hour limit
+- The storyboard fix round ((builder)) stopped on (model)'s 5-hour limit (reset 22:50
+  UTC) before editing the board (files still at 19:47; it had added tools/lab.mjs 20:35 and
+  tools/film-compare.py 20:59). Resumed with SendMessage at the reset. NEXT unchanged: its
+  hand-back, then storyboard critic 02 (the last), then the kit step.
