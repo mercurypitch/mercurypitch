@@ -4798,3 +4798,12 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   it cannot write). NEXT: the lead's calls on it; a board fix round by the storyboard agent
   (resume (builder)); critic 02 = the LAST (owner's two-turn rule); then the kit step.
 - If the critic stops on (model)'s 5-hour limit: resume it with SendMessage after the reset.
+
+## 20 Nov 19:59 UTC: the card's path walked on dev (calls 38, 39)
+- Walked dev v0.9.31 (fresh browsers, desktop and iPhone 13, prod blocked): the first-visit line
+  ("First visit? Skip the intro") is STALE since 6 Nov (no intro on room pages) -> call 38: it
+  comes out of L6's practise card and end card, FACTS 96 rewritten, in the fix round. Lesson 5's
+  film never had the line. Interval Trainer and Ear Lab > Shape > Leap paths hold (call 39).
+- App note for the owner (not acted on): Ear Lab has two things named "Leap", the tapped
+  listening drill (Shape station) and a singing ear room.
+- Evidence in l6film/review/dev-walk-01/.
