@@ -306,9 +306,9 @@ hold).
 
 ## Audio
 
-- Music: none recorded. A quiet open-fifth pad on A (FACTS 81), only in the act transitions and
-  under the dressed pauses (`predict`, `hook`, `q0`, `predict2`, `q1`, `q3`, `q4`, `feel`,
-  `card`); silent under every line and every sound (the gauge's 10 s and the tease's tune among
+- Music: none recorded. A quiet open-fifth pad on A (FACTS 81), only in the act transitions, under
+  the dressed pauses (`predict`, `hook`, `q0`, `predict2`, `q1`, `q3`, `q4`, `feel`, `card`) and
+  through `break` with its two soft landing taps; silent under every line and every sound (the gauge's 10 s and the tease's tune among
   them), and in `heard`, `breathe`, the ticks and `hold`, which keep only the room tone: the viewer
   holds the note alone after the model note, as the page's hold has nothing playing while it is
   open. The title and end stings are Lesson 1's chimes.

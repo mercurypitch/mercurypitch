@@ -489,7 +489,7 @@ it means, so a muted viewer knows what is playing and the predicts give nothing 
 | q0, q1, q3, q4, feel | [think] |
 | title, end | [chime] |
 
-`heard`, `breathe`, `hook` and `card` carry no caption: the picture holds them. Captions are 42
+`heard`, `breathe`, `hook`, `card` and `break` carry no caption: the picture holds them. Captions are 42
 characters a line, two lines, at most 20 characters a second, the speaker named only when it
 changes ("MERC:", "TAVI:"), the address written mercurypitch.com/mirror (FACTS 78). Every caption
 sits in the bottom 17 %, so every essential mark sits above y 896 and the care block above y 864.

@@ -4703,3 +4703,19 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   about 6k credits a pass plus retakes. Needs their yes (credits). Then re-time, final passes,
   60 fps final render (check frame 0).
 - Hourly check-in RE-ENABLED.
+
+## 13:21 UTC, 20 Nov
+- SOUND STEP HANDED BACK and ACCEPTED (DECISIONS 243; lead measured the review cut at -16.1 LUFS,
+  4.8 LU, and checked the pad (110/165/220 Hz in hook and break), the landing (E4 + E6) and the
+  room tone (flat in hold) by spectrum). FACTS 81, BRIEF § Audio, STORYBOARD § Sounds and captions
+  now carry  (backups $S/{facts,brief,storyboard}-pre243.md). Root takes full.wav now.
+  SENT the owner renders/film-draft-02-sound.mp4 to LISTEN (their list: the ooh, the starts back to
+  back, listen's two voices, the ticks, the pad in pauses and break, the landings, whooshes, chimes,
+  the 10 s of room tone, captions, phone speakers).
+- PASSES PROTOTYPE STARTED (DECISIONS 244): (model) agent (builder) with
+  $S/briefs/l5-passes-proto.md (idle in pauses, talk cycle at 225 px, S6/S7 eye turn, S14 at S15's
+  size, 60 fps boundaries; S8 + S14 at 30 fps in lab/passes-proto/, the film's passes untouched).
+- STILL WAITING ON THE OWNER: yes/no on generating the final voices (ElevenLabs credits, ~5.6k
+  characters a pass). Then: voices -> re-time (cues.py) -> final passes at 60 fps (per the
+  prototype) -> final render (check frame 0) -> deliverables (music-only sibling render, contact
+  sheet, DELIVERY.md, captions).

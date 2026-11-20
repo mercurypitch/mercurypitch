@@ -20,6 +20,90 @@ rest (mix.py reads only Echo samples there, which this film does not use).
 Every heavy run (a render, a Chromium pass, the Merc bundle, the Kokoro run) goes through the
 scratchpad's heavy helper on this shared machine, one at a time.
 
+## 2026-11-20 (Lesson 5, the sound step, DECISIONS 242)
+
+Two tools changed and two are new. Regenerate, in this order: `.venv/bin/python tools/mix.py` (it
+runs `node tools/sound-kit.mjs` first), `python3 tools/captions.py`, the review cut's mux, then
+`.venv/bin/python tools/sound-measure.py --out review/<round> --cut <cut> --picture <picture>`.
+Proofs: `review/sound-01/` (SOUND.md and its tables). The copies before: `review/sound-01/before/`
+(`mix.before-sound.py.txt`, `captions.before-sound.py.txt`).
+
+- **sound-kit.mjs: new, read-only.** Loads the kit's modules in node (no browser: `assets/cues.js`,
+  `assets/scenes.js`, `assets/merc/roots.js` and every `assets/lib/*.js` of `scripts.txt` but GSAP)
+  and writes `assets/audio/kit-sound.json`: `L.CONTOUR.easy`, `.pushed`, `.push` and `.demo`
+  (`cents`, the drawn line `c` and `db`, every millisecond), `L.CONTOUR.vib(t, 0)` over 10 s, the
+  Push slider's `pushAt`, a step's cents and dB, the gauge's length from `L.GAUGE.x` and its line's
+  place in Merc's band, `L.TRACE.ONSET`, `.len` and `.level` for the three starts, `L.TEASE`'s notes
+  and onsets, `L.TITLE.CHIME`, `L.HOP`, `L.settled('demo')`, and each file's sha256. Two rules live
+  only in a scene, so it reads that scene's own line and stops if the line no longer reads so:
+  s09-onset's `ROW_T = [0, LEN + 0.2, 2 * (LEN + 0.2)]` (the starts back to back) and s13-recap's
+  `HOP1 = at('break', 'start', 0.6), HOP2 = at('break', 'start', 1.25)` with its moves
+  `at: HOPn + L.HOP.crouch, dur: L.HOP.air` (the landings: 490.84 and 491.49 on today's clock).
+  `--print` prints a summary and writes nothing. It writes nothing but that JSON.
+- **sound-measure.py: new, read-only** (writes only into `--out`). Reads `cues.json`,
+  `kit-sound.json`, `mix-report.json`, the mixes and the stems; with `--cut`, the review cut's
+  decoded sound; with `--picture`, S9's frames. Writes `SOUND.md`, `tracks/<sound>.csv` and
+  `starts-picture.csv`: each sung sound's pitch and level every 10 ms against the kit's drawn
+  values (the fundamental's instantaneous frequency, band-passed 3 semitones each side), the ticks
+  against `listen`, the starts' onsets, lines against sounds, the bed's windows and the silences,
+  the landings, whooshes and chimes, the stems' and mixes' loudness, the stems' sum against
+  `full.wav`, the limiter, and the traces' heads frame by frame against the sound. It shares no code
+  with the mixer. Its frame reader passes `-fps_mode passthrough` and checks one frame read alone
+  against the same frame read in a run: without it FFmpeg repeats the first frame after a seek and
+  every frame reads one late (the first run read the picture 33 ms behind for that reason).
+  `--only 1,3` runs sections and writes nothing (development).
+- **mix.py: this film's sounds, bed and effects** (Lesson 4's engine kept: `tone`, `chime`,
+  `noise_whoosh`, `room_tone`, `place`, the limiter, the balance by loudness and its targets).
+  - `sound_for` (line 452) is Lesson 5's: `easy`, `pushed`, `push` and `demo` on `L.CONTOUR`'s drawn
+    line and level (`contour_note`, 313); `gauge`, `listen` and `twinkle` as held notes with the
+    voice's own wave from the kit (`held_note`, 321; `tune`, 405); the three starts (`start_sound`,
+    379): the tone's level is `L.TRACE.level`, its onset `L.TRACE.ONSET`, the puff and the click the
+    page's own bursts (its seeded noise, envelope and band, `page_burst`, 350; lengths and levels
+    from `lesson-05/starts.ts`, FACTS 80); `starts` on s09's row times; `tick` (419). `ooh` (292) is
+    the one timbre: FACTS 79's partials and lowpass on any contour, the release closing inside the
+    sound's own length so no tail runs under the next line. A sound whose length by the kit is not
+    its cue's stops the run.
+  - The bed (481 to 513, 584 to 598): an explicit list, FACTS 81's eight marks and nine pauses and
+    `break` (DECISIONS 215), each a window in the gap between two lines, sounds or stings; a mark or
+    pause with no window stops the run. Lesson 4's rule (everywhere but the quiet stretches, gaps
+    under 1.2 s merged) left `hook` and `recap` without the pad on this cue sheet. The pad runs up
+    to the title chime's first note. `pad` now takes a time array, and each window holds the pad on
+    its own time, zero at the window's middle: on the film's clock its slow beating left one pause
+    9 dB under another (-26.8 to -35.7 dBFS RMS; `break` the lowest). The gate's edges are written
+    where they fall (the same raised cosine a 0.35 s Hann kernel gave; convolving 26 million
+    samples took minutes).
+  - The effects: one whoosh an act mark, each at the same RMS (Lesson 4's differed by seed, 4 dB
+    in peak here), ending no later than the next line's start (`next`'s starts 0.05 s earlier for
+    that); the ticks and Merc's two landings (`landing`, 433) are set after the balance, against
+    `listen`'s peak (13 dB under) and the pad's peak in `break` (3 dB under), so the whooshes'
+    level does not move with them. The ticks sit in the `fx` stem.
+  - The master: the limiter's look-ahead is computed in place (the same values; 30 rolled copies
+    of the film took 3 GB); the final loudness is read on the two-channel signal the file carries;
+    the stems are written with the limiter's gain and the final gain, so they add up to `full.wav`
+    and `bed + stings + floor` is `music-only.wav`; a stem with nothing in it is not written
+    (`merc`); `full-raw.wav` and `music-raw.wav` are no longer left behind. It writes
+    `assets/audio/mix-report.json`: every time and level it chose.
+  - Removed: Lesson 4's `sound_for` table, `C_MAJ`, `D_MAJ` and `NO_BED`.
+  - Run it with the project's Python (`.venv/bin/python`: numpy and soundfile; the system Python
+    has neither), through the heavy helper (1.5 minutes).
+- **captions.py: this film's tables, and four rules.** `WORDS` (the address, FACTS 78), `SOUNDS`
+  (STORYBOARD § Sounds and captions, word for word), `QUIET` (`heard`, `breathe`, `hook`, `card`,
+  and `break`, which the board's table does not list) and `SUNG` (`gauge` and `twinkle` Merc's,
+  `demo` Tavi's, `listen` both, so the line after it is named). Lesson 4's solfège spellings are
+  gone (a stray "ray" or "tee" would have been rewritten). The rules, each for one caption of this
+  film: a long sound's description gives way by up to a tenth of its length, so "[your ten
+  seconds]" comes up when "[tick: start]" has had its 0.83 s; a description still short of its
+  minimum starts early by what it lacks ("[tick: stop]", 17 ms); `KEEP` holds words no caption may
+  part, a quoted title and a speaker's label from its first word ('"Twinkle, / Twinkle"' was
+  broken twice); a sentence with no clause mark that cannot fit is halved at the space nearest
+  its middle (o15, 85 characters); a first line never ends on a little word when the sentence can
+  be split at a clause mark instead (b6's "... talk at: a"); a short last chunk takes the clause
+  before it (b30's "a scoop." stood 0.83 s alone). Output: 139 captions, 23 of them sound
+  descriptions, longest line 42, peak 19.7 characters a second, no warning.
+- **gen-root.py: not changed; run with `MIX=full`.** `index.html`'s soundtrack is now
+  `assets/audio/full.wav` (its one changed line); `assets/scenes.js` was rewritten byte for byte;
+  no scene file was touched (35 files' sha256 before and after).
+
 ## 2026-11-19 (Lesson 5, integration: Merc's root on the shown pass frame in the film, DECISIONS 225)
 
 No tool changed. One kit file changed, by an atomic rename; proofs and the copy before are in

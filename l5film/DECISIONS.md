@@ -1920,3 +1920,28 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      picture with the new mix, not a new render. The builders now run on (model) at extra high effort:
      this session's weekly (model) allowance is at its warning level until 26 November, and (model)'s has
      reset.
+243. **The sound step is accepted for the owner's ear** (the lead read the hand-back and
+     `review/sound-01/SOUND.md`, measured the review cut's loudness, -16.1 LUFS and 4.8 LU, and
+     checked three spans by spectrum: the pad at 110, 165 and 220 Hz in `hook` and `break`, the
+     first landing on E4 with its double-octave partial, the room tone flat through `hold`).
+     - Every example comes from the kit's own numbers (`tools/sound-kit.mjs`), within 1.5 cents of
+       the drawn line (RMS 0.3 cents at most) and 0.03 dB of its level, except the starts' tones at
+       2.6 cents at most. The starts follow the trace's drawn level rather than the page's audio ramp,
+       so FACTS 80's "rising under it from 0.25 s" holds and the strip and the sound are one; the puff
+       and the click are the page's own.
+     - The ticks sit 13.1 to 13.2 dB under `listen` (LAB-CHECKS 16). The starts' sound leads its
+       picture by at most a frame, never trails it. The pad plays only where FACTS 81 (now with
+       `break`) puts it. No line overlaps any sound. The film is at -16 LUFS, as Lesson 4's.
+     - Stays as built: `tick-in` sounds with "Sing" 0.1 s before the ring starts to fill (the ring's
+       first frames barely move); the gauge's note carries the voice's vibrato while Merc's line is
+       drawn straight (FACTS 42); the catch's tone is full 13 ms after its drawn mark.
+     - Two slips by the builder, harmless: it ran `tools/chapters.py` before reading it (the output
+       was byte-identical), and it made a folder outside the brief's paths, then removed it.
+     - Review cut: `renders/film-draft-02-sound.mp4` (draft-02's video, copied). The root now takes
+       `full.wav`. FACTS 81, BRIEF § Audio and STORYBOARD § Sounds and captions now include `break`.
+244. **The final passes are proved on two scenes before the final run** (brief
+     `briefs/l5-passes-proto.md`): a visible idle in every pause over 0.25 s (189), a talk cycle
+     that registers at 225 px (201), the S6 to S7 eye turn on the cut's far side, S14's chunks at
+     S15's size (225) and 60 fps with no frame on a pass boundary. S8 and S14 are rendered at 30 fps
+     on today's clock in `lab/passes-proto/`, with the film's own passes untouched, so the final run
+     after the owner's voices is one run.

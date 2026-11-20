@@ -151,7 +151,10 @@ Facts from other lessons, beyond those carried above:
 81. **The bed and the silences.** A quiet open fifth on A, A2 110.00, E3 164.81 and A3 220.00 Hz,
     Lesson 2's pad in A (Lesson 4 film FACTS 69 has the same pad on D), only in the eight act
     transitions (`act1` to `act5`, `sing`, `recap`, `next`) and under the dressed pauses, `predict`,
-    `hook`, `q0`, `predict2`, `q1`, `q3`, `q4`, `feel` and `card` (MASTER-PLAN D9; playbook rule 12).
+    `hook`, `q0`, `predict2`, `q1`, `q3`, `q4`, `feel` and `card` (MASTER-PLAN D9; playbook rule 12),
+    and through `break`, where each of Merc's two hop landings gets a soft tap (two taps on E4, 3 dB
+    under the pad; DECISIONS 215 and 243). The pad fades under the title chime's first note; there
+    is none under the end chime.
     It is silent under every line and every sound (the gauge's note and the tease's tune among
     them), and in `heard` (the listening beat after the easy take), `breathe`, the ticks and
     `hold`: the viewer holds the note alone after the model note, as the page's hold has nothing
