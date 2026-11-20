@@ -71,7 +71,9 @@ export function StudioPage() {
   // the page's terms. A take holds the switch, as it holds leaving the tab;
   // so do an import, a song task, and changes a save cannot keep. A save in
   // flight does not: openForBackup lets it land first, as a backup from the
-  // list does, then opens through the same checks as the list's own rows.
+  // list does, then opens through the same checks as the list's own rows,
+  // which refuse a take that started during the wait. Export, Compare and
+  // Auto-balance are the workspace's own state, which the page cannot see.
   const switchHold = (): string | null => {
     if (studioTakeRunning()) return 'Stop the take to switch songs.'
     if (studio.importing())
@@ -83,10 +85,21 @@ export function StudioPage() {
     return null
   }
 
+  // From a pick until its switch settles, the rail holds every other row:
+  // a second pick would otherwise queue silently behind the first's wait.
+  const [switching, setSwitching] = createSignal(false)
+
   async function switchSong(id: string): Promise<void> {
     if (studio.project()?.id !== id) {
-      if (switchHold() !== null || studio.loading()) return
-      if (!studio.canBackup(id) || !(await studio.openForBackup(id))) return
+      if (switching() || switchHold() !== null || studio.loading()) return
+      if (!studio.canBackup(id)) return
+      setSwitching(true)
+      try {
+        // The controller asks again once the save has landed, take included.
+        if (!(await studio.openForBackup(id))) return
+      } finally {
+        setSwitching(false)
+      }
     }
     // The song is open now, or was already, behind the library: show it.
     if (studio.project()?.id === id) {
@@ -100,7 +113,7 @@ export function StudioPage() {
       songs: studio.projects,
       openId: () => studio.project()?.id ?? null,
       hold: switchHold,
-      opening: studio.loading,
+      opening: () => studio.loading() || switching(),
       open: switchSong,
     }),
   )

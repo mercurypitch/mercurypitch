@@ -4,6 +4,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { StudioStorageError } from '@/db/services/studio-service'
 import type { StudioProject } from '@/lib/studio/model/types'
 import { controllerServiceFixture } from './controller/controller.fixture'
+import { setStudioTakeRunning } from './record/take-running'
 import type { StudioController } from './useStudioController'
 import { STUDIO_SAVE_WAIT_MS, useStudioController } from './useStudioController'
 
@@ -11,6 +12,7 @@ const cleanups: (() => void)[] = []
 afterEach(() => {
   for (const cleanup of cleanups.splice(0)) cleanup()
   vi.useRealTimers()
+  setStudioTakeRunning(false)
 })
 
 const SWITCH_REFUSED =
@@ -121,5 +123,36 @@ describe('Studio controller backups', () => {
     controller.rename('Still saving')
     expect(await controller.openForBackup('one')).toBe(true)
     expect(controller.saveState()).toBe('saving')
+  })
+
+  it('refuses a switch while a take runs, even one that started during the wait for a save, and keeps the song open under the take', async () => {
+    const { controller, service } = mount()
+    await controller.open('one')
+    const land = holdNextSave(service)
+    controller.rename('Edit before the take')
+    const edited = controller.project()!
+
+    // The switch was asked for with no take running; the take starts while
+    // it waits for the save.
+    expect(controller.canBackup('two')).toBe(true)
+    const opening = controller.openForBackup('two')
+    setStudioTakeRunning(true)
+    land(edited)
+
+    expect(await opening).toBe(false)
+    expect(controller.project()?.id).toBe('one')
+    expect(controller.problem()).toBe(
+      'Stop the take before opening another project.',
+    )
+
+    // Asked again mid-take, every open path through the checks says no.
+    expect(controller.canBackup('two')).toBe(false)
+    await controller.open('two')
+    expect(controller.project()?.id).toBe('one')
+    expect(service.loadProject).toHaveBeenCalledTimes(1)
+
+    setStudioTakeRunning(false)
+    await controller.open('two')
+    expect(controller.project()?.id).toBe('two')
   })
 })

@@ -25,6 +25,7 @@ import { createStudioSaveQueue } from './controller/save-queue'
 import { prepareStudioSource } from './integration/prepare-source'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import { listStudioSources, readStudioSourceBlob, } from './integration/source-catalog'
+import { studioTakeRunning } from './record/take-running'
 import { createStudioStorageImports } from './storage/storage-imports'
 import type { StudioPersistence } from './storage/studio-persistence'
 import { createStudioPersistence } from './storage/studio-persistence'
@@ -38,6 +39,7 @@ import type { StudioStorageAnswer } from './storage/studio-storage-ask'
 export const STUDIO_SAVE_WAIT_MS = 10_000
 const SWITCH_REFUSED =
   'Save these changes, make a copy, or discard them before opening another project.'
+const SWITCH_WHILE_RECORDING = 'Stop the take before opening another project.'
 const LEAVE_WHILE_IMPORTING =
   'Studio is still adding audio to this project. Wait for it to finish, or cancel the import.'
 const LEAVE_WHILE_SAVING =
@@ -270,6 +272,13 @@ export function useStudioController(options: StudioControllerOptions = {}) {
 
   function canSwitch(waitsForSave = false): boolean {
     if (disposed() || loading() || working()) return false
+    // Opening another song unmounts the workspace, and with it a take that
+    // is counting in or recording. Asked again after a wait for a save, so
+    // a take started during the wait refuses the switch too.
+    if (studioTakeRunning()) {
+      setProblem(SWITCH_WHILE_RECORDING)
+      return false
+    }
     if (unsavedWork(waitsForSave)) {
       setProblem(SWITCH_REFUSED)
       return false

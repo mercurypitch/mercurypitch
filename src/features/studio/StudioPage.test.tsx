@@ -211,14 +211,42 @@ describe('Studio page song switch for the sidebar', () => {
     expect(studioSongs()).toBeNull()
   })
 
-  it('switches through the wait for a save in flight and the checks of its own list', async () => {
-    const controller = mountPage()
+  it('switches during a save in flight by handing the wait to the controller, not holding the rail', async () => {
+    const controller = mountPage(null, {
+      saveState: () => 'saving',
+      hasUnsavedChanges: () => true,
+    })
+    expect(studioSongs()!.hold()).toBeNull()
 
     await studioSongs()!.open('two')
 
     expect(controller.canBackup).toHaveBeenCalledWith('two')
     expect(controller.openForBackup).toHaveBeenCalledWith('two')
     expect(controller.open).not.toHaveBeenCalled()
+  })
+
+  it('holds the rail from a pick until its switch settles, so a second pick cannot queue behind it', async () => {
+    let settle!: (opened: boolean) => void
+    const controller = mountPage(null, {
+      saveState: () => 'saving',
+      hasUnsavedChanges: () => true,
+      openForBackup: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            settle = resolve
+          }),
+      ),
+    })
+    const loan = studioSongs()!
+
+    const first = loan.open('two')
+    expect(loan.opening()).toBe(true)
+    await loan.open('three')
+    expect(controller.openForBackup).toHaveBeenCalledOnce()
+
+    settle(false)
+    await first
+    expect(loan.opening()).toBe(false)
   })
 
   it('opens nothing when the controller refuses the switch', async () => {
