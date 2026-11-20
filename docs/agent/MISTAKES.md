@@ -563,6 +563,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** give a third signal a sum of its own first, so no node input adds more than two and no param more than one besides its own value, and pin it with a fan-in test on the fake graph. Before blaming a cycle, render the same graph several times: a rounding-sized difference is an order, not a timing.
 **See:** `src/lib/studio-fx/effects/delay.ts`, `src/lib/studio-fx/effects/delay.test.ts`, `src/lib/studio-fx/effects/dyneq.ts`
 
+### Count back from an output timestamp dated after the call
+
+**Symptom:** on a six-lane song the Studio playhead flickered back and forth while the sound played clean: 10 to 28 steps back in 6 s, up to 9.5 px at 80 px a second (headless Chromium, 20 Nov 2026).
+**Cause:** `getOutputTimestamp()` dated 84 % of that song's stamps after the call that read them, by up to 48 ms (a one-lane song: 73 %, up to 34 ms), each still a render time and the moment it is heard. `smoothHeardTime` counted on by `max(0, now - performanceTime)`, so it read a coming moment as now and jumped up to 46 ms from tick to tick. The line started again wherever the clock read, and stood on the older readout whenever a jump passed 50 ms.
+**Rule:** count `contextTime + (now - performanceTime) / 1000` whichever way it goes, never past `currentTime`: the same reads then moved within 0.3 ms of page time from tick to tick (p5 to p95). Judge a clock estimate by fitting a run of its readings against `performance.now()`.
+**See:** `src/lib/studio/playback/heard-clock.ts`, `src/lib/studio/playback/transport.heard.test.ts`, `src/e2e/studio-playhead-steady.spec.ts`
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
