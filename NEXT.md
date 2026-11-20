@@ -4748,3 +4748,6 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   NEXT: the lead's calls on its report (l6film/DECISIONS or LEAD-ANSWERS), the writer's fix round
   (resume (builder)), at most one more critic (owner's two-turn rule), then the storyboard.
 - Lesson 5 still waits on the owner (voices' yes; their listen).
+
+## 17:52 UTC, 20 Nov
+- Lesson 6 script critic ((builder)) DIED on (model)-hour limit (resets 17:00 UTC); worker restarted (several times). Owner said "Continue". RESUMED the critic at 17:52 via SendMessage. Nothing else in flight. Lesson 5 still waits on the owner (voices yes; listen).
