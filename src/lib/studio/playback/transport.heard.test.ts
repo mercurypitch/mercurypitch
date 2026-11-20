@@ -251,6 +251,30 @@ describe('smoothHeardTime', () => {
     expect(smoothHeardTime(ctx, 1500)).toBe(2)
   })
 
+  it('counts back from an output timestamp dated after the call, so readings between callbacks lie on one line', () => {
+    // Chromium dated 84 % of a six-lane song's timestamps after the call
+    // that read them, by up to 48 ms (headless, Nov 2026), each still the
+    // render time heard at its own performance time. One callback's stamp
+    // to the next, 33 ms of page time apart:
+    const stamps = [
+      { ahead: 14, now: 1000 },
+      { ahead: 36, now: 1033 },
+      { ahead: 2, now: 1066 },
+      { ahead: 48, now: 1099 },
+    ]
+    for (const { ahead, now } of stamps) {
+      const performanceTime = now + ahead
+      const ctx = clock({
+        contextTime: 1.9 + (performanceTime - 1000) / 1000,
+        performanceTime,
+      })
+      expect(smoothHeardTime(ctx, now)).toBeCloseTo(
+        1.9 + (now - 1000) / 1000,
+        9,
+      )
+    }
+  })
+
   it('reads the clock less latency before the device has played, while suspended, or without timestamps', () => {
     expect(
       smoothHeardTime(clock({ contextTime: 0, performanceTime: 0 }), 50),
