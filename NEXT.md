@@ -4829,3 +4829,17 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   UTC) before editing the board (files still at 19:47; it had added tools/lab.mjs 20:35 and
   tools/film-compare.py 20:59). Resumed with SendMessage at the reset. NEXT unchanged: its
   hand-back, then storyboard critic 02 (the last), then the kit step.
+
+## 20 Nov 23:54 UTC: board v2 done; storyboard critic 02 (the LAST) launched
+- FIX ROUND DONE ((builder)): board v2 (STORYBOARD.md, HANDOFFS.md rewritten), DECISIONS
+  84-108, FACTS 87/93/§4/96 (+§6 note), v1 kept in review/storyboard-01/before/. Check scripts in
+  l6film/tools/: board-geom.py (stills, clearances, flights, fill; --tight, --fill, --dump),
+  board-sweep.py (0.4 s rule, word keys; --md), board_lib.py. Both 0 failures (agent's run).
+- LEAD'S CALLS 48-50: guide names 44 px at F0 accepted; chapter 2 bands 0.75x; counter bare
+  numeral. All "done differently" items accepted.
+- STORYBOARD CRITIC 02 LAUNCHED ((model) xhigh) (builder), brief
+  briefs/l6-storyboard-critic-02.md -> l6film/review/storyboard-02/REPORT.md (save verbatim if it
+  cannot write). THE LAST critic (owner's two-turn rule). NEXT: lead's calls; any remaining items
+  go to a short touch-up the lead checks (no third critic) or the kit step's labs; then the KIT
+  STEP (seven new modules: L.tuneChart, L.gapMeasure, L.stairs, L.specimen, L.board/mix-up rows,
+  L.guide, L.column; lab page each), then scene groups A-E (at most two builders at once).
