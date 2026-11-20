@@ -4843,3 +4843,9 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   go to a short touch-up the lead checks (no third critic) or the kit step's labs; then the KIT
   STEP (seven new modules: L.tuneChart, L.gapMeasure, L.stairs, L.specimen, L.board/mix-up rows,
   L.guide, L.column; lab page each), then scene groups A-E (at most two builders at once).
+- 23:56: BUILD BRIEFS DRAFTED (not launched): briefs/l6-film-kit.md (the kit: carry L5's
+  series kit, camera, hosts layer, the seven new modules, labs, WIDTHS.md re-measuring the
+  board's tight clearances, BUILD-GUIDE.md) and briefs/l6-film-merc.md (the hosts' scratch passes
+  at 30 fps, chunked, PASSES.md). Launch BOTH together (two heavy builders, (model) xhigh) once
+  storyboard critic 02's calls and any touch-up are done; re-read both against the final board
+  first.
