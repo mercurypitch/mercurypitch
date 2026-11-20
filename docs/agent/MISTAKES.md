@@ -1386,6 +1386,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Rule:** render through `renderAsScheduled`, which schedules four seconds ahead and suspends every two seconds to schedule more, and build any instrument with a voice cap `offline`, without it.
 **See:** `src/lib/studio/playback/scheduled-render.ts`, `src/features/studio/midi/render/render-studio-midi.ts`
 
+### Start a Web Animation at the moment its first keyframe is for
+
+**Symptom:** with its clock fixed, the Studio playhead still trailed the clock after each start of its animation: by up to 38 ms on a page slowed six times, which started it 6 and 4 times in 15 s (two runs, headless Chromium, Nov 2026). Against a device clock 0.2 % slow, each new start stepped the line back: 3 times in 40 s in a unit model of the page.
+**Cause:** an animation given no start time starts on the page's next frame, 6 to 31 ms after the call on a busy page in Chromium, and the line is drawn that late until it starts again. Starting a line again at its clock steps it back whenever it ran ahead.
+**Rule:** set `startTime` to the moment the first keyframe is for, with `fill: 'both'` for a frame drawn before it. Keep a line on a second clock by changing its speed, and let it jump only forward.
+**See:** `src/features/studio/timeline/playhead-motion.ts`, `src/features/studio/timeline/playhead-motion.test.ts`
+
 ## Data and billing
 
 ### Share pending startup hydration, not just a ready flag
