@@ -133,6 +133,13 @@ export const [sidebarOpen, setSidebarOpen] = createSignal(false)
 export const [sidebarCollapsed, setSidebarCollapsed] =
   createPersistedSignal<boolean>('pitchperfect_sidebar_collapsed', false)
 
+// Studio keeps its own rail state: the arrangement wants the width, so the
+// sidebar starts collapsed there on each app load, whatever the other tabs
+// chose, and stays as the person leaves it until the next load.
+// Store-backed for the tour, which expands it for the Studio's sidebar steps.
+export const [studioSidebarExpanded, setStudioSidebarExpanded] =
+  createSignal(false)
+
 // Editor view within the Editor tab. 'split' shows the piano roll and a live
 // sheet-music strip together.
 export type EditorView =

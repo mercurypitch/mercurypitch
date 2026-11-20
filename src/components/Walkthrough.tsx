@@ -5,6 +5,7 @@
 import type { Component } from 'solid-js'
 import { createEffect, createMemo, createUniqueId, Index, onCleanup, Show, untrack, } from 'solid-js'
 import { IconArrowLeft, IconArrowRight, } from '@/components/hidden-features-icons'
+import { TAB_STUDIO_NIGHT } from '@/features/tabs/constants'
 import { applyPersistedValue } from '@/lib/storage'
 import type { TourSettingName } from '@/lib/tour-screen'
 import { applyTourSettings, undoTourSettings } from '@/lib/tour-screen'
@@ -14,7 +15,7 @@ import type { WalkthroughStep } from '@/stores/app-store'
 import { setWalkthroughStep, walkthroughStep } from '@/stores/app-store'
 import { tourSteps, walkthroughActive } from '@/stores/app-store'
 import { endWalkthrough, GUIDE_SECTIONS, nextWalkthroughStep, prevWalkthroughStep, skipSection, startWalkthrough, } from '@/stores/app-store'
-import { activeTab, setActiveTab, setSidebarCollapsed, setSidebarOpen, sidebarCollapsed, } from '@/stores/ui-store'
+import { activeTab, setActiveTab, setSidebarCollapsed, setSidebarOpen, setStudioSidebarExpanded, sidebarCollapsed, studioSidebarExpanded, } from '@/stores/ui-store'
 import styles from './Walkthrough.module.css'
 import { scrollTargetIntoView, shutToggle } from './walkthrough-dom'
 import { IconCheck, IconClose, IconSkipForward } from './walkthrough-icons'
@@ -374,6 +375,8 @@ export const Walkthrough: Component = () => {
   // Desktop: the sidebar can be collapsed to a thin rail that display:none's
   // its content. Track when the tour expanded it so we can re-collapse after.
   let tourExpandedSidebarRail = false
+  /** The Studio's own rail (ui-store), expanded by the tour as the app's is. */
+  let tourExpandedStudioRail = false
   // Collapse toggles the tour expanded (via step.reveal) so we can restore
   // them when it ends — mirrors tourOpenedSidebar.
   const tourExpandedReveals = new Set<string>()
@@ -421,11 +424,21 @@ export const Walkthrough: Component = () => {
       if (want) tourOpenedSidebar = true
       // Give the drawer a frame to slide in before measuring.
       await wait(want ? 240 : 0)
-    } else if (step.inSidebar === true && sidebarCollapsed()) {
+    } else if (step.inSidebar === true) {
       // Desktop: expand the collapsed rail, else the target is display:none.
-      setSidebarCollapsed(false)
-      tourExpandedSidebarRail = true
-      await wait(120) // let the sidebar re-flow before measuring
+      // The Studio keeps a rail state of its own (ui-store), so its steps
+      // expand that one.
+      const studio = activeTab() === TAB_STUDIO_NIGHT
+      if (studio ? !studioSidebarExpanded() : sidebarCollapsed()) {
+        if (studio) {
+          setStudioSidebarExpanded(true)
+          tourExpandedStudioRail = true
+        } else {
+          setSidebarCollapsed(false)
+          tourExpandedSidebarRail = true
+        }
+        await wait(120) // let the sidebar re-flow before measuring
+      }
     }
 
     // The page set as this step needs it, with a moment to draw it: the
@@ -537,6 +550,10 @@ export const Walkthrough: Component = () => {
     if (tourExpandedSidebarRail) {
       setSidebarCollapsed(true)
       tourExpandedSidebarRail = false
+    }
+    if (tourExpandedStudioRail) {
+      setStudioSidebarExpanded(false)
+      tourExpandedStudioRail = false
     }
     for (const sel of tourExpandedReveals) shutToggle(sel)
     tourExpandedReveals.clear()
