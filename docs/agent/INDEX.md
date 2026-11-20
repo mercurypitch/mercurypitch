@@ -233,9 +233,9 @@ These are the rules that break things when ignored.
 | [sync-store.ts](../../src/stores/sync-store.ts) | 1.4k | ── Sync store One person, two devices, a room code between them. |
 | [drive-sync-store.ts](../../src/stores/drive-sync-store.ts) | 850 | ── Drive sync store The user's own Google Drive as the place a library survives. |
 | [settings-store.ts](../../src/stores/settings-store.ts) | 850 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
+| [ui-store.ts](../../src/stores/ui-store.ts) | 750 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [ear-lab-store.ts](../../src/stores/ear-lab-store.ts) | 700 | Ear Lab store — readings, ratings and calibration history. |
 | [notifications-store.ts](../../src/stores/notifications-store.ts) | 700 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
-| [ui-store.ts](../../src/stores/ui-store.ts) | 700 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [native-shell-store.ts](../../src/stores/native-shell-store.ts) | 600 | Native shell bridge — how a room and the native chrome reach each other The native shell (`apps/mercurypitch/src/shell/`) draws the botto... |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 550 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 500 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
