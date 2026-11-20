@@ -4763,3 +4763,24 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 
 ## 18:41 UTC, 20 Nov
 - L6 SCRIPT CRITIC 02 RETURNED: ONE MORE PASS, short (saved to l6film/review/script-02/REPORT.md). Calls 16-23 in LEAD-ANSWERS.md (all five cuts; Either way care line; room tone in judging holds; o7; card tap line; letter strips F-E; doctor lines hold; "seven semitones make it"). NO THIRD CRITIC (owner rule): writer applies, lead checks the diff, then the storyboard.
+
+## 18:48 UTC, 20 Nov: STATE FOR A FRESH CONTEXT
+- LESSON 6 FILM (l6film/): SCRIPT LOCKED for the storyboard (LEAD-ANSWERS.md 1-24): draft 3,
+  8:50.6 scratch, about 9:37 at Lesson 4's voiced pace; two script critics done (review/script-01,
+  -02; owner's two-turn rule, no third). STORYBOARD STARTED: (model) agent (builder) with
+  briefs/l6-storyboard.md -> STORYBOARD.md, HANDOFFS.md, frozen board clock, scenes table. NEXT:
+  the lead reads the board and answers its questions; a fresh motion-critic storyboard round (at
+  most two); then the build (scene groups, kit first) as Lesson 5 did.
+- LESSON 5 FILM (l5film/): WAITING ON THE OWNER: (a) yes/no to generate the final voices with
+  their ElevenLabs voices (Merc "Merc V1 Gentle Whimsical D2", Tavi's Orange Merc as Lesson 4;
+  5,640 characters a pass); (b) their listen to renders/film-draft-02-sound.mp4; (c) their look at
+  lab/passes-proto/s08-before|after clips (does the talk read as talk). After the yes: voices ->
+  cues.py re-time -> merc-shots.py --final + final run (lab/passes-proto/final60/plan.md, about
+  4.2 h; S14 gates base 400; breath before host sung sounds) -> 60 fps final render with
+  MIX=full (check frame 0) -> deliverables (music-only sibling render, contact sheet, captions,
+  DELIVERY.md). DECISIONS up to 245.
+- SERIES DOCS: read from the fix worktree or origin/main; the primary checkout's docs/plans is
+  stale (19 Oct).
+- MODELS: lead (model) max; agents (model) xhigh ((model) weekly at warning until 26 Nov 01:00 UTC;
+  (model) has a 5-hour limit: resume agents with SendMessage after it resets).
+- HEREDOCS: quote the delimiter when the text has backticks (a `break` got executed once).
