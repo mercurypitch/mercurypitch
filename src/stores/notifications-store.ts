@@ -35,8 +35,8 @@
 //
 // THE STAGE speaks in one place, so it orders what it says. A warning or an
 // error goes before any calmer notice, which waits behind it; and while the
-// stage is quiet (`setStageQuiet`: a run, an example playing) only warnings
-// and errors are shown at all. A notice that waits is not on screen, so its
+// stage is quiet (`setStageQuiet`: a run, an example playing, a take
+// waiting for its answer) only warnings and errors are shown at all. A notice that waits is not on screen, so its
 // time does not run: its clock starts when it is shown, as a phone's third
 // toast's does, and a notice put back to wait keeps what was left of it.
 

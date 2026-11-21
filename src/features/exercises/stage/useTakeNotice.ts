@@ -11,6 +11,15 @@
 //
 // The notice says everything about the keep, in one place, so no toast is
 // raised for it; the analytics events are kept as they were.
+//
+// The take comes before a badge (owner, 0.9.31's review): from the run's
+// end until the take's question is answered or put away, and while "Take
+// kept" says how it went, the take holds Merc's bubble (`holdsBubble`), and
+// the app's calmer notices, an achievement among them, wait their turn
+// behind it with their time not running (ExerciseShell quiets the stage).
+// An unlock that came first used to stand over the question for its six
+// seconds, and a Try Again or a Back pressed meanwhile lost the take
+// without its question ever being asked.
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup } from 'solid-js'
@@ -36,6 +45,12 @@ export interface TakeNoticeController {
   notice: Accessor<TakeNotice | null>
   /** The capture's state while the run may speak of it, else null. */
   captureState: Accessor<ExerciseVoiceCaptureState | null>
+  /**
+   * The take has Merc's bubble, or is about to: its capture is still being
+   * finished, its question waits for an answer, a keep is under way, or
+   * its outcome is on show. Calmer notices wait while this holds.
+   */
+  holdsBubble: Accessor<boolean>
   /** A keep is being written: everything that would leave waits for it. */
   saving: Accessor<boolean>
   /** Keep the take, or retry a keep that failed. */
@@ -79,6 +94,16 @@ export function useTakeNotice(
       storageFull: storageFull(),
       keptSeen: keptSeen(),
     })
+  })
+
+  const holdsBubble = createMemo<boolean>(() => {
+    const capture = captureState()
+    if (capture === null) return false
+    // A take still being finished has its question on the way: a notice
+    // let in now would only be sent back to wait when the question came.
+    return (
+      notice() !== null || capture === 'recording' || capture === 'processing'
+    )
   })
 
   const clearKeptTimer = (): void => {
@@ -158,5 +183,14 @@ export function useTakeNotice(
     discard()
   }
 
-  return { notice, captureState, saving, keep, close, discard, reset }
+  return {
+    notice,
+    captureState,
+    holdsBubble,
+    saving,
+    keep,
+    close,
+    discard,
+    reset,
+  }
 }
