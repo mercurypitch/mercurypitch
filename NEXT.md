@@ -4887,3 +4887,12 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - The (model) agents (builder) and (builder) are RETIRED (do not resume them).
 - NEXT unchanged: lead checks the touch-up's diff and checks; then the KIT on (model) xhigh
   (briefs/l6-film-kit.md); lead reads PASSES.md and the contact sheet.
+- 21 Nov 04:13: HOSTS' PASSES DONE ((builder), (model)): 25 renders whole (30 fps,
+  assets/merc/), joins proven (merc/review/joins.md), contact sheet merc/review/contact-sheet.png
+  (the lead looked: reads right), PASSES.md, roots.js. DECISIONS collision fixed: board touch-up
+  109-121, passes renumbered 122-129 (backup $S/l6-decisions-pre-renumber.md); next free 130.
+  Calls 55-58 (LEAD-ANSWERS). Kit brief updated (roots.js uncomment, placement formula).
+  FOR THE FINAL RUN (after final voices): merc-shots.py --final needs the breath before each
+  host's own sung sound + S14 mercGate base 400, proved on two scenes first (call 58).
+- NEXT: board touch-up finisher (builder) still running -> lead checks diff + checks ->
+  KIT on (model) xhigh (briefs/l6-film-kit.md).
