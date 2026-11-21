@@ -27,6 +27,7 @@
 //   not loop.
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, untrack, } from 'solid-js'
+import { studioSpokenMessage } from '@/lib/studio/failure-copy'
 import type { StudioMidiKeys } from '@/lib/studio/midi/clip-keys'
 import { studioMidiKeys } from '@/lib/studio/midi/clip-keys'
 import { studioLaneMidiSound } from '@/lib/studio/midi/lane-sound'
@@ -145,10 +146,10 @@ function laneWords(project: StudioProject | null, want: Want): string {
     : (names[0] ?? 'A lane')
 }
 
+/** A failure's words for people after the notice's own, or none: a check's or the engine's words stay in the console. */
 function reason(error: unknown): string {
-  return error instanceof Error && error.message !== ''
-    ? ` ${error.message}`
-    : ''
+  const said = studioSpokenMessage(error)
+  return said === null ? '' : ` ${said}`
 }
 
 function aborted(signal: AbortSignal | undefined): Promise<void> {
@@ -235,6 +236,7 @@ export function createStudioMidiRenderService(
   }
 
   function fail(want: Want, error: unknown, stage: 'render' | 'keep'): void {
+    console.error(`[studio] MIDI ${stage} failed:`, error)
     failures.add(want.key)
     setFailed(new Map(failed()).set(want.key, reason(error).trim()))
     const lanes = laneWords(options.project(), want)

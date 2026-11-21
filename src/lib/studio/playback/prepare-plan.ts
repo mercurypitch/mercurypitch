@@ -1,6 +1,7 @@
 // Studio playback preparation — measured context-rate latency without changing durable project data.
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import { measureTrackLatencies } from '@/lib/studio-fx/mixdown'
+import { StudioRefusal } from '../failure-copy'
 import { prepareStudioLiveMeter } from '../metering/live-meter'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { compileStudioArrangement } from '../model/arrangement-plan'
@@ -266,9 +267,9 @@ export function playableStudioFrom(
 ): number {
   const content = compileStudioArrangement(project, assets)
   if (!content.lanes.some((lane) => lane.audible && lane.segments.length > 0))
-    throw new Error('Add an audible take before playing.')
+    throw new StudioRefusal('Add an audible take before playing.')
   if (loop !== null) return startInLoop(startFrame, loop)
   if (repeat && content.endFrame < 12000)
-    throw new Error('A song needs at least a quarter second to repeat.')
+    throw new StudioRefusal('A song needs at least a quarter second to repeat.')
   return studioFirstFrame(content.endFrame, startFrame)
 }

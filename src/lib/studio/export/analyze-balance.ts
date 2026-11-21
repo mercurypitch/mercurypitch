@@ -5,6 +5,7 @@
 // instead of running its chain again, as an export does: the render is the
 // lane before its faders, which is what this measures.
 import { balanceTrimDb } from '@/lib/studio-fx/auto-mix'
+import { StudioRefusal } from '../failure-copy'
 import { audioBufferReader, measureStudioPcm } from '../metering/measure-async'
 import type { StudioAsset, StudioProject } from '../model/types'
 import { validateStudioProject } from '../model/validation'
@@ -51,7 +52,7 @@ export async function analyzeStudioBalance(
     const check = () => {
       signal.throwIfAborted()
       if (options.isCurrent?.(token) === false)
-        throw new Error(
+        throw new StudioRefusal(
           'The song changed while balancing. Balance the current version again.',
         )
     }

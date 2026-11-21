@@ -1,8 +1,9 @@
-// Studio workspace notices — the rows above the arrangement: song audio being prepared, playback, errors, editing elsewhere, an import and why one was refused, and recording. The record card floats over the lanes instead, so it mounts after the timeline.
+// Studio workspace notices — the rows above the arrangement: song audio being prepared, playback, editing elsewhere, an import and why one was refused, and recording. Why playback, a preview or Auto-balance failed is said once as the app's notice, never as a bar that stays; a refused edit is said in a dialog to acknowledge. The record card floats over the lanes instead, so it mounts after the timeline.
 import { Show } from 'solid-js'
 import { StudioRecordNotices } from './record/StudioRecordNotices'
 import type { StudioRecorderHandle } from './record/useStudioRecorder'
 import { StudioPlaybackNotice } from './sound/StudioPlaybackNotice'
+import { StudioEditRefusalDialog, useStudioFailureNotice, } from './StudioFailureNotices'
 import styles from './StudioPage.module.css'
 import type { StudioController } from './useStudioController'
 
@@ -13,6 +14,7 @@ export interface StudioWorkspaceNoticesProps {
   preparing: boolean
   onShowProgress(): void
   onShowSound(): void
+  /** Why playback, a preview or Auto-balance failed, in words for people. */
   error: string | null
   studio: Pick<
     StudioController,
@@ -24,11 +26,14 @@ export interface StudioWorkspaceNoticesProps {
     | 'cancelImport'
     | 'importRefusal'
     | 'dismissImportRefusal'
+    | 'editRefusal'
+    | 'dismissEditRefusal'
   >
   recorder: StudioRecorderHandle
 }
 
 export function StudioWorkspaceNotices(props: StudioWorkspaceNoticesProps) {
+  useStudioFailureNotice(() => props.error)
   return (
     <>
       <Show when={props.preparing}>
@@ -44,13 +49,6 @@ export function StudioWorkspaceNotices(props: StudioWorkspaceNoticesProps) {
         </div>
       </Show>
       <StudioPlaybackNotice onShow={() => props.onShowSound()} />
-      <Show when={props.error}>
-        {(error) => (
-          <p class={styles.inlineError} role="alert">
-            {error()}
-          </p>
-        )}
-      </Show>
       {/* A song that lost its editing here says so in the page's banner,
           which offers the takeover too: one banner, not two. */}
       <Show when={!props.studio.writable() && props.studio.problem() === null}>
@@ -97,6 +95,10 @@ export function StudioWorkspaceNotices(props: StudioWorkspaceNoticesProps) {
         )}
       </Show>
       <StudioRecordNotices recorder={props.recorder} />
+      <StudioEditRefusalDialog
+        refusal={props.studio.editRefusal()}
+        onDismiss={() => props.studio.dismissEditRefusal()}
+      />
     </>
   )
 }

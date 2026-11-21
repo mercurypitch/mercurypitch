@@ -480,4 +480,32 @@ describe('ConfirmDialog as a way to stay', () => {
     window.removeEventListener('keydown', heard)
     expect(heard).not.toHaveBeenCalled()
   })
+
+  it('shows a notice with its one button and no Cancel, and closes it on that button or Escape', () => {
+    // Arrange
+    const onConfirm = vi.fn()
+    const onCancel = vi.fn()
+    render(() => (
+      <ConfirmDialog
+        open={true}
+        variant="notice"
+        title="That change was not made"
+        message="Your song is as it was."
+        confirmLabel="OK"
+        onConfirm={onConfirm}
+        onCancel={onCancel}
+      />
+    ))
+
+    // Act
+    fireEvent.click(screen.getByRole('button', { name: 'OK' }))
+    fireEvent.keyDown(screen.getByRole('alertdialog'), { key: 'Escape' })
+
+    // Assert
+    expect(screen.getAllByRole('button')).toHaveLength(1)
+    expect(screen.queryByTestId('confirm-cancel')).toBeNull()
+    expect(screen.queryByTestId('trash-icon')).toBeNull()
+    expect(onConfirm).toHaveBeenCalledTimes(1)
+    expect(onCancel).toHaveBeenCalledTimes(1)
+  })
 })
