@@ -30,8 +30,9 @@ and his Ear Lab come to the web, and the Exercises tab gains three drills.
 - **Back up a song.** One file holds the song and its audio. Opening a
   backup adds it as a new song.
 - **Switch songs from the sidebar.** Studio's sidebar lists your songs with
-  their length, lanes and last edit. Pick one to open it. Studio remembers
-  whether you left its sidebar open.
+  their length, lanes and last edit. Pick one to open it, or press New song
+  above the list to start one. Studio remembers whether you left its sidebar
+  open.
 - **Sing with Merc on the web.** Eight rooms open free from the Exercises
   tab: Long note, Echo, Lip roll, Ng slides, Home note, Leap, Harmony and
   the Warm-up.

@@ -61,8 +61,9 @@ The release PR carries two more changes beside these notes:
   notifications. The file name has no spaces:
   `Window-seat-2026-11-19-1230.mpstudio`.
 
-One more PR before the tag adds the sidebar's song list, fixes the playhead
-and fixes what the release review found:
+One more PR before the tag adds the sidebar's song list and its New song,
+fixes the playhead, and fixes what the release review and a check of the
+PR's preview found:
 
 - **Your songs, in Studio's sidebar.** A lazy-loaded panel (`studio-songs`,
   `src/features/sidebar/panels/StudioSongsPanel.tsx`) lists every Studio
@@ -87,6 +88,12 @@ and fixes what the release review found:
   survives a collapsed Your songs. An Export, Compare or Auto-balance render
   still does not hold a switch (its state is local to
   `StudioWorkspace.tsx`): a switch cancels the render, never an edit.
+  A New song button sits above the list, outside its scroll. It runs the
+  page's own `create()`, is held as a switch is and by a save in flight
+  (`canCreate`), and holds the rows like a pick until the new song opens.
+  A song picked after a New song opened with Add takes showing: the
+  workspace reads `startPanel` only at mount, and a sidebar switch remounts
+  it inside `openForBackup`. `switchSong` now resets it before the switch.
 - **A playhead that no longer steps back.** The line followed
   `smoothHeardTime` (`src/lib/studio/playback/heard-clock.ts`), which counted
   on from `AudioContext.getOutputTimestamp()` and clamped that difference at
@@ -118,6 +125,33 @@ and fixes what the release review found:
   marker and the time) run on their own clock, about ten updates a second,
   and never moved back in any run. When play stops, the line settles onto
   them: up to about 2 px back in the runs measured.
+- **Done while the song plays keeps it playing.** On the preview, Done in
+  the piano roll stopped playback with "clip.<id>.assetId: Owned source is
+  missing" in a red bar. Landing an edit wrote the history, the song and the
+  audio list as three signals outside a batch (`land()` in
+  `src/features/studio/controller/edit-commits.ts`), so for one update every
+  effect saw the new song with the old audio list. A kept MIDI render names
+  an asset only the third write adds. While the song played, the transport's
+  snapshot effect sent that pair on, its validation refused it and stopped
+  playback, and the effect, which follows only a new song object, never sent
+  the corrected list. The three writes now land in one `batch()`, as do
+  `openProject`'s. Nothing was stored wrong: `saveProject` validates a song
+  against its stored and new audio inside its IndexedDB transaction, and
+  with the message showing, the saved song, a further edit, Export, a backup
+  and a reload were all intact
+  (`src/e2e/studio-midi-done-while-playing.spec.ts`).
+- **Failures in words for people.** The red bar in the Studio is gone.
+  Playback that stops on an error, an edit playback cannot follow, a
+  prepared master, a take preview and Auto-balance now say what happened and
+  what to do in the app's notifications, one at a time on the
+  `studio-playback` channel, in copy from `src/lib/studio/failure-copy.ts`.
+  Only errors written for people keep their own words (`StudioRefusal`, the
+  storage, backup and newer-song errors, a memory refusal); the rest log to
+  the console as `[studio] <what>:`. A refused edit, undo or redo opens a
+  dialog to acknowledge (`ConfirmDialog`'s new `notice` variant) in place of
+  the save banner. Left for later: a save failure keeps its banner, the
+  import pipeline's plain `Error`s still show their own words, and the MIDI
+  file parser and the source picker pass an error's message through.
 - **Kept takes named in the drill's own words.** The release review found
   Hear Yourself titling a kept Sing It in Time take "Sing It in Time ·
   level:5": `exerciseThreadTitle`
