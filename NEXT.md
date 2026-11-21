@@ -4953,3 +4953,8 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   adapted to verification, previous report review/critic-kit-01/REPORT.md, report to
   review/critic-kit-02/) -> calls -> scene groups (briefs/l6-film-scenes-*.md; DECISIONS from
   the next free number, not 146: fix the briefs' line first).
+- 21 Nov 07:16: KIT CRITIC 02 BRIEF READY: briefs/l6-critic-kit-02.md (verification, the
+  last for the kit; report to l6film/review/critic-kit-02/). Launch it (motion-critic, (model)
+  xhigh) when the kit agent's small touch (calls 78-79) hands back. Correction to the last entry:
+  the scene briefs' "DECISIONS from 146 on" is right (the kit's revisions start at 146); no
+  change needed.
