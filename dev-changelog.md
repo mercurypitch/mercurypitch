@@ -9,7 +9,7 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.9.31] - 2026-11-19
+## [0.9.31] - 2026-11-21
 
 404 commits since `v0.9.30` (1b8320bd3) before these notes: 403 commits and
 #1408's merge, from 75 PRs merged after the tag (#1351, #1354, #1356, and
@@ -60,6 +60,77 @@ The release PR carries two more changes beside these notes:
   browser's downloads says so too, and the two failure lines are error
   notifications. The file name has no spaces:
   `Window-seat-2026-11-19-1230.mpstudio`.
+
+One more PR before the tag adds the sidebar's song list, fixes the playhead
+and fixes what the release review found:
+
+- **Your songs, in Studio's sidebar.** A lazy-loaded panel (`studio-songs`,
+  `src/features/sidebar/panels/StudioSongsPanel.tsx`) lists every Studio
+  song on the device from the summary rows the page already loads: length
+  (`3:42`, `1:02:05`, or Empty for a song with no clips), lanes and last
+  edit, with the open song marked by `aria-current` and an Open pill. The
+  page lends the panel its list and one switch through
+  `src/stores/studio-songs-store.ts` while it is mounted. The switch runs
+  the page's own path (`canBackup`, then `openForBackup`, which lets a save
+  in flight land first), and a take, an import, a song task or unsaved
+  changes hold it with a line that says why. Studio's sidebar now remembers
+  whether it is open (`sidebar-studio-rail-open`, on the device only) and
+  still starts collapsed on a first visit. The guided tour gains a Switch
+  songs step that opens the sidebar without saving that and leaves it as it
+  found it. Review hardened the switch: `canSwitch` refuses while a take
+  runs, and `openForBackup` asks again after its save wait, so a take
+  started during that wait keeps its song. A pick holds the other rows until
+  its switch settles. Rows are keyed by song id, so a save keeps the focused
+  row; held rows use `aria-disabled`, so Enter keeps the focus; the hold
+  line's live region stays mounted; the open song's row is never held; and
+  the tour step's target sits outside the collapsible section, so the step
+  survives a collapsed Your songs. An Export, Compare or Auto-balance render
+  still does not hold a switch (its state is local to
+  `StudioWorkspace.tsx`): a switch cancels the render, never an edit.
+- **A playhead that no longer steps back.** The line followed
+  `smoothHeardTime` (`src/lib/studio/playback/heard-clock.ts`), which counted
+  on from `AudioContext.getOutputTimestamp()` and clamped that difference at
+  zero. Chromium dates the stamp's `performanceTime` after the call (84 % of
+  reads on a six-lane song, median 14 ms, up to 48 ms), so the clamp read a
+  moment still to come as now, by a different amount at every audio
+  callback. The line's motion
+  (`src/features/studio/timeline/playhead-motion.ts`) restarted at a reading
+  more than 20 ms off, and fell back to the readout frame, up to about 80 ms
+  old, when a tick's step looked wrong: steps back of up to 9.5 px. The
+  clock now counts back from such stamps, still capped at `currentTime`. The
+  motion starts each animation at the tick that read the clock and changes
+  speed instead of stepping back; a line more than 20 ms behind jumps, and
+  only forward. On a six-lane song the steps back went from 10-28 per run,
+  at full speed and with the CPU slowed four times, to none
+  (`src/e2e/studio-playhead-steady.spec.ts`).
+- **Through an audio stall too.** A stall on the audio thread, as an
+  underrun on a loaded machine gives, also cancelled the animation and
+  dropped the line onto the readout frame: 26 steps back of 8.6 to 13.4 px
+  across 24 injected stalls. The line now holds where it is drawn and moves
+  on once the clock runs steadily again; none of 39 stalls stepped it back.
+  After 6 of 132 stalls Chromium dated the next stamp 150 to 1810 ms ahead,
+  which counting back reads as that far in the past. So a seek or loop wrap
+  moves the line only once the next tick agrees, about 33 ms later, and a
+  nudge of under 0.2 s back during play eases back rather than jumps. The
+  clock distrusts a stamp dated more than 100 ms ahead (normal play never
+  passed 48 ms) and reads on from the last trusted one, so an edit at the
+  playhead, such as a split, never sees that dip. The readouts (the ruler
+  marker and the time) run on their own clock, about ten updates a second,
+  and never moved back in any run. When play stops, the line settles onto
+  them: up to about 2 px back in the runs measured.
+- **Kept takes named in the drill's own words.** The release review found
+  Hear Yourself titling a kept Sing It in Time take "Sing It in Time ·
+  level:5": `exerciseThreadTitle`
+  (`src/features/exercises/exercise-voice-take.ts`) appended the drill's
+  internal `pattern`, and a take stores its title. Vibrato and the Warm-up
+  key their threads by style and routine, yet titled them by the note
+  alone, so two styles on one note read the same. The title now names the
+  note, then the variant as the drill's picker does (Level 5, Natural, Lip
+  trills), and leaves out a pattern it has no words for. The thread key is
+  unchanged. No take reached production with the old title.
+- **Sight-Singing's fresh start, said.** The user entry now says Sight-Singing
+  counts a note in any octave and its bests start fresh: its scoring version
+  went to 2 on 2026-11-16 (#1445), so earlier runs no longer compare.
 
 The user entry describes Studio as a whole, from its tour
 (`src/lib/studio-tour.ts`) and its panels: songs kept in this browser,
