@@ -1,7 +1,9 @@
-// Studio songs in the rail — every song on this device, one tap from opening, with its length, lanes and last edit.
-// The list and the switch are the Studio page's, lent through
-// studio-songs-store: a row asks the page to open its song, and the page
-// decides through the same checks its own song list makes. The rail never
+// Studio songs in the rail — every song on this device, one tap from opening, with its length, lanes and last edit, under a New song button.
+// The list, the switch and New song are the Studio page's, lent through
+// studio-songs-store: a row asks the page to open its song, New song asks
+// it to make one, and the page decides through the same checks its own
+// song list makes. New song sits above the list, outside its scroll, so a
+// long library never pushes it out of view. The rail never
 // reads a song or its audio itself. Nothing renders while no Studio page is
 // mounted, or while there are no songs: the page's own empty state, with
 // its Create project button, is right beside the rail and says it better.
@@ -12,6 +14,7 @@
 import type { Component } from 'solid-js'
 import { createMemo, For, Show } from 'solid-js'
 import { CollapsibleSection } from '@/components/CollapsibleSection'
+import { Plus } from '@/components/icons'
 import type { StudioProjectSummary } from '@/lib/studio/model/types'
 import { isPhoneStage } from '@/lib/use-viewport'
 import type { StudioSongsLoan } from '@/stores/studio-songs-store'
@@ -90,6 +93,32 @@ const SongRow: Component<{
   )
 }
 
+/** New song: held by everything that holds a switch, and by a save in flight. */
+const NewSongButton: Component<{
+  loan: StudioSongsLoan
+  onCreate: () => void
+}> = (props) => {
+  const held = () =>
+    props.loan.hold() !== null ||
+    props.loan.opening() ||
+    !props.loan.canCreate()
+  return (
+    <button
+      type="button"
+      class={styles.create}
+      aria-disabled={held() ? 'true' : undefined}
+      onClick={() => {
+        if (!held()) props.onCreate()
+      }}
+    >
+      <span class={styles.createGlyph}>
+        <Plus size={16} />
+      </span>
+      New song
+    </button>
+  )
+}
+
 const StudioSongsPanel: Component = () => {
   /**
    * On a phone the rail is a drawer that slides off-screen, and a closed
@@ -102,6 +131,12 @@ const StudioSongsPanel: Component = () => {
     // On a phone the drawer covers the song: a pick folds it away.
     if (isPhoneStage()) setSidebarOpen(false)
     void loan.open(id)
+  }
+
+  function create(loan: StudioSongsLoan): void {
+    // The new song opens under the drawer, as a picked one does.
+    if (isPhoneStage()) setSidebarOpen(false)
+    void loan.create()
   }
 
   return (
@@ -134,10 +169,18 @@ const StudioSongsPanel: Component = () => {
                 storageKey="sidebar-studio-songs-open"
               >
                 <div class={styles.panel}>
+                  <Show when={listOnScreen()}>
+                    <NewSongButton
+                      loan={loan()}
+                      onCreate={() => create(loan())}
+                    />
+                  </Show>
                   {/* Mounted with the section, empty until a hold: a live
-                      region that appears with its text is often not read. */}
+                      region that appears with its text is often not read.
+                      A song opening waits without a reason, and the page's
+                      own work on a new song is not one to read out. */}
                   <p class={styles.hold} role="status">
-                    {loan().hold() ?? ''}
+                    {loan().opening() ? '' : (loan().hold() ?? '')}
                   </p>
                   <Show when={listOnScreen()}>
                     <nav aria-label="Studio songs">

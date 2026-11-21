@@ -108,6 +108,23 @@ export function StudioPage() {
     }
   }
 
+  // The rail's New song is the page's own New song, held by the switch's
+  // checks too, and it holds the rail like a pick until the song opens.
+  // The new song's workspace mounts before the create returns, so Add takes
+  // is asked for first, and taken back if no song opened.
+  async function createFromRail(): Promise<void> {
+    if (switching() || switchHold() !== null || blocked()) return
+    const before = studio.project()?.id
+    setSwitching(true)
+    setStartPanel('sources')
+    try {
+      await create()
+    } finally {
+      setSwitching(false)
+      if (studio.project()?.id === before) setStartPanel(null)
+    }
+  }
+
   onCleanup(
     lendStudioSongs({
       songs: studio.projects,
@@ -115,6 +132,8 @@ export function StudioPage() {
       hold: switchHold,
       opening: () => studio.loading() || switching(),
       open: switchSong,
+      canCreate: () => !blocked(),
+      create: createFromRail,
     }),
   )
 
