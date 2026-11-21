@@ -9,7 +9,7 @@
 
 import type { Accessor, JSX } from 'solid-js'
 import { createComputed, createEffect, createMemo, createRoot, createSignal, onCleanup, onMount, } from 'solid-js'
-import { IS_NATIVE_BUILD } from '../native-build'
+import { EAR_LAB_WITH_MERC, IS_NATIVE_BUILD } from '../native-build'
 import type { BackgroundDefinition, BackgroundId, BackgroundPerkId, BackgroundSurface, BackgroundTreatment, PublicBackgroundSource, } from './background-catalog'
 import { defaultBackground, getBackgroundDefinition, listBackgrounds, } from './background-catalog'
 import type { PremiumBackgroundCatalogState, PremiumBackgroundCatalogStore, } from './background-catalog-store'
@@ -666,7 +666,14 @@ const SURFACE_CONTROLLERS = {
   jam: createBackgroundSurfaceController('jam'),
   piano: createBackgroundSurfaceController('piano'),
   guitar: createBackgroundSurfaceController('guitar'),
-  ear: createBackgroundSurfaceController('ear'),
+  // The Ear Lab with Merc keeps no room. His bench is the one Regulator Room
+  // and has no picker (#1460), so the shell draws that behind every screen of
+  // his, and a room stored before, or by the store app, whose Ear Lab still
+  // has its picker, stays stored as it was: neither read nor written here.
+  ear: createBackgroundSurfaceController(
+    'ear',
+    EAR_LAB_WITH_MERC ? { storage: null } : {},
+  ),
   drum: createBackgroundSurfaceController('drum'),
   sing: createBackgroundSurfaceController('sing'),
 } as const satisfies Record<BackgroundSurface, BackgroundSurfaceController>

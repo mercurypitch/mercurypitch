@@ -13,7 +13,8 @@
 // build) draws its own tab and drill room, so there the session bar and
 // the bridge fold away:
 // the shell keeps the room's picture (the alley's door ends on it), the
-// sound, the rack and the context the drills read.
+// sound, the rack and the context the drills read. The picture is his
+// Regulator Room whatever room was stored (background-surface.ts).
 // ============================================================
 
 import type { JSX } from 'solid-js'
