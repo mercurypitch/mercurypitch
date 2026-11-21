@@ -1,5 +1,5 @@
 // Studio controller — local project ownership, selected imports and durable revision saves.
-import { createSignal, onCleanup, onMount, untrack } from 'solid-js'
+import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import type { StudioEditorLease, StudioService, } from '@/db/services/studio-service'
 import { createStudioService } from '@/db/services/studio-service'
 import { useLocalSaveNavigationLockWithReason } from '@/lib/local-save-navigation-reason'
@@ -421,9 +421,12 @@ export function useStudioController(options: StudioControllerOptions = {}) {
       const metadata = await editor.pruneOnOpen(claim, token, snapshot, loaded)
       if (!current(epoch)) return
       const history = createStudioEditHistory(snapshot)
-      setEditHistory(history)
-      setProject(history.state.present)
-      setAssets(metadata)
+      // Together, as an edit lands: no reader sees the clips before their audio.
+      batch(() => {
+        setEditHistory(history)
+        setProject(history.state.present)
+        setAssets(metadata)
+      })
       editor.adopt(claim, epoch)
       claim = null
       if (token) {
