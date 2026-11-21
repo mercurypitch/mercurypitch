@@ -12,6 +12,7 @@ import type { StudioSoundEdit } from '@/lib/studio/model/sound-commands'
 import type { StudioProject } from '@/lib/studio/model/types'
 import type { MacroKey } from '@/lib/studio-fx/mix-macros'
 import { MACRO_LABELS } from '@/lib/studio-fx/mix-macros'
+import { DIAL_FACE, studioDialReadout } from './dial-face'
 import { createStudioMacroDraft, studioMacroValueText } from './macro-draft'
 import styles from './StudioMacroDial.module.css'
 
@@ -22,8 +23,9 @@ interface StudioMacroDialProps {
   onCommand(command: StudioSoundEdit): boolean
 }
 
-// The ring: radius 18, with 270 of its 360 degrees drawn.
-const RING = 2 * Math.PI * 18
+const { centre, ring, cap, pointer } = DIAL_FACE
+// The ring, with 270 of its 360 degrees drawn.
+const RING = 2 * Math.PI * ring.radius
 const TRAVEL = (270 / 360) * RING
 // The focus ring: radius 23 (clear of the zero mark), 240 degrees, ending
 // above the end words.
@@ -34,17 +36,11 @@ const DRAG_PIXELS = 160
 // A press that moves less than this is a click, not a turn.
 const DEAD_ZONE = 3
 
-// A true minus sign below the centre, a plus above it.
-function signed(value: number): string {
-  if (value > 0) return `+${value}`
-  if (value < 0) return `\u2212${-value}`
-  return '0'
-}
-
 export function StudioMacroDial(props: StudioMacroDialProps) {
   const draft = createStudioMacroDraft(props)
   const labels = () => MACRO_LABELS[props.name]
   const angle = () => (draft.value() / 100) * 135
+  const readout = () => studioDialReadout(draft.value())
   const [turning, setTurning] = createSignal(false)
   let input: HTMLInputElement | undefined
   let drag: {
@@ -139,34 +135,35 @@ export function StudioMacroDial(props: StudioMacroDialProps) {
           <line class={styles.zero} x1="24" y1="1.5" x2="24" y2="3.5" />
           <circle
             class={styles.track}
-            cx="24"
-            cy="24"
-            r="18"
+            cx={centre}
+            cy={centre}
+            r={ring.radius}
             style={{ 'stroke-dasharray': `${TRAVEL} ${RING}` }}
           />
           <circle
             class={styles.arc}
             classList={{ [styles.idle]: draft.value() === 0 }}
-            cx="24"
-            cy="24"
-            r="18"
+            cx={centre}
+            cy={centre}
+            r={ring.radius}
             style={{
               transform: `rotate(${-90 + Math.min(0, angle())}deg)`,
               'stroke-dasharray': `${(Math.abs(angle()) / 360) * RING} ${RING}`,
             }}
           />
-          <circle class={styles.cap} cx="24" cy="24" r="12.5" />
+          <circle class={styles.cap} cx={centre} cy={centre} r={cap.radius} />
           <line
             class={styles.pointer}
-            x1="24"
-            y1="12.5"
-            x2="24"
-            y2="16.5"
+            x1={centre}
+            y1={centre - pointer.to}
+            x2={centre}
+            y2={centre - pointer.from}
             style={{ transform: `rotate(${angle()}deg)` }}
           />
         </svg>
         <span class={styles.value} aria-hidden="true">
-          {signed(draft.value())}
+          <span class={styles.sign}>{readout().sign}</span>
+          {readout().digits}
         </span>
       </span>
       <span class={styles.ends} aria-hidden="true">
