@@ -5,6 +5,7 @@ import { createStudioService } from '@/db/services/studio-service'
 import { useLocalSaveNavigationLockWithReason } from '@/lib/local-save-navigation-reason'
 import { checkImportCancelled, DEFAULT_STUDIO_IMPORT_LIMITS, } from '@/lib/studio/audio/import-limits'
 import { prepareStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
+import { studioSpokenMessage } from '@/lib/studio/failure-copy'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioNewMidiClip } from '@/lib/studio/model/new-midi-clips'
@@ -72,10 +73,29 @@ export interface StudioControllerOptions {
   persistence?: StudioPersistence
 }
 
-function message(error: unknown): string {
-  return error instanceof Error
-    ? error.message
-    : 'Studio could not complete this operation. Try again.'
+const STUDIO_FAILED = 'Studio could not complete this operation. Try again.'
+/** An import or a new clip a check refused: the song did not change. */
+export const STUDIO_IMPORT_REFUSED =
+  'That could not be added to the song, so the song is as it was. Try adding it again.'
+/** An edit, undo or redo a check refused, for the dialog that says so. */
+export const STUDIO_EDIT_REFUSED =
+  'Studio checks every change before it keeps it, and this one did not pass. Your song is as it was before it, and nothing you saved is lost.'
+
+/**
+ * What a failure says on the page: words written for people, never a
+ * check's own (`clip.<id>.assetId: Owned source is missing`) or the
+ * engine's. A plain Error here is mostly an import's refusal, written for
+ * people. Anything else, and the cause behind a sentence, goes to the console.
+ */
+function message(error: unknown, fallback = STUDIO_FAILED): string {
+  const plain =
+    error instanceof Error && Object.getPrototypeOf(error) === Error.prototype
+      ? error.message || null
+      : null
+  const said = studioSpokenMessage(error) ?? plain
+  if (said === null || (error instanceof Error && error.cause !== undefined))
+    console.error('[studio]', error)
+  return said ?? fallback
 }
 
 export function useStudioController(options: StudioControllerOptions = {}) {
@@ -163,6 +183,13 @@ export function useStudioController(options: StudioControllerOptions = {}) {
   const current = (epoch: number) =>
     untrack(() => !disposed() && generation === epoch)
   const report = (error: unknown) => setProblem(message(error))
+  /** A refused edit, undo or redo: said in a dialog to acknowledge, its error in the console. */
+  const [editRefusal, setEditRefusal] = createSignal<string | null>(null)
+
+  function refuseEdit(error: unknown): void {
+    console.error('[studio] Edit refused:', error)
+    setEditRefusal(studioSpokenMessage(error) ?? STUDIO_EDIT_REFUSED)
+  }
 
   // Each import keeps its audio as the storage choice says, asking first on
   // a device that has none; the first take kept asks the browser to keep
@@ -177,7 +204,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     setAssets,
     setProject,
     now,
-    report,
+    report: refuseEdit,
   })
   const { commit } = edits
   const storage = createStudioStorageImports({
@@ -194,7 +221,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     // A new import clears the last one's refusal, and only that: a save
     // that failed, or another problem the banner holds, stays said.
     clearProblem: () => setImportRefusal(null),
-    report: (error) => setImportRefusal(message(error)),
+    report: (error) => setImportRefusal(message(error, STUDIO_IMPORT_REFUSED)),
     commit,
     amend: edits.amend,
     flush: () => queue?.flush(),
@@ -406,6 +433,7 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     setSaveState('saved')
     setProblem(null)
     setImportRefusal(null)
+    setEditRefusal(null)
     let claim: StudioSongClaim | null = null
     try {
       await retirement
@@ -703,6 +731,8 @@ export function useStudioController(options: StudioControllerOptions = {}) {
     /** Why the last import was refused, apart from save failures; null once dismissed. */
     importRefusal,
     dismissImportRefusal: () => setImportRefusal(null),
+    editRefusal,
+    dismissEditRefusal: () => setEditRefusal(null),
     laneNotice,
     hasUnsavedChanges,
     create,

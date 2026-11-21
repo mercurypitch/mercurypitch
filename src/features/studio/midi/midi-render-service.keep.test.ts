@@ -1,5 +1,6 @@
 // Studio MIDI render service tests — keeping: a stale clip's render is kept, named as its clip, when the editor closes, when the song opens, before an export and a second after an undo or redo; once for every clip it is for; never for notes that changed while it rendered. Failure: a clip whose render fails plays its earlier audio, its lane says so in plain words, and its key is tried once more only when a keep asks, never a third time.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { StudioRefusal } from '@/lib/studio/failure-copy'
 import { studioMidiRenderKey } from '@/lib/studio/midi/render-key'
 import { applyStudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
@@ -237,7 +238,9 @@ describe('a MIDI render that fails', () => {
   it('leaves its clip on its earlier audio, says so on its lane, and is tried once more only when a keep asks, never a third time', async () => {
     // Arrange
     const ui = mount()
-    const kit = new Error("Studio couldn't start the drum kit for this render.")
+    const kit = new StudioRefusal(
+      "Studio couldn't start the drum kit for this render.",
+    )
     ui.setProject(editNotes(ui.fixture.project, up))
     await vi.advanceTimersByTimeAsync(250)
 

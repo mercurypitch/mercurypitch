@@ -1,6 +1,7 @@
 // Studio balance lifecycle — analyze a frozen mix and keep faders separate from the measured correction.
 import { createEffect, createSignal, onCleanup } from 'solid-js'
 import { analyzeStudioBalance } from '@/lib/studio/export/analyze-balance'
+import { logStudioFailure, studioSpokenMessage, } from '@/lib/studio/failure-copy'
 import type { StudioSoundEdit } from '@/lib/studio/model/sound-commands'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import type { StudioFreezeHold } from '@/lib/studio/playback/lane-freezer'
@@ -23,6 +24,15 @@ export interface StudioSoundControllerOptions {
 
 /** How an Auto-balance run ended. */
 export type StudioBalanceOutcome = 'applied' | 'nothing' | 'cancelled'
+
+export const STUDIO_BALANCE_FAILED =
+  'The tracks could not be balanced. Try Auto-balance again.'
+
+/** What a failed Auto-balance says: a refusal as it is, anything else in plain words. */
+function balanceFailureText(cause: unknown): string {
+  logStudioFailure('Auto-balance failed', cause)
+  return studioSpokenMessage(cause) ?? STUDIO_BALANCE_FAILED
+}
 
 export function useStudioSound(options: StudioSoundControllerOptions) {
   const [busy, setBusy] = createSignal(false)
@@ -139,11 +149,7 @@ export function useStudioSound(options: StudioSoundControllerOptions) {
       return applied
     } catch (cause) {
       if (!disposed && !job.abort.signal.aborted && isCurrent(job))
-        setError(
-          cause instanceof Error
-            ? cause.message
-            : 'The tracks could not be balanced. Try again.',
-        )
+        setError(balanceFailureText(cause))
       return false
     } finally {
       held?.release()

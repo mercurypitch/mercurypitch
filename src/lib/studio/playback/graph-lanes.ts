@@ -14,6 +14,7 @@ import type { StudioFxChain } from '@/lib/studio-fx/chain'
 import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { StudioFxProfile } from '@/lib/studio-fx/fx-profile'
+import { StudioRefusal } from '../failure-copy'
 import type { StudioPlannedLane, StudioPlannedSegment, } from '../model/arrangement-plan'
 import { studioPanGains } from '../model/arrangement-plan'
 import type { StudioTrack } from '../model/types'
@@ -327,7 +328,7 @@ function startLaneSource(
   buffers: ReadonlyMap<string, AudioBuffer>,
 ): void {
   if (due < ctx.currentTime - 0.02)
-    throw new Error(
+    throw new StudioRefusal(
       'Studio playback could not keep up. Press Play to try again.',
     )
   const buffer = buffers.get(segment.assetId)

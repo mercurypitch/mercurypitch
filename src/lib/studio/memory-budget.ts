@@ -83,10 +83,12 @@ export function reserveStudioMemory(bytes: number): () => void {
   }
 }
 
+/** What a memory refusal says: written for people, so it is shown as it is. */
+export const STUDIO_MEMORY_REFUSAL =
+  'Studio needs more memory for this audio. Stop playback or choose shorter files.'
+
 function memoryError(): Error {
-  return new StudioMemoryError(
-    'Studio needs more memory for this audio. Stop playback or choose shorter files.',
-  )
+  return new StudioMemoryError(STUDIO_MEMORY_REFUSAL)
 }
 
 /**

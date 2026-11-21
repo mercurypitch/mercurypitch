@@ -13,7 +13,7 @@ import type { StudioBackupTarget } from './backup/backup-target'
 import { controllerServiceFixture, preparedFixture, presenceFixture, } from './controller/controller.fixture'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import type { StudioController, StudioControllerOptions, } from './useStudioController'
-import { useStudioController } from './useStudioController'
+import { STUDIO_EDIT_REFUSED, useStudioController } from './useStudioController'
 
 const cleanups: (() => void)[] = []
 const source = (id: string): StudioSourceEntry => ({
@@ -385,6 +385,31 @@ describe('Studio controller', () => {
     expect(dismissed).toBeNull()
     expect(controller.importRefusal()).toBeNull()
     expect(controller.project()?.clips).toHaveLength(1)
+  })
+
+  it('says a refused edit in its dialog, never in the check’s own words or the save banner, and keeps the song as it was', async () => {
+    // Arrange
+    const logged = vi.spyOn(console, 'error').mockImplementation(() => {})
+    const { controller } = mount()
+    await controller.open('one')
+    const before = controller.project()
+
+    // Act: a clip the song does not have.
+    const kept = controller.dispatch({ type: 'remove-clip', clipId: 'gone' })
+    const refusal = controller.editRefusal()
+    controller.dismissEditRefusal()
+
+    // Assert
+    expect(kept).toBe(false)
+    expect(refusal).toBe(STUDIO_EDIT_REFUSED)
+    expect(refusal).not.toContain('clip.gone')
+    expect(controller.problem()).toBeNull()
+    expect(controller.editRefusal()).toBeNull()
+    expect(controller.project()).toBe(before)
+    expect(String(logged.mock.calls[0]?.[1])).toContain(
+      'clip.gone: Clip does not exist',
+    )
+    logged.mockRestore()
   })
 
   it('queues a file picked while the last import is still saving', async () => {

@@ -46,10 +46,12 @@ interface ConfirmDialogProps {
   /**
    * `stay` is for a confirm that talks someone out of leaving: Cancel takes
    * the focus and is the one primary, full width, and the confirm sits under
-   * it as a quiet text button with no icon (`tone` is not read). `confirm`,
-   * the default, is the usual Cancel and confirm pair.
+   * it as a quiet text button with no icon (`tone` is not read). `notice` is
+   * a message to acknowledge: the confirm alone, primary and with no icon,
+   * and no Cancel; Escape and a press outside still call `onCancel`.
+   * `confirm`, the default, is the usual Cancel and confirm pair.
    */
-  variant?: 'confirm' | 'stay'
+  variant?: 'confirm' | 'stay' | 'notice'
   /** Lines listed under the message, outside its paragraph, and read with
    *  it as the dialog's description. None, or an empty list, shows nothing. */
   details?: readonly string[]
@@ -107,6 +109,12 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
   }
 
   const stay = (): boolean => props.variant === 'stay'
+  const notice = (): boolean => props.variant === 'notice'
+  // `stay` and `notice` draw the confirm their own way, whatever its tone.
+  const confirmClass = (): string => {
+    if (stay()) return styles.quiet
+    return notice() || props.tone === 'primary' ? styles.primary : styles.delete
+  }
   // The trap is read as `isolateKeyboard: isolateKeys` unless a caller passes false.
   const isolated = (): boolean => props.isolateKeyboard !== false
   const listed = (): boolean => (props.details?.length ?? 0) > 0
@@ -186,16 +194,18 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
                 class={styles.actions}
                 classList={{ [styles.stacked]: stay() }}
               >
-                <button
-                  ref={keepRef}
-                  type="button"
-                  class={stay() ? styles.keep : styles.cancel}
-                  data-testid="confirm-cancel"
-                  disabled={props.busy}
-                  onClick={cancel}
-                >
-                  {props.cancelLabel ?? 'Cancel'}
-                </button>
+                <Show when={!notice()}>
+                  <button
+                    ref={keepRef}
+                    type="button"
+                    class={stay() ? styles.keep : styles.cancel}
+                    data-testid="confirm-cancel"
+                    disabled={props.busy}
+                    onClick={cancel}
+                  >
+                    {props.cancelLabel ?? 'Cancel'}
+                  </button>
+                </Show>
                 <Show when={props.secondaryLabel != null}>
                   <button
                     type="button"
@@ -209,16 +219,14 @@ export const ConfirmDialog: Component<ConfirmDialogProps> = (props) => {
                 </Show>
                 <button
                   type="button"
-                  classList={{
-                    [styles.delete]: !stay() && props.tone !== 'primary',
-                    [styles.primary]: !stay() && props.tone === 'primary',
-                    [styles.quiet]: stay(),
-                  }}
+                  class={confirmClass()}
                   data-testid="confirm-delete"
                   disabled={props.busy === true || !phraseSatisfied()}
                   onClick={confirm}
                 >
-                  <Show when={!stay()}>{props.confirmIcon ?? <Trash2 />} </Show>
+                  <Show when={!stay() && !notice()}>
+                    {props.confirmIcon ?? <Trash2 />}{' '}
+                  </Show>
                   {props.confirmLabel ?? 'Delete'}
                 </button>
               </div>

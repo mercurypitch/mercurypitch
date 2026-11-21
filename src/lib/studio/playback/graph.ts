@@ -18,6 +18,7 @@ import { createStudioFxChain } from '@/lib/studio-fx/chain'
 import type { ChainSpec } from '@/lib/studio-fx/chain-spec'
 import type { StudioFxProfile } from '@/lib/studio-fx/fx-profile'
 import { FULL_FX_PROFILE } from '@/lib/studio-fx/fx-profile'
+import { StudioRefusal } from '../failure-copy'
 import type { StudioArrangementPlan, StudioPlannedLane, } from '../model/arrangement-plan'
 import type { StudioTrack } from '../model/types'
 import { STUDIO_SAMPLE_RATE } from '../model/types'
@@ -305,7 +306,7 @@ export function buildStudioGraph(
 ): StudioGraph {
   const loop = (plan.endFrame - plan.startFrame) / STUDIO_SAMPLE_RATE
   if (options.repeat === true && loop < MIN_LOOP_SECONDS)
-    throw new Error('A song needs at least a quarter second to repeat.')
+    throw new StudioRefusal('A song needs at least a quarter second to repeat.')
   const parts = buildParts(ctx, plan, epoch, options)
   const { output, master, lanes, peaks } = parts
   const byId = new Map(lanes.map((lane) => [lane.trackId, lane]))

@@ -7,7 +7,7 @@ import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
 import type { StudioNote } from '@/lib/studio/model/types'
 import { controllerServiceFixture, preparedFixture, } from './controller/controller.fixture'
 import type { StudioController } from './useStudioController'
-import { useStudioController } from './useStudioController'
+import { STUDIO_IMPORT_REFUSED, useStudioController, } from './useStudioController'
 
 const cleanups: (() => void)[] = []
 afterEach(() => {
@@ -350,7 +350,7 @@ describe('new MIDI clips in the Studio', () => {
     expect(controller.project()).not.toHaveProperty('sequences')
   })
 
-  it('add nothing on a lane the song does not have, and say why as an import does', async () => {
+  it('add nothing on a lane the song does not have, and say so as an import does, without the check’s own words', async () => {
     // Arrange
     const controller = mount()
     await controller.open('one')
@@ -363,6 +363,6 @@ describe('new MIDI clips in the Studio', () => {
     // Assert
     expect(made).toBeNull()
     expect(controller.project()?.clips).toEqual([])
-    expect(controller.importRefusal()).toMatch(/Lane does not exist/)
+    expect(controller.importRefusal()).toBe(STUDIO_IMPORT_REFUSED)
   })
 })

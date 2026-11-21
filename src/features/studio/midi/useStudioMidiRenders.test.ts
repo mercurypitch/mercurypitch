@@ -2,6 +2,7 @@
 import { createRoot } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioAssetInfo } from '@/lib/studio/audio/prepare-studio-asset'
+import { StudioRefusal } from '@/lib/studio/failure-copy'
 import { studioMidiRenderKey } from '@/lib/studio/midi/render-key'
 import type { StudioNote } from '@/lib/studio/model/types'
 import { controllerServiceFixture, preparedFixture, } from '../controller/controller.fixture'
@@ -155,7 +156,9 @@ describe('MIDI renders on the open song', () => {
     // Arrange
     const { controller, midi, renderer } = await mount()
     renderer.render.mockImplementation(async () => {
-      throw new Error("Studio couldn't start the drum kit for this render.")
+      throw new StudioRefusal(
+        "Studio couldn't start the drum kit for this render.",
+      )
     })
     const take = controller.project()!.clips[0]
 

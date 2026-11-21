@@ -11,6 +11,7 @@ import type { MacroKey } from '@/lib/studio-fx/mix-macros'
 import { measureTrackLatencies } from '@/lib/studio-fx/mixdown'
 import type { StudioMasterGainToken } from '../export/sound-graph'
 import { resolveStudioSoundGraph } from '../export/sound-graph'
+import { logStudioFailure, studioPlaybackFailureText, StudioRefusal, } from '../failure-copy'
 import { reserveStudioMemory } from '../memory-budget'
 import { createStudioLaneMeter } from '../metering/live-meter'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
@@ -240,11 +241,13 @@ export function createStudioTransport(options: StudioTransportOptions) {
 
   async function unlockContext(signal: AbortSignal): Promise<AudioContext> {
     if (!(await options.lease.unlock()))
-      throw new Error('Audio could not start. Press Play to try again.')
+      throw new StudioRefusal('Audio could not start. Press Play to try again.')
     signal.throwIfAborted()
     const ctx = options.lease.ensure()
     if (!ctx || ctx.state !== 'running')
-      throw new Error('The audio device is not ready. Press Play to try again.')
+      throw new StudioRefusal(
+        'The audio device is not ready. Press Play to try again.',
+      )
     watch(ctx)
     return ctx
   }
@@ -454,15 +457,13 @@ export function createStudioTransport(options: StudioTransportOptions) {
 
   function failed(error: unknown): void {
     wantsPlayback = false
+    logStudioFailure('Playback stopped', error)
     // A held run cannot hand over to a run that failed: it stops too.
     publish({
       ...silence(),
       pending: false,
       playing: false,
-      error:
-        error instanceof Error
-          ? error.message
-          : 'Studio could not play this project.',
+      error: studioPlaybackFailureText(error),
     })
   }
 
@@ -542,9 +543,8 @@ export function createStudioTransport(options: StudioTransportOptions) {
       if (run.ctx.currentTime >= runEndsAt(run)) playedOut(run)
     } catch (error) {
       pause()
-      publish({
-        error: error instanceof Error ? error.message : 'Playback stopped.',
-      })
+      logStudioFailure('Playback stopped', error)
+      publish({ error: studioPlaybackFailureText(error) })
     }
   }, 33)
 
