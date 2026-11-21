@@ -4872,3 +4872,18 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   Touch-up had changed STORYBOARD.md, board_lib.py and board-geom.py (not yet BRIEF, SCRIPT-DRAFT,
   HANDOFFS). Passes: shots, PASSES.md and the render queue finished at 02:22 on its own. Both
   resumed with SendMessage at 03:50.
+
+## 21 Nov 03:52 UTC: (model) WEEKLY LIMIT HIT (resets 26 Nov 01:00 UTC): agents on (model) xhigh
+- Both (model) agents stopped at once on (model)'s WEEKLY limit (not the 5-hour one): "resets Nov
+  26, 1am (UTC)". Per the owner's 18 Nov rule ("(model) at max for you ... extra high for
+  agents ... when (model) limit was reached") agents now run on (model) at xhigh (Agent tool
+  model "(model)", effort "xhigh"). (model)'s own weekly is at allowed_warning (resets 26 Nov 01:00
+  too): SPEND LEAN; if (model) is refused, the check-in does nothing until the reset.
+- New (model) agents finish the two stopped jobs (fresh contexts, from files):
+  - board touch-up finisher (builder), brief briefs/l6-board-touchup.md (restates the
+    touch-up: critic 02 + calls 51-54; v2 in review/storyboard-02/before/).
+  - hosts' passes finisher (builder) (brief briefs/l6-film-merc.md + finish notes:
+    verify every pass/chunk, re-render only missing, join proof, contact sheet, PASSES.md).
+- The (model) agents (builder) and (builder) are RETIRED (do not resume them).
+- NEXT unchanged: lead checks the touch-up's diff and checks; then the KIT on (model) xhigh
+  (briefs/l6-film-kit.md); lead reads PASSES.md and the contact sheet.
