@@ -4849,3 +4849,19 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   at 30 fps, chunked, PASSES.md). Launch BOTH together (two heavy builders, (model) xhigh) once
   storyboard critic 02's calls and any touch-up are done; re-read both against the final board
   first.
+
+## 21 Nov 00:27 UTC: storyboard critic 02 (last) back; touch-up and hosts' passes running
+- CRITIC 02 ((builder)): ONE MORE PASS = an editing pass, no third reading. 9 items
+  (real font metrics in the checks: 24/58 stills fail on real widths; chip "Do-re-mi" row; 9f
+  board opens on the chart; 6h numbers pile-up and jump flight; anchor board 36 -> 48 px; chip
+  "leap" place; 7b letters on "Does"; missing exits; BRIEF/SCRIPT-DRAFT first-visit line).
+  Saved verbatim: l6film/review/storyboard-02/REPORT.md (+ work/ with realfonts.py).
+- LEAD'S CALLS 51-54: all taken; no cue change; b29 stays (it is the LESSON PAGE's wording,
+  LESSON.md line 299: film and page change together or not at all -> OWNER'S LIST); 6 % pushes
+  judged on the kit's camera clip (8 % if they do not read).
+- TOUCH-UP: resumed the storyboard agent (builder) (v2 kept in review/storyboard-02/
+  before/; DECISIONS from 109). NO THIRD CRITIC: the lead checks the diff + script output.
+- HOSTS' PASSES LAUNCHED in parallel: (builder) ((model) xhigh, general-purpose), brief
+  briefs/l6-film-merc.md (30 fps scratch passes, chunked, merc/PASSES.md).
+- NEXT: lead checks the touch-up; then launch the KIT (briefs/l6-film-kit.md; re-read against
+  the final board) as the second heavy builder; kit lab -> component critic (max two rounds).
