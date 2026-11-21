@@ -19,6 +19,14 @@ export interface StudioEditCommitOptions {
   report(error: unknown): void
 }
 
+/** Whether two asset lists hold the same records, in the same order. */
+function sameAssets(
+  a: readonly StudioAsset[],
+  b: readonly StudioAsset[],
+): boolean {
+  return a.length === b.length && a.every((asset, index) => asset === b[index])
+}
+
 export function createStudioEditCommits(options: StudioEditCommitOptions) {
   // Undo and redo, counted: a MIDI render service keeps a render a step
   // lands on (src/features/studio/midi).
@@ -50,10 +58,15 @@ export function createStudioEditCommits(options: StudioEditCommitOptions) {
     assets: readonly StudioAsset[],
   ): void {
     queue.stage(next.state.present, prepared)
+    // An edit that brings no audio leaves the list as it was. A fresh copy
+    // would make everything read from the list recompute inside the batch,
+    // before the transport follows the edit, so a playing song heard a gain
+    // change an audio block later.
+    const unchanged = sameAssets(options.assets(), assets)
     batch(() => {
       options.setHistory(next)
       options.setProject(next.state.present)
-      options.setAssets(assets)
+      if (!unchanged) options.setAssets(assets)
     })
     void queue.flush()
   }

@@ -246,6 +246,19 @@ describe('a MIDI render kept in the Studio', () => {
  * the lane freezer read together. Playing, the transport refuses such a
  * pair with "Owned source is missing" and stops.
  */
+/** How many times the asset list changed after this call. */
+function assetWrites(controller: StudioController): () => number {
+  let runs = -1
+  createRoot((dispose) => {
+    cleanups.push(dispose)
+    createEffect(() => {
+      controller.assets()
+      runs += 1
+    })
+  })
+  return () => runs
+}
+
 function tornReads(controller: StudioController): string[] {
   const torn: string[] = []
   createRoot((dispose) => {
@@ -308,6 +321,24 @@ describe('the song and its audio, as the workspace reads them', () => {
     // Assert
     expect(controller.project()?.clips).toHaveLength(1)
     expect(torn).toEqual([])
+  })
+
+  it('leave the audio list as it was when an edit brings no audio, so nothing read from it recomputes before playback follows the edit', async () => {
+    // Arrange
+    const controller = mount()
+    await controller.open('one')
+    const writes = assetWrites(controller)
+
+    // Act
+    const kept = controller.dispatch({
+      type: 'rename-project',
+      title: 'Window seat',
+    })
+
+    // Assert
+    expect(kept).toBe(true)
+    expect(controller.project()?.title).toBe('Window seat')
+    expect(writes()).toBe(0)
   })
 })
 

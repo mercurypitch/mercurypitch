@@ -135,7 +135,12 @@ PR's preview found:
   snapshot effect sent that pair on, its validation refused it and stopped
   playback, and the effect, which follows only a new song object, never sent
   the corrected list. The three writes now land in one `batch()`, as do
-  `openProject`'s. Nothing was stored wrong: `saveProject` validates a song
+  `openProject`'s. An edit that brings no audio leaves the list as it was:
+  `commit()` handed `land()` a fresh copy, and inside the batch everything
+  read from it recomputed before the transport followed the edit, so a
+  playing song heard a gain change one audio block later (89.75 ms in place
+  of 68.25) in 5 of 20 interleaved runs. Nothing was stored wrong:
+  `saveProject` validates a song
   against its stored and new audio inside its IndexedDB transaction, and
   with the message showing, the saved song, a further edit, Export, a backup
   and a reload were all intact
