@@ -4896,3 +4896,14 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   host's own sung sound + S14 mercGate base 400, proved on two scenes first (call 58).
 - NEXT: board touch-up finisher (builder) still running -> lead checks diff + checks ->
   KIT on (model) xhigh (briefs/l6-film-kit.md).
+
+## 21 Nov 04:15 UTC: board FINAL (v2.1); KIT STEP launched on (model) xhigh
+- TOUCH-UP DONE ((builder)): critic 02's nine items + small ones applied; DECISIONS
+  109-121. The lead RAN both checks: board-geom.py 62 stills + 22 pulse peaks + 17 echo rings,
+  0 failures; board-sweep.py 193 landings (closest 0.40 s), 204 word keys, 0 failures. First-
+  visit line gone everywhere; 4b "before the ring closes". The lead synced tools/script-draft.py
+  (s12/s14 notes; backup $S/l6-script-draft-py-pre.py). Calls 59-61.
+- KIT STEP LAUNCHED: (builder) ((model) xhigh, general-purpose), brief
+  briefs/l6-film-kit.md (updated: passes done, roots.js uncomment, rendered-widths check).
+  NEXT: its hand-back -> a fresh motion-critic component round on the kit lab ((model) xhigh; at
+  most two rounds) -> scene groups A-E (two builders at a time, (model) xhigh while (model) is out).
