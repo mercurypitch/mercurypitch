@@ -204,7 +204,7 @@ async function keepRailSays(page: Page): Promise<() => Promise<string[]>> {
     )
 }
 
-test('New song in the sidebar makes a song and opens it, and the song that was open stays listed @smoke', async ({
+test('New song in the sidebar makes a song and opens it, the song that was open stays listed, and a song picked after it opens without Add takes @smoke', async ({
   page,
 }) => {
   test.setTimeout(90_000)
@@ -212,12 +212,15 @@ test('New song in the sidebar makes a song and opens it, and the song that was o
   await twoSongs(page)
   await expandRail(page)
   // Window seat open, so the new song is the only Untitled song that can be.
+  // The page's own New song asked for Add takes; a song picked after it
+  // opens without it.
   await railSong(page, 'Window seat').click()
   await expect(railSong(page, 'Window seat')).toHaveAttribute(
     'aria-current',
     'true',
   )
   await expect(studioClip(page, 'Phrase')).toHaveCount(1)
+  await expect(page.locator('[data-studio-panel]')).toHaveCount(0)
 
   // Above the list and outside its scroll.
   const newSong = railNewSong(page)
@@ -255,6 +258,12 @@ test('New song in the sidebar makes a song and opens it, and the song that was o
   await studio.getByRole('button', { name: 'Close Add takes' }).click()
   await expect(studioClip(page, 'Phrase')).toHaveCount(0)
   expect(await openSongTitle(page)).toBe('Untitled song')
+
+  // The rail's New song asked for Add takes too; Window seat, picked
+  // after it, opens without it.
+  await railSong(page, 'Window seat').click()
+  await expect(studioClip(page, 'Phrase')).toHaveCount(1)
+  await expect(page.locator('[data-studio-panel]')).toHaveCount(0)
   // The page's own work on the new song is no hold to read out.
   expect((await said()).filter((text) => text !== '')).toEqual([])
 })

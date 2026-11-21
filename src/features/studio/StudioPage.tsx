@@ -94,6 +94,9 @@ export function StudioPage() {
       if (switching() || switchHold() !== null || studio.loading()) return
       if (!studio.canBackup(id)) return
       setSwitching(true)
+      // The picked song's workspace mounts inside the switch and reads the
+      // start panel only then: a New song's Add takes is not for it.
+      setStartPanel(null)
       try {
         // The controller asks again once the save has landed, take included.
         if (!(await studio.openForBackup(id))) return
