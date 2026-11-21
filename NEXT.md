@@ -4942,3 +4942,14 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - KIT FIX ROUND: resumed the kit agent (builder) ((model)). NEXT: its hand-back -> KIT
   CRITIC 02 (the last for this stage; verification, previous report path) -> calls -> scene
   groups (briefs drafted; check DECISIONS numbers first).
+- 21 Nov 07:16: KIT FIX ROUND DONE ((builder)): DECISIONS 146-167; the lift made
+  with light (no hold; off's largest change 12 -> 201); scaleY flip; curved routes; new
+  tools/clearance.mjs (0 motion collisions, 16 labs); 60 fps clips + lab/kit-probe/MEASURE.md;
+  linear alpha; parallax on slow pushes; constant-speed hops; stroked sharp; cold-open lab; probe
+  970/970; root 0 errors; board checks 0 failures. Calls 78-82: sharp 1.5 px; board measures to
+  stroke outer edges + five pairs moved 1-2 px (a SMALL TOUCH, the kit agent resumed for it,
+  DECISIONS from 168); PASSES.md hop wording fixed by the lead (backup $S/l6-passes-md-pre.md).
+  NEXT: the touch's hand-back -> KIT CRITIC 02 (the last; brief = briefs/l6-critic-kit-01.md
+  adapted to verification, previous report review/critic-kit-01/REPORT.md, report to
+  review/critic-kit-02/) -> calls -> scene groups (briefs/l6-film-scenes-*.md; DECISIONS from
+  the next free number, not 146: fix the briefs' line first).
