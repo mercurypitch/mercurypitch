@@ -1,5 +1,5 @@
 import type { Accessor } from 'solid-js'
-import { lazy, Show, Suspense } from 'solid-js'
+import { createEffect, lazy, on, onCleanup, Show, Suspense, untrack, } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { IconChevronRight } from '@/components/exercise-icons'
 import { useEngines } from '@/contexts/EngineContext'
@@ -30,6 +30,7 @@ import WarmupExercise from '@/features/exercises/warmup/WarmupExercise'
 import type { PracticeFrameListener } from '@/features/practice/usePracticeController'
 import { openKaraokeNight } from '@/lib/karaoke-night-link'
 import { WEB_ROOMS } from '@/lib/native-build'
+import { exerciseEntered, exercisesTabLeft, exercisesTabShown, } from '@/stores/room-return-store'
 import styles from './ExercisesPage.module.css'
 
 /**
@@ -60,6 +61,16 @@ interface ExercisesPageProps {
 /** Exercises tab (TAB_EXERCISES): the menu plus the selected exercise. */
 export function ExercisesPage(props: ExercisesPageProps) {
   const { audioEngine, practiceEngine } = useEngines()
+  // The tab keeps its place: an exercise left open by a switch to another
+  // tab is open again on the way back, and a room that comes back this way
+  // does not play Merc's demo again by itself (room-return-store.ts). Said
+  // before the room is drawn, which asks as it mounts.
+  exercisesTabShown(untrack(() => props.selectedExercise()))
+  onCleanup(() => exercisesTabLeft(untrack(() => props.selectedExercise())))
+  // Another exercise, or the list, on this tab: the return is over.
+  createEffect(
+    on(() => props.selectedExercise(), exerciseEntered, { defer: true }),
+  )
   /** The room to open, when the selected exercise is one of the web's. */
   const room = () => {
     const selected = props.selectedExercise()
