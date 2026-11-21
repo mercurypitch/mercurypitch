@@ -483,6 +483,58 @@ describe('Studio timeline', () => {
     expect(add).toHaveBeenLastCalledWith('audio')
   })
 
+  it.each([
+    ['a computer', false],
+    ['a phone', true],
+  ])(
+    'offers Add takes and New lane’s three choices in an empty song on %s, each making its lane as the row under the lanes does',
+    (_device, phone) => {
+      const add = vi.fn()
+      const addTakes = vi.fn()
+      render(() => (
+        <StudioTimeline
+          {...base}
+          project={createStudioProject({ id: 'empty' })}
+          phone={phone}
+          onNewLane={add}
+          onAddTakes={addTakes}
+        />
+      ))
+
+      const start = screen.getByRole('group', { name: 'Start your song' })
+      fireEvent.click(within(start).getByRole('button', { name: 'Add takes' }))
+      const choices = within(start).getByRole('group', { name: 'New lane' })
+      for (const name of ['New audio lane', 'New piano lane', 'New drums lane'])
+        fireEvent.click(within(choices).getByRole('button', { name }))
+
+      expect(addTakes).toHaveBeenCalledTimes(1)
+      expect(add.mock.calls).toEqual([['audio'], ['piano'], ['drums']])
+      expect(
+        screen.getByText(
+          'Add a take, or start a lane to record or draw notes in.',
+        ),
+      ).toBeInTheDocument()
+    },
+  )
+
+  it('leaves New lane’s choices to Add takes while it is open, so an empty song shows them once', () => {
+    render(() => (
+      <StudioTimeline
+        {...base}
+        project={createStudioProject({ id: 'empty' })}
+        onNewLane={vi.fn()}
+      />
+    ))
+
+    // The song still says how to start; Add takes, open, offers both ways.
+    screen.getByText('Add a take, or start a lane to record or draw notes in.')
+    expect(
+      screen.queryAllByRole('button', {
+        name: /^(Add takes|New (audio|piano|drums) lane)$/,
+      }),
+    ).toEqual([])
+  })
+
   it('selects a lane from its empty space and marks it', () => {
     const select = vi.fn()
     const { container } = render(() => (

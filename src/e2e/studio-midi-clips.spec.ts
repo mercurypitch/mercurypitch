@@ -1,11 +1,12 @@
-// Studio MIDI clips — drawn from scratch and lengthened, each result read back from the saved song: New lane's Piano and Drums (from Add takes on a phone) make a lane with an empty clip four bars long at the playhead's bar, its audio a quarter second of silence, open in Draw; a double-click with a mouse, or two taps of a finger, on an empty stretch of a MIDI lane makes a clip from the bar under it; a MIDI clip's right edge in the lanes drags past its audio, snapping, its sequence growing, one undo step; the editor's End handle lengthens the clip by a finger or a mouse; and a note drawn in a new clip is rendered and kept as the editor closes, the clip's render key then naming its notes. The sampled grand's samples are refused, so the piano's synth renders. Nothing reaches the live site.
-import { expect, type Page, test } from '@playwright/test'
+// Studio MIDI clips — drawn from scratch and lengthened, each result read back from the saved song: New lane's Piano and Drums (from Add takes on a phone, and from an empty song's own offer under its Add takes, on a computer, a tablet and a phone) make a lane with an empty clip four bars long at the playhead's bar, its audio a quarter second of silence, open in Draw; a double-click with a mouse, or two taps of a finger, on an empty stretch of a MIDI lane makes a clip from the bar under it; a MIDI clip's right edge in the lanes drags past its audio, snapping, its sequence growing, one undo step; the editor's End handle lengthens the clip by a finger or a mouse; and a note drawn in a new clip is rendered and kept as the editor closes, the clip's render key then naming its notes. The sampled grand's samples are refused, so the piano's synth renders. Nothing reaches the live site.
+import { expect, type Locator, type Page, test } from '@playwright/test'
 import { studioMidiRenderKey } from '@/lib/studio/midi/render-key'
 import { center, importStudioAudio, openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import { routeNetwork } from './helpers/studio-midi'
 import { endDrag, endHandle, laneSecond, renderKept, savedAssets, savedMidiClips, } from './helpers/studio-midi-clips'
 import { pitchY, readNoteRoll, tickX, touchDrag, } from './helpers/studio-note-roll'
 import { noteEditor, noteEditorArrived, openMidiSong, } from './helpers/studio-notes'
+import { dismissOverlays, waitForNav } from './helpers/ui'
 
 /** Four bars at 120 bpm: eight seconds, 15,360 ticks. */
 const FOUR_BARS = 384_000
@@ -394,3 +395,65 @@ test.describe('Studio MIDI clips on a phone', () => {
     expect(live).toEqual([])
   })
 })
+
+/** A new song with nothing in it and Add takes closed: the song's own way to start. */
+async function openEmptySong(page: Page): Promise<Locator> {
+  await page.addInitScript(() => {
+    ;(window as unknown as { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
+  })
+  await page.goto('/studio-night')
+  await waitForNav(page, 30_000)
+  await dismissOverlays(page)
+  const studio = studioRegion(page)
+  await studio
+    .getByRole('button', { name: 'Create project', exact: true })
+    .click()
+  // A new song opens Add takes, which holds New lane as well. Closed, the
+  // song offers both ways to start itself.
+  await studio
+    .getByRole('button', { name: 'Close Add takes', exact: true })
+    .click()
+  return studio.getByRole('group', { name: 'Start your song', exact: true })
+}
+
+for (const [where, device, touch, tag] of [
+  ['a computer', COMPUTER, false, ' @smoke'],
+  ['a tablet', TABLET, true, ''],
+  ['a phone', PHONE, true, ' @smoke'],
+] as const) {
+  test.describe(`Studio MIDI clips from an empty song on ${where}`, () => {
+    test.use(device)
+
+    test(`an empty song offers Add takes and New lane’s Audio, Piano and Drums, and Piano makes a Piano lane with an empty clip, open in Draw${tag}`, async ({
+      page,
+    }) => {
+      test.setTimeout(120_000)
+      const live = await routeNetwork(page)
+      const start = await openEmptySong(page)
+      await expect(
+        start.getByRole('button', { name: 'Add takes', exact: true }),
+      ).toBeEnabled()
+      const choices = start.getByRole('group', {
+        name: 'New lane',
+        exact: true,
+      })
+      await expect(choices.getByRole('button')).toHaveText([
+        'Audio',
+        'Piano',
+        'Drums',
+      ])
+      const piano = choices.getByRole('button', {
+        name: 'New piano lane',
+        exact: true,
+      })
+
+      if (touch) await piano.tap()
+      else await piano.click()
+
+      await openedInDraw(page)
+      await expect(start).toHaveCount(0)
+      await expectEmptyClip(page, 'Piano', 'piano')
+      expect(live).toEqual([])
+    })
+  })
+}
