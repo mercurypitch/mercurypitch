@@ -143,16 +143,18 @@ test.describe('Studio backup files', () => {
       .click()
     await expect(saved).toHaveCount(1)
     const first = savedFile(await saved.textContent())
-    expectBackup(await pickedBytes(page, first), 'Window seat')
     // The notice is the app's notification, not a line in the Studio.
     await expect(studio.getByText(/^Backup saved as/)).toHaveCount(0)
-    // Dismissed, so the next notice read is the next backup's.
+    // Dismissed at once, so the next notice read is the next backup's. A
+    // success notice leaves by itself after six seconds, and reading the
+    // backup's bytes first outlasted that on a slow runner.
     await notices(page)
       .getByRole('status')
       .filter({ has: page.getByText(WINDOW_SEAT_SAVED) })
       .getByRole('button', { name: 'Dismiss notification' })
       .click()
     await expect(saved).toHaveCount(0)
+    expectBackup(await pickedBytes(page, first), 'Window seat')
 
     await studio.getByRole('button', { name: 'All songs' }).click()
     await studio
