@@ -18,7 +18,9 @@
 // was: no card, no hint, no clock. It starts AUTO_PLAY_MS after the singer
 // is back, the app active and the page showing, if the room is still at its
 // intro. One that had started ends on its card, and nothing plays by itself
-// on the way back.
+// on the way back. Nor on the way back to a room by the web's Exercises
+// tab: the room is made anew there, but it is the same visit
+// (room-return-store.ts), and "?" plays the demo on demand.
 //
 // Its mic hint ("Tap the mic to start.") is the room's at rest: it stays
 // over the mic whenever the room waits for the tap that starts a take
@@ -31,6 +33,7 @@ import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup, onMount, untrack, } from 'solid-js'
 import { onAppLeave, onAppReturn } from '@/components/room-kit/app-leave'
 import { prefersReducedMotion } from '@/components/room-kit/reduced-motion'
+import { isRoomReturn } from '@/stores/room-return-store'
 import { tellDemoAuto } from './demo-auto'
 import type { DemoBeats, DemoCue, DemoMark, DemoTakeId, DemoTakeShape, TakeClock, } from './demo-plan'
 import { takeClock } from './demo-plan'
@@ -447,7 +450,8 @@ export function useExerciseDemo<
   }
 
   onMount(() => {
-    if (config.autoPlays()) armAuto()
+    // A room the web's Exercises tab came back to is not a new visit.
+    if (config.autoPlays() && !isRoomReturn()) armAuto()
   })
 
   // The room keeps the screen on while the demo plays, and only then: not

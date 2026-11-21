@@ -397,6 +397,7 @@ import { melodyStore } from '@/stores/melody-store'
 import { micLatencyMs } from '@/stores/mic-latency-store'
 import { closeOnboarding, flowOpen, returningVisitor, } from '@/stores/onboarding-store'
 import { startPracticeTimer } from '@/stores/practice-timer-store'
+import { exerciseEntered } from '@/stores/room-return-store'
 import type { SavedMidiSong } from '@/stores/saved-midi-songs-store'
 import { savedMidiSongs } from '@/stores/saved-midi-songs-store'
 import { getSession, setSelectedMelodyIds, templateToSession, userSession, } from '@/stores/session-store'
@@ -737,6 +738,7 @@ const AppShell: Component<AppProps> = (props) => {
   // The re-select must land AFTER the caller's writes flush: writes inside
   // an effect coalesce, so back-to-back writes never unmount anything.
   const mountExercise = (type: ExerciseType) => {
+    exerciseEntered()
     if (untrack(selectedExercise) === type) {
       setSelectedExercise(null)
       queueMicrotask(() => setSelectedExercise(type))
@@ -1200,6 +1202,7 @@ const AppShell: Component<AppProps> = (props) => {
     }
     handleTabChange(TAB_EXERCISES, (accepted) => {
       if (!accepted) return
+      exerciseEntered()
       setSelectedExercise(data.e as ExerciseType)
       setAutoStartExercise(true)
       showNotification(`Loaded shared exercise: ${decoded.n ?? data.e}`, 'info')
@@ -4615,7 +4618,11 @@ const AppShell: Component<AppProps> = (props) => {
                     subscribeFrames={practice.subscribeFrames}
                     selectedExercise={selectedExercise}
                     autoStartExercise={autoStartExercise}
-                    onSelect={setSelectedExercise}
+                    onSelect={(type) => {
+                      // A card: a fresh way in, whatever the tab held.
+                      exerciseEntered()
+                      setSelectedExercise(type)
+                    }}
                     onQuickStart={handleQuickStart}
                     onBack={clearExercise}
                     onOpenZen={() =>

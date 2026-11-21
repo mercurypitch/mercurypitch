@@ -196,6 +196,8 @@ vi.mock('@/lib/merc/stage', () => ({
 }))
 
 const { LipRollRoom } = await import('../LipRollRoom')
+const { exerciseEntered, exercisesTabLeft, exercisesTabShown } =
+  await import('@/stores/room-return-store')
 
 // ── The clock ──────────────────────────────────────────────────
 
@@ -567,6 +569,26 @@ describe('the Lip roll demo', () => {
 
     expect(demoMode()).toBe('playing')
     expect(screen.queryByTestId('lip-skip-stop')).toBeNull()
+  })
+
+  it('never plays by itself in a room the Exercises tab came back to; "?" still plays it', async () => {
+    // The tab went with the room open, and is back: the same visit.
+    exercisesTabLeft('lip-roll-bay')
+    exercisesTabShown('lip-roll-bay')
+    try {
+      await open()
+      expect(screen.queryByTestId('lip-demo-tip')?.dataset.tip).toBe('mic')
+      await run(3000)
+      expect(demoMode()).toBe('idle')
+      expect(sound.made).toBe(0)
+
+      fireEvent.click(screen.getByTestId('lip-ask'))
+      await run(100)
+
+      expect(demoMode()).toBe('playing')
+    } finally {
+      exerciseEntered()
+    }
   })
 
   it('plays by itself only until it is seen; then "?" plays it', async () => {
