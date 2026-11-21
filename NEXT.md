@@ -4995,3 +4995,27 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   diff HANDOFFS/STORYBOARD against the backups. Then the SCENE GROUPS (briefs/l6-film-scenes-
   common.md + -A..-E.md): two builders at a time on (model) xhigh, paired by BUILD-GUIDE's builder
   splits; one fresh critic per group, at most two rounds.
+
+## 21 Nov 08:57 UTC: KIT DONE (final touch checked by the lead); SCENE GROUPS A and B launched
+- Kit final touch ((builder), done; retire it): calls 84-93 applied, DECISIONS 171-183;
+  root check 0 errors (1 info: a placeholder's serif p overflows at 29.48); probe 994/994;
+  clearance.mjs 0 failures over every second of 17 labs (new fail rule); WIDTHS nothing <12 px;
+  MEASURE.md with 60 fps clips (room, column carry/shrink, swap, coldopen).
+- The lead re-ran board-geom (0 failures, 62 stills/22 peaks/17 rings) and board-sweep (0
+  failures, 193 landings, closest 0.40 s, 202 word-keyed times: card 2's two tick cues gone),
+  diffed HANDOFFS/STORYBOARD vs $S/l6-pre-finaltouch/ (match the calls), and looked at the
+  named stills (sheets in $S/l6-finaltouch-look/): all as called.
+- Calls 94-97 (LEAD-ANSWERS): 94 8g's No pill +7 px (x 1319-1571, ring (1605,255), check 12 px
+  from each outline; the LEAD edited HANDOFFS + board-geom, 0 failures, logged in CHANGES.md;
+  the kit's mixup lab keeps 48 px, group C's brief says so); 95 keep the dimmed field (peak mean
+  luma ~40-43, no flash) -> OWNER LOOK LIST: the darker cut into the title; 96 within-block
+  pairs stay listed (data-own tool pass after the scenes); 97 nothing.
+- Briefs: common's Prove section now follows BUILD-GUIDE § Proving a scene (60 fps clips of
+  moves and signatures + measure.py, clearance.mjs 0 failures, contrast --at); C's brief: 8g's
+  pills and rows 1b/2b 3 px lower (was misstated as 2). Backups in $S/l6-pre-finaltouch/*.bak.
+- LAUNCHED ((model) xhigh, background): GROUP A (builder) (s01-s04, briefs common + A);
+  GROUP B (builder) (s05-s07, common + B). Disk: 7.7 GB free at launch (never clean
+  up; watch it). NEXT: as each hands back -> one fresh motion-critic per group (component
+  round, at most two rounds; report to l6film/review/critic-scenes-<G>-01/) -> calls -> the
+  builder fixes -> next group into the free slot: C (s08-s09) and D (s10-s11), then E
+  (s12-s14). Between waves, promote into the kit what two groups wrote alike.
