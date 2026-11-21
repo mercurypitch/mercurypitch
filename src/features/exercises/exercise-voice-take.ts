@@ -4,8 +4,11 @@
 
 import type { SaveVoiceTakeResult } from '@/db/services/voice-take-service'
 import { saveVoiceTake } from '@/db/services/voice-take-service'
+import { EXERCISE_SING_IN_TIME, EXERCISE_VIBRATO, EXERCISE_WARMUP, } from '@/lib/domain/exercise-contracts'
 import type { ExerciseConfig } from './types'
 import type { ExerciseSessionVoiceTake } from './use-base-exercise'
+import { VIBRATO_STYLES } from './vibrato/vibrato-styles'
+import { WARMUP_PATTERN_LABELS } from './warmup/warmup-steps'
 
 const EXERCISE_CONTEXT_VERSION = 1
 
@@ -45,22 +48,50 @@ export function exerciseComparisonKey(config: ExerciseConfig): string {
   return `exercise:${config.type}:${fingerprint(payload)}:v${EXERCISE_CONTEXT_VERSION}`
 }
 
+/**
+ * A drill's pattern is its own value for the variant it ran (`level:5`,
+ * `lip-trill`). It keys the thread; the title says it in the words the
+ * drill's own picker uses. A pattern with no such words stays out of the
+ * title rather than show its internal value.
+ */
+function patternLabel(config: ExerciseConfig): string | null {
+  const pattern = config.pattern
+  if (pattern === undefined || pattern === '') return null
+  switch (config.type) {
+    case EXERCISE_SING_IN_TIME: {
+      const level = /^level:(\d+)$/.exec(pattern)
+      return level === null ? null : `Level ${level[1]}`
+    }
+    case EXERCISE_VIBRATO:
+      return Object.hasOwn(VIBRATO_STYLES, pattern)
+        ? VIBRATO_STYLES[pattern as keyof typeof VIBRATO_STYLES].label
+        : null
+    case EXERCISE_WARMUP:
+      return Object.hasOwn(WARMUP_PATTERN_LABELS, pattern)
+        ? WARMUP_PATTERN_LABELS[pattern as keyof typeof WARMUP_PATTERN_LABELS]
+        : null
+    default:
+      return null
+  }
+}
+
+/** The note or notes first, then the variant: two Vibrato styles on one
+ *  note are two threads, and their titles say which is which. */
 export function exerciseThreadTitle(
   exerciseTitle: string,
   config: ExerciseConfig,
 ): string {
+  const parts = [exerciseTitle]
   if (config.targetNotes !== undefined && config.targetNotes.length > 0) {
     const first = config.targetNotes[0]!
     const last = config.targetNotes.at(-1)!
-    return `${exerciseTitle} · ${first}${first === last ? '' : ` to ${last}`}`
+    parts.push(first === last ? first : `${first} to ${last}`)
+  } else if (config.targetNote !== undefined && config.targetNote !== '') {
+    parts.push(config.targetNote)
   }
-  if (config.targetNote !== undefined && config.targetNote !== '') {
-    return `${exerciseTitle} · ${config.targetNote}`
-  }
-  if (config.pattern !== undefined && config.pattern !== '') {
-    return `${exerciseTitle} · ${config.pattern}`
-  }
-  return exerciseTitle
+  const label = patternLabel(config)
+  if (label !== null) parts.push(label)
+  return parts.join(' · ')
 }
 
 export async function keepExerciseVoiceTake(input: {
