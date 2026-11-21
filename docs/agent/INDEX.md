@@ -289,7 +289,7 @@ These are the rules that break things when ignored.
 | [room-words-store.ts](../../src/stores/room-words-store.ts) | 50 | A room's words, kept off a screen something else is about to take The native onboarding opens over the Sing room on a new install's first... |
 | [settings-section.ts](../../src/stores/settings-section.ts) | 50 | Settings sections — the web Settings panel's sub-tabs, by name A module of its own so the native shell bridge (native-shell-store.ts) can... |
 | [singer-sheet-store.ts](../../src/stores/singer-sheet-store.ts) | 50 | The singer sheet — which singer it is open on, if any The one sheet that reports or blocks a singer (src/components/moderation/SingerShee... |
-| [studio-songs-store.ts](../../src/stores/studio-songs-store.ts) | 50 | Studio songs store — the open Studio page's song list and switch, lent to the sidebar while the page is mounted The open song is Studio p... |
+| [studio-songs-store.ts](../../src/stores/studio-songs-store.ts) | 50 | Studio songs store — the open Studio page's song list, switch and New song, lent to the sidebar while the page is mounted The open song i... |
 | [transport-store.ts](../../src/stores/transport-store.ts) | 50 | Transport Store — persisted tempo, count-in and playback speed Every setter clamps to a musically valid range (bpm 40-280, speed 0.25-2.0x). |
 | [tv-stage-store.ts](../../src/stores/tv-stage-store.ts) | 50 | TV stage store — how far ahead a connected TV draws the stage A TV that draws the Karaoke room's stage (src/lib/tv-stage/) shows the song... |
 | [unlock-claims.ts](../../src/stores/unlock-claims.ts) | 50 | Unlock claims: a room that shows its own badges, and the tap you feel The notifications store's half of routing an unlock (its header exp... |
