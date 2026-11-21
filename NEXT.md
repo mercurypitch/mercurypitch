@@ -4865,3 +4865,6 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   briefs/l6-film-merc.md (30 fps scratch passes, chunked, merc/PASSES.md).
 - NEXT: lead checks the touch-up; then launch the KIT (briefs/l6-film-kit.md; re-read against
   the final board) as the second heavy builder; kit lab -> component critic (max two rounds).
+- 00:29: CONTAINER RESTART at about 00:28 stopped both agents just after launch. Scratchpad
+  and subagent transcripts survived; no stale processes. Resumed both with SendMessage (touch-up
+  (builder); hosts' passes (builder)).
