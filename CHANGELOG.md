@@ -5,7 +5,7 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
-## [0.9.31] - 2026-11-19
+## [0.9.31] - 2026-11-21
 
 Studio opens: record, arrange and mix your takes into a song. Merc's rooms
 and his Ear Lab come to the web, and the Exercises tab gains three drills.
@@ -29,6 +29,9 @@ and his Ear Lab come to the web, and the Exercises tab gains three drills.
   turn its five dials, then export a WAV with its loudness measured.
 - **Back up a song.** One file holds the song and its audio. Opening a
   backup adds it as a new song.
+- **Switch songs from the sidebar.** Studio's sidebar lists your songs with
+  their length, lanes and last edit. Pick one to open it. Studio remembers
+  whether you left its sidebar open.
 - **Sing with Merc on the web.** Eight rooms open free from the Exercises
   tab: Long note, Echo, Lip roll, Ng slides, Home note, Leap, Harmony and
   the Warm-up.
@@ -52,6 +55,8 @@ and his Ear Lab come to the web, and the Exercises tab gains three drills.
   a phone, Singing, Piano and Karaoke show them above the playback controls.
 - **Twelve keys.** The key pickers list all twelve major keys, and their
   relative minors when a minor scale is chosen.
+- **Sight-Singing hears any octave.** A line sung an octave from the page now
+  scores, so your Sight-Singing bests start fresh.
 - **A phone on its side.** The Singing tab shows the phone stage in two
   columns, the sidebar becomes a drawer, and the guided tours light every
   step.

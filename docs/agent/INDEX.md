@@ -76,10 +76,10 @@ These are the rules that break things when ignored.
 |---|---|---|---|
 | `lessons` | [staff-draw.ts](../../src/features/lessons/kit/staff-draw.ts) | 124.5k | Staff drawing — staves, clefs, notes and the pitch line, engraved as SVG The staff toy's picture (staff.ts; Lesson 15's WEB-SPEC, Toys 1... |
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
-| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 37.4k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
+| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 37.5k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
 | `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 32.6k | The room's lit instruments, by the name each of the older stage's instruments exports itself under (instrument-skin.ts). |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
-| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 24.4k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
+| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 24.5k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 19.0k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 15.5k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.3k | Hear Yourself History — local listening desk for kept performance takes |
