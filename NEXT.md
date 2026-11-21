@@ -4968,3 +4968,30 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   THE LAST kit critic. NEXT: calls; a last kit touch if needed (no third critic); then the SCENE
   GROUPS (briefs/l6-film-scenes-common.md + -A..-E.md): two builders at a time on (model) xhigh,
   pairing by BUILD-GUIDE's builder splits; one critic per group (at most two rounds).
+
+## 21 Nov 07:55 UTC: kit critic 02 back (ONE MORE PASS); calls 84-93; FINAL KIT TOUCH running
+- Critic 02 ((builder), done) report saved: l6film/review/critic-kit-02/REPORT.md. Nine
+  items: (1 NEW) cold-open exit: world labels + bead 3 fly through the hook at the pass into the
+  bead (film ~40.02-40.18); (2) L.swap draws both labels 0.25 s; (3) sharp fix breaks serif,
+  counters ~1x3 px at Outfit 48; (4) guide sweep fills amber on the viewer's turn; (5) slow pushes
+  still zoom-like and brighten the room (slowLift); (6) room + column need 60 fps clips; (7) the
+  probe lists, not fails, pairs ending <12 px ("higher" 8.2, "G" 10.7); (8) eased alpha in L.lit,
+  L.run, L.fade; (9) S2->S3 near-empty 0.9 s + grey flash. Plus small ones.
+- Calls 84-93 in l6film/LEAD-ANSWERS.md: all taken as proposed (84 exit fades 39.60-39.90 /
+  hook 39.65-39.95; 85 swap in sequence 0.12 + 0.13 s; 86 sharp stroke = parent stem, +0.06 em
+  after italic capital, +15 % size; 87 plain dashed sweep; 88 far 0 / near 2.5, no light change;
+  89 60 fps clips; 90 probe fails <12 px; 91 linear alpha <0.3 s; 92 rows full from 43.42;
+  93 small ones).
+- FINAL KIT TOUCH SENT to the kit agent (builder) ((model)), DECISIONS from 171. It may
+  edit HANDOFFS / STORYBOARD / board scripts only where 84, 92 or 93 change a number. Backups:
+  $S/l6-pre-finaltouch/ (HANDOFFS, STORYBOARD, BUILD-GUIDE, DECISIONS, board scripts,
+  clearance.mjs, CHANGES.md, assets/lib). Baseline 07:55: board-geom 0 failures (62 stills, 22
+  pulse peaks, 17 echo rings); board-sweep 0 failures (193 landings, closest 0.40 s, 104 rows,
+  204 word-keyed times).
+- NO THIRD CRITIC. When it hands back, the LEAD checks: root check 0 errors; probe; board-geom
+  (+ --tight) and board-sweep 0 failures; clearance.mjs 0 failures over every lab second;
+  WIDTHS nothing <12 px; MEASURE.md with the 60 fps clips; the named stills (cold-open exit at
+  39.75/39.95/40.10, swap mid-switch, both sharps, guide sweep, room push, S2->S3, small ones);
+  diff HANDOFFS/STORYBOARD against the backups. Then the SCENE GROUPS (briefs/l6-film-scenes-
+  common.md + -A..-E.md): two builders at a time on (model) xhigh, paired by BUILD-GUIDE's builder
+  splits; one fresh critic per group, at most two rounds.
