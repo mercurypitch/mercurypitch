@@ -1,4 +1,4 @@
-/* Studio rail — the song list. Each row is a song's title, when it was
+/* Studio rail — New song, then the song list. Each row is a song's title, when it was
    last edited, and its length and lanes as pills; the open song carries a
    filled glyph and an Open pill. Pointing at a row lifts its surface in
    and makes the glyph's level bars jump to a new reading: transform and
@@ -7,6 +7,72 @@
 .panel {
   display: flex;
   flex-direction: column;
+}
+
+/* New song: a row-sized button above the list and outside its scroll, so
+   any number of songs leaves it in view. A hairline frame sets it apart
+   from the songs; its plus sits in the same tile as a song's glyph. Held,
+   it fades with the rows and its press does nothing. */
+.create {
+  --row-ease: cubic-bezier(0.22, 1, 0.36, 1);
+
+  appearance: none;
+  position: relative;
+  isolation: isolate;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 44px;
+  margin: 0 0 8px;
+  padding: 5px 8px;
+  border: 1px solid color-mix(in srgb, var(--text-primary) 14%, transparent);
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 0.8rem;
+  font-weight: 600;
+  line-height: 1.25;
+  text-align: left;
+  cursor: pointer;
+}
+
+.create::before {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 7px;
+  background: var(--bg-hover);
+  opacity: 0;
+  transition: opacity 160ms var(--row-ease);
+  content: '';
+}
+
+.create:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 1px;
+}
+
+.create[aria-disabled='true'] {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.createGlyph {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--accent-surface);
+  color: var(--accent-text);
+}
+
+.createGlyph svg {
+  transition: transform 200ms var(--row-ease);
 }
 
 /* Why the page cannot switch now: said once above the rows it holds. The
@@ -196,9 +262,28 @@
    Under reduced motion the surface still marks the row, at once, and
    nothing moves. */
 @media (hover: hover) {
-  .row:hover:not([aria-disabled='true'])::before {
+  .row:hover:not([aria-disabled='true'])::before,
+  .create:hover:not([aria-disabled='true'])::before {
     opacity: 1;
     transform: none;
+  }
+}
+
+/* New song: pointing turns the plus a quarter turn, a press sinks the
+   tile. Under reduced motion the surface still comes in; nothing moves. */
+@media (hover: hover) and (prefers-reduced-motion: no-preference) {
+  .create:hover:not([aria-disabled='true']) .createGlyph svg {
+    transform: rotate(90deg);
+  }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .createGlyph {
+    transition: transform 120ms var(--row-ease);
+  }
+
+  .create:active:not([aria-disabled='true']) .createGlyph {
+    transform: scale(0.92);
   }
 }
 
@@ -246,7 +331,9 @@
   .row::before,
   .glyph,
   .glyph rect,
-  .body {
+  .body,
+  .create::before,
+  .createGlyph svg {
     transition: none;
   }
 

@@ -1,6 +1,14 @@
-// Studio songs in the sidebar — a row switches songs with the real mouse or the keyboard, its hover is drawn without moving the row, and a phone's drawer folds away after a pick.
+// Studio songs in the sidebar — a row switches songs with the real mouse or the keyboard, its hover is drawn without moving the row, New song above the list makes a song and opens it unless a take holds it, and a phone's drawer folds away after a pick or a new song.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { openArrangement, studioClip, studioRegion, } from './helpers/dedicatedstudio-fixture'
+import { fakeMicArgs, TONE_HZ, writeToneWav } from './helpers/tone-wav'
+
+// A take holds New song: the fake microphone it records from is a launch
+// option, which Playwright takes for a whole file only.
+test.use({
+  launchOptions: { args: fakeMicArgs(writeToneWav(TONE_HZ, 20)) },
+  permissions: ['microphone'],
+})
 
 function rail(page: Page): Locator {
   return page.getByRole('navigation', { name: 'Studio songs' })
@@ -8,6 +16,18 @@ function rail(page: Page): Locator {
 
 function railSong(page: Page, title: string): Locator {
   return rail(page).getByRole('button', { name: new RegExp(`^${title},`) })
+}
+
+/** The Your songs section: New song, the hold line and the list. */
+function railSection(page: Page): Locator {
+  return page.locator('[data-tour="studio.rail-songs"]')
+}
+
+function railNewSong(page: Page): Locator {
+  return railSection(page).getByRole('button', {
+    name: 'New song',
+    exact: true,
+  })
 }
 
 /** The open song's name, read from Song options. */
@@ -163,6 +183,146 @@ test('Studio songs in the phone drawer fold it away after a pick', async ({
   await windowSeat.click()
   await expect(rail(page)).toHaveCount(0)
   await expect(studioClip(page, 'Phrase')).toHaveCount(1)
+})
+
+/** Keep every text the rail's live region says, from now on. */
+async function keepRailSays(page: Page): Promise<() => Promise<string[]>> {
+  await page.evaluate(() => {
+    const status = document.querySelector(
+      '[data-tour="studio.rail-songs"] [role="status"]',
+    )!
+    const said: string[] = []
+    ;(window as unknown as { __railSaid: string[] }).__railSaid = said
+    new MutationObserver(() => said.push(status.textContent ?? '')).observe(
+      status,
+      { childList: true, characterData: true, subtree: true },
+    )
+  })
+  return () =>
+    page.evaluate(
+      () => (window as unknown as { __railSaid: string[] }).__railSaid,
+    )
+}
+
+test('New song in the sidebar makes a song and opens it, and the song that was open stays listed @smoke', async ({
+  page,
+}) => {
+  test.setTimeout(90_000)
+  await page.setViewportSize({ width: 1440, height: 900 })
+  await twoSongs(page)
+  await expandRail(page)
+  // Window seat open, so the new song is the only Untitled song that can be.
+  await railSong(page, 'Window seat').click()
+  await expect(railSong(page, 'Window seat')).toHaveAttribute(
+    'aria-current',
+    'true',
+  )
+  await expect(studioClip(page, 'Phrase')).toHaveCount(1)
+
+  // Above the list and outside its scroll.
+  const newSong = railNewSong(page)
+  const button = (await newSong.boundingBox())!
+  const list = (await rail(page).boundingBox())!
+  expect(button.y + button.height).toBeLessThanOrEqual(list.y)
+  expect(button.height).toBeGreaterThanOrEqual(44)
+  // The real mouse brings the hover surface in.
+  await newSong.hover()
+  await expect
+    .poll(() =>
+      newSong.evaluate(
+        (element) => getComputedStyle(element, '::before').opacity,
+      ),
+    )
+    .toBe('1')
+
+  const said = await keepRailSays(page)
+  await newSong.click()
+
+  const studio = studioRegion(page)
+  await expect(
+    studio.getByRole('button', { name: 'Close Add takes' }),
+  ).toBeVisible()
+  await expect(rail(page).getByRole('button')).toHaveCount(3)
+  const current = rail(page).locator('button[aria-current="true"]')
+  await expect(current).toHaveCount(1)
+  await expect(current).toHaveAccessibleName(/^Untitled song, empty,/)
+  await expect(
+    rail(page).getByRole('button', { name: /^Untitled song,/ }),
+  ).toHaveCount(2)
+  await expect(railSong(page, 'Window seat')).not.toHaveAttribute(
+    'aria-current',
+  )
+  await studio.getByRole('button', { name: 'Close Add takes' }).click()
+  await expect(studioClip(page, 'Phrase')).toHaveCount(0)
+  expect(await openSongTitle(page)).toBe('Untitled song')
+  // The page's own work on the new song is no hold to read out.
+  expect((await said()).filter((text) => text !== '')).toEqual([])
+})
+
+test('New song in the phone drawer folds it away and opens the new song', async ({
+  page,
+}) => {
+  test.setTimeout(90_000)
+  await page.setViewportSize({ width: 390, height: 844 })
+  await twoSongs(page)
+
+  await expect(railNewSong(page)).toHaveCount(0)
+  await page.locator('.sidebar-toggle-btn').click()
+  const newSong = railNewSong(page)
+  await expect(newSong).toBeInViewport()
+  expect((await newSong.boundingBox())!.height).toBeGreaterThanOrEqual(44)
+
+  await newSong.click()
+  await expect(rail(page)).toHaveCount(0)
+  await expect(
+    studioRegion(page).getByRole('button', { name: 'Close Add takes' }),
+  ).toBeVisible()
+  await page.locator('.sidebar-toggle-btn').click()
+  await expect(rail(page).getByRole('button')).toHaveCount(3)
+})
+
+test.describe('New song in the sidebar while a take runs', () => {
+  test('is held, says why, and makes no song', async ({ page }) => {
+    test.setTimeout(90_000)
+    await page.setViewportSize({ width: 1440, height: 900 })
+    await twoSongs(page)
+    await expandRail(page)
+    await railSong(page, 'Window seat').click()
+    await expect(studioClip(page, 'Phrase')).toHaveCount(1)
+
+    const studio = studioRegion(page)
+    const record = studio.locator('[data-studio-record]')
+    await expect(record).toHaveAttribute('data-phase', 'idle')
+    await studio
+      .getByRole('button', { name: 'Arm Phrase for recording', exact: true })
+      .click()
+    await expect(record).toHaveAttribute('data-phase', 'armed', {
+      timeout: 15_000,
+    })
+    await record.click()
+    await expect(record).toHaveAccessibleName('Stop recording', {
+      timeout: 10_000,
+    })
+
+    const newSong = railNewSong(page)
+    await expect(newSong).toHaveAttribute('aria-disabled', 'true')
+    await expect(railSection(page).getByRole('status')).toHaveText(
+      'Stop the take to switch songs.',
+    )
+    // aria-disabled, not disabled: the real mouse still lands on it.
+    await newSong.click({ force: true })
+    await expect(rail(page).getByRole('button')).toHaveCount(2)
+    await expect(railSong(page, 'Window seat')).toHaveAttribute(
+      'aria-current',
+      'true',
+    )
+
+    await record.click()
+    await expect(record).toHaveAccessibleName('Record', { timeout: 30_000 })
+    await expect(newSong).not.toHaveAttribute('aria-disabled')
+    await expect(railSection(page).getByRole('status')).toHaveText('')
+    await expect(rail(page).getByRole('button')).toHaveCount(2)
+  })
 })
 
 const RAIL_KEY = 'sidebar-studio-rail-open'

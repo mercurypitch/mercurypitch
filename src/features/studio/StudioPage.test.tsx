@@ -74,6 +74,7 @@ function mountPage(
     canBackup: vi.fn(() => true),
     openForBackup: vi.fn(async () => true),
     open: vi.fn(async () => {}),
+    create: vi.fn(async () => true),
     backup: vi.fn(async () => true),
     takeOver: vi.fn(async () => {}),
     fork: vi.fn(async () => {}),
@@ -296,6 +297,62 @@ describe('Studio page song switch for the sidebar', () => {
     expect(hold()).toBeNull()
     saveState = 'error'
     expect(hold()).toBe('Keep or discard this song’s unsaved changes first.')
+  })
+
+  it("makes a new song through the page's own New song, opens it, and holds the rail until it has", async () => {
+    let settle!: (made: boolean) => void
+    const controller = mountPage(null, {
+      saveState: () => 'saved',
+      create: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            settle = resolve
+          }),
+      ),
+    })
+    const loan = studioSongs()!
+    expect(loan.canCreate()).toBe(true)
+
+    const first = loan.create()
+    expect(loan.opening()).toBe(true)
+    // A second press, or a pick, cannot queue behind it.
+    await loan.create()
+    await loan.open('two')
+    expect(controller.create).toHaveBeenCalledOnce()
+    expect(controller.openForBackup).not.toHaveBeenCalled()
+
+    settle(true)
+    await first
+    expect(loan.opening()).toBe(false)
+    expect(
+      screen.queryByRole('navigation', { name: 'Studio projects' }),
+    ).toBeNull()
+  })
+
+  it('makes no song while a switch is held, or while a save is in flight', async () => {
+    let saveState = 'saving'
+    const controller = mountPage(null, {
+      saveState: () => saveState,
+      busy: () => saveState === 'saving',
+      hasUnsavedChanges: () => saveState === 'saving',
+    })
+    const loan = studioSongs()!
+
+    // The page's own New song waits for the save, and so does the rail's.
+    expect(loan.hold()).toBeNull()
+    expect(loan.canCreate()).toBe(false)
+    await loan.create()
+
+    saveState = 'saved'
+    setStudioTakeRunning(true)
+    expect(loan.hold()).toBe('Stop the take to switch songs.')
+    await loan.create()
+    expect(controller.create).not.toHaveBeenCalled()
+
+    setStudioTakeRunning(false)
+    expect(loan.canCreate()).toBe(true)
+    await loan.create()
+    expect(controller.create).toHaveBeenCalledOnce()
   })
 
   it('shows the open song again from the library without reopening it', async () => {

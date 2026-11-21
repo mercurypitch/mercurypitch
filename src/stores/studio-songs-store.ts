@@ -1,13 +1,14 @@
 // ============================================================
-// Studio songs store — the open Studio page's song list and switch, lent to the sidebar while the page is mounted
+// Studio songs store — the open Studio page's song list, switch and New song, lent to the sidebar while the page is mounted
 // ============================================================
 //
 // The open song is Studio page state: its controller owns the editor lease,
 // the save queue and the take recorder, and only the page knows when leaving
 // a song is safe. So the sidebar does not open songs itself. The page lends
 // it a read-only view of the list it already keeps (summaries only, never
-// audio) and one `open(id)` that goes through the page's own switch, and
-// takes the loan back when it unmounts. With no Studio page there is no
+// audio), one `open(id)` that goes through the page's own switch and one
+// `create()` that goes through its own New song, and takes the loan back
+// when it unmounts. With no Studio page there is no
 // loan, and the sidebar's Studio panel renders nothing: page-lifetime state
 // never outlives the page in this app-lifetime store.
 
@@ -25,6 +26,14 @@ export interface StudioSongsLoan {
   opening: () => boolean
   /** Switch through the page's own path, with every check it makes. */
   open: (id: string) => Promise<void>
+  /**
+   * Whether the page's own New song would take a press now. Beyond every
+   * hold, a save in flight keeps it waiting, without a reason: a switch
+   * waits for the save, a new song does not.
+   */
+  canCreate: () => boolean
+  /** Make a new song and open it, through the page's own New song path. */
+  create: () => Promise<void>
 }
 
 const [loan, setLoan] = createSignal<StudioSongsLoan | null>(null)
