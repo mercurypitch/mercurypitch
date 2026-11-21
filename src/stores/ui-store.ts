@@ -15,7 +15,7 @@ import { createSignal, untrack } from 'solid-js'
 import type { SignupSource } from '@/db/services/signup-context'
 import type { ExerciseType, GuidedPracticeLaunchConfig, } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { DEFAULT_TAB, TAB_EAR_LAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/constants'
+import { DEFAULT_TAB, TAB_EAR_LAB, TAB_EXERCISES, TAB_SETTINGS, TAB_STUDIO_NIGHT, } from '@/features/tabs/constants'
 import type { ZenExerciseDefinition } from '@/features/zen/types'
 import { firstLightOpensOn } from '@/lib/first-light-landing'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
@@ -179,6 +179,23 @@ export function revealStudioSidebarForTour(): boolean {
 /** The tour is over: the Studio's sidebar is as the person left it. */
 export function releaseStudioSidebarFromTour(): void {
   setStudioRailTour(null)
+}
+
+/** The rail a tour step opened, so the tour's end can shut that one again. */
+export type TourRail = 'studio' | 'sidebar'
+
+/**
+ * A desktop tour step anchored in the sidebar: open the rail it needs and say
+ * which one, or null when it was open already. The Studio keeps a rail of its
+ * own, so its steps open that one, as a hold.
+ */
+export function openSidebarForTourStep(): TourRail | null {
+  if (activeTab() === TAB_STUDIO_NIGHT) {
+    return revealStudioSidebarForTour() ? 'studio' : null
+  }
+  if (!sidebarCollapsed()) return null
+  setSidebarCollapsed(false)
+  return 'sidebar'
 }
 
 // Editor view within the Editor tab. 'split' shows the piano roll and a live
