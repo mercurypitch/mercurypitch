@@ -7,23 +7,29 @@
 // take's notice is, and the toasts draw nothing. These pin the order the
 // bubble gives them (stage/stage-notice.ts `bubbleNotice`): a warning or an
 // error, then the example's line, then any other notice, then the take's,
-// then the run's instruction or the brief; that a run holds the calmer
-// notices back; and that leaving the drill hands what is left to the
-// toasts. The store's part is pinned in src/stores/notifications-stage.test.ts.
+// then the run's instruction or the brief; that a run, and a take waiting
+// for its answer, hold the calmer notices back, so the take is asked before
+// an achievement is said; and that leaving the drill hands what is left to
+// the toasts. The store's part is pinned in
+// src/stores/notifications-stage.test.ts.
 
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import { createSignal, Show } from 'solid-js'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { Notifications } from '@/components/Notifications'
-import type { ExerciseVoiceCaptureController } from '@/lib/domain/exercise-voice-capture'
+import type { ExerciseVoiceCaptureController, ExerciseVoiceCaptureState, } from '@/lib/domain/exercise-voice-capture'
 import { encodeVoiceAtlasContour } from '@/lib/voice-contour'
 import { notifications, resetNotifications, showActionNotification, showNotification, } from '@/stores/notifications-store'
 import type { ExerciseDemo } from './ExerciseShell'
 import { DEMO_LINE_MIN_MS, ExerciseShell } from './ExerciseShell'
 import { STAGE_NOTICE_EXIT_MS } from './stage/StageNotice'
+import { TAKE_KEPT_LINGER_MS } from './stage/take-notice'
 import type { ExerciseStatus } from './types'
 import { EXERCISE_PITCH_HOLD } from './types'
 
+const { keepMock } = vi.hoisted(() => ({ keepMock: vi.fn() }))
+
+vi.mock('./exercise-voice-take', () => ({ keepExerciseVoiceTake: keepMock }))
 vi.mock('@/lib/analytics', () => ({ trackEvent: () => {} }))
 // jsdom has no WebGL, so Merc is his still here whatever the gate says; the
 // stub only spares the log the probe's "not implemented" notice.
@@ -62,6 +68,33 @@ function readyTake(): ExerciseVoiceCaptureController {
   }
 }
 
+/**
+ * A finished run's take as the drill hands it over: still being finished,
+ * then ready, and gone once it is thrown away.
+ */
+function finishingTake() {
+  const [state, setState] =
+    createSignal<ExerciseVoiceCaptureState>('processing')
+  const ready = readyTake()
+  const capture: ExerciseVoiceCaptureController = {
+    state,
+    take: () => (state() === 'ready' ? ready.take() : null),
+    awaitOutcome: ready.awaitOutcome,
+    discard: () => setState('idle'),
+  }
+  return { capture, ready: () => setState('ready') }
+}
+
+/** The achievements a first run earns, as the grant engine raises them. */
+function firstRunUnlocks(): void {
+  showNotification('Achievement unlocked: First Note', 'success', {
+    unlock: { kind: 'achievement', name: 'First Note', icon: 'leaf' },
+  })
+  showNotification('Achievement unlocked: Drill Sergeant', 'success', {
+    unlock: { kind: 'achievement', name: 'Drill Sergeant', icon: 'dumbbell' },
+  })
+}
+
 /** An example that sounds until the test says it has finished. */
 function example() {
   let finish: () => void = () => {}
@@ -81,6 +114,7 @@ function drill(
   options: {
     status?: ExerciseStatus
     take?: boolean
+    capture?: ExerciseVoiceCaptureController
     demo?: ExerciseDemo
   } = {},
 ) {
@@ -98,7 +132,9 @@ function drill(
           status={status}
           currentScore={() => 72}
           resultScore={() => (status() === 'complete' ? 72 : null)}
-          voiceCapture={options.take === true ? readyTake() : undefined}
+          voiceCapture={
+            options.capture ?? (options.take === true ? readyTake() : undefined)
+          }
           idlePlaceholder={BRIEF}
           activePhase={<span>Hold E3</span>}
           demo={options.demo}
@@ -137,6 +173,7 @@ function drill(
 }
 
 beforeEach(() => {
+  keepMock.mockReset()
   vi.useFakeTimers({
     toFake: ['setTimeout', 'clearTimeout', 'setInterval', 'clearInterval'],
   })
@@ -206,7 +243,24 @@ describe('what the bubble says first', () => {
     // However long the run, its time has not run while it waited.
     await vi.advanceTimersByTimeAsync(60_000)
     stage.setStatus('complete')
+    await vi.advanceTimersByTimeAsync(0)
     expect(stage.notice()?.textContent).toContain('Level up!')
+  })
+
+  it('a calmer notice does not pop out between a run ended and the next begun in one tap', async () => {
+    const stage = drill({ status: 'active' })
+    showNotification('Level up! This drill is now Lv 4', 'success')
+
+    // Try Again: the drill resets, then starts its count-in, in one go.
+    stage.setStatus('idle')
+    stage.setStatus('count-in')
+    await vi.advanceTimersByTimeAsync(0)
+
+    // Not on show, and not on its way out either.
+    expect(
+      stage.coach()!.querySelector('[data-testid="exercise-stage-notice"]'),
+    ).toBeNull()
+    expect(notifications()).toHaveLength(0)
   })
 
   it('a warning is said during a run, over its instruction', () => {
@@ -257,17 +311,75 @@ describe('what the bubble says first', () => {
     expect(stage.notice()?.textContent).toContain('Synced')
   })
 
-  it("a calmer notice is said before the take's, which follows when it goes", async () => {
+  it("the take's question is said before a calmer notice, which follows once it is answered", async () => {
     const stage = drill({ status: 'complete', take: true })
     expect(stage.notice()?.textContent).toContain('Keep this take?')
 
     showNotification('Level up! This drill is now Lv 4', 'success')
-    expect(stage.notice()?.textContent).toContain('Level up!')
-
-    fireEvent.click(stage.getByRole('button', { name: 'Dismiss notification' }))
-    await vi.advanceTimersByTimeAsync(STAGE_NOTICE_EXIT_MS)
-    expect(notifications()).toHaveLength(0)
     expect(stage.notice()?.textContent).toContain('Keep this take?')
+    expect(notifications()).toHaveLength(0)
+    expect(stage.toasts()).toBe(0)
+
+    // However long the question waits, the notice's time has not run.
+    await vi.advanceTimersByTimeAsync(60_000)
+    keepMock.mockResolvedValue({
+      ok: true,
+      quotaExceeded: false,
+      roomAvailable: true,
+    })
+    fireEvent.click(stage.getByRole('button', { name: 'Keep' }))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(stage.notice()?.textContent).toContain('Take kept')
+
+    await vi.advanceTimersByTimeAsync(TAKE_KEPT_LINGER_MS)
+    expect(stage.notice()?.textContent).toContain('Level up!')
+  })
+
+  it("a first run's achievements wait behind its take's question, from the run's end", async () => {
+    const take = finishingTake()
+    const stage = drill({ status: 'active', capture: take.capture })
+
+    // The run ends: its take is still being finished as the grants come.
+    stage.setStatus('complete')
+    firstRunUnlocks()
+    expect(stage.notice()).toBeNull()
+    expect(notifications()).toHaveLength(0)
+
+    take.ready()
+    expect(stage.notice()?.textContent).toContain('Keep this take?')
+
+    // Put away: the achievements, as one notice, with their whole time.
+    fireEvent.click(stage.getByRole('button', { name: 'Discard take' }))
+    await vi.advanceTimersByTimeAsync(STAGE_NOTICE_EXIT_MS)
+    const notices = stage
+      .coach()!
+      .querySelectorAll('[data-testid="exercise-stage-notice"]')
+    expect(notices).toHaveLength(1)
+    expect(notices[0]!.textContent).toBe(
+      '2 new achievementsFirst Note, Drill Sergeant',
+    )
+    expect(stage.toasts()).toBe(0)
+  })
+
+  it('an achievement waiting behind the take is a toast once the drill is left', () => {
+    const stage = drill({ status: 'complete', take: true })
+    firstRunUnlocks()
+    expect(stage.notice()?.textContent).toContain('Keep this take?')
+
+    stage.leave()
+
+    const region = stage.getByRole('region', { name: 'Notifications' })
+    expect([...region.children].map((toast) => toast.textContent)).toEqual([
+      expect.stringContaining('First Note'),
+    ])
+  })
+
+  it("a warning is said over the take's question", () => {
+    const stage = drill({ status: 'complete', take: true })
+
+    showNotification('Microphone disconnected.', 'warning')
+
+    expect(stage.notice()?.textContent).toContain('Microphone disconnected.')
   })
 
   it('the brief is back, not hidden, once there is nothing to say', async () => {

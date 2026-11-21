@@ -6,21 +6,23 @@
 // looks like and which goes first). In the web build, while a drill's stage
 // is on screen, the stage presents the app's notices in place of the
 // toasts: one at a time, unlocks of one moment as one, and during a run,
-// or while an example plays, only warnings and errors
-// (notifications-store.ts, `presentNoticesOnStage` and `setStageQuiet`).
+// while an example plays, or while the take's question waits for its
+// answer, only warnings and errors (notifications-store.ts,
+// `presentNoticesOnStage` and `setStageQuiet`).
 // When the drill is left, whatever is still waiting goes back to the
 // toasts. The native app has its own place for notices, the shell's pill,
 // so there the stage says only the take's.
 
 import type { Accessor } from 'solid-js'
-import { createEffect, createMemo, on, onCleanup } from 'solid-js'
+import { createEffect, createMemo, on, onCleanup, untrack } from 'solid-js'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
 import { notificationPresenter, notifications, presentNoticesOnStage, removeNotification, setStageQuiet, unlockShown, } from '@/stores/notifications-store'
 import type { StageNoticeModel } from './stage-notice'
 import { bubbleNotice, noticeFromNotification } from './stage-notice'
 
 export interface StageNoticesOptions {
-  /** A run is under way, or an example plays: warnings and errors only. */
+  /** A run is under way, an example plays, or the take has the bubble:
+   *  warnings and errors only. */
   quiet: () => boolean
   /** The example's line is in Merc's bubble. */
   example: () => boolean
@@ -33,7 +35,25 @@ export function useStageNotices(
 ): Accessor<StageNoticeModel | null> {
   if (!IS_NATIVE_BUILD) {
     onCleanup(presentNoticesOnStage())
-    createEffect(on(options.quiet, (quiet) => setStageQuiet(quiet)))
+    let alive = true
+    onCleanup(() => {
+      alive = false
+    })
+    createEffect(
+      on(options.quiet, (quiet) => {
+        if (quiet) {
+          setStageQuiet(true)
+          return
+        }
+        // The stage speaks again once the moment has settled. Try Again
+        // ends a run and starts the next in one tap (the drill's reset,
+        // then its start), and a notice let in between would pop out of
+        // the bubble and straight back in, as the count-in quiets it.
+        queueMicrotask(() => {
+          if (alive && !untrack(options.quiet)) setStageQuiet(false)
+        })
+      }),
+    )
   }
 
   // The one notice the store has on screen, while the stage draws them.

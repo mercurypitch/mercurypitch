@@ -2434,6 +2434,13 @@ before it is saved.
 **Rule:** to see a notice in a room, raise one that is not an unlock (an error with an action, a warning); to see two unlocks merged in the pill, use Merc's Ear Lab room, which has no chip. Measure the pill once its drop-in has finished (`getAnimations()`), since its box includes the transform.
 **See:** `src/components/room-kit/room-unlocks.ts`, `src/stores/unlock-claims.ts`, `src/e2e/room-notices.spec.ts`
 
+### Let the stage's last notice finish leaving before measuring what the next one covers
+
+**Symptom:** `exercise-stage-notices.spec.ts` failed now and then on CI (19 Nov 2026): the achievements' notice lay over "Keep" and "Discard take", although the take's notice was not on show.
+**Cause:** the take's question and the run's achievements raced. A take finished before the grants came was asked first, and the unlock then took Merc's bubble: the take's notice was still on its way out (`.leaving`, `STAGE_NOTICE_EXIT_MS`) with its buttons under the unlock's box when the spec measured. Since 0.9.31 the take always goes first and the unlock waits for its answer.
+**Rule:** wait for the notice a stage notice replaced to be gone (`toHaveCount(0)`) before measuring the new one against the controls. To judge which came first, record each notice as it is added (a `MutationObserver` in an init script) rather than reading the bubble at one moment.
+**See:** `src/e2e/exercise-stage-notices.spec.ts` (`recordNotices`), `src/features/exercises/stage/StageNotice.tsx`
+
 ## Process
 
 ### Validate native notation, not just the exporter importing its own bytes
