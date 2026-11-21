@@ -156,6 +156,30 @@ export function createStudioPlayheadMotion(
     setMoving(course !== null)
   }
 
+  /**
+   * The clock stands where a seek or a loop wrap took it, or runs on from
+   * there, and this tick agrees with the last: the line goes there.
+   */
+  function goToJump(on: Course, frame: number, now: number): void {
+    if (running || on.speed > 0 || on.frame !== frame)
+      run({ frame, at: now, speed: running ? 1 : 0 })
+  }
+
+  /**
+   * A stall, or a jump the next tick has yet to confirm: the line holds where
+   * it is drawn, or where a clock ahead of it went.
+   */
+  function holdThroughStall(
+    on: Course,
+    tick: { frame: number; drawn: number; now: number; ran: boolean },
+  ): void {
+    const { frame, drawn, now, ran } = tick
+    if (ran && Math.abs(frame - drawn) > seek) jumpedTo = frame
+    const place = Math.max(drawn, frame)
+    if (on.speed > 0 || place > on.frame)
+      run({ frame: place, at: now, speed: 0 })
+  }
+
   return {
     /** Whether an animation moves or holds the line: its own style is then left alone. */
     moving,
@@ -197,20 +221,12 @@ export function createStudioPlayheadMotion(
         frame >= jumped - jump &&
         frame - jumped <= played + jump
       ) {
-        // The clock stands where it jumped to, or runs on from there: a seek
-        // or a loop wrap moved it, and the line goes there.
-        if (running || course.speed > 0 || course.frame !== frame)
-          run({ frame, at: now, speed: running ? 1 : 0 })
+        goToJump(course, frame, now)
         return
       }
       const drawn = drawnAt(course, now)
       if (!running) {
-        if (ran && Math.abs(frame - drawn) > seek) jumpedTo = frame
-        // A stall, or a jump the next tick has yet to confirm: the line holds
-        // where it is drawn, or where a clock ahead of it went.
-        const place = Math.max(drawn, frame)
-        if (course.speed > 0 || place > course.frame)
-          run({ frame: place, at: now, speed: 0 })
+        holdThroughStall(course, { frame, drawn, now, ran })
         return
       }
       // Positive while the clock is ahead of the line.
