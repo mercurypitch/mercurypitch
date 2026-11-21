@@ -4927,3 +4927,18 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   l6-film-scenes-A.md to -E.md (modeled on L5's). Before launching: check the kit fix round's
   DECISIONS numbers (the briefs say "from 146"), re-read against BUILD-GUIDE's builder splits,
   pair groups by effort (two builders at a time, (model) xhigh while (model) is out).
+
+## 21 Nov 05:59 UTC: kit critic 01 back (ONE MORE PASS); kit fix round running
+- KIT CRITIC 01 ((builder)): ONE MORE PASS. Top: THE LIFT DOES NOT READ (35 % shadow
+  invisible; P7 hover a hard hold); rendered collisions the probe missed (letter crossfade,
+  specimen grow through type, recap line, 8k sub-lines); no 60 fps clips for motion modules;
+  eased short fades; 6 % pushes read as zooms; hops' power1.in carry; hairline sharp; no cold-
+  open dense still. Saved: l6film/review/critic-kit-01/REPORT.md.
+- LEAD'S CALLS 69-77 (LEAD-ANSWERS): lift with light (rise 8-10 units, +15 % bright, rows 40 %,
+  hover bob); scaleY letter flip; curved routes + a PIXEL CLEARANCE PROBE (1/60 s); 60 fps clips;
+  linear alpha <0.3 s; parallax on slow pushes; constant-speed hops; stroked sharp; 13th-gap
+  connector; travelling numbers stay visible (replaces call 59); HANDOFFS/STORYBOARD edits allowed
+  where calls change numbers, DECISIONS from 146.
+- KIT FIX ROUND: resumed the kit agent (builder) ((model)). NEXT: its hand-back -> KIT
+  CRITIC 02 (the last for this stage; verification, previous report path) -> calls -> scene
+  groups (briefs drafted; check DECISIONS numbers first).
