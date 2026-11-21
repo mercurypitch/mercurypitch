@@ -18,7 +18,9 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 /** Mount Settings with the native constant forced, on its Practice tab. */
 async function renderPracticeTab(isNative: boolean): Promise<void> {
   vi.resetModules()
-  vi.doMock('@/lib/native-build', () => ({
+  // Only the build's nativeness changes; every other flag stays as built.
+  vi.doMock('@/lib/native-build', async (importOriginal) => ({
+    ...((await importOriginal()) as Record<string, unknown>),
     IS_NATIVE_BUILD: isNative,
     CAN_TAKE_PAYMENT: !isNative,
   }))
