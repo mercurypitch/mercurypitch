@@ -4868,3 +4868,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - 00:29: CONTAINER RESTART at about 00:28 stopped both agents just after launch. Scratchpad
   and subagent transcripts survived; no stale processes. Resumed both with SendMessage (touch-up
   (builder); hosts' passes (builder)).
+- 21 Nov 03:50: both agents had stopped on (model)'s 5-hour limit (about 00:50; reset 03:50).
+  Touch-up had changed STORYBOARD.md, board_lib.py and board-geom.py (not yet BRIEF, SCRIPT-DRAFT,
+  HANDOFFS). Passes: shots, PASSES.md and the render queue finished at 02:22 on its own. Both
+  resumed with SendMessage at 03:50.
