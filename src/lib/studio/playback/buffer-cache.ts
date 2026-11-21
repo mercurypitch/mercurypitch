@@ -5,6 +5,7 @@
 // as they load, so playback, renders and exports all read floats.
 import { CANONICAL_PCM_HEADER_BYTES, canonicalPcmLayout, readCanonicalChannel, readCanonicalPcmBytes, } from '../audio/canonical-pcm'
 import { importCheckpoint } from '../audio/import-limits'
+import { StudioRefusal } from '../failure-copy'
 import { registerStudioMemoryReclaimer, reserveStudioMemory, StudioMemoryError, } from '../memory-budget'
 import type { StudioAsset } from '../model/types'
 
@@ -141,7 +142,9 @@ export function createStudioBufferCache() {
     signal: AbortSignal,
   ): Promise<StudioBufferLease> {
     if (disposed || loading)
-      throw new Error('Studio audio is still preparing. Try again in a moment.')
+      throw new StudioRefusal(
+        'Studio audio is still preparing. Try again in a moment.',
+      )
     const unique = new Map(assets.map((asset) => [key(asset), asset]))
     const required = [...unique.values()].reduce(
       (total, asset) => total + asset.normalizedFrameCount * asset.channels * 4,

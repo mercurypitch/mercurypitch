@@ -76,10 +76,10 @@ These are the rules that break things when ignored.
 |---|---|---|---|
 | `lessons` | [staff-draw.ts](../../src/features/lessons/kit/staff-draw.ts) | 124.5k | Staff drawing — staves, clefs, notes and the pitch line, engraved as SVG The staff toy's picture (staff.ts; Lesson 15's WEB-SPEC, Toys 1... |
 | `guitar-night` | [guitar-night-score-voice-commands.ts](../../src/features/guitar-night/guitar-night-score-voice-commands.ts) | 43.9k | Guitar Night score voice commands — hands-free Rehearse controls The score room and its command overlay share this one capability-shaped... |
-| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 37.3k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
+| `studio` | [StudioWorkspace.tsx](../../src/features/studio/StudioWorkspace.tsx) | 37.6k | Studio workspace — arrangement view state, contextual panels and the shared audio transport. |
 | `ear-lab` | [index.ts](../../src/features/ear-lab/merc/lit/index.ts) | 32.6k | The room's lit instruments, by the name each of the older stage's instruments exports itself under (instrument-skin.ts). |
 | `drum-night` | [index.ts](../../src/features/drum-night/session/index.ts) | 32.2k | Drum Night session boundary — import, score, kit, and evidence coaching. |
-| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 24.4k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
+| `exercises` | [ExerciseShell.tsx](../../src/features/exercises/ExerciseShell.tsx) | 24.5k | ExerciseShell — shared chrome for every exercise runner Owns the layout that used to be duplicated across all 18 exercise components: the... |
 | `stem-mixer` | [stem-mixer-voice-commands.ts](../../src/features/stem-mixer/stem-mixer-voice-commands.ts) | 19.0k | StemMixer voice commands — the karaoke tab's own spoken set Registered by StemMixer for exactly its mount lifetime, which ends the global... |
 | `admin` | [AdminPremiumPerksPage.tsx](../../src/features/admin/AdminPremiumPerksPage.tsx) | 15.5k | AdminPremiumPerksPage — protected art and supporter access console THESIS: a premium background is not live until its exact art revision... |
 | `voice-history` | [VoiceHistoryPage.tsx](../../src/features/voice-history/VoiceHistoryPage.tsx) | 10.3k | Hear Yourself History — local listening desk for kept performance takes |
@@ -118,11 +118,11 @@ These are the rules that break things when ignored.
 | `mercury-sing` | [mercury-sing-engine.ts](../../src/features/mercury-sing/mercury-sing-engine.ts) | 1.6k | Mercury Sing engine — listen, match, decide, hand off The headless controller behind the stage: owns its own AudioEngine + LivePitchBuffe... |
 | `practice-intelligence` | [weakness-analyzer.ts](../../src/features/practice-intelligence/weakness-analyzer.ts) | 1.5k | Weakness Analyzer — Detect problem areas from practice history Scans exercise history and session results to identify: - Low-scoring exer... |
 | `premium-exercises` | [ExercisePicker.tsx](../../src/features/premium-exercises/ExercisePicker.tsx) | 1.5k | The exercise picker: every premium exercise, one card each A kit Sheet the Sing room owns, as it owns its song and take sheets. |
+| `sidebar` | [sidebar-registry.ts](../../src/features/sidebar/sidebar-registry.ts) | 1.3k | ── Sidebar panel registry One AppSidebar shell; WHAT it shows is this file's decision, per tab. |
 | `tours` | [TourScreenHost.tsx](../../src/features/tours/TourScreenHost.tsx) | 1.3k | TourScreenHost — what a tour asks before it changes the screen Draws the question a door asks before a tour closes what the singer has op... |
 | `playback` | [usePlaybackController.ts](../../src/features/playback/usePlaybackController.ts) | 1.2k | usePlaybackController — the Singing tab's transport Start/stop/seek across the three playback modes (free practice, session, backing track). |
 | `home` | [DestinationGallery.tsx](../../src/features/home/DestinationGallery.tsx) | 1.1k | DestinationGallery — the Home page's card grid `HOME_DESTINATIONS` is the content; the component is the renderer. |
 | `session-drummer` | [session-drummer-engine.ts](../../src/features/session-drummer/session-drummer-engine.ts) | 1.1k | A session-scoped drummer borrows the room graph and either scheduled score beats or one manual-tempo clock. |
-| `sidebar` | [sidebar-registry.ts](../../src/features/sidebar/sidebar-registry.ts) | 1.1k | ── Sidebar panel registry One AppSidebar shell; WHAT it shows is this file's decision, per tab. |
 | `falling-notes` | [useFallingNotesController.ts](../../src/features/falling-notes/useFallingNotesController.ts) | 1.0k | useFallingNotesController — Game logic for Synthesia-style piano practice |
 | `mic-feedback` | [MicLatencyWizard.tsx](../../src/features/mic-feedback/MicLatencyWizard.tsx) | 1.0k | MicLatencyWizard — measure the speaker-to-microphone round trip Plays a short click track through the speakers and records what comes bac... |
 | `practice` | [usePracticeController.ts](../../src/features/practice/usePracticeController.ts) | 950 | usePracticeController — mic capture and scoring for the Singing tab Owns one mic lease for the duration of the practice run. |
@@ -149,7 +149,7 @@ These are the rules that break things when ignored.
 
 | Module | Entry point | LOC | What it is |
 |---|---|---|---|
-| `studio` | [studio-recorder.ts](../../src/lib/studio/record/studio-recorder.ts) | 26.1k | Studio recorder — arm lanes, count in, record every armed lane's take on the song's clock, and hand each take over to be kept Arming a la... |
+| `studio` | [studio-recorder.ts](../../src/lib/studio/record/studio-recorder.ts) | 26.2k | Studio recorder — arm lanes, count in, record every armed lane's take on the song's clock, and hand each take over to be kept Arming a la... |
 | `guitar` | [guitar-live-score.ts](../../src/lib/guitar/guitar-live-score.ts) | 12.4k | Guitar live score — bounded, evidence-honest feedback while a take is running. |
 | `jam` | [jam-net-stats.ts](../../src/lib/jam/jam-net-stats.ts) | 10.9k | ── Jam network stats One RTCStatsReport, reduced to the numbers that decide whether two people can play together. |
 | `studio-fx` | [index.ts](../../src/lib/studio-fx/index.ts) | 6.9k | Studio FX — insert effect chains for Studio tracks and the master bus For a beginner, nothing needs choosing: `autoMixChain(role, clip)`... |
@@ -233,9 +233,9 @@ These are the rules that break things when ignored.
 | [sync-store.ts](../../src/stores/sync-store.ts) | 1.4k | ── Sync store One person, two devices, a room code between them. |
 | [drive-sync-store.ts](../../src/stores/drive-sync-store.ts) | 850 | ── Drive sync store The user's own Google Drive as the place a library survives. |
 | [settings-store.ts](../../src/stores/settings-store.ts) | 850 | Settings Store — every persisted user preference, plus its defaults `SettingsConfig` is the shape; `DEFAULT_SETTINGS` is the fallback use... |
+| [ui-store.ts](../../src/stores/ui-store.ts) | 750 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [ear-lab-store.ts](../../src/stores/ear-lab-store.ts) | 700 | Ear Lab store — readings, ratings and calibration history. |
 | [notifications-store.ts](../../src/stores/notifications-store.ts) | 700 | Notifications Store — toast queue Toasts are pushed from anywhere and rendered by Notifications.tsx. |
-| [ui-store.ts](../../src/stores/ui-store.ts) | 700 | UI Store — active tab, modal/library visibility, focus mode, first-run flags `setActiveTab` is the app's navigation primitive; `onTabTran... |
 | [native-shell-store.ts](../../src/stores/native-shell-store.ts) | 600 | Native shell bridge — how a room and the native chrome reach each other The native shell (`apps/mercurypitch/src/shell/`) draws the botto... |
 | [karaoke-playlist-store.ts](../../src/stores/karaoke-playlist-store.ts) | 550 | Karaoke Playlist Store — persisted set lists + playback transport A playlist is a saved, reusable set list built from session groups and/... |
 | [practice-session-store.ts](../../src/stores/practice-session-store.ts) | 500 | Practice Session Store — the multi-item guided practice run A session is an ordered list of SessionItems, each repeated N times. |
@@ -289,6 +289,7 @@ These are the rules that break things when ignored.
 | [room-words-store.ts](../../src/stores/room-words-store.ts) | 50 | A room's words, kept off a screen something else is about to take The native onboarding opens over the Sing room on a new install's first... |
 | [settings-section.ts](../../src/stores/settings-section.ts) | 50 | Settings sections — the web Settings panel's sub-tabs, by name A module of its own so the native shell bridge (native-shell-store.ts) can... |
 | [singer-sheet-store.ts](../../src/stores/singer-sheet-store.ts) | 50 | The singer sheet — which singer it is open on, if any The one sheet that reports or blocks a singer (src/components/moderation/SingerShee... |
+| [studio-songs-store.ts](../../src/stores/studio-songs-store.ts) | 50 | Studio songs store — the open Studio page's song list, switch and New song, lent to the sidebar while the page is mounted The open song i... |
 | [transport-store.ts](../../src/stores/transport-store.ts) | 50 | Transport Store — persisted tempo, count-in and playback speed Every setter clamps to a musically valid range (bpm 40-280, speed 0.25-2.0x). |
 | [tv-stage-store.ts](../../src/stores/tv-stage-store.ts) | 50 | TV stage store — how far ahead a connected TV draws the stage A TV that draws the Karaoke room's stage (src/lib/tv-stage/) shows the song... |
 | [unlock-claims.ts](../../src/stores/unlock-claims.ts) | 50 | Unlock claims: a room that shows its own badges, and the tap you feel The notifications store's half of routing an unlock (its header exp... |

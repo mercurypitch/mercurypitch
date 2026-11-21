@@ -1,9 +1,12 @@
 // Studio page tests — the save picker empties the file it hands back, so everything that could refuse a backup is asked before it opens; and the page's one banner offers what its state can use.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioProjectSummary } from '@/lib/studio/model/types'
+import { studioSongs } from '@/stores/studio-songs-store'
 import type * as BackupTarget from './backup/backup-target'
 import type { StudioBackupTarget } from './backup/backup-target'
+import { setStudioTakeRunning } from './record/take-running'
 import { StudioPage } from './StudioPage'
 
 const picker = vi.hoisted(() => ({ open: vi.fn(), sweep: vi.fn() }))
@@ -16,13 +19,23 @@ const studio = vi.hoisted(() => ({ current: {} as Record<string, unknown> }))
 vi.mock('./useStudioController', () => ({
   useStudioController: () => studio.current,
 }))
-vi.mock('./StudioWorkspace', () => ({ StudioWorkspace: () => null }))
+/** The panel each workspace mount was asked to open: it reads the prop once, at mount. */
+const workspaceMounts = vi.hoisted(() => [] as (string | null)[])
+vi.mock('./StudioWorkspace', () => ({
+  StudioWorkspace: (props: { startPanel: string | null }) => {
+    // eslint-disable-next-line solid/reactivity -- read once, at mount, as the workspace reads it
+    workspaceMounts.push(props.startPanel)
+    return null
+  },
+}))
 
 afterEach(() => {
   cleanup()
+  workspaceMounts.length = 0
   picker.open.mockReset()
   picker.sweep.mockReset()
   vi.useRealTimers()
+  setStudioTakeRunning(false)
 })
 
 function song(id: string, title: string): StudioProjectSummary {
@@ -60,6 +73,7 @@ function mountPage(
     projects: () => [song('one', 'Window seat'), song('two', 'Sketch')],
     loading: () => false,
     busy: () => false,
+    editBlocked: () => false,
     hasUnsavedChanges: () => false,
     importing: () => false,
     problem: () => problem,
@@ -70,6 +84,7 @@ function mountPage(
     canBackup: vi.fn(() => true),
     openForBackup: vi.fn(async () => true),
     open: vi.fn(async () => {}),
+    create: vi.fn(async () => true),
     backup: vi.fn(async () => true),
     takeOver: vi.fn(async () => {}),
     fork: vi.fn(async () => {}),
@@ -188,5 +203,204 @@ describe('Studio page banner', () => {
     expect(screen.getByRole('alertdialog')).toHaveTextContent(
       'Discard changes?',
     )
+  })
+})
+
+describe('Studio page song switch for the sidebar', () => {
+  it('lends its song list and open song while mounted, and takes them back when it unmounts', () => {
+    mountPage()
+    const loan = studioSongs()
+    expect(loan?.songs().map((entry) => entry.title)).toEqual([
+      'Window seat',
+      'Sketch',
+    ])
+    expect(loan?.openId()).toBe('one')
+    expect(loan?.hold()).toBeNull()
+
+    cleanup()
+
+    expect(studioSongs()).toBeNull()
+  })
+
+  it('switches during a save in flight by handing the wait to the controller, not holding the rail', async () => {
+    const controller = mountPage(null, {
+      saveState: () => 'saving',
+      hasUnsavedChanges: () => true,
+    })
+    expect(studioSongs()!.hold()).toBeNull()
+
+    await studioSongs()!.open('two')
+
+    expect(controller.canBackup).toHaveBeenCalledWith('two')
+    expect(controller.openForBackup).toHaveBeenCalledWith('two')
+    expect(controller.open).not.toHaveBeenCalled()
+  })
+
+  it('holds the rail from a pick until its switch settles, so a second pick cannot queue behind it', async () => {
+    let settle!: (opened: boolean) => void
+    const controller = mountPage(null, {
+      saveState: () => 'saving',
+      hasUnsavedChanges: () => true,
+      openForBackup: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            settle = resolve
+          }),
+      ),
+    })
+    const loan = studioSongs()!
+
+    const first = loan.open('two')
+    expect(loan.opening()).toBe(true)
+    await loan.open('three')
+    expect(controller.openForBackup).toHaveBeenCalledOnce()
+
+    settle(false)
+    await first
+    expect(loan.opening()).toBe(false)
+  })
+
+  it('opens nothing when the controller refuses the switch', async () => {
+    const controller = mountPage()
+    controller.canBackup.mockReturnValue(false)
+
+    await studioSongs()!.open('two')
+
+    expect(controller.openForBackup).not.toHaveBeenCalled()
+  })
+
+  it('holds the switch while a take runs, as leaving the tab is held', async () => {
+    const controller = mountPage(null, { saveState: () => 'saved' })
+    setStudioTakeRunning(true)
+
+    expect(studioSongs()!.hold()).toBe('Stop the take to switch songs.')
+    await studioSongs()!.open('two')
+
+    expect(controller.canBackup).not.toHaveBeenCalled()
+    expect(controller.openForBackup).not.toHaveBeenCalled()
+  })
+
+  it('names what else holds it: an import, a song task, or changes a save cannot keep', () => {
+    let importing = true
+    let working = false
+    let unsaved = false
+    let saveState = 'saving'
+    mountPage(null, {
+      importing: () => importing,
+      editBlocked: () => importing || working,
+      hasUnsavedChanges: () => unsaved,
+      saveState: () => saveState,
+    })
+    const hold = () => studioSongs()!.hold()
+
+    expect(hold()).toBe(
+      'Studio is adding audio to this song. Switch once it is in.',
+    )
+    importing = false
+    working = true
+    expect(hold()).toBe(
+      'Studio is busy with this song. Switch once it finishes.',
+    )
+    working = false
+    unsaved = true
+    // A save in flight lands before the switch: no hold.
+    expect(hold()).toBeNull()
+    saveState = 'error'
+    expect(hold()).toBe('Keep or discard this song’s unsaved changes first.')
+  })
+
+  it("makes a new song through the page's own New song, opens it, and holds the rail until it has", async () => {
+    let settle!: (made: boolean) => void
+    const controller = mountPage(null, {
+      saveState: () => 'saved',
+      create: vi.fn(
+        () =>
+          new Promise<boolean>((resolve) => {
+            settle = resolve
+          }),
+      ),
+    })
+    const loan = studioSongs()!
+    expect(loan.canCreate()).toBe(true)
+
+    const first = loan.create()
+    expect(loan.opening()).toBe(true)
+    // A second press, or a pick, cannot queue behind it.
+    await loan.create()
+    await loan.open('two')
+    expect(controller.create).toHaveBeenCalledOnce()
+    expect(controller.openForBackup).not.toHaveBeenCalled()
+
+    settle(true)
+    await first
+    expect(loan.opening()).toBe(false)
+    expect(
+      screen.queryByRole('navigation', { name: 'Studio projects' }),
+    ).toBeNull()
+  })
+
+  it('opens a song picked after a New song without the Add takes that New song asked for', async () => {
+    const [open, setOpen] = createSignal({ id: 'one', title: 'Window seat' })
+    mountPage(null, {
+      project: open,
+      saveState: () => 'saved',
+      create: vi.fn(async () => {
+        setOpen({ id: 'new', title: 'Untitled song' })
+        return true
+      }),
+      openForBackup: vi.fn(async (id: string) => {
+        setOpen({ id, title: 'Window seat' })
+        return true
+      }),
+    })
+    const loan = studioSongs()!
+
+    await loan.create()
+    expect(workspaceMounts).toEqual(['sources'])
+
+    await loan.open('one')
+
+    expect(loan.openId()).toBe('one')
+    expect(workspaceMounts).toEqual(['sources', null])
+  })
+
+  it('makes no song while a switch is held, or while a save is in flight', async () => {
+    let saveState = 'saving'
+    const controller = mountPage(null, {
+      saveState: () => saveState,
+      busy: () => saveState === 'saving',
+      hasUnsavedChanges: () => saveState === 'saving',
+    })
+    const loan = studioSongs()!
+
+    // The page's own New song waits for the save, and so does the rail's.
+    expect(loan.hold()).toBeNull()
+    expect(loan.canCreate()).toBe(false)
+    await loan.create()
+
+    saveState = 'saved'
+    setStudioTakeRunning(true)
+    expect(loan.hold()).toBe('Stop the take to switch songs.')
+    await loan.create()
+    expect(controller.create).not.toHaveBeenCalled()
+
+    setStudioTakeRunning(false)
+    expect(loan.canCreate()).toBe(true)
+    await loan.create()
+    expect(controller.create).toHaveBeenCalledOnce()
+  })
+
+  it('shows the open song again from the library without reopening it', async () => {
+    const controller = mountPage(null, { saveState: () => 'saved' })
+    expect(
+      screen.getByRole('navigation', { name: 'Studio projects' }),
+    ).toBeInTheDocument()
+
+    await studioSongs()!.open('one')
+
+    expect(controller.openForBackup).not.toHaveBeenCalled()
+    expect(
+      screen.queryByRole('navigation', { name: 'Studio projects' }),
+    ).toBeNull()
   })
 })

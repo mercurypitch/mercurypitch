@@ -6,6 +6,7 @@
 // matches, and reads none of a frozen lane's takes. A render's chunks
 // become buffers only as the render nears them, a few seconds ahead, so
 // they never all sit in memory as audio at once.
+import { StudioRefusal } from '../failure-copy'
 import { reserveStudioMemory } from '../memory-budget'
 import { compileStudioArrangement } from '../model/arrangement-plan'
 import type { StudioAsset, StudioProject } from '../model/types'
@@ -91,7 +92,7 @@ export async function renderStudioArrangement(
     const trim = 24000 + Math.round(planLatencySeconds(plan) * 48000)
     const total = trim + length
     if (!Number.isSafeInteger(total) || length <= 0 || total > 0xffffffff)
-      throw new Error('This arrangement is too long to render.')
+      throw new StudioRefusal('This arrangement is too long to render.')
     releaseOutput = reserveStudioMemory(total * 2 * 4)
     releaseResult = reserveStudioMemory(length * 2 * 4)
     signal.throwIfAborted()

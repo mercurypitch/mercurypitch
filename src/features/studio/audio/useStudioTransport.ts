@@ -6,6 +6,7 @@ import type { PreviewPlayer } from '@/lib/preview-player'
 import { createPreviewPlayer } from '@/lib/preview-player'
 import { DEFAULT_STUDIO_IMPORT_LIMITS } from '@/lib/studio/audio/import-limits'
 import type { StudioMasterGainToken } from '@/lib/studio/export/sound-graph'
+import { logStudioFailure, StudioRefusal, studioSpokenMessage, } from '@/lib/studio/failure-copy'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
@@ -70,6 +71,20 @@ export interface StudioPreviewOptions {
   startSeconds?: number
   /** Exact rendered-WAV duration for prepared comparisons; source previews default to five minutes. */
   durationSeconds?: number
+}
+
+/** An edit playing could not follow: the song plays on as it was. */
+export const STUDIO_PLAYBACK_BEHIND =
+  'Playback could not follow that edit. Stop and press Play to hear it.'
+export const STUDIO_MASTER_FAILED =
+  'The prepared master could not be applied. Try again.'
+export const STUDIO_PREVIEW_FAILED =
+  'This take could not be previewed. Try Preview again.'
+
+/** What a failed preview says: a refusal as it is, anything else in plain words. */
+function previewFailureText(error: unknown): string {
+  logStudioFailure('Preview failed', error)
+  return studioSpokenMessage(error) ?? STUDIO_PREVIEW_FAILED
 }
 
 function previewSettings(options: StudioPreviewOptions) {
@@ -319,9 +334,11 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
   function previewContext(blob: Blob, prepared = false): AudioContext {
     const ctx = lease.ensure()
     if (!ctx || ctx.state !== 'running')
-      throw new Error('The audio device is not ready.')
+      throw new StudioRefusal(
+        'The audio device is not ready. Try Preview again.',
+      )
     if (!blob.size || (!prepared && blob.size > 64 * 1024 * 1024))
-      throw new Error('This take is too large to preview here.')
+      throw new StudioRefusal('This take is too large to preview here.')
     return ctx
   }
 
@@ -357,7 +374,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
       await runtime.releaseAudio()
       await Promise.all(retiringPreviews)
       if (!(await unlocked))
-        throw new Error('Audio could not start. Try Preview again.')
+        throw new StudioRefusal('Audio could not start. Try Preview again.')
       if (disposed || token !== previewGeneration) return false
       const ctx = previewContext(blob, settings.durationSeconds !== undefined)
       // Media decoding is browser-managed. Reserve the supported five-minute
@@ -397,9 +414,7 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
       return true
     } catch (error) {
       if (!disposed && token === previewGeneration)
-        setPreviewError(
-          error instanceof Error ? error.message : 'Preview could not start.',
-        )
+        setPreviewError(previewFailureText(error))
       return false
     } finally {
       player?.dispose()
@@ -427,12 +442,9 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
       observedId = project?.id ?? null
     } else if (project !== null && project !== observedProject) {
       void runtime.setSnapshot(project, assets).catch((error: unknown) => {
-        if (!disposed)
-          setPreviewError(
-            error instanceof Error
-              ? error.message
-              : 'Playback could not follow this edit.',
-          )
+        if (disposed) return
+        console.error('[studio] Playback could not follow an edit:', error)
+        setPreviewError(STUDIO_PLAYBACK_BEHIND)
       })
     }
     observedProject = project
@@ -577,12 +589,9 @@ export function useStudioTransport(options: UseStudioTransportOptions) {
         runtime.setMasterGain(value)
         await runtime.setSnapshot(project, assets)
       } catch (error) {
-        if (!disposed)
-          setPreviewError(
-            error instanceof Error
-              ? error.message
-              : 'The prepared master could not be applied.',
-          )
+        if (disposed) return
+        console.error('[studio] The prepared master was not applied:', error)
+        setPreviewError(STUDIO_MASTER_FAILED)
       }
     },
     pending: () => statePending() || previewPending(),

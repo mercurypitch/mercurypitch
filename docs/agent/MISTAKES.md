@@ -563,6 +563,13 @@ must import the inventory in a child Node process as well as through Vitest.
 **Rule:** give a third signal a sum of its own first, so no node input adds more than two and no param more than one besides its own value, and pin it with a fan-in test on the fake graph. Before blaming a cycle, render the same graph several times: a rounding-sized difference is an order, not a timing.
 **See:** `src/lib/studio-fx/effects/delay.ts`, `src/lib/studio-fx/effects/delay.test.ts`, `src/lib/studio-fx/effects/dyneq.ts`
 
+### Count back from an output timestamp dated after the call
+
+**Symptom:** on a six-lane song the Studio playhead flickered back and forth while the sound played clean: 10 to 28 steps back in 6 s, up to 9.5 px at 80 px a second (headless Chromium, 20 Nov 2026).
+**Cause:** `getOutputTimestamp()` dated 84 % of that song's stamps after the call that read them, by up to 48 ms (a one-lane song: 73 %, up to 34 ms), each still a render time and the moment it is heard. `smoothHeardTime` counted on by `max(0, now - performanceTime)`, so it read a coming moment as now and jumped up to 46 ms from tick to tick. The line started again wherever the clock read, and stood on the older readout whenever a jump passed 50 ms.
+**Rule:** count `contextTime + (now - performanceTime) / 1000` whichever way it goes, never past `currentTime`: the same reads then moved within 0.3 ms of page time from tick to tick (p5 to p95). Judge a clock estimate by fitting a run of its readings against `performance.now()`.
+**See:** `src/lib/studio/playback/heard-clock.ts`, `src/lib/studio/playback/transport.heard.test.ts`, `src/e2e/studio-playhead-steady.spec.ts`
+
 ## Framework
 
 ### Format CSS before verifying a standalone production build
@@ -1378,6 +1385,13 @@ took about 0.38 seconds with pitch fixtures passing; keep bounded fail-safe queu
 **Cause:** Chromium pulls every node the destination reaches at every render quantum, started or not, so a source scheduled minutes ahead costs work in every quantum until it has played. Scheduling ahead also counts against a voice cap that frees a voice only when it ends: the piano's synth stopped 8 of 40 notes scheduled ahead before they began.
 **Rule:** render through `renderAsScheduled`, which schedules four seconds ahead and suspends every two seconds to schedule more, and build any instrument with a voice cap `offline`, without it.
 **See:** `src/lib/studio/playback/scheduled-render.ts`, `src/features/studio/midi/render/render-studio-midi.ts`
+
+### Start a Web Animation at the moment its first keyframe is for
+
+**Symptom:** with its clock fixed, the Studio playhead still trailed the clock after each start of its animation: by up to 38 ms on a page slowed six times, which started it 6 and 4 times in 15 s (two runs, headless Chromium, Nov 2026). Against a device clock 0.2 % slow, each new start stepped the line back: 3 times in 40 s in a unit model of the page.
+**Cause:** an animation given no start time starts on the page's next frame, 6 to 31 ms after the call on a busy page in Chromium, and the line is drawn that late until it starts again. Starting a line again at its clock steps it back whenever it ran ahead.
+**Rule:** set `startTime` to the moment the first keyframe is for, with `fill: 'both'` for a frame drawn before it. Keep a line on a second clock by changing its speed, and let it jump only forward.
+**See:** `src/features/studio/timeline/playhead-motion.ts`, `src/features/studio/timeline/playhead-motion.test.ts`
 
 ## Data and billing
 

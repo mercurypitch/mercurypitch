@@ -5,7 +5,7 @@ import type { analyzeStudioBalance, StudioBalanceProposal, } from '@/lib/studio/
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
 import type { StudioAsset, StudioProject } from '@/lib/studio/model/types'
 import { deferred } from '../export/export.test-fixtures'
-import { useStudioSound } from './useStudioSound'
+import { STUDIO_BALANCE_FAILED, useStudioSound } from './useStudioSound'
 
 const disposers: (() => void)[] = []
 afterEach(() => {
@@ -83,7 +83,7 @@ describe('Studio auto-balance lifecycle', () => {
     expect(ui.held.release).toHaveBeenCalled()
   })
 
-  it('lets the held lane renders go when the analysis fails', async () => {
+  it('lets the held lane renders go when the analysis fails, and says so in plain words, not the error’s', async () => {
     // Arrange
     const ui = mount()
     ui.analyze.mockRejectedValueOnce(new Error('No room to render.'))
@@ -93,7 +93,7 @@ describe('Studio auto-balance lifecycle', () => {
 
     // Assert
     expect(applied).toBe(false)
-    expect(ui.controller.error()).toBe('No room to render.')
+    expect(ui.controller.error()).toBe(STUDIO_BALANCE_FAILED)
     expect(ui.held.release).toHaveBeenCalled()
   })
 

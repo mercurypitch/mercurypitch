@@ -1,5 +1,6 @@
 // Studio transport handoff tests — an edit the running graph cannot follow keeps the song playing while the next run takes over.
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { STUDIO_PLAYBACK_STOPPED } from '../failure-copy'
 import { setStudioWorkingBytes, studioReservedMemoryBytes, } from '../memory-budget'
 import type { StudioArrangementPlan } from '../model/arrangement-plan'
 import { applyStudioCommand } from '../model/commands'
@@ -323,7 +324,7 @@ describe('Studio transport handoff', () => {
     expect(studioReservedMemoryBytes()).toBe(0)
   })
 
-  it('stops the held run with the error when the next run cannot be built', async () => {
+  it('stops the held run when the next run cannot be built, saying so in plain words, not the error’s', async () => {
     vi.useFakeTimers()
     const f = transportFixture()
     const graphs = freshGraphs(f)
@@ -337,7 +338,7 @@ describe('Studio transport handoff', () => {
     expect(f.transport.getState()).toMatchObject({
       playing: false,
       pending: false,
-      error: 'This effect could not start.',
+      error: STUDIO_PLAYBACK_STOPPED,
     })
     await vi.advanceTimersByTimeAsync(240)
     expect(graphs[0].dispose).toHaveBeenCalledOnce()

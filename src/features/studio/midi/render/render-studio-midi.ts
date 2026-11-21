@@ -46,6 +46,7 @@
 // settles before the abort is reported, and holds its memory until then.
 import type { StudioMidiModules, StudioMidiVoice, } from '@/features/studio/record/midi/studio-midi-sounds'
 import { buildStudioDrumSound, buildStudioPianoSound, loadStudioMidiModules, } from '@/features/studio/record/midi/studio-midi-sounds'
+import { StudioRefusal } from '@/lib/studio/failure-copy'
 import { reserveStudioMemory } from '@/lib/studio/memory-budget'
 import type { StudioMidiSoundKind } from '@/lib/studio/midi/render-key'
 import { studioTicksToFrames } from '@/lib/studio/midi/time'
@@ -211,7 +212,7 @@ async function readyDrums(
   const sound = buildStudioDrumSound(modules, context, { offline: true })
   if (await sound.kit.activate()) return { ...sound, engine: 'kit' }
   sound.dispose()
-  throw new Error(KIT_FAILED)
+  throw new StudioRefusal(KIT_FAILED)
 }
 
 /** Whether the grand holds its samples for `pitches` within `timeoutMs`: not when time runs out, a sample fails, or no pitch is one of its keys. */

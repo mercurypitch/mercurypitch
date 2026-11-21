@@ -4,9 +4,11 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { installStudioAudioWorker } from '@/lib/studio/audio/studio-audio-client'
 import { nativeDeviceApi } from '@/stores/native-shell-store'
 import { showNotification } from '@/stores/notifications-store'
+import { lendStudioSongs } from '@/stores/studio-songs-store'
 import { createStudioClock, StudioClockContext } from './audio/studio-clock'
 import type { StudioBackupTarget } from './backup/backup-target'
 import { downloadStudioBackup, openStudioBackupTarget, studioBackupFileName, sweepStudioBackupCopies, } from './backup/backup-target'
+import { studioTakeRunning } from './record/take-running'
 import { createStudioStorageAsk } from './storage/studio-storage-ask'
 import { StudioStorageAsk } from './storage/StudioStorageAsk'
 import styles from './StudioPage.module.css'
@@ -64,6 +66,79 @@ export function StudioPage() {
       setLibrary(false)
     }
   }
+
+  // The sidebar's song list switches songs here (studio-songs-store), on
+  // the page's terms. A take holds the switch, as it holds leaving the tab;
+  // so do an import, a song task, and changes a save cannot keep. A save in
+  // flight does not: openForBackup lets it land first, as a backup from the
+  // list does, then opens through the same checks as the list's own rows,
+  // which refuse a take that started during the wait. Export, Compare and
+  // Auto-balance are the workspace's own state, which the page cannot see.
+  const switchHold = (): string | null => {
+    if (studioTakeRunning()) return 'Stop the take to switch songs.'
+    if (studio.importing())
+      return 'Studio is adding audio to this song. Switch once it is in.'
+    if (studio.editBlocked() && !studio.loading())
+      return 'Studio is busy with this song. Switch once it finishes.'
+    if (studio.hasUnsavedChanges() && studio.saveState() !== 'saving')
+      return 'Keep or discard this song’s unsaved changes first.'
+    return null
+  }
+
+  // From a pick until its switch settles, the rail holds every other row:
+  // a second pick would otherwise queue silently behind the first's wait.
+  const [switching, setSwitching] = createSignal(false)
+
+  async function switchSong(id: string): Promise<void> {
+    if (studio.project()?.id !== id) {
+      if (switching() || switchHold() !== null || studio.loading()) return
+      if (!studio.canBackup(id)) return
+      setSwitching(true)
+      // The picked song's workspace mounts inside the switch and reads the
+      // start panel only then: a New song's Add takes is not for it.
+      setStartPanel(null)
+      try {
+        // The controller asks again once the save has landed, take included.
+        if (!(await studio.openForBackup(id))) return
+      } finally {
+        setSwitching(false)
+      }
+    }
+    // The song is open now, or was already, behind the library: show it.
+    if (studio.project()?.id === id) {
+      setStartPanel(null)
+      setLibrary(false)
+    }
+  }
+
+  // The rail's New song is the page's own New song, held by the switch's
+  // checks too, and it holds the rail like a pick until the song opens.
+  // The new song's workspace mounts before the create returns, so Add takes
+  // is asked for first, and taken back if no song opened.
+  async function createFromRail(): Promise<void> {
+    if (switching() || switchHold() !== null || blocked()) return
+    const before = studio.project()?.id
+    setSwitching(true)
+    setStartPanel('sources')
+    try {
+      await create()
+    } finally {
+      setSwitching(false)
+      if (studio.project()?.id === before) setStartPanel(null)
+    }
+  }
+
+  onCleanup(
+    lendStudioSongs({
+      songs: studio.projects,
+      openId: () => studio.project()?.id ?? null,
+      hold: switchHold,
+      opening: () => studio.loading() || switching(),
+      open: switchSong,
+      canCreate: () => !blocked(),
+      create: createFromRail,
+    }),
+  )
 
   // A backup asks where it goes first, while the click still counts as the
   // person's: Chromium refuses a save picker opened seconds later. Chromium

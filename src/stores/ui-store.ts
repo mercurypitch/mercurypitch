@@ -15,7 +15,7 @@ import { createSignal, untrack } from 'solid-js'
 import type { SignupSource } from '@/db/services/signup-context'
 import type { ExerciseType, GuidedPracticeLaunchConfig, } from '@/features/exercises/types'
 import type { ActiveTab } from '@/features/tabs/constants'
-import { DEFAULT_TAB, TAB_EAR_LAB, TAB_EXERCISES, TAB_SETTINGS, } from '@/features/tabs/constants'
+import { DEFAULT_TAB, TAB_EAR_LAB, TAB_EXERCISES, TAB_SETTINGS, TAB_STUDIO_NIGHT, } from '@/features/tabs/constants'
 import type { ZenExerciseDefinition } from '@/features/zen/types'
 import { firstLightOpensOn } from '@/lib/first-light-landing'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
@@ -132,6 +132,71 @@ export const [sidebarOpen, setSidebarOpen] = createSignal(false)
 // format) App.tsx historically used, so existing user prefs carry over.
 export const [sidebarCollapsed, setSidebarCollapsed] =
   createPersistedSignal<boolean>('pitchperfect_sidebar_collapsed', false)
+
+/** Where the Studio's sidebar choice is kept on this device. */
+export const STUDIO_SIDEBAR_KEY = 'sidebar-studio-rail-open'
+
+// Studio keeps its own rail state, apart from the other tabs': the
+// arrangement wants the width, so a first visit starts collapsed. Once the
+// person expands or collapses it, that choice is remembered on this device
+// (a key without the synced `pitchperfect_` prefix, as the sidebar's
+// sections keep theirs: how wide a rail should be is the screen's question,
+// not the account's). createPersistedSignal reads and writes inside
+// try/catch, so storage that throws or is empty leaves it collapsed.
+const [studioRailChoice, setStudioRailChoice] = createPersistedSignal<boolean>(
+  STUDIO_SIDEBAR_KEY,
+  false,
+  { validator: (value): value is boolean => typeof value === 'boolean' },
+)
+// A tour's sidebar step shows the rail without making that the person's
+// choice: null when no tour holds it.
+const [studioRailTour, setStudioRailTour] = createSignal<boolean | null>(null)
+
+/** Whether the Studio's sidebar is expanded: a tour's hold, else the person's choice. */
+export const studioSidebarExpanded = (): boolean =>
+  studioRailTour() ?? studioRailChoice()
+
+/** The person expands or collapses the Studio's sidebar: remembered on this device. */
+export function setStudioSidebarExpanded(
+  next: boolean | ((expanded: boolean) => boolean),
+): void {
+  const value =
+    typeof next === 'function' ? next(untrack(studioSidebarExpanded)) : next
+  setStudioRailTour(null)
+  setStudioRailChoice(value)
+}
+
+/**
+ * A tour step in the Studio's sidebar: show the rail without writing it as
+ * the person's choice. True when the tour had to open it.
+ */
+export function revealStudioSidebarForTour(): boolean {
+  if (untrack(studioSidebarExpanded)) return false
+  setStudioRailTour(true)
+  return true
+}
+
+/** The tour is over: the Studio's sidebar is as the person left it. */
+export function releaseStudioSidebarFromTour(): void {
+  setStudioRailTour(null)
+}
+
+/** The rail a tour step opened, so the tour's end can shut that one again. */
+export type TourRail = 'studio' | 'sidebar'
+
+/**
+ * A desktop tour step anchored in the sidebar: open the rail it needs and say
+ * which one, or null when it was open already. The Studio keeps a rail of its
+ * own, so its steps open that one, as a hold.
+ */
+export function openSidebarForTourStep(): TourRail | null {
+  if (activeTab() === TAB_STUDIO_NIGHT) {
+    return revealStudioSidebarForTour() ? 'studio' : null
+  }
+  if (!sidebarCollapsed()) return null
+  setSidebarCollapsed(false)
+  return 'sidebar'
+}
 
 // Editor view within the Editor tab. 'split' shows the piano roll and a live
 // sheet-music strip together.

@@ -386,7 +386,7 @@ import { LeaderboardPage } from '@/pages/LeaderboardPage'
 import PathPage from '@/pages/PathPage'
 import { PianoPage } from '@/pages/PianoPage'
 import { SettingsPage } from '@/pages/SettingsPage'
-import { adminContentSection, celebrationData, closeFeedbackSurvey, dismissCelebration, dismissSurvey, dismissWelcome, feedbackSurveyOpen, firstVisitThroughRoom, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, resetPasswordView, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setResetPasswordView, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, walkthroughModalOpen, } from '@/stores'
+import { adminContentSection, celebrationData, closeFeedbackSurvey, dismissCelebration, dismissSurvey, dismissWelcome, feedbackSurveyOpen, firstVisitThroughRoom, openWalkthroughChapter, pendingDrill, requestAdminContentSection, requestCloseAdminContentStudio, resetPasswordView, selectedWalkthrough, setActiveTab, setActiveUserSession, setBpm, setEditorView, setInstrument, setKeyName, setPendingDrill, setPlaybackSpeed, setResetPasswordView, setScaleType, setShowWelcome, setSidebarCollapsed, setSidebarOpen, setStudioSidebarExpanded, showAdminContentStudio, showSelection, sidebarCollapsed, sidebarOpen, studioSidebarExpanded, walkthroughModalOpen, } from '@/stores'
 import { activeTab as activeTabSignal, appStore, bpm, countIn, editorView, endPracticeSession, focusMode as focusModeSignal, getNoteAccuracyMap, getSessionHistory, hideLibrary, hideSessionLibrary, hideSessionPresetsLibrary, isLibraryModalOpen as isLibraryModalOpenSignal, isSessionLibraryModalOpen as isSessionLibraryModalOpenSignal, keyName as keyNameSignal, micActive, micError, onTabTransition, openLearningWalkthrough, playbackSpeed, scaleType as scaleTypeSignal, sessionMode, showNotification, showSessionBrowser, showSessionPresetsLibrary, showWelcome, startWalkthrough, surveySeen, walkthroughActive, } from '@/stores'
 import { getAllUvrSessionsReactive, initGroupStore, initSessionStore, sessionLostOnLeave, } from '@/stores/app-store'
 import { refreshBalance, waitForCreditGrant } from '@/stores/billing-store'
@@ -629,7 +629,6 @@ const OpeningTakeoverMount: Component<OpeningTakeoverProps> = IS_NATIVE_BUILD
     )
 
 const AppShell: Component<AppProps> = (props) => {
-  const [studioSidebarExpanded, setStudioSidebarExpanded] = createSignal(false)
   const { audioEngine, playbackRuntime, practiceEngine } = useEngines()
   const guitarCtx = useGuitar()
 
