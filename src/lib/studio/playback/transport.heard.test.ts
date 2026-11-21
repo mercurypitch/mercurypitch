@@ -275,6 +275,83 @@ describe('smoothHeardTime', () => {
     }
   })
 
+  it('reads on from the last stamp it trusted when the stamp after a stall is dated far ahead, so the reading never steps back', () => {
+    // After its audio thread ran late, Chromium dated the first stamp 151,
+    // 151, 305, 1517 or 1810 ms ahead (headless, Nov 2026), naming the
+    // render clock's own time.
+    for (const ahead of [151, 151, 305, 1517, 1810]) {
+      // Heard at 1.9 s at page time 1000 ms, the render clock 100 ms ahead.
+      const heard = (ms: number) => 1.9 + (ms - 1000) / 1000
+      const stamp = { contextTime: 0, performanceTime: 0 }
+      const ctx = {
+        state: 'running',
+        currentTime: 0,
+        outputLatency: 0.1,
+        baseLatency: 0,
+        getOutputTimestamp: () => stamp,
+      } as unknown as AudioContext
+      const read = (
+        ms: number,
+        renderClock: number,
+        given: { contextTime: number; performanceTime: number },
+      ) => {
+        Object.assign(ctx, { currentTime: renderClock })
+        Object.assign(stamp, given)
+        return smoothHeardTime(ctx, ms)
+      }
+      const sound = (ms: number, dated: number) => ({
+        contextTime: heard(ms + dated),
+        performanceTime: ms + dated,
+      })
+      expect(read(1000, heard(1000) + 0.1, sound(1000, 10))).toBeCloseTo(1.9, 9)
+      const last = sound(1033, 40)
+      expect(read(1033, heard(1033) + 0.1, last)).toBeCloseTo(1.933, 9)
+      // The thread stalls at 1040 ms: the render clock and the stamp stand.
+      const stood = heard(1040) + 0.1
+      let before = 0
+      for (const ms of [1066, 1099, 1133, 1166, 1199])
+        before = read(ms, stood, last)
+      expect(before).toBeCloseTo(stood, 9)
+      // It runs again: the render clock moves on 24 ms, and the stamp names
+      // that time, dated far ahead.
+      const after = read(1210, stood + 0.024, {
+        contextTime: stood + 0.024,
+        performanceTime: 1210 + ahead,
+      })
+      expect(after).toBeCloseTo(stood + 0.024, 9)
+      expect(after).toBeGreaterThan(before)
+      // The stamp after it is sound again.
+      expect(read(1243, heard(1243) + 0.1, sound(1243, 20))).toBeCloseTo(
+        heard(1243),
+        9,
+      )
+    }
+  })
+
+  it('reads the clock less latency for a stamp dated far ahead with no stamp trusted in the last second, or since the context stopped', () => {
+    expect(
+      smoothHeardTime(clock({ contextTime: 2, performanceTime: 2810 }), 1000),
+    ).toBeCloseTo(1.95, 9)
+    const stamp = { contextTime: 1.9, performanceTime: 1000 }
+    const ctx = {
+      state: 'running',
+      currentTime: 2,
+      outputLatency: 0.04,
+      baseLatency: 0.01,
+      getOutputTimestamp: () => stamp,
+    } as unknown as AudioContext
+    expect(smoothHeardTime(ctx, 1000)).toBeCloseTo(1.9, 9)
+    Object.assign(stamp, { contextTime: 2, performanceTime: 2500 + 1810 })
+    expect(smoothHeardTime(ctx, 2500)).toBeCloseTo(1.95, 9)
+    Object.assign(stamp, { contextTime: 1.98, performanceTime: 2600 })
+    expect(smoothHeardTime(ctx, 2600)).toBeCloseTo(1.98, 9)
+    Object.assign(ctx, { state: 'suspended' })
+    expect(smoothHeardTime(ctx, 2650)).toBeCloseTo(1.95, 9)
+    Object.assign(ctx, { state: 'running' })
+    Object.assign(stamp, { contextTime: 2, performanceTime: 2700 + 1810 })
+    expect(smoothHeardTime(ctx, 2700)).toBeCloseTo(1.95, 9)
+  })
+
   it('reads the clock less latency before the device has played, while suspended, or without timestamps', () => {
     expect(
       smoothHeardTime(clock({ contextTime: 0, performanceTime: 0 }), 50),
