@@ -1499,6 +1499,15 @@
   stroke-width: 1.5;
   stroke-dasharray: 4 4;
 }
+/* The two ways to start: Add takes, and New lane's choices under it
+   (StudioNewLaneStart), as wide as the column lets them be. */
+.emptyActions {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+}
 .timeline button.emptyAction {
   display: inline-flex;
   align-items: center;
@@ -1523,6 +1532,11 @@
 .timeline button.emptyAction:focus-visible {
   outline: 2px solid var(--studio-accent);
   outline-offset: 2px;
+}
+/* A finger's Add takes: a full press, like New lane's choices under it. */
+.timeline.phone button.emptyAction,
+.timeline.tablet button.emptyAction {
+  height: 44px;
 }
 .status {
   position: absolute;

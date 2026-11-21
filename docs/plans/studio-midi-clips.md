@@ -235,7 +235,9 @@ Each PR adds its own "Where it lives" section below.
   Drums lane is called Piano or Drums, then Piano 2 and so on.
 - **The same three choices head Add takes, on every device.** A phone
   adds its lanes there, and an empty song on a computer, which has no New
-  lane row, finds them there too.
+  lane row, finds them there too. Since 21 Nov 2026 an empty song also
+  offers them itself, under its own Add takes, on every device, so its
+  first lane can be a Piano or Drums lane without opening Add takes.
 - **The End handle is a slider over the ruler**, so it takes the focus and
   the arrows (a grid step, Shift a bar, each press one commit). Its target
   is 44 px across and as tall as the ruler; on a touch screen it reaches a

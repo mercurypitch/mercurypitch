@@ -1,4 +1,4 @@
-/* Studio new lane — New lane's choices: a caption over three buttons, each its instrument's chip and its word, in the header column of the row under the lanes, or in Add takes on a phone. */
+/* Studio new lane — New lane's choices: a caption over three buttons, each its instrument's chip and its word, in the header column of the row under the lanes, under an empty song's Add takes, or in Add takes on a phone. */
 .header {
   position: sticky;
   left: 0;
@@ -21,6 +21,21 @@
   letter-spacing: 0.08em;
   line-height: 12px;
   text-transform: uppercase;
+}
+/* An empty song's: the caption over the three, under Add takes in the
+   middle of the lanes (StudioTimeline.tsx). The empty state lets clicks
+   through to the lanes, so the choices take them back. */
+.start {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-sizing: border-box;
+  width: min(100%, 264px);
+  pointer-events: auto;
+}
+.start .caption {
+  padding-left: 0;
+  text-align: center;
 }
 .choices {
   display: flex;

@@ -16,7 +16,7 @@ import { createStudioRulerGesture } from './ruler-gesture'
 import { publishStudioScrubGrid } from './scrub-step'
 import { StudioClipToolbar } from './StudioClipToolbar'
 import { StudioLineBar } from './StudioLineBar'
-import { StudioNewLane } from './StudioNewLane'
+import { StudioNewLane, StudioNewLaneStart } from './StudioNewLane'
 import { StudioPhoneClipNote } from './StudioPhoneClipNote'
 import { createStudioRangeTools, StudioRangeShade, StudioRulerRange, } from './StudioRulerRange'
 import styles from './StudioTimeline.module.css'
@@ -683,17 +683,29 @@ export function StudioTimeline(props: StudioTimelineProps) {
               <rect x="28" y="28" width="132" height="16" rx="3" />
               <rect x="52" y="52" width="64" height="16" rx="3" />
             </svg>
-            <p>Add a take to start your song.</p>
+            <p>Add a take, or start a lane to record or draw notes in.</p>
+            {/* No Add takes while it is open: it holds New lane too, so the
+                song shows the three choices once. */}
             <Show when={props.onAddTakes}>
               {(add) => (
-                <button
-                  type="button"
-                  class={styles.emptyAction}
-                  disabled={!props.writable}
-                  onClick={() => add()()}
+                <div
+                  class={styles.emptyActions}
+                  role="group"
+                  aria-label="Start your song"
                 >
-                  <Plus size={16} /> Add takes
-                </button>
+                  <button
+                    type="button"
+                    class={styles.emptyAction}
+                    disabled={!props.writable}
+                    onClick={() => add()()}
+                  >
+                    <Plus size={16} /> Add takes
+                  </button>
+                  <StudioNewLaneStart
+                    onNewLane={props.onNewLane}
+                    touch={props.phone || props.tablet === true}
+                  />
+                </div>
               )}
             </Show>
           </div>

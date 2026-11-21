@@ -23,7 +23,7 @@ interface StudioSourcePickerProps {
   >
   onAdd(entries: readonly StudioSourceEntry[]): Promise<boolean>
   onFile(): void
-  /** New lane's choices, as the row under the lanes offers them: a phone has no such row, and an empty song shows none. */
+  /** New lane's choices, as the row under the lanes offers them: a phone has no such row. An empty song offers them under its own Add takes, and leaves them to this while it is open. */
   onNewLane?: (kind: StudioNewLaneKind) => void
   /** Finger-sized choices. */
   touch?: boolean

@@ -4,10 +4,12 @@
 //
 // A computer and a tablet offer them in the row under the lanes. A phone
 // has no room for that row, and adds its lanes from Add takes, where the
-// same three choices stand (StudioSourcePicker.tsx). Each choice wears its
-// instrument's glyph in its family's ink, as the lane it makes will
-// (InstrumentGlyph.tsx): beside its word in a computer's narrow header
-// column, and as a chip over its word for a finger.
+// same three choices stand (StudioSourcePicker.tsx). A song with no lanes
+// has no row either: its empty state offers them under Add takes, on every
+// screen (StudioNewLaneStart). Each choice wears its instrument's glyph in
+// its family's ink, as the lane it makes will (InstrumentGlyph.tsx): beside
+// its word in a computer's narrow header column, and as a chip over its
+// word for a finger.
 import { For, Show } from 'solid-js'
 import type { InstrumentFamilyId, InstrumentGlyphId, } from '@/lib/studio/instruments/glyph-catalog'
 import { instrumentFamily } from '@/lib/studio/instruments/glyph-catalog'
@@ -96,6 +98,21 @@ export function StudioNewLaneChoices(props: {
           </button>
         )}
       </For>
+    </div>
+  )
+}
+
+/** New lane's choices under their caption, for a song with no lanes yet: it has no row under its lanes to hold them. */
+export function StudioNewLaneStart(props: {
+  onNewLane?: (kind: StudioNewLaneKind) => void
+  touch?: boolean
+}) {
+  return (
+    <div class={styles.start}>
+      <span class={styles.caption} aria-hidden="true">
+        New lane
+      </span>
+      <StudioNewLaneChoices onNewLane={props.onNewLane} touch={props.touch} />
     </div>
   )
 }
