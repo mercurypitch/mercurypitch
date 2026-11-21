@@ -171,6 +171,41 @@ PR's preview found:
   counts a note in any octave and its bests start fresh: its scoring version
   went to 2 on 2026-11-16 (#1445), so earlier runs no longer compare.
 
+A last PR before the tag fixes what a check of dev and the release review
+left:
+
+- **An empty song offers its first lane.** A song with no lanes showed only
+  "Add a take to start your song." and Add takes: the empty state dates from
+  26 Oct, three weeks before Piano and Drums lanes, and New lane's row appears
+  only under a lane. The empty state now holds Add takes and, under it, New
+  lane's Audio, Piano and Drums (`StudioNewLaneStart`, the row's own chips
+  through the same `onNewLane`) on a computer, a tablet and a phone: "Add a
+  take, or start a lane to record or draw notes in."
+- **The take is asked about first.** After a run that earned achievements,
+  Merc's bubble showed the unlock first and "Keep this take?" waited behind
+  its 6 s; Try Again or Back in that window lost the take without the
+  question. `useTakeNotice` now holds the bubble from the run's end until the
+  question is answered, and while "Take kept" shows, so calm notices,
+  achievements included, wait their turn with their time stopped; warnings and
+  errors still go first. The same order removes the cause of the flake in
+  `exercise-stage-notices.spec.ts:99`: the take notice was still leaving when
+  the unlock arrived over its buttons.
+- **Back to a room without a second demo.** The selected exercise lives in
+  App, so a tab switch brought the room back, built anew, and
+  `useExerciseDemo` played Merc's demo again.
+  `src/stores/room-return-store.ts` marks a return by the tab; every fresh way
+  in (a card, a link, a share) clears it, and only a return skips the demo.
+  The "?" still plays it.
+- **Merc's Ear Lab draws only the Regulator Room.** #1460 took the room picker
+  out of Merc's Ear Lab on purpose (`docs/plans/ear-lab-native-look.md`), but
+  a room stored before still showed through its gaps: 14 % of the Ear Report
+  at a desk, the scroll gutter, and a tint under a phone's tab bar. With Merc
+  on, the Ear Lab's controller neither reads nor writes
+  `pitchperfect_ear_background`, so every screen draws the Regulator Room and
+  the store app's choice stays as it was. Supporter Ear Lab rooms stay granted
+  (migration 0035) and choosable in the store app; whether Merc's Ear Lab
+  should draw them is a design question for later.
+
 The user entry describes Studio as a whole, from its tour
 (`src/lib/studio-tour.ts`) and its panels: songs kept in this browser,
 takes and audio files brought in, several lanes recorded at once, monitor

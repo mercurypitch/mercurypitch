@@ -286,6 +286,7 @@ These are the rules that break things when ignored.
 | [playback-state-store.ts](../../src/stores/playback-state-store.ts) | 50 | Playback State Store — transport position, shared app-wide Prefer the `isPlaying()` / `isPaused()` / `isStopped()` helpers over reading t... |
 | [playback-store.ts](../../src/stores/playback-store.ts) | 50 | Playback Store — Transport and playback state |
 | [promo-store.ts](../../src/stores/promo-store.ts) | 50 | promo-store — the promo code the app offers with one click The server decides which code is featured and whether it is open (GET /api/bil... |
+| [room-return-store.ts](../../src/stores/room-return-store.ts) | 50 | Room return store — a room the Exercises tab comes back to The Exercises tab keeps its place, as a tab bar does: an exercise left open by... |
 | [room-words-store.ts](../../src/stores/room-words-store.ts) | 50 | A room's words, kept off a screen something else is about to take The native onboarding opens over the Sing room on a new install's first... |
 | [settings-section.ts](../../src/stores/settings-section.ts) | 50 | Settings sections — the web Settings panel's sub-tabs, by name A module of its own so the native shell bridge (native-shell-store.ts) can... |
 | [singer-sheet-store.ts](../../src/stores/singer-sheet-store.ts) | 50 | The singer sheet — which singer it is open on, if any The one sheet that reports or blocks a singer (src/components/moderation/SingerShee... |
