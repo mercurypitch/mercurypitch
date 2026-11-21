@@ -4958,3 +4958,13 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   xhigh) when the kit agent's small touch (calls 78-79) hands back. Correction to the last entry:
   the scene briefs' "DECISIONS from 146 on" is right (the kit's revisions start at 146); no
   change needed.
+
+## 21 Nov 07:34 UTC: kit's small touch done; KIT CRITIC 02 (the last) launched
+- Kit touch ((builder)): sharp 1.5 px (gap open), board measures to stroke outer edges,
+  seven pairs moved (DECISIONS 168-170); probe 970/970, root 0 errors, board checks 0 failures,
+  WIDTHS nothing under 12 px. Call 83 accepts it.
+- KIT CRITIC 02 LAUNCHED: (builder) (motion-critic, (model) xhigh), brief
+  briefs/l6-critic-kit-02.md -> l6film/review/critic-kit-02/REPORT.md (save verbatim if needed).
+  THE LAST kit critic. NEXT: calls; a last kit touch if needed (no third critic); then the SCENE
+  GROUPS (briefs/l6-film-scenes-common.md + -A..-E.md): two builders at a time on (model) xhigh,
+  pairing by BUILD-GUIDE's builder splits; one critic per group (at most two rounds).
