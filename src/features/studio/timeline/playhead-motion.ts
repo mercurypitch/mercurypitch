@@ -1,4 +1,4 @@
-// Studio playhead motion — the playhead line moves on the compositor while the song plays, kept to the audio clock on every transport tick and never stepped back.
+// Studio playhead motion — the playhead line moves on the compositor while the song plays, kept to the audio clock on every transport tick: it holds where it is drawn through a stall, and moves back only to a clock that went back and stayed there, as a seek or a loop wrap moves it.
 //
 // Writing the line's transform on every 33 ms tick moved it in steps and
 // had the page restyle and composite 30 times a second. Here each line gets
@@ -14,20 +14,46 @@
 // The audio device's clock still runs a little fast or slow against the
 // page's, so the line and the clock part slowly. A line that pulls ahead
 // runs a little slower until the clock catches up, and one that drops
-// behind runs a little faster: the line never steps back to the clock while
-// it plays. Only a line more than DRIFT_SECONDS behind jumps on to it. A
-// jump (a seek, a loop) and a clock that stands still (the first frame on
-// its way to the speakers, a seek's run being built) stand the line where
-// its own style puts it until the clock moves on.
+// behind runs a little faster. Only a line more than DRIFT_SECONDS behind
+// jumps, forward, on to the clock.
+//
+// A clock that stops moving steadily has stalled, or was moved. When the
+// audio thread ran 150 or 300 ms late, the clock ran on to the render clock
+// and stood there until the thread caught up, then jumped on. Now and then
+// the first output timestamp after it was dated 0.15 to 1.8 s ahead, which
+// put one reading that far back (headless Chromium, Nov 2026). The line
+// holds where it is drawn until the clock runs steadily again, then moves
+// on from there, or jumps forward to a clock ahead of it. Standing it on its
+// own style instead, the readouts' playhead, put it up to 168 ms back.
+//
+// A clock that was running steadily and jumps more than SEEK_SECONDS from
+// the line was moved by a seek or a loop wrap, or read once wrong: the line
+// holds, and goes there if the next tick finds the clock still there or
+// running on from there. A clock found running steadily more than
+// LOST_SECONDS behind the line, as after a seek made while it stood still,
+// takes the line back too. While a song plays, nothing else moves the line
+// back; Stop and a drag stand it on its own style (StudioTimeline.tsx).
 import { createSignal } from 'solid-js'
 
 /** How far the line may fall behind the clock before it jumps on to where the clock is. */
 export const STUDIO_PLAYHEAD_DRIFT_SECONDS = 0.02
 /**
  * A clock that moved this much more or less than the time between two ticks
- * jumped (a seek, a loop) or stalled: the line stands until it moves on.
+ * stalled, or was moved by a seek or a loop wrap.
  */
 export const STUDIO_PLAYHEAD_JUMP_SECONDS = 0.05
+/**
+ * A clock that was running steadily and jumps this far from the line, then
+ * stays there or runs on from there, was moved by a seek or a loop wrap:
+ * just under the shortest loop (STUDIO_MIN_LOOP_FRAMES), a wrap moving the
+ * clock back by the loop's length. A smaller jump is a stall's.
+ */
+export const STUDIO_PLAYHEAD_SEEK_SECONDS = 0.2
+/**
+ * A clock found running steadily this far behind the line, as after a seek
+ * made while it stood still, takes the line back to it.
+ */
+export const STUDIO_PLAYHEAD_LOST_SECONDS = 0.5
 /** A gap to the clock changes the line's speed by its own length per this many seconds. */
 export const STUDIO_PLAYHEAD_FOLLOW_SECONDS = 1
 /** A change of speed smaller than this is not worth starting the line's animations again. */
@@ -50,7 +76,10 @@ interface StudioPlayheadMotionOptions {
   endFrame(): number
 }
 
-/** Where the running animations draw the line: `frame` at page time `at` (ms), moving `speed` times as fast as the song. */
+/**
+ * Where the running animations draw the line: `frame` at page time `at`
+ * (ms), moving `speed` times as fast as the song. Speed 0 holds it there.
+ */
 interface Course {
   frame: number
   at: number
@@ -62,13 +91,20 @@ export function createStudioPlayheadMotion(
 ) {
   const elements = new Set<HTMLElement>()
   let animations: Animation[] = []
-  // Null while no animation moves the line.
+  // Null while no animation moves or holds the line.
   let course: Course | null = null
   // The clock at the last tick, and when (performance time, ms).
   let last: { frame: number; at: number } | null = null
+  // Whether the clock moved steadily up to the last tick.
+  let running = false
+  // Where the clock jumped to at the last tick, from steady running, far
+  // from the line: a seek or a loop wrap, if the next tick agrees.
+  let jumpedTo: number | null = null
   const [moving, setMoving] = createSignal(false)
   const drift = STUDIO_PLAYHEAD_DRIFT_SECONDS * options.sampleRate
   const jump = STUDIO_PLAYHEAD_JUMP_SECONDS * options.sampleRate
+  const seek = STUDIO_PLAYHEAD_SEEK_SECONDS * options.sampleRate
+  const lost = STUDIO_PLAYHEAD_LOST_SECONDS * options.sampleRate
   const follow = STUDIO_PLAYHEAD_FOLLOW_SECONDS * options.sampleRate
 
   /** The frame `on` draws the line at, at page time `now`. */
@@ -88,13 +124,16 @@ export function createStudioPlayheadMotion(
     end: number,
   ): Animation | null {
     if (typeof element.animate !== 'function') return null
+    const held = on.speed === 0
     const animation = element.animate(
       [
         { transform: `translateX(${options.pixels(on.frame)}px)` },
-        { transform: `translateX(${options.pixels(end)}px)` },
+        { transform: `translateX(${options.pixels(held ? on.frame : end)}px)` },
       ],
       {
-        duration: ((end - on.frame) / options.sampleRate / on.speed) * 1000,
+        duration: held
+          ? 1000
+          : ((end - on.frame) / options.sampleRate / on.speed) * 1000,
         easing: 'linear',
         // A frame drawn before `at`, on a page that drew late, holds the
         // first place rather than letting the line's own style show.
@@ -118,7 +157,7 @@ export function createStudioPlayheadMotion(
   }
 
   return {
-    /** Whether an animation moves the line: its own style is then left alone. */
+    /** Whether an animation moves or holds the line: its own style is then left alone. */
     moving,
     /** Move `element` with the others from now on; the returned function lets it go. */
     attach(element: HTMLElement): () => void {
@@ -132,34 +171,51 @@ export function createStudioPlayheadMotion(
         elements.delete(element)
       }
     },
-    /** Read the clock on a tick: follow it, stand still with it, or move on from where it went. */
+    /** Read the clock on a tick: follow it, hold through a stall, or go where a seek or a loop wrap moved it. */
     check(now: number = performance.now()): void {
       const frame = options.frameNow()
       const previous = last
+      const ran = running
+      const jumped = jumpedTo
       last = { frame, at: now }
-      const steady =
-        previous !== null &&
-        frame > previous.frame &&
-        Math.abs(
-          frame -
-            previous.frame -
-            ((now - previous.at) / 1000) * options.sampleRate,
-        ) <= jump
-      if (!steady) {
-        if (course !== null) {
-          cancel()
-          setMoving(false)
-        }
+      jumpedTo = null
+      if (previous === null) {
+        running = false
         return
       }
+      // The frames the song played since the last tick.
+      const played = ((now - previous.at) / 1000) * options.sampleRate
+      running =
+        frame > previous.frame &&
+        Math.abs(frame - previous.frame - played) <= jump
       if (course === null) {
-        run({ frame, at: now, speed: 1 })
+        if (running) run({ frame, at: now, speed: 1 })
+        return
+      }
+      if (
+        jumped !== null &&
+        frame >= jumped - jump &&
+        frame - jumped <= played + jump
+      ) {
+        // The clock stands where it jumped to, or runs on from there: a seek
+        // or a loop wrap moved it, and the line goes there.
+        if (running || course.speed > 0 || course.frame !== frame)
+          run({ frame, at: now, speed: running ? 1 : 0 })
         return
       }
       const drawn = drawnAt(course, now)
+      if (!running) {
+        if (ran && Math.abs(frame - drawn) > seek) jumpedTo = frame
+        // A stall, or a jump the next tick has yet to confirm: the line holds
+        // where it is drawn, or where a clock ahead of it went.
+        const place = Math.max(drawn, frame)
+        if (course.speed > 0 || place > course.frame)
+          run({ frame: place, at: now, speed: 0 })
+        return
+      }
       // Positive while the clock is ahead of the line.
       const gap = frame - drawn
-      if (gap > drift) {
+      if (gap > drift || gap < -lost) {
         run({ frame, at: now, speed: 1 })
         return
       }
@@ -167,7 +223,7 @@ export function createStudioPlayheadMotion(
       if (Math.abs(speed - course.speed) >= SPEED_STEP)
         run({ frame: drawn, at: now, speed })
     },
-    /** The zoom or the song's length changed: a moving line goes on from where it is drawn. */
+    /** The zoom or the song's length changed: a moving or held line goes on from where it is drawn. */
     restart(now: number = performance.now()): void {
       if (course !== null)
         run({ frame: drawnAt(course, now), at: now, speed: course.speed })
@@ -176,6 +232,8 @@ export function createStudioPlayheadMotion(
     stop(): void {
       cancel()
       last = null
+      running = false
+      jumpedTo = null
       setMoving(false)
     },
   }
