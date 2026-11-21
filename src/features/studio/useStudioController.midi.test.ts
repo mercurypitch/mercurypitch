@@ -1,8 +1,9 @@
 // Studio controller MIDI takes — a take recorded on a MIDI lane comes into the song with its sequence, in the edit that adds its clip, its clip keyed by its notes and sound so nothing renders until an edit; one undo takes both away. A render of edited notes is kept as a take is, swapped in without an undo step, skipped when the notes changed meanwhile, and kept when shorter than its clip's window, which is silent past it; undo and redo bring the notes back with the audio that matched them. New MIDI clips come in one undo step, a new lane with them, all playing one quarter second of silence kept as a recording with no name, and a lane the song does not have is refused as an import is.
-import { createRoot } from 'solid-js'
-import { afterEach, describe, expect, it } from 'vitest'
+import { createEffect, createRoot } from 'solid-js'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioAssetInfo } from '@/lib/studio/audio/prepare-studio-asset'
 import { studioMidiRenderKey } from '@/lib/studio/midi/render-key'
+import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
 import type { StudioNote } from '@/lib/studio/model/types'
 import { controllerServiceFixture, preparedFixture, } from './controller/controller.fixture'
 import type { StudioController } from './useStudioController'
@@ -33,13 +34,13 @@ const recordedFixture = async (blob: Blob, info: StudioAssetInfo) => {
   }
 }
 
-function mount(): StudioController {
+function mount(service = controllerServiceFixture()): StudioController {
   let serial = 0
   let controller!: StudioController
   createRoot((dispose) => {
     cleanups.push(dispose)
     controller = useStudioController({
-      service: controllerServiceFixture(),
+      service,
       createId: () => `id-${++serial}`,
       prepareFile: recordedFixture,
     })
@@ -236,6 +237,77 @@ describe('a MIDI render kept in the Studio', () => {
     expect(clip.assetId).not.toBe(take.assetId)
     expect(asset?.normalizedFrameCount).toBe(2400)
     expect(clip.sourceOutFrame).toBe(take.sourceOutFrame)
+  })
+})
+
+/**
+ * The clips the song names audio for that the asset list read beside it
+ * does not hold, gathered every time either changes: what the transport and
+ * the lane freezer read together. Playing, the transport refuses such a
+ * pair with "Owned source is missing" and stops.
+ */
+function tornReads(controller: StudioController): string[] {
+  const torn: string[] = []
+  createRoot((dispose) => {
+    cleanups.push(dispose)
+    createEffect(() => {
+      const owned = new Set(controller.assets().map((asset) => asset.id))
+      for (const clip of controller.project()?.clips ?? [])
+        if (!owned.has(clip.assetId)) torn.push(clip.id)
+    })
+  })
+  return torn
+}
+
+describe('the song and its audio, as the workspace reads them', () => {
+  it('change together when a render is kept, so no reader sees the clip on audio the list does not hold yet', async () => {
+    // Arrange
+    const { controller, key } = await editedTake()
+    const torn = tornReads(controller)
+
+    // Act
+    const kept = await controller.keepMidiRender({
+      samples: new Float32Array(9600),
+      renderKey: key,
+      title: 'Take 1',
+    })
+
+    // Assert
+    expect(kept).toBe(true)
+    expect(torn).toEqual([])
+  })
+
+  it('change together when new MIDI clips bring their silence', async () => {
+    // Arrange
+    const controller = mount()
+    await controller.open('one')
+    const torn = tornReads(controller)
+
+    // Act
+    const made = await controller.addMidiClips([
+      { lane: { name: 'Drums', role: 'drums' }, startFrame: 0, frames: 96_000 },
+    ])
+
+    // Assert
+    expect(made).toHaveLength(1)
+    expect(torn).toEqual([])
+  })
+
+  it('change together when a song opens, so no reader sees its clips before the audio they play', async () => {
+    // Arrange: a saved song with one clip on its one take.
+    const { project, asset } = studioFixture()
+    const service = controllerServiceFixture()
+    vi.mocked(service.loadProject).mockResolvedValue({ ...project, id: 'one' })
+    vi.mocked(service.listAssets).mockResolvedValue([asset])
+    const controller = mount(service)
+    const torn = tornReads(controller)
+
+    // Act
+    await controller.open('one')
+
+    // Assert
+    expect(controller.project()?.clips).toHaveLength(1)
+    expect(torn).toEqual([])
   })
 })
 
