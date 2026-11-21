@@ -183,16 +183,17 @@
   box-shadow: inset 0 0 0 1px var(--studio-accent);
   background: color-mix(in srgb, var(--studio-accent) 8%, var(--studio-card));
 }
-/* The lane's hue across the top, as in the lane header's edge. */
+/* The lane's hue across the top, as in the lane header's edge. It is the top
+   border of a box over the whole strip, so it bends down the strip's corners
+   at the strip's own radius. A box 3 px tall would shrink any radius to 3 px
+   and end square inside the corners. */
 .strip::before {
   content: '';
   position: absolute;
-  top: -1px;
-  right: -1px;
-  left: -1px;
-  height: 3px;
-  border-radius: 10px 10px 0 0;
-  background: var(--studio-track);
+  inset: -1px;
+  border-top: 3px solid var(--studio-track);
+  border-radius: inherit;
+  pointer-events: none;
 }
 .strip[data-silent]::before {
   opacity: 0.4;
