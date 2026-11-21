@@ -1,5 +1,6 @@
 // Studio page tests — the save picker empties the file it hands back, so everything that could refuse a backup is asked before it opens; and the page's one banner offers what its state can use.
 import { cleanup, fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { StudioProjectSummary } from '@/lib/studio/model/types'
 import { studioSongs } from '@/stores/studio-songs-store'
@@ -18,10 +19,19 @@ const studio = vi.hoisted(() => ({ current: {} as Record<string, unknown> }))
 vi.mock('./useStudioController', () => ({
   useStudioController: () => studio.current,
 }))
-vi.mock('./StudioWorkspace', () => ({ StudioWorkspace: () => null }))
+/** The panel each workspace mount was asked to open: it reads the prop once, at mount. */
+const workspaceMounts = vi.hoisted(() => [] as (string | null)[])
+vi.mock('./StudioWorkspace', () => ({
+  StudioWorkspace: (props: { startPanel: string | null }) => {
+    // eslint-disable-next-line solid/reactivity -- read once, at mount, as the workspace reads it
+    workspaceMounts.push(props.startPanel)
+    return null
+  },
+}))
 
 afterEach(() => {
   cleanup()
+  workspaceMounts.length = 0
   picker.open.mockReset()
   picker.sweep.mockReset()
   vi.useRealTimers()
@@ -327,6 +337,31 @@ describe('Studio page song switch for the sidebar', () => {
     expect(
       screen.queryByRole('navigation', { name: 'Studio projects' }),
     ).toBeNull()
+  })
+
+  it('opens a song picked after a New song without the Add takes that New song asked for', async () => {
+    const [open, setOpen] = createSignal({ id: 'one', title: 'Window seat' })
+    mountPage(null, {
+      project: open,
+      saveState: () => 'saved',
+      create: vi.fn(async () => {
+        setOpen({ id: 'new', title: 'Untitled song' })
+        return true
+      }),
+      openForBackup: vi.fn(async (id: string) => {
+        setOpen({ id, title: 'Window seat' })
+        return true
+      }),
+    })
+    const loan = studioSongs()!
+
+    await loan.create()
+    expect(workspaceMounts).toEqual(['sources'])
+
+    await loan.open('one')
+
+    expect(loan.openId()).toBe('one')
+    expect(workspaceMounts).toEqual(['sources', null])
   })
 
   it('makes no song while a switch is held, or while a save is in flight', async () => {
