@@ -1,5 +1,6 @@
 // Studio sidebar choice tests — collapsed on a first visit, the person's expand remembered across loads, storage that throws ignored, and a tour's hold never written down.
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { DEFAULT_TAB, TAB_STUDIO_NIGHT } from '@/features/tabs/constants'
 
 const KEY = 'sidebar-studio-rail-open'
 
@@ -92,6 +93,30 @@ describe('Studio sidebar under a tour', () => {
     expect(localStorage.getItem(KEY)).toBe('false')
 
     ui.releaseStudioSidebarFromTour()
+    expect(ui.studioSidebarExpanded()).toBe(false)
+  })
+})
+
+describe('A tour step in the sidebar', () => {
+  it("opens the Studio's own rail on the Studio tab, as a hold the tour lets go of", async () => {
+    const ui = await load()
+    ui.setActiveTab(TAB_STUDIO_NIGHT)
+    expect(ui.openSidebarForTourStep()).toBe('studio')
+    expect(ui.studioSidebarExpanded()).toBe(true)
+    expect(localStorage.getItem(KEY)).toBeNull()
+    expect(ui.openSidebarForTourStep()).toBeNull()
+    ui.releaseStudioSidebarFromTour()
+    expect(ui.studioSidebarExpanded()).toBe(false)
+  })
+
+  it('opens the collapsed sidebar on any other tab, and leaves an open one alone', async () => {
+    const ui = await load()
+    ui.setActiveTab(DEFAULT_TAB)
+    expect(ui.activeTab()).not.toBe(TAB_STUDIO_NIGHT)
+    ui.setSidebarCollapsed(true)
+    expect(ui.openSidebarForTourStep()).toBe('sidebar')
+    expect(ui.sidebarCollapsed()).toBe(false)
+    expect(ui.openSidebarForTourStep()).toBeNull()
     expect(ui.studioSidebarExpanded()).toBe(false)
   })
 })
