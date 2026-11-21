@@ -4923,3 +4923,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   NEXT: lead's calls; the kit's fix round by RESUMING the kit agent (builder) (with call
   62's 8k change); critic 02 only if needed (max two); then the scene groups A-E (two builders at
   a time, (model) xhigh while (model) is out; briefs to write, modeled on briefs/l5-film-scenes-*.md).
+- 21 Nov 05:43: SCENE BRIEFS DRAFTED (not launched): briefs/l6-film-scenes-common.md and
+  l6-film-scenes-A.md to -E.md (modeled on L5's). Before launching: check the kit fix round's
+  DECISIONS numbers (the briefs say "from 146"), re-read against BUILD-GUIDE's builder splits,
+  pair groups by effort (two builders at a time, (model) xhigh while (model) is out).
