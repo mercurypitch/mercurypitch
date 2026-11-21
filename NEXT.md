@@ -4907,3 +4907,19 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   briefs/l6-film-kit.md (updated: passes done, roots.js uncomment, rendered-widths check).
   NEXT: its hand-back -> a fresh motion-critic component round on the kit lab ((model) xhigh; at
   most two rounds) -> scene groups A-E (two builders at a time, (model) xhigh while (model) is out).
+
+## 21 Nov 05:41 UTC: KIT DONE; kit critic 01 launched ((model) xhigh)
+- KIT ((builder), (model)): assets/lib (lesson, motion, marks, frames, tune, gap, stairs,
+  specimen, mixup, guide, turn, recap, board, tease, column, hosts, lesson.css), labs in
+  lab/kit-src + lab/kit-*/ (stills, 7 clips), BUILD-GUIDE.md, DECISIONS 130-145, root regenerated
+  (backup $S/l6kit-backup/index.html.pre-genroot). Root check 0 errors; probe 919/919; only two
+  clearances under 12 px (8k, typographic quotes).
+- LEAD'S CALLS 62-68: keep typographic quotes, 8k rows 1b/2b down 2 px (kit fix round);
+  overlap marking as BUILD-GUIDE; lift shadow 35 % (50 % if unreadable); F-end parallax ok;
+  HANDOFFS fixed by the lead (rows 6 to 17; L5's last frame has no kicker; backup
+  $S/l6-handoffs-pre-kitcalls.md); root stays.
+- KIT CRITIC 01 LAUNCHED: (builder) (motion-critic, (model) xhigh), brief
+  briefs/l6-critic-kit-01.md -> l6film/review/critic-kit-01/REPORT.md (save verbatim if needed).
+  NEXT: lead's calls; the kit's fix round by RESUMING the kit agent (builder) (with call
+  62's 8k change); critic 02 only if needed (max two); then the scene groups A-E (two builders at
+  a time, (model) xhigh while (model) is out; briefs to write, modeled on briefs/l5-film-scenes-*.md).
