@@ -5057,3 +5057,17 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   -> A's fix round (SendMessage (builder)) once a builder slot is free (at most two
   builders: B and C now). On B's hand-back -> critic B-01; compare B's lab tools with A's and
   promote the better into P/tools before D. Then D, then E. Disk 7.0 GB free.
+
+## 26 Nov 13:21 UTC: (model)-HOUR LIMIT hit ~09:15 (reset 12:50); all three RESUMED
+- At ~09:15 the critic A-01 ((builder)), builder B ((builder)) and builder C
+  ((builder)) all stopped on (model)'s 5-hour limit. Nothing was lost: the critic's
+  partial work is in review/critic-scenes-A-01/work/; B's labs s05-s07 exist; C had only read.
+  No leftover renders; the heavy wrapper drops dead tickets itself.
+- Resumed all three with SendMessage after the reset (the critic told only that HANDOFFS,
+  STORYBOARD and the board scripts changed at 09:12; B told calls 98-101, of which 100 and 101
+  apply to it; C told nothing changed).
+- If (model) runs out again: keep the (model) agents for its reset (their context is worth keeping)
+  and put NEW work (group D, a critic) on (model) xhigh meanwhile, as the owner's rule allows;
+  at most two builders at once; mind the (model) weekly budget the lead shares.
+- B's critic brief is ready: briefs/l6-critic-scenes-B-01.md (report folder to create:
+  review/critic-scenes-B-01/work).
