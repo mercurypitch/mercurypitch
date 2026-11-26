@@ -1,0 +1,62 @@
+{
+ "model": "Xenova/wav2vec2-base-960h onnx/model_quantized.onnx",
+ "model_sha256": "cd5040c147381580ed73258143dd8e0c28e800a09e74ee42ee2b3e8cb4d760a3",
+ "reference": "assets/voice-kokoro/<id>.words.json (Kokoro phoneme times, onsets calibrated on the envelope)",
+ "takes": 71,
+ "words": 1034,
+ "lead": 0.5,
+ "start_lag": 0.033,
+ "end_lag": 0.005,
+ "placed_by_a_silence": {
+  "starts": 295,
+  "ends": 317
+ },
+ "as_aligned": {
+  "starts": {
+   "n": 1034,
+   "median": 0.04,
+   "median_abs": 0.04,
+   "p90_abs": 0.09,
+   "worst_abs": 0.295
+  },
+  "ends": {
+   "n": 1034,
+   "median": -0.01,
+   "median_abs": 0.03,
+   "p90_abs": 0.13,
+   "worst_abs": 0.532
+  }
+ },
+ "unplaced_as_aligned": {
+  "starts": {
+   "n": 739,
+   "median": 0.033,
+   "median_abs": 0.035,
+   "p90_abs": 0.075,
+   "worst_abs": 0.203
+  },
+  "ends": {
+   "n": 717,
+   "median": 0.005,
+   "median_abs": 0.025,
+   "p90_abs": 0.062,
+   "worst_abs": 0.298
+  }
+ },
+ "calibrated": {
+  "starts": {
+   "n": 1034,
+   "median": 0.0,
+   "median_abs": 0.01,
+   "p90_abs": 0.0414,
+   "worst_abs": 0.236
+  },
+  "ends": {
+   "n": 1034,
+   "median": 0.0,
+   "median_abs": 0.015,
+   "p90_abs": 0.06,
+   "worst_abs": 0.61
+  }
+ }
+}

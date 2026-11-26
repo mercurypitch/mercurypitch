@@ -5137,3 +5137,20 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   (builder) (Merc's voice generation, done); (builder), (builder),
   (builder), (builder).
 - Next free numbers: l6film LEAD-ANSWERS 104; l5film DECISIONS 246 (the import agent's).
+
+## 26 Nov 13:57 UTC: CRITIC A-01 back (ONE MORE PASS; S4 KEEP); calls 104-110; A's FIX ROUND running
+- Critic A-01 ((builder), retire) could not write; the lead saved its report verbatim to
+  l6film/review/critic-scenes-A-01/REPORT.md. Six findings: the pass into the bead reads as a fade
+  through grey (jolt, see-through bead, luma sag, bezel, S2's flat disc); "≠" beside "+6
+  semitones"; the spent ring timer reads as a selected radio on the wrong answer; S2->S3's empty
+  second; S3 with the sound off (no "promise" kicker, a faint second start, ragged left edges);
+  the check and the gold pairs start together.
+- Calls 104-110 (LEAD-ANSWERS): all six taken; the ghost line's clip at hollow rings goes to the
+  kit pass after the scenes (with the data-own pass); the pills' prompt no change; A's question 5
+  keep S4's added motions; question 6 holds accepted, re-measured on the final 60 fps passes.
+- A's FIX ROUND: builder (builder) resumed (SendMessage). It may change L.approach in
+  frames.js (only S1 uses it), its rows in HANDOFFS/STORYBOARD, and board-geom/-sweep to match
+  (0 failures), logged in CHANGES.md; backups $S/l6-pre-A-fix/. Then critic A-02 (verification,
+  the last round for A).
+- Builders now: C (building) and A (fix): two. D waits (slots and the (model) budget; the L5 import
+  comes first). Next free LEAD-ANSWERS number: 111.

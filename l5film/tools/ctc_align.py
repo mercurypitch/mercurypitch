@@ -22,11 +22,15 @@ letter's first frame to its last letter's last frame, and the output keeps the w
 script word with no letter in it (a bare mark) takes no time, at the end of the word before it.
 
 Calibration. A CTC model marks a letter somewhere inside its sound, so a word's start comes out a
-little late and its end early, by about the same amount each time. `--calibrate` measures both on the
-scratch takes, whose word times are Kokoro's own phoneme times (assets/voice-kokoro/<id>.words.json),
-and writes the two constants to tools/ctc-calibration.json; `Aligner.words` takes them off. The
-envelope calibration that follows (tools/tts.py `calibrate`: a word after a silence starts where the
-sound starts) is the importer's step, as it is the scratch voice's.
+little late, by about the same amount each time. `--calibrate` measures it on the scratch takes, whose
+word times are Kokoro's own phoneme times (assets/voice-kokoro/<id>.words.json): every take is aligned
+and the word starts and ends compared, as aligned and then as the importer uses them. The importer's
+way is the scratch voice's (tools/tts.py `calibrate`): a word after a silence starts where the sound
+starts, and a word before one ends where the sound stops; the words no silence places move back by a
+constant. For Kokoro that constant is each take's own median; an aligner's is steadier measured once
+over every take, so it is the median of (aligned - Kokoro) over the words no silence places, one for
+starts and one for ends, written to tools/ctc-calibration.json. `Aligner.start_lag` and `.end_lag`
+hold them; `Aligner.words` takes them off every word when it is used alone, with no envelope.
 
 A words check comes free with the model: `heard` is its greedy transcript (the likeliest letter of
 every frame, repeats merged, blanks dropped), and `compare` sets it beside the script line. The model
@@ -262,7 +266,8 @@ class Aligner:
 def compare(script_text, heard):
     """The script line (normalised) against what the model heard, word by word:
     [(kind, script words, heard words)] for every stretch that differs, kind 'spelling' when the stretch
-    has as many words on each side and each pair is near (the model spells by ear), else 'words'."""
+    has as many words on each side, give or take one (the model joins and splits words), and letters
+    0.6 or more alike (it spells by ear), else 'words'."""
     a, b = normalised(script_text).split(), heard.split()
     out = []
     for op, i0, i1, j0, j1 in difflib.SequenceMatcher(None, a, b, autojunk=False).get_opcodes():
@@ -277,64 +282,95 @@ def compare(script_text, heard):
 
 # ------------------------------------------------------------------ calibration on the scratch takes
 
-def percentile(v, q):
-    return float(np.percentile(np.abs(v), q)) if len(v) else float('nan')
+def load_tool(name):
+    """A sibling tool as a module (python -I leaves the tools folder off the path)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name.replace('-', '_').replace('.py', ''), os.path.join(HERE, name))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 
-def measure(al, lags):
-    """Every Kokoro take aligned, against its own word file: signed errors (seconds, aligner minus
-    Kokoro) of the word starts and ends, and the per-line list."""
+def stats(d):
+    d = np.asarray(d, dtype=np.float64)
+    return {'n': int(len(d)), 'median': round(float(np.median(d)), 4),
+            'median_abs': round(float(np.median(np.abs(d))), 4),
+            'p90_abs': round(float(np.percentile(np.abs(d), 90)), 4), 'worst_abs': round(float(np.abs(d).max()), 4)}
+
+
+def show(name, st):
+    return (f"{name}: median {st['median'] * 1000:+6.1f} ms; |error| median {st['median_abs'] * 1000:5.1f} ms, "
+            f"90th percentile {st['p90_abs'] * 1000:5.1f} ms, worst {st['worst_abs'] * 1000:4.0f} ms ({st['n']} words)")
+
+
+def calibrate(write=True):
+    """Every Kokoro take aligned, against its own word file (errors are aligner minus Kokoro, seconds)."""
     import soundfile as sf
+    tts = load_tool('tts.py')
+    al = Aligner(calibration=None)
     script = json.load(open(os.path.join(ROOT, 'script.json')))
-    ds, de, rows = [], [], []
+    takes = []
     for e in script['events']:
-        if e['type'] != 'line':
-            continue
         wpath = os.path.join(KOKORO, e['id'] + '.words.json')
-        if not os.path.exists(wpath):
+        if e['type'] != 'line' or not os.path.exists(wpath):
             continue
         ref = json.load(open(wpath))['words']
         if [w['w'] for w in ref] != e['text'].split():
             continue
-        x, sr = sf.read(os.path.join(KOKORO, e['id'] + '.wav'), dtype='float32')
-        got = al.words(x, sr, e['text'], lags=lags)
-        s = [g['t'] - r['t'] for g, r in zip(got, ref) if g['score'] is not None]
-        en = [g['e'] - r['e'] for g, r in zip(got, ref) if g['score'] is not None]
-        ds += s
-        de += en
-        rows.append((e['id'], len(s), max(abs(v) for v in s), max(abs(v) for v in en)))
-    return np.array(ds), np.array(de), rows
-
-
-def stats(name, d):
-    return (f'{name}: median {np.median(d) * 1000:+6.1f} ms; |error| median {percentile(d, 50) * 1000:5.1f} ms, '
-            f'90th percentile {percentile(d, 90) * 1000:5.1f} ms, worst {np.abs(d).max() * 1000:5.0f} ms')
-
-
-def calibrate(write=True):
-    al = Aligner(calibration=None)
-    ds, de, rows = measure(al, lags=False)
-    print(f'ctc_align.py: {len(rows)} Kokoro takes, {len(ds)} words')
-    print('  as aligned    ' + stats('starts', ds))
-    print('                ' + stats('ends  ', de))
-    start_lag, end_lag = round(float(np.median(ds)), 4), round(float(np.median(de)), 4)
-    cs, ce = ds - start_lag, de - end_lag
-    print(f'  constants: a word\'s start is marked {start_lag * 1000:+.1f} ms from Kokoro\'s, its end {end_lag * 1000:+.1f} ms')
-    print('  less those    ' + stats('starts', cs))
-    print('                ' + stats('ends  ', ce))
+        x, sr = sf.read(os.path.join(KOKORO, e['id'] + '.wav'), dtype='float64')
+        raw = [[w['t'], max(w['e'], w['t'] + 0.01)] for w in al.words(x, sr, e['text'], lags=False)]
+        takes.append((e['id'], x, ref, raw))
+    # as aligned
+    s0 = [r[0] - w['t'] for _, _, ref, raw in takes for r, w in zip(raw, ref)]
+    e0 = [r[1] - w['e'] for _, _, ref, raw in takes for r, w in zip(raw, ref)]
+    # the words no silence places (tts.calibrate leaves them where they are when their lags are 0)
+    s1, e1, placed_s, placed_e = [], [], 0, 0
+    for _, x, ref, raw in takes:
+        w = [list(r) for r in raw]
+        tts.calibrate(x, w, lags=(0.0, 0.0))
+        for got, r, ref_w in zip(w, raw, ref):
+            if got[0] == r[0]:
+                s1.append(r[0] - ref_w['t'])
+            else:
+                placed_s += 1
+            if got[1] == r[1]:
+                e1.append(r[1] - ref_w['e'])
+            else:
+                placed_e += 1
+    start_lag, end_lag = round(float(np.median(s1)), 4), round(float(np.median(e1)), 4)
+    # as the importer uses them: the envelope, and the constants for the rest
+    s2, e2, worst = [], [], []
+    for lid, x, ref, raw in takes:
+        w = [list(r) for r in raw]
+        tts.calibrate(x, w, lags=(start_lag, end_lag))
+        for got, ref_w in zip(w, ref):
+            s2.append(got[0] - ref_w['t'])
+            e2.append(got[1] - ref_w['e'])
+            worst.append((abs(got[0] - ref_w['t']), lid, ref_w['w']))
+    n = len(s0)
+    out = {'model': 'Xenova/wav2vec2-base-960h onnx/model_quantized.onnx',
+           'model_sha256': hashlib.sha256(open(al.model_path, 'rb').read()).hexdigest(),
+           'reference': 'assets/voice-kokoro/<id>.words.json (Kokoro phoneme times, onsets calibrated on the envelope)',
+           'takes': len(takes), 'words': n, 'lead': LEAD,
+           'start_lag': start_lag, 'end_lag': end_lag,
+           'placed_by_a_silence': {'starts': placed_s, 'ends': placed_e},
+           'as_aligned': {'starts': stats(s0), 'ends': stats(e0)},
+           'unplaced_as_aligned': {'starts': stats(s1), 'ends': stats(e1)},
+           'calibrated': {'starts': stats(s2), 'ends': stats(e2)}}
+    print(f'ctc_align.py: {len(takes)} Kokoro takes, {n} words; a silence places {placed_s} starts and {placed_e} ends')
+    print('  as aligned           ' + show('starts', out['as_aligned']['starts']))
+    print('                       ' + show('ends  ', out['as_aligned']['ends']))
+    print('  the words no silence places, as aligned')
+    print('                       ' + show('starts', out['unplaced_as_aligned']['starts']))
+    print('                       ' + show('ends  ', out['unplaced_as_aligned']['ends']))
+    print(f'  constants: those words\' starts move back by {start_lag * 1000:+.1f} ms, their ends by {end_lag * 1000:+.1f} ms')
+    print('  envelope + constants ' + show('starts', out['calibrated']['starts']))
+    print('                       ' + show('ends  ', out['calibrated']['ends']))
+    print('  the five starts furthest out: ' + ', '.join(f'{lid} "{w}" {d * 1000:.0f} ms' for d, lid, w in sorted(worst)[-5:]))
     if write:
-        d = {'model': 'Xenova/wav2vec2-base-960h onnx/model_quantized.onnx',
-             'model_sha256': hashlib.sha256(open(al.model_path, 'rb').read()).hexdigest(),
-             'reference': 'assets/voice-kokoro/<id>.words.json (Kokoro phoneme times, onsets calibrated on the envelope)',
-             'takes': len(rows), 'words': int(len(ds)), 'lead': LEAD,
-             'start_lag': start_lag, 'end_lag': end_lag,
-             'before': {'start_median_abs': round(percentile(ds, 50), 4), 'start_p90_abs': round(percentile(ds, 90), 4),
-                        'end_median_abs': round(percentile(de, 50), 4), 'end_p90_abs': round(percentile(de, 90), 4)},
-             'after': {'start_median_abs': round(percentile(cs, 50), 4), 'start_p90_abs': round(percentile(cs, 90), 4),
-                       'end_median_abs': round(percentile(ce, 50), 4), 'end_p90_abs': round(percentile(ce, 90), 4)}}
-        json.dump(d, open(CALIBRATION, 'w'), indent=1)
+        json.dump(out, open(CALIBRATION, 'w'), indent=1)
         print(f'ctc_align.py: wrote {os.path.relpath(CALIBRATION, ROOT)}')
-    return ds, de, rows
+    return out
 
 
 def main():
