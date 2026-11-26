@@ -2,12 +2,12 @@
 <html lang="en">
   <head><meta charset="UTF-8" /></head>
   <body>
-    <div id="s14-next" data-composition-id="s14-next" data-start="0" data-duration="15.870" data-width="1920" data-height="1080">
+    <div id="s14-next" data-composition-id="s14-next" data-start="0" data-duration="17.495" data-width="1920" data-height="1080">
       <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s14-next -->
-      <video id="s14-next-m-orange" data-merc="m-orange" class="clip" muted playsinline src="assets/merc/m-orange-s14-merc.webm" data-start="0.000" data-duration="15.888" data-media-start="0.050"></video>
-      <video id="s14-next-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m-orange-s14-merc.webm" data-start="0.000" data-duration="15.888" data-media-start="0.050"></video>
-      <video id="s14-next-m-blue" data-merc="m-blue" class="clip" muted playsinline src="assets/merc/m-blue-s14-merc.webm" data-start="0.000" data-duration="15.888" data-media-start="0.050"></video>
-      <video id="s14-next-m-blue-refl" data-merc="m-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m-blue-s14-merc.webm" data-start="0.000" data-duration="15.888" data-media-start="0.050"></video>
+      <video id="s14-next-m-orange" data-merc="m-orange" class="clip" muted playsinline src="assets/merc/m-orange-s14-merc.webm" data-start="0.000" data-duration="17.513" data-media-start="0.025"></video>
+      <video id="s14-next-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m-orange-s14-merc.webm" data-start="0.000" data-duration="17.513" data-media-start="0.025"></video>
+      <video id="s14-next-m-blue" data-merc="m-blue" class="clip" muted playsinline src="assets/merc/m-blue-s14-merc.webm" data-start="0.000" data-duration="17.513" data-media-start="0.025"></video>
+      <video id="s14-next-m-blue-refl" data-merc="m-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m-blue-s14-merc.webm" data-start="0.000" data-duration="17.513" data-media-start="0.025"></video>
       <div class="scene" id="s14-next-scene"></div>
       <script>
         ;(function () {
@@ -88,8 +88,8 @@
           /* ---------------------------------------------------------------- the hosts at 300: Merc under the tune's right
              end since his hops in S13, Tavi in her corner */
           const HR = L.HOSTS.mercRight
-          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...HR.merc })
-          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...HR.tavi })
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...HR.merc, base: L.HOSTS.end.merc.size })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...HR.tavi, base: L.HOSTS.end.tavi.size })
 
           const probe = { cam, te, arrowsG, echo, bead, kicker, line, hook, lineLayer, hookLayer,
             A: { KICK, CARRY0, CARRY_D, LAND, ROWS_IN, ROWS_D, TW, LINE_Y, LIGHT_D, LINE, ARROWS, ARROW_STEP, ARROW_D, COPY, COPY_D, QM, LINE_OUT, HOOK, HOOK_OUT, SHRINK0, ROWS_OUT_D, D, T0 },

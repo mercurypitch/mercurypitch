@@ -94,7 +94,7 @@ def main():
     w('the pass\'s fps, its drawn square three quarters of its `size` (`medium`): 225 px for 300, 300 for')
     if final:
         w(f'400, 315 for 420. Pass frame i is film frame round(filmStart x fps) + i exactly. These are the')
-        w(f'final passes, at {pass_fps} fps (`tools/merc-shots.py --final`; DECISIONS 189, 201, 203, 225); what')
+        w(f'final passes, at {pass_fps} fps (`tools/merc-shots.py --final`; DECISIONS 189, 201, 203, 225, 245, 258); what')
         w('each host does in every pause, and what was moved at the cuts, is in `merc/final-report.md`.')
     else:
         w('400, 315 for 420. Pass frame i is film frame round(filmStart x fps) + i exactly. These are 30 fps')
@@ -182,13 +182,20 @@ def main():
     w('  speaker, no arcs) for the first 3 s of each line (the whole line if shorter), then `idle`, eyes')
     w('  open and held on the speaker, until the line ends (DECISIONS 161).')
     w('- Idle, turned to the drawing, through every sound neither makes (easy, pushed, push, the starts,')
-    w('  starts, the other\'s sounds), the pauses, and the viewer\'s breathe, ticks and hold: no arcs.')
+    if final:
+        w('  starts, the other\'s sounds), the pauses, and the viewer\'s ticks and hold: no arcs.')
+    else:
+        w('  starts, the other\'s sounds), the pauses, and the viewer\'s breathe, ticks and hold: no arcs.')
     if final:
         w('- Talk in a cycle: the mouth opens and shuts with each syllable (5.5 times a second from each')
         w('  word\'s start), never as wide as a sung note; the arcs pulse with it (DECISIONS 201).')
         w('- Breathe in before a phrase: the mouth opens 0.15 s before the first word after every pause of')
         w('  0.25 s or more. Blink in the pauses: the talker as the voice stops, the listener after, wherever')
         w('  the renderer\'s blinks reach (DECISIONS 189; the list is `merc/final-report.md`).')
+        w('- Breathe in before their own sung sounds too: the same small o for 0.15 s before the first note')
+        w('  of `gauge`, `demo`, `listen` and `twinkle`. In `breathe` both breathe in with the viewer: the')
+        w('  mouth\'s small o, no sound and no arcs, from 0.12 s into the pause to 0.15 s before the tick, so')
+        w('  both mouths are shut when the viewer\'s note starts (DECISIONS 245, 258).')
         w('- Keep their eyes at rest across every cut: nothing moves an eye from 0.2 s before a scene')
         w('  boundary to 0.2 s after it; a `listen` that would start on a cut starts 0.2 s after it (DECISIONS 203).')
     w('')

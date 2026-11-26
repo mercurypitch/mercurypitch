@@ -68,7 +68,10 @@ those decisions sent to them, at 60 fps:
     restarts them, and such a cue BLINK_AT[state] before the pause puts a blink in it;
   - eyes at rest across every cut (CUT_CLEAR): a `listen` that would start on a cut starts after it
     (DECISIONS 203), and no blink or glance crosses a cut;
-  - S14's chunks at S15's size (CHUNK_SIZE_FINAL; DECISIONS 225).
+  - S14's chunks at S15's size (CHUNK_SIZE_FINAL; DECISIONS 225);
+  - the lead's additions (DECISIONS 245, 258): a breath in before each host's own sung sound too
+    (`gauge`, `demo`, `listen`, `twinkle`: the same BREATH_IN before the first note), and in `breathe`
+    the hosts breathe in with the viewer (BREATHE_WITH: the mouth's small o through the pause).
 Without `--final` the tool writes today's shots, byte for byte.
 """
 import importlib.util
@@ -113,6 +116,14 @@ SPEECH_ARCS_FINAL = 0.5  # the arcs' level while a host talks (unchanged), over 
 # pause, at BREATH_LEVEL (just over VOICED: the mouth's smallest open shape, no squash, no arcs).
 BREATH_IN = 0.15
 BREATH_LEVEL = 0.05
+# The lead's additions (DECISIONS 245, 258). A host breathes in before its own sung sound as before
+# a phrase: the same small o for BREATH_IN before the first note, in `sing` from 0.05 s before the
+# mouth first moves (as a line that opens on a breath in). And in the pauses of BREATHE_WITH the
+# hosts breathe in with the viewer: both in `sing` with the mouth at BREATH_LEVEL (no sound, no arcs)
+# from `after` s into the pause, when Merc's mouth has shut on "Breathe in." (the renderer's 45 ms
+# voice smoothing shuts it in about 0.1 s), to `before` s from its end, so that both mouths are shut
+# again when the tick starts the viewer's note: nobody sings with the viewer (FACTS 87).
+BREATHE_WITH = {'breathe': {'after': 0.12, 'before': 0.15}}
 # The renderer's blinks (sim-choreo.ts, blinkMul): each takes BLINK_LEN, at these times from its
 # state's start, then every `period`. `listen` holds one eye shut and blinks at 3.3 s, after its 3 s cap.
 BLINK_LEN = 0.22
@@ -296,6 +307,21 @@ def arc_keys(windows, dur):
     return out
 
 
+def breath_span(t0, t1, midi):
+    """A breath in as a voice entry (the final profile): the mouth's small o from t0 to t1 with no
+    sound, a step in and out, at the level a line's breath in has in its talk envelope (BREATH_LEVEL)."""
+    return {'t0': round(t0, 4), 't1': round(t1, 4), 'level': BREATH_LEVEL, 'cents': 0, 'steady': 0.95,
+            'midi': midi, 'edgeIn': 0, 'edgeOut': 0}
+
+
+def breathe_with(cid):
+    """(start, end) in film time of the hosts' breath in with the viewer in pause `cid` (BREATHE_WITH)."""
+    k = BREATHE_WITH[cid]
+    a, b = round(C[cid]['start'] + k['after'], 4), round(C[cid]['end'] - k['before'], 4)
+    assert b - a >= 2 * BREATH_IN, (cid, 'too short a pause to breathe in with the viewer', a, b)
+    return a, b
+
+
 def score(p, t0, t1):
     """The pass's states [(t, state)], voice entries and arcs windows, in shot time."""
     who = p['who']
@@ -329,7 +355,14 @@ def score(p, t0, t1):
                 heard.append((a + LISTEN_CAP, b + 0.12))
         elif c['type'] == 'sound' and cid in p.get('sings', ()):
             ns = NOTES[cid][who]
-            iv.append((a - SING_PAD, b + SING_PAD, 4, 'sing'))
+            if FINAL:
+                # a breath in before the host's own sound (DECISIONS 245): the mouth's small o for
+                # BREATH_IN before the first note, a step in and out (the note's own soft edge opens it
+                # from there); `sing` from 0.05 s before the mouth first moves, as before a phrase
+                iv.append((a - BREATH_IN - 0.05, b + SING_PAD, 4, 'sing'))
+                voice.append(breath_span(a - BREATH_IN, a, ns[0]['midi']))
+            else:
+                iv.append((a - SING_PAD, b + SING_PAD, 4, 'sing'))
             for i, n in enumerate(ns):
                 last = i == len(ns) - 1
                 nxt_legato = not last and ns[i + 1]['legato']
@@ -351,6 +384,13 @@ def score(p, t0, t1):
             windows.append((a + ra, a + rb, 1.0))
     for cid in p.get('quiet', ()):
         iv.append((C[cid]['start'] - t0, C[cid]['end'] - t0, 6, 'idle'))
+        if FINAL and cid in BREATHE_WITH:
+            # the hosts breathe in with the viewer (DECISIONS 245): `sing`, over the quiet `idle`,
+            # with the mouth's small o and no sound, from 0.05 s before the mouth opens to 0.05 s after
+            # it has shut
+            ba, bb = breathe_with(cid)
+            iv.append((ba - 0.05 - t0, bb + 0.05 - t0, 6.5, 'sing'))
+            voice.append(breath_span(ba - t0, bb - t0, 57 if who == 'blue' else 69))
     for k, (st, at, length) in enumerate(p.get('fixed', ())):
         a = 0.0 if at - t0 < 0.02 else at - t0               # an entrance on the first frame starts it
         iv.append((a, a + length, 7, f'{st}#{k}'))           # numbered: two hops in a row stay two states
@@ -934,6 +974,10 @@ def main_final():
         P0, N = round(t0 * FPS), round(dur * FPS)
         cues = [{'t': round(max(0.0, t - t0), 3), 'state': st} for t, st in tr.cues]
         assert all(b['t'] > a['t'] for a, b in zip(cues, cues[1:])), (pid, 'cues out of order')
+        # a breath in before a sung sound or with the viewer never lies over the host's own voice
+        for v in voice:
+            if 't0' in v and v['level'] == BREATH_LEVEL:
+                assert not any(a < t0 + v['t1'] and b > t0 + v['t0'] for a, b in tr.talk), (pid, 'a breath in over a line', v)
         # the idles in which the host listens, cue by cue: a cue of `idle` restarts its glances
         listening = []
         for i, (t, st) in enumerate(tr.cues):
@@ -975,17 +1019,22 @@ def final_report(rows, notes, cuts, tracks, who_of, span_of):
     on = lambda t: [pid for pid in tracks if span_of[pid][0] <= t and t + 1.0 <= span_of[pid][1]]
     seen = [r for r in rows if on(r['p0'])]
     with_blink = [r for r in seen if r['blinks']]
-    breath = [r for r in seen if r['after'] in C and C[r['after']]['type'] == 'line']
+    sung = {cid for p in PASSES for cid in p.get('sings', ())}        # a host's own sound: a breath in before it too
+    breath = [r for r in seen if r['after'] in C and (C[r['after']]['type'] == 'line' or r['after'] in sung)]
+    viewer = [r for r in seen if any(r['p0'] - 1e-6 <= C[cid]['start'] and C[cid]['end'] <= r['p1'] + 1e-6 for cid in BREATHE_WITH)]
     L = ['# The final passes: pauses and cuts', '',
          f'Generated by `tools/merc-shots.py --final` at {FPS} fps from `cues.json` and the lines\' envelopes. Do not edit.',
          '', '## Constants', '',
          f'- Talk cycle: {TALK["hz"]} Hz, open {TALK["open"]} of each cycle, gain {TALK["gain"]}, power {TALK["power"]}; arcs {SPEECH_ARCS_FINAL} while talking.',
-         f'- Breath in: the mouth opens {BREATH_IN} s before the first word after a pause of {PAUSE_MIN} s or more.',
+         f'- Breath in: the mouth opens {BREATH_IN} s before the first word after a pause of {PAUSE_MIN} s or more, and before a host\'s own sung sound ({", ".join(f"`{x}`" for x in sorted(sung, key=lambda x: C[x]["start"]))}).',
+         *[f'- In `{cid}` ({a:.2f} to {b:.2f}) both hosts breathe in with the viewer: the mouth\'s small o, no sound, no arcs.'
+           for cid in BREATHE_WITH for a, b in [breathe_with(cid)]],
          f'- Blinks: the talker\'s {BLINK_AFTER} s after the voice stops; the listener\'s {BLINK_PAIR} s after that one, in a pause of {PAIR_MIN} s or more (or when the talker has none).',
          f'- Cuts: no eye move from {CUT_CLEAR} s before a cut to {CUT_CLEAR} s after it.',
          '', '## Pauses', '',
          f'{len(seen)} pauses of {PAUSE_MIN} s or more with a host on screen: {len(with_blink)} have a blink, '
-         f'{len(breath)} end on a breath in (a line follows), {sum(1 for r in seen if not r["blinks"] and r not in breath)} have neither.',
+         f'{len(breath)} end on a breath in (a line or a host\'s own sound follows), {len(viewer)} hold the hosts\' breath in with the viewer, '
+         f'{sum(1 for r in seen if not r["blinks"] and r not in breath and r not in viewer)} have none of these.',
          '', '| Pause | Length | After | Before | Merc | Tavi |', '| ----- | ------ | ----- | ------ | ---- | ---- |']
     for r in seen:
         cell = {}
@@ -998,7 +1047,8 @@ def final_report(rows, notes, cuts, tracks, who_of, span_of):
             else:
                 cell[who] = 'no blink: ' + r['why'].get(pid, 'a blink is there already' if r['blinks'] else 'not asked')
         L.append(f"| {r['p0']:.2f} to {r['p1']:.2f} | {r['p1'] - r['p0']:.2f} | {r['before']} | {r['after']}"
-                 f"{' (breath in)' if r in breath else ''} | {cell['blue']} | {cell['orange']} |")
+                 f"{' (breath in)' if r in breath else ''}{' (the hosts breathe in with the viewer)' if r in viewer else ''}"
+                 f" | {cell['blue']} | {cell['orange']} |")
     L += ['', '## Cuts', '', 'What was moved so that no eye moves across a cut, and so that no cue cuts a blink short:', '']
     L += [f'- {t:.3f}, {pid}: {text}' for t, pid, text in sorted(notes)] or ['- nothing']
     L += ['', 'Eye moves left within the clear window of a cut, by pass (none is the aim):', '']

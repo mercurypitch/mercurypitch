@@ -5207,3 +5207,35 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   contact sheet, DELIVERY.md, LEDGER). DECISIONS from 257. Keep 2 GB free.
 - RESUMED builder C ((builder)), told calls 113-115 apply to it. Running: A's fix
   ((builder)), C, the L5 final run. WAITING: B's fix round (after A's fix hands back).
+
+## 26 Nov 23:51 UTC: (model) LIMIT ~20:00 to 23:50; the owner: use (model) while (model) is out; all three RESUMED
+- About 20:00 the L5 final run ((builder)), builder C ((builder)) and builder
+  A's fix ((builder)) stopped on (model)'s 5-hour limit (reset 23:50). The worker
+  restarted several times; four check-ins (20:50 to 23:50) were read at 23:50.
+- OWNER, verbatim (during the outage): "Btw continue using (model) now that (model) limit was
+  reaches". (model) reset at 23:50, just before the lead acted, so the three were RESUMED on (model)
+  at 23:51 (their context kept). FROM NOW ON: when (model)'s limit stops agents, start fresh (model)
+  xhigh agents at once on the same briefs, carrying on from the stopped agents' notes, and retire
+  the (model) ones (never resume them). The hourly check-in's prompt says the same (updated 23:52).
+- L5 final run on disk: before/ copies done; gen-root in place done (13 durations; check 0
+  errors); the queue had rendered m-blue-s04, m-orange-s15, m-blue-s15 and was mid m-blue-s13
+  at 20:21 when a worker restart killed it (no process left). The queue is resumable
+  (merc-queue.py --order=final --list). Told the agent to update its NOTES.md and restart it.
+- A WORKER RESTART KILLS LONG RENDERS: a detached queue does not survive it.
+- Running: L5 final run, builder C, A's fix. WAITING: B's fix (after A's), then critics A-02 and
+  B-02, D, E. Disk 5.6 GB free.
+
+## 26 Nov 23:52 UTC: (model) WEEKLY LIMIT (until 3 Dec 01:00 UTC); work moved to (model) xhigh
+- The three resumed (model) agents failed at once: "You've hit your (model) limit, resets Dec 3, 1am
+  (UTC)". Per the owner ("continue using (model) now that (model) limit was reaches"), the work moves
+  to fresh (model) xhigh agents carrying on from the notes.
+- RETIRED (never resume; (model) is out until 3 Dec): (builder) (L5 final run),
+  (builder) (builder A), (builder) (builder C), (builder) (builder B).
+- LAUNCHED ((model) xhigh, background): L5 FINAL RUN (builder) (briefs/l5-final-run.md,
+  carrying on from lab/final-run/NOTES.md; queue resumable); L6 A's FIX ROUND (builder)
+  (briefs/l6-fix-A-01.md, carrying on from BUILD-NOTES and diffs vs $S/l6-pre-A-fix/).
+- (model) BUDGET: the seven-day limit was at allowed_warning (resets 3 Dec 01:00 UTC, the same time
+  as (model)'s); the lead runs on (model) too, so if agents spend it the whole session stops until
+  then. Two (model) agents at a time, lean. QUEUE: builder C's build (fresh (model), from
+  lab/s08-swap/ and s09-names/ BUILD-NOTES), B's fix round (fresh (model), calls 111-116; after
+  A's fix, never together), then critics A-02 and B-02, D, E.

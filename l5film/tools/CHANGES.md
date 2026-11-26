@@ -20,6 +20,31 @@ rest (mix.py reads only Echo samples there, which this film does not use).
 Every heavy run (a render, a Chromium pass, the Merc bundle, the Kokoro run) goes through the
 scratchpad's heavy helper on this shared machine, one at a time.
 
+## 2026-11-26 (Lesson 5, the final run: the lead's additions to the final passes, DECISIONS 245, 257 to 259)
+
+Two tools changed, both only for the final profile. The copies before: `lab/final-run/before/tools/`.
+Outputs to regenerate: the final shots (`python3 tools/merc-shots.py --final`), every pass
+(`tools/merc-queue.py --order=final`) and `merc/PASSES.md`; all done in this run.
+
+- **merc-shots.py: a breath in before a host's own sung sound, and with the viewer in `breathe`**
+  (lines 72 to 74, 116 to 126, 310 to 323, 357 to 365, 387 to 393, 977 to 980, 1022 to 1031, 1036 to
+  1037, 1050). Under `--final` only; without it the tool writes the same four shots byte for byte
+  before and after (`lab/final-run/nonfinal-check/`).
+  - Before: `sing` from 0.15 s before a host's own sound, the mouth shut until the note. After: a
+    voice entry `breath_span` (the small o at `BREATH_LEVEL` 0.05, a step in and out, no sound) for
+    `BREATH_IN` 0.15 s before the first note of `gauge`, `demo`, `listen` and `twinkle`, and `sing`
+    from 0.20 s before it.
+  - Before: both hosts `idle` through `breathe`. After: `BREATHE_WITH` (line 126): both in `sing`
+    (over the quiet `idle`, priority 6.5) with the same small o from 0.12 s into the pause to 0.15 s
+    before its end, `idle` again 0.05 s after the mouth shuts. No arcs window is added.
+  - An assert that no such breath lies over the host's own voice (line 980), so a re-time that puts
+    a line there stops the tool.
+  - `merc/final-report.md` names both in its constants, marks "(breath in)" before a host's own
+    sound too and "(the hosts breathe in with the viewer)" on that pause, and counts them.
+- **merc-passes.py: the guide's text for the final passes** (lines 97, 185 to 188, 195 to 198):
+  the hosts no longer idle through `breathe`, and the two additions are described. For shots
+  without `profile: final` the guide is unchanged.
+
 ## 2026-11-26 (Lesson 5, the final voices: the import tools and the re-time, DECISIONS 246 to 256)
 
 Two tools are new and one changed; `tts.py` and every other tool are as they were (`tts.py` sha256

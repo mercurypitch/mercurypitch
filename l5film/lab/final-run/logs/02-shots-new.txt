@@ -1,0 +1,5 @@
+m01-blue       0.00-  42.27   2536 fr at 60 fps   15 cues (7 added)    2 voice  6 pauses with its blink
+m01-orange     0.00-  42.27   2536 fr at 60 fps   11 cues (3 added)    2 voice  4 pauses with its blink
+m-orange      54.93- 569.83  30894 fr at 60 fps  153 cues (32 added)  617 voice  41 pauses with its blink  13 chunks
+m-blue        62.42- 569.83  30445 fr at 60 fps  145 cues (76 added)   66 voice  76 pauses with its blink  12 chunks
+75 of 75 files written under lab/final-run/shots-new/ (the shots, 70 talk envelopes, final-report.md)

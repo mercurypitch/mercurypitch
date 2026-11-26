@@ -2096,3 +2096,57 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      (`merc-shots.py --final`, the queue, roots, joins, passes, tags), with `gen-root.py` in place
      for the 13 durations, then the 60 fps render and its measure. Nothing was rendered here. The
      captions and chapters in `captions/` are the film's; the page's copies travel with the MP4s.
+
+## The final run: the hosts' final passes, the 60 fps render and the deliverables, 26 November
+
+257. **The 13 scene durations are written, in place** (brief `briefs/l5-final-run.md`; 252).
+     `MIX=full python3 tools/gen-root.py` changed one number in each of the 13 scene files, its root
+     `data-duration`, to the values 252 lists (s01 42.620, s03 10.085, s04 13.695, s05 38.180, s06
+     70.380, s07 38.685, s08 20.410, s09 59.095, s10 62.300, s11 39.965, s12 77.965, s13 69.065, s14
+     17.495); `index.html` and `assets/scenes.js` came out byte for byte as they were, s02 and s15
+     were not touched. `check` after it: 0 errors, the 24 standing warnings (14, 6 and 4, as 254),
+     runtime and motion clean, contrast 67 of 67, the one layout note at 265.37 s. Everything the run
+     rewrites was first copied to `lab/final-run/before/` (the 15 scene files, `merc/`, the scratch
+     clock's passes, the tools; `before.sha256`).
+258. **The final passes' profile on the voiced clock, and the lead's two additions as built** (245).
+     `merc-shots.py --final` already did, with nothing changed: the breath in 0.15 s before the first
+     word after every pause of 0.25 s or more; the talker's blink 0.10 s after the voice stops and
+     the listener's after it; the talk cycle at 5.5 a second; no eye move within 0.2 s of a cut; S14's
+     chunks at 400; 60 fps on the film's frame grid (`merc-tags.py --margins`: 66,401 film frames over
+     27 tags, the nearest pass-frame boundary 7.50 ms away, none on another pass frame). Added to the
+     tool, under `--final` only (`tools/CHANGES.md`):
+     - **A breath in before a host's own sung sound**: the same small o (level 0.05, a step in and
+       out, no sound, cents 0) for the 0.15 s before the first note of `gauge`, `listen` and `twinkle`
+       (Merc) and of `demo` and `listen` (Tavi), with `sing` starting 0.20 s before the note instead
+       of 0.15 (0.05 s before the mouth first moves, as a line that opens on a breath in). The note's
+       own 0.06 s edge opens the mouth from there.
+     - **In `breathe` the hosts breathe in with the viewer**: both in `sing` with the same small o
+       and no sound from 0.12 s into the pause (422.815: Merc's mouth has shut on "Breathe in.") to
+       0.15 s before its end (423.645), back in `idle` at 423.695, so both mouths are shut 0.1 s
+       before the tick starts the viewer's note. No arcs: the windows are keyed on phrases and notes
+       only, and nobody sings with the viewer (FACTS 87). 0.15 s, the length of the breath before a
+       phrase, would be over before the pause's label has been read; the pause is the viewer's
+       in-breath, so the hosts' lasts with it (0.83 s).
+     Looked at on stills of both hosts before the queue started (`lab/final-run/look-breathe.png`,
+     `look-sung.png`): the small o reads as a breath, the note opens from it, Merc blinks as his
+     line ends (422.77, cued) and both smile again by 423.85. One thing it keeps from the lines'
+     breath in: the arcs' 0.08 s fade in starts inside the breath's last 0.08 s, at a few per cent.
+     Against the same tool without the additions on the same clock (`lab/final-run/shots-asis/`,
+     `shots-new/`): seven breath entries are added (Merc four, Tavi three); `sing` starts 0.05 s
+     sooner before `gauge` (Merc, 131.005), `demo` (Tavi, 306.40) and `listen` (Tavi, 419.485; Merc
+     is in `sing` already there and before `twinkle`); Tavi goes into `sing` at 422.765 and both
+     into `idle` at 423.695 (was 422.695). The blink plan follows: Merc gains a blink at 422.77,
+     both hosts' blink in the hold is `idle`'s own at 424.79 and 424.80 (cued at 425.13 and 425.14
+     before), Tavi gains one at 434.45 and her `listen` at 434.695 no longer waits. Nothing else in
+     the four shots changes. Without `--final` the tool writes the same four shots byte for byte
+     before and after (`lab/final-run/nonfinal-check/result.txt`).
+     The shots: m01-blue and m01-orange 2,536 frames each (0 to 42.27), m-orange 30,894 (54.93 to
+     569.83, 13 chunks), m-blue 30,445 (62.42 to 569.83, 12 chunks); 184 pauses of 0.25 s or more
+     with a host on screen, 102 with a blink, 175 ending on a breath in, one the breath with the
+     viewer, one with none of these; no eye move left within 0.2 s of a cut (`merc/final-report.md`).
+     The run is 27 jobs and 66,474 frames, 4.37 hours alone on the machine by the tool's own
+     estimate (`lab/final-run/plan.md`; 63,998 frames and 4.19 hours on the scratch clock).
+259. **S14's two `L.mercGate` calls take `base` 400** (245, 225): `base: L.HOSTS.end.merc.size` and
+     `base: L.HOSTS.end.tavi.size`, the two lines the lab's proved copy has
+     (`lab/passes-proto/cut-end-c/`), so S14 draws its 300 px chunks as S15 does. The cut on `end`
+     is measured again on the final render (the entry on the render, below).
