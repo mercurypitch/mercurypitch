@@ -21,16 +21,28 @@ and its Viterbi path, in numpy) gives each letter its frames; a script word runs
 letter's first frame to its last letter's last frame, and the output keeps the word as written. A
 script word with no letter in it (a bare mark) takes no time, at the end of the word before it.
 
-Calibration. A CTC model marks a letter somewhere inside its sound, so a word's start comes out a
-little late, by about the same amount each time. `--calibrate` measures it on the scratch takes, whose
-word times are Kokoro's own phoneme times (assets/voice-kokoro/<id>.words.json): every take is aligned
-and the word starts and ends compared, as aligned and then as the importer uses them. The importer's
-way is the scratch voice's (tools/tts.py `calibrate`): a word after a silence starts where the sound
-starts, and a word before one ends where the sound stops; the words no silence places move back by a
-constant. For Kokoro that constant is each take's own median; an aligner's is steadier measured once
-over every take, so it is the median of (aligned - Kokoro) over the words no silence places, one for
-starts and one for ends, written to tools/ctc-calibration.json. `Aligner.start_lag` and `.end_lag`
-hold them; `Aligner.words` takes them off every word when it is used alone, with no envelope.
+Placing the words on the sound (`place`). A CTC model marks a letter somewhere inside its sound, so a
+word's start comes out a little late, by about the same amount each time, and no nearer than its
+20 ms frames. Two steps set that right, the scratch voice's own two (tools/tts.py `calibrate`):
+  - a silence of tts.MIN_SILENCE or more that parts two words sets the end of the first where the
+    sound stops and the start of the second where it starts again (the envelope, to 5 ms), and the
+    take's first and last words take the sound's own start and stop;
+  - every other word start and end moves back by a constant.
+tts.py's function itself is not used: it lets a silence claim the first word the model starts
+within 0.3 s after it, which suits Kokoro's phoneme durations but not natural speech, where the
+closure of a p, t or k inside a word is a silence too (on Lesson 5's final takes it put ten word
+starts 0.19 to 0.275 s early, "back" in "spring back" onto the p of "spring"). Here the aligner's
+letters say which two words a silence parts (the last letter of one ends before it, give or take
+BETWEEN; the first letter of the next starts after it), and the silence sets an edge only when the
+aligner's own time is within NEAR_START or NEAR_END of it; otherwise the edge keeps the aligner's
+time less the constant.
+
+Calibration (`--calibrate`). The constants are measured on the scratch takes, whose word times are
+Kokoro's own phoneme times (assets/voice-kokoro/<id>.words.json): every take is aligned and its word
+starts and ends compared, as aligned and then as placed. A Kokoro take's own constant is its median
+at the silences; an aligner's is steadier measured once over every take, so each is the median of
+(aligned - Kokoro) over the word edges no silence places, written to tools/ctc-calibration.json.
+`Aligner.start_lag` and `.end_lag` hold them.
 
 A words check comes free with the model: `heard` is its greedy transcript (the likeliest letter of
 every frame, repeats merged, blanks dropped), and `compare` sets it beside the script line. The model
@@ -63,6 +75,11 @@ LEAD = 0.5           # seconds of silence put before and after the sound, so the
                      # are heard with something round them (a trimmed take starts 0.02 s before its word)
 BLANK, BAR = '<pad>', '|'
 THREADS = 2          # the machine is shared
+BETWEEN = 0.02       # seconds: a word's last letter may end this far into the silence that follows the word
+NEAR_START = (-0.03, 0.15)   # a silence's end sets the next word's start when the aligner's start is this near it
+                             # (after a clear pause the aligner is 35 to 55 ms late, 131 ms for 19 in 20)
+NEAR_END = (0.0, 0.25)       # a silence's start sets a word's end when it comes this long after the aligner's end
+                             # (the sound runs on 115 to 135 ms past the last letter, 230 ms for 19 in 20)
 
 
 # ------------------------------------------------------------------ the script's words, as the model spells
@@ -235,9 +252,11 @@ class Aligner:
                 out.append({'w': w, 'f0': None, 'f1': None, 'score': None})
         return out
 
-    def words(self, audio, sr, text, logp=None, lags=True):
-        """[{w, t, e, score}]: each script word as written, its start and end in seconds from the audio's
-        start (the calibration's constants taken off unless lags is False)."""
+    def words(self, audio, sr, text, logp=None, lags=False):
+        """[{w, t, e, score}]: each script word as written, as aligned: its start (its first letter's
+        frame) and end (its last letter's frame's end) in seconds from the audio's start. `place`
+        moves them onto the sound; lags=True takes the calibration's constants off every word instead
+        (for a look at one take with no envelope)."""
         if logp is None:
             logp = self.emissions(audio, sr)
         a, b = (self.start_lag, self.end_lag) if lags else (0.0, 0.0)
@@ -263,6 +282,65 @@ class Aligner:
         return ' '.join(s.replace(BAR, ' ').split())
 
 
+def load_tool(name):
+    """A sibling tool as a module (python -I leaves the tools folder off the path)."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name.replace('-', '_').replace('.py', ''), os.path.join(HERE, name))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+def place(tts, audio, aligned, start_lag, end_lag):
+    """Move aligned words onto the sound. `audio` is mono at tts.SR, `aligned` is Aligner.words' list.
+    Returns { words: [[t, e]], starts, ends (the indices a silence placed), first, last (the sound's
+    start and stop), take_lag (the median of aligned start - the sound's start at the placed starts) }.
+    The silences are tools/tts.py's: frames of tts.FRAME under tts.QUIET_DB for tts.MIN_SILENCE or more."""
+    hop = int(tts.FRAME * tts.SR)
+    rms = tts.frame_rms(audio, hop)
+    thr = rms.max() * 10 ** (tts.QUIET_DB / 20)
+    quiet = [(a * tts.FRAME, b * tts.FRAME) for a, b in tts.silences(rms, thr, int(round(tts.MIN_SILENCE / tts.FRAME)))]
+    loud = np.nonzero(rms >= thr)[0]
+    first, last = loud[0] * tts.FRAME, (loud[-1] + 1) * tts.FRAME
+    t, e, n = [w['t'] for w in aligned], [w['e'] for w in aligned], len(aligned)
+    words = [[a - start_lag, b - end_lag] for a, b in zip(t, e)]
+    starts, ends, fixes = set(), set(), []
+
+    def start_at(k, b):
+        if k not in starts and NEAR_START[0] <= t[k] - b <= NEAR_START[1]:
+            words[k][0] = b
+            starts.add(k)
+            fixes.append(t[k] - b)
+
+    def end_at(j, a):
+        if j not in ends and NEAR_END[0] <= a - e[j] <= NEAR_END[1]:
+            words[j][1] = a
+            ends.add(j)
+
+    start_at(0, first)
+    end_at(n - 1, last)
+    for a, b in quiet:
+        if a <= first or b >= last:
+            continue
+        j = max((i for i in range(n) if e[i] <= a + BETWEEN), default=None)        # the last word wholly before it
+        k = min((i for i in range(n) if t[i] >= b + NEAR_START[0]), default=None)  # the first word after it
+        if j is None or k is None or k != j + 1:
+            continue                                # the silence is inside a word, by the aligner's letters
+        start_at(k, b)
+        end_at(j, a)
+    # in order, no word ending after the next one starts, and every word inside the sound (as tts.calibrate)
+    for k in range(1, n):
+        words[k][0] = max(words[k][0], words[k - 1][0])
+    for k in range(n - 1):
+        if words[k][1] > words[k + 1][0] > words[k][0]:
+            words[k][1] = words[k + 1][0]
+    for w in words:
+        w[0] = min(max(w[0], first), last - 0.01)
+        w[1] = min(max(w[1], w[0] + 0.01), last)
+    return {'words': words, 'starts': starts, 'ends': ends, 'first': first, 'last': last,
+            'take_lag': float(np.median(fixes)) if fixes else 0.0}
+
+
 def compare(script_text, heard):
     """The script line (normalised) against what the model heard, word by word:
     [(kind, script words, heard words)] for every stretch that differs, kind 'spelling' when the stretch
@@ -281,15 +359,6 @@ def compare(script_text, heard):
 
 
 # ------------------------------------------------------------------ calibration on the scratch takes
-
-def load_tool(name):
-    """A sibling tool as a module (python -I leaves the tools folder off the path)."""
-    import importlib.util
-    spec = importlib.util.spec_from_file_location(name.replace('-', '_').replace('.py', ''), os.path.join(HERE, name))
-    mod = importlib.util.module_from_spec(spec)
-    spec.loader.exec_module(mod)
-    return mod
-
 
 def stats(d):
     d = np.asarray(d, dtype=np.float64)
@@ -310,62 +379,58 @@ def calibrate(write=True):
     al = Aligner(calibration=None)
     script = json.load(open(os.path.join(ROOT, 'script.json')))
     takes = []
-    for e in script['events']:
-        wpath = os.path.join(KOKORO, e['id'] + '.words.json')
-        if e['type'] != 'line' or not os.path.exists(wpath):
+    for ev in script['events']:
+        wpath = os.path.join(KOKORO, ev['id'] + '.words.json')
+        if ev['type'] != 'line' or not os.path.exists(wpath):
             continue
         ref = json.load(open(wpath))['words']
-        if [w['w'] for w in ref] != e['text'].split():
+        if [w['w'] for w in ref] != ev['text'].split():
             continue
-        x, sr = sf.read(os.path.join(KOKORO, e['id'] + '.wav'), dtype='float64')
-        raw = [[w['t'], max(w['e'], w['t'] + 0.01)] for w in al.words(x, sr, e['text'], lags=False)]
-        takes.append((e['id'], x, ref, raw))
+        x, sr = sf.read(os.path.join(KOKORO, ev['id'] + '.wav'), dtype='float64')
+        takes.append((ev['id'], x, ref, al.words(x, sr, ev['text'])))
     # as aligned
-    s0 = [r[0] - w['t'] for _, _, ref, raw in takes for r, w in zip(raw, ref)]
-    e0 = [r[1] - w['e'] for _, _, ref, raw in takes for r, w in zip(raw, ref)]
-    # the words no silence places (tts.calibrate leaves them where they are when their lags are 0)
-    s1, e1, placed_s, placed_e = [], [], 0, 0
-    for _, x, ref, raw in takes:
-        w = [list(r) for r in raw]
-        tts.calibrate(x, w, lags=(0.0, 0.0))
-        for got, r, ref_w in zip(w, raw, ref):
-            if got[0] == r[0]:
-                s1.append(r[0] - ref_w['t'])
-            else:
-                placed_s += 1
-            if got[1] == r[1]:
-                e1.append(r[1] - ref_w['e'])
-            else:
-                placed_e += 1
+    s0 = [g['t'] - r['t'] for _, _, ref, got in takes for g, r in zip(got, ref)]
+    e0 = [g['e'] - r['e'] for _, _, ref, got in takes for g, r in zip(got, ref)]
+    # the edges no silence places: their medians are the constants
+    s1, e1, n_s, n_e = [], [], 0, 0
+    for _, x, ref, got in takes:
+        p = place(tts, x, got, 0.0, 0.0)
+        n_s, n_e = n_s + len(p['starts']), n_e + len(p['ends'])
+        s1 += [g['t'] - r['t'] for k, (g, r) in enumerate(zip(got, ref)) if k not in p['starts']]
+        e1 += [g['e'] - r['e'] for k, (g, r) in enumerate(zip(got, ref)) if k not in p['ends']]
     start_lag, end_lag = round(float(np.median(s1)), 4), round(float(np.median(e1)), 4)
-    # as the importer uses them: the envelope, and the constants for the rest
-    s2, e2, worst = [], [], []
-    for lid, x, ref, raw in takes:
-        w = [list(r) for r in raw]
-        tts.calibrate(x, w, lags=(start_lag, end_lag))
-        for got, ref_w in zip(w, ref):
-            s2.append(got[0] - ref_w['t'])
-            e2.append(got[1] - ref_w['e'])
-            worst.append((abs(got[0] - ref_w['t']), lid, ref_w['w']))
+    # as placed: the silences, and the constants for the rest
+    s2, e2, s2p, s2u, worst = [], [], [], [], []
+    for lid, x, ref, got in takes:
+        p = place(tts, x, got, start_lag, end_lag)
+        for k, (w, r) in enumerate(zip(p['words'], ref)):
+            s2.append(w[0] - r['t'])
+            e2.append(w[1] - r['e'])
+            (s2p if k in p['starts'] else s2u).append(w[0] - r['t'])
+            worst.append((abs(w[0] - r['t']), lid, r['w']))
     n = len(s0)
     out = {'model': 'Xenova/wav2vec2-base-960h onnx/model_quantized.onnx',
            'model_sha256': hashlib.sha256(open(al.model_path, 'rb').read()).hexdigest(),
            'reference': 'assets/voice-kokoro/<id>.words.json (Kokoro phoneme times, onsets calibrated on the envelope)',
            'takes': len(takes), 'words': n, 'lead': LEAD,
+           'between': BETWEEN, 'near_start': list(NEAR_START), 'near_end': list(NEAR_END),
            'start_lag': start_lag, 'end_lag': end_lag,
-           'placed_by_a_silence': {'starts': placed_s, 'ends': placed_e},
+           'placed_by_a_silence': {'starts': n_s, 'ends': n_e},
            'as_aligned': {'starts': stats(s0), 'ends': stats(e0)},
            'unplaced_as_aligned': {'starts': stats(s1), 'ends': stats(e1)},
-           'calibrated': {'starts': stats(s2), 'ends': stats(e2)}}
-    print(f'ctc_align.py: {len(takes)} Kokoro takes, {n} words; a silence places {placed_s} starts and {placed_e} ends')
+           'placed': {'starts': stats(s2), 'ends': stats(e2),
+                      'starts_at_a_silence': stats(s2p), 'starts_elsewhere': stats(s2u)}}
+    print(f'ctc_align.py: {len(takes)} Kokoro takes, {n} words; a silence places {n_s} starts and {n_e} ends')
     print('  as aligned           ' + show('starts', out['as_aligned']['starts']))
     print('                       ' + show('ends  ', out['as_aligned']['ends']))
-    print('  the words no silence places, as aligned')
+    print('  the edges no silence places, as aligned')
     print('                       ' + show('starts', out['unplaced_as_aligned']['starts']))
     print('                       ' + show('ends  ', out['unplaced_as_aligned']['ends']))
-    print(f'  constants: those words\' starts move back by {start_lag * 1000:+.1f} ms, their ends by {end_lag * 1000:+.1f} ms')
-    print('  envelope + constants ' + show('starts', out['calibrated']['starts']))
-    print('                       ' + show('ends  ', out['calibrated']['ends']))
+    print(f'  constants: those starts move back by {start_lag * 1000:+.1f} ms, those ends by {end_lag * 1000:+.1f} ms')
+    print('  as placed            ' + show('starts', out['placed']['starts']))
+    print('                       ' + show('ends  ', out['placed']['ends']))
+    print('    starts at a silence ' + show('', out['placed']['starts_at_a_silence']))
+    print('    starts elsewhere    ' + show('', out['placed']['starts_elsewhere']))
     print('  the five starts furthest out: ' + ', '.join(f'{lid} "{w}" {d * 1000:.0f} ms' for d, lid, w in sorted(worst)[-5:]))
     if write:
         json.dump(out, open(CALIBRATION, 'w'), indent=1)
@@ -381,11 +446,16 @@ def main():
     if len(args) != 2:
         raise SystemExit(__doc__)
     path, text = args
+    tts = load_tool('tts.py')
     al = Aligner()
-    x = decode(path, 24000)
-    logp = al.emissions(x, 24000)
-    for w in al.words(x, 24000, text, logp):
-        print(f"  {w['t']:7.3f} {w['e']:7.3f}  {'' if w['score'] is None else format(w['score'], '6.2f')}  {w['w']}")
+    x = decode(path, tts.SR).astype(np.float64)
+    logp = al.emissions(x, tts.SR)
+    got = al.words(x, tts.SR, text, logp)
+    p = place(tts, x, got, al.start_lag, al.end_lag)
+    for k, (g, w) in enumerate(zip(got, p['words'])):
+        print(f"  {w[0]:7.3f}{'*' if k in p['starts'] else ' '} {w[1]:7.3f}{'*' if k in p['ends'] else ' '}  "
+              f"{'' if g['score'] is None else format(g['score'], '6.2f')}  {g['w']}")
+    print('(* set by a silence)')
     print('script:', normalised(text))
     print('heard: ', al.heard(logp))
 

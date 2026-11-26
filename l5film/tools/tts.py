@@ -212,13 +212,9 @@ def silences(rms, thr, min_frames):
     return out
 
 
-def calibrate(audio, words, lags=None):
+def calibrate(audio, words):
     """Move each word onto the sound: words = [[t, e]] in seconds from the audio's start (changed in
     place). Returns (lag, first onset, last offset) in seconds.
-
-    `lags` (tools/import.py, an aligner's times): a pair of seconds (start, end) that the words no
-    silence places move back by, in place of the take's own median, which is still returned. Without
-    it, as every scratch take is made, nothing here differs.
 
     Each silence of MIN_SILENCE or more is claimed by the first word the model starts after the
     silence starts (its onset is the silence's end, within 0.3 s of the model's onset) and by the last
@@ -248,12 +244,11 @@ def calibrate(audio, words, lags=None):
             words[j][1] = a
             end_fixed.add(j)
     lag = float(np.median(fixes)) if fixes else 0.0
-    back_t, back_e = (lag, lag) if lags is None else lags
     for k in range(len(words)):
         if k not in onset_fixed:
-            words[k][0] -= back_t
+            words[k][0] -= lag
         if k not in end_fixed:
-            words[k][1] -= back_e
+            words[k][1] -= lag
     # in order, and no word ending after the next one starts
     for k in range(1, len(words)):
         words[k][0] = max(words[k][0], words[k - 1][0])

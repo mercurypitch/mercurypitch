@@ -5154,3 +5154,14 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   the last round for A).
 - Builders now: C (building) and A (fix): two. D waits (slots and the (model) budget; the L5 import
   comes first). Next free LEAD-ANSWERS number: 111.
+
+## 26 Nov 18:51 UTC: (model)-HOUR LIMIT again (~14:00 to 18:20); resumed by priority
+- About 14:00 all four (model) agents stopped on the 5-hour limit (reset 18:20): builder A's fix
+  round, critic B-01, builder C and the L5 import. The worker restarted several times; five
+  hourly check-ins (14:50 to 18:50) queued and were read at 18:51. Nothing was running.
+- The L5 import had written tools/ctc_align.py and tools/import.py and fetched models/w2v/; no
+  take imported, no backup made yet.
+- RESUMED 18:52 by priority, to give the owner's voices the window: the L5 import
+  ((builder)) and critic B-01 ((builder), told of the 13:47 kit marks and A's
+  allowed edits). WAITING to resume when one of those hands back: builder C ((builder))
+  and builder A's fix round ((builder)). D after them.
