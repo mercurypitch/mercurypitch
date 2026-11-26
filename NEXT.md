@@ -5019,3 +5019,18 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   round, at most two rounds; report to l6film/review/critic-scenes-<G>-01/) -> calls -> the
   builder fixes -> next group into the free slot: C (s08-s09) and D (s10-s11), then E
   (s12-s14). Between waves, promote into the kit what two groups wrote alike.
+
+## 26 Nov 07:58 UTC: weekly limits reset; GROUPS A and B RELAUNCHED on (model) xhigh
+- On 21 Nov ~08:58 both (model) builders (A (builder), B (builder)) stopped on
+  the (model) WEEKLY limit right after launch, having only read (nothing written; compositions/
+  still the placeholders of 20 Nov). The lead stopped too. Twelve hourly check-ins (21 Nov
+  09:50-20:50) queued and were read on 26 Nov 07:57; nothing else happened in between.
+- Both weekly limits reset 26 Nov 01:00 UTC. Back to the standing rule: lead (model) max;
+  AGENTS ON (model) xhigh ((model) xhigh only while (model) is out).
+- RETIRED (never resume): (builder), (builder) (the (model) A/B builders).
+- LAUNCHED ((model) xhigh, background, same briefs): GROUP A (builder) (s01-s04);
+  GROUP B (builder) (s05-s07). Each keeps lab/<scene>/BUILD-NOTES.md current for
+  resumes. On a (model)-hour limit: resume with SendMessage after the reset.
+- Disk 7.7 GB free at launch. NEXT unchanged: per group, a fresh motion-critic (component
+  round, at most two rounds, l6film/review/critic-scenes-<G>-01/) -> calls from 98 -> the
+  builder fixes -> C, D, then E into free slots.
