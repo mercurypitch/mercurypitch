@@ -5034,3 +5034,26 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Disk 7.7 GB free at launch. NEXT unchanged: per group, a fresh motion-critic (component
   round, at most two rounds, l6film/review/critic-scenes-<G>-01/) -> calls from 98 -> the
   builder fixes -> C, D, then E into free slots.
+
+## 26 Nov 09:12 UTC: GROUP A BUILT; critic A-01 running; calls 98-101; GROUP C launched
+- Group A ((builder), (model)) handed back ~09:06: s01-s04 built, every check passing
+  (root check 0 errors; probe all; clearance 0 failures; contrast all; clock-lint silent;
+  merc-tags 0 stale; holds S1 1.5 s per 30 s, longest 0.4; S4 2.4 per 30, longest 0.3). Clips
+  voice only (no full.wav). 78 MB. Its open questions 1-4 called (98-101); 5 (S4's three added
+  motions) and 6 (S1's holds) wait for the critic.
+- CRITIC A-01 launched (motion-critic, (model) xhigh, (builder)); brief
+  briefs/l6-critic-scenes-A-01.md; report l6film/review/critic-scenes-A-01/REPORT.md (save it
+  verbatim from its final text if the write did not land).
+- Calls 98-101 (LEAD-ANSWERS): 98 echo rings measured to their ink (half stroke, 2.4 px under
+  F-lift): only 1g bead 7 under 12 (10.8) -> 1.9x as built; 99 S4's chips pulse 1.06; 100 alpha
+  only where a slide would pass a stroke (no kit change); 101 data-own for blocks whose lines land
+  apart. The LEAD edited board_lib.ring (w), board-geom (RINGS with w, bead 7 at 45.6, 4d 1.06),
+  HANDOFFS, STORYBOARD, CHANGES.md: board-geom 0 failures (62/22/17), --tight 0, board-sweep 0.
+  Backups $S/l6-pre-calls98/.
+- Common brief: new "Standing calls" section (98-101; A's lab tools optional, read before run,
+  copy, never edit there).
+- GROUP C launched ((model) xhigh, (builder), s08-s09). B ((builder)) building.
+- NEXT: on critic A-01 -> save report -> calls from 102 (its findings + A's questions 5 and 6)
+  -> A's fix round (SendMessage (builder)) once a builder slot is free (at most two
+  builders: B and C now). On B's hand-back -> critic B-01; compare B's lab tools with A's and
+  promote the better into P/tools before D. Then D, then E. Disk 7.0 GB free.
