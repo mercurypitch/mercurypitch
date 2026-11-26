@@ -5097,3 +5097,26 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   27 jobs, about 4.2 h; S14 gates base 400; breath before the hosts' sung sounds) and the 60 fps
   final render with MIX=full (check frame 0) -> deliverables. Retakes only for lines the owner or
   the words check flags (a new call each, never a retry of one).
+- 13:36: MERC's 56 DONE ((builder), retire): 4,757 credits, no errors, no retries. The
+  lead verified: ledger 71 lines, 71 unique ids and sessions, 5,640 credits in all (as estimated),
+  71 takes downloaded, none under 0.5 s, 445.15 s of speech. merc-report.md exists, so the import
+  agent goes on to Phase 2 by itself after Phase 1.
+
+## 26 Nov 13:48 UTC: GROUP B BUILT; critic B-01 running; calls 102-103 (kit marks for the probe)
+- Group B ((builder)) handed back: s05-s07 built; clock-lint silent; merc-tags 0 stale;
+  root check 0 errors; clearance 0 failures (with in-scene marks); contrast all; probe 30/75/81;
+  cuts S5->S6->S7 0.000 px; S4->S5 mean 0.54. 204 MB. Holds: s05 1.2, s06 1.9, s07 3.0 s per 30 s
+  (longest 0.4 each). The travelling numbers are seen the whole way (HANDOFFS/DECISIONS 151/
+  LEAD-ANSWERS 77; the B brief's "unseen between" was the stale call 59). Built locally: S7's
+  names switch (two-part capsule, x 1456-1614, y 669.1-777.1; C needs it at S8's first frame:
+  told C), strip light, a sung pair's onsets, stairs dim over the full 0.2 s, redraw after fonts.
+- Calls 102-103 (the LEAD edited the kit; backups $S/l6-pre-calls102/): L.chapterCard's layer
+  and every lit halo carry data-clear-skip (marks.js, lesson.js x2, specimen.js, board.js,
+  tease.js; node --check ok); BUILD-GUIDE and CHANGES.md say so; common brief updated. B's
+  decisions 3 (S7 holds 3.0/30 s) and 4 ("-1" at 94.5 px a frame) wait for critic B-01.
+- CRITIC B-01 launched (motion-critic, (model) xhigh, (builder)), brief
+  briefs/l6-critic-scenes-B-01.md (fixed: travelling numbers as HANDOFFS § Chapter 2).
+- D WAITS: (model) runs critic A, critic B, builder C and the L5 import; the L5 voices come first
+  (the owner is waiting to check), so no new (model) agent until the import hands back. Then D
+  (s10-s11) into the free builder slot; A's and B's fix rounds as their critics return (at most
+  two builders at once).
