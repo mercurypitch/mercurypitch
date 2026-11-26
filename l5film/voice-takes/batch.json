@@ -1,0 +1,641 @@
+[
+ {
+  "id": "o1",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 57,
+  "text": "So if I push the air out harder, the note holds steadier?"
+ },
+ {
+  "id": "b1",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 130,
+  "text": "Let's listen: the same note, pushed harder and harder. Will the line settle, steadier than before, or get louder and drift higher?"
+ },
+ {
+  "id": "b3",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 67,
+  "text": "Louder, and higher. Pushing doesn't hold a note still: it moves it."
+ },
+ {
+  "id": "o2",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 98,
+  "text": "But singers are told to \"support\" a long note. If that doesn't mean pushing, what keeps it steady?"
+ },
+ {
+  "id": "b4",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 141,
+  "text": "By the end, you'll know what your diaphragm does, how to breathe in low and start easily, and you'll hold a comfortable note for ten seconds."
+ },
+ {
+  "id": "o3",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 67,
+  "text": "From Lesson 3: how loud should you sing when you practise matching?"
+ },
+ {
+  "id": "b6",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 77,
+  "text": "At about the volume you talk at: a quiet note is just as much the right note."
+ },
+ {
+  "id": "o4",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 38,
+  "text": "If I ease off, does it come back down?"
+ },
+ {
+  "id": "b7",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 126,
+  "text": "How hard your breath pushes on your vocal folds is its pressure. It mainly sets how loud the note is, and it nudges the pitch."
+ },
+ {
+  "id": "b8",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 66,
+  "text": "Listen, and watch the line: the push rises, holds, then eases off."
+ },
+ {
+  "id": "o5",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 80,
+  "text": "It came back. But Lesson 1 said loud and high are different things. Aren't they?"
+ },
+ {
+  "id": "b9",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 46,
+  "text": "They are. But in a voice, one push moves both."
+ },
+ {
+  "id": "o6",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 60,
+  "text": "Then where does that push come from? Isn't it the diaphragm?"
+ },
+ {
+  "id": "b11",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 83,
+  "text": "Your diaphragm is a dome-shaped muscle under your lungs. It tightens to breathe in."
+ },
+ {
+  "id": "b12",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 93,
+  "text": "After a big breath, you start a quiet note. Must your body push the air out, or hold it back?"
+ },
+ {
+  "id": "b13",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 61,
+  "text": "Hold it back, with your breathing muscles, never your throat."
+ },
+ {
+  "id": "b14",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 159,
+  "text": "Full lungs spring back by themselves, often harder than a quiet note needs. So at first your breathing-in muscles keep working, holding some of that push back."
+ },
+ {
+  "id": "b15",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 101,
+  "text": "As the air goes, your belly and rib muscles take over the pushing. Your diaphragm can't push air out."
+ },
+ {
+  "id": "o7",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 69,
+  "text": "So full lungs push by themselves, and at first I just hold some back."
+ },
+ {
+  "id": "b16",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 91,
+  "text": "Yes. And a loud note needs less holding back at first, but more adding as the air runs low."
+ },
+ {
+  "id": "o8",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 68,
+  "text": "What about \"support\"? Don't singers mean pushing hard, or squeezing?"
+ },
+ {
+  "id": "b17",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 61,
+  "text": "That's a common mix-up. Pushing moves the note, as you heard."
+ },
+ {
+  "id": "b18",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 146,
+  "text": "Squeezing your throat makes a pressed sound, the sound people make lifting something heavy, and a pressed sound needs more air pressure, not less."
+ },
+ {
+  "id": "b19",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 102,
+  "text": "\"Support\" is singers' word for how they manage the breath as they sing. There's no one agreed meaning."
+ },
+ {
+  "id": "b20",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 112,
+  "text": "A steady note needs steady air, not more of it: breathe in low, start easily, and let the air flow out unforced."
+ },
+ {
+  "id": "o9",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 24,
+  "text": "How should I breathe in?"
+ },
+ {
+  "id": "b21",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 106,
+  "text": "Start tall but easy. If you're standing, keep your knees unlocked. Let your jaw, tongue and neck go loose."
+ },
+ {
+  "id": "b22",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 100,
+  "text": "Then breathe in quietly, and let the breath drop low, shoulders still, taking as much as feels easy."
+ },
+ {
+  "id": "o10",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 30,
+  "text": "And how should the note start?"
+ },
+ {
+  "id": "b24",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 73,
+  "text": "How a note starts is its onset. A voice has three main ways. Just listen."
+ },
+ {
+  "id": "b25",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 61,
+  "text": "Air first: a puff of breath, like a soft \"h\", then the sound."
+ },
+ {
+  "id": "b26",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 99,
+  "text": "A catch: the vocal folds are pressed shut, and the note starts as they open, a little like a cough."
+ },
+ {
+  "id": "b27",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 62,
+  "text": "Or together: the folds meet the air just as it starts to flow."
+ },
+ {
+  "id": "b27a",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 68,
+  "text": "Back to back now: listen for the puff, then the click, then neither."
+ },
+ {
+  "id": "b28",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 161,
+  "text": "For a long, easy note, many singing teachers aim for the third, the easy start. It's often found by beginning with a soft \"h\", then keeping it only in your mind."
+ },
+ {
+  "id": "o11",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 61,
+  "text": "What does a steady note look like? A perfectly straight line?"
+ },
+ {
+  "id": "b29",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 32,
+  "text": "Tavi, hold an A for ten seconds."
+ },
+ {
+  "id": "o12",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 47,
+  "text": "It scooped, and it waves. Is that still steady?"
+ },
+ {
+  "id": "b30",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 89,
+  "text": "It is. Sung notes are rarely perfectly still: they can begin with a short slide, a scoop."
+ },
+ {
+  "id": "b31",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 109,
+  "text": "And steady doesn't mean dead straight: a small vibrato, a regular wave in the pitch, can sit inside the band."
+ },
+ {
+  "id": "b32",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 115,
+  "text": "Steady means the line settles into the band and stays, for a comfortable, fixed length, never \"as long as you can\"."
+ },
+ {
+  "id": "o13",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 48,
+  "text": "Then is it steady air that keeps the note there?"
+ },
+ {
+  "id": "b33",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 117,
+  "text": "No. Muscles in your voice box set the note. A steady note needs steady air too, because a change in the air moves it."
+ },
+ {
+  "id": "b34",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 54,
+  "text": "Your turn: one comfortable note, held for ten seconds."
+ },
+ {
+  "id": "b35",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 79,
+  "text": "Lesson 3's care lines still apply: stop if your voice feels scratchy or hoarse."
+ },
+ {
+  "id": "b36",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 48,
+  "text": "Sore, hoarse or unwell today? Just listen along."
+ },
+ {
+  "id": "b37",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 231,
+  "text": "Choose listening if anything hurts or singing has felt uncomfortable, if your voice feels unusually hoarse or tired, if notes you usually reach have suddenly gone, if you're ill, or if talking or singing feels like hard work today."
+ },
+ {
+  "id": "b37a",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 52,
+  "text": "Listening along? Rest your voice and watch the ring."
+ },
+ {
+  "id": "b38",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 46,
+  "text": "Otherwise, sing my A, or Tavi's, an octave up."
+ },
+ {
+  "id": "b39",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 105,
+  "text": "Listen to our note. Breathe in, low and quiet. Then sing straight away, easily, at about speaking volume."
+ },
+ {
+  "id": "b40",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 67,
+  "text": "Hold the note until the ring closes, or stop sooner if you need to."
+ },
+ {
+  "id": "b41",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 49,
+  "text": "Stop immediately if anything feels uncomfortable."
+ },
+ {
+  "id": "b42",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 11,
+  "text": "Breathe in."
+ },
+ {
+  "id": "b43",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 63,
+  "text": "How did that feel? Easy, workable, effortful, or uncomfortable?"
+ },
+ {
+  "id": "b44",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 46,
+  "text": "Easy or workable? Rest for a few easy breaths."
+ },
+ {
+  "id": "b45",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 54,
+  "text": "Effortful? Keep it gentle: rest before you sing again."
+ },
+ {
+  "id": "b46",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 86,
+  "text": "Uncomfortable? Thanks for saying so. That's enough singing for today: rest your voice."
+ },
+ {
+  "id": "b46a",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 223,
+  "text": "Whatever you chose: if hoarseness or discomfort lasts more than a couple of weeks, see a doctor (a GP or an ear, nose and throat specialist). If it's very painful, or breathing or swallowing is hard, get help straight away."
+ },
+ {
+  "id": "b47",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 12,
+  "text": "Quick check."
+ },
+ {
+  "id": "b48",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 34,
+  "text": "What is your diaphragm's main job?"
+ },
+ {
+  "id": "b49",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 13,
+  "text": "Breathing in."
+ },
+ {
+  "id": "b51",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 68,
+  "text": "For a long, easy note, which start do many singing teachers aim for?"
+ },
+ {
+  "id": "b52",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 48,
+  "text": "Air and sound starting together: the easy start."
+ },
+ {
+  "id": "o14a",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 57,
+  "text": "What does a steady long note look like on the pitch line?"
+ },
+ {
+  "id": "b54",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 41,
+  "text": "It settles into the band and stays there."
+ },
+ {
+  "id": "b55",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 131,
+  "text": "Practise it. Voice Mirror has you glide up and down, hold any comfortable note for six seconds, then sing back five notes it plays."
+ },
+ {
+  "id": "b56",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 130,
+  "text": "Keep the glides comfortable. Sore, hoarse or unwell today? Just listen along. Free, no account: mercurypitch dot com slash mirror."
+ },
+ {
+  "id": "b58",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 152,
+  "text": "Felt uncomfortable, or listened along today? Rest today. Voice Mirror will be here when your voice feels comfortable: mercurypitch dot com slash mirror."
+ },
+ {
+  "id": "b59",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 10,
+  "text": "Next time."
+ },
+ {
+  "id": "b60",
+  "who": "blue",
+  "host": "Merc",
+  "voice": "Merc V1 Gentle Whimsical D2",
+  "voice_id": "B4fBPRmasEsTgd6YlSok",
+  "chars": 50,
+  "text": "I move every single note of \"Twinkle, Twinkle\" up."
+ },
+ {
+  "id": "o15",
+  "who": "orange",
+  "host": "Tavi",
+  "voice": "Tavi - Orange Merc (recreated)",
+  "voice_id": "nIlUZMilnuQseg9riG4H",
+  "chars": 79,
+  "text": "Why can you start \"Twinkle, Twinkle\" on any note and it is still the same tune?"
+ }
+]
