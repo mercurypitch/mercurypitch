@@ -1967,3 +1967,132 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      (128). The final film's holds are measured first.
      The builder ran `merc-joins.py` outside the heavy helper by mistake; it rewrote
      `review/merc/joins.md` from the unchanged passes (23 of 23 boundaries join).
+
+## The final voices' import and the re-time, 26 November
+
+246. **The owner's final voices are in the film** (the owner's yes on 26 November; brief
+     `briefs/l5-voices-import.md`): all 71 takes (Merc 56, "Merc V1 Gentle Whimsical D2"; Tavi 15,
+     "Tavi - Orange Merc (recreated)"; Eleven v3, one take a line, the prompt the script line) stand in
+     `assets/voice/` as the scratch takes did (24 kHz mono 16-bit, a WAV, an envelope and a word file a
+     line) and are listed in `assets/voice/_elevenlabs.json`, so `cues.py` never re-speaks them. The
+     Kokoro takes stay in `assets/voice-kokoro/`. No service was called: the takes were given. The two
+     import tools lost with Lesson 4's machine are rebuilt, `tools/ctc_align.py` and `tools/import.py`
+     (`tools/CHANGES.md`). Everything this step rewrites was first copied to `backup-pre-voices/`
+     (`cues.json`, `assets/cues.js`, `assets/scenes.js`, the WAVs of `assets/audio/`, `PACING.md`,
+     `SCRIPT.md`, `captions/`, `index.html`, `assets/voice/`; `before.sha256` holds their hashes and
+     every scene file's).
+247. **The aligner, measured on the scratch takes.** wav2vec2-base-960h as ONNX (the Xenova export,
+     quantised, in `models/w2v/`), the CTC trellis and its Viterbi path in numpy, each word spelled
+     for the model ("3" as THREE, "dome-shaped" as two words) and written out as the script writes
+     it. Against Kokoro's own word times on the 71 takes, 1034 words (aligner minus Kokoro;
+     `lab/voices-import/calibration.txt`, `tools/ctc-calibration.json`):
+     - as aligned: starts +40 ms at the median, the error 40 ms for the median word and 90 ms for
+       nine in ten; ends -10 ms, 30 and 135 ms;
+     - as placed (248), with the constants +35 ms for starts and +5 ms for ends taken off the edges
+       no silence places: starts 0 ms, 10 ms for the median word and 45 ms for nine in ten (worst
+       238); ends 0 ms, 15 and 65 ms.
+     The pipeline's earlier figure was 5 ms and 60 ms. Nine in ten is inside it; the median is 10 ms,
+     not 5: a silence places 291 of the 1034 starts exactly, and the other 743 keep the aligner's
+     20 ms frames (17 ms at their median). Averaging four alignments 5 ms apart and more or less
+     silence round the sound changed neither figure. After a clear pause the aligner marks the final
+     voices' words 55 ms late (both), the scratch voices' 40 ms (`proofs.txt`), so the scratch
+     voices' constants stand for the final ones.
+248. **The importer places the words itself; `tts.calibrate` is not used on an aligner's times.**
+     The scratch voice's rule lets a silence claim the first word the model starts within 0.3 s
+     after it, whichever word the silence is in. That suits Kokoro's phoneme durations; in natural
+     speech the closure of a p, t or k inside a word is a silence too. Run on the final takes it sets
+     eight word starts 0.14 to 0.275 s early, each on a stop inside the word before ("back" on the p
+     of "spring", "or" on the k of "talking", "folds" on "vocal"; `proofs.txt`), the error trap 19
+     was written about. `ctc_align.place` keeps its two steps and adds one test: the aligner's letters
+     say which two words a silence parts (the last letter of one ends before it, the first letter of
+     the next starts after it), and a silence inside a word sets nothing. A silence between two words
+     sets the start of the second where the sound starts and the end of the first where it stops,
+     within tts.py's own 0.3 s of the aligner's time, the last such silence before a word. On the
+     final takes it places 373 of 1034 starts; 23 move more than 0.13 s from the aligner's time, the
+     most 0.275 s ('"h"' in b28), and each is a soft start whose sound rises from the placed time
+     (the w of "one", an l, an s, a vowel; `moves.txt`). A cap of 0.15 s was tried first and left
+     those words up to 0.25 s late. `tools/tts.py` is unchanged (sha256 e1e084f6...).
+     One fault found on the way: the model writes a word boundary after a line's last word, and a
+     forced path with nowhere to put it spent the last word's letters there ("in?" in o9, 0.3 s
+     late). The path may now pass a boundary before the first word and after the last.
+249. **What the take format had to settle.**
+     - The trim is by the sound, as tts.py's is (0.02 s before the first frame within 40 dB of the
+       loudest, 0.02 s after the last), not by the words: a word's last consonant can follow its
+       last letter by 0.2 s.
+     - Fourteen takes carry a click in the file's first or last 5 ms (a 1 to 2 ms step in the level,
+       12 at the end, 2 at the start), 60 to 240 ms from the speech: nearer than trap 18's 0.3 s.
+       The importer counts as no sound a loud run under 60 ms that stands 0.3 s or more from any
+       other sound (trap 18) or that touches the file's edge with 50 ms or more of silence between
+       it and the rest. No take has a lone click inside it.
+     - The service cuts these takes in 80 ms steps, some in the sound. 24 takes give less than
+       0.02 s of silence at an edge (10 at the start, 16 at the end): the importer fades 5 ms of
+       what the take gives and fills the pad with silence, so every take starts 0.02 s before its
+       first sound, as a scratch take does. At 15 of those edges the voice is still above -30 dB
+       (under the take's loudest 5 ms) at the cut: the starts of o7, b32, b36, b41, b58, b59 and o15,
+       the ends of o1, o3, b6, b9, b16, o8, b46a and o14a (`voice-takes/IMPORT.md`). Whether those
+       words sound whole is for the owner's ear; nothing was regenerated.
+     - The word file's `lag` is the calibration's start constant (0.035), `end_lag` its end constant
+       (0.005) and `take_lag` the take's own median at its silences, a check (Merc 53 ms, Tavi
+       35 ms); `source` names the take, the voice, the model and the aligner.
+     - `_elevenlabs.json` holds, per line, the take's path and sha256, the voice and its id, the
+       model, and the ledger's flow, node and session (the ledger names the generation by its
+       session); `cues.py` reads the ids.
+     - Every take is at -22.8 LUFS; none needed the peak limit (the highest peak is 0.48); the mean
+       level of the voiced frames spans 2.0 dB across the 71 (-23.6 to -21.6 dBFS).
+250. **The words check is the aligner's own model, and a prompt to listen, not a verdict.** Its
+     greedy transcript of each take is set beside the script line as the model spells it, and beside
+     what it hears in the scratch take of the same line (a word it mishears in both is its ear).
+     `voice-takes/ASR.md` lists every line that differs, with both texts: 22 with a word missing,
+     added or far from the script, 27 that differ in spelling only, 22 heard as written. It spells by
+     ear with no dictionary, and Tavi's voice reads harder for it than Merc's. The lines to hear
+     first, by the alignment's own support as well: o4 ("If I ease off, does it come back down?",
+     heard "YE LIKE EAS OFF AN IT COME BACK NOW", 207 words a minute), b42 ("Breathe in." as
+     "BREATHE EM"), b47 ("Quick check." as "QUICK TRACK"), b48 ("job?" as "JOHN"), o12, o5 and o3
+     ("Lesson" as "LOVE IN" and "LETHIN"), b29 ("Tavi," as "TOBVY"), b58 ("Voice Mirror" as "VOICE
+     MERE"), o15 ("tune?" as "TO").
+251. **The film on the final voices runs 9:29.7** (569.740 s; the scratch voice 9:09.5, 549.465 s:
+     20.3 s more, inside the owner's ten minutes). The takes hold 433.2 s of speech against the
+     scratch takes' 413.0 s (Merc 366.4 against 351.8, Tavi 66.9 against 61.2). While speaking, 143
+     words a minute (2.39 a second; the scratch voice 150): Tavi 153, Merc 141; 13 lines faster and
+     28 slower than 140 to 165 (`PACING.md`). The gaps and every sound, pause and sting are the
+     script's, unchanged (48.2 and 88.1 s). `cues.py` now heads the report "the voiced clock" and
+     names the imported voices when every line is imported; the scratch report is byte for byte what
+     it was.
+252. **After a re-time the scene table comes first, and this step leaves every scene file as it
+     is.** `gen-root.py` must run before `mix.py` (its `sound-kit.mjs` loads `assets/scenes.js`),
+     `chapters.py` and `script-md.py` (both read it; the 190 re-time left `chapters.json` stale that
+     way). It also keeps each built scene's root `data-duration` equal to the table, and on a re-time
+     that is an edit of 13 scene files (all but s02 and s15), which this step's brief rules out. So it
+     was run aside (`lab/voices-import/root-aside/`) and only `assets/scenes.js` and `index.html` were
+     installed; the 15 scene files keep their sha256. `check` gives the same result on the project as
+     it stands and on a copy with the 13 numbers written (`lab/voices-import/root-synced/`). The 13
+     numbers must be written before any render (`MIX=full python3 tools/gen-root.py`, in place), with
+     the final passes' tags: s01 38.810 to 42.620, s03 10.470 to 10.085, s04 13.635 to 13.695, s05
+     36.205 to 38.180, s06 68.775 to 70.380, s07 36.390 to 38.685, s08 20.385 to 20.410, s09 57.070 to
+     59.095, s10 61.080 to 62.300, s11 39.170 to 39.965, s12 76.780 to 77.965, s13 65.025 to 69.065,
+     s14 15.870 to 17.495.
+253. **The sound follows the clock with no hand edit.** `mix.py` as the sound step left it (243):
+     -16.0 LUFS integrated, 5.0 LU, true peak -2.5 dBTP (the scratch mix: -16.0, 4.8, -1.5; its
+     review cut read -16.1 and 4.8). The limiter now takes 0.6 dB at most, for 5.5 s in all (the
+     scratch voice: 6.7 dB, 141.9 s): the final voices peak lower at the same loudness. The pad has
+     its 17 windows, the ticks sit 13 dB under `listen`, Merc's landings are at 507.24 and 507.89.
+     `captions.py`: 139 captions, 23 of them sound descriptions, longest line 42, peak 20.0
+     characters a second (at the limit, at 219.6 s), no warning. `chapters.py` and `script-md.py`
+     follow the new table ("Practise it" at 8:28, "Next time" at 9:06).
+254. **The checks.** `hyperframes check` on the root: 0 errors; 24 warnings, the standing ones (14
+     of a pass and its reflection as one source, 6 of a long scene file, 4 of a tag's local start);
+     runtime and motion clean; contrast 67 of 67; one layout note, at 265.37 s, where the new length
+     put a sample on S9's title changing from "A catch" to "Together" (the kit's 0.25 s swap, the
+     scene's own: stills in `lab/voices-import/snap/`; the scratch film's note was another, at 293.54
+     in S10). `tools/clock-lint.py` on every scene: silent.
+255. **The listening copies for the owner**: `renders/voices-final-listen.mp3`, the full mix
+     (`assets/audio/full.wav`) at 192 kbps, -16.0 LUFS, 5.0 LU, -2.5 dBTP; and
+     `renders/voices-final-voice-only.mp3`, the mix's voice stem alone at 192 kbps, -15.7 LUFS, 5.4
+     LU, -2.5 dBTP, silent between the lines. The MP3 encoder turns its input down by 0.26 dB; that
+     is put back, so both play at the mix's own level.
+256. **What waits for the next step.** The hosts are still the scratch clock's: `merc/shots/`,
+     `assets/merc/`, `assets/merc/roots.js` and every scene's `<video data-merc>` tags, so a preview
+     now shows them out of step with the voices. The final run is as 244 and 245 set it
+     (`merc-shots.py --final`, the queue, roots, joins, passes, tags), with `gen-root.py` in place
+     for the 13 durations, then the 60 fps render and its measure. Nothing was rendered here. The
+     captions and chapters in `captions/` are the film's; the page's copies travel with the MP4s.

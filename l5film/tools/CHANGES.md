@@ -20,6 +20,78 @@ rest (mix.py reads only Echo samples there, which this film does not use).
 Every heavy run (a render, a Chromium pass, the Merc bundle, the Kokoro run) goes through the
 scratchpad's heavy helper on this shared machine, one at a time.
 
+## 2026-11-26 (Lesson 5, the final voices: the import tools and the re-time, DECISIONS 246 to 256)
+
+Two tools are new and one changed; `tts.py` and every other tool are as they were (`tts.py` sha256
+e1e084f6...). The proofs and the copy before are in `lab/voices-import/` (NOTES.md). What this step
+rewrote was copied first to `backup-pre-voices/`. After any re-import, in this order:
+
+```bash
+$S/bin/heavy .venv/bin/python -I tools/import.py            # every take; or the ids, or --who=orange
+$S/bin/heavy .venv/bin/python -I tools/cues.py --no-tts     # the clock, PACING.md, assets/audio/voice.wav
+MIX=full python3 tools/gen-root.py                           # the scene table FIRST: the next three read it
+$S/bin/heavy .venv/bin/python tools/mix.py
+python3 tools/captions.py && python3 tools/chapters.py && python3 tools/script-md.py
+$S/bin/heavy npx --yes hyperframes@0.8.97 check && python3 tools/clock-lint.py
+```
+
+`ctc_align.py --calibrate` runs again only if the Kokoro takes or the model change.
+
+- **ctc_align.py: new** (recreated from PRODUCTION-PIPELINE § 3 and trap 19; the director's original
+  was lost with Lesson 4's machine). Forced alignment of a line's own words with wav2vec2-base-960h
+  as ONNX, in numpy: `spoken` spells a script word for the model's 26 capitals and apostrophe (a
+  hyphenated word as its parts, a numeral as its words), `viterbi` is the CTC trellis and its best
+  path (it may pass a word boundary before the first word and after the last: the model writes one
+  at a line's end), `Aligner.words` gives each script word, as written, its start and end and the
+  mean log-probability of its letters, `Aligner.heard` the greedy transcript, `compare` the
+  transcript against the script line.
+  - `place` moves the aligned words onto the sound: a silence (tts.py's: 5 ms frames 40 dB under
+    the loudest, 50 ms or more) that the aligner's letters put between two words sets the end of
+    the first and the start of the second, within 0.3 s of the aligner's own time, and the take's
+    first and last words take the sound's start and stop; every other edge moves back by the
+    calibration's constant. It stands in for `tts.calibrate`, which sets a word on any silence
+    within 0.3 s before it, a stop's closure inside the word before included (DECISIONS 248).
+  - `--calibrate` aligns every Kokoro take, compares the word starts and ends with Kokoro's own
+    word files and writes `tools/ctc-calibration.json`: the constants (+35 ms starts, +5 ms ends),
+    the model's sha256 and the errors as aligned and as placed (DECISIONS 247). `--check` writes
+    nothing. With an audio file and a line it prints that take's words and what the model hears.
+  - Reads sound through ffmpeg; writes nothing but the calibration file.
+- **import.py: new** (recreated likewise). Per line of `voice-takes/batch.json`: decodes
+  `voice-takes/takes/<id>.mp3` to 24 kHz mono; leaves out the clicks that are not speech (trap 18,
+  and a run under 60 ms at the file's first or last sample); aligns and places the words; trims from
+  PAD before the first sound to PAD after the last with FADE, filling the pad with silence where
+  the service cut the take short; sets LUFS under PEAK and writes the envelope, all with tts.py's
+  own constants and functions (`frame_rms`, `silences`, `loudness`, `envelope`). Writes
+  `assets/voice/<id>.wav`, `.env.json`, `.words.json` and `assets/voice/_elevenlabs.json`, and in
+  `voice-takes/`: `import.json` (what each import measured, kept across runs), `IMPORT.md` (edges,
+  lengths against the scratch takes, levels) and `ASR.md` (the words check). It refuses a line
+  whose text in batch.json is not script.json's. `--dry` measures and writes nothing. It calls no
+  service.
+- **tools/ctc-calibration.json: new, generated** by `ctc_align.py --calibrate`; `import.py` stops
+  without it.
+- **models/w2v/: new.** `vocab.json` (sha256 4178db26...), `onnx/model_quantized.onnx` (95 MB,
+  cd5040c1...), and the export's `config.json` and `preprocessor_config.json`, from
+  huggingface.co/Xenova/wav2vec2-base-960h. `W2V_MODEL` names another folder.
+- **cues.py: the pacing report's heading** (lines 207 to 219 and 238; nothing in the clock).
+  - **Before:** `# Pacing: the scratch clock`, the scratch voices named ("local Kokoro: Merc
+    `am_michael` at 0.84 ..."), and "a line with many marks reads slow (Kokoro pauses at each)",
+    whatever stood in `assets/voice/`.
+  - **After:** when every line is listed in `_elevenlabs.json`, `# Pacing: the voiced clock`, the
+    voices the list names, and "(the voice pauses at each)". Otherwise the text is the old one: on
+    the backed-up scratch clock the report comes out byte for byte as `backup-pre-voices/PACING.md`.
+  - The copy before: `lab/voices-import/before/cues.before-import.py.txt`.
+- **gen-root.py: not changed; run aside** (`lab/voices-import/root-aside/`), because on a re-time it
+  writes the root `data-duration` of every built scene whose length moved (13 of 15 here), and this
+  step was not to touch a scene file. Only its `assets/scenes.js` and `index.html` were installed.
+  Run it in place before the next render (DECISIONS 252).
+- **Regenerated on the voiced clock** (9:29.7): `cues.json`, `assets/cues.js`,
+  `assets/audio/voice.wav`, `PACING.md`; `assets/scenes.js`, `index.html`;
+  `assets/audio/kit-sound.json`, `full.wav`, `music-only.wav`, the six stems, `mix-report.json`;
+  `captions/lesson-05.en.srt`, `.vtt`, `chapters.json`; `SCRIPT.md`. Not regenerated, and stale until
+  the final passes: `merc/shots/`, `assets/merc/` (the passes and `roots.js`), every scene's Merc
+  tags and the 13 root durations.
+- **New in renders/**: `voices-final-listen.mp3` and `voices-final-voice-only.mp3` (DECISIONS 255).
+
 ## 2026-11-20 (Lesson 5, the final passes proved on two scenes: DECISIONS 189, 201, 203, 224, 225, 227, 234)
 
 Six tools changed; `merc-joins.py`, `merc-whole.py` and `merc-sheet.py` did not. Nothing the film

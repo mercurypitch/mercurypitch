@@ -1,6 +1,6 @@
-[heavy] slot 1: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/.venv/bin/python -I tools/import.py
+[heavy] slot 1: $S/l5film/.venv/bin/python -I tools/import.py
   o1    Tavi   4.32 ->   4.33 s  (scratch   3.96)   166 wpm   -7.0 dB  placed  5/12  take lag    5 ms  words spelling filled 0/20 ms
-  b1    Merc  10.56 ->  10.46 s  (scratch   9.15)   126 wpm   -6.2 dB  placed  7/22  take lag   55 ms  words spelling 1 click(s) left out
+  b1    Merc  10.56 ->  10.46 s  (scratch   9.15)   126 wpm   -6.2 dB  placed  8/22  take lag   55 ms  words spelling 1 click(s) left out
   b3    Merc   5.76 ->   5.68 s  (scratch   4.68)   127 wpm   -7.1 dB  placed  4/12  take lag   68 ms  words same     
   o2    Tavi   8.32 ->   8.24 s  (scratch   7.12)   131 wpm   -5.7 dB  placed 10/18  take lag   35 ms  words words    
   b4    Merc   9.68 ->   9.48 s  (scratch   9.87)   164 wpm   -6.1 dB  placed  6/26  take lag   25 ms  words spelling 
@@ -10,7 +10,7 @@
   b7    Merc   8.80 ->   8.60 s  (scratch   9.37)   175 wpm   -6.8 dB  placed  6/25  take lag   47 ms  words spelling 
   b8    Merc   6.00 ->   5.84 s  (scratch   4.96)   123 wpm   -5.3 dB  placed  6/12  take lag   57 ms  words same     
   o5    Tavi   7.52 ->   6.89 s  (scratch   5.87)   131 wpm   -7.2 dB  placed  8/15  take lag   28 ms  words words    
-  b9    Merc   4.16 ->   4.15 s  (scratch   3.29)   145 wpm   -6.6 dB  placed  4/10  take lag   10 ms  words same     filled 0/20 ms
+  b9    Merc   4.16 ->   4.15 s  (scratch   3.29)   145 wpm   -6.6 dB  placed  5/10  take lag   20 ms  words same     filled 0/20 ms
   o6    Tavi   3.76 ->   3.60 s  (scratch   4.07)   184 wpm   -5.4 dB  placed  6/11  take lag    3 ms  words words    
   b11   Merc   6.16 ->   6.03 s  (scratch   5.74)   139 wpm   -6.4 dB  placed  5/14  take lag   30 ms  words words    
   b12   Merc   7.68 ->   7.66 s  (scratch   6.70)   157 wpm   -6.0 dB  placed  6/20  take lag   40 ms  words same     filled 0/5 ms
@@ -18,7 +18,7 @@
   b14   Merc  11.60 ->  11.51 s  (scratch  11.75)   141 wpm   -6.2 dB  placed  9/27  take lag   15 ms  words spelling filled 5/0 ms
   b15   Merc   8.00 ->   7.87 s  (scratch   7.66)   145 wpm   -6.6 dB  placed  6/19  take lag   22 ms  words spelling 
   o7    Tavi   5.36 ->   5.30 s  (scratch   5.33)   158 wpm   -7.9 dB  placed  5/14  take lag   40 ms  words words    filled 20/0 ms
-  b16   Merc   6.88 ->   6.85 s  (scratch   6.59)   166 wpm   -6.4 dB  placed  5/19  take lag   40 ms  words same     filled 0/20 ms
+  b16   Merc   6.88 ->   6.85 s  (scratch   6.59)   166 wpm   -6.4 dB  placed  6/19  take lag   53 ms  words same     filled 0/20 ms
   o8    Tavi   5.44 ->   5.38 s  (scratch   4.77)   112 wpm   -6.6 dB  placed  6/10  take lag   55 ms  words words    filled 0/20 ms
   b17   Merc   4.32 ->   4.26 s  (scratch   4.12)   155 wpm   -6.9 dB  placed  3/11  take lag   60 ms  words spelling 
   b18   Merc  10.24 ->  10.09 s  (scratch   9.93)   143 wpm   -5.2 dB  placed  8/24  take lag   25 ms  words words    
@@ -33,7 +33,7 @@
   b26   Merc   7.04 ->   6.83 s  (scratch   6.78)   176 wpm   -6.0 dB  placed  7/20  take lag   25 ms  words spelling 
   b27   Merc   4.80 ->   4.63 s  (scratch   4.48)   168 wpm   -5.7 dB  placed  3/13  take lag   25 ms  words same     1 click(s) left out
   b27a  Merc   5.52 ->   5.42 s  (scratch   4.27)   144 wpm   -5.7 dB  placed  7/13  take lag   55 ms  words words    
-  b28   Merc  12.96 ->  12.80 s  (scratch  12.86)   145 wpm   -7.2 dB  placed  8/31  take lag   42 ms  words same     
+  b28   Merc  12.96 ->  12.80 s  (scratch  12.86)   145 wpm   -7.2 dB  placed 10/31  take lag   78 ms  words same     
   o11   Tavi   4.08 ->   4.08 s  (scratch   4.01)   162 wpm   -5.7 dB  placed  4/11  take lag   23 ms  words words    filled 0/20 ms
   b29   Merc   2.88 ->   2.62 s  (scratch   2.31)   161 wpm   -6.6 dB  placed  3/ 7  take lag   35 ms  words words    1 click(s) left out
   o12   Tavi   4.24 ->   4.10 s  (scratch   3.38)   132 wpm   -5.0 dB  placed  6/ 9  take lag   77 ms  words words    
@@ -42,7 +42,7 @@
   b32   Merc   8.88 ->   8.68 s  (scratch   8.38)   145 wpm   -6.4 dB  placed  8/21  take lag   55 ms  words words    1 click(s) left out; filled 20/0 ms
   o13   Tavi   3.68 ->   3.60 s  (scratch   2.99)   166 wpm   -3.9 dB  placed  5/10  take lag   35 ms  words same     1 click(s) left out; filled 0/20 ms
   b33   Merc   9.28 ->   9.15 s  (scratch   9.22)   157 wpm   -5.8 dB  placed  7/24  take lag   65 ms  words same     
-  b34   Merc   4.32 ->   4.21 s  (scratch   4.17)   128 wpm   -7.1 dB  placed  2/ 9  take lag   25 ms  words spelling 1 click(s) left out
+  b34   Merc   4.32 ->   4.21 s  (scratch   4.17)   128 wpm   -7.1 dB  placed  3/ 9  take lag   30 ms  words spelling 1 click(s) left out
   b35   Merc   6.24 ->   6.01 s  (scratch   5.93)   140 wpm   -5.4 dB  placed  4/14  take lag   53 ms  words spelling 
   b36   Merc   4.48 ->   4.49 s  (scratch   3.87)   107 wpm   -5.6 dB  placed  5/ 8  take lag   80 ms  words spelling filled 20/0 ms
   b37   Merc  17.92 ->  17.86 s  (scratch  17.85)   131 wpm   -6.2 dB  placed 11/39  take lag   60 ms  words spelling filled 0/5 ms
@@ -54,20 +54,20 @@
   b42   Merc   1.20 ->   0.91 s  (scratch   0.94)   132 wpm   -5.6 dB  placed  1/ 2  take lag   -5 ms  words words    
   b43   Merc   5.28 ->   5.09 s  (scratch   4.62)   106 wpm   -5.1 dB  placed  6/ 9  take lag   75 ms  words same     
   b44   Merc   5.28 ->   5.08 s  (scratch   3.75)   106 wpm   -6.4 dB  placed  4/ 9  take lag  105 ms  words spelling 
-  b45   Merc   4.40 ->   4.22 s  (scratch   3.81)   128 wpm   -5.3 dB  placed  4/ 9  take lag   95 ms  words spelling 
+  b45   Merc   4.40 ->   4.22 s  (scratch   3.81)   128 wpm   -5.3 dB  placed  4/ 9  take lag   50 ms  words spelling 
   b46   Merc   5.76 ->   5.75 s  (scratch   5.60)   136 wpm   -6.1 dB  placed  4/13  take lag   35 ms  words spelling filled 0/20 ms
-  b46a  Merc  17.52 ->  17.52 s  (scratch  17.80)   137 wpm   -6.8 dB  placed 10/40  take lag   65 ms  words spelling filled 0/20 ms
+  b46a  Merc  17.52 ->  17.52 s  (scratch  17.80)   137 wpm   -6.8 dB  placed 12/40  take lag   70 ms  words spelling filled 0/20 ms
   b47   Merc   1.04 ->   0.79 s  (scratch   0.91)   152 wpm   -6.0 dB  placed  1/ 2  take lag   45 ms  words words    1 click(s) left out
   b48   Merc   2.56 ->   2.52 s  (scratch   2.29)   143 wpm   -7.0 dB  placed  1/ 6  take lag   40 ms  words words    
   b49   Merc   1.12 ->   0.96 s  (scratch   0.97)   124 wpm   -6.0 dB  placed  1/ 2  take lag   60 ms  words same     
   b51   Merc   5.04 ->   4.86 s  (scratch   4.84)   161 wpm   -7.4 dB  placed  4/13  take lag   35 ms  words spelling 1 click(s) left out
-  b52   Merc   3.76 ->   3.65 s  (scratch   3.52)   131 wpm   -6.4 dB  placed  2/ 8  take lag   87 ms  words same     1 click(s) left out
+  b52   Merc   3.76 ->   3.65 s  (scratch   3.52)   131 wpm   -6.4 dB  placed  3/ 8  take lag  135 ms  words same     1 click(s) left out
   o14a  Tavi   4.24 ->   4.25 s  (scratch   3.19)   170 wpm   -6.5 dB  placed  6/12  take lag   15 ms  words spelling filled 0/20 ms
   b54   Merc   3.12 ->   2.96 s  (scratch   2.46)   162 wpm   -6.7 dB  placed  2/ 8  take lag   55 ms  words same     
   b55   Merc   9.60 ->   9.35 s  (scratch  10.14)   154 wpm   -6.8 dB  placed  6/24  take lag   27 ms  words words    
   b56   Merc  12.24 ->  12.05 s  (scratch  10.30)   100 wpm   -6.0 dB  placed 12/20  take lag   52 ms  words spelling 
   b58   Merc  12.96 ->  12.98 s  (scratch  11.69)   106 wpm   -6.5 dB  placed  8/23  take lag   58 ms  words words    filled 20/5 ms
   b59   Merc   1.04 ->   0.98 s  (scratch   1.04)   122 wpm   -5.7 dB  placed  1/ 2  take lag  100 ms  words same     filled 20/0 ms
-  b60   Merc   4.56 ->   4.47 s  (scratch   3.58)   121 wpm   -6.0 dB  placed  3/ 9  take lag  105 ms  words same     
+  b60   Merc   4.56 ->   4.47 s  (scratch   3.58)   121 wpm   -6.0 dB  placed  4/ 9  take lag  127 ms  words same     
   o15   Tavi   6.48 ->   6.44 s  (scratch   5.66)   149 wpm   -4.6 dB  placed  7/16  take lag   40 ms  words words    filled 20/0 ms
 import.py: 71 take(s) imported into assets/voice/; 71 listed in _elevenlabs.json; voice-takes/ASR.md and IMPORT.md written for 71

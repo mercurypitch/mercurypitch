@@ -6,7 +6,7 @@ model, with no language model and no other service (PRODUCTION-PIPELINE § 3 Voi
   <venv>/bin/python -I tools/ctc_align.py --calibrate --check  the same comparison, writing nothing
   <venv>/bin/python -I tools/ctc_align.py <audio> "<the line>" one take: its words, and what the model hears
 
-tools/import.py uses it (`Aligner`). Recreated for Lesson 5 from the pipeline's description of the
+tools/import.py uses it (`Aligner`, `place`, `compare`). Recreated for Lesson 5 from the pipeline's description of the
 director's `voice-elevenlabs/ctc_align.py`; the original was lost with Lesson 4's machine.
 
 The model is wav2vec2-base-960h as ONNX (the Xenova export, quantised: models/w2v/vocab.json and
@@ -29,13 +29,15 @@ word's start comes out a little late, by about the same amount each time, and no
     take's first and last words take the sound's own start and stop;
   - every other word start and end moves back by a constant.
 tts.py's function itself is not used: it lets a silence claim the first word the model starts
-within 0.3 s after it, which suits Kokoro's phoneme durations but not natural speech, where the
-closure of a p, t or k inside a word is a silence too (on Lesson 5's final takes it put ten word
-starts 0.19 to 0.275 s early, "back" in "spring back" onto the p of "spring"). Here the aligner's
-letters say which two words a silence parts (the last letter of one ends before it, give or take
-BETWEEN; the first letter of the next starts after it), and the silence sets an edge only when the
-aligner's own time is within NEAR_START or NEAR_END of it; otherwise the edge keeps the aligner's
-time less the constant.
+within 0.3 s after it, whichever word the silence is in, which suits Kokoro's phoneme durations
+but not natural speech, where the closure of a p, t or k inside a word is a silence too (on
+Lesson 5's final takes it put "back" in "spring back" on the p of "spring", 0.27 s early). Here
+the aligner's letters say which two words a silence parts (the last letter of one ends before it,
+give or take BETWEEN; the first letter of the next starts after it): a silence inside a word sets
+nothing. A silence between two words sets their edges when the aligner's own time is within
+NEAR_START or NEAR_END of it (tts.py's own 0.3 s: a soft start, the w of "one", is marked up to
+0.25 s late), the last such silence before a word and the first after one; otherwise the edge
+keeps the aligner's time less the constant.
 
 Calibration (`--calibrate`). The constants are measured on the scratch takes, whose word times are
 Kokoro's own phoneme times (assets/voice-kokoro/<id>.words.json): every take is aligned and its word
@@ -76,8 +78,9 @@ LEAD = 0.5           # seconds of silence put before and after the sound, so the
 BLANK, BAR = '<pad>', '|'
 THREADS = 2          # the machine is shared
 BETWEEN = 0.02       # seconds: a word's last letter may end this far into the silence that follows the word
-NEAR_START = (-0.03, 0.15)   # a silence's end sets the next word's start when the aligner's start is this near it
-                             # (after a clear pause the aligner is 35 to 55 ms late, 131 ms for 19 in 20)
+NEAR_START = (-0.03, 0.3)    # a silence's end sets the next word's start when the aligner's start is this near it
+                             # (after a clear pause the aligner is 40 to 55 ms late, 131 ms for 19 in 20, and up
+                             # to 0.25 s on a soft start, the w of "one", an l, a vowel; 0.3 is tools/tts.py's reach)
 NEAR_END = (0.0, 0.3)        # a silence's start sets a word's end when it comes this long after the aligner's end
                              # (the sound runs on 115 to 135 ms past the last letter, 230 ms for 19 in 20; 0.3 is
                              # tools/tts.py's own reach)
@@ -314,15 +317,15 @@ def place(tts, audio, aligned, start_lag, end_lag):
     first, last = loud[0] * tts.FRAME, (loud[-1] + 1) * tts.FRAME
     t, e, n = [w['t'] for w in aligned], [w['e'] for w in aligned], len(aligned)
     words = [[a - start_lag, b - end_lag] for a, b in zip(t, e)]
-    starts, ends, fixes = set(), set(), []
+    starts, ends, fixes = set(), set(), {}
 
-    def start_at(k, b):
-        if k not in starts and NEAR_START[0] <= t[k] - b <= NEAR_START[1]:
+    def start_at(k, b):                         # the last silence before a word's first letter wins
+        if NEAR_START[0] <= t[k] - b <= NEAR_START[1]:
             words[k][0] = b
             starts.add(k)
-            fixes.append(t[k] - b)
+            fixes[k] = t[k] - b
 
-    def end_at(j, a):
+    def end_at(j, a):                           # the first silence after a word's last letter wins
         if j not in ends and NEAR_END[0] <= a - e[j] <= NEAR_END[1]:
             words[j][1] = a
             ends.add(j)
@@ -348,7 +351,7 @@ def place(tts, audio, aligned, start_lag, end_lag):
         w[0] = min(max(w[0], first), last - 0.01)
         w[1] = min(max(w[1], w[0] + 0.01), last)
     return {'words': words, 'starts': starts, 'ends': ends, 'first': first, 'last': last,
-            'take_lag': float(np.median(fixes)) if fixes else 0.0}
+            'take_lag': float(np.median(list(fixes.values()))) if fixes else 0.0}
 
 
 def compare(script_text, heard):

@@ -1,4 +1,4 @@
-[heavy] slot 1: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/.venv/bin/python -I tools/cues.py --no-tts
+[heavy] slot 1: $S/l5film/.venv/bin/python -I tools/cues.py --no-tts
 cues.py: 71 imported take(s) kept as they are, never re-spoken: b1 b11 b12 b13 b14 b15 b16 b17 b18 b19 b20 b21 b22 b24 b25 b26 b27 b27a b28 b29 b3 b30 b31 b32 b33 b34 b35 b36 b37 b37a b38 b39 b4 b40 b41 b42 b43 b44 b45 b46 b46a b47 b48 b49 b51 b52 b54 b55 b56 b58 b59 b6 b60 b7 b8 b9 o1 o10 o11 o12 o13 o14a o15 o2 o3 o4 o5 o6 o7 o8 o9
 # Pacing: the voiced clock
 

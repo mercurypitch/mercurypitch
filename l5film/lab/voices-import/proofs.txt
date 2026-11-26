@@ -1,0 +1,29 @@
+[heavy] slot 1: $S/l5film/.venv/bin/python -I lab/voices-import/proofs.py $S/l5film
+On the 71 final takes, 1034 words: tts.calibrate sets 371 word starts on a silence's end; place sets 373.
+18 starts that calibrate sets and place leaves alone (the silence is inside the word before, by the aligner's letters,
+or further from the aligner's start than 0.3 s). Columns: seconds calibrate moves the start back from the aligner's time,
+line, the word before, the word, calibrate's start, place's start (take time, before the trim):
+   (0.275, 'b26', 'vocal', 'folds', 1.525, 1.765)
+   (0.27, 'b37', 'talking', 'or', 15.03, 15.265)
+   (0.265, 'b14', 'spring', 'back', 0.975, 1.205)
+   (0.225, 'o5', 'different', 'things.', 5.235, 5.425)
+   (0.2, 'o3', 'practise', 'matching?', 3.98, 4.145)
+   (0.19, 'o11', 'perfectly', 'straight', 3.15, 3.305)
+   (0.16, 'o13', 'keeps', 'the', 2.74, 2.865)
+   (0.14, 'o14a', 'pitch', 'line?', 3.64, 3.745)
+   (0.1, 'o10', 'note', 'start?', 1.16, 1.225)
+   (0.09, 'o11', 'look', 'like?', 1.59, 1.645)
+   (0.085, 'b45', 'Keep', 'it', 1.315, 1.365)
+   (0.06, 'o14a', 'look', 'like', 2.72, 2.745)
+   (0.06, 'o11', 'note', 'look', 1.36, 1.385)
+   (0.045, 'o2', 'it', 'steady?', 7.695, 7.705)
+   (0.045, 'b55', 'up', 'and', 3.155, 3.165)
+   (0.02, 'o4', 'back', 'down?', 2.2, 2.185)
+   (-0.03, 'o7', 'push', 'by', 1.57, 1.505)
+   (-0.045, 'o7', 'So', 'full', 0.405, 0.325)
+
+How late the aligner marks the word after a clear pause (ms; aligned start - the sound's start):
+  final   Merc n 138  median   55  5%   -5  95%  131
+  final   Tavi n  23  median   55  5%   -9  95%  105
+  scratch Merc n  94  median   40  5%  -10  95%  167
+  scratch Tavi n  14  median   40  5%  -23  95%   62

@@ -1,0 +1,28 @@
+s01-cold-open         0.00 -   42.62  (42.62s)
+s02-title            42.62 -   46.22  ( 3.60s)
+s03-promise          46.22 -   56.30  (10.09s)
+s04-recall           56.30 -   70.00  (13.70s)
+s05-push             70.00 -  108.18  (38.18s)
+s06-diaphragm       108.18 -  178.56  (70.38s)
+s07-support         178.56 -  217.25  (38.69s)
+s08-breathe         217.25 -  237.66  (20.41s)
+s09-onset           237.66 -  296.75  (59.09s)
+s10-steady          296.75 -  359.05  (62.30s)
+s11-sing            359.05 -  399.01  (39.96s)
+s12-your-turn       399.01 -  476.98  (77.97s)
+s13-recap           476.98 -  546.04  (69.06s)
+s14-next            546.04 -  563.54  (17.50s)
+s15-end             563.54 -  569.74  ( 6.20s)
+data-duration updated: s01-cold-open 38.810 -> 42.620
+data-duration updated: s03-promise 10.470 -> 10.085
+data-duration updated: s04-recall 13.635 -> 13.695
+data-duration updated: s05-push 36.205 -> 38.180
+data-duration updated: s06-diaphragm 68.775 -> 70.380
+data-duration updated: s07-support 36.390 -> 38.685
+data-duration updated: s08-breathe 20.385 -> 20.410
+data-duration updated: s09-onset 57.070 -> 59.095
+data-duration updated: s10-steady 61.080 -> 62.300
+data-duration updated: s11-sing 39.170 -> 39.965
+data-duration updated: s12-your-turn 76.780 -> 77.965
+data-duration updated: s13-recap 65.025 -> 69.065
+data-duration updated: s14-next 15.870 -> 17.495

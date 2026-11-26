@@ -1,4 +1,4 @@
-[heavy] slot 1: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/.venv/bin/python tools/mix.py
+[heavy] slot 1: $S/l5film/.venv/bin/python tools/mix.py
 sound-kit: assets/audio/kit-sound.json (18 files read; hops land at 507.24 and 507.89)
   voice      -23.9 LUFS ->  -18.0  (+5.9 dB)
   examples   -15.2 LUFS ->  -21.0  (-5.8 dB)

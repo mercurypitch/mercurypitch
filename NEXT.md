@@ -5188,3 +5188,22 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   HANDOFFS and STORYBOARD at the same time; B may edit its rows 5a-7l and specimen.js's
   optional travel duration, logged). Then critics A-02 and B-02 (the last rounds), then D, E.
 - Next free LEAD-ANSWERS number: 117.
+
+## 26 Nov 19:40 UTC: L5 VOICES IMPORTED + RE-TIMED; listening copies SENT; L5 FINAL RUN started; C resumed
+- L5 import ((builder), retire) done: 71/71 imported (tools/ctc_align.py, import.py,
+  ctc-calibration.json; calibration on 1034 Kokoro words: starts median 10 ms, nine in ten
+  45 ms); re-timed to 9:29.7 (569.740 s, was 9:09.5); mix -16.0 LUFS / 5.0 LU / -2.5 dBTP
+  (lead re-measured the MP3); 139 captions; chapters; SCRIPT.md; check 0 errors; clock-lint
+  silent; no scene file touched (gen-root run aside: 13 scene durations still to write, DECISIONS
+  252). L5 DECISIONS 246-256. Backup l5film/backup-pre-voices/ (1.3 GB). Disk 5.6 GB free.
+- Words check (greedy CTC; a prompt to listen): hear first o4 1:12, o5 1:36, o12 5:17, b42
+  7:02, b47 7:57, b48 7:59. Edges cut with the voice above -30 dB: starts o7, b32, b36, b41,
+  b58, b59, o15; ends o1, o3, b6, b9, b16, o8, b46a, o14a.
+- SENT to the owner (SendUserFile): renders/voices-final-listen.mp3 and -voice-only.mp3, with
+  the listen-first list. Retakes only for lines the owner names (a new call each).
+- L5 FINAL RUN launched ((model) xhigh, (builder), briefs/l5-final-run.md): gen-root in
+  place (13 durations), merc-shots --final (profile 245 + the lead's additions), the 27 jobs at
+  60 fps, joins/tags, render film-final-60.mp4 (--strict), measure, deliverables (music-only,
+  contact sheet, DELIVERY.md, LEDGER). DECISIONS from 257. Keep 2 GB free.
+- RESUMED builder C ((builder)), told calls 113-115 apply to it. Running: A's fix
+  ((builder)), C, the L5 final run. WAITING: B's fix round (after A's fix hands back).
