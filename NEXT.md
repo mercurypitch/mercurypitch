@@ -5120,3 +5120,20 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   (the owner is waiting to check), so no new (model) agent until the import hands back. Then D
   (s10-s11) into the free builder slot; A's and B's fix rounds as their critics return (at most
   two builders at once).
+
+## 26 Nov 13:51 UTC: CHECK-IN BACK ON; who is IN FLIGHT and who is RETIRED
+- The hourly check-in trig_01JGQdH9F56vCzkd9UvFFRJv is ENABLED again (updated 13:19:57 UTC, by
+  the owner, around their "Continue"); it fired at 13:50. Its prompt was stale (the 21 Nov (model)
+  builders in flight, "next free 98", voices awaiting the yes); the lead refreshed it at 13:51 so
+  it defers to these notes.
+- rate_limit_info: seven_day, allowed_warning, resets 3 Dec 01:00 UTC: SPEND LEAN (the lead most
+  of all). Lead context about 400k of 650k.
+- IN FLIGHT ((model) xhigh): critic A-01 (builder) (review/critic-scenes-A-01/REPORT.md);
+  critic B-01 (builder) (review/critic-scenes-B-01/REPORT.md); builder C
+  (builder) (s08-s09); Lesson 5 import (builder) (briefs/l5-voices-import.md).
+- HANDED BACK, to be RESUMED for their fix rounds after their critics: builder A
+  (builder), builder B (builder).
+- RETIRED (never resume): (builder), (builder) (the (model) A/B builders of 21 Nov);
+  (builder) (Merc's voice generation, done); (builder), (builder),
+  (builder), (builder).
+- Next free numbers: l6film LEAD-ANSWERS 104; l5film DECISIONS 246 (the import agent's).
