@@ -1,0 +1,1 @@
+139 captions (23 sound descriptions), longest line 42 chars, peak 20.0 chars/s at 219.6s, median 13.4

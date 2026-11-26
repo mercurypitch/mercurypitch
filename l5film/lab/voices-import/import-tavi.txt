@@ -1,0 +1,17 @@
+[heavy] slot 1: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/.venv/bin/python -I tools/import.py --who=orange
+  o1    Tavi   4.32 ->   4.33 s  (scratch   3.96)   166 wpm   -7.0 dB  placed  5/12  take lag    5 ms  words spelling filled 0/20 ms
+  o2    Tavi   8.32 ->   8.24 s  (scratch   7.12)   131 wpm   -5.7 dB  placed 10/18  take lag   35 ms  words words    
+  o3    Tavi   4.80 ->   4.84 s  (scratch   4.80)   149 wpm   -6.5 dB  placed  3/12  take lag   60 ms  words words    filled 20/20 ms
+  o4    Tavi   2.72 ->   2.60 s  (scratch   2.62)   207 wpm   -8.5 dB  placed  3/ 9  take lag   45 ms  words words    1 click(s) left out
+  o5    Tavi   7.52 ->   6.89 s  (scratch   5.87)   131 wpm   -7.2 dB  placed  8/15  take lag   28 ms  words words    
+  o6    Tavi   3.76 ->   3.60 s  (scratch   4.07)   184 wpm   -5.4 dB  placed  6/11  take lag    3 ms  words words    
+  o7    Tavi   5.36 ->   5.30 s  (scratch   5.33)   158 wpm   -7.9 dB  placed  5/14  take lag   40 ms  words words    filled 20/0 ms
+  o8    Tavi   5.44 ->   5.38 s  (scratch   4.77)   112 wpm   -6.6 dB  placed  6/10  take lag   55 ms  words words    filled 0/20 ms
+  o9    Tavi   1.44 ->   1.44 s  (scratch   1.54)   209 wpm   -7.3 dB  placed  1/ 5  take lag   40 ms  words same     filled 0/15 ms
+  o10   Tavi   1.84 ->   1.76 s  (scratch   1.86)   205 wpm   -8.2 dB  placed  1/ 6  take lag   35 ms  words spelling 
+  o11   Tavi   4.08 ->   4.08 s  (scratch   4.01)   162 wpm   -5.7 dB  placed  4/11  take lag   23 ms  words words    filled 0/20 ms
+  o12   Tavi   4.24 ->   4.10 s  (scratch   3.38)   132 wpm   -5.0 dB  placed  6/ 9  take lag   77 ms  words words    
+  o13   Tavi   3.68 ->   3.60 s  (scratch   2.99)   166 wpm   -3.9 dB  placed  5/10  take lag   35 ms  words same     1 click(s) left out; filled 0/20 ms
+  o14a  Tavi   4.24 ->   4.25 s  (scratch   3.19)   170 wpm   -6.5 dB  placed  6/12  take lag   15 ms  words spelling filled 0/20 ms
+  o15   Tavi   6.48 ->   6.44 s  (scratch   5.66)   149 wpm   -4.6 dB  placed  7/16  take lag   40 ms  words words    filled 20/0 ms
+import.py: 15 take(s) imported into assets/voice/; 15 listed in _elevenlabs.json; voice-takes/ASR.md and IMPORT.md written for 15

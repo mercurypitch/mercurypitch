@@ -1,0 +1,56 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.073,
+ "words": [
+  {
+   "w": "What",
+   "t": 0.02,
+   "e": 0.12
+  },
+  {
+   "w": "about",
+   "t": 0.145,
+   "e": 0.395
+  },
+  {
+   "w": "\"support\"?",
+   "t": 0.495,
+   "e": 1.065
+  },
+  {
+   "w": "Don't",
+   "t": 1.675,
+   "e": 1.895
+  },
+  {
+   "w": "singers",
+   "t": 1.97,
+   "e": 2.395
+  },
+  {
+   "w": "mean",
+   "t": 2.445,
+   "e": 2.62
+  },
+  {
+   "w": "pushing",
+   "t": 2.695,
+   "e": 3.17
+  },
+  {
+   "w": "hard,",
+   "t": 3.245,
+   "e": 3.79
+  },
+  {
+   "w": "or",
+   "t": 3.865,
+   "e": 3.945
+  },
+  {
+   "w": "squeezing?",
+   "t": 4.02,
+   "e": 4.75
+  }
+ ]
+}

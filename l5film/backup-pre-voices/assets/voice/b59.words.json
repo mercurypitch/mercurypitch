@@ -1,0 +1,16 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.145,
+ "words": [
+  {
+   "w": "Next",
+   "t": 0.02,
+   "e": 0.295
+  },
+  {
+   "w": "time.",
+   "t": 0.345,
+   "e": 1.02
+  }
+ ]
+}

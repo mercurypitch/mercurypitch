@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+  <head><meta charset="UTF-8" /></head>
+  <body>
+    <div id="s09-onset" data-composition-id="s09-onset" data-start="0" data-duration="59.095" data-width="1920" data-height="1080">
+      <!-- the passes, static (trap 4), timed by python3 tools/merc-tags.py s09-onset -->
+      <video id="s09-onset-m-orange" data-merc="m-orange" class="clip" muted playsinline src="assets/merc/m-orange-s09-merc.webm" data-start="0.000" data-duration="57.113" data-media-start="0.050"></video>
+      <video id="s09-onset-m-orange-refl" data-merc="m-orange" data-merc-refl class="clip" muted playsinline src="assets/merc/m-orange-s09-merc.webm" data-start="0.000" data-duration="57.113" data-media-start="0.050"></video>
+      <video id="s09-onset-m-blue" data-merc="m-blue" class="clip" muted playsinline src="assets/merc/m-blue-s09-merc.webm" data-start="0.000" data-duration="57.113" data-media-start="0.050"></video>
+      <video id="s09-onset-m-blue-refl" data-merc="m-blue" data-merc-refl class="clip" muted playsinline src="assets/merc/m-blue-s09-merc.webm" data-start="0.000" data-duration="57.113" data-media-start="0.050"></video>
+      <div class="scene" id="s09-onset-scene"></div>
+      <script>
+        ;(function () {
+          // S9, chapter 4 "Starting a note" (STORYBOARD 9a to 9g; HANDOFFS § The folds and the traces (S9), § The cuts
+          // S8 to S9 and S9 to S10). F0 throughout, no camera move: S8's figure with its cue labels dims under the card
+          // and leaves from dim while a small ring at its throat grows into the folds seen from above; the trace strip;
+          // the four words for "onset"; the three starts, each heard and drawn in its own time with the folds showing
+          // its state; the strip becomes a stack of three (an object move); the three back to back; the third, the easy
+          // start, and its "h" kept in mind. Every time is a cue, a word, a duration or a start's own time.
+          const SID = 's09-onset'
+          const D = L.dur(SID)
+          const T0 = L.scene(SID).start
+          const at = (cue, edge, off) => L.at(SID, cue, edge, off)
+          const word = (line, which, edge, off) => L.word(SID, line, which, edge, off)
+          const C = L.C, P = L.prog, clamp = L.clamp, lerp = L.lerp, f2 = L.f2, FO = L.FOLDS, TR = L.TRACE
+
+          const root = document.getElementById(SID + '-scene')
+          const room = L.room(root, { floor: true })
+          const world = L.stage(room.mid)
+          const hud = L.stage(room.hud)
+          const dust = L.filmDust(room.near)
+          const cam = L.frameRig(room, { from: 'F0' })                // F0 throughout: the stack is an object move
+
+          /* ---------------------------------------------------------------- anchors */
+          // 9a: act4
+          const ACT = at('act4')
+          const CARD_IN = ACT + 0.22, CARD_OUT = at('o10', 'start', -0.5)
+          // 9b: o10, b24
+          const O10 = at('o10'), KICK_OUT = at('b24', 'end')
+          // the figure fades from 25 % and the ring grows as the card starts to leave, overlapping its exit (DECISIONS 196;
+          // before C-01 on "how should", the board's 240.00)
+          const FOLD0 = CARD_OUT
+          const GROW_D = 0.5, SLIDE = FOLD0 + 0.4, SLIDE_D = 1.0       // grows 0.5 s (0.9 before C-01); slides to the left place (power2.inOut)
+          const FS = 1.35                                              // the folds' box at 1.35 about its centre (DECISIONS 192): x 160.5 to 619.5, y 200.5 to 659.5
+          const FOLD_L = SLIDE + SLIDE_D                               // "vocal folds, from above" as they arrive
+          const ONSET = word('b24', 'onset'), ROW_IN = ONSET - 0.41, ROW_OUT = at('b24', 'end', -0.1)
+          const TITLE = word('b24', 'onset', 'end')                    // "onset: how a note starts"
+          const THREE = word('b24', 'three'), CHIPS = [THREE, THREE + 0.4, THREE + 0.8]
+          const JUST = word('b24', 'just')                             // each chip scales 1.08
+          // 9c: b25, start-air
+          const AIR = word('b25', 'air first')
+          const LEN = TR.len                                           // each start is 1.6 s (FACTS 80)
+          const S_AIR = at('start-air'), AIR_L = S_AIR + 0.56          // "air, no note" (board 255.30)
+          // the strip (its lane, hairline and chip) draws in with its first trace (DECISIONS 226), not 12 s before it
+          // under the title and "Air first": from 0.3 s before the start, drawn on over 0.6 s ahead of the trace's head
+          const STRIP = S_AIR - 0.3, STRIP_D = 0.6                     // (FOLD_L + 0.45 before F-01)
+          // 9d: b26, start-catch
+          const CATCH = word('b26', 'catch'), LISTEN = CATCH + 0.43, PRESSED = word('b26', 'pressed')
+          const S_CATCH = at('start-catch'), CATCH_L = S_CATCH + 0.29  // "the catch" (board 265.90)
+          // 9e: b27, start-together
+          const TOG = word('b27', 'together'), MEET = word('b27', 'meet'), S_TOG = at('start-together')
+          // 9f: b27a, starts
+          const B27A = at('b27a'), OUT1 = B27A + 0.04                  // the title, chips and the folds' name leave
+          // the strip becomes a stack of three, in order (DECISIONS 197): the folds shrink first (0.5 s), trace 3 then settles
+          // into row 3 (0.6 s, from 0.4 s), and the names land once it has, 0.4 s apart (all power2.inOut)
+          const STACK = B27A + 0.09, FSH_D = 0.5
+          const TMV = STACK + 0.4, TMV_D = 0.6, STACK_D = TMV + TMV_D - STACK
+          const NAME0 = TMV + TMV_D, NAMES = [NAME0, NAME0 + 0.4, NAME0 + 0.8]
+          const NPULSE = [word('b27a', 'puff'), word('b27a', 'click'), word('b27a', 'neither')]
+          const ROW3_OUT = at('b27a', 'end')                           // row 3's drawing leaves before the replay
+          const STARTS = at('starts'), ROW_T = [0, LEN + 0.2, 2 * (LEN + 0.2)]   // back to back, 0.2 s apart (FACTS 96)
+          const SR = ROW_T.map((r) => STARTS + r)
+          const CIRC = [SR[0] + LEN + 0.23, SR[1] + LEN + 0.23], NEITHER = SR[2] + LEN + 0.13   // board 283.20, 285.00, 286.70
+          // 9g: b28
+          const THIRD = word('b28', 'the third'), EASY = word('b28', 'the easy'), SOFT = word('b28', 'soft'), ONLY = word('b28', 'only')
+          // DECISIONS 227: the clip held still 0.3 s or more inside "teachers aim" (47.2 to 47.5); the stack moves on there:
+          // rows 1 and 2 dim from "aim" ("aim for the third"), and the third lights on "the third", as before
+          const AIM = word('b28', 'aim')
+
+          /* ---------------------------------------------------------------- the hosts at 240 */
+          const Hs = L.HOSTS.small
+          const merc = L.mercGate(room.top, { sid: SID, pass: 'm-blue', tag: SID + '-m-blue', ...Hs.merc })
+          const tavi = L.mercGate(room.top, { sid: SID, pass: 'm-orange', tag: SID + '-m-orange', ...Hs.tavi })
+
+          /* ---------------------------------------------------------------- carried from S8: the figure whole at S8's
+             placement, breathed out to rest (breath 0, DECISIONS 191), the jaw loose (4 px), with its cue labels, leaders
+             and marks (the same block as s08-breathe's, drawn at S8's last frame) */
+          const fig = L.figure(world)
+          const F8 = L.FIGURE.S8
+          const POSE8 = { ...F8, fade: null, legs: 1, breath: 0, jaw: 4, knee: 0 }
+          const CUE = {
+            tall: { text: 'tall but easy', x: 900, y: 200, anchor: 'end' },
+            shoulders: { text: 'shoulders still', x: 910, y: 300, anchor: 'end' },
+            breathe: { text: 'breathe in quietly, low', x: 910, y: 400, anchor: 'end' },
+            knees: { text: 'knees unlocked', x: 907, y: 700, anchor: 'end' },
+            jaw: { text: 'jaw · tongue · neck loose', x: 1070, y: 245 },
+            dia: { text: 'diaphragm at work', x: 1110, y: 470 },
+            much: { text: 'as much as feels easy', x: 1110, y: 560 },
+          }
+          const cueL = {}
+          for (const [n, c] of Object.entries(CUE)) cueL[n] = L.label(world, c.text, { ...c, size: 36 })
+          const singers = [
+            L.label(world, 'Singers breathe in', { x: 1110, y: 720, size: 48, family: 'serif' }),
+            L.label(world, 'different ways.', { x: 1110, y: 770, size: 48, family: 'serif' }),
+          ]
+          for (const l of singers) l.el.setAttribute('data-layout-allow-overlap', '')   // one label's two lines, 50 px apart
+          const ARROW = { x: 925, y1: 830, y2: 150 }
+          const backArrow = L.arrow(world, { x1: ARROW.x, y1: ARROW.y1, x2: ARROW.x, y2: ARROW.y2, color: C.chrome, width: 3, head: 12 })
+          const LEVEL = { x1: 932, x2: 958, y: 289 }
+          const level = L.bracket(world, { x1: LEVEL.x1, x2: LEVEL.x2, y: LEVEL.y, dir: 'down', tick: 5, width: 2.5 })
+          const lead = {}
+          for (const n of ['tall', 'shoulders', 'breathe', 'knees', 'jaw', 'dia']) lead[n] = L.leader(world, {})
+          fig.draw(POSE8)
+          {
+            const s = fig.shape(), k = F8.k, mid = (c) => c.y - 0.35 * 36
+            const by = mid(CUE.breathe), cy = F8.y0 + k * s.lungs[1], ry = k * s.lungs[3]
+            const lx = F8.x0 + k * s.lungs[0] - k * s.lungs[2] * Math.sqrt(Math.max(0, 1 - ((by - cy) / ry) ** 2))
+            const [chx, chy] = fig.at('chin'), [dx, dy] = fig.at('domeApex')
+            lead.tall.set({ x1: CUE.tall.x + 6, y1: mid(CUE.tall), x2: ARROW.x - 4, y2: mid(CUE.tall) })
+            lead.shoulders.set({ x1: CUE.shoulders.x + 6, y1: LEVEL.y, x2: LEVEL.x1 - 3, y2: LEVEL.y })
+            lead.breathe.set({ x1: CUE.breathe.x + 6, y1: by, x2: lx - 3, y2: by })
+            lead.knees.set({ x1: CUE.knees.x + 6, y1: mid(CUE.knees), x2: F8.x0 + k * (209.1 + s.legDu(780)) - 3, y2: F8.y0 + k * 780 })
+            lead.jaw.set({ x1: CUE.jaw.x - 6, y1: mid(CUE.jaw), x2: chx + 3, y2: chy + 1 })
+            lead.dia.set({ x1: CUE.dia.x - 6, y1: mid(CUE.dia), x2: dx + 3, y2: dy })
+          }
+
+          /* ---------------------------------------------------------------- the folds, from above */
+          const fo = L.folds(world)
+          // its name centred under the box (now to y 659.5 at 1.35): baseline 694, 12 px or more under the outline
+          const foLabel = L.label(world, FO.LABEL.text, { ...FO.LABEL, x: FO.CX, y: 694, anchor: 'middle' })
+          // the growth (HANDOFFS § Provisional values, 9b): a ring of r 20 at scale 0.5 (r 10, 20 px across, inside the
+          // 35 px neck) centred on the throat point, at full strength; it grows (0.5 s) and, from 0.4 s, slides to
+          // (390, 430) as its scale goes to 1.35 (power2.inOut)
+          const GROW = { from: FO.THROAT, s0: 0.5 }
+          // the folds' state, by the starts' own times (FACTS 80): air rising through open folds, which close into
+          // vibration as the tone grows; pressed shut, snapping open at the click; meeting at a slit as the tone starts
+          const foldsAt = (t) => {
+            const lvA = (tau) => TR.level('air', tau), lvT = (tau) => TR.level('together', tau)
+            const rel = (t0) => { const r = P(t, t0, 0.4); return { state: { from: 'slit', to: 'apart', u: r }, vib: 1 - r } }
+            if (t < SR[0] - 0.2) {
+              if (t < S_AIR) return { state: 'apart', vib: 0, airA: P(t, AIR, 0.2), airU: P(t, AIR, 0.6) }
+              if (t < S_AIR + LEN) { const lv = lvA(t - S_AIR); return { state: { from: 'apart', to: 'slit', u: lv }, vib: lv, airA: 1 - P(t, S_AIR + 0.25, 0.3), airU: 1 } }
+              if (t < PRESSED) return rel(S_AIR + LEN)
+              if (t < S_CATCH + 0.15) return { state: { from: 'apart', to: 'pressed', u: P(t, PRESSED, 0.3) }, vib: 0 }
+              if (t < S_CATCH + LEN) { const u = P(t, S_CATCH + 0.15, 0.05, 'none'); return { state: { from: 'pressed', to: 'slit', u }, vib: u } }
+              if (t < MEET) return rel(S_CATCH + LEN)
+              if (t < S_TOG) return { state: { from: 'apart', to: 'slit', u: P(t, MEET, 0.4) }, vib: 0 }
+              if (t < S_TOG + LEN) return { state: 'slit', vib: lvT(t - S_TOG) }
+              return rel(S_TOG + LEN)
+            }
+            // starts: air, the catch, together, back to back (the folds small)
+            if (t < SR[0]) return { state: 'apart', vib: 0 }
+            if (t < SR[0] + LEN) { const tau = t - SR[0], lv = lvA(tau); return { state: { from: 'apart', to: 'slit', u: lv }, vib: lv, airA: L.env(t, SR[0], 0.1, 0.25, 0.25), airU: P(t, SR[0], 0.3) } }
+            if (t < SR[1]) { const u = P(t, SR[0] + LEN, 0.2, 'none'); return { state: { from: 'slit', to: 'pressed', u }, vib: 1 - u } }
+            if (t < SR[1] + LEN) { const u = P(t, SR[1] + 0.15, 0.05, 'none'); return { state: { from: 'pressed', to: 'slit', u }, vib: u } }
+            if (t < SR[2]) return { state: 'slit', vib: 1 - P(t, SR[1] + LEN, 0.2, 'none') }
+            if (t < SR[2] + LEN) return { state: 'slit', vib: lvT(t - SR[2]) }
+            return rel(SR[2] + LEN)
+          }
+
+          /* ---------------------------------------------------------------- the trace strip (x 700 to 1600, centre y 430) */
+          // the strip's hairline is its own trace (drawn with nothing in it) so a start can fade without taking the strip
+          // with it; it and trace 3 ride one group that carries them into row 3 (y 650, half-height 70) in the stack move,
+          // their strokes kept at their width (non-scaling); the gold tick is drawn here, never scaled
+          const stripG = L.svg('g', { class: 'strip' }, world)
+          const movG = L.svg('g', { class: 'strip-moving' }, world)
+          const clipId = L.uid('stripclip')
+          const clipDefs = L.svg('defs', {}, movG)
+          const clipEl = L.svg('clipPath', { id: clipId }, clipDefs)
+          const clipRect = L.svg('rect', { x: TR.x0 - 4, y: TR.y - TR.h - 40, height: 2 * TR.h + 80, width: 0 }, clipEl)
+          const baseG = L.svg('g', { 'clip-path': `url(#${clipId})` }, movG)
+          // the strip as a lit lane (DECISIONS 192): chrome at 6 %, x 700 to 1600, y 320 to 540, like the stack rows' lit
+          // boxes; it draws on with the strip and rides the stack move into row 3, fading as trace 3 settles there
+          const lane = L.svg('rect', { x: TR.x0, y: TR.y - TR.h, width: TR.x1 - TR.x0, height: 2 * TR.h, rx: 6, fill: C.chrome, 'fill-opacity': 0.06 }, baseG)
+          const baseTr = L.trace(baseG, {})
+          const airTr = L.trace(stripG, { seed: 75 }), catchTr = L.trace(stripG, { seed: 76 }), togTr = L.trace(movG, { seed: 77 })
+          for (const tr of [airTr, catchTr, togTr]) tr.g.querySelector('rect').setAttribute('fill-opacity', '0')   // no hairline of its own
+          // a finished trace stays at 30 % once the next start is named, until the next draws over it (DECISIONS 192): a
+          // clip whose left edge is the next trace's head
+          const wipeOf = (tr) => {
+            const id = L.uid('wipe'), cp = L.svg('clipPath', { id }, L.svg('defs', {}, stripG))
+            const r = L.svg('rect', { x: TR.x0 - 10, y: 0, width: 2000, height: 1080 }, cp)
+            tr.g.setAttribute('clip-path', `url(#${id})`)
+            return r
+          }
+          const airWipe = wipeOf(airTr), catchWipe = wipeOf(catchTr)
+          togTr.g.querySelector('path').setAttribute('vector-effect', 'non-scaling-stroke')
+          const tick = L.svg('rect', { x: TR.x0 - 2, y: -20, width: 4, height: 40, fill: C.gold, opacity: 0 }, world)
+          const stripTag = L.tag(world, L.TAGS.illustration, TR.tag)
+          // the title, switched (L.swap): "onset: how a note starts", "Air first", "A catch", "Together"
+          const TITLES = ['onset: how a note starts', 'Air first', 'A catch', 'Together']
+          const titles = TITLES.map((s) => L.label(world, s, { ...TR.title, size: 44 }))
+          const listen1 = L.tag(world, L.TAGS.listen, { x: TR.title.x, y: 270, anchor: 'start' })   // after "A catch", + 24 px
+          let catchW = 160
+          L.afterFonts(() => { try { catchW = titles[2].el.getComputedTextLength() || catchW } catch (e) { /* measured again */ } })
+          const chips = TR.chips.map((c) => L.chip(world, c.text, { x: c.x, y: TR.chipY }))
+          const airLbl = L.label(world, TR.marks.air.text, TR.marks.air)
+          const catchLbl = L.label(world, TR.marks.catch.text, TR.marks.catch)
+
+          /* ---------------------------------------------------------------- the stack (9f, 9g): the block s10-steady
+             draws again at its first frame */
+          const ST = TR.STACK
+          const ROW_H = ST.h                                          // the rows' half-height, 70 (the glyph's place is ST.hGlyph)
+          const stackG = L.svg('g', { class: 'stack' }, world)
+          const rowTr = ST.rows.map((y, i) => L.trace(stackG, { y, h: ROW_H, seed: 75 + i }))
+          const KINDS = ['air', 'catch', 'together']
+          // the names right-aligned to 660 (HANDOFFS 670: row 1's circle, rx 122 round its dots, reaches x 676, 5 px from
+          // "Air first")
+          const NAME_X = 660
+          const names = ST.names.texts.map((s, i) => L.label(stackG, s, { x: NAME_X, y: ST.names.y[i], size: ST.names.size, anchor: 'end' }))
+          // "the puff" at baseline 148 (HANDOFFS 165: row 1's circle, ry 84 round the row's centre 250, rises to y 166,
+          // through the label's descender at 171); "the click" from x 812 (HANDOFFS 800: 6 px over row 2's circle there)
+          const PUFF = { ...ST.puff, y: 148 }, CLICK = { ...ST.click, x: 812 }
+          const puff = L.label(stackG, PUFF.text, PUFF), click = L.label(stackG, CLICK.text, CLICK), neither = L.label(stackG, ST.neither.text, ST.neither)
+          // "the easy start" reads as row 3's own name (DECISIONS 195): under "Together", right-aligned 660, baseline 714
+          // (12 px or more under the name's "g"); on "neither"'s line it read "neither the easy start"
+          const EASY_L = { ...ST.easy, x: NAME_X, y: 714, anchor: 'end' }
+          const easy = L.label(stackG, EASY_L.text, EASY_L)
+          const hGlyph = L.label(stackG, ST.hGlyph.text, { x: ST.hGlyph.x, y: 732, size: ST.hGlyph.size, family: 'serif', anchor: 'middle', fill: C.ink2 })   // centred (760, 690)
+          const hLine = L.label(stackG, ST.hLine.text, ST.hLine)
+          // the "h" reads (DECISIONS 195): while it shows, row 3's first 200 px (x 704 to 900, past the gold tick) dim to
+          // 25 % through a mask with a soft edge (880 to 920), and the "h" stands at 70 %
+          const hMaskId = L.uid('hmask'), hGradId = L.uid('hgrad')
+          const hDefs = L.svg('defs', {}, stackG)
+          const hGrad = L.svg('linearGradient', { id: hGradId, gradientUnits: 'userSpaceOnUse', x1: 704, y1: 0, x2: 1700, y2: 0 }, hDefs)
+          const hStops = [0, (880 - 704) / 996, (920 - 704) / 996, 1].map((o) => L.svg('stop', { offset: o.toFixed(4), 'stop-color': '#fff', 'stop-opacity': 1 }, hGrad))
+          const hMask = L.svg('mask', { id: hMaskId, maskUnits: 'userSpaceOnUse', x: 600, y: 540, width: 1100, height: 220 }, hDefs)
+          L.svg('rect', { x: 600, y: 540, width: 104, height: 220, fill: '#fff' }, hMask)
+          L.svg('rect', { x: 704, y: 540, width: 996, height: 220, fill: `url(#${hGradId})` }, hMask)
+          // "LISTEN ONLY" is row 2's tag, under "A catch" (DECISIONS 195): right-aligned 660, centred y 495
+          const listen2 = L.tag(stackG, L.TAGS.listen, { x: NAME_X, y: 495, anchor: 'end' })
+
+          /* ---------------------------------------------------------------- frame-fixed: the card, the kicker, the words */
+          const card = L.chapterCard(hud, { num: 4, title: 'Starting a note', tIn: CARD_IN, tOut: CARD_OUT })
+          const kicker = L.kicker(hud, '04 · Starting a note')
+          const WORDS = ['air pressure', 'diaphragm', 'onset', '“support”']
+          const row = L.chipRow(hud, WORDS, { right: 1800, y: 87, gap: 12 })
+
+          const probe = { cam, fig, cueL, singers, backArrow, level, lead, fo, foLabel, baseTr, airTr, catchTr, togTr, movG, tick, stripTag, titles, listen1, chips, airLbl, catchLbl,
+            rowTr, names, puff, click, neither, easy, hGlyph, hLine, listen2, card, kicker, row, foldsAt, lane, clipRect, airWipe, catchWipe, hStops, hMaskId,
+            A: { ACT, CARD_IN, CARD_OUT, O10, FOLD0, GROW_D, SLIDE, FOLD_L, STRIP, ROW_IN, ONSET, ROW_OUT, TITLE, CHIPS, JUST, AIR, S_AIR, AIR_L, CATCH, LISTEN, PRESSED, S_CATCH, CATCH_L, TOG, MEET, S_TOG,
+              B27A, OUT1, STACK, FSH_D, TMV, TMV_D, STACK_D, NAMES, NPULSE, ROW3_OUT, STARTS, SR, CIRC, NEITHER, THIRD, AIM, EASY, SOFT, ONLY, D, FS }, boxes: {} }
+          window.__sceneProbe = window.__sceneProbe || {}
+          window.__sceneProbe[SID] = probe
+
+          const tl = gsap.timeline({ paused: true })
+          L.clock(tl, D, (t) => {
+            const T = T0 + t
+            cam.apply(t)
+            dust(T)
+            probe.boxes = { merc: merc(t), tavi: tavi(t) }
+
+            /* 9a: S8's figure dims to 25 % and its labels hide (linear 0.2 s); 9b: it fades from 25 % to nothing */
+            const dimU = P(t, ACT, 0.2, 'none')
+            const figA = lerp(1, 0.25, dimU) * (1 - P(t, FOLD0, 0.4, 'none'))
+            fig.draw({ ...POSE8, a: figA })
+            const labA = 1 - dimU
+            for (const l of Object.values(cueL)) l.draw({ a: labA })
+            for (const l of singers) l.draw({ a: labA })
+            for (const l of Object.values(lead)) l.draw(1, labA)
+            backArrow.draw(1, figA); level.draw(1, figA)
+
+            /* 9b: the ring at the throat grows into the folds and slides to the left place; the strip draws in */
+            const grow = P(t, FOLD0, GROW_D, 'none')
+            const su = P(t, SLIDE, SLIDE_D, 'power2.inOut')
+            const fk = P(t, STACK, FSH_D, 'power2.inOut')               // the stack move, first: the folds to the top left, small
+            const ku = P(t, TMV, TMV_D, 'power2.inOut')                 // then: trace 3 into row 3
+            const fx = lerp(lerp(GROW.from[0], FO.CX, su), FO.SMALL.cx, fk), fy = lerp(lerp(GROW.from[1], FO.CY, su), FO.SMALL.cy, fk)
+            const fs = lerp(lerp(GROW.s0, FS, su), FO.SMALL.s, fk)
+            const fst = foldsAt(t)
+            fo.draw({ a: P(t, FOLD0, 0.2, 'none'), cx: fx, cy: fy, s: fs, grow, T, state: fst.state, vib: fst.vib, airA: fst.airA || 0, airU: fst.airU || 0 })
+            foLabel.draw({ a: L.fade(t, FOLD_L, OUT1, { dIn: 0.3, easeIn: 'none' }).a })   // linear: it lands as the folds settle
+
+            // the strip's hairline draws on left to right with its chip
+            clipRect.setAttribute('width', f2((TR.x1 - TR.x0 + 8) * P(t, STRIP, STRIP_D, 'power2.inOut')))
+            // the stack move: the strip (its hairline and trace 3) into row 3; its chip up to centred y 150
+            const cy = lerp(TR.y, ST.rows[2], ku), sy = lerp(1, ROW_H / TR.h, ku)
+            movG.setAttribute('transform', ku > 0 ? `translate(0 ${f2(cy - TR.y * sy)}) scale(1 ${sy.toFixed(5)})` : '')
+            const landed = t >= STACK + STACK_D
+            baseTr.draw({ kind: 'air', t: 0, a: t >= STRIP && !landed ? 1 : 0 })
+            lane.setAttribute('opacity', (t >= STRIP ? 1 - P(t, TMV, TMV_D, 'none') : 0).toFixed(3))
+            stripTag.draw({ alpha: L.fade(t, STRIP + 0.3, null, { dIn: 0.3 }).a, dy: (ST.tag.y - TR.tag.y) * ku })
+
+            /* the starts on the strip, each in its own time; each goes to 30 % as the next is named (0.3 s, linear) and
+               stays until the next draws over it */
+            const headX = (s0) => TR.x0 + ((TR.x1 - TR.x0) * clamp(t - s0, 0, LEN)) / LEN
+            const ghost = (named, next) => (t >= next + LEN ? 0 : lerp(1, 0.3, P(t, named, 0.3, 'none')))
+            airTr.draw({ kind: 'air', t: clamp(t - S_AIR, 0, LEN), a: t >= S_AIR ? ghost(CATCH, S_CATCH) : 0 })
+            airWipe.setAttribute('x', f2(t >= S_CATCH ? headX(S_CATCH) : TR.x0 - 10))
+            catchTr.draw({ kind: 'catch', t: clamp(t - S_CATCH, 0, LEN), a: t >= S_CATCH ? ghost(TOG, S_TOG) : 0 })
+            catchWipe.setAttribute('x', f2(t >= S_TOG ? headX(S_TOG) : TR.x0 - 10))
+            const togA = t >= S_TOG ? 1 - P(t, ROW3_OUT, 0.3) : 0
+            togTr.draw({ kind: 'together', t: clamp(t - S_TOG, 0, LEN), a: togA, tick: 0 })
+            tick.setAttribute('y', f2(cy - 20))
+            tick.setAttribute('opacity', (t >= S_TOG ? P(t, S_TOG, 0.2, 'none') * togA : 0).toFixed(3))
+            airLbl.draw({ a: L.fade(t, AIR_L, CATCH).a })
+            catchLbl.draw({ a: L.fade(t, CATCH_L, TOG).a })
+
+            // the title and its switches; "LISTEN ONLY" beside "A catch"
+            const sw = [TITLE, AIR, CATCH, TOG]
+            titles.forEach((l, i) => {
+              const inU = i === 0 ? P(t, TITLE, 0.2, 'power2.out') : P(t, sw[i], 0.25, 'power2.inOut')
+              const outU = i < 3 ? P(t, sw[i + 1], 0.25, 'power2.inOut') : P(t, OUT1, 0.2, 'power2.in')
+              l.draw({ a: inU * (1 - outU), dy: (i === 0 ? 0 : 12 * (1 - inU)) - (i < 3 ? 12 * outU : 0) })
+            })
+            listen1.draw({ alpha: L.fade(t, LISTEN, TOG).a, dx: catchW + 24 })
+            // the three chips: land 0.4 s apart, scale 1.08 on "Just listen.", each lit while its start is named
+            const litOf = [P(t, AIR, 0.25) * (1 - P(t, CATCH, 0.25)), P(t, CATCH, 0.25) * (1 - P(t, TOG, 0.25)), P(t, TOG, 0.25)]
+            chips.forEach((c, i) => c.draw({ alpha: L.fade(t, CHIPS[i], OUT1).a, lit: litOf[i], scale: L.pulse(t, [JUST], 'chip') }))
+
+            /* 9f, 9g: the stack. Rows 1 and 2 open with the move; row 3 is trace 3 carried down until the replay; the
+               three back to back, each row lit as it plays; the circles; the third lit, rows 1 and 2 dim */
+            const rowsA = [P(t, TMV, TMV_D, 'none'), P(t, TMV, TMV_D, 'none'), landed ? 1 : 0]
+            // linear over 0.6 s: an eased 0.3 s light over the row's whole area put its change into two frames (a pop)
+            const lit3 = P(t, THIRD, 0.6, 'none')
+            const dim12 = P(t, AIM, 0.6, 'none')                       // from "aim" (on "the third" before F-01)
+            rowTr.forEach((tr, i) => {
+              const tt = clamp(t - SR[i], 0, LEN)
+              tr.draw({ kind: KINDS[i], t: tt, a: rowsA[i], lit: Math.max(L.env(t, SR[i], 0.15, LEN - 0.15, 0.3), i === 2 ? lit3 : 0),
+                dim: i < 2 ? dim12 : 0, circle: i < 2 ? P(t, CIRC[i], 0.4) : 0, tick: i === 2 ? P(t, SR[2], 0.2, 'none') : 1,
+                tickScale: i === 2 ? L.pulse(t, [EASY], 'bead') : 1 })
+            })
+            names.forEach((l, i) => l.life(t, NAMES[i], null, {}, [NPULSE[i]], 'chip'))
+            listen2.draw({ alpha: L.fade(t, STARTS, null).a })
+            puff.life(t, CIRC[0], null); click.life(t, CIRC[1], null); neither.life(t, NEITHER, null)
+            easy.life(t, EASY, null)
+            // linear over 0.5 s: the "h" and the row's dim eased over 0.3 s measured as a pop (0.28 % at 52.800)
+            const hShow = P(t, SOFT, 0.5, 'none') * (1 - P(t, ONLY, 1.2, 'sine.inOut'))
+            hGlyph.draw({ a: 0.7 * hShow })
+            const hm = 1 - 0.75 * hShow
+            hStops[0].setAttribute('stop-opacity', hm.toFixed(3)); hStops[1].setAttribute('stop-opacity', hm.toFixed(3))
+            if (hShow > 0) rowTr[2].g.setAttribute('mask', `url(#${hMaskId})`)
+            else rowTr[2].g.removeAttribute('mask')
+            hLine.life(t, ONLY, null)
+
+            /* frame-fixed */
+            card.draw(t)
+            kicker.draw(t, O10, KICK_OUT)
+            const wf = L.fade(t, ROW_IN, ROW_OUT)
+            const litO = P(t, ONSET, 0.3, 'power2.out')
+            row.draw((i) => ({ alpha: wf.a, lit: i === 2 ? litO : 1, underline: i === 2 ? litO : 1, scale: i === 2 ? L.pulse(t, [ONSET], 'chip') : 1 }))
+          })
+          window.__timelines = window.__timelines || {}
+          window.__timelines[SID] = tl
+        })()
+      </script>
+    </div>
+  </body>
+</html>

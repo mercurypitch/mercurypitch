@@ -1,0 +1,56 @@
+== o1: 4.330 s, peak 0.394; first sample +0.00000, last +0.00000
+   first 30 ms, dBFS per ms: -180 -180 -180 -180 -180 -101 -104 -94 -91 -89 -88 -70 -72 -68 -74 -75 -68 -63 -67 -62 -58 -54 -51 -50 -50 -47 -51 -47 -50 -51
+   last 30 ms,  dBFS per ms: -42 -47 -47 -44 -44 -46 -47 -50 -48 -59 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180
+   envelope: 434 frames at 100/s, max 1.000; first 8: [np.float64(0.0), np.float64(0.003), np.float64(0.022), np.float64(0.048), np.float64(0.082), np.float64(0.094), np.float64(0.126), np.float64(0.151)]; last 8: [np.float64(0.792), np.float64(0.726), np.float64(0.604), np.float64(0.295), np.float64(0.035), np.float64(0.0), np.float64(0.0), np.float64(0.0)]
+   envelope onsets (voiced after 50 ms or more unvoiced): 0.03 0.50 0.75 0.86 1.15 1.92 2.67 3.28 3.80
+    0.020  0.270  So             env around the start: 0.00 0.00 0.02 0.05 0.08 0.09                onset 0.03 (-10 ms)
+    0.375  0.450  if             env around the start: 0.65 0.66 0.72 0.74 0.72 0.73 0.75           
+    0.535  0.650  I              env around the start: 0.64 0.98 1.00 0.83 0.80 0.75 0.57           onset 0.50 (+35 ms)
+    0.750  1.090  push           env around the start: 0.00 0.00 0.01 0.04 0.01 0.01 0.03           onset 0.75 (+0 ms)
+    1.155  1.230  the            env around the start: 0.00 0.01 0.07 0.23 0.23 0.21 0.23           onset 1.15 (+5 ms)
+    1.355  1.510  air            env around the start: 0.29 0.46 0.72 0.82 0.86 0.93 1.00           
+    1.575  1.710  out            env around the start: 1.00 1.00 1.00 1.00 1.00 1.00 1.00           
+    1.835  2.425  harder,        env around the start: 0.03 0.04 0.03 0.03 0.03 0.03 0.03           
+    2.670  2.770  the            env around the start: 0.00 0.00 0.00 0.05 0.23 0.40 0.54           onset 2.67 (+0 ms)
+    2.875  3.160  note           env around the start: 0.40 0.41 0.40 0.39 0.38 0.35 0.31           
+    3.225  3.550  holds          env around the start: 0.01 0.01 0.01 0.02 0.02 0.02 0.02           onset 3.28 (-55 ms)
+    3.655  4.310  steadier?      env around the start: 0.14 0.10 0.11 0.09 0.12 0.12 0.11           
+== o4: 2.605 s, peak 0.314; first sample +0.00000, last +0.00000
+   first 30 ms, dBFS per ms: -94 -91 -83 -74 -76 -79 -76 -75 -75 -80 -80 -77 -73 -67 -65 -61 -61 -56 -53 -57 -48 -38 -40 -43 -50 -52 -52 -50 -42 -31
+   last 30 ms,  dBFS per ms: -51 -51 -48 -50 -49 -50 -51 -52 -51 -52 -52 -55 -54 -58 -59 -55 -57 -59 -57 -58 -57 -57 -57 -59 -57 -55 -60 -61 -67 -73
+   envelope: 261 frames at 100/s, max 1.000; first 8: [np.float64(0.001), np.float64(0.007), np.float64(0.067), np.float64(0.156), np.float64(0.182), np.float64(0.231), np.float64(0.278), np.float64(0.312)]; last 8: [np.float64(0.063), np.float64(0.062), np.float64(0.045), np.float64(0.028), np.float64(0.019), np.float64(0.015), np.float64(0.009), np.float64(0.005)]
+   envelope onsets (voiced after 50 ms or more unvoiced): 0.02 0.20 0.45 1.41 1.67 2.15
+    0.020  0.125  If             env around the start: 0.00 0.01 0.07 0.16 0.18 0.23                onset 0.02 (+0 ms)
+    0.230  0.285  I              env around the start: 0.38 0.64 0.67 0.62 0.60 0.59 0.49           onset 0.20 (+30 ms)
+    0.510  0.685  ease           env around the start: 0.16 0.16 0.17 0.19 0.19 0.19 0.20           onset 0.45 (+60 ms)
+    0.850  1.045  off,           env around the start: 1.00 1.00 1.00 1.00 1.00 0.95 1.00           
+    1.400  1.485  does           env around the start: 0.00 0.00 0.01 0.04 0.04 0.15 0.27           onset 1.41 (-10 ms)
+    1.530  1.605  it             env around the start: 0.07 0.07 0.08 0.09 0.18 0.25 0.24           
+    1.665  1.865  come           env around the start: 0.00 0.00 0.00 0.01 0.09 0.05 0.03           onset 1.67 (-5 ms)
+    1.870  2.065  back           env around the start: 0.31 0.32 0.34 0.35 0.37 0.32 0.22           
+    2.130  2.585  down?          env around the start: 0.00 0.00 0.00 0.00 0.01 0.10 0.04           onset 2.15 (-20 ms)
+== o13: 3.605 s, peak 0.400; first sample +0.00000, last +0.00000
+   first 30 ms, dBFS per ms: -94 -84 -82 -78 -72 -69 -71 -68 -64 -64 -56 -59 -58 -60 -67 -68 -68 -66 -63 -64 -58 -51 -37 -34 -37 -41 -44 -48 -49 -55
+   last 30 ms,  dBFS per ms: -52 -47 -54 -54 -52 -52 -54 -55 -56 -66 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180
+   envelope: 361 frames at 100/s, max 1.000; first 8: [np.float64(0.003), np.float64(0.006), np.float64(0.07), np.float64(0.138), np.float64(0.507), np.float64(0.666), np.float64(0.658), np.float64(0.584)]; last 8: [np.float64(0.021), np.float64(0.027), np.float64(0.042), np.float64(0.043), np.float64(0.02), np.float64(0.009), np.float64(0.0), np.float64(0.0)]
+   envelope onsets (voiced after 50 ms or more unvoiced): 0.02 0.85 1.26 1.55 2.39 2.64 2.80 3.23
+    0.020  0.610  Then           env around the start: 0.00 0.01 0.07 0.14 0.51 0.67                onset 0.02 (+0 ms)
+    0.840  1.005  is             env around the start: 0.00 0.00 0.00 0.01 0.14 0.21 0.24           onset 0.85 (-10 ms)
+    1.110  1.190  it             env around the start: 0.58 0.57 0.61 0.58 0.59 0.58 0.50           
+    1.250  1.825  steady         env around the start: 0.00 0.00 0.00 0.02 0.08 0.15 0.22           onset 1.26 (-10 ms)
+    1.970  2.125  air            env around the start: 0.94 0.96 1.00 0.99 0.95 0.96 0.98           
+    2.190  2.325  that           env around the start: 0.94 0.81 0.73 0.23 0.06 0.02 0.02           
+    2.390  2.685  keeps          env around the start: 0.00 0.01 0.01 0.09 0.04 0.05 0.05           onset 2.39 (+0 ms)
+    2.750  2.865  the            env around the start: 0.11 0.09 0.02 0.00 0.00 0.00 0.00           onset 2.80 (-50 ms)
+    2.910  3.145  note           env around the start: 0.58 0.60 0.59 0.58 0.56 0.55 0.53           
+    3.235  3.585  there?         env around the start: 0.00 0.01 0.05 0.44 0.64 0.68 0.72           onset 3.23 (+5 ms)
+== o9: 1.435 s, peak 0.335; first sample +0.00000, last +0.00000
+   first 30 ms, dBFS per ms: -83 -72 -71 -69 -63 -62 -67 -67 -60 -61 -66 -65 -59 -62 -62 -60 -65 -59 -56 -57 -55 -56 -52 -55 -49 -49 -49 -52 -50 -53
+   last 30 ms,  dBFS per ms: -49 -51 -50 -56 -50 -54 -54 -53 -54 -53 -58 -59 -68 -64 -75 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180 -180
+   envelope: 144 frames at 100/s, max 1.000; first 8: [np.float64(0.005), np.float64(0.008), np.float64(0.021), np.float64(0.028), np.float64(0.044), np.float64(0.057), np.float64(0.064), np.float64(0.073)]; last 8: [np.float64(0.128), np.float64(0.109), np.float64(0.081), np.float64(0.056), np.float64(0.033), np.float64(0.013), np.float64(0.0), np.float64(0.0)]
+   envelope onsets (voiced after 50 ms or more unvoiced): 0.04
+    0.020  0.200  How            env around the start: 0.01 0.01 0.02 0.03 0.04 0.06                onset 0.04 (-20 ms)
+    0.245  0.460  should         env around the start: 0.53 0.47 0.53 0.48 0.27 0.10 0.14           
+    0.505  0.560  I              env around the start: 1.00 1.00 1.00 1.00 1.00 1.00 1.00           
+    0.625  0.960  breathe        env around the start: 0.57 0.61 0.26 0.20 0.18 0.06 0.01           
+    1.065  1.415  in?            env around the start: 0.59 0.53 0.51 0.48 0.52 0.57 0.60           

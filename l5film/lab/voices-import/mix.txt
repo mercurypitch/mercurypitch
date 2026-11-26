@@ -1,0 +1,9 @@
+[heavy] slot 1: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/.venv/bin/python tools/mix.py
+sound-kit: assets/audio/kit-sound.json (18 files read; hops land at 507.24 and 507.89)
+  voice      -23.9 LUFS ->  -18.0  (+5.9 dB)
+  examples   -15.2 LUFS ->  -21.0  (-5.8 dB)
+  fx         -30.4 LUFS ->  -30.0  (+0.4 dB)
+  bed        -40.1 LUFS ->  -34.0  (+6.1 dB)
+  stings     -23.0 LUFS ->  -26.0  (-3.0 dB)
+  floor        0.3 LUFS ->  -55.0  (-55.3 dB)
+mix: 569.74s, integrated -15.3 LUFS, range 5.0 LU, true peak -1.8 dBTP before; gain -0.70 dB -> -16.0 LUFS, -2.5 dBTP (target -16.0 LUFS, -1.2 dBTP or lower)

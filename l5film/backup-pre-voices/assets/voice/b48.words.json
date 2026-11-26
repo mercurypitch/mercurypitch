@@ -1,0 +1,36 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.071,
+ "words": [
+  {
+   "w": "What",
+   "t": 0.02,
+   "e": 0.17
+  },
+  {
+   "w": "is",
+   "t": 0.22,
+   "e": 0.32
+  },
+  {
+   "w": "your",
+   "t": 0.37,
+   "e": 0.495
+  },
+  {
+   "w": "diaphragm's",
+   "t": 0.57,
+   "e": 1.295
+  },
+  {
+   "w": "main",
+   "t": 1.345,
+   "e": 1.62
+  },
+  {
+   "w": "job?",
+   "t": 1.695,
+   "e": 2.205
+  }
+ ]
+}

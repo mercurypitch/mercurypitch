@@ -5165,3 +5165,26 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   ((builder)) and critic B-01 ((builder), told of the 13:47 kit marks and A's
   allowed edits). WAITING to resume when one of those hands back: builder C ((builder))
   and builder A's fix round ((builder)). D after them.
+
+## 26 Nov 19:09 UTC: CRITIC B-01 back (ONE MORE PASS); calls 111-116; A's fix resumed
+- Critic B-01 ((builder), retire) could not write; the lead saved its report verbatim to
+  l6film/review/critic-scenes-B-01/REPORT.md. Findings: S6's empty right panel for 18 s (the
+  specimen's dim rows invisible); signature 2's gold a blink under the letter wave; frozen time
+  in speech (S7 3.0, S6 1.9, S5 1.2 s per 30 s); dimmed strokes through cards 02 and 03; S6's
+  push subliminal (3-4 px/s); small: seek-order raster differences in S7 (up to 68 levels), S5
+  "how far?" alignment, S7's definition before it is said, "-1" too fast, the E copy over bead 4.
+- Calls 111-116 (LEAD-ANSWERS): all five taken (rows at 100 % + question large in the panel;
+  gold held 1.3 s+; motions on words in S5/S7; strokes 10 % / rows 25 % under every card; S6
+  push to about 1.12, the 8 px/s floor for every slow push); small: seek order fixed or
+  explained, "-1" 0.8 s (B may add an optional duration to L.SPECIMEN.travel), others as
+  written; no change on the band-edge beads and S7's switch. OWNER LOOK LIST: the hosts'
+  listen pose reads as a wink (both critics; Lessons 5 and 6; the passes, a series call).
+- Common brief: standing calls 113-115 added (motion on words in speech, cards' strokes 10 %,
+  slow pushes over 8 px/s).
+- RESUMED: builder A's fix round ((builder)). Still running: the L5 import
+  ((builder)). WAITING: builder C ((builder); resume when the import hands
+  back, and tell it calls 114 and 115 apply to it: its cards, and the push under `compare`) and
+  builder B's fix round ((builder); after A's fix hands back, so the two never edit
+  HANDOFFS and STORYBOARD at the same time; B may edit its rows 5a-7l and specimen.js's
+  optional travel duration, logged). Then critics A-02 and B-02 (the last rounds), then D, E.
+- Next free LEAD-ANSWERS number: 117.

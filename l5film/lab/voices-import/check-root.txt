@@ -1,0 +1,4 @@
+[heavy] slot 1: npx --yes hyperframes@0.8.97 check
+◆  Checking l5film
+[hyperframes] media proxy pre-resolve: 27/27 ready, 0 failed (10ms)
+[hyperframes] browserGpuMode probe → software (WebGL unavailable)

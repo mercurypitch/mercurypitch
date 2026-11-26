@@ -40,8 +40,8 @@ The steps, per take:
      or more from any other sound (PRODUCTION-PIPELINE trap 18: a lone click after a silence), and one
      that touches the file's first or last sample with a silence of tts.MIN_SILENCE or more between it
      and the rest (these takes often carry a 1 to 2 ms step at the file's last samples);
-  3. the script's words aligned to the sound (tools/ctc_align.py), then moved onto the envelope with
-     tools/tts.py `calibrate` and the calibration's constants;
+  3. the script's words aligned to the sound and placed on it (tools/ctc_align.py `place`: a word after
+     a silence starts where the sound starts, the others move back by the calibration's constants);
   4. trimmed from PAD before the first sound to PAD after the last, faded over FADE at each cut; a take
      that gives less than PAD of silence at an edge (the service cuts some in the sound) is filled up
      to PAD with silence after the fade, so every take starts PAD before its first sound;
@@ -154,11 +154,9 @@ def import_take(al, line, ledger, dry):
     audio = ctc.decode(src, SR).astype(np.float64)
     blips, quiet = clicks(audio)
     logp = al.emissions(audio, SR)
-    raw = al.words(audio, SR, text, logp, lags=False)
-    words = [[w['t'], max(w['e'], w['t'] + 0.01)] for w in raw]
-    before = [list(w) for w in words]
-    take_lag, first, last = tts.calibrate(quiet, words, lags=(al.start_lag, al.end_lag))
-    placed = sum(1 for w, b in zip(words, before) if abs(w[0] - (b[0] - al.start_lag)) > 1e-9)
+    raw = al.words(audio, SR, text, logp)
+    p = ctc.place(tts, quiet, raw, al.start_lag, al.end_lag)
+    words, first, last, take_lag, placed = p['words'], p['first'], p['last'], p['take_lag'], len(p['starts'])
     # the trim: PAD either side of the sound, faded inside what the take gives, filled up to PAD
     head, tail = int(round((first - PAD) * SR)), int(round((last + PAD) * SR))
     x = audio[max(0, head): min(len(audio), tail)].copy()
@@ -203,6 +201,7 @@ def import_take(al, line, ledger, dry):
         'clicks': [list(b) for b in blips], 'clicks_silenced_inside': [list(b) for b in inside],
         'dur': round(len(x) / SR, 3), 'kokoro_dur': round(kok_dur, 3) if kok_dur else None,
         'words': len(out_words), 'placed_by_silence': placed, 'take_lag': round(take_lag, 3),
+        'first_word': out_words[0]['t'], 'last_word_end': round(len(x) / SR - out_words[-1]['e'], 3),
         'lufs_in': None if lufs is None else round(lufs, 1), 'gain_db': round(float(20 * np.log10(gain)), 1),
         'limited_db': round(limited, 1), 'peak': round(float(np.abs(x).max()), 3), 'voiced_db': round(voiced_db(x), 1),
         'score': round(float(np.mean(scores)), 2) if scores else None,
@@ -215,7 +214,7 @@ def import_take(al, line, ledger, dry):
         json.dump({'rate': tts.ENV_RATE, 'level': tts.envelope(x)}, open(os.path.join(VOICE, lid + '.env.json'), 'w'),
                   separators=(',', ':'))
         source = (f"ElevenLabs take {rec['take']} ({line['voice']}, {MODEL}); words by {al.name()} "
-                  f"(tools/ctc_align.py), onsets calibrated on the envelope (tools/tts.py calibrate)")
+                  f"(tools/ctc_align.py), onsets at silences set on the envelope")
         json.dump({'source': source, 'lag': al.start_lag, 'end_lag': al.end_lag, 'take_lag': round(take_lag, 3),
                    'words': out_words}, open(os.path.join(VOICE, lid + '.words.json'), 'w'), indent=1)
         rec['listed'] = {
@@ -257,9 +256,8 @@ def asr_md(recs, order):
            'apostrophe, a numeral as its word). No other service heard the takes.', '',
            '**A difference is a prompt for a person to listen, not a verdict.** The model spells by ear '
            '("DIAPHRAM", "TAVY"), so most differences are its spelling. Two things sort them: a stretch '
-           'counts as spelling when it has as many words on each side, give or take one (the model often '
-           'joins or splits a word), and letters 0.6 or more alike; and "scratch too" marks a stretch the '
-           'model heard the very same way in the '
+           'counts as spelling when its letters, spaces aside, are 0.6 or more alike (the model also joins '
+           'and splits words); and "scratch too" marks a stretch the model heard the very same way in the '
            'Kokoro take of the line, which speaks the script by construction. "Weakest word" is the '
            'script word the forced alignment found least support for (mean log-probability of its '
            'letters; nearer 0 is surer).', '',
@@ -269,10 +267,20 @@ def asr_md(recs, order):
            f'- Differ in spelling only: {len(by["spelling"])}.',
            f'- Heard exactly as written: {len(by["same"])}'
            + (' (' + ', '.join(r['id'] for r in by['same']) + ')' if by['same'] else '') + '.', '']
+    out += ['## By the alignment\'s support, least first', '',
+            'The mean log-probability of the script\'s own letters on the take (nearer 0 is surer). It is a '
+            'second view, blind to spelling: a line far under its host\'s others is worth an ear whatever the '
+            'transcript says. Tavi\'s voice scores lower than Merc\'s throughout.', '',
+            '| Line | Host | Support | Weakest word | Words check |', '| --- | --- | --- | --- | --- |']
+    for r in sorted(rows, key=lambda r: (r['who'] != 'orange', r['score'] if r['score'] is not None else 0)):
+        weak = f"\"{cell(r['weakest'][1])}\" ({r['weakest'][0]:.2f})" if r['weakest'] else '-'
+        out.append(f"| {r['id']} | {WHO[r['who']]} | {r['score']:.2f} | {weak} | "
+                   f"{ {'words': 'words differ', 'spelling': 'spelling only', 'same': 'as written'}[grade(r)] } |")
+    out.append('')
     for g, title, note in (
             ('words', 'Listen to these first: a word missing, added or far from the script',
-             'A stretch here has more or fewer words than the script, or letters far from it, and the '
-             'scratch take was not heard the same way.'),
+             'A stretch here is missing, added, or under 0.6 alike in its letters, and the scratch take was '
+             'not heard the same way.'),
             ('spelling', 'Differ in spelling only',
              'Every stretch is near the script\'s letters, or was heard the same way in the scratch take.')):
         out += [f'## {title}', '', note, '']
@@ -323,6 +331,18 @@ def import_md(recs, order, al):
                 out.append(f"| {r['id']} | {WHO[r['who']]} | end | {r['cut_out_db']:.0f} | {cell(w[-1])} |")
     else:
         out.append('None.')
+    apart = [r for r in rows if r['first_word'] > PAD + 0.0005 or r['last_word_end'] > PAD + 0.0005]
+    out += ['', '## Takes with sound before the first word or after the last', '',
+            'The first word normally starts 0.02 s into its take, where the sound starts, and the last ends '
+            '0.02 s before its end. Here the aligner hears the word further in (a breath, a long first '
+            'consonant, a tail after the last letter), so the word keeps the aligner\'s time and the take keeps '
+            'the sound.', '']
+    if apart:
+        out += ['| Line | Host | First word starts at (s) | Last word ends before the end by (s) |', '| --- | --- | --- | --- |']
+        for r in apart:
+            out.append(f"| {r['id']} | {WHO[r['who']]} | {r['first_word']:.3f} | {r['last_word_end']:.3f} |")
+    else:
+        out.append('None.')
     clicked = [r for r in rows if r['clicks']]
     out += ['', '## Clicks counted as no sound', '',
             f'A loud run under {BLIP * 1000:.0f} ms that stands {FAR} s or more from any other sound (trap 18), or '
@@ -339,8 +359,8 @@ def import_md(recs, order, al):
     out += ['', '## Every take', '',
             'Lead and tail: the silence the service gave before the first sound and after the last. Fill: '
             'silence added to make up the 0.02 s pad. Placed: word starts set by a silence, of the line\'s '
-            'words. Take lag: this take\'s own median of (aligned start - the sound\'s start) at those words; '
-            'the calibration expects about 55 ms. Voiced: the mean level of the voiced frames after the gain.', '',
+            'words. Take lag: this take\'s own median of (aligned start - the sound\'s start) at those words '
+            '(the scratch voices: about 40 ms). Voiced: the mean level of the voiced frames after the gain.', '',
             '| Line | Host | Source (s) | Lead | Tail | Fill in/out | Take (s) | Scratch (s) | Ratio | Words a minute | '
             'LUFS in | Gain (dB) | Peak | Voiced (dBFS) | Placed | Take lag (ms) | Notes |',
             '| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |']

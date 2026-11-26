@@ -1,0 +1,14 @@
+[heavy] slot 1: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/.venv/bin/python -I tools/ctc_align.py --calibrate
+ctc_align.py: 71 Kokoro takes, 1034 words; a silence places 286 starts and 278 ends
+  as aligned           starts: median  +40.0 ms; |error| median  40.0 ms, 90th percentile  90.0 ms, worst  295 ms (1034 words)
+                       ends  : median  -10.0 ms; |error| median  30.0 ms, 90th percentile 135.0 ms, worst  532 ms (1034 words)
+  the edges no silence places, as aligned
+                       starts: median  +35.0 ms; |error| median  35.0 ms, 90th percentile  75.6 ms, worst  295 ms (748 words)
+                       ends  : median   +5.0 ms; |error| median  25.0 ms, 90th percentile  65.0 ms, worst  298 ms (756 words)
+  constants: those starts move back by +35.0 ms, those ends by +5.0 ms
+  as placed            starts: median   +0.0 ms; |error| median  10.0 ms, 90th percentile  45.0 ms, worst  260 ms (1034 words)
+                       ends  : median   +0.0 ms; |error| median  15.0 ms, 90th percentile  65.0 ms, worst  465 ms (1034 words)
+    starts at a silence : median   +0.0 ms; |error| median   0.0 ms, 90th percentile   0.0 ms, worst  200 ms (286 words)
+    starts elsewhere    : median   -0.0 ms; |error| median  17.0 ms, 90th percentile  50.0 ms, worst  260 ms (748 words)
+  the five starts furthest out: b25 ""h"," 225 ms, b38 "up." 230 ms, b51 "long," 230 ms, b28 "long," 238 ms, b28 ""h"," 260 ms
+ctc_align.py: wrote tools/ctc-calibration.json

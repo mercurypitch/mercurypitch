@@ -78,8 +78,9 @@ THREADS = 2          # the machine is shared
 BETWEEN = 0.02       # seconds: a word's last letter may end this far into the silence that follows the word
 NEAR_START = (-0.03, 0.15)   # a silence's end sets the next word's start when the aligner's start is this near it
                              # (after a clear pause the aligner is 35 to 55 ms late, 131 ms for 19 in 20)
-NEAR_END = (0.0, 0.25)       # a silence's start sets a word's end when it comes this long after the aligner's end
-                             # (the sound runs on 115 to 135 ms past the last letter, 230 ms for 19 in 20)
+NEAR_END = (0.0, 0.3)        # a silence's start sets a word's end when it comes this long after the aligner's end
+                             # (the sound runs on 115 to 135 ms past the last letter, 230 ms for 19 in 20; 0.3 is
+                             # tools/tts.py's own reach)
 
 
 # ------------------------------------------------------------------ the script's words, as the model spells
@@ -150,14 +151,19 @@ def resample(audio, sr, to):
 
 # ------------------------------------------------------------------ the trellis
 
-def viterbi(logp, tokens, blank):
+def viterbi(logp, tokens, blank, edge=None):
     """The best CTC path of `tokens` through logp (frames x vocabulary, log-probabilities).
     Returns [(first frame, last frame, mean log-probability)] per token, or None when the sound has
-    fewer frames than the letters need."""
+    fewer frames than the letters need. `edge` is a token the path may also pass through before the
+    first token and after the last, or not: the model writes a word boundary at the end of a line
+    (and sometimes at its start), and a path with nowhere to put it would spend the last word's
+    letters on it."""
     T, L = logp.shape[0], len(tokens)
-    S = 2 * L + 1
+    seq = list(tokens) if edge is None else [edge] + list(tokens) + [edge]
+    n = len(seq)
+    S = 2 * n + 1
     ext = np.full(S, blank, dtype=np.int64)
-    ext[1::2] = tokens
+    ext[1::2] = seq
     need = L + sum(1 for i in range(1, L) if tokens[i] == tokens[i - 1])
     if T < need:
         return None
@@ -167,6 +173,8 @@ def viterbi(logp, tokens, blank):
     NEG = -1e30
     score = np.full(S, NEG)
     score[0], score[1] = em[0, 0], em[0, 1]
+    if edge is not None:                                 # or start past the leading edge token
+        score[2], score[3] = em[0, 2], em[0, 3]
     back = np.zeros((T, S), dtype=np.int8)
     idx = np.arange(S)
     for t in range(1, T):
@@ -177,13 +185,15 @@ def viterbi(logp, tokens, blank):
         k = cand.argmax(0)
         score = cand[k, idx] + em[t]
         back[t] = k
-    s = S - 1 if score[S - 1] >= score[S - 2] else S - 2
+    ends = [S - 1, S - 2] if edge is None else [S - 1, S - 2, S - 3, S - 4]   # or end before the trailing one
+    s = max(ends, key=lambda i: score[i])
     path = np.empty(T, dtype=np.int64)
     for t in range(T - 1, -1, -1):
         path[t] = s
         s -= int(back[t, s])
     out = []
-    for i in range(L):
+    first = 0 if edge is None else 1
+    for i in range(first, first + L):
         f = np.nonzero(path == 2 * i + 1)[0]
         out.append((int(f[0]), int(f[-1]), float(em[f, 2 * i + 1].mean())))
     return out
@@ -238,7 +248,7 @@ class Aligner:
                     owner.append((k, True))
         if not tokens:
             raise ValueError('no word of the line has a letter the model knows')
-        spans = viterbi(logp, np.array(tokens), self.vocab[BLANK])
+        spans = viterbi(logp, np.array(tokens), self.vocab[BLANK], edge=self.vocab[BAR])
         if spans is None:
             raise ValueError('the take is too short for the line\'s letters')
         out = []
@@ -343,17 +353,16 @@ def place(tts, audio, aligned, start_lag, end_lag):
 
 def compare(script_text, heard):
     """The script line (normalised) against what the model heard, word by word:
-    [(kind, script words, heard words)] for every stretch that differs, kind 'spelling' when the stretch
-    has as many words on each side, give or take one (the model joins and splits words), and letters
-    0.6 or more alike (it spells by ear), else 'words'."""
+    [(kind, script words, heard words)] for every stretch that differs, kind 'spelling' when the
+    stretch's letters, spaces aside, are 0.6 or more alike (the model spells by ear, and joins and
+    splits words), else 'words'."""
     a, b = normalised(script_text).split(), heard.split()
     out = []
     for op, i0, i1, j0, j1 in difflib.SequenceMatcher(None, a, b, autojunk=False).get_opcodes():
         if op == 'equal':
             continue
         x, y = a[i0:i1], b[j0:j1]
-        near = (difflib.SequenceMatcher(None, ''.join(x), ''.join(y), autojunk=False).ratio() >= 0.6
-                and abs(len(x) - len(y)) <= 1 and x and y)
+        near = x and y and difflib.SequenceMatcher(None, ''.join(x), ''.join(y), autojunk=False).ratio() >= 0.6
         out.append(('spelling' if near else 'words', ' '.join(x), ' '.join(y)))
     return out
 

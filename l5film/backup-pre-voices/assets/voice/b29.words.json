@@ -1,0 +1,41 @@
+{
+ "source": "kokoro phoneme durations, aligned to the script, onsets calibrated on the envelope",
+ "lag": 0.055,
+ "words": [
+  {
+   "w": "Tavi,",
+   "t": 0.02,
+   "e": 0.535
+  },
+  {
+   "w": "hold",
+   "t": 0.63,
+   "e": 0.938
+  },
+  {
+   "w": "an",
+   "t": 0.962,
+   "e": 1.012
+  },
+  {
+   "w": "A",
+   "t": 1.038,
+   "e": 1.062
+  },
+  {
+   "w": "for",
+   "t": 1.113,
+   "e": 1.238
+  },
+  {
+   "w": "ten",
+   "t": 1.312,
+   "e": 1.562
+  },
+  {
+   "w": "seconds.",
+   "t": 1.663,
+   "e": 1.85
+  }
+ ]
+}

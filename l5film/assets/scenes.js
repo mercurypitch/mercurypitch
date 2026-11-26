@@ -2,77 +2,77 @@
 window.SCENES = {
  "s01-cold-open": {
   "start": 0.0,
-  "end": 38.81,
+  "end": 42.62,
   "title": "Cold open: one note, sung easily, then pushed"
  },
  "s02-title": {
-  "start": 38.81,
-  "end": 42.41,
+  "start": 42.62,
+  "end": 46.22,
   "title": "Title"
  },
  "s03-promise": {
-  "start": 42.41,
-  "end": 52.88,
+  "start": 46.22,
+  "end": 56.305,
   "title": "The promise"
  },
  "s04-recall": {
-  "start": 52.88,
-  "end": 66.515,
+  "start": 56.305,
+  "end": 70.0,
   "title": "From Lesson 3: how loud to sing"
  },
  "s05-push": {
-  "start": 66.515,
-  "end": 102.72,
+  "start": 70.0,
+  "end": 108.18,
   "title": "What pushing does"
  },
  "s06-diaphragm": {
-  "start": 102.72,
-  "end": 171.495,
+  "start": 108.18,
+  "end": 178.56,
   "title": "What the diaphragm does"
  },
  "s07-support": {
-  "start": 171.495,
-  "end": 207.885,
+  "start": 178.56,
+  "end": 217.245,
   "title": "\"Support\": a common mix-up"
  },
  "s08-breathe": {
-  "start": 207.885,
-  "end": 228.27,
+  "start": 217.245,
+  "end": 237.655,
   "title": "Breathing in"
  },
  "s09-onset": {
-  "start": 228.27,
-  "end": 285.34,
+  "start": 237.655,
+  "end": 296.75,
   "title": "How a note starts"
  },
  "s10-steady": {
-  "start": 285.34,
-  "end": 346.42,
+  "start": 296.75,
+  "end": 359.05,
   "title": "What a steady note looks like"
  },
  "s11-sing": {
-  "start": 346.42,
-  "end": 385.59,
+  "start": 359.05,
+  "end": 399.015,
   "title": "Sing it: listen along if you need to"
  },
  "s12-your-turn": {
-  "start": 385.59,
-  "end": 462.37,
+  "start": 399.015,
+  "end": 476.98,
   "title": "Your turn: ten seconds"
  },
  "s13-recap": {
-  "start": 462.37,
-  "end": 527.395,
+  "start": 476.98,
+  "end": 546.045,
   "title": "Quick check and practise"
  },
  "s14-next": {
-  "start": 527.395,
-  "end": 543.265,
+  "start": 546.045,
+  "end": 563.54,
   "title": "Next time"
  },
  "s15-end": {
-  "start": 543.265,
-  "end": 549.465,
+  "start": 563.54,
+  "end": 569.74,
   "title": "End card"
  }
 };

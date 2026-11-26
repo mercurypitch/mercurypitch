@@ -42,3 +42,36 @@ DECISIONS 246 on, `tools/CHANGES.md` and `LEDGER.md`.
 `gen-root.py` rewrites each built scene's root `data-duration` when the table changes, and every
 scene's length changes on a re-time. The brief says it must leave every scene file as it is. Plan:
 run it aside first, see exactly what it would change, keep the scene files untouched, and report.
+
+## Progress, 26 November (later)
+
+- [x] The aligner's forced path now passes an optional word boundary at the line's edges (the model
+      writes one after the last word; without it "in?" in o9 was put 0.3 s late on bad frames).
+- [x] Calibration final (`calibration.txt`): as aligned starts +40 ms median, |error| 40 / 90 ms
+      (median / 90th percentile), ends -10, 30 / 135; as placed starts 0, 10 / 45 ms, ends 0, 15 / 65.
+      Constants +35 ms (starts), +5 ms (ends).
+- [x] Backup made before anything changed: `backup-pre-voices/` (with `before.sha256`, which also holds
+      every scene file's hash, and `voice.sha256`).
+- [x] Phase 1: Tavi's 15 imported; looked at o1, o4, o13, o9 (`look/`).
+- [x] Phase 2 step 1: all 71 imported (`import-all.txt`); `voice-takes/ASR.md`, `IMPORT.md`, `import.json`.
+- [ ] Next: cues.py --no-tts; gen-root aside (scene files!); mix; captions; chapters; script-md; check;
+      clock-lint; listening copies; DECISIONS 246+, LEDGER, CHANGES.
+
+Order to run after cues.py: gen-root.py BEFORE chapters.py and script-md.py (both read
+assets/scenes.js; CHANGES records chapters.json going stale that way on the 190 re-time), and before
+mix.py if sound-kit.mjs reads the scene table.
+
+## Progress (after the re-time)
+
+- [x] `cues.py --no-tts`: 9:29.7 (569.740 s), 143 words a minute while speaking (`cues-no-tts.txt`).
+      cues.py's pacing header now names the imported voices when every line is imported
+      (`before/cues.before-import.py.txt`; the scratch report is byte for byte the old one).
+- [x] gen-root.py run ASIDE (`root-aside/`): it would rewrite the root `data-duration` of 13 scene
+      files (all but s02 and s15) and nothing else. Installed only `assets/scenes.js` and `index.html`;
+      the 15 scene files keep their sha256 (`backup-pre-voices/before.sha256`).
+- [x] mix.py (after gen-root, since sound-kit.mjs loads the scene table): -16.0 LUFS, 5.0 LU, -2.5 dBTP
+      by its own report (`mix.txt`). captions.py: 139 captions, 23 sound descriptions, no warning.
+      chapters.py and script-md.py after gen-root.
+- [x] clock-lint: silent on every scene.
+- [ ] check (root, scene files untouched) running: `check-root.txt`. Then check on a copy with the
+      durations synced (`root-synced/`), listening copies, logs.
