@@ -7,6 +7,10 @@
 //   MP_API_BASE=http://localhost:8788 MP_ADMIN_KEY=dev-admin-key \
 //     node scripts/seed-weekly-rotation.mjs --dry-run
 //
+// For a schedule that is already running, use seed-legends.mjs instead:
+// this script starts the original five from scratch, first one active,
+// which would replace whatever Legend is live.
+//
 // Supersedes seed-weekly-sample.mjs, which seeds a single week. Week one
 // here is that same reviewed money-note melody, so a board already seeded
 // from the sample keeps its content and its scores.
@@ -75,7 +79,20 @@ if (
 
 // ── Melody helpers ───────────────────────────────────────────────────
 
-const NOTE_NAMES = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B']
+const NOTE_NAMES = [
+  'C',
+  'C#',
+  'D',
+  'D#',
+  'E',
+  'F',
+  'F#',
+  'G',
+  'G#',
+  'A',
+  'A#',
+  'B',
+]
 
 /** MIDI list → MelodyItem[]. One beat per item, so a held note is the
  *  same note repeated — which is how the reviewed week-one melody spells

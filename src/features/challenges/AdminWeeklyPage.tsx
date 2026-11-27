@@ -13,6 +13,7 @@ import { createEffect, createResource, createSignal, For, onCleanup, Show, untra
 import { showNotification } from '@/stores/notifications-store'
 import type { MelodyItem } from '@/types'
 import styles from './AdminWeeklyPage.module.css'
+import { DIFFICULTIES, FEAT_TYPES } from './challenge-taxonomy'
 import { CHALLENGE_PERIODS, DEFAULT_PERIOD_WEEKS, formatIsoWeek, reflowChanges, reflowQueue, reorder, shiftWeeks, weeksBetween, windowFrom, windowWeeks, } from './challenge-window'
 import type { WeeklyAdminRow } from './weekly-service'
 import { createWeekly, deleteWeekly, getAdminKey, listAllWeekly, melodyItemsToNotes, parseTargetNotes, plusOneWeekIso, setAdminKey, thisMondayUtcIso, updateWeekly, } from './weekly-service'
@@ -85,17 +86,6 @@ const arrowRight = () => (
   </svg>
 )
 
-const FEAT_TYPES = [
-  'money-note',
-  'sustain',
-  'low-note',
-  'range',
-  'melisma-run',
-  'register-jump',
-  'vibrato',
-  'belt-vs-falsetto',
-]
-const DIFFICULTIES = ['beginner', 'intermediate', 'advanced']
 const STATUSES = ['queued', 'active', 'closed']
 
 interface FormState {
@@ -128,10 +118,13 @@ function blankForm(): FormState {
     notes: '',
     hearItUrl: '',
     startsAt,
-    endsAt: plusOneWeekIso(startsAt),
+    endsAt: windowFrom(startsAt, DEFAULT_PERIOD_WEEKS).endsAt,
     founderScore: '',
     evergreen: true,
-    status: 'active',
+    // Queued, not active: an active row with a future date goes live at
+    // once and hides the current Legend. The worker promotes a queued row
+    // itself when its window opens; "Set live now" is the deliberate way.
+    status: 'queued',
   }
 }
 
@@ -545,7 +538,7 @@ export const AdminWeeklyPage: Component<AdminWeeklyPageProps> = (props) => {
         <Show when={!embedded}>
           <header class={styles.head}>
             <h2 id="weekly-admin-title" class={styles.title}>
-              Weekly Legend — Authoring
+              Legend Attempts: Authoring
             </h2>
             <button
               class={styles.close}
