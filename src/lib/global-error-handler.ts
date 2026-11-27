@@ -28,6 +28,11 @@ function messageOf(reason: unknown): string {
  * so both filters have to agree or an offline blip shows a crash screen.
  */
 export function isNetworkError(reason: unknown): boolean {
+  // A call to the API that had no answer by its deadline (ApiDeadlineError,
+  // src/db/api-fetch.ts) is the same state: the backend is out of reach. It
+  // is recognised by its name, so this module does not import api-fetch.ts
+  // and the notification store behind it.
+  if (reason instanceof Error && reason.name === 'ApiDeadlineError') return true
   return /NetworkError when attempting to fetch|Failed to fetch|Load failed/i.test(
     messageOf(reason),
   )

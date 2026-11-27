@@ -1,4 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiDeadlineError } from '@/db/api-fetch'
 import { initGlobalErrorHandlers, isNetworkError, isStaleBuildError, } from './global-error-handler'
 import { requestUpdateCheck } from './pwa-service-worker'
 
@@ -24,6 +25,10 @@ describe('isNetworkError', () => {
     ['a browser TypeError', new TypeError('Failed to fetch')],
     ['a bare string', 'NetworkError when attempting to fetch resource.'],
     ['something error-shaped', { message: 'Load failed' }],
+    [
+      'an API request with no answer by its deadline',
+      new ApiDeadlineError('https://api.example.test/api/auth/me', 8000),
+    ],
   ])('recognises %s', (_label, reason) => {
     expect(isNetworkError(reason)).toBe(true)
   })
@@ -150,6 +155,16 @@ describe('the global handlers', () => {
     window.dispatchEvent(event)
 
     expect(askedForUpdate).not.toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('treats an API request past its deadline as degraded, not broken', () => {
+    const event = rejection(
+      new ApiDeadlineError('https://api.example.test/api/userSettings', 8000),
+    )
+
+    window.dispatchEvent(event)
+
     expect(event.defaultPrevented).toBe(true)
   })
 
