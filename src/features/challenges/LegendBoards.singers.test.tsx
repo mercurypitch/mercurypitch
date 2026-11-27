@@ -21,28 +21,32 @@ const data = vi.hoisted(() => ({
   archiveReads: 0,
 }))
 
-vi.mock('./weekly-service', async (importOriginal) => ({
-  ...(await importOriginal<typeof WeeklyService>()),
-  getActiveWeekly: () =>
-    Promise.resolve({
-      id: 'c1',
-      slug: 'c1',
-      title: 'The Impossible Note',
-      description: 'Hold the B4',
-      featType: 'money-note',
-      targetItems: [],
-      targetScore: 70,
-      hearItUrl: null,
-      endsAt: '2026-12-28T00:00:00.000Z',
-      founderScore: 88,
-    }),
-  getWeeklyBoard: () => Promise.resolve(data.board),
-  getWeeklyArchive: () => {
-    data.archiveReads += 1
-    return Promise.resolve(data.archive)
-  },
-  hoursUntil: () => 72,
-}))
+vi.mock('./weekly-service', async (importOriginal) => {
+  const live = {
+    id: 'c1',
+    slug: 'c1',
+    title: 'The Impossible Note',
+    description: 'Hold the B4',
+    featType: 'money-note',
+    targetItems: [],
+    targetScore: 70,
+    hearItUrl: null,
+    endsAt: '2026-12-28T00:00:00.000Z',
+    founderScore: 88,
+  }
+  return {
+    ...(await importOriginal<typeof WeeklyService>()),
+    getActiveWeekly: () => Promise.resolve(live),
+    readActiveWeekly: () =>
+      Promise.resolve({ status: 'ok' as const, challenge: live }),
+    getWeeklyBoard: () => Promise.resolve(data.board),
+    getWeeklyArchive: () => {
+      data.archiveReads += 1
+      return Promise.resolve(data.archive)
+    },
+    hoursUntil: () => 72,
+  }
+})
 
 vi.mock('./board-consent', () => ({
   hasBoardConsent: () => Promise.resolve(true),
