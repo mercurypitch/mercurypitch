@@ -1,4 +1,4 @@
-// Studio clip take menu — a clip's takes as menu rows, the one playing checked: what its right-click menu and the Takes list on its toolbar show.
+// Studio clip take menu — a clip's takes as menu rows, the one playing checked, then Show takes: what its right-click menu and the Takes list on its toolbar show.
 //
 // The rows are OverflowMenu's plain rows, so a shared Studio menu (a lane's
 // own, for one) can take them in as they are. A row is a step of the takes,
@@ -10,6 +10,7 @@ import { studioClipTakeList, studioClipTakeStep, studioClipTakeSteps, } from '@/
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import { studioClipTakeName } from './clip-take-name'
+import { studioTakesClipId, toggleStudioTakes } from './comp-editor'
 
 /** A step's name in the list: its take's file name, or "Take 2" for one without, and its pass or comp. */
 export function studioTakeStepName(
@@ -40,8 +41,32 @@ export function studioChooseTakeCommand(
   }
 }
 
-/** The clip's takes as menu rows, oldest first, the playing one checked. */
+/**
+ * The clip's takes as menu rows, oldest first, the playing one checked; then,
+ * for a clip of several takes, Show takes, which stands them in rows under
+ * its lane (StudioTakeLanes.tsx), or Hide takes while they stand there.
+ */
 export function studioClipTakeMenu(
+  clip: StudioClip,
+  assets: ReadonlyMap<string, StudioAsset>,
+  onCommand: (command: StudioCommand) => boolean,
+  writable: boolean,
+): OverflowMenuItem[] {
+  const rows = takeRows(clip, assets, onCommand, writable)
+  if (clip.takes === undefined) return rows
+  const shown = studioTakesClipId() === clip.id
+  return [
+    ...rows,
+    {
+      key: 'show-takes',
+      label: shown ? 'Hide takes' : 'Show takes',
+      separatorBefore: true,
+      onSelect: () => toggleStudioTakes(clip.id),
+    },
+  ]
+}
+
+function takeRows(
   clip: StudioClip,
   assets: ReadonlyMap<string, StudioAsset>,
   onCommand: (command: StudioCommand) => boolean,

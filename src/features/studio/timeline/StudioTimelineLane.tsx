@@ -19,6 +19,7 @@ import { StudioCompLanes } from './StudioCompLanes'
 import { StudioArmButton, StudioLaneInstrument } from './StudioLaneHeader'
 import { StudioLaneLine } from './StudioLaneLine'
 import lineStyles from './StudioLaneLine.module.css'
+import { StudioTakeLanes } from './StudioTakeLanes'
 import styles from './StudioTimeline.module.css'
 import { StudioTimelineClip } from './StudioTimelineClip'
 import { StudioTrackControls, StudioTrackName } from './StudioTrackControls'
@@ -382,6 +383,11 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
         </Show>
       </div>
       <StudioCompLanes
+        trackId={props.id}
+        timeline={props.timeline}
+        view={props.view}
+      />
+      <StudioTakeLanes
         trackId={props.id}
         timeline={props.timeline}
         view={props.view}

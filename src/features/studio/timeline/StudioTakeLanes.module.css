@@ -1,0 +1,64 @@
+/* Studio take lanes — a clip's takes as rows under its lane (StudioTakeLanes.tsx).
+   The rows borrow the comp rows' frame (StudioCompLanes.module.css): the
+   lane grows by their height and the lanes below move down. What differs:
+   a row is a button that plays its take, the playing one lit as a comp
+   lights the pass that plays, and Hide takes stands beside the hint, as a
+   phone's header column is too narrow for it. */
+
+.tools {
+  position: sticky;
+  left: calc(var(--studio-header-width) + 12px);
+  z-index: 4;
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+  height: 100%;
+  max-width: calc(100vw - var(--studio-header-width) - 24px);
+  padding-left: 12px;
+}
+
+/* The secondary ink, as the comp rows' hint: the muted one is too faint
+   over the range's tint. */
+.hint {
+  min-width: 0;
+  margin: 0;
+  overflow: hidden;
+  color: var(--studio-text-2);
+  font-size: 12px;
+  line-height: 16px;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.name {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.take {
+  padding: 0;
+  font: inherit;
+  cursor: pointer;
+  touch-action: manipulation;
+}
+.take:disabled {
+  cursor: default;
+}
+@media (hover: hover) {
+  .take:hover:not(:disabled) {
+    border-color: var(--studio-track);
+  }
+}
+
+.playing {
+  border-color: var(--studio-track);
+  border-top: 3px solid var(--studio-track);
+  background: color-mix(
+    in srgb,
+    var(--studio-track) 34%,
+    var(--studio-clip-base)
+  );
+  color: var(--track-wave);
+}
