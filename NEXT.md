@@ -5730,3 +5730,32 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Next: E-02 -> E's polish (no third round). D's polish done -> the SOUND STEP
   (briefs/l6-sound.md; note the clock is now 531.54 s). Then the KIT PASS, the film draft and
   the owner's look.
+
+## 27 Nov 12:42 UTC: CRITIC E-02 RETURNED (last round); E's POLISH launched
+- CRITIC E-02 ((builder), finished): ONE MORE PASS. Saved verbatim to
+  review/critic-scenes-E-02/REPORT.md.
+  - FIXED: 1, 2, 3, 4, 6 and 8, the hops, the plates, the copy and the seam (not a defect).
+  - PARTLY: 5 (the pair at 47 % of the width) and 7 (the leaves read as fades).
+  - New:
+    1. 12e's question over an empty chart for 1.5 s;
+    2. 12c's pair small for 5 s;
+    3. the leaves' alpha;
+    4. 12h's empty panel for 0.3 s;
+    5. the Leap beads blob;
+    6. Tavi's gold sparks on a hop.
+  - Its render rewrote lab/s14-end/proj (the polish is told).
+- LEAD-ANSWERS 136:
+  - seven hollow rings on "Is";
+  - the 1.4x move from 460.855;
+  - the alpha holds 40 % of each leave;
+  - the panel at 487.31;
+  - the beads never touch;
+  - FACTS gets b47's printed form;
+  - HOSTS' PASSES: Tavi's s14 landing is a hop with NO sparkles (replaces 135's fan).
+  Next free call: 137.
+- LAUNCHED ((model) xhigh): E's POLISH (briefs/l6-polish-E-02.md); its id is in the agent list.
+  No third round.
+- Running: D's polish redo ((builder)) and E's polish.
+- Next: when D's polish ends, the SOUND STEP (briefs/l6-sound.md; the clock is now 531.54 s).
+  When both polishes end: the KIT PASS (its list in NEXT.md, with the + items since), then the
+  30 fps film draft with MIX=full, measure, and the owner's look.
