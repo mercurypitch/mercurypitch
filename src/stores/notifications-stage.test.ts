@@ -287,6 +287,25 @@ describe("while a take's question has Merc's bubble", () => {
     expect(messages()).toEqual(['Synced'])
   })
 
+  it('folds a grouped arrival into its toast beside the bubble, not into a second notice', () => {
+    const group = {
+      key: 'jam-join',
+      summarise: (parts: string[]) => parts.join(' and '),
+    }
+    release = presentNoticesOnStage()
+    setStageTakeHolds(true)
+    showNotification('Cy joined', 'info', { group })
+    setStageTakeHolds(false)
+    expect(toastsBesideStage().map((n) => n.message)).toEqual(['Cy joined'])
+
+    showNotification('Di joined', 'info', { group })
+
+    expect(toastsBesideStage().map((n) => n.message)).toEqual([
+      'Cy joined and Di joined',
+    ])
+    expect(messages()).toEqual([])
+  })
+
   it('sends an achievement on screen back to wait, and brings it back after', () => {
     release = presentNoticesOnStage()
     grant(FIRST_NOTE)

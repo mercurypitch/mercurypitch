@@ -593,17 +593,21 @@ function foldedIntoGroup(
     }
     return true
   }
-  const live = notifications().find((n) => n.groupKey === group.key)
+  // A toast a take's question let through, beside the bubble, is as live
+  // as one in the stack: the arrival joins it rather than start a second.
+  const beside = toastsBeside().find((n) => n.groupKey === group.key)
+  const live = beside ?? notifications().find((n) => n.groupKey === group.key)
   if (live === undefined) return false
   const parts = [...(live.groupParts ?? [live.message]), message]
   // The FIRST summariser, not this call's: a randomised phrase must
   // not be re-rolled halfway through somebody reading it.
   const write = live.groupSummarise ?? group.summarise
-  setNotifications((list) =>
+  const fold = (list: Notification[]): Notification[] =>
     list.map((n) =>
       n.id === live.id ? { ...n, message: write(parts), groupParts: parts } : n,
-    ),
-  )
+    )
+  if (beside !== undefined) setToastsBeside(fold)
+  else setNotifications(fold)
   const left = (deadlines.get(live.id) ?? 0) - Date.now()
   scheduleRemoval(live.id, Math.max(left, MIN_ON_SCREEN_MS))
   return true
