@@ -5449,3 +5449,15 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - LAUNCHED ((model) xhigh): CRITIC C-02 (builder) (briefs/l6-critic-scenes-C-02.md).
   Until about 06:20 it only reads, then waits on `heavy true` before its first frame pull, so the
   L5 render's memory stays safe.
+- 05:52 check-in: L5 FILM RENDER HIT AN OOM KILL (about 04:54, oom_kill 1):
+  - Two Chrome workers had reached about 3.2 GiB each, on top of 5.5 GiB of frames in shm.
+  - HyperFrames retried from FRAME 0 with one worker in screenshot mode. That worker's Chrome grows
+    about 0.19 GiB per 1000 frames (4.6 GiB at frame 13.7k), so it would OOM again near frame
+    23k, about 06:25, and loop.
+  - Lead told the L5 agent: stop it now (DECISIONS 263), render in pieces (a range on the root,
+    or scene by scene as lab.mjs hosts a scene), each under about 8 GiB, with a watchdog under
+    1.5 GiB free; join at scene cuts and mux the full mix once.
+  - The music-only version is the same picture with music-only.wav muxed on, not a second
+    render.
+  - Checks: 34185 frames; the joins against root snapshots.
+  - Disk 4.0 G. Critic C-02 is still reading and waits on `heavy true`.
