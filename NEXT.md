@@ -5393,3 +5393,28 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - 02:59: SENT THE OWNER a look at groups A and B: l6film/renders/look-groups-a-b-30.mp4 (S1-S7,
   3:44, 30 fps, voice only at -20.4 LUFS, the 30 fps scratch hosts). It joins the seven scene
   clips (list in $S/tmp/l6-look-ab.txt). Their notes go into the polish after the scenes.
+
+## 27 Nov 03:06 UTC: critic C-01: ONE MORE PASS; C's fix round launched
+- CRITIC C-01 ((builder), 249k tokens). Saved verbatim to
+  review/critic-scenes-C-01/REPORT.md. Eight problems:
+  1. the semitone counts read as grey slabs, so they cannot be counted;
+  2. 8f's push shows no parallax, and its labels read as one line with the question;
+  3. one composition for 40-50 s (9m's payoff fills 8 % of the frame);
+  4. holds 1.9 and 2.3 per 30 s;
+  5. the swap is never seen happening;
+  6. 9m's labels;
+  7. the mix-up card's row spacing;
+  8. the keys read as tiles.
+- LEAD-ANSWERS 124 takes nearly all of them:
+  - counted cells, 0.12 s apart, the same language as S7's;
+  - 8f named a slow zoom, with its labels dimmed to 40 % during compare; the room's near-layer
+    parallax is a kit-pass question;
+  - 9m at 1.5x, P5a about 120 px lower, 8h a 1.3x push;
+  - holds as 120 and 121 say;
+  - the swap's numbers travel and cross;
+  - 9m's labels, the card's even rows, the keys as a piano, and the small ones.
+  Next free call: 125.
+- LAUNCHED ((model) xhigh): C's FIX (builder) (briefs/l6-fix-C-01.md). It may edit
+  HANDOFFS and STORYBOARD rows 8a-9n by exact replacement only; the S9-to-S10 handoff is frozen.
+  Then critic C-02 (the LAST round for C).
+- KIT PASS LIST gains: can the room's near layer carry visible parallax under every slow push?
