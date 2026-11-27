@@ -6026,3 +6026,24 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
     their look. No critic follows.
   - Restate the three open questions: their notes on the draft; L6's final voices now or after
     their L5 listen; deleting the old web-app scratch.
+
+## 27 Nov 22:33 UTC: DRAFT 03 RETURNED and SENT TO THE OWNER for their look
+- DRAFT 03 ((builder), finished and RETIRED):
+  - 15,947 frames, 531.567 s; check 0 errors; merc-tags 0 stale.
+  - The first render's frame 1 was blank, so it rendered again; frames 0 to 7 are whole.
+  - film-draft-03-full.mp4: -16.1 LUFS, 4.4 LU, -1.8 dBTP.
+  - Holds 1.56 s per 30 s, the longest 0.4 s; 77 events, none new in content.
+  - All 13 cuts hold. Sync 117/117, and its three flags are other pixels, checked by region.
+  - The cache stayed in /dev/shm and is cleared. Disk 3.2 G free.
+  - Notes: l6film/review/film-03/NOTES.md and COMPARE.md.
+- The LEAD checked frames 0 to 7 (luma 40) and looked at the small sheet: it reads as one piece.
+- SENT THE OWNER renders/film-draft-03-full.mp4 and review/film-03/contact-sheet-small.jpg.
+  - The look list: the whooshes and the duet by ear on a phone; the two quiet turns; the
+    doctor lines alone (6:49); the title cut (0:40); one chart across five chapters.
+  - Asked again:
+    1. their notes;
+    2. L6's final voices now or after their L5 listen;
+    3. deleting the old web-app scratch.
+- NOTHING RUNNING. Next: the owner's notes, then a fix round if they ask for one. The final
+  voices need their word (ElevenLabs), then the re-time, the hosts' passes, the 60 fps final in
+  pieces (cache in /dev/shm) and the deliverables.
