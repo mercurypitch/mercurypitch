@@ -69,6 +69,14 @@ export function stepStudioMenu(
 export const STUDIO_LONG_PRESS_MS = 500
 /** How far a finger may drift and still be holding still. */
 export const STUDIO_LONG_PRESS_SLOP = 8
+/**
+ * How long after a long press's lift its click may still come. Chromium
+ * sends it a task after the pointerup (about 1 ms, measured with touch
+ * emulation), so the next task is too soon; a browser that waits to tell a
+ * double tap may take up to 300 ms. Past this the press lets go: a browser
+ * that sends no click must not leave a later one swallowed.
+ */
+export const STUDIO_LONG_PRESS_LIFT_MS = 400
 
 export interface StudioLongPressTimers {
   set(run: () => void, ms: number): unknown
@@ -93,7 +101,9 @@ export interface StudioLongPressPoint {
  * lift or a cancel stops it, and `onPress` runs once the finger has held
  * still long enough. `swallow` then says whether the click the lift makes,
  * or the browser's own `contextmenu`, belongs to that press and should do
- * nothing.
+ * nothing. Some browsers send no click after a long press, so the press
+ * lets go a moment after the lift (`lift`, STUDIO_LONG_PRESS_LIFT_MS), or at
+ * the next key (`reset`): it must not swallow a later click it never made.
  */
 export function createStudioLongPress(options: {
   onPress(point: StudioLongPressPoint): void
@@ -105,16 +115,24 @@ export function createStudioLongPress(options: {
   const slop = options.slop ?? STUDIO_LONG_PRESS_SLOP
   let held: { point: StudioLongPressPoint; handle: unknown } | null = null
   let pressed = false
+  /** The lift's let-go, waiting for the click the lift makes. */
+  let letGo: { handle: unknown } | null = null
 
   function stop(): void {
     if (held !== null) timers.clear(held.handle)
     held = null
   }
 
+  function reset(): void {
+    if (letGo !== null) timers.clear(letGo.handle)
+    letGo = null
+    pressed = false
+  }
+
   return {
     down(point: StudioLongPressPoint): void {
       stop()
-      pressed = false
+      reset()
       if (point.pointerType !== 'touch') return
       const handle = timers.set(() => {
         held = null
@@ -133,15 +151,19 @@ export function createStudioLongPress(options: {
       )
       if (drift > slop) stop()
     },
-    /** The finger lifted or the browser took the touch. */
+    /** The browser took the touch. */
     end: stop,
+    /** The finger lifted: a press it ends swallows the lift's click, and nothing after it. */
+    lift(): void {
+      stop()
+      if (!pressed || letGo !== null) return
+      letGo = { handle: timers.set(reset, STUDIO_LONG_PRESS_LIFT_MS) }
+    },
     /** The press opened the menu: its lift's click and the browser's own menu do nothing. */
     swallow(): boolean {
       return pressed
     },
-    /** A new gesture: what came after the last press is no longer its. */
-    reset(): void {
-      pressed = false
-    },
+    /** A new gesture, or a key: what came after the last press is no longer its. */
+    reset,
   }
 }

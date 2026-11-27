@@ -43,6 +43,7 @@ import { StudioTransport } from './StudioTransport'
 import { StudioRecordStatus, StudioWorkspaceNotices, } from './StudioWorkspaceNotices'
 import { StudioTimeline } from './timeline/StudioTimeline'
 import { studioContentEnd } from './timeline/timeline-geometry'
+import { removeStudioTrack } from './track-removal'
 import type { StudioController } from './useStudioController'
 import { useStudioNewClips } from './useStudioNewClips'
 
@@ -425,6 +426,9 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     }
   })
 
+  const removeTrack = (trackId: string) =>
+    removeStudioTrack(trackId, props.studio, workspace)
+
   function historyAction(direction: 'undo' | 'redo'): void {
     if (!writable()) return
     editor.cancel()
@@ -610,6 +614,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               if (!phone()) openPanel('clip')
             }}
             onTrackDetails={openTrackDetails}
+            onRemoveTrack={removeTrack}
             laneInputs={recorder.laneInputs}
             readCanonicalAsset={props.studio.readCanonicalAsset}
             assetPeaks={props.studio.assetPeaks}
@@ -761,13 +766,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
                 onCommand={props.studio.dispatch}
                 afterLines={overlay() ? closePanel : undefined}
                 onRemove={() => {
-                  if (
-                    props.studio.dispatch({
-                      type: 'remove-track',
-                      trackId: selectedTrack()!.id,
-                    })
-                  )
-                    closePanel()
+                  if (removeTrack(selectedTrack()!.id)) closePanel()
                 }}
               />
             </Show>

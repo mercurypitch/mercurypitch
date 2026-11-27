@@ -50,6 +50,8 @@ export interface StudioLaneMenuContext {
     toggle(): void
   }
   onCommand(command: StudioCommand): boolean
+  /** Remove the lane, undoably, leaving the focus where Ctrl+Z reaches. */
+  onRemove(): void
   onDetails(): void
 }
 
@@ -120,8 +122,7 @@ export function studioLaneMenuItems(
       disabled: !context.writable,
       separatorBefore: true,
       select: () => {
-        if (context.writable)
-          context.onCommand({ type: 'remove-track', trackId: track.id })
+        if (context.writable) context.onRemove()
       },
     },
   )

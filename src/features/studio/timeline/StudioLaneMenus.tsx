@@ -96,6 +96,10 @@ export function StudioLaneMenus(props: {
         },
       },
       onCommand: (command) => timeline.onCommand(command),
+      onRemove: () =>
+        timeline.onRemoveTrack !== undefined
+          ? timeline.onRemoveTrack(trackId)
+          : timeline.onCommand({ type: 'remove-track', trackId }),
       onDetails: () => timeline.onTrackDetails(trackId),
     })
   }
@@ -141,10 +145,14 @@ export function StudioLaneMenus(props: {
       (each) => each.id === hit.trackId,
     )
     if (track === undefined) return
+    // The control it was asked from, if it is the lane's own; else the
+    // lane's name. Unbounded, the lookup climbs to the focusable workspace.
+    const own = origin.closest<HTMLElement>('button, [tabindex]')
     const header =
       hit.audio === null
-        ? (origin.closest<HTMLElement>('button, [tabindex]') ??
-          hit.lane.querySelector<HTMLElement>('[data-studio-track-header]'))
+        ? own !== null && hit.lane.contains(own)
+          ? own
+          : hit.lane.querySelector<HTMLElement>('[data-studio-track-header]')
         : null
     const active = document.activeElement
     const back =
@@ -158,6 +166,7 @@ export function StudioLaneMenus(props: {
       label: hit.audio === null ? track.name : 'Studio',
       items: hit.audio === null ? laneItems(hit.trackId) : spaceItems(hit, x),
       returnFocus: back,
+      anchor: hit.lane,
     })
   }
 
@@ -206,7 +215,10 @@ export function StudioLaneMenus(props: {
       longPress.down(event)
     }
     const pointerMove = (event: PointerEvent) => longPress.move(event)
-    const pointerEnd = () => longPress.end()
+    const pointerUp = () => longPress.lift()
+    const pointerCancel = () => longPress.end()
+    // A key is a new gesture: a long press's lift may have sent no click.
+    const anyKey = () => longPress.reset()
     // The lift after a long press is not a tap on what it lifted from.
     const click = (event: MouseEvent) => {
       if (!longPress.swallow()) return
@@ -218,17 +230,20 @@ export function StudioLaneMenus(props: {
     scope.addEventListener('keydown', keyDown)
     scope.addEventListener('pointerdown', pointerDown)
     scope.addEventListener('pointermove', pointerMove)
-    scope.addEventListener('pointerup', pointerEnd)
-    scope.addEventListener('pointercancel', pointerEnd)
+    scope.addEventListener('pointerup', pointerUp)
+    scope.addEventListener('pointercancel', pointerCancel)
+    scope.addEventListener('keydown', anyKey, true)
     scope.addEventListener('click', click, true)
     onCleanup(() => {
       longPress.end()
+      longPress.reset()
       scope.removeEventListener('contextmenu', contextMenu)
       scope.removeEventListener('keydown', keyDown)
       scope.removeEventListener('pointerdown', pointerDown)
       scope.removeEventListener('pointermove', pointerMove)
-      scope.removeEventListener('pointerup', pointerEnd)
-      scope.removeEventListener('pointercancel', pointerEnd)
+      scope.removeEventListener('pointerup', pointerUp)
+      scope.removeEventListener('pointercancel', pointerCancel)
+      scope.removeEventListener('keydown', anyKey, true)
       scope.removeEventListener('click', click, true)
     })
   })
