@@ -5549,3 +5549,26 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - 08:32: LAUNCHED ((model) xhigh): L6 GROUP D BUILDER (builder) (briefs/l6-film-scenes-D.md
   and the common brief), building S10-S11 from their stubs. Then critic D-01, D's fix, critic D-02
   (the last), D's polish; then E, the kit pass and the whole film.
+
+## 27 Nov 09:41 UTC: D's BUILD DONE; critic D-01 launched
+- D's BUILD ((builder), 540k tokens) DONE:
+  - S10 (30.59 s) and S11 (58.43 s) built;
+  - probe 28/28 and 37/37;
+  - clearance 0;
+  - root check 0 errors, contrast 68/68;
+  - clock-lint and merc-tags clean;
+  - holds S10 2.0 and S11 1.3 per 30 s, longest 0.3 s, none of 0.4 s or more;
+  - cuts S9 to S10 and S10 to S11 identical by marks.
+  It made no doc edits. Its departures: doctor lines 2 px lower; alpha-only give-ways; extra
+  b33 motion.
+- LEAD-ANSWERS 128: D's decisions stand. KIT PASS LIST gains:
+  - L.typeLayer re-lays SVG text out after a scale change (seek-history dependence after a push);
+  - re-check seek order after the pushes in S6 to S8;
+  - D's local builds may move into the kit.
+  Next free call: 129.
+- LAUNCHED ((model) xhigh): CRITIC D-01 (builder) ( briefs/l6-critic-scenes-D-01.md). It also checks
+  the care block word for word against FACTS § 3.
+- 09:41: E's brief (briefs/l6-film-scenes-E.md) gained the 27 November preface: the standing
+  calls, the type re-layout after a push (128), S11's last frame as E's first, the lab tools, and
+  exact-replacement edits. LAUNCHED ((model) xhigh): L6 GROUP E BUILDER (see the agent list) for
+  S12-S14. Running: critic D-01 and E's build.
