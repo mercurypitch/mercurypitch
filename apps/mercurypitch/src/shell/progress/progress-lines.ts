@@ -31,7 +31,7 @@ export function leadNumber(label: string): TileParts {
 
 /** The kinds of run, in the words the web page's marks use. */
 export function sourceWord(source: ProgressSourceKind): string {
-  if (source === 'weekly') return 'Weekly Legend'
+  if (source === 'weekly') return 'Legend Attempt'
   if (source === 'exercise') return 'Exercise'
   if (source === 'challenge') return 'Challenge'
   return 'Practice'
@@ -46,7 +46,7 @@ const KIND_NAMES: Readonly<Record<ProgressSourceKind, readonly string[]>> = {
   practice: ['practice', 'singing'],
   exercise: ['exercise', 'exercises'],
   challenge: ['challenge', 'challenges'],
-  weekly: ['weekly legend', 'weekly'],
+  weekly: ['legend attempt', 'weekly'],
 }
 
 /**

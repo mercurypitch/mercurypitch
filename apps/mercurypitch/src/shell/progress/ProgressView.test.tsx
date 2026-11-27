@@ -251,7 +251,7 @@ describe("a week's sheet", () => {
       'Week 2 of 2',
     )
     expect(text(sheet as Element, '.mp-prog-sheet__lead')).toBe(
-      'Three active days including a Weekly Legend.',
+      'Three active days including a Legend Attempt.',
     )
     expect(
       [...(sheet as Element).querySelectorAll('.mp-prog-tile')].map(
@@ -262,7 +262,7 @@ describe("a week's sheet", () => {
       [...(sheet as Element).querySelectorAll('.mp-prog-kind__name')].map(
         (kind) => kind.textContent,
       ),
-    ).toEqual(['Weekly Legend', 'Practice'])
+    ).toEqual(['Legend Attempt', 'Practice'])
     expect(text(sheet as Element, '.mp-prog-week-sheet__mark')).toBe(
       'Milestone: Four active weeks',
     )

@@ -55,7 +55,7 @@ export interface ExerciseStats {
 }
 
 export interface ExerciseResultRecordOptions {
-  /** Present only when a Weekly Legend run hands off its temporary replay. */
+  /** Present only when a Legend Attempt run hands off its temporary replay. */
   weeklyVoiceCapture?: ExerciseVoiceCaptureOutcome
 }
 

@@ -1,5 +1,5 @@
 // ============================================================
-// Weekly Legend Voice Take — challenge-scoped local keep adapter
+// Legend Attempt Voice Take — challenge-scoped local keep adapter
 // ============================================================
 
 import type { SaveVoiceTakeResult } from '@/db/services/voice-take-service'
@@ -22,7 +22,7 @@ export function weeklyLegendComparisonKey(challengeId: string): string {
 }
 
 export function weeklyLegendThreadTitle(title: string): string {
-  return `Weekly Legend · ${title}`
+  return `Legend Attempt · ${title}`
 }
 
 export async function keepWeeklyLegendVoiceTake(input: {

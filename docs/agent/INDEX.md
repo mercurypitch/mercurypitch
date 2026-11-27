@@ -94,7 +94,7 @@ These are the rules that break things when ignored.
 | `guitar` | [guitar-room-band.ts](../../src/features/guitar/backing/guitar-room-band.ts) | 6.1k | Guitar room band schedules count-ins and synthesized grooves on the shared room buses. |
 | `voice-control` | [useVoiceControlController.ts](../../src/features/voice-control/useVoiceControlController.ts) | 6.1k | useVoiceControlController — voice control's dispatcher and lifecycle Owns the listener (started/stopped with the persisted enable flag, e... |
 | `piano` | [piano-sampled-instrument.ts](../../src/features/piano/instrument/piano-sampled-instrument.ts) | 5.8k | Piano sampled instrument — lazy Salamander playback on one bounded graph Construction is deliberately inert. |
-| `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 5.1k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
+| `challenges` | [ChallengeStage.tsx](../../src/features/challenges/ChallengeStage.tsx) | 5.2k | ChallengeStage — the Legend Attempt performed on the zen canvas "Sing it" no longer runs the plain sight-singing drill: the challenge's m... |
 | `play-along` | [useSongController.ts](../../src/features/play-along/useSongController.ts) | 5.0k | Shared song selection controller owns lazy catalogs, stale-safe staging, and leases. |
 | `long-note` | [long-note-machine.ts](../../src/features/long-note/long-note-machine.ts) | 4.9k | Long note's room states — a pure reducer intro → starting → listen → hold → result, and Again round through starting with the same note (... |
 | `zen` | [ZenPitchStage.tsx](../../src/features/zen/ZenPitchStage.tsx) | 4.9k | _(no header comment)_ |
@@ -607,6 +607,7 @@ The headless preview lies in specific, repeatable ways:
 | `pnpm db:init:local` | `./scripts/init-cloudflare-db.sh --local` |
 | `pnpm db:seed` | `node scripts/seed-remote-db.mjs` |
 | `pnpm db:seed:weekly` | `node scripts/seed-weekly-rotation.mjs` |
+| `pnpm db:seed:legends` | `node scripts/seed-legends.mjs` |
 | `pnpm deploy:db:dev` | `cd workers/db-worker && pnpm exec wrangler deploy --env dev` |
 | `pnpm deploy:db:prod` | `cd workers/db-worker && pnpm exec wrangler deploy --env prod` |
 | `pnpm typecheck:db` | `tsc -p workers/db-worker && tsc -p workers/db-worker/node-tests` |

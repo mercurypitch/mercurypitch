@@ -75,7 +75,7 @@ export function takeSupportsVoiceAnalysis(source: VoiceTakeSource): boolean {
 export function performanceTakeSourceLabel(source: VoiceTakeSource): string {
   if (source === 'freeform') return 'Free practice'
   if (source === 'guided') return 'Guided check'
-  if (source === 'legend') return 'Weekly Legend'
+  if (source === 'legend') return 'Legend Attempt'
   if (source === 'guitar-night') return 'Guitar Night'
   if (source === 'piano-night') return 'Piano Night'
   if (source === 'drum-night') return 'Drum Night'

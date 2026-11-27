@@ -53,7 +53,7 @@ describe('ProgressPage', () => {
 
     expect(onWeekSelect).toHaveBeenCalledWith('week-two')
     expect(
-      screen.getByText('Three active days including a Weekly Legend.'),
+      screen.getByText('Three active days including a Legend Attempt.'),
     ).toBeVisible()
     expect(screen.getByRole('button', { name: /May 25–31/ })).toHaveAttribute(
       'aria-pressed',

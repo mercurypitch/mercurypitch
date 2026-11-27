@@ -1,5 +1,5 @@
 // ============================================================
-// Weekly Legend — pure client logic tests
+// Legend Attempt — pure client logic tests
 // ============================================================
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'

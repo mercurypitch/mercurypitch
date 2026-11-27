@@ -12,7 +12,7 @@ const labels: Record<SourceKind, string> = {
   recording: 'Recorded in Studio',
   glass: 'Glass',
   exercise: 'Exercise',
-  legend: 'Weekly Legend',
+  legend: 'Legend Attempt',
   guided: 'Guided check',
 }
 const tints: Partial<Record<SourceKind, string>> = {

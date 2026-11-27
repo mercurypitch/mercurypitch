@@ -11,7 +11,7 @@ const SOURCE_LABELS = {
   practice: 'Practice',
   exercise: 'Exercise',
   challenge: 'Challenge',
-  weekly: 'Weekly Legend',
+  weekly: 'Legend Attempt',
 } as const
 
 function finite(value: number | null | undefined): value is number {
@@ -301,7 +301,7 @@ function traceFor(moment: ProgressOneMoment): ProgressPitchTrace | undefined {
     points,
     description:
       moment.source === 'weekly'
-        ? 'Best saved pitch contour for this Weekly Legend'
+        ? 'Best saved pitch contour for this Legend Attempt'
         : 'Best saved pitch contour for this challenge',
   }
 }

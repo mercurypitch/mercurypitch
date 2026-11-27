@@ -34,9 +34,11 @@ function userFacingText(source: string): string[] {
     if (/^[a-z0-9-]+$/.test(value)) continue // ids, css classes, kinds
     out.push(value)
   }
-  // Bare JSX text between tags.
-  for (const match of source.matchAll(/>([^<>{}\n]{4,})</g)) {
-    out.push(match[1])
+  // Bare JSX text between tags, including text that wraps over several
+  // lines: the old Home fallback did, and so the check never read it.
+  for (const match of source.matchAll(/>([^<>{}]{4,})</g)) {
+    const text = match[1].replace(/\s+/g, ' ').trim()
+    if (text.length >= 4) out.push(text)
   }
   return out
 }
@@ -55,7 +57,8 @@ const SURFACES = [
 ]
 
 // "This week", "weekly", "monthly", "this month" — a period in the name.
-const PERIOD_WORDS = /\b(weekly|monthly|fortnightly|this week|this month)\b/i
+const PERIOD_WORDS =
+  /\b(weekly|monthly|fortnightly|this week|this month|every week|every month)\b/i
 
 describe('what a user reads about a challenge', () => {
   it.each(SURFACES)('%s never names a period', (path) => {
@@ -63,6 +66,24 @@ describe('what a user reads about a challenge', () => {
       (text) => PERIOD_WORDS.test(text),
     )
     expect(offenders).toEqual([])
+  })
+
+  it('names no period where Progress and Studio label a Legend take', () => {
+    for (const path of [
+      'src/features/progress/ProgressPage.tsx',
+      'src/features/progress/progress-view-model.ts',
+      'src/features/progress/progress-share-model.ts',
+      'src/features/progress/model.ts',
+      'src/features/challenges/weekly-voice-take.ts',
+      'src/features/studio/timeline/source-presentation.ts',
+      'src/features/studio/integration/source-catalog.ts',
+      'src/lib/domain/performance-take.ts',
+    ]) {
+      const offenders = userFacingText(withoutComments(repoFile(path))).filter(
+        (text) => /weekly legend/i.test(text),
+      )
+      expect({ path, offenders }).toEqual({ path, offenders: [] })
+    }
   })
 
   it('calls it a Legend Attempt on the home card', () => {
