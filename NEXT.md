@@ -5572,3 +5572,31 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   calls, the type re-layout after a push (128), S11's last frame as E's first, the lab tools, and
   exact-replacement edits. LAUNCHED ((model) xhigh): L6 GROUP E BUILDER (builder) for
   S12-S14. Running: critic D-01 and E's build.
+
+## 27 Nov 09:52 UTC: critic D-01: ONE MORE PASS; D's fix launched
+- CRITIC D-01 ((builder), 194k tokens). Saved verbatim to
+  review/critic-scenes-D-01/REPORT.md. Ten problems:
+  1. the glide into the guide is unseen (rows at 1.12:1);
+  2. the guide fills 10-24 % of the frame;
+  3. the push has no depth;
+  4. holds;
+  5. the matched cut's rows are unseen (1.3:1);
+  6. "today fa";
+  7. "either way" reads as a doctor line;
+  8. lit states too subtle;
+  9. the reading mark looks like a text cursor;
+  10. blank frames between states.
+  PASSED: the care lines match FACTS § 3 word for word, and every landing falls on its word.
+- LEAD-ANSWERS 129 takes them all:
+  - push in through the turns (1.5-1.8x), with the care lines in a HUD strip, back to F-turn
+    before 11j;
+  - a true push with layer rates;
+  - the matched cut's rows at 20-25 % (E told);
+  - the gaps, chips and status marker, lines lit by the reading mark, no blank frames;
+  - small ones, among them "feels like hard work".
+  Next free call: 130.
+- LAUNCHED ((model) xhigh): D's FIX (builder) (briefs/l6-fix-D-01.md). It messages the lead
+  the S11-to-S12 rows' level, and the LEAD PASSES IT TO E ((builder), told to keep it as a
+  parameter).
+- Running: E's build and D's fix (both may edit HANDOFFS/STORYBOARD, by exact replacement in their
+  own rows).
