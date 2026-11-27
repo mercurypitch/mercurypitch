@@ -13,7 +13,7 @@ test.use({
 })
 
 test.describe('Studio takes', () => {
-  test('a take sung over a take on the armed lane is the newest take of that clip, plays alone, and outlasts a reload', async ({
+  test('a take sung over a take on the armed lane is the newest take of that clip, plays alone, and outlasts a reload @smoke', async ({
     page,
   }) => {
     test.setTimeout(180_000)
@@ -61,7 +61,7 @@ test.describe('Studio takes', () => {
     expect(await levelFromStart(page)).toBeGreaterThan(-40)
   })
 
-  test('a clip of two takes says which plays, and its right-click menu, its bar, a phone and T choose another', async ({
+  test('a clip of two takes says which plays, and its right-click menu, its bar, a phone and T choose another @smoke', async ({
     page,
   }) => {
     test.setTimeout(180_000)
@@ -180,7 +180,7 @@ test.describe('Studio takes', () => {
     expect(await gap()).toBe(closed)
   })
 
-  test('Alt+Shift+T crops a clip to the take it plays, and Explode takes to new lanes moves the other take to a lane of its own under it, each one undo step', async ({
+  test('Alt+Shift+T crops a clip to the take it plays, and Explode takes to new lanes moves the other take to a lane of its own under it, each one undo step @smoke', async ({
     page,
   }) => {
     test.setTimeout(180_000)

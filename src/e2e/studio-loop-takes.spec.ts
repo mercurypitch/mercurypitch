@@ -46,7 +46,7 @@ async function recordLoop(page: Page): Promise<void> {
 }
 
 test.describe('Studio loop takes', () => {
-  test('T steps through the passes of a loop take, and a second loop over its clip stacks on it as a take', async ({
+  test('T steps through the passes of a loop take, and a second loop over its clip stacks on it as a take @smoke', async ({
     page,
   }) => {
     test.setTimeout(240_000)

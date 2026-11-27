@@ -1,6 +1,10 @@
 // Studio clip takes: a take recorded over takes stacks on them, every take lines up with the others through every edit, and the song refuses a take it cannot play.
+// Over TESTING.md's 600 lines (3.5): every edit a take must survive reads
+// against the one fixture of takes above its cases, and split, each part
+// would copy it.
 import { describe, expect, it } from 'vitest'
 import { compileStudioArrangement } from './arrangement-plan'
+import { studioCompSourceFrame } from './clip-comp'
 import { STUDIO_MAX_CLIP_TAKES, studioClipActiveTake, studioClipAssetIds, studioClipTakeBounds, studioClipTakeCount, studioClipTakeList, studioClipTakeStep, studioClipTakeSteps, studioClipWithTakes, studioSongAssetIds, studioStackTargets, } from './clip-takes'
 import type { StudioCommand } from './commands'
 import { applyStudioCommand } from './commands'
@@ -395,7 +399,7 @@ describe('edits of a clip of several takes', () => {
     expect(heardAt(clip, 300)).toEqual({ 'take-1': before, 'take-2': 300 })
   })
 
-  it('a take not playing keeps its comp, cut to the stretch it shares and sounding as before', () => {
+  it('a take not playing whose shared stretch lies in one pass of its comp plays that pass whole, sounding as before', () => {
     const { project, assets, first } = takesFixture()
     // take-1 as a loop take of two passes, comped: pass 2, then pass 1.
     const comped: StudioClip = {
@@ -421,6 +425,72 @@ describe('edits of a clip of several takes', () => {
     expect(waiting.comp).toBeUndefined()
     expect(heardAt(shared, 400)['take-1']).toBe(300)
     expect(() => validateStudioProject(next, assets)).not.toThrow()
+  })
+
+  it('a take not playing keeps a comp of several stretches through a stack, a split and a trim, sounding as before', () => {
+    const { project, assets, first } = takesFixture()
+    // take-1 as a loop take of three passes, comped over pass 2's window:
+    // pass 1, then pass 3, then pass 2. Song frames 100 to 500.
+    const comped: StudioClip = {
+      ...first,
+      sourceInFrame: 400,
+      sourceOutFrame: 800,
+      passes: { firstFrame: 0, frames: 400, count: 3 },
+      comp: [
+        { fromSourceFrame: 400, toSourceFrame: 500, pass: 0 },
+        { fromSourceFrame: 500, toSourceFrame: 650, pass: 2 },
+        { fromSourceFrame: 650, toSourceFrame: 800, pass: 1 },
+      ],
+    }
+    const takeOne = (clip: StudioClip) =>
+      studioClipTakeList(clip).find((take) => take.assetId === 'take-1')!
+    // take-1's file frame heard at song frames 150, 300 and 420, one in
+    // each stretch, and the stretches of each clip's take-1, left to right.
+    const heard = (song: StudioProject) =>
+      [150, 300, 420].map((frame) => {
+        const take = takeOne(
+          song.clips.find(
+            (clip) =>
+              clip.startFrame <= frame &&
+              frame <
+                clip.startFrame + clip.sourceOutFrame - clip.sourceInFrame,
+          )!,
+        )
+        return studioCompSourceFrame(
+          take,
+          take.sourceInFrame + frame - take.startFrame,
+        )
+      })
+    const stretches = (song: StudioProject) =>
+      [...song.clips]
+        .sort((a, b) => a.startFrame - b.startFrame)
+        .map((clip) => takeOne(clip).comp?.length)
+
+    const stacked = stack(
+      { ...project, clips: [comped] },
+      assets,
+      landed('take-2', 100, 300, 400),
+    )
+    const split = apply(stacked, assets, {
+      type: 'split-clip',
+      clipId: first.id,
+      atFrame: 250,
+      newClipId: 'right',
+    })
+    const trimmed = apply(split, assets, {
+      type: 'trim-tail',
+      clipId: 'right',
+      sourceOutFrame: 650,
+    })
+
+    expect(heard({ ...project, clips: [comped] })).toEqual([50, 1000, 720])
+    expect(clipAt(stacked, 100).assetId).toBe('take-2')
+    expect(stretches(stacked)).toEqual([3])
+    expect(stretches(split)).toEqual([2, 2])
+    expect(stretches(trimmed)).toEqual([2, 2])
+    for (const song of [stacked, split, trimmed])
+      expect(heard(song)).toEqual([50, 1000, 720])
+    expect(() => validateStudioProject(trimmed, assets)).not.toThrow()
   })
 })
 

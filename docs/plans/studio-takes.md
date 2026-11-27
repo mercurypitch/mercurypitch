@@ -274,7 +274,14 @@ helper (`studioClipAssetIds`):
 - the importer's "in use" sets for the song's audio limit;
 - the lane's audio in Lane details.
 
-Missing any one of these loses a take, so each has a test.
+Missing one of the first three loses a take, and each has a test that fails
+when it leaves out the takes that are not playing: the prune, Make a copy
+and the restore in `studio-service.test.ts`, the editor keeper in
+`useStudioController.takes.test.ts`, and the backup writer, its check and
+the restore in `studio-backup.takes.test.ts`. Missing one of the last two
+loses nothing: the importer's sets only choose which message a full song
+shows, and Lane details only lists the lane's audio. Neither has a test with
+takes.
 
 ### 3.3 Edits and undo
 
