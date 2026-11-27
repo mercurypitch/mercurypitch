@@ -1,9 +1,7 @@
-// Studio takes: a take sung over a take on the armed lane becomes that clip's newest take instead of landing on a new lane; the newest take plays, the older one waits with its own volume, and a reload keeps both.
-import { expect, type Page, test } from '@playwright/test'
-import type { StudioAsset, StudioClip, StudioProject, } from '../lib/studio/model/types'
-import { openArrangement, readStudioProject, studioRegion, } from './helpers/dedicatedstudio-fixture'
-import { armLane, recordTake } from './helpers/studio-arming'
-import { tapOutput, traceLevel } from './helpers/studio-output'
+// Studio takes: a take sung over a take on the armed lane becomes that clip's newest take instead of landing on a new lane; the newest take plays, the older one waits with its own volume, and a reload keeps both. The clip says which take plays, and its right-click menu, its bar's Takes list, a phone's clip note and T and Shift+T choose another.
+import { expect, test } from '@playwright/test'
+import { readStudioProject } from './helpers/dedicatedstudio-fixture'
+import { firstClip, levelFromStart, recordTwoTakes, } from './helpers/studio-clip-takes'
 import { fakeMicArgs, TONE_HZ, writeToneWav } from './helpers/tone-wav'
 
 const TONE_WAV = writeToneWav(TONE_HZ, 20)
@@ -14,117 +12,15 @@ test.use({
   viewport: { width: 1440, height: 900 },
 })
 
-async function readAssets(page: Page): Promise<StudioAsset[]> {
-  return page.evaluate(async () => {
-    const database = await new Promise<IDBDatabase>((resolve, reject) => {
-      const request = indexedDB.open('MercuryPitchDB')
-      request.onsuccess = () => resolve(request.result)
-      request.onerror = () => reject(request.error)
-    })
-    try {
-      return await new Promise<StudioAsset[]>((resolve, reject) => {
-        const request = database
-          .transaction('studioAssets', 'readonly')
-          .objectStore('studioAssets')
-          .getAll()
-        // The row keeps the asset beside its project and digest (studio-records.ts).
-        request.onsuccess = () =>
-          resolve(
-            (request.result as { asset: StudioAsset }[]).map(
-              (row) => row.asset,
-            ),
-          )
-        request.onerror = () => reject(request.error)
-      })
-    } finally {
-      database.close()
-    }
-  })
-}
-
-/** The stored id of the take kept as `title`. */
-async function takeId(page: Page, title: string): Promise<string> {
-  const asset = (await readAssets(page)).find(
-    (each) => each.originalName === `${title}.wav`,
-  )
-  if (!asset) throw new Error(`No take called ${title} in the song.`)
-  return asset.id
-}
-
-/** The clip a lane plays from song frame 0, as stored. */
-const firstClip = (project: StudioProject, trackId: string) =>
-  project.clips.find(
-    (clip) => clip.trackId === trackId && clip.startFrame === 0,
-  ) as StudioClip
-
-/** The output level over the second after Play song is pressed: what the song plays from its start. */
-async function levelFromStart(page: Page): Promise<number> {
-  const studio = studioRegion(page)
-  await studio.locator('[data-tour="studio.workspace"]').focus()
-  await page.keyboard.press('Home')
-  const { after } = await traceLevel(page, () =>
-    studio.getByRole('button', { name: 'Play song', exact: true }).click(),
-  )
-  await studio.getByRole('button', { name: 'Pause song', exact: true }).click()
-  return after
-}
-
 test.describe('Studio takes', () => {
   test('a take sung over a take on the armed lane is the newest take of that clip, plays alone, and outlasts a reload', async ({
     page,
   }) => {
     test.setTimeout(180_000)
-    await tapOutput(page)
-    await openArrangement(page)
-    const studio = studioRegion(page)
-    // Only the takes sound: the fixture's phrase is muted.
-    await studio
-      .locator('[data-studio-track]')
-      .getByRole('button', { name: 'Mute Phrase', exact: true })
-      .click()
-    await studio
-      .getByRole('button', { name: 'New audio lane', exact: true })
-      .click()
-    await armLane(page, 'Lane 2')
-
-    // Take 1, three seconds, then turned all the way down.
-    await recordTake(page, 'Take 1', async () => {
-      await expect(studio.getByRole('timer')).toHaveText(/^0:0[3-9]/, {
-        timeout: 10_000,
-      })
-    })
-    await studio.getByRole('button', { name: /, Take 1\.wav, / }).dblclick()
-    const gain = studio.getByRole('spinbutton', {
-      name: 'Clip gain',
-      exact: true,
-    })
-    await gain.fill('-60')
-    await gain.press('Tab')
-    await studio
-      .getByRole('button', { name: 'Close Clip details', exact: true })
-      .click()
-    const one = await takeId(page, 'Take 1')
-    await expect
-      .poll(async () => {
-        const project = await readStudioProject(page)
-        return project.clips.find((clip) => clip.assetId === one)?.gainDb
-      })
-      .toBe(-60)
-    const lane = (await readStudioProject(page)).tracks.find(
-      (track) => track.name === 'Lane 2',
-    )!.id
-
-    // Take 2, two seconds, from the same start on the lane still armed.
-    await studio.locator('[data-tour="studio.workspace"]').focus()
-    await page.keyboard.press('Home')
-    await recordTake(page, 'Take 2')
-    const two = await takeId(page, 'Take 2')
+    const { studio, lane, one, two } = await recordTwoTakes(page)
 
     // One lane more than the fixture's, and no word of a new one.
     await expect(studio.getByText(/Added on a new lane/)).toHaveCount(0)
-    await expect
-      .poll(async () => firstClip(await readStudioProject(page), lane)?.assetId)
-      .toBe(two)
     const project = await readStudioProject(page)
     expect(project.tracks.map((track) => track.name)).toEqual([
       'Phrase',
@@ -132,6 +28,7 @@ test.describe('Studio takes', () => {
     ])
     const stacked = firstClip(project, lane)
     expect(stacked).toMatchObject({
+      assetId: two,
       gainDb: 0,
       activeTake: 1,
       takes: [{ assetId: one, gainDb: -60 }],
@@ -162,5 +59,73 @@ test.describe('Studio takes', () => {
     ).toHaveCount(1)
     expect(firstClip(await readStudioProject(page), lane)).toEqual(stacked)
     expect(await levelFromStart(page)).toBeGreaterThan(-40)
+  })
+
+  test('a clip of two takes says which plays, and its right-click menu, its bar, a phone and T choose another', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000)
+    const { studio, lane, one, two } = await recordTwoTakes(page)
+    const clip = (take: number) =>
+      studio.getByRole('button', {
+        name: new RegExp(`^Lane 2, Take ${take}\\.wav, take ${take} of 2, `),
+      })
+    const playing = async () =>
+      firstClip(await readStudioProject(page), lane)?.assetId
+    await expect(clip(2).locator('[data-studio-take-badge]')).toHaveText('2/2')
+    const loud = await levelFromStart(page)
+
+    // A right-click lists the takes, the playing one checked and focused.
+    await clip(2).click({ button: 'right' })
+    const menu = page.getByRole('menu', { name: 'Takes', exact: true })
+    const rows = menu.getByRole('menuitemradio')
+    await expect(rows).toHaveText(['Take 1', 'Take 2'])
+    await expect(rows.nth(1)).toHaveAttribute('aria-checked', 'true')
+    await expect(rows.nth(1)).toBeFocused()
+    await rows.nth(0).click()
+    await expect(menu).toHaveCount(0)
+    await expect(clip(1).locator('[data-studio-take-badge]')).toHaveText('1/2')
+    await expect.poll(playing).toBe(one)
+    expect(firstClip(await readStudioProject(page), lane)).toMatchObject({
+      gainDb: -60,
+      activeTake: 0,
+      takes: [{ assetId: two, gainDb: 0 }],
+    })
+    // Take 1 was turned all the way down.
+    const quiet = await levelFromStart(page)
+    expect(quiet).toBeLessThan(loud - 30)
+
+    // T plays the next take, round from the last to the first, and Shift+T
+    // the one before; the clip keeps the focus.
+    await clip(1).focus()
+    await page.keyboard.press('t')
+    await expect(clip(2)).toBeFocused()
+    await page.keyboard.press('t')
+    await expect(clip(1)).toBeFocused()
+    await page.keyboard.press('Shift+T')
+    await expect(clip(2)).toBeFocused()
+    await expect.poll(playing).toBe(two)
+    expect(await levelFromStart(page)).toBeGreaterThan(quiet + 30)
+
+    // The selected clip's bar lists them too, and Undo takes a pick back.
+    await clip(2).click()
+    await studio.getByRole('button', { name: 'Takes', exact: true }).click()
+    await expect(rows.nth(1)).toHaveAttribute('aria-checked', 'true')
+    await rows.nth(0).click()
+    await expect(clip(1)).toHaveCount(1)
+    await studio
+      .getByRole('button', { name: 'Undo choose take', exact: true })
+      .click()
+    await expect(clip(2)).toHaveCount(1)
+
+    // A phone has no right-click: the selected clip's note lists them. An
+    // armed lane's card stands where the note does, so disarm first.
+    await studio.getByRole('button', { name: 'Disarm', exact: true }).click()
+    await page.setViewportSize({ width: 390, height: 844 })
+    await clip(2).click()
+    await studio.getByRole('button', { name: 'Takes', exact: true }).click()
+    await rows.nth(0).click()
+    await expect(clip(1)).toHaveCount(1)
+    await expect.poll(playing).toBe(one)
   })
 })

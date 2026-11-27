@@ -8,8 +8,8 @@ import { applyStudioAutomationEdit, isStudioAutomationEdit } from './automation'
 import type { StudioCompEdit } from './clip-comp'
 import { applyStudioCompEdit, fitStudioComps, isStudioCompEdit, } from './clip-comp'
 import { studioClipOnPass } from './clip-passes'
-import type { StudioStackTakeEdit } from './clip-takes'
-import { fitStudioTakeComps, isStudioStackTakeEdit, stackStudioTake, } from './clip-takes'
+import type { StudioChooseTakeEdit, StudioStackTakeEdit } from './clip-takes'
+import { chooseStudioTake, fitStudioTakeComps, isStudioChooseTakeEdit, isStudioStackTakeEdit, stackStudioTake, } from './clip-takes'
 import { createStudioTrack } from './defaults'
 import type { StudioMidiRenderEdit } from './midi-render-commands'
 import { applyStudioMidiRenderEdit, isStudioMidiRenderEdit, } from './midi-render-commands'
@@ -30,6 +30,7 @@ import { requireValue } from './validation-values'
 export type StudioEdit =
   | StudioCompEdit
   | StudioStackTakeEdit
+  | StudioChooseTakeEdit
   | StudioPasteEdit
   | StudioPunchEdit
   | StudioSoundEdit
@@ -216,7 +217,7 @@ function setTrackInstrument(
 /** An edit of one clip's placement or sound; its notes are a sequence edit's, and its comp clip-comp.ts's. */
 type StudioClipEdit = Exclude<
   Extract<StudioEdit, { clipId: string }>,
-  StudioSequenceEdit | StudioCompEdit
+  StudioSequenceEdit | StudioCompEdit | StudioChooseTakeEdit
 >
 
 function editClip(project: StudioProject, edit: StudioClipEdit): StudioProject {
@@ -312,6 +313,7 @@ function applyEdit(project: StudioProject, edit: StudioEdit): StudioProject {
     return applyStudioMidiRenderEdit(project, edit)
   if (isStudioCompEdit(edit)) return applyStudioCompEdit(project, edit)
   if (isStudioStackTakeEdit(edit)) return stackStudioTake(project, edit)
+  if (isStudioChooseTakeEdit(edit)) return chooseStudioTake(project, edit)
   if ('clipId' in edit) return editClip(project, edit)
   switch (edit.type) {
     case 'paste-clip':

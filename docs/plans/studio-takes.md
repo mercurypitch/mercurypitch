@@ -306,9 +306,12 @@ edges, as a playing one is (`fitStudioComps`).
   list with the playing one checked, then "Show takes", "Crop to this take"
   and "Explode takes to new lanes". The menu is built from a plain list of
   items (`clip-take-menu.ts`), so the lane menu being built on
-  `feat/studio-lane-polish` can share it. On a phone, and for keyboard
-  users, the same list opens from the badge and from a Takes button on the
-  selected clip's toolbar. On a computer the context-menu key opens it too.
+  `feat/studio-lane-polish` can share it. The same list opens from a Takes
+  button on the selected clip's toolbar and, on a phone, which has no
+  right-click, from a Takes button in the selected clip's note. On a
+  computer the context-menu key opens it too. The badge is a label, not a
+  button: the clip is a button already, and a badge that small is too small
+  to tap.
 - **Showing every take.** "Show takes" opens the clip's lane: each take
   becomes a row under it, newest on top, the way a loop take's passes stand
   for comping. The lanes below move down. A row draws its take's waveform

@@ -34,6 +34,7 @@ const EDIT_LABELS: Record<StudioEdit['type'], string> = {
   'choose-pass': 'choose pass',
   'comp-pass': 'comp',
   'stack-take': 'add take',
+  'choose-take': 'choose take',
   'set-project-settings': 'change song settings',
   'set-sound-flavour': 'change flavour',
   'set-sound-macros': 'adjust sound',

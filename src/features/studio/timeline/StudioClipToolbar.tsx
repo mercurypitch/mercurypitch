@@ -9,13 +9,14 @@ import { Copy, Split, Trash2 } from '@/components/icons'
 import { studioCanComp } from '@/lib/studio/model/clip-comp'
 import { studioClipPass } from '@/lib/studio/model/clip-passes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
-import type { StudioClip } from '@/lib/studio/model/types'
+import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
 import { studioTakeRunning } from '../record/take-running'
 import { CompPasses, InfoCircle, RangeBrackets } from '../studio-icons'
 import { fitClipBar, watchClipBarRoom } from './clip-bar-fold'
 import { STUDIO_COMP_HELD_TITLE, studioCompClipId, studioCompHeld, toggleStudioComp, } from './comp-editor'
 import compStyles from './StudioCompLanes.module.css'
+import { StudioTakesButton } from './StudioTakesButton'
 import styles from './StudioTimeline.module.css'
 import { clipEndFrame } from './timeline-geometry'
 
@@ -28,6 +29,8 @@ interface StudioClipToolbarProps {
   /** The selected clip's track name and hue, so the bar says what it acts on. */
   label: string
   color?: string
+  /** The song's audio by id, so the Takes list names a clip's takes. */
+  assets?: ReadonlyMap<string, StudioAsset>
   /** Offsets inside the timeline: past the lane headers, above the scrollbar. */
   left: number
   bottom: number
@@ -189,10 +192,19 @@ export function StudioClipToolbar(props: StudioClipToolbarProps) {
           </button>
         )}
       </Show>
-      <Show when={props.docked !== true}>
+      <Show when={props.docked !== true && props.clip.takes === undefined}>
         <PassPicker
           clip={props.clip}
           writable={props.writable}
+          onCommand={(command) => props.onCommand(command)}
+        />
+      </Show>
+      <Show when={props.docked !== true && props.clip.takes !== undefined}>
+        <StudioTakesButton
+          clip={props.clip}
+          assets={props.assets ?? new Map()}
+          writable={props.writable}
+          textClass={styles.toolbarText}
           onCommand={(command) => props.onCommand(command)}
         />
       </Show>

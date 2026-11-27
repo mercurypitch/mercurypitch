@@ -1,4 +1,5 @@
 // Studio keyboard editor — focus-scoped shortcuts and cancellable held nudges share immutable commands.
+import { studioClipTakeStep, studioClipTakeSteps, } from '@/lib/studio/model/clip-takes'
 import { studioAdjacentLaneClip } from './clip-focus'
 import { createEditorActions } from './editor-actions'
 import { studioEditorFocus } from './key-scope'
@@ -52,6 +53,33 @@ export function createStudioEditor(options: StudioEditorOptions) {
     return finishStudioKey(event)
   }
 
+  /**
+   * T and Shift+T on a focused clip of several takes: the next or the
+   * previous one plays, round and round, as REAPER's Next take and Previous
+   * take (clip-takes.ts). Alt is left for Crop to this take.
+   */
+  function takeKey(event: KeyboardEvent, clipId: string): boolean {
+    if (event.key.toLowerCase() !== 't' || event.altKey) return false
+    const clip = options.project()?.clips.find((item) => item.id === clipId)
+    const steps = clip ? studioClipTakeSteps(clip) : []
+    if (!clip || steps.length < 2 || !options.writable()) return false
+    if (!event.repeat) {
+      nudge.cancel()
+      const at = studioClipTakeStep(clip) + (event.shiftKey ? -1 : 1)
+      const index = (at + steps.length) % steps.length
+      const step = steps[index]
+      const chosen = options.dispatch({
+        type: 'choose-take',
+        clipId,
+        take: step.take,
+        ...(step.pass !== undefined && { pass: step.pass }),
+      })
+      if (chosen)
+        options.announce(`Playing take ${index + 1} of ${steps.length}.`)
+    }
+    return finishStudioKey(event)
+  }
+
   /** Up and Down on a focused clip: the focus moves to the nearest clip in the lane above or below (clip-focus.ts). */
   function laneKey(event: KeyboardEvent, clipId: string): boolean {
     if (event.key !== 'ArrowUp' && event.key !== 'ArrowDown') return false
@@ -82,6 +110,7 @@ export function createStudioEditor(options: StudioEditorOptions) {
     if (event.ctrlKey || event.metaKey) return modifiedKey(event, focus)
     if (focus.clipId !== null && nudge.keyDown(event, focus.clipId)) return true
     if (focus.clipId !== null && laneKey(event, focus.clipId)) return true
+    if (focus.clipId !== null && takeKey(event, focus.clipId)) return true
     return plainKey(event, focus)
   }
 

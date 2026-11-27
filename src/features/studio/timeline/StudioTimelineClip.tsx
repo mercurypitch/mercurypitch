@@ -10,15 +10,20 @@
 // double tap counted by hand with a finger or a pen (double-tap.ts): its
 // own dblclick is left to the mouse, so two taps never open it twice. An
 // audio clip's double-click still opens its details.
-import { createMemo, Show } from 'solid-js'
+import { createMemo, createSignal, Show } from 'solid-js'
 import { studioNotePreview } from '@/lib/studio/midi/preview'
 import { studioClipTickWindow } from '@/lib/studio/midi/time'
 import { studioClipPass } from '@/lib/studio/model/clip-passes'
+import { studioClipTakeStep, studioClipTakeSteps, } from '@/lib/studio/model/clip-takes'
+import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import type { StudioClipNotes } from './clip-notes'
+import { studioClipTakeMenu } from './clip-take-menu'
 import { STUDIO_AUDIO_EXTENSION } from './clip-take-name'
 import { createStudioDoubleTap } from './double-tap'
 import type { StudioGestureKind } from './gesture-draft'
+import type { StudioClipMenuAnchor } from './StudioClipMenu'
+import { StudioClipMenu, studioClipMenuAnchor } from './StudioClipMenu'
 import midiStyles from './StudioMidiClip.module.css'
 import styles from './StudioTimeline.module.css'
 import { StudioWaveform } from './StudioWaveform'
@@ -69,6 +74,10 @@ interface StudioTimelineClipProps {
   editing?: boolean
   /** A MIDI clip's notes have no audio yet: their render is under way. */
   rendering?: boolean
+  /** The song's audio by id, so the clip's menu names its takes. */
+  assets?: ReadonlyMap<string, StudioAsset>
+  /** Runs a take chosen from the clip's menu. */
+  onCommand?(command: StudioCommand): boolean
   onSelect(): void
   onDetails(): void
   /** Open a MIDI clip's notes in the editor. */
@@ -128,6 +137,24 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
     return props.clip.comp
       ? `, comp of ${pass.count} passes`
       : `, pass ${pass.number} of ${pass.count}`
+  }
+  // A clip of several takes says which of them plays: "2/3" on its band, as
+  // REAPER's "Take 2/3", a loop take's passes counted among them
+  // (clip-takes.ts). A loop take alone names its pass already; its passes
+  // are still steps for T and the right-click menu.
+  const steps = createMemo(() => studioClipTakeSteps(props.clip).length)
+  const step = createMemo(() => studioClipTakeStep(props.clip) + 1)
+  const takeOf = () =>
+    props.clip.takes === undefined ? '' : `, take ${step()} of ${steps()}`
+  // Its takes on a right-click, or the menu key: not on a finger's long press,
+  // which belongs to the clip's drag.
+  const [menu, setMenu] = createSignal<StudioClipMenuAnchor | null>(null)
+  const openMenu = (event: MouseEvent) => {
+    if (steps() < 2 || !props.assets || !props.onCommand) return
+    if ((event as PointerEvent).pointerType === 'touch') return
+    event.preventDefault()
+    props.onSelect()
+    setMenu(studioClipMenuAnchor(event, event.currentTarget as HTMLElement))
   }
   const handleSize = () => (props.tablet ? 44 : 28)
   const handles = () =>
@@ -215,7 +242,7 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
         : title().replace(STUDIO_AUDIO_EXTENSION, '') + passOf()
     const notes = midi() ? `, MIDI, ${countWords()}` : ''
     const rendering = props.rendering === true ? ', rendering' : ''
-    return `${props.trackName}, ${name}${notes}${rendering}, ${formatStudioTime(clip().startFrame)} to ${formatStudioTime(clipEndFrame(clip()))}`
+    return `${props.trackName}, ${name}${takeOf()}${notes}${rendering}, ${formatStudioTime(clip().startFrame)} to ${formatStudioTime(clipEndFrame(clip()))}`
   }
   return (
     <div
@@ -252,6 +279,7 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
         onPointerDown={press}
         onClick={tapped}
         onDblClick={doubleClicked}
+        onContextMenu={openMenu}
       >
         <Show when={props.notes !== undefined}>
           <span class={midiStyles.sheen} aria-hidden="true" />
@@ -263,6 +291,15 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
             'padding-left': `${Math.max(8, visibleLeft() - left() + 8)}px`,
           }}
         >
+          <Show when={props.clip.takes !== undefined}>
+            <span
+              class={styles.takeBadge}
+              aria-hidden="true"
+              data-studio-take-badge=""
+            >
+              {`${step()}/${steps()}`}
+            </span>
+          </Show>
           <Show
             when={props.notes}
             fallback={title().replace(STUDIO_AUDIO_EXTENSION, '') + passOf()}
@@ -311,6 +348,17 @@ export function StudioTimelineClip(props: StudioTimelineClipProps) {
           )}
         </Show>
       </button>
+      <StudioClipMenu
+        anchor={menu()}
+        label="Takes"
+        items={studioClipTakeMenu(
+          props.clip,
+          props.assets ?? new Map(),
+          (command) => props.onCommand?.(command) === true,
+          props.writable,
+        )}
+        onClose={() => setMenu(null)}
+      />
       <Show when={hinted()}>
         <span
           class={midiStyles.hint}

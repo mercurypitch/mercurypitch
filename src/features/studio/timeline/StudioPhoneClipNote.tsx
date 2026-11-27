@@ -1,9 +1,11 @@
 // Studio phone clip note — on a phone a clip is edited elsewhere, but its toolbar's Range lives here: Repeat and Punch work from a phone too. A MIDI clip's notes open here as well, and save as a MIDI file: a phone has no Clip details.
 import { Show } from 'solid-js'
-import type { StudioClip } from '@/lib/studio/model/types'
+import type { StudioCommand } from '@/lib/studio/model/commands'
+import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
 import { studioTakeRunning } from '../record/take-running'
 import { FileDown, InfoCircle, NoteBars, RangeBrackets } from '../studio-icons'
+import { StudioTakesButton } from './StudioTakesButton'
 import styles from './StudioTimeline.module.css'
 import { clipEndFrame } from './timeline-geometry'
 
@@ -15,6 +17,10 @@ export function StudioPhoneClipNote(props: {
   onEditNotes?(clipId: string): void
   /** Save a MIDI clip's notes alone as a MIDI file. */
   onExportMidi?(clipId: string): void
+  /** The song's audio by id, and the song's commands: a clip of several takes lists them here. */
+  assets?: ReadonlyMap<string, StudioAsset>
+  writable?: boolean
+  onCommand?(command: StudioCommand): boolean
 }) {
   const midi = () =>
     props.clip?.midi !== undefined && props.onEditNotes !== undefined
@@ -57,6 +63,19 @@ export function StudioPhoneClipNote(props: {
             <FileDown size={15} />
             <span>MIDI</span>
           </button>
+        )}
+      </Show>
+      <Show
+        when={props.clip?.takes !== undefined && props.onCommand && props.clip}
+      >
+        {(clip) => (
+          <StudioTakesButton
+            clip={clip()}
+            assets={props.assets ?? new Map()}
+            writable={props.writable === true}
+            class={styles.phoneNoteRange}
+            onCommand={(command) => props.onCommand?.(command) === true}
+          />
         )}
       </Show>
       <Show when={props.onRange && props.clip}>
