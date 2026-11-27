@@ -5602,3 +5602,16 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   own rows).
 - 10:19: D's fix set the S11-to-S12 rows' level: 13 row lines at fill-opacity 0.24, 2.0:1, rising
   from 0.06 over 442.10-442.40; geometry and room unchanged; in HANDOFFS § The cuts. PASSED TO E.
+
+## 27 Nov 10:49 UTC: E's BUILD DONE; critic E-01 launched
+- E's BUILD ((builder), 503k tokens) DONE: S12, S13 and S14 built.
+  - Probes 54/17/12; clearance 0; contrast all pass; root check 0; clock-lint and merc-tags clean;
+    board-sweep 0 (196 landings); seek order identical.
+  - Holds: S12 1.2, S13 1.6 per 30 s, S14 0.
+  - The matched cut's rows at 0.24 on both sides (CUT_LINE_A).
+- LEAD-ANSWERS 130: E's decisions stand; the end card's 3 % push is exempt from 115. Next free
+  call: 131.
+- LAUNCHED ((model) xhigh): CRITIC E-01 (see the agent list; briefs/l6-critic-scenes-E-01.md).
+- Running: D's fix and critic E-01. ALL FIVE GROUPS ARE NOW BUILT. Left: D's last round and
+  polish; E's fix, last round and polish; the KIT PASS (list in NEXT.md); then the final passes
+  and the whole film.
