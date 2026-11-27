@@ -12,6 +12,7 @@ import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createUniqueId, For, Show } from 'solid-js'
 import { studioClipActiveTake, studioClipTakeList, } from '@/lib/studio/model/clip-takes'
 import type { StudioClip } from '@/lib/studio/model/types'
+import { focusStudioClip } from './clip-focus'
 import { studioClipTakeName } from './clip-take-name'
 import { closeStudioTakes, studioTakesClipId } from './comp-editor'
 import { PassWave } from './StudioCompLanes'
@@ -114,10 +115,7 @@ function TakeRows(props: TakeRowsProps) {
     const id = clip().id
     closeStudioTakes()
     // Back to the clip the takes belong to, not to the page.
-    for (const element of document.querySelectorAll<HTMLElement>(
-      '[data-studio-clip]',
-    ))
-      if (element.dataset.studioClip === id) element.focus()
+    focusStudioClip(id)
   }
 
   function choose(index: number): void {

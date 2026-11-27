@@ -7,6 +7,7 @@ import { setStudioRecordCardAside } from '../record/record-card-aside'
 import { StudioRecordLane } from '../record/StudioRecordLane'
 import { studioTakeRunning } from '../record/take-running'
 import { StudioViewControls } from '../StudioViewControls'
+import { closeStudioRows } from './comp-editor'
 import { studioLaneHeight } from './lane-height'
 import { studioLaneLinesRequest } from './lane-lines-request'
 import { attachStudioLaneNavigation } from './lane-navigation'
@@ -227,6 +228,8 @@ export function StudioTimeline(props: StudioTimelineProps) {
     setStudioRecordCardAside(props.phone && lines.view() !== null),
   )
   onCleanup(() => setStudioRecordCardAside(false))
+  // StudioPage opens each song anew: the rows open under a lane go with it.
+  onCleanup(closeStudioRows)
   const lineTrack = () => {
     const open = lines.view()
     return open ? tracks().get(open.trackId) : undefined

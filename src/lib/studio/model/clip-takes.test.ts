@@ -477,6 +477,34 @@ describe('the song with clips of several takes', () => {
     ).toThrow('A MIDI clip has one take')
   })
 
+  it.each(['passes', 'comp'])(
+    'refuses a take not playing whose %s is null, as it refuses the playing take’s',
+    (field) => {
+      const { project, assets, first } = takesFixture()
+      const two = studioClipWithTakes(
+        [
+          first,
+          {
+            ...first,
+            assetId: 'take-2',
+            sourceInFrame: 300,
+            sourceOutFrame: 1100,
+          },
+        ],
+        1,
+      )
+      const opened = (clip: unknown) => () =>
+        validateStudioProject({ ...project, clips: [clip] }, assets)
+      const waiting = { ...two, takes: [{ ...two.takes![0], [field]: null }] }
+
+      expect(opened(two)).not.toThrow()
+      expect(opened(waiting)).toThrow(`project.clips[0].takes[0].${field}`)
+      expect(opened({ ...two, [field]: null })).toThrow(
+        `project.clips[0].${field}`,
+      )
+    },
+  )
+
   it('opens a song saved before takes, unchanged', () => {
     const { project, assets } = takesFixture()
     expect(validateStudioProject(project, assets)).toEqual(project)

@@ -51,7 +51,11 @@ function ownTake(clip: StudioClip): StudioClip {
   return own
 }
 
-/** Take `take` of the clip as a clip of one take, lined up with the playing one. */
+/**
+ * Take `take` of the clip as a clip of one take, lined up with the playing
+ * one. Its passes and comp come along whatever they hold, so the clip's
+ * validator sees a saved null as it would on the playing take.
+ */
 function takeClip(own: StudioClip, take: StudioClipTake): StudioClip {
   return {
     id: own.id,
@@ -62,8 +66,8 @@ function takeClip(own: StudioClip, take: StudioClipTake): StudioClip {
     sourceOutFrame: own.sourceOutFrame + take.offsetFrames,
     gainDb: take.gainDb,
     fades: take.fades,
-    ...(take.passes && { passes: take.passes }),
-    ...(take.comp && { comp: take.comp }),
+    ...(take.passes !== undefined && { passes: take.passes }),
+    ...(take.comp !== undefined && { comp: take.comp }),
   }
 }
 

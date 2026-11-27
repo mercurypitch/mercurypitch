@@ -41,6 +41,7 @@ export function StudioTakesButton(props: {
       <StudioClipMenu
         anchor={menu()}
         label="Takes"
+        clipId={props.clip.id}
         items={studioClipTakeMenu(
           props.clip,
           props.assets,

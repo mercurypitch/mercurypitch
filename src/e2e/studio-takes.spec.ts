@@ -1,4 +1,4 @@
-// Studio takes: a take sung over a take on the armed lane becomes that clip's newest take instead of landing on a new lane; the newest take plays, the older one waits with its own volume, and a reload keeps both. The clip says which take plays, and its right-click menu, its bar's Takes list, a phone's clip note and T and Shift+T choose another. Show takes stands them in rows under the lane, where a click plays one.
+// Studio takes: a take sung over a take on the armed lane becomes that clip's newest take instead of landing on a new lane; the newest take plays, the older one waits with its own volume, and a reload keeps both. The clip says which take plays, and its right-click menu, its bar's Takes list, a phone's clip note and T and Shift+T choose another. Show takes stands them in rows under the lane, where a click plays one. Crop and Explode from the bar's list leave the focus on the clip.
 import { expect, test } from '@playwright/test'
 import { readStudioProject } from './helpers/dedicatedstudio-fixture'
 import { firstClip, levelFromStart, recordTwoTakes, } from './helpers/studio-clip-takes'
@@ -235,5 +235,52 @@ test.describe('Studio takes', () => {
       .click()
     await expect(studio.locator('[data-studio-track]')).toHaveCount(2)
     await expect(stacked).toHaveCount(1)
+  })
+
+  test('Crop to this take and Explode takes to new lanes from the bar’s Takes list leave the focus on the clip, by keyboard alone @smoke', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000)
+    const { studio } = await recordTwoTakes(page)
+    const stacked = studio.getByRole('button', {
+      name: /^Lane 2, Take 2\.wav, take 2 of 2, /,
+    })
+    const cropped = studio.getByRole('button', {
+      name: /^Lane 2, Take 2\.wav, 0:00/,
+    })
+    const takes = studio.getByRole('button', { name: 'Takes', exact: true })
+    const menu = page.getByRole('menu', { name: 'Takes', exact: true })
+    const row = (name: string) =>
+      menu.getByRole('menuitem', { name, exact: true })
+
+    // Enter selects the clip, and Enter on its bar's Takes opens the list on
+    // the take that plays.
+    await stacked.focus()
+    await page.keyboard.press('Enter')
+    await takes.focus()
+    await page.keyboard.press('Enter')
+    await expect(menu.getByRole('menuitemradio').nth(1)).toBeFocused()
+
+    // Crop to this take is the last row. It takes the button away with the
+    // takes, and the clip has the focus.
+    await page.keyboard.press('End')
+    await expect(row('Crop to this take')).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(takes).toHaveCount(0)
+    await expect(cropped).toBeFocused()
+
+    // Undo brings the takes back, and the button. Explode is the row above
+    // Crop, and leaves the focus on the clip too.
+    await page.keyboard.press('ControlOrMeta+z')
+    await expect(stacked).toHaveCount(1)
+    await takes.focus()
+    await page.keyboard.press('Enter')
+    await page.keyboard.press('End')
+    await page.keyboard.press('ArrowUp')
+    await expect(row('Explode takes to new lanes')).toBeFocused()
+    await page.keyboard.press('Enter')
+    await expect(studio.locator('[data-studio-track]')).toHaveCount(3)
+    await expect(takes).toHaveCount(0)
+    await expect(cropped).toBeFocused()
   })
 })
