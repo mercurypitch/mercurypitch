@@ -5432,3 +5432,20 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - MEMORY IS NEAR THE CAP: rss 7.1 + shmem 5.5 = 12.7 of 13.4 GiB, free under 0.4 GiB, failcnt
   high, oom_kill 0. Two Chrome workers take 3.2 GiB each. Told C's fix agent: no browser or
   video work outside heavy until about 06:20. DISK 3.6 G.
+
+## 27 Nov 04:53 UTC: C's FIX DONE; critic C-02 (the LAST round for C) launched
+- C's FIX ((builder), 506k tokens) DONE. Every item of 124 is built and measured:
+  - the counting cells sit 4 px apart, 0.12 s apart, and settle;
+  - 8f is named a slow zoom, with its labels at 40 %;
+  - 9m moves to P5m at 1.5x and fills about 33 % of the frame (the critic measured 8 %);
+  - P5a is 120 px lower, with a 200 px rise;
+  - 8h is a 1.3x push;
+  - the swap's numbers travel at a 29 px a frame peak;
+  - 9m's labels are fixed, the card's rows are even, and the keys are a piano.
+  Checks: probe 95/70, clearance 0, root 0, board tools 0. Holds: S8 1.8, S9 2.0 per 30 s,
+  longest 0.3 s. Still pending: S9's first contrast group, queued in heavy behind L5's render.
+- LEAD-ANSWERS 125 confirms C's decisions, among them 8h as a third push-and-return. FOR D'S BRIEF:
+  S10 opens with the octave measure as ticks only. Next free call: 126.
+- LAUNCHED ((model) xhigh): CRITIC C-02 (builder) (briefs/l6-critic-scenes-C-02.md).
+  Until about 06:20 it only reads, then waits on `heavy true` before its first frame pull, so the
+  L5 render's memory stays safe.
