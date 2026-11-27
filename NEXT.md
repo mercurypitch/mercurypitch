@@ -5362,3 +5362,18 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   (waiting on its queue).
 - 01:50 check-in: seven_day allowed_warning. In flight: L5 final run (queue 13 done, 14 to go),
   C's finish, B's polish. Disk 5.1 G free. Nothing stopped and nothing due.
+
+## 27 Nov 02:48 UTC: C's FINISH DONE; critic C-01 launched
+- C's FINISH ((builder), 424k tokens) DONE:
+  - calls: 120 applied (the seek-order differences are now 1 level, Chromium's own); 113 (two
+    0.4 s holds in S8 now carry motions); 114 and 121 (the strokes under the cards' ink at 0);
+    115 (F-swap 1.08);
+  - checks: probe 95/95 and 70/70; clearance 0; contrast 190/190 and 95/95; root 0; board tools
+    0 (195 landings, 222 word-keyed times);
+  - holds: S8 1.9 and S9 2.3 per 30 s, longest 0.3 s.
+- LEAD-ANSWERS 122: C's decisions stand; the board's 8c pulse goes to the kit pass. Next free
+  call: 123.
+- LAUNCHED ((model) xhigh): CRITIC C-01 (builder) (briefs/l6-critic-scenes-C-01.md; round 1
+  of 2; the lead saves its report to review/critic-scenes-C-01/REPORT.md).
+- Running: B's polish (renders), critic C-01, L5 (waiting on its queue). QUEUE: C's fix after
+  C-01, then critic C-02, D, E, the kit pass and the whole film.

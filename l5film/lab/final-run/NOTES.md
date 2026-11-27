@@ -27,6 +27,8 @@ from the film's root (`l5film/`), every heavy job through `$S/bin/heavy`, one at
   `merc-sheet.py`, each logged in `lab/final-run/logs/03-*`. It writes `lab/final-run/run-passes.state`
   (one line a stage as it finishes). Rerunning it is safe: the queue skips done jobs, the rest
   rewrite their own outputs.
+- 27 November 02:02 UTC: 15 of 27 done (through m-blue-s08; times in `merc/render.log`), the queue
+  still running; about 36,200 frames left, about 2.4 h.
 
 ## How to resume
 
