@@ -9,3 +9,5 @@
 [initSession:beginframe] applyVideoMetadataHints complete (513ms)
 [initSession:beginframe] media + fonts + tailwind ready (619ms)
 [initSession:beginframe] static-frame dedup: disabled (capture mode beginframe, not screenshot) (2433ms)
+CHUNK {"outputPath":"/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/renders/pieces/piece-008.tmp.mp4","outputKind":"file","framesEncoded":1800,"sha256":"a4fb0d75166e0d53c90c91ce07144fec2c129ebd1321ce27d5cafdf213cc48c1","durationMs":249751,"planHashMs":1514,"sessionBootMs":2818,"captureStageMs":222371,"encodeStageMs":23003,"workers":1,"captureMode":"beginframe","perfPath":"/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/renders/pieces/piece-008.tmp.mp4.perf.json"}
+chunk done in 250.0 s

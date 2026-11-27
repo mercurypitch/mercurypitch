@@ -1,0 +1,359 @@
+# Measurement
+
+File: `renders/film-final-60.mp4`
+
+| Property | Value |
+| --- | --- |
+| Duration | 569.750 s |
+| Picture | 1920x1080 60.00 fps h264 |
+| Audio | aac 48000 Hz 2 ch |
+
+## Holds
+
+A hold is a 0.1 s sample where the mean change is below 0.1 and no pixel changes by 16 or more. Target: at most about 1 s per 30 s in total and none longer than about 0.5 s; a hold that runs to the end (the final call to action) is reported separately and exempt.
+
+**Inside the film:** 12.3 s (0.6 s per 30 s), longest 0.5 s.
+**Final hold:** none.
+
+| Starts | Length | Note |
+| --- | --- | --- |
+| 0.00 s | 0.1 s |  |
+| 0.50 s | 0.1 s |  |
+| 4.60 s | 0.1 s |  |
+| 10.70 s | 0.1 s |  |
+| 29.10 s | 0.4 s |  |
+| 71.80 s | 0.1 s |  |
+| 80.30 s | 0.1 s |  |
+| 81.90 s | 0.1 s |  |
+| 86.70 s | 0.1 s |  |
+| 97.40 s | 0.1 s |  |
+| 105.30 s | 0.1 s |  |
+| 124.50 s | 0.3 s |  |
+| 130.80 s | 0.1 s |  |
+| 143.40 s | 0.1 s |  |
+| 145.10 s | 0.1 s |  |
+| 162.30 s | 0.4 s |  |
+| 177.90 s | 0.1 s |  |
+| 181.30 s | 0.1 s |  |
+| 193.10 s | 0.1 s |  |
+| 193.80 s | 0.1 s |  |
+| 201.20 s | 0.1 s |  |
+| 204.10 s | 0.1 s |  |
+| 208.50 s | 0.1 s |  |
+| 211.20 s | 0.4 s |  |
+| 217.30 s | 0.3 s |  |
+| 220.70 s | 0.1 s |  |
+| 222.90 s | 0.1 s |  |
+| 223.60 s | 0.1 s |  |
+| 234.80 s | 0.1 s |  |
+| 237.40 s | 0.1 s |  |
+| 237.70 s | 0.1 s |  |
+| 239.40 s | 0.1 s |  |
+| 241.70 s | 0.2 s |  |
+| 242.90 s | 0.1 s |  |
+| 243.90 s | 0.1 s |  |
+| 253.40 s | 0.1 s |  |
+| 257.70 s | 0.1 s |  |
+| 258.00 s | 0.1 s |  |
+| 258.80 s | 0.1 s |  |
+| 261.80 s | 0.1 s |  |
+| 267.80 s | 0.1 s |  |
+| 268.70 s | 0.1 s |  |
+| 273.20 s | 0.1 s |  |
+| 285.30 s | 0.1 s |  |
+| 289.40 s | 0.2 s |  |
+| 289.80 s | 0.1 s |  |
+| 290.00 s | 0.1 s |  |
+| 291.10 s | 0.1 s |  |
+| 294.20 s | 0.1 s |  |
+| 294.60 s | 0.1 s |  |
+| 295.20 s | 0.1 s |  |
+| 296.80 s | 0.1 s |  |
+| 301.10 s | 0.1 s |  |
+| 301.30 s | 0.1 s |  |
+| 318.00 s | 0.1 s |  |
+| 318.50 s | 0.1 s |  |
+| 334.10 s | 0.1 s |  |
+| 339.10 s | 0.1 s |  |
+| 360.60 s | 0.2 s |  |
+| 363.60 s | 0.1 s |  |
+| 379.40 s | 0.1 s |  |
+| 380.70 s | 0.1 s |  |
+| 385.90 s | 0.1 s |  |
+| 390.30 s | 0.1 s |  |
+| 391.00 s | 0.1 s |  |
+| 404.30 s | 0.1 s |  |
+| 416.90 s | 0.1 s |  |
+| 444.20 s | 0.5 s |  |
+| 447.10 s | 0.2 s |  |
+| 447.50 s | 0.1 s |  |
+| 451.70 s | 0.1 s |  |
+| 460.70 s | 0.1 s |  |
+| 462.30 s | 0.1 s |  |
+| 469.30 s | 0.1 s |  |
+| 469.90 s | 0.1 s |  |
+| 470.10 s | 0.1 s |  |
+| 471.20 s | 0.1 s |  |
+| 476.70 s | 0.3 s |  |
+| 483.20 s | 0.1 s |  |
+| 488.60 s | 0.1 s |  |
+| 491.80 s | 0.1 s |  |
+| 502.50 s | 0.1 s |  |
+| 509.20 s | 0.1 s |  |
+| 519.70 s | 0.1 s |  |
+| 523.30 s | 0.1 s |  |
+| 528.30 s | 0.1 s |  |
+| 528.70 s | 0.1 s |  |
+| 530.30 s | 0.1 s |  |
+| 534.10 s | 0.1 s |  |
+| 538.20 s | 0.1 s |  |
+| 539.60 s | 0.3 s |  |
+| 543.80 s | 0.1 s |  |
+| 566.10 s | 0.3 s |  |
+| 567.90 s | 0.1 s |  |
+| 569.00 s | 0.2 s |  |
+
+## Low motion
+
+Runs where the mean change is below 0.35. Not an automatic fail: a critic looks at each one. A large "largest change" means something small is visibly moving (a thin line drawing, a small object), which the mean hides.
+
+| Starts | Length | Largest change | Note |
+| --- | --- | --- | --- |
+| 0.00 s | 0.9 s | 131 | small element moving |
+| 1.40 s | 2.5 s | 148 | small element moving |
+| 4.60 s | 0.7 s | 145 | small element moving |
+| 5.60 s | 0.4 s | 98 | small element moving |
+| 6.10 s | 2.0 s | 187 | small element moving |
+| 8.70 s | 0.8 s | 152 | small element moving |
+| 9.70 s | 0.3 s | 112 | small element moving |
+| 10.30 s | 2.5 s | 161 | small element moving |
+| 13.10 s | 0.8 s | 163 | small element moving |
+| 14.00 s | 1.2 s | 171 | small element moving |
+| 15.70 s | 1.1 s | 169 | small element moving |
+| 16.90 s | 1.2 s | 221 | small element moving |
+| 18.60 s | 0.8 s | 157 | small element moving |
+| 19.60 s | 3.2 s | 213 | small element moving |
+| 23.00 s | 0.8 s | 212 | small element moving |
+| 23.90 s | 0.8 s | 179 | small element moving |
+| 24.80 s | 0.9 s | 149 | small element moving |
+| 25.80 s | 0.4 s | 147 | small element moving |
+| 26.50 s | 0.6 s | 147 | small element moving |
+| 27.70 s | 0.5 s | 89 | small element moving |
+| 28.50 s | 1.2 s | 141 | small element moving |
+| 29.80 s | 0.3 s | 164 | small element moving |
+| 30.40 s | 2.9 s | 226 | small element moving |
+| 36.50 s | 3.5 s | 182 | small element moving |
+| 40.20 s | 1.2 s | 132 | small element moving |
+| 46.00 s | 0.3 s | 194 | small element moving |
+| 46.50 s | 0.7 s | 107 | small element moving |
+| 47.30 s | 0.5 s | 29 |  |
+| 48.20 s | 0.6 s | 70 | small element moving |
+| 48.90 s | 1.0 s | 87 | small element moving |
+| 56.10 s | 0.6 s | 101 | small element moving |
+| 57.90 s | 0.6 s | 172 | small element moving |
+| 58.60 s | 0.3 s | 133 | small element moving |
+| 59.20 s | 3.5 s | 165 | small element moving |
+| 63.20 s | 0.7 s | 150 | small element moving |
+| 64.60 s | 1.5 s | 141 | small element moving |
+| 66.20 s | 0.3 s | 87 | small element moving |
+| 67.00 s | 0.6 s | 169 | small element moving |
+| 69.70 s | 0.5 s | 148 | small element moving |
+| 72.90 s | 2.1 s | 135 | small element moving |
+| 75.30 s | 2.9 s | 171 | small element moving |
+| 78.40 s | 3.8 s | 167 | small element moving |
+| 82.30 s | 0.4 s | 164 | small element moving |
+| 82.80 s | 1.4 s | 127 | small element moving |
+| 84.40 s | 6.4 s | 173 | small element moving |
+| 91.50 s | 0.3 s | 203 | small element moving |
+| 92.30 s | 1.8 s | 204 | small element moving |
+| 94.70 s | 3.1 s | 203 | small element moving |
+| 98.90 s | 0.4 s | 153 | small element moving |
+| 99.40 s | 4.1 s | 193 | small element moving |
+| 104.10 s | 0.4 s | 185 | small element moving |
+| 104.70 s | 1.8 s | 223 | small element moving |
+| 106.60 s | 1.1 s | 156 | small element moving |
+| 111.20 s | 1.5 s | 103 | small element moving |
+| 113.90 s | 0.4 s | 153 | small element moving |
+| 114.40 s | 4.8 s | 165 | small element moving |
+| 119.30 s | 0.3 s | 86 | small element moving |
+| 119.70 s | 0.9 s | 83 | small element moving |
+| 120.70 s | 9.1 s | 164 | small element moving |
+| 129.90 s | 1.3 s | 134 | small element moving |
+| 141.60 s | 1.4 s | 183 | small element moving |
+| 143.20 s | 0.8 s | 189 | small element moving |
+| 144.10 s | 1.6 s | 155 | small element moving |
+| 146.50 s | 0.5 s | 110 | small element moving |
+| 147.10 s | 1.9 s | 166 | small element moving |
+| 149.20 s | 0.6 s | 45 |  |
+| 150.00 s | 3.1 s | 191 | small element moving |
+| 153.30 s | 0.3 s | 107 | small element moving |
+| 155.80 s | 1.8 s | 157 | small element moving |
+| 158.90 s | 0.3 s | 108 | small element moving |
+| 159.30 s | 6.6 s | 160 | small element moving |
+| 166.70 s | 3.4 s | 161 | small element moving |
+| 170.30 s | 0.9 s | 186 | small element moving |
+| 171.60 s | 0.9 s | 129 | small element moving |
+| 173.40 s | 2.1 s | 155 | small element moving |
+| 175.70 s | 3.0 s | 152 | small element moving |
+| 180.00 s | 1.6 s | 118 | small element moving |
+| 181.80 s | 4.5 s | 163 | small element moving |
+| 186.70 s | 0.4 s | 145 | small element moving |
+| 187.40 s | 0.7 s | 151 | small element moving |
+| 188.90 s | 1.7 s | 163 | small element moving |
+| 191.10 s | 5.7 s | 151 | small element moving |
+| 196.90 s | 0.8 s | 157 | small element moving |
+| 198.20 s | 0.5 s | 105 | small element moving |
+| 198.80 s | 0.4 s | 129 | small element moving |
+| 199.40 s | 1.4 s | 168 | small element moving |
+| 200.90 s | 0.4 s | 20 |  |
+| 202.00 s | 1.3 s | 154 | small element moving |
+| 203.40 s | 2.3 s | 152 | small element moving |
+| 206.30 s | 0.7 s | 155 | small element moving |
+| 207.30 s | 1.4 s | 93 | small element moving |
+| 208.80 s | 3.0 s | 158 | small element moving |
+| 211.90 s | 2.5 s | 174 | small element moving |
+| 214.50 s | 2.3 s | 154 | small element moving |
+| 217.20 s | 0.4 s | 17 |  |
+| 218.70 s | 0.5 s | 39 |  |
+| 220.20 s | 6.4 s | 197 | small element moving |
+| 226.70 s | 8.8 s | 163 | small element moving |
+| 235.60 s | 2.2 s | 152 | small element moving |
+| 239.20 s | 0.4 s | 33 |  |
+| 240.90 s | 2.7 s | 137 | small element moving |
+| 243.70 s | 0.9 s | 108 | small element moving |
+| 244.70 s | 3.4 s | 155 | small element moving |
+| 248.70 s | 5.2 s | 163 | small element moving |
+| 256.40 s | 1.9 s | 87 | small element moving |
+| 258.60 s | 4.6 s | 158 | small element moving |
+| 265.60 s | 1.3 s | 56 | small element moving |
+| 267.20 s | 2.8 s | 156 | small element moving |
+| 273.00 s | 4.4 s | 167 | small element moving |
+| 277.90 s | 1.4 s | 127 | small element moving |
+| 279.70 s | 1.4 s | 156 | small element moving |
+| 281.50 s | 1.4 s | 129 | small element moving |
+| 283.20 s | 3.6 s | 166 | small element moving |
+| 287.50 s | 9.4 s | 156 | small element moving |
+| 298.20 s | 0.5 s | 43 |  |
+| 300.60 s | 1.5 s | 116 | small element moving |
+| 302.30 s | 4.1 s | 170 | small element moving |
+| 306.60 s | 0.7 s | 155 | small element moving |
+| 307.70 s | 11.3 s | 194 | small element moving |
+| 320.10 s | 1.5 s | 168 | small element moving |
+| 323.10 s | 1.1 s | 143 | small element moving |
+| 324.40 s | 4.1 s | 172 | small element moving |
+| 330.50 s | 0.5 s | 42 |  |
+| 331.20 s | 4.2 s | 173 | small element moving |
+| 335.70 s | 0.5 s | 167 | small element moving |
+| 337.70 s | 2.1 s | 154 | small element moving |
+| 340.00 s | 1.0 s | 167 | small element moving |
+| 341.20 s | 8.9 s | 172 | small element moving |
+| 352.10 s | 0.3 s | 161 | small element moving |
+| 352.50 s | 1.8 s | 157 | small element moving |
+| 354.50 s | 1.7 s | 169 | small element moving |
+| 356.40 s | 2.1 s | 203 | small element moving |
+| 359.80 s | 1.2 s | 150 | small element moving |
+| 361.70 s | 2.7 s | 141 | small element moving |
+| 364.50 s | 2.3 s | 172 | small element moving |
+| 367.00 s | 1.9 s | 157 | small element moving |
+| 369.00 s | 3.0 s | 171 | small element moving |
+| 372.10 s | 3.0 s | 171 | small element moving |
+| 375.30 s | 4.6 s | 173 | small element moving |
+| 380.00 s | 18.1 s | 171 | small element moving |
+| 398.30 s | 0.9 s | 61 | small element moving |
+| 399.50 s | 14.7 s | 175 | small element moving |
+| 414.30 s | 1.4 s | 167 | small element moving |
+| 416.00 s | 2.0 s | 120 | small element moving |
+| 420.30 s | 1.4 s | 123 | small element moving |
+| 422.50 s | 0.3 s | 137 | small element moving |
+| 423.30 s | 0.5 s | 56 | small element moving |
+| 424.00 s | 0.8 s | 125 | small element moving |
+| 425.00 s | 0.9 s | 238 | small element moving |
+| 426.00 s | 0.8 s | 119 | small element moving |
+| 427.00 s | 0.8 s | 170 | small element moving |
+| 428.00 s | 0.8 s | 165 | small element moving |
+| 429.00 s | 0.8 s | 126 | small element moving |
+| 430.00 s | 0.8 s | 173 | small element moving |
+| 430.90 s | 1.0 s | 239 | small element moving |
+| 432.00 s | 0.8 s | 123 | small element moving |
+| 433.00 s | 0.8 s | 126 | small element moving |
+| 435.00 s | 2.7 s | 141 | small element moving |
+| 437.90 s | 9.9 s | 174 | small element moving |
+| 448.00 s | 2.8 s | 170 | small element moving |
+| 450.90 s | 1.6 s | 174 | small element moving |
+| 452.60 s | 2.7 s | 120 | small element moving |
+| 455.50 s | 2.9 s | 171 | small element moving |
+| 459.40 s | 16.6 s | 172 | small element moving |
+| 476.50 s | 0.6 s | 167 | small element moving |
+| 478.90 s | 5.9 s | 172 | small element moving |
+| 485.90 s | 7.9 s | 173 | small element moving |
+| 494.10 s | 1.1 s | 160 | small element moving |
+| 495.30 s | 0.8 s | 137 | small element moving |
+| 496.60 s | 0.4 s | 96 | small element moving |
+| 497.30 s | 2.0 s | 138 | small element moving |
+| 499.40 s | 4.1 s | 173 | small element moving |
+| 503.80 s | 0.5 s | 131 | small element moving |
+| 504.50 s | 1.8 s | 157 | small element moving |
+| 509.00 s | 3.4 s | 158 | small element moving |
+| 512.50 s | 4.7 s | 171 | small element moving |
+| 517.40 s | 3.8 s | 172 | small element moving |
+| 521.30 s | 4.0 s | 171 | small element moving |
+| 525.50 s | 5.1 s | 173 | small element moving |
+| 530.80 s | 2.8 s | 157 | small element moving |
+| 533.70 s | 6.5 s | 172 | small element moving |
+| 540.30 s | 3.7 s | 168 | small element moving |
+| 546.70 s | 5.2 s | 175 | small element moving |
+| 552.20 s | 2.8 s | 167 | small element moving |
+| 555.10 s | 1.3 s | 169 | small element moving |
+| 557.00 s | 2.8 s | 168 | small element moving |
+| 559.90 s | 1.0 s | 140 | small element moving |
+| 561.00 s | 2.2 s | 113 | small element moving |
+| 564.70 s | 5.0 s | 211 | small element moving, runs to the end |
+
+60 shorter run(s) totalling 8.3 s are not listed; `motion.csv` has every sample.
+
+## Single-frame events
+
+From every frame at the film's own rate, by the share of pixels that change by more than 24 (at 960 px wide) against the changes either side. A jump changes once and stays: a large one is a cut, a small one is usually a whole-pixel snap in a slow move, and equal snaps come out as equal jumps. A pop differs from both of its neighbours: a flash, a missing element or a one-frame glitch. Look at each on a frame-exact sheet.
+
+| Time | Kind | Mean change | Pixels changed |
+| --- | --- | --- | --- |
+| 25.750 s | pop | 0.23 | 0.27% |
+| 33.350 s | jump | 0.23 | 0.40% |
+| 69.683 s | jump | 0.20 | 0.27% |
+| 216.883 s | jump | 0.27 | 0.35% |
+| 216.917 s | jump | 0.41 | 0.57% |
+| 270.017 s | pop | 0.35 | 0.28% |
+| 277.500 s | jump | 0.42 | 0.58% |
+| 336.367 s | jump | 0.37 | 0.27% |
+| 418.083 s | jump | 0.21 | 0.33% |
+| 418.117 s | jump | 0.22 | 0.33% |
+| 419.383 s | jump | 0.33 | 0.42% |
+| 485.117 s | jump | 0.25 | 0.41% |
+| 496.417 s | jump | 0.32 | 0.34% |
+| 506.517 s | jump | 0.24 | 0.43% |
+| 506.550 s | jump | 0.27 | 0.43% |
+| 507.367 s | jump | 0.38 | 0.44% |
+| 544.267 s | jump | 0.40 | 0.30% |
+| 544.383 s | jump | 0.50 | 0.97% |
+| 544.783 s | jump | 0.50 | 1.11% |
+| 544.900 s | jump | 0.42 | 0.30% |
+
+28 weaker event(s) are in `events.csv`.
+
+## Loop seam
+
+From the last frame back to the first: 14.55 on the scale of `frames.csv`, against a median frame change of 0.026, a 95th percentile of 0.38 and a largest of 12.51 at 42.667 s. If the film plays on a loop (feeds, landing pages, README embeds), the seam reads as a jump. Compare `frame-last.png` with `frame-0.png`; ignore this for a film that never loops.
+
+## Loudness
+
+Integrated -16.0 LUFS, loudness range 5.0 LU, true peak -2.6 dBTP.
+
+Targets: about -14 LUFS for punchy pieces, -16 to -19 LUFS for calm ones, true peak at most -1 dBTP. Momentary loudness needs a 400 ms window and short-term loudness a 3 s window, so the first samples read -120.7 by definition. Ignore the loudness range on clips shorter than about 10 s. Compare effects with the music using `measure.py audio`.
+
+Short-term per second: 1s -120.7, 2s -120.7, 3s -20.5, 4s -19.4, 5s -20.2, 6s -19.0, 7s -16.7, 8s -15.3, 9s -15.6, 10s -16.4, 11s -17.7, 12s -16.5, 13s -16.6, 14s -15.9, 15s -16.3, 16s -17.5, 17s -16.1, 18s -17.1, 19s -16.0, 20s -16.5, 21s -17.2, 22s -19.3, 23s -31.2, 24s -23.5, 25s -20.4, 26s -17.7, 27s -16.5, 28s -15.6, 29s -15.7, 30s -16.8, 31s -16.4, 32s -17.7, 33s -16.8, 34s -18.2, 35s -17.9, 36s -16.6, 37s -16.6, 38s -15.3, 39s -16.6, 40s -16.8, 41s -17.7, 42s -17.0, 43s -17.7, 44s -19.2, 45s -24.5, 46s -26.7, 47s -21.0, 48s -16.7, 49s -15.2, 50s -15.2, 51s -15.6, 52s -16.0, 53s -15.9, 54s -16.5, 55s -16.9, 56s -17.5, 57s -17.2, 58s -17.9, 59s -15.1, 60s -16.2, 61s -15.7, 62s -21.7, 63s -23.0, 64s -26.6, 65s -17.6, 66s -16.8, 67s -15.3, 68s -16.9, 69s -16.0, 70s -18.2, 71s -20.1, 72s -28.3, 73s -25.5, 74s -18.5, 75s -17.3, 76s -15.2, 77s -15.5, 78s -15.6, 79s -16.9, 80s -17.5, 81s -15.6, 82s -16.1, 83s -15.6, 84s -18.1, 85s -16.8, 86s -17.1, 87s -15.6, 88s -15.8, 89s -16.1, 90s -16.9, 91s -18.5, 92s -18.5, 93s -16.4, 94s -14.4, 95s -14.2, 96s -15.7, 97s -17.0, 98s -18.1, 99s -16.7, 100s -16.1, 101s -15.0, 102s -15.7, 103s -17.0, 104s -17.8, 105s -16.9, 106s -16.1, 107s -15.6, 108s -16.9, 109s -19.2, 110s -27.4, 111s -22.3, 112s -17.1, 113s -16.7, 114s -16.0, 115s -16.9, 116s -15.7, 117s -15.7, 118s -15.4, 119s -16.6, 120s -16.9, 121s -18.1, 122s -16.0, 123s -16.6, 124s -17.3, 125s -21.5, 126s -18.0, 127s -16.1, 128s -15.1, 129s -16.8, 130s -20.1, 131s -26.0, 132s -24.9, 133s -21.7, 134s -19.8, 135s -19.4, 136s -19.4, 137s -19.4, 138s -19.4, 139s -19.4, 140s -19.4, 141s -19.4, 142s -18.2, 143s -17.7, 144s -16.6, 145s -15.8, 146s -15.8, 147s -14.8, 148s -14.8, 149s -15.1, 150s -15.7, 151s -16.9, 152s -16.8, 153s -18.0, 154s -16.2, 155s -16.4, 156s -15.6, 157s -16.9, 158s -16.4, 159s -16.6, 160s -15.3, 161s -15.2, 162s -16.1, 163s -19.0, 164s -17.0, 165s -16.4, 166s -16.2, 167s -16.7, 168s -15.3, 169s -15.3, 170s -16.0, 171s -18.1, 172s -17.9, 173s -17.4, 174s -16.3, 175s -15.9, 176s -15.7, 177s -16.3, 178s -15.2, 179s -14.6, 180s -14.2, 181s -15.3, 182s -17.4, 183s -16.6, 184s -17.1, 185s -16.0, 186s -18.7, 187s -16.1, 188s -17.0, 189s -16.6, 190s -17.1, 191s -16.7, 192s -16.4, 193s -15.9, 194s -16.0, 195s -16.1, 196s -17.1, 197s -15.7, 198s -15.6, 199s -15.9, 200s -17.6, 201s -16.9, 202s -16.7, 203s -15.4, 204s -16.2, 205s -15.7, 206s -15.7, 207s -15.9, 208s -16.6, 209s -17.7, 210s -16.5, 211s -17.1, 212s -18.4, 213s -17.3, 214s -16.2, 215s -14.7, 216s -14.5, 217s -15.8, 218s -18.5, 219s -27.7, 220s -25.7, 221s -19.4, 222s -16.5, 223s -15.9, 224s -16.3, 225s -15.9, 226s -16.0, 227s -15.2, 228s -16.3, 229s -16.1, 230s -18.0, 231s -15.7, 232s -15.6, 233s -14.9, 234s -17.1, 235s -18.2, 236s -16.8, 237s -16.7, 238s -17.0, 239s -21.6, 240s -30.5, 241s -20.7, 242s -18.5, 243s -15.6, 244s -15.9, 245s -16.0, 246s -17.5, 247s -16.4, 248s -16.9, 249s -16.8, 250s -18.8, 251s -17.0, 252s -16.9, 253s -16.1, 254s -16.7, 255s -17.8, 256s -19.6, 257s -20.8, 258s -17.9, 259s -16.4, 260s -15.5, 261s -14.8, 262s -14.8, 263s -15.9, 264s -18.5, 265s -21.5, 266s -17.5, 267s -15.1, 268s -14.6, 269s -15.7, 270s -19.0, 271s -19.9, 272s -21.4, 273s -17.8, 274s -16.9, 275s -16.4, 276s -16.8, 277s -16.2, 278s -16.8, 279s -18.3, 280s -22.0, 281s -20.4, 282s -20.8, 283s -20.3, 284s -17.9, 285s -16.1, 286s -16.0, 287s -16.5, 288s -17.5, 289s -16.6, 290s -18.0, 291s -17.5, 292s -15.9, 293s -14.9, 294s -16.1, 295s -17.9, 296s -17.4, 297s -17.5, 298s -19.6, 299s -30.5, 300s -18.2, 301s -16.7, 302s -15.7, 303s -16.4, 304s -16.6, 305s -15.7, 306s -16.2, 307s -17.2, 308s -19.2, 309s -20.8, 310s -19.7, 311s -19.7, 312s -19.7, 313s -19.7, 314s -19.7, 315s -19.7, 316s -19.7, 317s -20.3, 318s -20.3, 319s -17.6, 320s -17.9, 321s -15.9, 322s -16.8, 323s -15.2, 324s -15.3, 325s -15.7, 326s -15.2, 327s -15.8, 328s -15.7, 329s -16.8, 330s -16.6, 331s -16.9, 332s -16.6, 333s -16.6, 334s -15.6, 335s -15.7, 336s -15.8, 337s -16.6, 338s -15.3, 339s -15.2, 340s -15.3, 341s -17.4, 342s -17.7, 343s -17.4, 344s -15.7, 345s -15.6, 346s -15.7, 347s -17.3, 348s -16.2, 349s -15.6, 350s -15.0, 351s -15.0, 352s -15.4, 353s -16.5, 354s -17.5, 355s -17.5, 356s -16.5, 357s -16.8, 358s -15.6, 359s -16.2, 360s -17.5, 361s -22.9, 362s -22.1, 363s -18.7, 364s -16.3, 365s -15.6, 366s -16.4, 367s -16.1, 368s -16.6, 369s -16.3, 370s -15.9, 371s -15.8, 372s -16.0, 373s -18.3, 374s -18.3, 375s -16.0, 376s -15.1, 377s -15.7, 378s -15.8, 379s -15.5, 380s -15.3, 381s -16.1, 382s -18.1, 383s -17.3, 384s -16.8, 385s -16.5, 386s -16.9, 387s -16.8, 388s -15.5, 389s -15.3, 390s -16.3, 391s -17.3, 392s -16.1, 393s -15.6, 394s -15.0, 395s -16.7, 396s -16.2, 397s -17.0, 398s -15.4, 399s -17.2, 400s -16.9, 401s -16.8, 402s -16.0, 403s -15.6, 404s -15.2, 405s -15.0, 406s -15.4, 407s -17.6, 408s -16.1, 409s -15.5, 410s -14.9, 411s -16.6, 412s -16.2, 413s -15.9, 414s -16.1, 415s -16.8, 416s -18.1, 417s -15.9, 418s -16.1, 419s -15.7, 420s -17.5, 421s -17.2, 422s -16.5, 423s -15.8, 424s -18.2, 425s -21.7, 426s -47.1, 427s -52.7, 428s -52.7, 429s -52.6, 430s -52.7, 431s -52.8, 432s -52.7, 433s -52.7, 434s -47.1, 435s -22.7, 436s -19.0, 437s -16.4, 438s -16.3, 439s -16.4, 440s -16.9, 441s -18.3, 442s -20.8, 443s -22.3, 444s -17.8, 445s -17.9, 446s -16.6, 447s -17.0, 448s -16.4, 449s -17.1, 450s -18.1, 451s -16.2, 452s -16.1, 453s -15.1, 454s -16.1, 455s -16.3, 456s -15.5, 457s -15.6, 458s -15.8, 459s -16.5, 460s -17.0, 461s -15.9, 462s -16.9, 463s -14.8, 464s -16.0, 465s -16.0, 466s -18.4, 467s -17.6, 468s -16.0, 469s -15.5, 470s -16.3, 471s -18.4, 472s -18.2, 473s -15.4, 474s -14.7, 475s -14.6, 476s -16.6, 477s -19.2, 478s -20.2, 479s -20.0, 480s -17.6, 481s -16.6, 482s -17.3, 483s -19.4, 484s -23.6, 485s -20.1, 486s -16.0, 487s -16.0, 488s -15.1, 489s -16.7, 490s -16.8, 491s -20.1, 492s -24.6, 493s -18.7, 494s -17.0, 495s -15.6, 496s -17.2, 497s -16.8, 498s -15.3, 499s -15.4, 500s -15.6, 501s -18.7, 502s -20.2, 503s -26.0, 504s -20.7, 505s -17.6, 506s -16.4, 507s -18.3, 508s -22.2, 509s -23.2, 510s -19.6, 511s -16.3, 512s -15.6, 513s -15.2, 514s -15.9, 515s -16.7, 516s -15.8, 517s -15.9, 518s -16.1, 519s -16.6, 520s -17.3, 521s -16.7, 522s -17.7, 523s -16.6, 524s -16.3, 525s -16.2, 526s -17.0, 527s -16.5, 528s -15.9, 529s -15.7, 530s -15.2, 531s -15.6, 532s -15.8, 533s -16.0, 534s -16.1, 535s -16.6, 536s -17.8, 537s -16.5, 538s -15.1, 539s -15.3, 540s -18.0, 541s -17.9, 542s -17.0, 543s -16.3, 544s -18.8, 545s -22.6, 546s -26.4, 547s -21.2, 548s -20.4, 549s -19.5, 550s -21.4, 551s -20.7, 552s -20.4, 553s -16.8, 554s -14.9, 555s -14.7, 556s -16.2, 557s -16.9, 558s -17.0, 559s -16.4, 560s -16.4, 561s -15.7, 562s -15.3, 563s -15.7, 564s -17.1, 565s -19.8, 566s -25.7, 567s -27.4, 568s -39.9, 569s -50.4
+
+## Look at these
+
+- `frame-0.png`: must be a finished composition. `frame-last.png`: the end card.
+- 5 contact sheet(s), one frame every 5 s, each stamped with its own time: `sheet-01.jpg`, `sheet-02.jpg`, `sheet-03.jpg`, `sheet-04.jpg`, `sheet-05.jpg`
+- Every transition and every single-frame event: `measure.py dense`, at 20 fps and frame-exact (`--fps <film fps>`, `--window` covering the whole transition).

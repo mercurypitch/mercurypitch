@@ -1,0 +1,13 @@
+[BrowserManager] Browser launched (HeadlessChrome/152.0.7977.30, beginframe, gl=--use-gl=angle --use-angle=swiftshader, headlessShell=true, platform=linux)
+[initSession:beginframe] warmup loop started (0ms)
+[initSession:beginframe] page.goto start (0ms)
+[HyperFrames] render runtime fps {"canonicalFps":60,"source":"render-options","rawFpsSource":"render-options","rawFps":60}
+[initSession:beginframe] page.goto complete (319ms)
+[initSession:beginframe] GSAP proxy flush complete (332ms)
+[initSession:beginframe] pollHfReady complete (435ms)
+[initSession:beginframe] pollSubCompositionTimelines complete (ready) (438ms)
+[initSession:beginframe] applyVideoMetadataHints complete (438ms)
+[initSession:beginframe] media + fonts + tailwind ready (440ms)
+[initSession:beginframe] static-frame dedup: disabled (capture mode beginframe, not screenshot) (2232ms)
+CHUNK {"outputPath":"/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/renders/pieces/piece-010.tmp.mp4","outputKind":"file","framesEncoded":1800,"sha256":"bcdba2cf7ab66426f39d72e692620fb37d86dd88c734d5561366e078117b6174","durationMs":200201,"planHashMs":1367,"sessionBootMs":2542,"captureStageMs":166898,"encodeStageMs":29346,"workers":1,"captureMode":"beginframe","perfPath":"/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/renders/pieces/piece-010.tmp.mp4.perf.json"}
+chunk done in 200.5 s

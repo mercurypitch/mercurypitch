@@ -1,0 +1,2 @@
+[heavy] slot 2: /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/bin/heavy bash lab/final-run/straddle.sh 1800 18000 19800
+[heavy] waiting for 10 GiB free

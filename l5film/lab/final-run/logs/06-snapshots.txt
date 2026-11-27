@@ -1,0 +1,45 @@
+[heavy] slot 2: npx --yes hyperframes@0.8.97 snapshot . --at 29.983333,30.000000,59.983333,60.000000,89.983333,90.000000,119.983333,120.000000,149.983333,150.000000,179.983333,180.000000,209.983333,210.000000,239.983333,240.000000,269.983333,270.000000,299.983333,300.000000,329.983333,330.000000,359.983333,360.000000,389.983333,390.000000,419.983333,420.000000,449.983333,450.000000,479.983333,480.000000,509.983333,510.000000,539.983333,540.000000 --no-end -o review/final-film/joins/snap
+◆  Capturing 36 frames at [29.983s, 30s, 59.983s, 60s, 89.983s, 90s, 119.983s, 120s, 149.983s, 150s, 179.983s, 180s, 209.983s, 210s, 239.983s, 240s, 269.983s, 270s, 299.983s, 300s, 329.983s, 330s, 359.983s, 360s, 389.983s, 390s, 419.983s, 420s, 449.983s, 450s, 479.983s, 480s, 509.983s, 510s, 539.983s, 540s] from l5film
+[hyperframes] browserGpuMode probe → software (WebGL unavailable)
+
+   Fonts: 5 loaded, 1 unused
+
+◇  36 snapshots saved to /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/review/final-film/joins/snap
+   review/final-film/joins/snap/frame-00-at-29.983s.png
+   review/final-film/joins/snap/frame-01-at-30s.png
+   review/final-film/joins/snap/frame-02-at-59.983s.png
+   review/final-film/joins/snap/frame-03-at-60s.png
+   review/final-film/joins/snap/frame-04-at-89.983s.png
+   review/final-film/joins/snap/frame-05-at-90s.png
+   review/final-film/joins/snap/frame-06-at-119.983s.png
+   review/final-film/joins/snap/frame-07-at-120s.png
+   review/final-film/joins/snap/frame-08-at-149.983s.png
+   review/final-film/joins/snap/frame-09-at-150s.png
+   review/final-film/joins/snap/frame-10-at-179.983s.png
+   review/final-film/joins/snap/frame-11-at-180s.png
+   review/final-film/joins/snap/frame-12-at-209.983s.png
+   review/final-film/joins/snap/frame-13-at-210s.png
+   review/final-film/joins/snap/frame-14-at-239.983s.png
+   review/final-film/joins/snap/frame-15-at-240s.png
+   review/final-film/joins/snap/frame-16-at-269.983s.png
+   review/final-film/joins/snap/frame-17-at-270s.png
+   review/final-film/joins/snap/frame-18-at-299.983s.png
+   review/final-film/joins/snap/frame-19-at-300s.png
+   review/final-film/joins/snap/frame-20-at-329.983s.png
+   review/final-film/joins/snap/frame-21-at-330s.png
+   review/final-film/joins/snap/frame-22-at-359.983s.png
+   review/final-film/joins/snap/frame-23-at-360s.png
+   review/final-film/joins/snap/frame-24-at-389.983s.png
+   review/final-film/joins/snap/frame-25-at-390s.png
+   review/final-film/joins/snap/frame-26-at-419.983s.png
+   review/final-film/joins/snap/frame-27-at-420s.png
+   review/final-film/joins/snap/frame-28-at-449.983s.png
+   review/final-film/joins/snap/frame-29-at-450s.png
+   review/final-film/joins/snap/frame-30-at-479.983s.png
+   review/final-film/joins/snap/frame-31-at-480s.png
+   review/final-film/joins/snap/frame-32-at-509.983s.png
+   review/final-film/joins/snap/frame-33-at-510s.png
+   review/final-film/joins/snap/frame-34-at-539.983s.png
+   review/final-film/joins/snap/frame-35-at-540s.png
+   contact-sheet-1..4.jpg (grid view for AI review)
+   --describe: GEMINI_API_KEY not set, skipping

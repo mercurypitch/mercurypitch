@@ -5508,3 +5508,10 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   exact-replacement edits, heavy queueing. D's scenes are still 22-line stubs.
   HOLD D until L5's final run hands back its deliverables: (model) is at allowed_warning, and L5's
   delivery comes first. Then start D (fresh (model) xhigh builder).
+- 08:13: C's proof chain ended at 08:11, clean but for the S8 probe crashing on a duplicate
+  `const u3` in probe-checks.js. The lead renamed it u3p, widened the row-gap check to the usual
+  2 px (DOM 42.0 against the model's 43.4), and the probe now reads 100/100.
+  - 8f contrast: labels 5.5-6.0:1, "+2" and "+7" 8.4-8.8:1.
+  - Clearance 0 on both scenes; root check rc 0.
+  GROUP C IS DONE for the owner's look. L5: all 19 pieces at 07:31; its agent is joining,
+  muxing and measuring.
