@@ -5801,3 +5801,11 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
     into the title (95); the listen pose reading as a wink; b29 wording; Ear Lab's two "Leap"s);
   - after their look and the final voices' word: the hosts' passes (with 135/136's items), then
     the 60 fps final render.
+- 13:38: briefs/l6-film-draft-01.md WRITTEN (from l5-film-draft-02.md):
+  - MIX=full gen-root, merc-tags, check;
+  - the 30 fps render to renders/film-draft-01.mp4 (531.54 s), with a frame-0 check;
+  - measure.py; the cuts table; sync-check.py on the draft; two contact sheets (one small for
+    the owner).
+  LAUNCH it when the kit pass and the sound step have both handed back.
+  - Lead's plan after it: weigh ONE film-round critic (F-01) before the owner's look. The owner's
+    cap is two review turns; the film as a whole has had none. Decide on the draft's numbers.
