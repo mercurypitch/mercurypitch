@@ -5515,3 +5515,6 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   - Clearance 0 on both scenes; root check rc 0.
   GROUP C IS DONE for the owner's look. L5: all 19 pieces at 07:31; its agent is joining,
   muxing and measuring.
+- 08:13: SENT THE OWNER the group C look: l6film/renders/look-group-c-30.mp4 (S8-S9, 2:09).
+  L5's film-final-60.mp4 and its music-only twin (164 MB each) are in renders/; the agent is
+  measuring and writing the deliverables.
