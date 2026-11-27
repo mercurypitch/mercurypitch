@@ -5390,3 +5390,6 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   call: 124.
 - Groups A and B are DONE for the owner's look. Running: critic C-01, and L5 (its queue near the
   end). QUEUE: C's fix after C-01, critic C-02, D, E, the kit pass, the whole film.
+- 02:59: SENT THE OWNER a look at groups A and B: l6film/renders/look-groups-a-b-30.mp4 (S1-S7,
+  3:44, 30 fps, voice only at -20.4 LUFS, the 30 fps scratch hosts). It joins the seven scene
+  clips (list in $S/tmp/l6-look-ab.txt). Their notes go into the polish after the scenes.
