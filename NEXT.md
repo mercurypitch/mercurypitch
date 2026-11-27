@@ -5977,3 +5977,29 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   CRITIC F-02 = (builder). Running: it alone. Next: its report -> the lead's calls -> a
   polish (no third round; the pixel stepping of the slow moves is a likely item) -> send the
   owner draft 02 (or the polished draft 03) for their look.
+
+## 27 Nov 19:55 UTC: CRITIC F-02 RETURNED (the last film round); call 145
+- CRITIC F-02 ((builder), finished): ONE MORE PASS, "five mechanical fixes, nothing
+  structural". Saved verbatim to review/critic-F-02/REPORT.md.
+  - FIXED: 1, 4 (all but 455), 5, 6, the solo examples, 513, the grey field.
+  - PARTLY: holds 1.6 per 30 s; one layout (pushes now).
+  - New:
+    1. the duet is now the loudest thing (-12.4 LUFS against speech at -15.4);
+    2. holds;
+    3. 455.6 to 466, two small beads;
+    4. the whooshes 25 dB over the pad;
+    5. a care-block overprint at 381.50.
+- LEAD-ANSWERS 145:
+  - the duet -3 dB; the whooshes -6 dB with a -6 dB shelf above 2 kHz;
+  - 12c's push to at least 1.8x on b45;
+  - the 381.5 re-wrap as the line wipe;
+  - a room breath (far layers only, no type) in S7 210 to 223, S8 281.8 to 287.3 and S9 317.2
+    to 322.1;
+  - 184 letters and numbers together if the brief says so.
+  Then the mix, draft 03, and the OWNER'S LOOK (no critic). Next free call: 146.
+- LAUNCHED ((model) xhigh): the F-02 POLISH (builder) (briefs/l6-polish-F-02.md): the duet
+  -3 dB, the whooshes -6 dB with a shelf, 12c at 1.8x or more, the 381.5 wipe, the room breath,
+  184, then the mix.
+- briefs/l6-film-draft-03.md WRITTEN (from draft 02's: it checks the mix is fresh, renders,
+  muxes, measures, cuts, sync, COMPARE with draft 02, sheets). LAUNCH it when the polish hands
+  back; then SEND THE OWNER draft 03 for their look (no critic follows).
