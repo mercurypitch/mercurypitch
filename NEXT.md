@@ -5265,3 +5265,20 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   extract GC raised to 8 GiB). Music-only sibling at $S/l5film-music-only/ (symlinks, its own
   check). The agent waits on run-passes.sh (queue at m01-blue); it starts render-final.sh when the
   queue ends.
+
+## 27 Nov 00:18 UTC: L6 group A SHIP (critic A-02, the last round); A's polish launched
+- CRITIC A-02 ((builder)) returned SHIP: all 6 round-01 problems FIXED (item 5's empty
+  bottom band PARTLY, accepted: F0 framing); no regressions. The lead saved it verbatim to
+  review/critic-scenes-A-02/REPORT.md. Lead looked at crops/pass-40.33.png: the mid-pass sphere
+  reads as a matte grey ball, as the critic says.
+- LEAD-ANSWERS 118: five small items go into a POLISH pass now, with no critic round after it
+  (the owner looks next): the sphere keeps its specular to r 900; S1 kicker "WHAT WILL STILL
+  MATCH?" 14.75 to 22.72 (at the latest 36.98); S2 notes 3-4 hop at 41.00 or later (117's first
+  bullet withdrawn); S3 arrow 8 px clear; the ghost line clipped in S1 alone if possible, else
+  the kit pass. S4 stays; its holds are measured again on the whole film. Next free call: 119.
+- LAUNCHED ((model) xhigh): A's POLISH (builder) (briefs/l6-polish-A-02.md). It does NOT
+  touch HANDOFFS, STORYBOARD or the board tools while B's fix runs; it lists its doc changes
+  under "For the kit pass" in lab/s01-cold-open/BUILD-NOTES.md.
+- KIT PASS LIST, so far: data-own; the ghost-line clip (110, if not done in S1); the card fade
+  check (116); the stale counts and the dimmed-bead docs (117); A's polish's "For the kit pass"
+  list (118).
