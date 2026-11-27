@@ -73,11 +73,23 @@ export async function createDatabase(): Promise<DatabaseAdapter> {
   const adapter = resolveAdapter()
 
   if (adapter instanceof HybridAdapter) {
-    // Restore an existing session only — never mint one here. A returning
-    // user is authenticated before the first repository call; a first-time
-    // visitor stays anonymous-local until they write something (see the
-    // adapter's beforeWrite hook). Failure is non-fatal (offline-tolerant).
-    await restoreAuth()
+    // Check a stored session with the server, and never mint one here. A
+    // first-time visitor stays anonymous-local until they write something
+    // (see the adapter's beforeWrite hook).
+    //
+    // Not awaited. This adapter is the gate to every read and write on the
+    // device too, and on a network that held the request to /api/auth/me,
+    // awaiting it kept a signed-in singer from their own data for a minute
+    // on every page load (27 Nov 2026). The check carries on alone and does
+    // what it always did when it answers: an account the server refuses is
+    // signed out (handleCloudSessionRejected), an anonymous token is dropped,
+    // and a server that cannot be reached leaves the session as it was.
+    //
+    // A write that races the check cannot mint a second identity: its
+    // beforeWrite hook (requireAuth) joins this same check, provisions only
+    // when no token is left, and for an account the server refused the
+    // sign-in it now needs stops it first (src/db/index.test.ts).
+    void restoreAuth().catch(() => false)
   }
 
   // Seed sample data on first run (local adapter only — server seeds itself)

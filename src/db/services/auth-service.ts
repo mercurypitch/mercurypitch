@@ -16,6 +16,7 @@
 // banner was answered.
 
 import { createSignal, untrack } from 'solid-js'
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { trackEvent } from '@/lib/analytics'
 import { API_BASE_URL } from '@/lib/defaults'
 import { beginGoogleReturn, EXPIRED_STATE_CODE, readGoogleReturn, UNSTARTED_RETURN_CODE, } from '@/lib/google-return-nonce'
@@ -376,7 +377,9 @@ async function postSignIn(
   route: string,
   body: Record<string, unknown>,
 ): Promise<SignInOutcome> {
-  const res = await fetch(`${requireBaseUrl()}/api/auth/${route}`, {
+  // A write's deadline (api-fetch.ts). Anonymous provisioning comes through
+  // here from a write's beforeWrite hook, which waited on it with none.
+  const res = await fetchWithDeadline(`${requireBaseUrl()}/api/auth/${route}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
@@ -491,13 +494,45 @@ function currentSessionVerified(): boolean {
   return hasValidToken() && getAuthToken() === serverVerifiedToken
 }
 
+/**
+ * The check of the stored session that is out now, if any. Startup starts one
+ * and does not wait for it (createDatabase); a write's beforeWrite hook, the
+ * account UI and anything else that asks while it is out share it, rather
+ * than each asking /me again, and all of them act on the same answer. It
+ * belongs to one exact credential: a sign-in or sign-out meanwhile (a new
+ * token or a new authVersion) starts a check of its own.
+ */
+let verifying: {
+  token: string
+  version: number
+  answer: Promise<boolean>
+} | null = null
+
 async function verifyTokenWithServer(): Promise<boolean> {
   const token = getAuthToken()
   if (token === null || token === '') return false
   if (currentSessionVerified()) return true
   const version = untrack(authVersion)
+  if (verifying?.token === token && verifying.version === version) {
+    return verifying.answer
+  }
+  const answer = askServerAboutSession(token, version)
+  verifying = { token, version, answer }
   try {
-    const res = await fetch(`${requireBaseUrl()}/api/auth/me`, {
+    return await answer
+  } finally {
+    if (verifying?.answer === answer) verifying = null
+  }
+}
+
+async function askServerAboutSession(
+  token: string,
+  version: number,
+): Promise<boolean> {
+  try {
+    // A read's deadline (api-fetch.ts). Without one, a network that held the
+    // request held startup and every write's beforeWrite hook with it.
+    const res = await fetchWithDeadline(`${requireBaseUrl()}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
     if (!sessionIsCurrent(token, version)) return currentSessionVerified()
@@ -521,6 +556,8 @@ async function verifyTokenWithServer(): Promise<boolean> {
     // A server hiccup does not discard the session that sent this request.
     return true
   } catch {
+    // Unreachable, or no answer by the deadline: keep the stored session.
+    // Only an answer from the server can say it is no good.
     return sessionIsCurrent(token, version) || currentSessionVerified()
   }
 }
@@ -530,7 +567,8 @@ async function verifyTokenWithServer(): Promise<boolean> {
  * API is configured, no valid token is stored, or the server rejected it.
  * This is what startup and account UI call: a visitor who only browses
  * never gets a server-side identity. Never throws — callers must stay
- * usable offline.
+ * usable offline. Awaiting it costs at most a read's deadline (8 s), and a
+ * check already out for the same session is shared, not repeated.
  */
 export async function restoreAuth(): Promise<boolean> {
   if (API_BASE_URL == null || API_BASE_URL === '') return false
@@ -726,14 +764,19 @@ export async function refreshSession(): Promise<RefreshedSession | null> {
   if (token == null || token === '') return null
   const version = untrack(authVersion)
   try {
-    const res = await fetch(`${requireBaseUrl()}/api/auth/refresh`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${token}`,
+    // A write's deadline: the native app asks for this on a cold start, and
+    // a held request kept its foreground check busy for as long as it hung.
+    const res = await fetchWithDeadline(
+      `${requireBaseUrl()}/api/auth/refresh`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
+        },
+        body: '{}',
       },
-      body: '{}',
-    })
+    )
     if (!sessionIsCurrent(token, version)) return null
     if (res.status === 401) {
       // The session behind the token is gone — revoked elsewhere, or the
@@ -1374,7 +1417,9 @@ export async function fetchMe(): Promise<MeResponse | null> {
   const token = getAuthToken()
   if (token == null || token === '') return null
   try {
-    const res = await fetch(`${requireBaseUrl()}/api/auth/me`, {
+    // A read's deadline: Home's account chip and the returning-visitor offer
+    // await this right after restoreAuth().
+    const res = await fetchWithDeadline(`${requireBaseUrl()}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
     if (!res.ok) {
