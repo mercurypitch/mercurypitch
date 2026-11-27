@@ -5945,3 +5945,18 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
     description corrected; the last film round.
   review/critic-F-02/ made. Order: SIDE B hands back -> the lead's call -> the DRAFT 02 agent ->
   CRITIC F-02 -> the polish -> the owner's look.
+
+## 27 Nov 19:00 UTC: THE FILM FIX ROUND DONE (143); DRAFT 02 launched
+- SIDE B ((builder)) HANDED BACK, all of its items in 141 done:
+  - the pills; S8's push to F-gap 1.27 on b22; S9's push to F-bracket 1.3 and pull back; S10's
+    3 % settle; S11's doctor lines alone; S12's line on "Quick", its push on "second", the rest
+    card whole;
+  - all 42 speakers on screen;
+  - probes S8 to S14 all pass; clearance 0; root 0 (34 warnings); board tools 0;
+  - cuts (0, 0) everywhere;
+  - holds: S9 2.0 -> 1.1 per 30 s; S10 2.0 -> 1.6.
+  The 513 snap did not reproduce at 60 fps. LEAD-ANSWERS 143: accepted. Next free call: 144.
+- LAUNCHED ((model) xhigh): FILM DRAFT 02 (briefs/l6-film-draft-02.md); its id is in the next line.
+  DRAFT 02 agent = (builder) (notes in review/film-02/NOTES.md). Running: it alone.
+  Next: its hand-back -> the lead's check -> CRITIC F-02 (briefs/l6-critic-F-02.md, the last
+  film round) -> the polish -> the owner's look.
