@@ -11,7 +11,7 @@ from the film's root (`l5film/`), every heavy job through `$S/bin/heavy`, one at
 | 0 | Copies of everything the run rewrites: `lab/final-run/before/` (the 15 scene files, `merc/`, `assets/merc/` as `assets-merc/`, `index.html`, `scenes.js`, `review/merc/`, the ten tools; `before.sha256`) | done |
 | 1 | `MIX=full python3 tools/gen-root.py`, in place: the 13 root `data-duration` values of DECISIONS 252, nothing else (`logs/01-gen-root.txt`); `check`: 0 errors, 24 standing warnings (`logs/01-check-after-gen-root.txt`) | done (257) |
 | 2 | `merc-shots.py --final` on the voiced clock, with the lead's additions (DECISIONS 258, `tools/CHANGES.md`; `logs/02-*`); S14's `base` 400 (259); the 54 Merc tags written for the new shots and `--margins` checked (`logs/03-tags-*`) | done: do NOT run merc-shots.py again (it would make every pass stale) |
-| 3 | The 27 jobs (`merc-queue.py --order=final`), then joins, tags `--check`, roots.js, sheet | running: see below |
+| 3 | The 27 jobs, roots, joins (23 of 23), tags check (15 of 15), sheet (on `lab/final-run/dump-current/`) | done 04:09 UTC 27 November (263) |
 | 4 | The 60 fps render and the music-only sibling's (DECISIONS 262: the extraction in memory) | `lab/final-run/render-final.sh`, after step 3; state in `lab/final-run/render-final.state`, memory in `logs/04-memory.tsv` |
 | 5 | The measure | |
 | 6 | The deliverables | |

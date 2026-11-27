@@ -7,28 +7,28 @@ obsidian; "root" compares the renderer's root on each frame (the sidecars).
 
 | Pass | Boundary | Shared frames | Rendered | Root | Decoded, as seen over #0d1117 (pixels off by more than 2 levels, largest difference) |
 | ---- | -------- | ------------- | -------- | ---- | ------------------------------------------------------------------------------------ |
-| m-blue | s04-recall to s05-push (chunk k from frame 0: no pre-roll) | 227 to 229 | identical | same | 3862 px, 20, 3511 px, 34, 3686 px, 39 |
-| m-blue | s05-push to s06-diaphragm | 1313 to 1315 | identical | same | 3910 px, 16, 4005 px, 18, 3662 px, 25 |
-| m-blue | s06-diaphragm to s07-support | 3376 to 3378 | identical | same | 4915 px, 36, 4281 px, 18, 4440 px, 25 |
-| m-blue | s07-support to s08-breathe | 4468 to 4470 | identical | same | 4105 px, 13, 4263 px, 19, 3747 px, 15 |
-| m-blue | s08-breathe to s09-onset | 5080 to 5082 | identical | same | 3599 px, 10, 3694 px, 42, 3946 px, 40 |
-| m-blue | s09-onset to s10-steady | 6792 to 6794 | identical | same | 3732 px, 14, 3936 px, 21, 3950 px, 20 |
-| m-blue | s10-steady to s11-sing | 8624 to 8626 | identical | same | 3761 px, 10, 3861 px, 31, 3957 px, 14 |
-| m-blue | s11-sing to s12-your-turn | 9799 to 9801 | identical | same | 4481 px, 19, 3688 px, 44, 3957 px, 33 |
-| m-blue | s12-your-turn to s13-recap | 12103 to 12105 | identical | same | 0 px, 1, 0 px, 2, 16 px, 8 |
-| m-blue | s13-recap to s14-next | 14053 to 14055 | identical | same | 3447 px, 12, 3511 px, 18, 3784 px, 30 |
-| m-blue | s14-next to s15-end | 14529 to 14531 | sizes differ | same | - |
-| m-orange | s03-promise to s04-recall (chunk k from frame 0: no pre-roll) | 41 to 43 | identical | same | 3730 px, 36, 4122 px, 28, 4265 px, 19 |
-| m-orange | s04-recall to s05-push | 450 to 452 | identical | same | 3624 px, 30, 3594 px, 28, 3696 px, 20 |
-| m-orange | s05-push to s06-diaphragm | 1536 to 1538 | identical | same | 3976 px, 23, 3988 px, 25, 3866 px, 34 |
-| m-orange | s06-diaphragm to s07-support | 3599 to 3601 | identical | same | 3386 px, 22, 3477 px, 21, 3819 px, 28 |
-| m-orange | s07-support to s08-breathe | 4691 to 4693 | identical | same | 3662 px, 15, 3765 px, 34, 3414 px, 28 |
-| m-orange | s08-breathe to s09-onset | 5303 to 5305 | identical | same | 3107 px, 10, 3321 px, 14, 3441 px, 23 |
-| m-orange | s09-onset to s10-steady | 7015 to 7017 | identical | same | 3360 px, 12, 3400 px, 15, 3419 px, 41 |
-| m-orange | s10-steady to s11-sing | 8847 to 8849 | identical | same | 2995 px, 12, 3539 px, 30, 3982 px, 21 |
-| m-orange | s11-sing to s12-your-turn | 10022 to 10024 | identical | same | 3867 px, 21, 3665 px, 21, 4436 px, 16 |
-| m-orange | s12-your-turn to s13-recap | 12326 to 12328 | identical | same | 0 px, 0, 0 px, 0, 12 px, 6 |
-| m-orange | s13-recap to s14-next | 14276 to 14278 | identical | same | 3203 px, 11, 3563 px, 20, 3760 px, 31 |
-| m-orange | s14-next to s15-end | 14752 to 14754 | sizes differ | same | - |
+| m-blue | s04-recall to s05-push (chunk k from frame 0: no pre-roll) | 454 to 456 | identical | same | 3476 px, 11, 3596 px, 32, 3669 px, 36 |
+| m-blue | s05-push to s06-diaphragm | 2745 to 2747 | identical | same | 4197 px, 37, 4050 px, 22, 4032 px, 19 |
+| m-blue | s06-diaphragm to s07-support | 6968 to 6970 | identical | same | 4290 px, 23, 1531 px, 12, 1606 px, 31 |
+| m-blue | s07-support to s08-breathe | 9289 to 9291 | identical | same | 3588 px, 25, 3704 px, 17, 3766 px, 28 |
+| m-blue | s08-breathe to s09-onset | 10514 to 10516 | identical | same | 3897 px, 24, 3993 px, 27, 3955 px, 22 |
+| m-blue | s09-onset to s10-steady | 14059 to 14061 | identical | same | 3839 px, 19, 3738 px, 45, 3856 px, 45 |
+| m-blue | s10-steady to s11-sing | 17797 to 17799 | identical | same | 3971 px, 14, 4030 px, 30, 4062 px, 28 |
+| m-blue | s11-sing to s12-your-turn | 20195 to 20197 | identical | same | 3457 px, 40, 3523 px, 40, 3473 px, 19 |
+| m-blue | s12-your-turn to s13-recap | 24873 to 24875 | identical | same | 3724 px, 12, 3775 px, 34, 3755 px, 18 |
+| m-blue | s13-recap to s14-next | 29017 to 29019 | sizes differ | same | - |
+| m-blue | s14-next to s15-end | 30067 to 30069 | identical | same | 5407 px, 17, 5409 px, 35, 5413 px, 24 |
+| m-orange | s03-promise to s04-recall (chunk k from frame 0: no pre-roll) | 82 to 84 | identical | same | 3242 px, 16, 3324 px, 19, 3391 px, 23 |
+| m-orange | s04-recall to s05-push | 903 to 905 | identical | same | 3471 px, 20, 3481 px, 17, 3586 px, 24 |
+| m-orange | s05-push to s06-diaphragm | 3194 to 3196 | identical | same | 3886 px, 39, 3868 px, 32, 3996 px, 32 |
+| m-orange | s06-diaphragm to s07-support | 7417 to 7419 | identical | same | 4161 px, 24, 2308 px, 21, 2542 px, 34 |
+| m-orange | s07-support to s08-breathe | 9738 to 9740 | identical | same | 3303 px, 25, 3308 px, 20, 3303 px, 19 |
+| m-orange | s08-breathe to s09-onset | 10963 to 10965 | identical | same | 3486 px, 15, 3512 px, 14, 3531 px, 15 |
+| m-orange | s09-onset to s10-steady | 14508 to 14510 | identical | same | 3155 px, 49, 3015 px, 38, 3153 px, 28 |
+| m-orange | s10-steady to s11-sing | 18246 to 18248 | identical | same | 2944 px, 20, 2993 px, 20, 2980 px, 16 |
+| m-orange | s11-sing to s12-your-turn | 20644 to 20646 | identical | same | 3663 px, 12, 3662 px, 12, 3650 px, 26 |
+| m-orange | s12-your-turn to s13-recap | 25322 to 25324 | identical | same | 3205 px, 14, 3252 px, 18, 3291 px, 28 |
+| m-orange | s13-recap to s14-next | 29466 to 29468 | sizes differ | same | - |
+| m-orange | s14-next to s15-end | 30516 to 30518 | identical | same | 5315 px, 23, 5360 px, 38, 5507 px, 21 |
 
 23 of 23 boundaries checked join.

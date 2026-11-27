@@ -1,0 +1,2 @@
+[heavy] slot 1: python3 tools/merc-sheet.py --dump=lab/final-run/dump-current
+/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/review/merc/contact-sheet.png (2242, 2416)

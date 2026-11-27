@@ -5425,3 +5425,10 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   - the hyperframes extract cache: 2.2 G, which it sweeps itself.
   The L5 render needs about 1 G. C's fix was told to keep renders lean and stop above 2.5 G.
   Nothing deleted.
+- 04:51 check-in: L5's passes are DONE (queue 04:08, joins, roots, the tags check 15/15). Its
+  sheet step exited 1; that is the agent's to look at. The FILM RENDER started 04:26 and was 53 %
+  at 04:51 (17454 of 34185 frames), so about 25 min to go, then the music-only render (about
+  50 min).
+- MEMORY IS NEAR THE CAP: rss 7.1 + shmem 5.5 = 12.7 of 13.4 GiB, free under 0.4 GiB, failcnt
+  high, oom_kill 0. Two Chrome workers take 3.2 GiB each. Told C's fix agent: no browser or
+  video work outside heavy until about 06:20. DISK 3.6 G.

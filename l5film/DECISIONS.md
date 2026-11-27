@@ -2192,3 +2192,17 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      script therefore clears `/dev/shm/l5-extract` between the two renders as well as after them:
      otherwise both sets, about 10.6 GiB, would sit there together until the second sweep, which
      could not remove the new ones anyway. The same literal path is cleared on any exit.
+263. **The 27 passes are rendered, joined and tagged** (27 November, 04:09 UTC). 66,474 frames in
+     15,386 s of rendering (4.27 h; the tool's estimate 4.37), the first three on the 26th before the
+     restart, the rest from 23:55 (`merc/render.log`). `merc-roots.py`: 27 chunks in
+     `assets/merc/roots.js`. `merc-joins.py`: 23 of 23 boundaries join, every shared frame identical
+     (`review/merc/joins.md`; s13 to s14 compares roots only, the sizes differ). `merc-tags.py
+     <scene> --check`: 15 of 15 scenes current. `merc-sheet.py` stopped on a stale dump: the frames
+     the scratch clock's chunks dumped on 18 and 19 November are still in `lab/merc/dump/` under the
+     same chunk names, and one fell outside its chunk's new range. Nothing was moved or changed
+     there: the sheet ran on a folder of links to this run's 150 dumps only (25 chunks, six each,
+     newer than the shot files; `lab/final-run/dump-current/`, `--dump=`). The sheet
+     (`review/merc/contact-sheet.png`) was looked at: the leaps, talk and listen, the sung sounds
+     with their arcs, the hops in the break, the end card, the long listen and the feet on y 840
+     all read as the shots say. Its footer still says "30 fps scratch passes", a stale label in
+     the tool; the stills are this run's 60 fps passes.

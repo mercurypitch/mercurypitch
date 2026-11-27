@@ -1,0 +1,29 @@
+[heavy] slot 1: python3 tools/merc-roots.py
+m-blue-s04       457 frames  x +0.0000 to +0.0000  y +0.0000 to +0.2219  x at rest throughout
+m-blue-s05      2294 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-blue-s06      4226 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-blue-s07      2324 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-blue-s08      1228 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-blue-s09      3548 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-blue-s10      3741 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-blue-s11      2401 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-blue-s12      4681 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-blue-s13      4147 frames  x -0.0043 to +0.3800  y +0.0000 to +0.2016  x moves on 103 frames, film 506.833 to 508.650
+m-blue-s14      1053 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-blue-s15       375 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-orange-s03      85 frames  x +0.0000 to +0.0000  y +0.0000 to +0.2219  x at rest throughout
+m-orange-s04     824 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-orange-s05    2294 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-orange-s06    4226 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-orange-s07    2324 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-orange-s08    1228 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-orange-s09    3548 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-orange-s10    3741 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0002  x at rest throughout
+m-orange-s11    2401 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-orange-s12    4681 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-orange-s13    4147 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-orange-s14    1053 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m-orange-s15     375 frames  x +0.0000 to +0.0000  y +0.0000 to +0.2218  x at rest throughout
+m01-blue        2536 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+m01-orange      2536 frames  x +0.0000 to +0.0000  y +0.0000 to +0.0000  x at rest throughout
+assets/merc/roots.js: 27 chunks, 394 KB

@@ -1,0 +1,45 @@
+== s01-cold-open
+4 Merc tags, 0 stale, 0 problems
+exit 0
+== s02-title
+0 Merc tags, 0 stale, 0 problems
+exit 0
+== s03-promise
+2 Merc tags, 0 stale, 0 problems
+exit 0
+== s04-recall
+4 Merc tags, 0 stale, 0 problems
+exit 0
+== s05-push
+4 Merc tags, 0 stale, 0 problems
+exit 0
+== s06-diaphragm
+4 Merc tags, 0 stale, 0 problems
+exit 0
+== s07-support
+4 Merc tags, 0 stale, 0 problems
+exit 0
+== s08-breathe
+4 Merc tags, 0 stale, 0 problems
+exit 0
+== s09-onset
+4 Merc tags, 0 stale, 0 problems
+exit 0
+== s10-steady
+4 Merc tags, 0 stale, 0 problems
+exit 0
+== s11-sing
+4 Merc tags, 0 stale, 0 problems
+exit 0
+== s12-your-turn
+4 Merc tags, 0 stale, 0 problems
+exit 0
+== s13-recap
+4 Merc tags, 0 stale, 0 problems
+exit 0
+== s14-next
+4 Merc tags, 0 stale, 0 problems
+exit 0
+== s15-end
+4 Merc tags, 0 stale, 0 problems
+exit 0

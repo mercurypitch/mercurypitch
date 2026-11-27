@@ -1,0 +1,97 @@
+◆  Checking l5film
+[hyperframes] media proxy pre-resolve: 10/27 ready, 17 failed (10437ms)
+[hyperframes] browserGpuMode probe → software (WebGL unavailable)
+
+Lint
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching video entries with the same source/start/duration.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s01-cold-open.html [data-composition-id] t=0s
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+  ⚠ composition_file_too_large: This HTML composition file has 314 lines. Smaller sub-compositions are easier to read, iterate on, and diff.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s01-cold-open.html [data-composition-id] t=0s
+    Fix: Split this sub-composition further into smaller .html files, then mount them from the parent with data-composition-src so each file stays small enough to inspect, revise, and validate independently.
+  ⚠ nested_media_start_basis_ambiguous: <video id="s03-promise-m-orange"> has data-start="8.705" inside a sub-composition. Nested media timing is local to its composition by default; a nonzero value can be confused with a legacy root-global timestamp.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s03-promise.html #s03-promise-m-orange t=0s
+    Fix: Keep data-start="8.705" if it is composition-local. If this is a legacy root-global timestamp, add data-hf-media-start-basis="global"; otherwise convert it to local time by subtracting the host start.
+  ⚠ nested_media_start_basis_ambiguous: <video id="s03-promise-m-orange-refl"> has data-start="8.705" inside a sub-composition. Nested media timing is local to its composition by default; a nonzero value can be confused with a legacy root-global timestamp.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s03-promise.html #s03-promise-m-orange-refl t=0s
+    Fix: Keep data-start="8.705" if it is composition-local. If this is a legacy root-global timestamp, add data-hf-media-start-basis="global"; otherwise convert it to local time by subtracting the host start.
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching video entries with the same source/start/duration.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s03-promise.html [data-composition-id] t=0s
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+  ⚠ nested_media_start_basis_ambiguous: <video id="s04-recall-m-blue"> has data-start="6.103" inside a sub-composition. Nested media timing is local to its composition by default; a nonzero value can be confused with a legacy root-global timestamp.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s04-recall.html #s04-recall-m-blue t=0s
+    Fix: Keep data-start="6.103" if it is composition-local. If this is a legacy root-global timestamp, add data-hf-media-start-basis="global"; otherwise convert it to local time by subtracting the host start.
+  ⚠ nested_media_start_basis_ambiguous: <video id="s04-recall-m-blue-refl"> has data-start="6.103" inside a sub-composition. Nested media timing is local to its composition by default; a nonzero value can be confused with a legacy root-global timestamp.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s04-recall.html #s04-recall-m-blue-refl t=0s
+    Fix: Keep data-start="6.103" if it is composition-local. If this is a legacy root-global timestamp, add data-hf-media-start-basis="global"; otherwise convert it to local time by subtracting the host start.
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching video entries with the same source/start/duration.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s04-recall.html [data-composition-id] t=0s
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching video entries with the same source/start/duration.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s05-push.html [data-composition-id] t=0s
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching video entries with the same source/start/duration.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s06-diaphragm.html [data-composition-id] t=0s
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+  ⚠ composition_file_too_large: This HTML composition file has 387 lines. Smaller sub-compositions are easier to read, iterate on, and diff.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s06-diaphragm.html [data-composition-id] t=0s
+    Fix: Split this sub-composition further into smaller .html files, then mount them from the parent with data-composition-src so each file stays small enough to inspect, revise, and validate independently.
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching video entries with the same source/start/duration.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s07-support.html [data-composition-id] t=0s
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching video entries with the same source/start/duration.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s08-breathe.html [data-composition-id] t=0s
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching video entries with the same source/start/duration.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s09-onset.html [data-composition-id] t=0s
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+  ⚠ composition_file_too_large: This HTML composition file has 349 lines. Smaller sub-compositions are easier to read, iterate on, and diff.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s09-onset.html [data-composition-id] t=0s
+    Fix: Split this sub-composition further into smaller .html files, then mount them from the parent with data-composition-src so each file stays small enough to inspect, revise, and validate independently.
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching video entries with the same source/start/duration.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s10-steady.html [data-composition-id] t=0s
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+  ⚠ composition_file_too_large: This HTML composition file has 397 lines. Smaller sub-compositions are easier to read, iterate on, and diff.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s10-steady.html [data-composition-id] t=0s
+    Fix: Split this sub-composition further into smaller .html files, then mount them from the parent with data-composition-src so each file stays small enough to inspect, revise, and validate independently.
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching video entries with the same source/start/duration.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s11-sing.html [data-composition-id] t=0s
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching video entries with the same source/start/duration.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s12-your-turn.html [data-composition-id] t=0s
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+  ⚠ composition_file_too_large: This HTML composition file has 402 lines. Smaller sub-compositions are easier to read, iterate on, and diff.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s12-your-turn.html [data-composition-id] t=0s
+    Fix: Split this sub-composition further into smaller .html files, then mount them from the parent with data-composition-src so each file stays small enough to inspect, revise, and validate independently.
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching video entries with the same source/start/duration.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s13-recap.html [data-composition-id] t=0s
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+  ⚠ composition_file_too_large: This HTML composition file has 385 lines. Smaller sub-compositions are easier to read, iterate on, and diff.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s13-recap.html [data-composition-id] t=0s
+    Fix: Split this sub-composition further into smaller .html files, then mount them from the parent with data-composition-src so each file stays small enough to inspect, revise, and validate independently.
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching video entries with the same source/start/duration.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s14-next.html [data-composition-id] t=0s
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+  ⚠ duplicate_media_discovery_risk: Detected 2 matching video entries with the same source/start/duration.
+    /tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/compositions/s15-end.html [data-composition-id] t=0s
+    Fix: Avoid duplicated media nodes that can be discovered twice during compilation.
+  0 error(s), 24 warning(s), 0 info(s)
+
+Runtime
+  ◇ 0 errors, 0 warnings
+
+Layout
+  ℹ t=265.37s content_overlap #s09-onset-scene > div:nth-of-type(5) > svg:nth-of-type(1) > text:nth-of-type(13) inside #s09-onset-scene > div:nth-of-type(5) > svg:nth-of-type(1) > text:nth-of-type(14) "A catch" — Two text blocks overlap and may render unreadable.
+        Fix: Give each block its own zone, or mark intentional layering with data-layout-allow-overlap.
+  0 error(s), 0 warning(s), 1 info(s)
+
+Motion
+  ◇ 0 errors, 0 warnings
+
+Contrast
+  ◇ 67/67 text checks pass WCAG AA
+
+Snapshots
+  ◇ disabled
+
+◇  Check passed
