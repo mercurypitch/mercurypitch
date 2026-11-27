@@ -5311,3 +5311,25 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - 01:26: 119's proof passed: S2 clearance 0 (217 frames), clips 60 and 30 fps fresh, clock-lint
   silent. Noted in s02's and s01's BUILD-NOTES. GROUP A IS DONE for the owner's look; its doc and
   board changes wait for the kit pass.
+
+## 27 Nov 01:34 UTC: B's FIX DONE; critic B-02 and C's finish launched
+- B's FIX ROUND ((builder), 521k tokens) DONE. Calls 111-116 built and measured:
+  - checks: probe 31/80/87, clearance 0, contrast all pass, root 0, board tools 0 (194 landings);
+  - seek order: the cause was a ghost line at alpha 0 keeping its old paths. S7 hides it, and
+    the difference is now 6 px, max 2;
+  - holds: S5 1.1, S6 1.8, S7 2.9 per 30 s, longest 0.4 s, mostly scattered samples inside speech.
+- LEAD-ANSWERS 120:
+  - holds are measured again on the final passes; the kit pass adds word-tied motion only if
+    S6 or S7 is then over about 1.5 s per 30 s;
+  - B's decisions 1-12 stand;
+  - a faded line goes out of the paint (display: none) while it is out, a standing rule for C,
+    D and E, added to the common brief.
+  Next free call: 121.
+- KIT PASS LIST gains: hide or clear a faded line's paths in the kit itself (B's decision 9).
+- LAUNCHED ((model) xhigh, background):
+  - CRITIC B-02 (builder) (briefs/l6-critic-scenes-B-02.md; verification, the LAST round;
+    the lead saves its report to review/critic-scenes-B-02/REPORT.md);
+  - C's FINISH (builder) (briefs/l6-finish-C.md: C was nearly done on disk at 20:13 on
+    26 Nov; it applies 113-115 and 120 where missing, proves, and hands back).
+- L5 queue at 01:33: 11 done, 16 to go. It ends about 05:15, then the render.
+- QUEUE: C's critic (round 01) after C's finish; then D, E, the kit pass and the whole film.
