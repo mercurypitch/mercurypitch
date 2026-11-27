@@ -5936,3 +5936,12 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   LEAD-ANSWERS 142: accepted. HOSTS' PASSES +: Merc's S3/S4 entrance and his b4a talk.
   KIT-HYGIENE +: the copies of the rig. Next free call: 143.
 - Running: SIDE B ((builder)) alone.
+- 17:59: the lead changed mix.py's examples target from -21.0 to -19.0 (141.7; backup
+  $S/l6-mix-pre141.py; logged in CHANGES.md); it mixes at draft 02. Briefs WRITTEN:
+  - briefs/l6-film-draft-02.md: the rebuild sequence (mix), gen-root MIX=full, the render, a mux
+    of full.wav (HyperFrames' mix came out 0.85 dB low), measure, cuts, sync by region, COMPARE
+    with draft 01, sheets;
+  - briefs/l6-critic-F-02.md: the verification marks; it reads F-01's report; the music-only
+    description corrected; the last film round.
+  review/critic-F-02/ made. Order: SIDE B hands back -> the lead's call -> the DRAFT 02 agent ->
+  CRITIC F-02 -> the polish -> the owner's look.
