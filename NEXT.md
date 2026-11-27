@@ -5677,3 +5677,26 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   CRITIC D-02 = (builder). Running now: E's fix ((builder)) and critic D-02.
   Next: D-02's report -> D's polish (brief from l6-polish-C-02.md; no third round), then the
   sound step in the freed slot.
+
+## 27 Nov 11:25 UTC: CRITIC D-02 RETURNED (last round); D's POLISH launched
+- CRITIC D-02 ((builder), finished): ONE MORE PASS, limited to two mechanical fixes.
+  Everything else is KEEP. Saved verbatim to review/critic-scenes-D-02/REPORT.md.
+  - FIXED: 1, 2, 3, 5, 6, 7, 8 and 9. PARTLY: 4 (holds: S10 1.5, S11 1.4 per 30 s) and 10 (a
+    one-to-two-frame dip in the block swaps).
+  - Small ones: 11h's 68 px gap; "Your turn." beside "la"; the caret mark; rows split across two
+    pixel rows at 442.66.
+- LEAD-ANSWERS 133:
+  - the holds wait for the hosts' final passes (127);
+  - the swaps keep 60 % ink, with the outgoing block leaving up;
+  - the doctor lines glide 42 px up;
+  - the title is 40 px or more from "la";
+  - a soft reading band;
+  - KIT PASS +: snap the matched cut's row lines to whole pixels on both sides together;
+  - OWNER'S LOOK +: whether the 23.6 s of care type at F-turn reads calm or as a wall of text.
+  Next free call: 134.
+- LAUNCHED ((model) xhigh): D's POLISH (builder) (briefs/l6-polish-D-02.md). No third round.
+- Running: E's fix ((builder)) and D's polish ((builder)).
+- Next:
+  - E's fix -> CRITIC E-02 (brief from E-01 plus the verification section, as D-02 was made);
+  - D's polish done -> the SOUND STEP (briefs/l6-sound.md) in the freed slot;
+  - E-02 -> E's polish -> KIT PASS -> film draft (MIX=full root) -> the owner's look.
