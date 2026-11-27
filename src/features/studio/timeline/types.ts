@@ -117,6 +117,8 @@ export interface StudioTimelineProps {
   arming?: StudioLaneArming
   /** Where Hear yourself is kept, for a lane's menu; absent where nothing records. */
   recordSettings?: StudioRecordSettingsSource
+  /** Remove a lane and put the focus on its neighbour; absent, a lane's menu sends `remove-track` itself. */
+  onRemoveTrack?(trackId: string): void
   /** The range on the ruler Repeat loops and Punch records in (StudioRulerRange.tsx). */
   range?: StudioFrameRange | null
   /** Set or clear the range: a drag along the ruler, its handles, or a clip's toolbar. */

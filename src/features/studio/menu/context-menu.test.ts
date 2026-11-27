@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { createStudioLongPress, placeStudioMenu, stepStudioMenu, } from './context-menu'
+import { createStudioLongPress, placeStudioMenu, stepStudioMenu, STUDIO_LONG_PRESS_LIFT_MS, } from './context-menu'
 
 const VIEWPORT = { width: 1440, height: 900 }
 const MENU = { width: 240, height: 300 }
@@ -118,5 +118,25 @@ describe('createStudioLongPress', () => {
     elapse()
     press.down({ ...finger, pointerType: 'mouse' })
     expect(press.swallow()).toBe(false)
+  })
+
+  it("swallows the lift's own click, and nothing after it, where no click came", () => {
+    const { press, elapse, pending } = rig()
+    press.down(finger)
+    elapse()
+    press.lift()
+    // The click the lift makes comes a task or so later: still swallowed.
+    expect(press.swallow()).toBe(true)
+    expect(pending.at(-1)?.ms).toBe(STUDIO_LONG_PRESS_LIFT_MS)
+    elapse()
+    expect(press.swallow()).toBe(false)
+  })
+
+  it('lets a lift with no press behind it change nothing', () => {
+    const { press, pending } = rig()
+    press.down(finger)
+    press.lift()
+    expect(press.swallow()).toBe(false)
+    expect(pending.filter((timer) => timer.ms >= 0)).toHaveLength(0)
   })
 })

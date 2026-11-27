@@ -17,6 +17,7 @@ function laneMenu(
   }
   const onCommand = vi.fn(() => true)
   const onDetails = vi.fn()
+  const onRemove = vi.fn()
   const toggleLines = vi.fn()
   const items = studioLaneMenuItems({
     track: TRACK,
@@ -24,11 +25,20 @@ function laneMenu(
     hearYourself,
     lines: { open: false, held: false, toggle: toggleLines },
     onCommand,
+    onRemove,
     onDetails,
     ...overrides,
   })
   const item = (key: string) => items.find((each) => each.key === key)!
-  return { items, item, hearYourself, onCommand, onDetails, toggleLines }
+  return {
+    items,
+    item,
+    hearYourself,
+    onCommand,
+    onRemove,
+    onDetails,
+    toggleLines,
+  }
 }
 
 describe('studioLaneMenuItems', () => {
@@ -48,7 +58,8 @@ describe('studioLaneMenuItems', () => {
   })
 
   it("holds the lane's own actions, with the keys that do the same", () => {
-    const { items, item, onCommand, onDetails, toggleLines } = laneMenu()
+    const { items, item, onCommand, onRemove, onDetails, toggleLines } =
+      laneMenu()
     expect(items.map((each) => each.key)).toEqual([
       'hear-yourself',
       'mute',
@@ -68,8 +79,9 @@ describe('studioLaneMenuItems', () => {
     expect(onCommand.mock.calls).toEqual([
       [{ type: 'update-track', trackId: 'lane-1', changes: { mute: true } }],
       [{ type: 'update-track', trackId: 'lane-1', changes: { solo: false } }],
-      [{ type: 'remove-track', trackId: 'lane-1' }],
     ])
+    // Removing goes through the Studio, which leaves the focus where Ctrl+Z reaches.
+    expect(onRemove).toHaveBeenCalledOnce()
     expect(toggleLines).toHaveBeenCalledOnce()
     expect(onDetails).toHaveBeenCalledOnce()
     expect(item('remove').danger).toBe(true)
@@ -83,12 +95,13 @@ describe('studioLaneMenuItems', () => {
   })
 
   it('changes nothing in a song that takes no edits', () => {
-    const { item, onCommand } = laneMenu({ writable: false })
+    const { item, onCommand, onRemove } = laneMenu({ writable: false })
     expect(item('mute').disabled).toBe(true)
     expect(item('remove').disabled).toBe(true)
     item('mute').select()
     item('remove').select()
     expect(onCommand).not.toHaveBeenCalled()
+    expect(onRemove).not.toHaveBeenCalled()
   })
 })
 

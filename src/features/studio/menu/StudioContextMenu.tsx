@@ -7,7 +7,7 @@
 // takes the focus on its first item, and answers the keys a menu does: the
 // arrows, Home and End, Enter or Space to choose, Escape or Tab to leave.
 // It closes by the app's rule for floating panels (use-popover-layer.ts): a
-// press outside, a scroll, a resize. Leaving gives the focus back to where
+// press outside, a scroll that moves what it was asked from, a resize. Leaving gives the focus back to where
 // it was asked from. An item says the key that does the same, where there
 // is one, and an item that is on or off says which.
 import { createEffect, For, onCleanup, Show } from 'solid-js'
@@ -43,6 +43,8 @@ export interface StudioMenuRequest {
   readonly items: readonly StudioMenuItem[]
   /** Where the focus goes back to when the menu closes. */
   readonly returnFocus?: HTMLElement | null
+  /** What it was asked from, on the page: a scroll that moves it closes the menu. */
+  readonly anchor?: Element | null
 }
 
 export function StudioContextMenu(props: {
@@ -61,6 +63,7 @@ export function StudioContextMenu(props: {
   usePopoverLayer({
     open: () => props.request !== null,
     inside: () => [panel],
+    anchor: () => props.request?.anchor ?? panel,
     onClose: (reason) => close(reason === 'escape'),
   })
 

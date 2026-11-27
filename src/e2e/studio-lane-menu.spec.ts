@@ -1,6 +1,6 @@
-// Studio lane menus — a right-click on a lane's header opens the lane's menu with Hear yourself in it, a right-click on empty lane space opens the Studio's, both instead of the browser's menu; the keys move through them, Escape closes them, a long press opens them on touch, and the lane's details switch Hear yourself too.
+// Studio lane menus — a right-click on a lane's header opens the lane's menu with Hear yourself in it, a right-click on empty lane space opens the Studio's, both instead of the browser's menu; the keys move through them, Escape closes them and gives the focus back to the lane, a scroll closes them, Remove track leaves the focus where Ctrl+Z undoes it, a long press opens them on touch, and the lane's details switch Hear yourself too.
 import { expect, type Locator, type Page, test } from '@playwright/test'
-import { openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
+import { importStudioAudio, openArrangement, studioRegion, timelineViewport, } from './helpers/dedicatedstudio-fixture'
 
 /** Every `contextmenu` the page sees, and whether something kept the browser's menu from opening. */
 async function watchContextMenus(page: Page): Promise<void> {
@@ -149,6 +149,95 @@ test.describe('on a computer', () => {
       hearYourself(page.getByRole('menu', { name: 'Phrase' })),
     ).toHaveAttribute('aria-checked', 'true')
   })
+  test("Escape after a right-click between a header's buttons gives the focus back to the lane's name @smoke", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    const head = studioRegion(page).locator('[data-studio-lane-head]').first()
+    // A point on the header that no button or slider covers.
+    const gap = await head.evaluate((element) => {
+      const box = element.getBoundingClientRect()
+      for (let y = box.top + 2; y < box.bottom - 2; y += 3)
+        for (let x = box.left + 2; x < box.right - 2; x += 3) {
+          const hit = document.elementFromPoint(x, y)
+          if (hit && element.contains(hit) && !hit.closest('button, input'))
+            return { x, y }
+        }
+      return null
+    })
+    expect(gap).not.toBeNull()
+    await page.mouse.click(gap!.x, gap!.y, { button: 'right' })
+    const menu = page.getByRole('menu', { name: 'Phrase' })
+    await expect(menu).toBeVisible()
+    await page.keyboard.press('Escape')
+    await expect(menu).toBeHidden()
+    await expect(laneName(page)).toBeFocused()
+  })
+
+  test('A scroll of the lanes closes the menu, which would no longer sit by them @smoke', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    const lane = studioRegion(page).locator('[data-studio-lane-audio]').first()
+    const box = (await lane.boundingBox())!
+    await page.mouse.click(box.x + 400, box.y + box.height / 2, {
+      button: 'right',
+    })
+    const menu = page.getByRole('menu', { name: 'Studio' })
+    await expect(menu).toBeVisible()
+    const viewport = timelineViewport(page)
+    await viewport.evaluate((element) => {
+      element.scrollLeft += 300
+    })
+    await expect
+      .poll(() => viewport.evaluate((element) => element.scrollLeft))
+      .toBeGreaterThan(0)
+    await expect(menu).toBeHidden()
+  })
+
+  test('Remove track in the menu leaves the focus on the next lane, and Ctrl+Z brings the lane back @smoke', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    await importStudioAudio(page, 'Second')
+    const lanes = studioRegion(page).locator('[data-studio-track]')
+    await expect(lanes).toHaveCount(2)
+    await laneName(page).click({ button: 'right' })
+    await page
+      .getByRole('menu', { name: 'Phrase' })
+      .getByRole('menuitem', { name: /^Remove track/ })
+      .click()
+    await expect(lanes).toHaveCount(1)
+    await expect(
+      studioRegion(page).getByRole('button', {
+        name: 'Second details',
+        exact: true,
+      }),
+    ).toBeFocused()
+
+    await page.keyboard.press('Control+z')
+    await expect(lanes).toHaveCount(2)
+    await expect(laneName(page)).toBeVisible()
+  })
+
+  test("Remove track in the lane's details, the song's last lane, leaves the focus where Ctrl+Z brings it back @smoke", async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    const lanes = studioRegion(page).locator('[data-studio-track]')
+    await expect(lanes).toHaveCount(1)
+    await laneName(page).click()
+    await studioRegion(page)
+      .getByRole('button', { name: 'Remove track', exact: true })
+      .click()
+    await expect(lanes).toHaveCount(0)
+    await expect(
+      studioRegion(page).locator('[data-tour="studio.workspace"]'),
+    ).toBeFocused()
+
+    await page.keyboard.press('Control+z')
+    await expect(lanes).toHaveCount(1)
+  })
 })
 
 test.describe('on a tablet', () => {
@@ -187,5 +276,47 @@ test.describe('on a tablet', () => {
     } finally {
       await session.detach()
     }
+  })
+
+  test('After a long press, a key on the lane still presses it where no click follows the lift @smoke', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    await page.setViewportSize({ width: 1024, height: 768 })
+    await openArrangement(page)
+    const name = laneName(page)
+    const box = (await name.boundingBox())!
+    const point = { x: box.x + box.width / 2, y: box.y + box.height / 2, id: 1 }
+    // Some browsers send no click after a long press: keep this one's from
+    // the page, as they would.
+    await page.evaluate(() => {
+      window.addEventListener(
+        'click',
+        (event) => event.stopImmediatePropagation(),
+        { capture: true, once: true },
+      )
+    })
+    const session = await page.context().newCDPSession(page)
+    try {
+      await session.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [point],
+      })
+      const menu = page.getByRole('menu', { name: 'Phrase' })
+      await expect(menu).toBeVisible()
+      await session.send('Input.dispatchTouchEvent', {
+        type: 'touchEnd',
+        touchPoints: [],
+      })
+      await page.keyboard.press('Escape')
+      await expect(menu).toBeHidden()
+      await expect(name).toBeFocused()
+    } finally {
+      await session.detach()
+    }
+    await page.keyboard.press('Enter')
+    await expect(
+      studioRegion(page).getByRole('combobox', { name: 'Sound role' }),
+    ).toHaveCount(1)
   })
 })
