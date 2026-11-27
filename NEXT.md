@@ -5775,3 +5775,11 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Next: when E's polish ends -> the KIT PASS brief (write it: the list in NEXT.md with every +
   since); then the 30 fps film draft with MIX=full (after the sound step), measure, and the
   owner's look.
+- 12:57: briefs/l6-kit-pass.md WRITTEN. It sorts the items three ways:
+  (1) ON SCREEN NOW: the card fade, ring timers r 24, the matched cut's rows snapped on both
+  sides, the ghost-line clip, the 8c pulse, near-layer parallax under slow pushes (or rename the
+  move a zoom), seek order on all 14 scenes;
+  (2) DOCS NOW: A's and B's lists, the stale counts, the dimmed-bead docs, frames.js;
+  (3) LATER (P/KIT-HYGIENE.md, for L7's first step): moving the local builds into the kit.
+  A regression baseline of 8 stills a scene plus the cuts' frames; every changed pixel must be
+  explained. LAUNCH it when E's polish hands back (two agents: the kit pass and the sound step).
