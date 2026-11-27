@@ -5503,3 +5503,8 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
     RESULTS; a background waiter is armed.
 - L5 pieces: 7 of 19 done at 06:49, each about 5 min with its own plan, peak 6.2-7.8 GiB, least
   free 7 GiB. Done about 07:55.
+- 06:51: D's brief (briefs/l6-film-scenes-D.md) gained a "Since this brief was written"
+  preface: the standing calls, S10 opening with the octave measure as ticks only, the lab tools,
+  exact-replacement edits, heavy queueing. D's scenes are still 22-line stubs.
+  HOLD D until L5's final run hands back its deliverables: (model) is at allowed_warning, and L5's
+  delivery comes first. Then start D (fresh (model) xhigh builder).
