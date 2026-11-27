@@ -5844,3 +5844,21 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
     render) and removed its own entries. Its bin/clips.sh now clears each render's entries.
   - The film draft brief now says the same. LESSON: the extract cache explains this session's
     disk drops; every render agent clears its own entries.
+
+## 27 Nov 15:52 UTC: THE KIT PASS DONE (140); FILM DRAFT launched
+- KIT PASS ((builder), finished):
+  - the card fade is linear over 0.35 s; ring timers r 24;
+  - the matched cut's rows are on whole pixels on both sides (1.98 and 1.99:1, mean difference
+    0.05);
+  - S6's push has layer rates; S1's seek order is fixed (mask -> clip path);
+  - docs and board tools caught up, including the chapter times;
+  - the regression check: 140 stills, 13 differ, all explained;
+  - root 0 errors (28 warnings, S6 at 330 lines); clearance 0; board tools 0;
+  - KIT-HYGIENE.md has 12 items for L7.
+  - Probes: only the stale ring places fail (S4, S6 to S9, S12); S1's probe needs its sphere
+    check updated.
+  LEAD-ANSWERS 140: accepted; the probes are fixed in the final-pass step. Next free call: 141.
+- LAUNCHED ((model) xhigh): FILM DRAFT (briefs/l6-film-draft-01.md); its id is in the next line.
+  FILM DRAFT agent = (builder) (notes in review/film-01/NOTES.md). Running: the film draft
+  alone. When it hands back: the lead checks the numbers and the sheets; decide on ONE film-round
+  critic (the film has had none), then send the owner the draft and the small sheet.
