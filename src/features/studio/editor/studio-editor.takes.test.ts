@@ -108,15 +108,32 @@ describe('Studio take keys', () => {
     expect(editor.clip()).toMatchObject({ sourceInFrame: 200 })
   })
 
-  it('leaves T to the page on a clip of one take, a held key and Alt+Shift+T', () => {
+  it('leaves T to the page on a clip of one take, with Ctrl, and on a held key', () => {
     const one = takesEditor(1)
     expect(one.press('t').defaultPrevented).toBe(false)
+    expect(
+      one.press('T', { shiftKey: true, altKey: true }).defaultPrevented,
+    ).toBe(false)
     const three = takesEditor()
+    expect(three.press('t', { ctrlKey: true }).defaultPrevented).toBe(false)
     expect(three.press('t', { repeat: true }).defaultPrevented).toBe(true)
     expect(three.playing()).toBe(2)
-    expect(
-      three.press('T', { shiftKey: true, altKey: true }).defaultPrevented,
-    ).toBe(false)
-    expect(three.playing()).toBe(2)
+  })
+
+  it('crops the clip to the take it plays on Alt+Shift+T as one undo step, whatever character a Mac reports for it', () => {
+    const editor = takesEditor()
+    const event = editor.press('ˇ', {
+      shiftKey: true,
+      altKey: true,
+      code: 'KeyT',
+    })
+    expect(event.defaultPrevented).toBe(true)
+    expect(editor.clip().takes).toBeUndefined()
+    expect(editor.clip().assetId).toBe('asset-3')
+    expect(editor.announce).toHaveBeenLastCalledWith(
+      'Cropped to the take that plays.',
+    )
+    editor.undo()
+    expect(editor.clip().takes).toHaveLength(2)
   })
 })

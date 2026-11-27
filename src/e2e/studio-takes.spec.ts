@@ -179,4 +179,61 @@ test.describe('Studio takes', () => {
     ).toBeFocused()
     expect(await gap()).toBe(closed)
   })
+
+  test('Alt+Shift+T crops a clip to the take it plays, and Explode takes to new lanes moves the other take to a lane of its own under it, each one undo step', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000)
+    const { studio, lane, one, two } = await recordTwoTakes(page)
+    const stacked = studio.getByRole('button', {
+      name: /^Lane 2, Take 2\.wav, take 2 of 2, /,
+    })
+    const playing = async () => firstClip(await readStudioProject(page), lane)
+
+    // Alt+Shift+T keeps the take that plays and drops the other.
+    await stacked.focus()
+    await page.keyboard.press('Alt+Shift+T')
+    await expect(
+      studio.getByRole('button', { name: /^Lane 2, Take 2\.wav, 0:00/ }),
+    ).toHaveCount(1)
+    await expect.poll(async () => (await playing())?.takes).toBeUndefined()
+    expect(await playing()).toMatchObject({ assetId: two, gainDb: 0 })
+    await studio
+      .getByRole('button', { name: 'Undo crop to take', exact: true })
+      .click()
+    await expect(stacked).toHaveCount(1)
+    await expect.poll(async () => (await playing())?.takes?.length).toBe(1)
+
+    // Explode moves Take 1 to a lane of its own right under Lane 2, where
+    // it sounded and as loud as it was.
+    await stacked.click({ button: 'right' })
+    await page
+      .getByRole('menuitem', {
+        name: 'Explode takes to new lanes',
+        exact: true,
+      })
+      .click()
+    await expect(studio.locator('[data-studio-track]')).toHaveCount(3)
+    await expect
+      .poll(async () => (await readStudioProject(page)).tracks.length)
+      .toBe(3)
+    const project = await readStudioProject(page)
+    const lanes = [...project.tracks].sort((a, b) => a.order - b.order)
+    expect(lanes.map((each) => each.name)).toEqual([
+      'Phrase',
+      'Lane 2',
+      'Take 1',
+    ])
+    expect(firstClip(project, lane)).toMatchObject({ assetId: two })
+    expect(firstClip(project, lane).takes).toBeUndefined()
+    expect(firstClip(project, lanes[2].id)).toMatchObject({
+      assetId: one,
+      gainDb: -60,
+    })
+    await studio
+      .getByRole('button', { name: 'Undo explode takes', exact: true })
+      .click()
+    await expect(studio.locator('[data-studio-track]')).toHaveCount(2)
+    await expect(stacked).toHaveCount(1)
+  })
 })

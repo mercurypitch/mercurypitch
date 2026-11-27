@@ -3,7 +3,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest'
 import { studioClipWithTakes } from '@/lib/studio/model/clip-takes'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
-import { studioClipTakeMenu } from './clip-take-menu'
+import { studioClipTakeMenu, studioExplodeTakesCommand } from './clip-take-menu'
 import { closeStudioTakes, studioTakesClipId } from './comp-editor'
 
 afterEach(() => closeStudioTakes())
@@ -38,7 +38,14 @@ describe('Studio clip take menu', () => {
       { label: 'Take 1', checked: false, separatorBefore: undefined },
       { label: 'Take 2', checked: true, separatorBefore: undefined },
       { label: 'Show takes', checked: undefined, separatorBefore: true },
+      {
+        label: 'Explode takes to new lanes',
+        checked: undefined,
+        separatorBefore: undefined,
+      },
+      { label: 'Crop to this take', checked: undefined, separatorBefore: true },
     ])
+    expect(items[4].destructive).toBe(true)
     items[1].onSelect()
     expect(onCommand).not.toHaveBeenCalled()
     items[0].onSelect()
@@ -68,7 +75,24 @@ describe('Studio clip take menu', () => {
       'Take 1, pass 1 of 3',
       'Take 1, pass 2 of 3',
       'Take 1, pass 3 of 3',
+      'Crop to this take',
     ])
     expect(items.every((item) => item.disabled === true)).toBe(true)
+  })
+
+  it('explodes the takes the clip does not play to lanes named as the list names them', () => {
+    const { clip, assets } = takes(3)
+    let id = 0
+    expect(studioExplodeTakesCommand(clip, assets, () => `id-${++id}`)).toEqual(
+      {
+        type: 'explode-takes',
+        clipId: clip.id,
+        lanes: [
+          { id: 'id-1', name: 'Take 1' },
+          { id: 'id-2', name: 'Take 2' },
+        ],
+        clipIds: ['id-3', 'id-4'],
+      },
+    )
   })
 })

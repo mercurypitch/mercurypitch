@@ -23,6 +23,8 @@ import { applyStudioSequenceEdit, isStudioSequenceEdit, } from './sequence-comma
 import { pruneStudioSequences } from './sequences'
 import type { StudioSoundEdit } from './sound-commands'
 import { applyStudioSoundEdit, isStudioSoundEdit } from './sound-commands'
+import type { StudioTakeEdit } from './take-commands'
+import { applyStudioTakeEdit, isStudioTakeEdit } from './take-commands'
 import type { StudioAsset, StudioClip, StudioProject, StudioTrack, } from './types'
 import { validateStudioProject } from './validation'
 import { requireValue } from './validation-values'
@@ -31,6 +33,7 @@ export type StudioEdit =
   | StudioCompEdit
   | StudioStackTakeEdit
   | StudioChooseTakeEdit
+  | StudioTakeEdit
   | StudioPasteEdit
   | StudioPunchEdit
   | StudioSoundEdit
@@ -217,7 +220,7 @@ function setTrackInstrument(
 /** An edit of one clip's placement or sound; its notes are a sequence edit's, and its comp clip-comp.ts's. */
 type StudioClipEdit = Exclude<
   Extract<StudioEdit, { clipId: string }>,
-  StudioSequenceEdit | StudioCompEdit | StudioChooseTakeEdit
+  StudioSequenceEdit | StudioCompEdit | StudioChooseTakeEdit | StudioTakeEdit
 >
 
 function editClip(project: StudioProject, edit: StudioClipEdit): StudioProject {
@@ -314,6 +317,7 @@ function applyEdit(project: StudioProject, edit: StudioEdit): StudioProject {
   if (isStudioCompEdit(edit)) return applyStudioCompEdit(project, edit)
   if (isStudioStackTakeEdit(edit)) return stackStudioTake(project, edit)
   if (isStudioChooseTakeEdit(edit)) return chooseStudioTake(project, edit)
+  if (isStudioTakeEdit(edit)) return applyStudioTakeEdit(project, edit)
   if ('clipId' in edit) return editClip(project, edit)
   switch (edit.type) {
     case 'paste-clip':

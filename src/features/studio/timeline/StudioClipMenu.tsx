@@ -141,6 +141,9 @@ export function StudioClipMenu(props: StudioClipMenuProps) {
                   role={roleOf(item)}
                   aria-checked={item.checked}
                   class={styles.row}
+                  classList={{
+                    [styles.destructive]: item.destructive === true,
+                  }}
                   disabled={item.disabled}
                   data-studio-menu-row={item.key}
                   onClick={() => pick(item)}
