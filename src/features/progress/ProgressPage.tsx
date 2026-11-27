@@ -340,7 +340,7 @@ function toPolyline(
 }
 
 function sourceLabel(source: ProgressSourceKind): string {
-  if (source === 'weekly') return 'Weekly Legend'
+  if (source === 'weekly') return 'Legend Attempt'
   return source.charAt(0).toUpperCase() + source.slice(1)
 }
 
@@ -773,7 +773,7 @@ export function ProgressPage(props: ProgressPageProps): JSX.Element {
                     </span>
                     <span>
                       <i class={styles.keyWeekly} />
-                      Weekly Legend
+                      Legend Attempt
                     </span>
                   </div>
                 </div>

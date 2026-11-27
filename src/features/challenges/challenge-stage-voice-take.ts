@@ -1,5 +1,5 @@
 // ============================================================
-// Weekly Legend Stage Voice Take — dry replay -> exercise handoff
+// Legend Attempt Stage Voice Take — dry replay -> exercise handoff
 // ============================================================
 
 import type { ExerciseResult } from '@/lib/domain/exercise-contracts'

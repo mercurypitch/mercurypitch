@@ -30,7 +30,7 @@ const take: ExerciseSessionVoiceTake = {
   },
 }
 
-describe('Weekly Legend voice take', () => {
+describe('Legend Attempt voice take', () => {
   beforeEach(() => {
     saveVoiceTakeMock.mockReset()
     saveVoiceTakeMock.mockResolvedValue({
@@ -52,7 +52,7 @@ describe('Weekly Legend voice take', () => {
 
   it('names the thread from the weekly title snapshot', () => {
     expect(weeklyLegendThreadTitle('The Impossible Note')).toBe(
-      'Weekly Legend · The Impossible Note',
+      'Legend Attempt · The Impossible Note',
     )
   })
 

@@ -240,8 +240,8 @@ describe('buildProgressShareMoment', () => {
     const selected: ProgressOneMoment = {
       kind: 'challenge',
       priority: 5,
-      headline: '88% on Weekly Legend: The Show Must Go On',
-      detail: 'Your latest weekly Legend attempt.',
+      headline: '88% on Legend Attempt: The Show Must Go On',
+      detail: 'Your latest Legend Attempt.',
       occurredAt: NOW.toISOString(),
       recordId: 'weekly-run',
       score: 88,
@@ -254,7 +254,7 @@ describe('buildProgressShareMoment', () => {
     expect(shared.trace?.points[0]).toEqual({ time: 0, pitch: 69 })
     expect(shared.trace?.points[1].pitch).toBeCloseTo(70)
     expect(shared.trace?.description).toBe(
-      'Best saved pitch contour for this Weekly Legend',
+      'Best saved pitch contour for this Legend Attempt',
     )
     expect(
       shared.trace?.points.every(

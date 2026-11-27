@@ -68,7 +68,7 @@ describe('adaptive theme surface contracts', () => {
       ['Home', css.home, '.primaryBtn'],
       ['Home routine', css.home, '.segStart'],
       ['Home account', css.home, '.accountNudgeCta'],
-      ['Weekly Legend', css.weeklyLegend, '.singBtn'],
+      ['Legend Attempt', css.weeklyLegend, '.singBtn'],
       ['Exercise card', css.exercises, '.exercise-card-start-btn'],
       ['Exercise runner', css.exercises, '.exercise-btn-primary'],
       ['Theme source', css.themePicker, '.sourceBtnActive:hover'],
@@ -108,7 +108,7 @@ describe('adaptive theme surface contracts', () => {
         ],
       ],
       [
-        'Weekly Legend',
+        'Legend Attempt',
         css.weeklyLegend,
         ['.countdown', '.boardStat', '.rankNum', '.allLink', '.attemptHint'],
       ],
@@ -312,7 +312,7 @@ describe('adaptive theme surface contracts', () => {
         '.accountNudgeCta:disabled',
       ],
       [
-        'Weekly Legend',
+        'Legend Attempt',
         css.weeklyLegend,
         '.singBtn:focus-visible',
         '.singBtn:disabled',

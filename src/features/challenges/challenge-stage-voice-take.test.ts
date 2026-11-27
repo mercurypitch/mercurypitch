@@ -32,7 +32,7 @@ const capture = {
   sampleRateHz: 48_000,
 }
 
-describe('Weekly Legend challenge-stage voice handoff', () => {
+describe('Legend Attempt challenge-stage voice handoff', () => {
   beforeEach(() => {
     recordExerciseResultMock.mockReset()
   })

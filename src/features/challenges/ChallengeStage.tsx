@@ -728,8 +728,8 @@ export function ChallengeStage(props: ChallengeStageProps) {
             </p>
             <Show when={launch.mode === 'practice'}>
               <p class={styles.practiceNotice}>
-                This week has ended. Practice as often as you like — these runs
-                stay off the weekly board.
+                This is practice: sing it as often as you like. Nothing from
+                these runs goes on the board.
               </p>
             </Show>
             <Show when={outOfRange() !== null}>

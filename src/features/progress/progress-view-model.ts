@@ -85,7 +85,7 @@ function sourceKind(source: SessionSource): ProgressSourceKind {
 }
 
 function sourceName(source: SessionSource): string {
-  if (source === 'weekly') return 'Weekly Legend'
+  if (source === 'weekly') return 'Legend Attempt'
   if (source === 'exercise') return 'Exercises'
   if (source === 'challenge') return 'Challenges'
   return 'Singing'
@@ -474,8 +474,8 @@ function momentReason(moment: ProgressOneMoment): string {
   }
   if (moment.kind === 'challenge') {
     return moment.trace === undefined
-      ? 'This is the latest recorded challenge or Weekly Legend attempt.'
-      : 'This is the latest recorded challenge or Weekly Legend attempt with a saved pitch trace from that take.'
+      ? 'This is the latest recorded challenge or Legend Attempt.'
+      : 'This is the latest recorded challenge or Legend Attempt with a saved pitch trace from that take.'
   }
   if (moment.kind === 'return') {
     return 'This is the first recorded practice after a gap of at least seven days.'
@@ -1056,7 +1056,7 @@ function buildHistory(
       { id: 'practice', label: 'Singing' },
       { id: 'exercise', label: 'Exercises' },
       { id: 'challenge', label: 'Challenges' },
-      { id: 'weekly', label: 'Weekly Legend' },
+      { id: 'weekly', label: 'Legend Attempt' },
     ],
     items: filtered.map((item) => historyItemView(item, accountHeld)),
   }

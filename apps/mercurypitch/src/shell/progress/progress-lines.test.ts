@@ -153,7 +153,7 @@ describe('the measured range on a keyboard', () => {
 describe("a week's bar, as a screen reader hears it", () => {
   it('names the week, its dates, its summary and its kinds of run', () => {
     expect(weekLabel(week(), 11, 13)).toBe(
-      'Week 12 of 13, Oct 26–Nov 1. 5 scored attempts across 3 active days. Weekly Legend, Practice.',
+      'Week 12 of 13, Oct 26–Nov 1. 5 scored attempts across 3 active days. Legend Attempt, Practice.',
     )
   })
 
@@ -171,13 +171,13 @@ describe("a week's bar, as a screen reader hears it", () => {
 describe("a path stop's tag", () => {
   it('names the kind beside a stop the record names otherwise', () => {
     expect(pathTag('Long Note', 'exercise')).toBe('Exercise')
-    expect(pathTag('The Evening Bell', 'weekly')).toBe('Weekly Legend')
+    expect(pathTag('The Evening Bell', 'weekly')).toBe('Legend Attempt')
   })
 
   it('adds none where the name is the kind already, or there is no kind', () => {
     expect(pathTag('Exercises', 'exercise')).toBeUndefined()
     expect(pathTag('Singing', 'practice')).toBeUndefined()
-    expect(pathTag('Weekly Legend', 'weekly')).toBeUndefined()
+    expect(pathTag('Legend Attempt', 'weekly')).toBeUndefined()
     expect(pathTag('Karaoke performances', undefined)).toBeUndefined()
   })
 })

@@ -933,7 +933,7 @@ function buildMomentCandidates(input: {
           : `${challengeScore}% on ${challengeRecord.melodyName}`,
       detail:
         sourceOf(challengeRecord) === 'weekly'
-          ? 'Your latest weekly Legend attempt.'
+          ? 'Your latest Legend Attempt.'
           : 'Your latest challenge attempt.',
       occurredAt: occurredAt(challengeRecord),
       recordId: challengeRecord.id,

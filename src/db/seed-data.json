@@ -480,10 +480,10 @@
     },
     {
       "name": "Legend Attempt",
-      "description": "Take on the weekly Legend once",
+      "description": "Take on a Legend once",
       "icon": "bolt",
       "points": 15,
-      "condition": "Take on the weekly Legend once",
+      "condition": "Take on a Legend once",
       "required": 1,
       "sortOrder": 6,
       "category": "beginnings"
@@ -720,10 +720,10 @@
     },
     {
       "name": "Legend Regular",
-      "description": "Take the weekly Legend 5 times",
+      "description": "Take on a Legend 5 times",
       "icon": "bolt",
       "points": 30,
-      "condition": "Take the weekly Legend 5 times",
+      "condition": "Take on a Legend 5 times",
       "required": 5,
       "sortOrder": 30,
       "category": "building"
@@ -950,10 +950,10 @@
     },
     {
       "name": "Legend Keeper",
-      "description": "Take the weekly Legend 20 times",
+      "description": "Take on a Legend 20 times",
       "icon": "eagle",
       "points": 80,
-      "condition": "Take the weekly Legend 20 times",
+      "condition": "Take on a Legend 20 times",
       "required": 20,
       "sortOrder": 53,
       "category": "mastery"

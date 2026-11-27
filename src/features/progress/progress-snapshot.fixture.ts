@@ -61,7 +61,7 @@ export function snapshot(): ProgressPageSnapshot {
         activityLevel: 0.7,
         activeDaysLabel: '3 active days',
         attemptsLabel: '5 attempts',
-        summary: 'Three active days including a Weekly Legend.',
+        summary: 'Three active days including a Legend Attempt.',
         sources: ['weekly', 'practice'],
         coverage: 'complete',
         milestoneLabel: 'Four active weeks',
@@ -127,7 +127,7 @@ export function snapshot(): ProgressPageSnapshot {
         },
         {
           id: 'weekly',
-          label: 'Weekly Legend',
+          label: 'Legend Attempt',
           detail: 'Completed this week',
           source: 'weekly',
           status: 'current',

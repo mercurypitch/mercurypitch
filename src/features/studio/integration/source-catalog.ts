@@ -37,7 +37,7 @@ const SOURCE_LABELS: Record<VoiceTakeSource, string> = {
   'drum-night': 'Drums',
   glass: 'Glass',
   exercise: 'Exercise',
-  legend: 'Weekly Legend',
+  legend: 'Legend Attempt',
   guided: 'Guided check',
 }
 

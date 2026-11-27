@@ -1,5 +1,5 @@
 // ============================================================
-// Weekly Legend Attempt — the drill → weekly-challenge return path
+// Legend Attempt Attempt — the drill → weekly-challenge return path
 // ============================================================
 //
 // Mirrors challenge-attempt.ts: the hero arms an attempt context, the
