@@ -303,8 +303,9 @@ edges, as a playing one is (`fitStudioComps`).
   A comped loop take is one step, so a comp is never undone by stepping
   past it.
 - **The Takes list.** Right-click on a clip opens its menu: the takes as a
-  list with the playing one checked, then "Show takes", "Crop to this take"
-  and "Explode takes to new lanes". The menu is built from a plain list of
+  list with the playing one checked, then "Show takes" and "Explode takes to
+  new lanes", and last, set apart in the danger colour as the app's menus
+  set apart what takes something away, "Crop to this take". The menu is built from a plain list of
   items (`clip-take-menu.ts`), so the lane menu being built on
   `feat/studio-lane-polish` can share it. The same list opens from a Takes
   button on the selected clip's toolbar and, on a phone, which has no

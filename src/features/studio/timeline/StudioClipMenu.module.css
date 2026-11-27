@@ -80,6 +80,16 @@
   white-space: nowrap;
 }
 
+/* What takes something away, though Undo brings it back: OverflowMenu's
+   danger ink. */
+.destructive {
+  color: var(--error, #f85149);
+}
+.destructive:hover:not(:disabled),
+.destructive:focus-visible {
+  background: color-mix(in srgb, var(--error, #f85149) 12%, transparent);
+}
+
 .divider {
   height: 1px;
   margin: 4px 6px;

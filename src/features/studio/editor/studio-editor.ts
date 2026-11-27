@@ -1,5 +1,6 @@
 // Studio keyboard editor — focus-scoped shortcuts and cancellable held nudges share immutable commands.
 import { studioClipTakeStep, studioClipTakeSteps, } from '@/lib/studio/model/clip-takes'
+import { studioCanCropTakes } from '@/lib/studio/model/take-commands'
 import { studioAdjacentLaneClip } from './clip-focus'
 import { createEditorActions } from './editor-actions'
 import { studioEditorFocus } from './key-scope'
@@ -56,10 +57,18 @@ export function createStudioEditor(options: StudioEditorOptions) {
   /**
    * T and Shift+T on a focused clip of several takes: the next or the
    * previous one plays, round and round, as REAPER's Next take and Previous
-   * take (clip-takes.ts). Alt is left for Crop to this take.
+   * take (clip-takes.ts). Alt+Shift+T crops it to the take it plays.
    */
   function takeKey(event: KeyboardEvent, clipId: string): boolean {
-    if (event.key.toLowerCase() !== 't' || event.altKey) return false
+    if (event.ctrlKey || event.metaKey) return false
+    // With Alt a Mac reports another character: the key's place says T.
+    if (event.altKey)
+      return (
+        event.shiftKey &&
+        (event.key.toLowerCase() === 't' || event.code === 'KeyT') &&
+        cropKey(event, clipId)
+      )
+    if (event.key.toLowerCase() !== 't') return false
     const clip = options.project()?.clips.find((item) => item.id === clipId)
     const steps = clip ? studioClipTakeSteps(clip) : []
     if (!clip || steps.length < 2 || !options.writable()) return false
@@ -76,6 +85,18 @@ export function createStudioEditor(options: StudioEditorOptions) {
       })
       if (chosen)
         options.announce(`Playing take ${index + 1} of ${steps.length}.`)
+    }
+    return finishStudioKey(event)
+  }
+
+  /** Alt+Shift+T: the focused clip keeps the take it plays, as REAPER's Crop to active take (take-commands.ts). */
+  function cropKey(event: KeyboardEvent, clipId: string): boolean {
+    const clip = options.project()?.clips.find((item) => item.id === clipId)
+    if (!clip || !studioCanCropTakes(clip) || !options.writable()) return false
+    if (!event.repeat) {
+      nudge.cancel()
+      if (options.dispatch({ type: 'crop-takes', clipId }))
+        options.announce('Cropped to the take that plays.')
     }
     return finishStudioKey(event)
   }
