@@ -5239,3 +5239,24 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   then. Two (model) agents at a time, lean. QUEUE: builder C's build (fresh (model), from
   lab/s08-swap/ and s09-names/ BUILD-NOTES), B's fix round (fresh (model), calls 111-116; after
   A's fix, never together), then critics A-02 and B-02, D, E.
+
+## 27 Nov 00:07 UTC: A's fix DONE; L5 render goes to memory; critic A-02 and B's fix launched
+- L6 A's FIX ROUND ((builder)) DONE: calls 104-110 and 115 all met, with their numbers.
+  The pass: sphere at alpha 1, darkens toward the field; luma rises on every frame, 25.4 at
+  39.933 to 41.2 at the cut. Probes S1 81/81, S2 23/23, S3 38/38, S4 31/31. Clearance 0.
+  Board tools 0 (194 landings). Holds: S1 2.1 s (accepted, 110), S2/S3 none. Report in the
+  transcript; proofs in lab/s0*/BUILD-NOTES.md (last sections).
+  LEAD-ANSWERS 117: S2's notes 3-4 occlusion accepted; the stale counts (193/194, 204/202) and
+  the dimmed-bead docs go to the KIT PASS. Next free call: 118.
+- L5 DISK (DECISIONS 261): the lead chose (b), extraction in RAM: --frames-cache-dir=
+  /dev/shm/l5-extract (cap 13.4 GiB, use 1.5, /dev/shm 16G empty). Both renders run back to back
+  in lab/final-run/render-final.sh, under BOTH heavy slots (nested heavy, HEAVY_PRI=1,
+  HEAVY_MIN_GIB=10) so no L6 job runs beside them. The script exits under 9 GiB free, logs memory
+  every 30 s and removes only its own /dev/shm/l5-extract. The agent checks HyperFrames' 2 GiB
+  cache GC first. To be logged as its 262. Pass queue: m-blue-s13 at 00:05, about 4 h to go.
+- LAUNCHED ((model) xhigh, background): CRITIC A-02 (builder)
+  (briefs/l6-critic-scenes-A-02.md; verification, the LAST round; report to
+  review/critic-scenes-A-02/REPORT.md, which the lead saves), and B's FIX ROUND (builder)
+  (briefs/l6-fix-B-01.md; calls 111-116; may change L.SPECIMEN.travel's optional duration only).
+- QUEUE: C's build (fresh (model), after B's fix, since both edit HANDOFFS/STORYBOARD), critic B-02,
+  C's critic, D, E, the kit pass.

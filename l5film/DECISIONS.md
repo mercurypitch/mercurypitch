@@ -2150,3 +2150,24 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      `base: L.HOSTS.end.tavi.size`, the two lines the lab's proved copy has
      (`lab/passes-proto/cut-end-c/`), so S14 draws its 300 px chunks as S15 does. The cut on `end`
      is measured again on the final render (the entry on the render, below).
+260. **The queue resumed after the worker restart** (27 November, 23:55 UTC on the 26th). The first
+     queue (19:54) rendered m-blue-s04 (107 s), m-orange-s15 (146 s) and m-blue-s15 (182 s) and was
+     killed at 20:21 with m-blue-s13 at frame 3,360 of 4,147; nothing ran from 20:21 to 23:52.
+     `merc-shots.py --final` had already run (258; the shots dated 19:54, the 54 tags written and
+     `--margins` checked), so it was not run again: a second run would only make every pass stale.
+     The rest runs detached as `lab/final-run/run-passes.sh` (the queue, then roots, joins, the tags
+     check for every scene and the sheet), each stage stamped in `lab/final-run/run-passes.state`.
+261. **The 60 fps render does not fit on the disk as it stands.** HyperFrames extracts every pass it
+     shows to PNG before capture (alpha sources are always PNG, `--video-frame-format` cannot change
+     that; one extraction a pass, the reflection tag shares it: film-draft-02's 54 videos were 27
+     cache misses). Measured here on the passes' own frames: 79 KB a frame at 225 px, 105 KB at 300,
+     132 KB at 315; the 27 jobs' 66,474 frames (58,546, 2,856 and 5,072 by size) come to about
+     5.3 GiB, held through the capture, plus the MP4 (about 0.5 GiB at delivery quality). The disk
+     has 5.5 GiB free. HyperFrames' own extract cache (`/tmp/hyperframes-extract-cache-0`, 1.9 GiB of
+     other renders' frames, capped at 2 GiB by its own GC) would give some back, which still leaves
+     about 1.5 GiB free at the peak, under the 2 GB floor the brief sets. So the render waits for the
+     lead: either about 1 GiB more is freed (nothing here was made by this run, so nothing is
+     deleted to make room), or the extraction goes to memory (`--frames-cache-dir=/dev/shm/...`:
+     about 5.3 GiB of the 13.7 GiB the shells share, held for the render's length, so a 5 GB heavy
+     job elsewhere would have little room). The music-only render needs the same frames (a cache
+     hit when the cache directory is kept between the two renders).

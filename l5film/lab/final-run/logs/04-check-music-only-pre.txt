@@ -1,0 +1,33 @@
+[heavy] slot 2: npx --yes hyperframes@0.8.97 check
+◆  Checking l5film-music-only
+[Bundler] Skipping sub-composition "compositions/s01-cold-open.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s02-title.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s03-promise.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s04-recall.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s05-push.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s06-diaphragm.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s07-support.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s08-breathe.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s09-onset.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s10-steady.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s11-sing.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s12-your-turn.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s13-recap.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s14-next.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s15-end.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s01-cold-open.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s02-title.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s03-promise.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s04-recall.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s05-push.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s06-diaphragm.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s07-support.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s08-breathe.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s09-onset.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s10-steady.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s11-sing.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s12-your-turn.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s13-recap.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s14-next.html": the file is empty (0 bytes or whitespace-only).
+[Bundler] Skipping sub-composition "compositions/s15-end.html": the file is empty (0 bytes or whitespace-only).
+[hyperframes] browserGpuMode probe → software (WebGL unavailable)
