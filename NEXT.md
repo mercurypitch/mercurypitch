@@ -5831,3 +5831,10 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   Next free call: 140.
 - Running: the kit pass ((builder)) alone. When it hands back -> the FILM DRAFT
   (briefs/l6-film-draft-01.md).
+- 13:51 check-in: running: the kit pass ((builder)). DISK 1.6 G free.
+  - Where it went: the sound step's mixes, about 0.5 G; the session's transcripts, 1.07 G
+    (770 M of agents plus a 302 M main jsonl); a git auto-repack in the main checkout at 13:48
+    (327 + 226 + 5 M packs, replacing the old ones).
+  - The film draft fits. The hosts' passes and the final render do not.
+  - ASKED THE OWNER AGAIN, with the table: may the old web-app scratch go (polish2 1.3G,
+    eardrill 607M, dev 523M, audit 350M, earwide 283M, snotices 210M)? Nothing deleted.
