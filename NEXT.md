@@ -5600,3 +5600,5 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   parameter).
 - Running: E's build and D's fix (both may edit HANDOFFS/STORYBOARD, by exact replacement in their
   own rows).
+- 10:19: D's fix set the S11-to-S12 rows' level: 13 row lines at fill-opacity 0.24, 2.0:1, rising
+  from 0.06 over 442.10-442.40; geometry and room unchanged; in HANDOFFS § The cuts. PASSED TO E.
