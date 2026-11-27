@@ -5418,3 +5418,10 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   HANDOFFS and STORYBOARD rows 8a-9n by exact replacement only; the S9-to-S10 handoff is frozen.
   Then critic C-02 (the LAST round for C).
 - KIT PASS LIST gains: can the room's near layer carry visible parallax under every slow push?
+- 03:50 check-in: seven_day allowed_warning. In flight: L5 final run (queue 24 of 27; the
+  render follows) and C's fix. DISK 4.1 G free and falling about 0.4 G an hour. Where it goes:
+  - the L6 labs: 1.3 G, up from 846 M at 00:50;
+  - the session transcripts: 984 M;
+  - the hyperframes extract cache: 2.2 G, which it sweeps itself.
+  The L5 render needs about 1 G. C's fix was told to keep renders lean and stop above 2.5 G.
+  Nothing deleted.
