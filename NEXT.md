@@ -5634,3 +5634,33 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
     - L5 backup-pre-voices 1.3G (until the owner's listen).
   - ASKED THE OWNER.
 - ASK THE OWNER (with the disk): L6's final voices (ElevenLabs, as L5's), after their L5 listen.
+
+## 27 Nov 11:05 UTC: CRITIC E-01 RETURNED (ONE MORE PASS); E's FIX launched
+- CRITIC E-01 ((builder), finished): ONE MORE PASS. Saved verbatim to
+  review/critic-scenes-E-01/REPORT.md. Top items:
+  1. 1.6 s of empty room at S12 to S13;
+  2. the column does not read as a column;
+  3. 12c has 2.2 s of empty chart;
+  4. the hook stands only 0.10 s after it is said;
+  5. 12d's measure is a slab, and the frame fill is 34 %;
+  6. 12h's card is small for 7 s;
+  7. nothing leaves up;
+  8. the Leap title lands 0.67 s early.
+  PASSED: the matched cut within 1 px, honesty (FACTS' addresses, no first-visit line),
+  landings 22/24 on their words, contrast, determinism.
+- LEAD-ANSWERS 131 takes them all:
+  - 12c gets two hollow rings on "first note" and "second", filled on the onsets; this replaces
+    130's empty rows;
+  - THE CLOCK MOVES: script.json `end` gap 0.4 -> 1.3 s, so S14 is at 525.34 and the total
+    531.54. The builder regenerates with cues.py --no-tts, proves everything before `end`
+    unchanged, and replaces the files atomically;
+  - the sparkles stand only if the hop is `celebrate`;
+  - "2 intervals changed" stands by FACTS 80.
+  Next free call: 132.
+- KIT PASS list +: the ring timers r 18 -> r 24 or more, for phones (E-01).
+- LAUNCHED ((model) xhigh): E's FIX (builder) (briefs/l6-fix-E-01.md).
+- Running: D's fix ((builder)) and E's fix ((builder)). When D's fix hands
+  back: launch CRITIC D-02 (briefs/l6-critic-scenes-D-02.md, ready). Sound step brief ready
+  (briefs/l6-sound.md); it goes when a slot frees, about when D's polish ends.
+- OWNER ASKED (10:56): may the old web-app scratch go (about 3.3 GB), and L6's final voices
+  after their L5 listen? No answer yet.
