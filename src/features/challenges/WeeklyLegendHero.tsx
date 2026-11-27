@@ -32,7 +32,7 @@ import { showNotification } from '@/stores/notifications-store'
 import { openChallengeStage, setActiveTab } from '@/stores/ui-store'
 import { grantBoardConsent, hasBoardConsent } from './board-consent'
 import { beginWeeklyAttempt, clearWeeklyAttempt, weeklyAttemptVersion, } from './weekly-attempt'
-import { getActiveWeekly, getWeeklyBoard, hoursUntil } from './weekly-service'
+import { getWeeklyBoard, hoursUntil, readActiveWeekly } from './weekly-service'
 import styles from './WeeklyLegendHero.module.css'
 
 function countdownLabel(endsAt: string): string {
@@ -52,7 +52,18 @@ interface WeeklyLegendHeroProps {
 }
 
 export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
-  const [challenge] = createResource(getActiveWeekly)
+  // Read with its outcome: "nothing is running" and "this network cannot
+  // reach the server" used to share one line of copy, which told a singer
+  // behind a blocking firewall that the first Legend was still on its way.
+  const [active, { refetch: refetchActive }] = createResource(readActiveWeekly)
+  /** The live Legend: null when there is none or it could not be read,
+   *  undefined until the first read lands. */
+  const challenge = () => {
+    const read = active()
+    if (read === undefined) return undefined
+    return read.status === 'ok' ? read.challenge : null
+  }
+  const unreachable = () => active()?.status === 'unreachable'
   const [board, { refetch: refetchBoard }] = createResource(
     () => challenge()?.id,
     (id) => getWeeklyBoard(id),
@@ -182,10 +193,52 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
       <Show
         when={challenge()}
         fallback={
-          <p class={styles.soon}>
-            A fresh community vocal challenge drops here every week. Keep your
-            streak alive — the first Legend is on its way.
-          </p>
+          <Show
+            when={active() !== undefined}
+            fallback={
+              <p
+                class={styles.soon}
+                aria-busy="true"
+                data-testid="legend-loading"
+              >
+                {'\u00a0'}
+              </p>
+            }
+          >
+            <Show
+              when={unreachable()}
+              fallback={
+                <>
+                  <p class={styles.soon} data-testid="legend-none">
+                    No Legend is running right now. Past ones keep their
+                    podiums, and you can sing any of them as practice against
+                    its benchmark.
+                  </p>
+                  <Show when={props.showPastLink !== false}>
+                    <button
+                      class={styles.allLink}
+                      onClick={showPastChallenges}
+                      data-testid="legend-past-link"
+                    >
+                      See past challenges
+                    </button>
+                  </Show>
+                </>
+              }
+            >
+              <p class={styles.soon} data-testid="legend-unreachable">
+                Couldn't load the Legend. This network may be blocking Mercury
+                Pitch's servers.
+              </p>
+              <button
+                class={styles.allLink}
+                onClick={() => void refetchActive()}
+                data-testid="legend-retry"
+              >
+                Try again
+              </button>
+            </Show>
+          </Show>
         }
       >
         <h3

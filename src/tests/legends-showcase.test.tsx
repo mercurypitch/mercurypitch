@@ -53,6 +53,8 @@ vi.mock('@/features/challenges/weekly-service', async () => {
   return {
     ...actual,
     getActiveWeekly: () => Promise.resolve(LIVE),
+    readActiveWeekly: () =>
+      Promise.resolve({ status: 'ok' as const, challenge: LIVE }),
     getWeeklyBoard: () => Promise.resolve(null),
     getWeeklyArchive: () => Promise.resolve([CLOSED]),
     hoursUntil: () => 72,

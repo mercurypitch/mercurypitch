@@ -174,13 +174,16 @@
 
 .allLink {
   align-self: flex-start;
-  margin-top: 8px;
+  /* A 45px tap target around a small text link. The padding is handed back
+     by the margins, so the text sits 8px under what is above it, as it did
+     with no padding, and the card is no taller. */
+  margin: -7px 0 -15px;
   border: none;
   background: transparent;
   color: var(--text-secondary);
   font-size: 0.8rem;
   cursor: pointer;
-  padding: 0;
+  padding: 15px 0;
   text-decoration: underline;
 }
 

@@ -52,6 +52,8 @@ vi.mock('@/features/challenges/board-consent', () => ({
 
 vi.mock('@/features/challenges/weekly-service', () => ({
   getActiveWeekly: () => Promise.resolve(CHALLENGE),
+  readActiveWeekly: () =>
+    Promise.resolve({ status: 'ok' as const, challenge: CHALLENGE }),
   getWeeklyBoard: () => Promise.resolve(boardResponse),
   hoursUntil: () => 72,
 }))

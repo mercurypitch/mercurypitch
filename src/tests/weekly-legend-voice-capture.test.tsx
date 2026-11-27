@@ -30,6 +30,10 @@ vi.mock('@/features/challenges/weekly-voice-take', () => ({
 }))
 vi.mock('@/features/challenges/weekly-service', () => ({
   getActiveWeekly: getActiveWeeklyMock,
+  readActiveWeekly: async () => ({
+    status: 'ok' as const,
+    challenge: await getActiveWeeklyMock(),
+  }),
 }))
 vi.mock('@/stores/notifications-store', () => ({
   showNotification: notificationMock,
@@ -72,7 +76,7 @@ function showResult(
   render(() => <ChallengeResultCard />)
 }
 
-describe('Weekly Legend voice capture result', () => {
+describe('Legend Attempt voice capture result', () => {
   afterEach(() => {
     clearChallengeResult()
     cleanup()
