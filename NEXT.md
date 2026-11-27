@@ -5809,3 +5809,25 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   LAUNCH it when the kit pass and the sound step have both handed back.
   - Lead's plan after it: weigh ONE film-round critic (F-01) before the owner's look. The owner's
     cap is two review turns; the film as a whole has had none. Decide on the draft's numbers.
+
+## 27 Nov 13:48 UTC: THE SOUND STEP DONE (139)
+- SOUND STEP ((builder), finished), all nine items:
+  - full.wav: -16.0 LUFS, 5.1 LU, -1.5 dBTP (a voice limiter, up to 6.8 dB on the scratch takes);
+  - music-only.wav: -29.7 LUFS;
+  - stems as FLAC, 68 MB (L5's WAV stems were 939 MB);
+  - 133 notes within 0.16 cents; the vibrato 5.50 Hz / 13.99 cents / 0.35 s;
+  - the pad in all 13 places, room tone alone in the 12 pauses;
+  - no line over a sound;
+  - tools/sync-check.py: all 117 lights within 33 ms;
+  - captions: 139 cues, peak 20.0 cps;
+  - chapters.json: 12 chapters;
+  - renders/listen/ (10 copies, 53 MB).
+  - The rebuild sequence after the re-time is in the hand-back and in review/sound-01/NOTES.md.
+- LEAD-ANSWERS 139:
+  - departures accepted;
+  - FACTS 80 (figures in captions) and 81 to 83 (the sound round's measurements) updated by the
+    lead; backup $S/l6-FACTS-pre139.md; facts-check passes;
+  - STORYBOARD's chapter times are sent to the KIT PASS by SendMessage (it edits STORYBOARD now).
+  Next free call: 140.
+- Running: the kit pass ((builder)) alone. When it hands back -> the FILM DRAFT
+  (briefs/l6-film-draft-01.md).
