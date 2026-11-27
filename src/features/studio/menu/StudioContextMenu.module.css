@@ -1,0 +1,111 @@
+/* Studio context menu — the app's popover look (OverflowMenu), with a column for the check and one for the key. */
+.menu {
+  position: fixed;
+  z-index: 9000;
+  top: 0;
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: max-content;
+  min-width: 220px;
+  max-width: min(320px, calc(100vw - 16px));
+  max-height: calc(100vh - 16px);
+  padding: 6px;
+  overflow-y: auto;
+  border: 1px solid var(--border-color, var(--border));
+  border-radius: 10px;
+  background: var(--bg-primary);
+  box-shadow: 0 10px 30px rgb(0 0 0 / 0.35);
+  color: var(--text-primary);
+  animation: studio-menu-in 0.12s ease-out;
+}
+:global(html[data-theme='light']) .menu {
+  box-shadow: 0 10px 30px rgb(31 35 40 / 0.16);
+}
+.item {
+  display: grid;
+  grid-template-columns: 16px minmax(0, 1fr) auto;
+  align-items: center;
+  column-gap: 8px;
+  min-height: 32px;
+  margin: 0;
+  padding: 6px 10px 6px 8px;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  color: inherit;
+  font: inherit;
+  font-size: 13px;
+  line-height: 18px;
+  text-align: left;
+  cursor: pointer;
+}
+.item:focus-visible,
+.item:focus {
+  outline: none;
+  background: var(--bg-hover, var(--bg-tertiary));
+}
+@media (hover: hover) {
+  .item:hover:not(:disabled) {
+    background: var(--bg-hover, var(--bg-tertiary));
+  }
+}
+.item:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+@media (pointer: coarse) {
+  .item {
+    min-height: 44px;
+  }
+}
+.check {
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+}
+.words {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+.label {
+  white-space: nowrap;
+}
+.note {
+  color: var(--text-muted);
+  font-size: 12px;
+  line-height: 16px;
+}
+.shortcut {
+  min-width: 18px;
+  padding: 1px 5px;
+  border: 1px solid var(--border-color, var(--border));
+  border-radius: 4px;
+  color: var(--text-secondary);
+  font: inherit;
+  font-size: 11px;
+  font-variant-numeric: tabular-nums;
+  line-height: 14px;
+  text-align: center;
+}
+.danger {
+  color: var(--status-danger-fg);
+}
+.separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border-color, var(--border));
+}
+@keyframes studio-menu-in {
+  from {
+    opacity: 0;
+    transform: translateY(-2px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .menu {
+    animation: none;
+  }
+}

@@ -15,6 +15,7 @@ import { createStudioPlayheadMotion } from './playhead-motion'
 import { createStudioRulerGesture } from './ruler-gesture'
 import { publishStudioScrubGrid } from './scrub-step'
 import { StudioClipToolbar } from './StudioClipToolbar'
+import { StudioLaneMenus } from './StudioLaneMenus'
 import { StudioLineBar } from './StudioLineBar'
 import { StudioNewLane, StudioNewLaneStart } from './StudioNewLane'
 import { StudioPhoneClipNote } from './StudioPhoneClipNote'
@@ -745,6 +746,12 @@ export function StudioTimeline(props: StudioTimelineProps) {
           {lineBar(true)}
         </div>
       </Show>
+      <StudioLaneMenus
+        scope={() => viewport}
+        timeline={props}
+        view={lane}
+        zoom={zoom}
+      />
       <p
         class={styles.status}
         classList={{ [styles.statusVisible]: statusShown() }}
