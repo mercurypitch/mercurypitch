@@ -396,8 +396,8 @@ function CompRows(props: CompRowsProps) {
   )
 }
 
-/** One pass's audio over the drawn part of the clip's span. */
-function PassWave(props: {
+/** One pass's audio over the drawn part of the clip's span, or one take's (StudioTakeLanes.tsx). */
+export function PassWave(props: {
   clip: StudioClip
   from: number
   to: number

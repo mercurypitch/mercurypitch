@@ -1,4 +1,4 @@
-// Studio takes: a take sung over a take on the armed lane becomes that clip's newest take instead of landing on a new lane; the newest take plays, the older one waits with its own volume, and a reload keeps both. The clip says which take plays, and its right-click menu, its bar's Takes list, a phone's clip note and T and Shift+T choose another.
+// Studio takes: a take sung over a take on the armed lane becomes that clip's newest take instead of landing on a new lane; the newest take plays, the older one waits with its own volume, and a reload keeps both. The clip says which take plays, and its right-click menu, its bar's Takes list, a phone's clip note and T and Shift+T choose another. Show takes stands them in rows under the lane, where a click plays one.
 import { expect, test } from '@playwright/test'
 import { readStudioProject } from './helpers/dedicatedstudio-fixture'
 import { firstClip, levelFromStart, recordTwoTakes, } from './helpers/studio-clip-takes'
@@ -127,5 +127,56 @@ test.describe('Studio takes', () => {
     await rows.nth(0).click()
     await expect(clip(1)).toHaveCount(1)
     await expect.poll(playing).toBe(one)
+  })
+
+  test('Show takes stands each take in a row under its lane, newest on top, moves the lane below down, and a click on a row plays its take', async ({
+    page,
+  }) => {
+    test.setTimeout(180_000)
+    const { studio, lane, one } = await recordTwoTakes(page)
+    await studio
+      .getByRole('button', { name: 'New audio lane', exact: true })
+      .click()
+    const lanes = studio.locator('[data-studio-track]')
+    // How far below Lane 2's top Lane 3 starts.
+    const gap = async () =>
+      (await lanes.nth(2).boundingBox())!.y -
+      (await lanes.nth(1).boundingBox())!.y
+    const closed = await gap()
+    const loud = await levelFromStart(page)
+
+    await studio
+      .getByRole('button', { name: /^Lane 2, Take 2\.wav, take 2 of 2, / })
+      .click({ button: 'right' })
+    await page
+      .getByRole('menuitem', { name: 'Show takes', exact: true })
+      .click()
+    const rows = studio.locator('[data-studio-take-row]')
+    await expect(rows).toHaveCount(2)
+    await expect(rows.nth(0)).toHaveAccessibleName('Take 2')
+    await expect(rows.nth(0)).toHaveAttribute('aria-pressed', 'true')
+    await expect(rows.nth(1)).toHaveAccessibleName('Take 1')
+    await expect(rows.nth(1)).toHaveAttribute('aria-pressed', 'false')
+    // Lane 3 moved down by the rows: a bar and a row a take.
+    expect(await gap()).toBeGreaterThan(closed + 100)
+
+    // A click on a row plays its take.
+    await rows.nth(1).click()
+    await expect(rows.nth(1)).toHaveAttribute('aria-pressed', 'true')
+    await expect
+      .poll(async () => firstClip(await readStudioProject(page), lane)?.assetId)
+      .toBe(one)
+    expect(await levelFromStart(page)).toBeLessThan(loud - 30)
+
+    // Escape closes them, back on the clip, and Lane 3 moves back up.
+    await rows.nth(1).focus()
+    await page.keyboard.press('Escape')
+    await expect(rows).toHaveCount(0)
+    await expect(
+      studio.getByRole('button', {
+        name: /^Lane 2, Take 1\.wav, take 1 of 2, /,
+      }),
+    ).toBeFocused()
+    expect(await gap()).toBe(closed)
   })
 })
