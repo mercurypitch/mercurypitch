@@ -5783,3 +5783,21 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   (3) LATER (P/KIT-HYGIENE.md, for L7's first step): moving the local builds into the kit.
   A regression baseline of 8 stills a scene plus the cuts' frames; every changed pixel must be
   explained. LAUNCH it when E's polish hands back (two agents: the kit pass and the sound step).
+
+## 27 Nov 13:37 UTC: GROUP E DONE (138): ALL FIVE GROUPS DONE; KIT PASS launched
+- E's POLISH ((builder), finished): all six items of 136.
+  - Checks: probes 62/18/33; clearance 0; root 0; board tools 0; facts-check 35/35 (b47's form
+    added to FACTS 92).
+  - Holds: S12 1.2 per 30 s; S13 1.0 s (the hosts' stopgap).
+  - Flagged: the leaves are half visible at 8.3 px, not 12; the beads reach r 14 at 514.60.
+  LEAD-ANSWERS 138 accepts both. GROUP E IS DONE. Next free call: 139.
+- LAUNCHED ((model) xhigh): KIT PASS (builder) (briefs/l6-kit-pass.md; resume notes in P/KIT-PASS.md).
+- Running: the sound step ((builder)) and the kit pass ((builder)).
+- Next:
+  - both hand back -> the lead switches the root to MIX=full (gen-root, read it first) and
+    renders the 30 fps FILM DRAFT in pieces (L5's lab/final-run/render-pieces.sh and piece.mjs,
+    adapted), muxes full.wav and runs measure.py;
+  - the OWNER'S LOOK: the film draft plus the look list (the 23.6 s of care type; the darker cut
+    into the title (95); the listen pose reading as a wink; b29 wording; Ear Lab's two "Leap"s);
+  - after their look and the final voices' word: the hosts' passes (with 135/136's items), then
+    the 60 fps final render.
