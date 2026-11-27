@@ -355,12 +355,13 @@ export const ExerciseShell: Component<ExerciseShellProps> = (props) => {
   onCleanup(stopDemo)
 
   // What lies over Merc's bubble, if anything: the app's notices, which wait
-  // while a run is under way, an example plays or the take has the bubble,
-  // unless they warn, and the take's. The take goes before a badge: its
-  // question is asked at once, and an achievement the run earned waits for
-  // its answer (stage/useTakeNotice.ts).
+  // while a run is under way or an example plays unless they warn, and the
+  // take's. The take goes before a badge: its question is asked at once, an
+  // achievement the run earned waits for its answer, and any other notice
+  // is a toast meanwhile (stage/useTakeNotice.ts).
   const bubbleNotice = useStageNotices({
-    quiet: () => !isIdleLike() || demoLineUp() || take.holdsBubble(),
+    quiet: () => !isIdleLike() || demoLineUp(),
+    takeHolds: take.holdsBubble,
     example: demoLineUp,
     take: () => {
       const notice = take.notice()

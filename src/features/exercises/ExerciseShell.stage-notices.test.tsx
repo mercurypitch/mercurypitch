@@ -7,11 +7,11 @@
 // take's notice is, and the toasts draw nothing. These pin the order the
 // bubble gives them (stage/stage-notice.ts `bubbleNotice`): a warning or an
 // error, then the example's line, then any other notice, then the take's,
-// then the run's instruction or the brief; that a run, and a take waiting
-// for its answer, hold the calmer notices back, so the take is asked before
-// an achievement is said; and that leaving the drill hands what is left to
-// the toasts. The store's part is pinned in
-// src/stores/notifications-stage.test.ts.
+// then the run's instruction or the brief; that a run holds the calmer
+// notices back; that while the take's question has the bubble, an
+// achievement waits for it and every other notice is a toast at once; and
+// that leaving the drill hands what is left to the toasts. The store's part
+// is pinned in src/stores/notifications-stage.test.ts.
 
 import { cleanup, fireEvent, render } from '@solidjs/testing-library'
 import { createSignal, Show } from 'solid-js'
@@ -311,16 +311,48 @@ describe('what the bubble says first', () => {
     expect(stage.notice()?.textContent).toContain('Synced')
   })
 
-  it("the take's question is said before a calmer notice, which follows once it is answered", async () => {
+  it("during the take's question a calmer notice is a toast at once, and the question keeps the bubble", () => {
     const stage = drill({ status: 'complete', take: true })
     expect(stage.notice()?.textContent).toContain('Keep this take?')
 
-    showNotification('Level up! This drill is now Lv 4', 'success')
+    showNotification('Synced', 'info')
+
     expect(stage.notice()?.textContent).toContain('Keep this take?')
-    expect(notifications()).toHaveLength(0)
+    const region = stage.getByRole('region', { name: 'Notifications' })
+    expect([...region.children].map((toast) => toast.textContent)).toEqual([
+      expect.stringContaining('Synced'),
+    ])
+  })
+
+  it('a toast the question let through stays a toast once it is answered, and the achievements have the bubble', async () => {
+    const take = finishingTake()
+    const stage = drill({ status: 'active', capture: take.capture })
+    stage.setStatus('complete')
+    take.ready()
+    firstRunUnlocks()
+    showNotification('Synced', 'info', { durationMs: 60_000 })
+    expect(stage.notice()?.textContent).toContain('Keep this take?')
+    expect(stage.toasts()).toBe(1)
+
+    fireEvent.click(stage.getByRole('button', { name: 'Discard take' }))
+    await vi.advanceTimersByTimeAsync(STAGE_NOTICE_EXIT_MS)
+
+    expect(stage.notice()?.textContent).toBe(
+      '2 new achievementsFirst Note, Drill Sergeant',
+    )
+    const region = stage.getByRole('region', { name: 'Notifications' })
+    expect([...region.children].map((toast) => toast.textContent)).toEqual([
+      expect.stringContaining('Synced'),
+    ])
+  })
+
+  it("an achievement waits behind the take's question, and is said in the bubble after Keep", async () => {
+    const stage = drill({ status: 'complete', take: true })
+    firstRunUnlocks()
+    expect(stage.notice()?.textContent).toContain('Keep this take?')
     expect(stage.toasts()).toBe(0)
 
-    // However long the question waits, the notice's time has not run.
+    // However long the question waits, the achievements' time has not run.
     await vi.advanceTimersByTimeAsync(60_000)
     keepMock.mockResolvedValue({
       ok: true,
@@ -332,7 +364,10 @@ describe('what the bubble says first', () => {
     expect(stage.notice()?.textContent).toContain('Take kept')
 
     await vi.advanceTimersByTimeAsync(TAKE_KEPT_LINGER_MS)
-    expect(stage.notice()?.textContent).toContain('Level up!')
+    expect(stage.notice()?.textContent).toBe(
+      '2 new achievementsFirst Note, Drill Sergeant',
+    )
+    expect(stage.toasts()).toBe(0)
   })
 
   it("a first run's achievements wait behind its take's question, from the run's end", async () => {
@@ -374,12 +409,47 @@ describe('what the bubble says first', () => {
     ])
   })
 
-  it("a warning is said over the take's question", () => {
+  it("a warning is a toast at once during the take's question, which keeps the bubble", () => {
     const stage = drill({ status: 'complete', take: true })
 
     showNotification('Microphone disconnected.', 'warning')
 
-    expect(stage.notice()?.textContent).toContain('Microphone disconnected.')
+    expect(stage.notice()?.textContent).toContain('Keep this take?')
+    const region = stage.getByRole('region', { name: 'Notifications' })
+    expect([...region.children].map((toast) => toast.textContent)).toEqual([
+      expect.stringContaining('Microphone disconnected.'),
+    ])
+  })
+
+  it('a notice that waited out the run is a toast at once when the question comes', async () => {
+    const take = finishingTake()
+    const stage = drill({ status: 'active', capture: take.capture })
+    showNotification('Synced', 'info')
+    expect(stage.toasts()).toBe(0)
+
+    stage.setStatus('complete')
+    take.ready()
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(stage.notice()?.textContent).toContain('Keep this take?')
+    expect(stage.toasts()).toBe(1)
+  })
+
+  it('an achievement does not pop out between an answered question and the next run begun in one tap', async () => {
+    const stage = drill({ status: 'complete', take: true })
+    firstRunUnlocks()
+
+    // Try Again during the question: the drill resets and starts its
+    // count-in in one go.
+    stage.setStatus('idle')
+    stage.setStatus('count-in')
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(
+      stage.coach()!.querySelector('[data-testid="exercise-stage-notice"]'),
+    ).toBeNull()
+    expect(notifications()).toHaveLength(0)
+    expect(stage.toasts()).toBe(0)
   })
 
   it('the brief is back, not hidden, once there is nothing to say', async () => {

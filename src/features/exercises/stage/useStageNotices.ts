@@ -6,9 +6,10 @@
 // looks like and which goes first). In the web build, while a drill's stage
 // is on screen, the stage presents the app's notices in place of the
 // toasts: one at a time, unlocks of one moment as one, and during a run,
-// while an example plays, or while the take's question waits for its
-// answer, only warnings and errors (notifications-store.ts,
-// `presentNoticesOnStage` and `setStageQuiet`).
+// or while an example plays, only warnings and errors (notifications-store.ts,
+// `presentNoticesOnStage` and `setStageQuiet`). While the take's question
+// has the bubble, nothing covers it: an achievement waits for the bubble,
+// and every other notice is a toast at once (`setStageTakeHolds`).
 // When the drill is left, whatever is still waiting goes back to the
 // toasts. The native app has its own place for notices, the shell's pill,
 // so there the stage says only the take's.
@@ -16,14 +17,16 @@
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, on, onCleanup, untrack } from 'solid-js'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
-import { notificationPresenter, notifications, presentNoticesOnStage, removeNotification, setStageQuiet, unlockShown, } from '@/stores/notifications-store'
+import { notificationPresenter, notifications, presentNoticesOnStage, removeNotification, setStageQuiet, setStageTakeHolds, unlockShown, } from '@/stores/notifications-store'
 import type { StageNoticeModel } from './stage-notice'
 import { bubbleNotice, noticeFromNotification } from './stage-notice'
 
 export interface StageNoticesOptions {
-  /** A run is under way, an example plays, or the take has the bubble:
-   *  warnings and errors only. */
+  /** A run is under way, or an example plays: warnings and errors only. */
   quiet: () => boolean
+  /** The take's question has the bubble, or is on its way: achievements
+   *  wait for it, and everything else is a toast. */
+  takeHolds: () => boolean
   /** The example's line is in Merc's bubble. */
   example: () => boolean
   /** The voice take's notice, where the drill records one. */
@@ -39,21 +42,28 @@ export function useStageNotices(
     onCleanup(() => {
       alive = false
     })
-    createEffect(
-      on(options.quiet, (quiet) => {
-        if (quiet) {
-          setStageQuiet(true)
-          return
-        }
-        // The stage speaks again once the moment has settled. Try Again
-        // ends a run and starts the next in one tap (the drill's reset,
-        // then its start), and a notice let in between would pop out of
-        // the bubble and straight back in, as the count-in quiets it.
-        queueMicrotask(() => {
-          if (alive && !untrack(options.quiet)) setStageQuiet(false)
-        })
-      }),
-    )
+    // Each holds at once, and lets go once the moment has settled. Try
+    // Again ends a run and starts the next in one tap (the drill's reset,
+    // then its start), and a notice let in between would pop out of the
+    // bubble and straight back in, as the count-in quiets it.
+    const holdWhile = (
+      holds: () => boolean,
+      set: (on: boolean) => void,
+    ): void => {
+      createEffect(
+        on(holds, (on) => {
+          if (on) {
+            set(true)
+            return
+          }
+          queueMicrotask(() => {
+            if (alive && !untrack(holds)) set(false)
+          })
+        }),
+      )
+    }
+    holdWhile(options.takeHolds, setStageTakeHolds)
+    holdWhile(options.quiet, setStageQuiet)
   }
 
   // The one notice the store has on screen, while the stage draws them.

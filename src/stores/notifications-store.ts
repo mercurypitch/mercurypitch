@@ -35,10 +35,17 @@
 //
 // THE STAGE speaks in one place, so it orders what it says. A warning or an
 // error goes before any calmer notice, which waits behind it; and while the
-// stage is quiet (`setStageQuiet`: a run, an example playing, a take
-// waiting for its answer) only warnings and errors are shown at all. A notice that waits is not on screen, so its
+// stage is quiet (`setStageQuiet`: a run, an example playing) only warnings
+// and errors are shown at all. A notice that waits is not on screen, so its
 // time does not run: its clock starts when it is shown, as a phone's third
 // toast's does, and a notice put back to wait keeps what was left of it.
+//
+// THE TAKE'S QUESTION. While a finished run's "Keep this take?" has Merc's
+// bubble (`setStageTakeHolds`), nothing covers it and nothing else waits for
+// it (owner, 27 Nov 2026): every notice but an unlock is a toast at once,
+// warnings and errors too, and an unlock waits, merged with its moment, for
+// the bubble once the question is answered. The singer's recording goes
+// before a badge, and Progress lists the badge anyway.
 
 import { createEffect, createRoot, createSignal, on, untrack } from 'solid-js'
 import type { UnlockItem } from '@/lib/unlock-copy'
@@ -124,6 +131,16 @@ export const [notifications, setNotifications] = createSignal<Notification[]>(
   [],
 )
 
+/**
+ * Toasts a take's question let through, still on screen when the question
+ * was answered. They stay toasts until their own time runs out, beside the
+ * bubble, rather than move into it and hold back what waited for it.
+ */
+const [toastsBeside, setToastsBeside] = createSignal<Notification[]>([])
+
+/** What the toasts draw while the stage or the pill has the notices. */
+export const toastsBesideStage = toastsBeside
+
 let _notifId = 0
 
 export interface NotificationOptions {
@@ -206,6 +223,9 @@ let chosen: NotificationPresenter = 'toast'
 /** How many drill stages are on screen, each holding the presentation. */
 let stageHolds = 0
 
+/** A take's question has Merc's bubble; see the header. */
+let takeHolds = false
+
 /** A room's hold on the pill: the bar the pill sits under. */
 interface PillHold {
   readonly under: () => Element | null | undefined
@@ -218,7 +238,28 @@ const pillHolds: PillHold[] = []
 function heldPresenter(): NotificationPresenter {
   if (chosen !== 'toast') return chosen
   if (pillHolds.length > 0) return 'pill'
-  return stageHolds > 0 ? 'stage' : 'toast'
+  if (stageHolds === 0) return 'toast'
+  return takeHolds ? 'toast' : 'stage'
+}
+
+/**
+ * The stage is up and has given its bubble to a take's question: the
+ * toasts say everything else, and unlocks wait for the bubble.
+ */
+function unlocksWaitForTake(): boolean {
+  return (
+    takeHolds && stageHolds > 0 && pillHolds.length === 0 && chosen === 'toast'
+  )
+}
+
+/** An unlock, which the stage, the pill and a take's wait word and merge. */
+function isUnlock(notif: Notification): boolean {
+  return notif.unlocks !== undefined
+}
+
+/** Unlocks are said in a bubble or the pill, or wait for the bubble. */
+function unlocksMerge(): boolean {
+  return presenter() !== 'toast' || unlocksWaitForTake()
 }
 
 /**
@@ -231,7 +272,14 @@ function present(): void {
   // subscribe it to the queue.
   untrack(() => {
     setPresenter(heldPresenter())
+    // The toasts are back: what stayed beside the bubble is theirs again.
+    if (presenter() === 'toast' && toastsBeside().length > 0) {
+      const beside = toastsBeside()
+      setToastsBeside([])
+      setNotifications((list) => [...beside, ...list])
+    }
     evictOverflow()
+    yieldUnlocks()
     yieldCalm()
     admitWaiting()
   })
@@ -264,7 +312,10 @@ export function presentNoticesOnStage(): () => void {
     if (!held) return
     held = false
     stageHolds -= 1
-    if (stageHolds === 0) setStageQuietSignal(false)
+    if (stageHolds === 0) {
+      setStageQuietSignal(false)
+      takeHolds = false
+    }
     present()
   }
 }
@@ -302,6 +353,25 @@ export function presentNoticesInPill(
 export function noticePillCeiling(): Element | null {
   if (chosen !== 'toast') return null
   return pillHolds[pillHolds.length - 1]?.under() ?? null
+}
+
+/**
+ * Give Merc's bubble to a take's question, or take it back: while it holds,
+ * every notice but an unlock is a toast at once, and unlocks wait for the
+ * bubble with their time not running (see the header). An unlock on screen
+ * goes back to wait. Nothing changes without a stage to hold it.
+ */
+export function setStageTakeHolds(holds: boolean): void {
+  if (holds && stageHolds === 0) return
+  if (takeHolds === holds) return
+  if (!holds && unlocksWaitForTake()) {
+    // The toasts the question let through stay toasts, with their clocks.
+    const shown = notifications().filter((notif) => !isUnlock(notif))
+    setNotifications((list) => list.filter(isUnlock))
+    setToastsBeside((list) => [...list, ...shown])
+  }
+  takeHolds = holds
+  present()
 }
 
 /**
@@ -360,6 +430,7 @@ function dropVisible(id: number): void {
   timers.delete(id)
   deadlines.delete(id)
   setNotifications((n) => n.filter((x) => x.id !== id))
+  setToastsBeside((n) => n.filter((x) => x.id !== id))
 }
 
 /**
@@ -389,6 +460,12 @@ function sendBack(shown: readonly Notification[]): void {
   waiting.unshift(...requeued)
 }
 
+/** While a take's question holds the bubble, an unlock on screen waits. */
+function yieldUnlocks(): void {
+  if (!unlocksWaitForTake()) return
+  sendBack(notifications().filter(isUnlock))
+}
+
 /**
  * On the stage, a calmer notice on screen gives way while the stage is
  * quiet, and to a warning or an error that is waiting.
@@ -405,6 +482,7 @@ function yieldCalm(): void {
  * goes while it is quiet.
  */
 function nextToShow(): number {
+  if (unlocksWaitForTake()) return waiting.findIndex((w) => !isUnlock(w.notif))
   if (presenter() === 'stage') {
     const urgent = waiting.findIndex((w) => isUrgent(w.notif))
     if (urgent !== -1 || stageQuiet()) return urgent
@@ -427,7 +505,9 @@ function pushNotification(notif: Notification, durationMs: number): void {
   const channel = notif.channel
   if (channel != null) {
     dropWaiting((n) => n.channel === channel)
-    for (const stale of notifications().filter((n) => n.channel === channel))
+    for (const stale of [...notifications(), ...toastsBeside()].filter(
+      (n) => n.channel === channel,
+    ))
       dropVisible(stale.id)
   }
   // The stage chooses what it says next (see the header), so every arrival
@@ -438,7 +518,10 @@ function pushNotification(notif: Notification, durationMs: number): void {
     admitWaiting()
     return
   }
-  if (notifications().length >= visibleCap()) {
+  if (
+    notifications().length >= visibleCap() ||
+    (isUnlock(notif) && unlocksWaitForTake())
+  ) {
     waiting.push({ notif, durationMs })
     return
   }
@@ -488,7 +571,7 @@ function routedUnlock(
     claim({ message, type, unlock })
     return true
   }
-  return presenter() !== 'toast' && mergeUnlock(unlock)
+  return unlocksMerge() && mergeUnlock(unlock)
 }
 
 /** Fold a grouped arrival into a live or waiting toast; true when it did. */
@@ -539,12 +622,11 @@ export function showNotification(
   if (group !== undefined && foldedIntoGroup(message, group)) return
 
   const id = ++_notifId
-  // The pill and the stage word an unlock themselves, the same way they
+  // The pill and the stage word an unlock themselves (one waiting for the
+  // bubble too), the same way they
   // word a merged set.
   const text =
-    unlock !== undefined && presenter() !== 'toast'
-      ? unlockSummary([unlock])
-      : message
+    unlock !== undefined && unlocksMerge() ? unlockSummary([unlock]) : message
   pushNotification(
     {
       id,
@@ -664,7 +746,9 @@ export function removeNotification(id: number): void {
 export function removeNotificationsByChannel(channel: string): void {
   if (channel === TOUR_OFFER_CHANNEL) setOfferRetired((n) => n + 1)
   dropWaiting((n) => n.channel === channel)
-  for (const stale of notifications().filter((n) => n.channel === channel))
+  for (const stale of [...notifications(), ...toastsBeside()].filter(
+    (n) => n.channel === channel,
+  ))
     dropVisible(stale.id)
   admitWaiting()
 }
@@ -677,11 +761,13 @@ export function resetNotifications(): void {
   waiting.length = 0
   resetUnlockClaims()
   stageHolds = 0
+  takeHolds = false
   pillHolds.length = 0
   chosen = 'toast'
   setStageQuietSignal(false)
   setPresenter('toast')
   setNotifications([])
+  setToastsBeside([])
 }
 
 export function getNotifications() {

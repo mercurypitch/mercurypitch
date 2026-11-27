@@ -14,12 +14,13 @@
 //
 // The take comes before a badge (owner, 0.9.31's review): from the run's
 // end until the take's question is answered or put away, and while "Take
-// kept" says how it went, the take holds Merc's bubble (`holdsBubble`), and
-// the app's calmer notices, an achievement among them, wait their turn
-// behind it with their time not running (ExerciseShell quiets the stage).
-// An unlock that came first used to stand over the question for its six
-// seconds, and a Try Again or a Back pressed meanwhile lost the take
-// without its question ever being asked.
+// kept" says how it went, the take holds Merc's bubble (`holdsBubble`).
+// An achievement waits behind it with its time not running, and comes to
+// the bubble after; every other notice, a warning too, is a toast at once,
+// so nothing covers the question and nothing else is held up (owner, 27 Nov
+// 2026; the store's `setStageTakeHolds`). An unlock that came first used to
+// stand over the question for its six seconds, and a Try Again or a Back
+// pressed meanwhile lost the take without its question ever being asked.
 
 import type { Accessor } from 'solid-js'
 import { createEffect, createMemo, createSignal, on, onCleanup } from 'solid-js'
@@ -48,7 +49,8 @@ export interface TakeNoticeController {
   /**
    * The take has Merc's bubble, or is about to: its capture is still being
    * finished, its question waits for an answer, a keep is under way, or
-   * its outcome is on show. Calmer notices wait while this holds.
+   * its outcome is on show. Achievements wait while this holds, and other
+   * notices are toasts.
    */
   holdsBubble: Accessor<boolean>
   /** A keep is being written: everything that would leave waits for it. */

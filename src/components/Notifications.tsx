@@ -7,7 +7,9 @@
 // time (src/features/exercises/stage/StageNotice.tsx). While a room on the
 // web holds them (the store's `pill` presenter), it draws the pill instead
 // of the toasts, one at a time under the room's bar
-// (src/components/notice-pill/NoticePill.tsx).
+// (src/components/notice-pill/NoticePill.tsx). Beside either, it still
+// draws the toasts a take's question let through until their time is up
+// (the store's `toastsBesideStage`).
 
 import type { Component } from 'solid-js'
 import { For, lazy, Match, onMount, Show, Suspense, Switch } from 'solid-js'
@@ -18,7 +20,7 @@ import { unlockNames } from '@/lib/unlock-copy'
 // pulls app-store, which would drag the whole app shell into the standalone
 // karaoke/mirror entries that also mount this toast host.
 import type { Notification } from '@/stores/notifications-store'
-import { notificationPresenter, notifications, removeNotification, showActionNotification, showNotification, } from '@/stores/notifications-store'
+import { notificationPresenter, notifications, removeNotification, showActionNotification, showNotification, toastsBesideStage, } from '@/stores/notifications-store'
 import styles from '@/styles/Notifications.module.css'
 import { AlertTriangle, CheckCircle, XCircle } from './icons'
 
@@ -97,7 +99,13 @@ export const Notifications: Component = () => {
         role="region"
         aria-label="Notifications"
       >
-        <For each={notificationPresenter() === 'toast' ? notifications() : []}>
+        <For
+          each={
+            notificationPresenter() === 'toast'
+              ? notifications()
+              : toastsBesideStage()
+          }
+        >
           {(notif) => (
             <div
               class={`${styles.notification} ${styles[notif.type]} ${
