@@ -1158,6 +1158,18 @@
   overflow: hidden;
   text-overflow: ellipsis;
 }
+/* Which of a clip's takes plays, "2/3": on its band, before its name. */
+.takeBadge {
+  display: inline-block;
+  margin-right: 6px;
+  padding: 0 5px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--studio-text) 16%, transparent);
+  color: var(--studio-text);
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+  line-height: 14px;
+}
 .visibleWave {
   position: absolute;
   top: 20px;

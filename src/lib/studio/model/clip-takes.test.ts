@@ -1,7 +1,7 @@
 // Studio clip takes: a take recorded over takes stacks on them, every take lines up with the others through every edit, and the song refuses a take it cannot play.
 import { describe, expect, it } from 'vitest'
 import { compileStudioArrangement } from './arrangement-plan'
-import { STUDIO_MAX_CLIP_TAKES, studioClipActiveTake, studioClipAssetIds, studioClipTakeBounds, studioClipTakeCount, studioClipTakeList, studioClipWithTakes, studioSongAssetIds, studioStackTargets, } from './clip-takes'
+import { STUDIO_MAX_CLIP_TAKES, studioClipActiveTake, studioClipAssetIds, studioClipTakeBounds, studioClipTakeCount, studioClipTakeList, studioClipTakeStep, studioClipTakeSteps, studioClipWithTakes, studioSongAssetIds, studioStackTargets, } from './clip-takes'
 import type { StudioCommand } from './commands'
 import { applyStudioCommand } from './commands'
 import { createStudioHistory, executeStudioCommand, undoStudioCommand, } from './history'
@@ -480,5 +480,127 @@ describe('the song with clips of several takes', () => {
   it('opens a song saved before takes, unchanged', () => {
     const { project, assets } = takesFixture()
     expect(validateStudioProject(project, assets)).toEqual(project)
+  })
+})
+
+describe('choosing a take', () => {
+  /** clip-1 of three takes, take-3 playing: take-1 and take-2 recorded, take-3 a loop take of three passes. */
+  function threeTakes() {
+    const fixture = takesFixture()
+    const two = stack(
+      fixture.project,
+      fixture.assets,
+      landed('take-2', 100, 300, 800),
+    )
+    // take-3 sang three passes of 400 frames; its third plays.
+    const loop = {
+      ...landed('take-3', 100, 900, 400),
+      passes: { firstFrame: 100, frames: 400, count: 3 },
+    }
+    const three = stack(
+      { ...two, clips: [{ ...clipAt(two, 100), sourceOutFrame: 700 }] },
+      fixture.assets,
+      loop,
+    )
+    return { ...fixture, project: three, clip: clipAt(three, 100) }
+  }
+
+  it('steps through every take, each pass of a loop take a step of its own and a comped one a single step', () => {
+    const { clip } = threeTakes()
+    expect(studioClipTakeSteps(clip)).toEqual([
+      { take: 0 },
+      { take: 1 },
+      { take: 2, pass: 0 },
+      { take: 2, pass: 1 },
+      { take: 2, pass: 2 },
+    ])
+    // Playing take-3's third pass.
+    expect(studioClipTakeStep(clip)).toBe(4)
+    const comped = studioClipWithTakes(
+      studioClipTakeList(clip).map((take, index) =>
+        index === 2
+          ? {
+              ...take,
+              comp: [
+                { fromSourceFrame: 900, toSourceFrame: 1100, pass: 2 },
+                { fromSourceFrame: 1100, toSourceFrame: 1300, pass: 0 },
+              ],
+            }
+          : take,
+      ),
+      2,
+    )
+    expect(studioClipTakeSteps(comped)).toEqual([
+      { take: 0 },
+      { take: 1 },
+      { take: 2 },
+    ])
+    expect(studioClipTakeStep(comped)).toBe(2)
+  })
+
+  it('plays the chosen take with every take still lined up, and choosing back gives the clip as it was', () => {
+    const { project, assets, clip } = threeTakes()
+    const before = heardAt(clip, 300)
+    const first = apply(project, assets, {
+      type: 'choose-take',
+      clipId: 'clip-1',
+      take: 0,
+    })
+    const chosen = clipAt(first, 100)
+    expect(chosen).toMatchObject({
+      assetId: 'take-1',
+      activeTake: 0,
+      gainDb: -3,
+    })
+    expect(heardAt(chosen, 300)).toEqual(before)
+    const back = apply(first, assets, {
+      type: 'choose-take',
+      clipId: 'clip-1',
+      take: 2,
+    })
+    expect(clipAt(back, 100)).toEqual(clip)
+  })
+
+  it('plays another pass of a loop take, whether or not it plays now, and refuses a take or a pass the clip lacks', () => {
+    const { project, assets } = threeTakes()
+    const onFirst = apply(project, assets, {
+      type: 'choose-take',
+      clipId: 'clip-1',
+      take: 0,
+    })
+    const pass = apply(onFirst, assets, {
+      type: 'choose-take',
+      clipId: 'clip-1',
+      take: 2,
+      pass: 0,
+    })
+    const clip = clipAt(pass, 100)
+    expect(clip).toMatchObject({ assetId: 'take-3', sourceInFrame: 100 })
+    expect(studioClipTakeStep(clip)).toBe(2)
+    for (const wrong of [
+      { take: 3 },
+      { take: -1 },
+      { take: 0, pass: 0 },
+      { take: 2, pass: 3 },
+    ])
+      expect(() =>
+        apply(project, assets, {
+          type: 'choose-take',
+          clipId: 'clip-1',
+          ...wrong,
+        }),
+      ).toThrow(/is not one of the/)
+  })
+
+  it('is one undo step, "choose take"', () => {
+    const { project, assets } = threeTakes()
+    const history = executeStudioCommand(
+      createStudioHistory(project),
+      { type: 'choose-take', clipId: 'clip-1', take: 1 },
+      { assets, now: TEST_NOW },
+    )
+    expect(clipAt(history.present, 100).assetId).toBe('take-2')
+    const undone = undoStudioCommand(history, { assets, now: TEST_NOW })
+    expect(undone.present.clips).toEqual(project.clips)
   })
 })

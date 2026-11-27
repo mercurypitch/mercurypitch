@@ -414,6 +414,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
       {(selected) => (
         <StudioClipToolbar
           clip={selected()}
+          assets={assets()}
           label={selectedName() ?? 'Clip'}
           color={selectedColor()}
           left={headerWidth() + 12}
@@ -768,6 +769,9 @@ export function StudioTimeline(props: StudioTimelineProps) {
             onRange={props.onRange}
             onEditNotes={props.onOpenNotes}
             onExportMidi={props.onExportClipMidi}
+            assets={assets()}
+            writable={props.writable}
+            onCommand={props.onCommand}
           />
         )}
       </Show>

@@ -420,3 +420,12 @@ export const Eraser: Component<{ size?: number }> = (p) => (
     <path d="M8 21h12" />
   </svg>
 )
+
+// Three bands stacked, the front one whole — a clip's takes, the one playing in front.
+export const TakeStack: Component<{ size?: number }> = (p) => (
+  <svg {...outline(p.size)}>
+    <rect x="3" y="11" width="18" height="9" rx="2" />
+    <path d="M5.5 7.5h13" opacity="0.65" />
+    <path d="M8 4h8" opacity="0.35" />
+  </svg>
+)

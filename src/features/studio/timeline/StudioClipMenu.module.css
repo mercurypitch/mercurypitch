@@ -1,0 +1,99 @@
+/* StudioClipMenu: portalled to <body>, so it paints with the app's theme
+   tokens, which the Studio's own map to. z-index 9000 is the app's popover
+   layer, as OverflowMenu's. */
+.menu {
+  position: fixed;
+  z-index: 9000;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  width: max-content;
+  min-width: 180px;
+  max-width: min(300px, calc(100vw - 16px));
+  max-height: min(60vh, 420px);
+  padding: 5px;
+  overflow-y: auto;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--bg-card);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+  animation: clipMenuIn 0.1s ease-out;
+}
+
+@keyframes clipMenuIn {
+  from {
+    opacity: 0;
+    transform: scale(0.97);
+  }
+}
+
+.row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 36px;
+  padding: 6px 10px 6px 6px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--text-primary);
+  font: inherit;
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.row:hover:not(:disabled),
+.row:focus-visible {
+  background: var(--bg-hover);
+  outline: none;
+}
+
+.row:focus-visible {
+  box-shadow: inset 0 0 0 2px var(--accent);
+}
+
+.row:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.row[aria-checked='true'] {
+  font-weight: 600;
+}
+
+.mark {
+  display: inline-flex;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  color: var(--accent);
+}
+
+.text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.divider {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--border);
+}
+
+@media (pointer: coarse) {
+  .row {
+    min-height: 44px;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .menu {
+    animation: none;
+  }
+}

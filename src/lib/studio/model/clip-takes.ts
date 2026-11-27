@@ -28,7 +28,7 @@
 // new take covers is a clip of its own. So every take covers its whole clip,
 // and nothing sung is lost (docs/plans/studio-takes.md).
 import { fitStudioClipComp } from './clip-comp'
-import { studioClipSourceBounds } from './clip-passes'
+import { studioClipOnPass, studioClipSourceBounds, studioPassAt, } from './clip-passes'
 import type { SourceKind, StudioClip, StudioClipTake, StudioProject, } from './types'
 import { requireValue } from './validation-values'
 
@@ -171,6 +171,95 @@ export function fitStudioTakeComps(project: StudioProject): StudioProject {
     return studioClipWithTakes(fitted, studioClipActiveTake(clip))
   })
   return changed ? { ...project, clips } : project
+}
+
+/**
+ * One step of a clip's takes, as T steps through them: a take, or one pass
+ * of a loop take. A comped loop take is one step, so stepping past it never
+ * undoes its comp.
+ */
+export interface StudioTakeStep {
+  /** The take, counted from 0, oldest first. */
+  readonly take: number
+  /** The pass of a loop take that is not comped, counted from 0. */
+  readonly pass?: number
+}
+
+/** Every step of a clip's takes, in the order they were sung. */
+export function studioClipTakeSteps(clip: StudioClip): StudioTakeStep[] {
+  return studioClipTakeList(clip).flatMap((take, index) =>
+    take.passes && take.comp === undefined
+      ? Array.from({ length: take.passes.count }, (_, pass) => ({
+          take: index,
+          pass,
+        }))
+      : [{ take: index }],
+  )
+}
+
+/** The step a clip plays now, counted from 0 among studioClipTakeSteps. */
+export function studioClipTakeStep(clip: StudioClip): number {
+  const take = studioClipActiveTake(clip)
+  const pass =
+    clip.passes && clip.comp === undefined
+      ? studioPassAt(clip.passes, clip.sourceInFrame)
+      : undefined
+  return studioClipTakeSteps(clip).findIndex(
+    (step) => step.take === take && step.pass === pass,
+  )
+}
+
+/** Another take of a clip plays, or another pass of a loop take: the one at `take`, oldest first, on `pass` when given. */
+export interface StudioChooseTakeEdit {
+  readonly type: 'choose-take'
+  readonly clipId: string
+  readonly take: number
+  readonly pass?: number
+}
+
+export function isStudioChooseTakeEdit(edit: {
+  readonly type: string
+}): edit is StudioChooseTakeEdit {
+  return edit.type === 'choose-take'
+}
+
+/** The clip with id `clipId`, or a refusal saying it is gone. */
+function requireClip(project: StudioProject, clipId: string): StudioClip {
+  const clip = project.clips.find((item) => item.id === clipId)
+  requireValue(clip !== undefined, `clip.${clipId}`, 'Clip does not exist')
+  return clip
+}
+
+const isIndex = (value: number, count: number) =>
+  Number.isSafeInteger(value) && value >= 0 && value < count
+
+/** The song with the edit's take playing in its clip (see the header). */
+export function chooseStudioTake(
+  project: StudioProject,
+  edit: StudioChooseTakeEdit,
+): StudioProject {
+  const clip = requireClip(project, edit.clipId)
+  const list = studioClipTakeList(clip)
+  requireValue(
+    isIndex(edit.take, list.length),
+    `clip.${clip.id}.takes`,
+    "Take is not one of the clip's",
+  )
+  let chosen = list[edit.take]
+  if (edit.pass !== undefined) {
+    requireValue(
+      chosen.passes !== undefined && isIndex(edit.pass, chosen.passes.count),
+      `clip.${clip.id}.passes`,
+      "Pass is not one of the take's",
+    )
+    chosen = studioClipOnPass(chosen, edit.pass)
+  }
+  list[edit.take] = chosen
+  const next = studioClipWithTakes(list, edit.take)
+  return {
+    ...project,
+    clips: project.clips.map((item) => (item.id === clip.id ? next : item)),
+  }
 }
 
 /** A take recorded over clips of its lane, kept as their newest take where it covers them. */
