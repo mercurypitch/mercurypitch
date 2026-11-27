@@ -368,11 +368,17 @@ Each slice is one commit with its tests.
 ## 5. Where it lives
 
 - `src/lib/studio/model/clip-takes.ts`: the model's take helpers (pack,
-  unpack, choose, crop, explode, stack) and `studioClipAssetIds`.
+  unpack, stack, choose, the steps T goes through) and `studioClipAssetIds`.
+- `src/lib/studio/model/take-commands.ts`: crop and explode.
 - `src/lib/studio/model/validation-takes.ts`: the format's rules.
 - `src/features/studio/timeline/clip-take-menu.ts` and
-  `StudioClipMenu.tsx`: the menu's items and the menu.
-- `src/features/studio/timeline/StudioTakeLanes.tsx`: the rows.
+  `StudioClipMenu.tsx`: the menu's items and the menu;
+  `StudioTakesButton.tsx` opens the same list from the clip's bar and a
+  phone's clip note.
+- `src/features/studio/timeline/StudioTakeLanes.tsx`: the rows, with
+  `comp-editor.ts` keeping which clip has rows open, takes or comp.
+- `src/features/studio/editor/studio-editor.ts`: T, Shift+T and
+  Alt+Shift+T.
 
 ## 6. Left for later
 
