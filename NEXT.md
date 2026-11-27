@@ -5377,3 +5377,16 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   of 2; the lead saves its report to review/critic-scenes-C-01/REPORT.md).
 - Running: B's polish (renders), critic C-01, L5 (waiting on its queue). QUEUE: C's fix after
   C-01, then critic C-02, D, E, the kit pass and the whole film.
+
+## 27 Nov 02:57 UTC: B's POLISH DONE; GROUP B IS DONE for the owner's look
+- B's POLISH ((builder), about 310k tokens) DONE:
+  - S7's measure and ticks at 0 under the card (+19 before);
+  - S5's lit blocks at their rims' 10 %, and the treads of stairs 2 to 4 at 0 (LEAD-ANSWERS 123
+    approves it);
+  - "+4" lands on "semitones," 0.50 s after the last arrow;
+  - checks: probe 34/80/89, clearance 0, contrast all pass, root 0, cuts unchanged. Holds as
+    before: S5 1.1, S7 2.9 per 30 s.
+- KIT PASS LIST gains B's "For the kit pass" list (end of lab/s07-slide/BUILD-NOTES.md). Next free
+  call: 124.
+- Groups A and B are DONE for the owner's look. Running: critic C-01, and L5 (its queue near the
+  end). QUEUE: C's fix after C-01, critic C-02, D, E, the kit pass, the whole film.
