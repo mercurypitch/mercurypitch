@@ -6,6 +6,7 @@ import { validateStudioLaneAutomation } from './validation-automation'
 import { validateClipComp } from './validation-comp'
 import { validateStudioChain } from './validation-fx'
 import { validateStudioClipMidi } from './validation-midi'
+import { validateClipTakes } from './validation-takes'
 import { boolValue, enumValue, frameValue, idValue, numberValue, record, requireValue, textValue, } from './validation-values'
 
 export function validateStudioTrack(raw: unknown, path = 'track'): StudioTrack {
@@ -71,7 +72,7 @@ export function validateStudioClip(raw: unknown, path = 'clip'): StudioClip {
       'gainDb',
       'fades',
     ],
-    ['passes', 'midi', 'comp'],
+    ['passes', 'midi', 'comp', 'takes', 'activeTake'],
   )
   for (const key of ['id', 'trackId', 'assetId'])
     idValue(value[key], `${path}.${key}`)
@@ -122,6 +123,7 @@ export function validateStudioClip(raw: unknown, path = 'clip'): StudioClip {
     validateStudioClipMidi(value.midi, `${path}.midi`)
   if (Object.hasOwn(value, 'comp'))
     validateClipComp(clip, value.comp, `${path}.comp`)
+  validateClipTakes(clip, value, path, validateStudioClip)
   return structuredClone(clip)
 }
 

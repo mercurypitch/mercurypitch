@@ -27,7 +27,9 @@ export async function armLane(page: Page, lane: string): Promise<void> {
 /**
  * Record about two seconds on the armed lanes with R, doing `during` once
  * the take is two seconds in; resolves once each lane's take is kept as
- * `title`, `lanes` of them.
+ * `title`, `lanes` of them. A take sung over a take on its lane joins that
+ * clip as its newest take (clip-takes.ts), and a part of it past the clip
+ * is a clip of its own, so a lane may hold the take as two clips.
  */
 export async function recordTake(
   page: Page,
@@ -49,9 +51,18 @@ export async function recordTake(
   await expect(recordButton(page)).toHaveAccessibleName('Record', {
     timeout: 30_000,
   })
-  await expect(
-    studio.getByRole('button', { name: new RegExp(`, ${title}\\.wav, `) }),
-  ).toHaveCount(lanes)
+  const kept = studio.getByRole('button', {
+    name: new RegExp(`, ${title}\\.wav, `),
+  })
+  // The lanes holding the take: a clip's name starts with its lane's.
+  await expect
+    .poll(async () => {
+      const names = await kept.evaluateAll((clips) =>
+        clips.map((clip) => clip.getAttribute('aria-label') ?? ''),
+      )
+      return new Set(names.map((name) => name.split(', ')[0])).size
+    })
+    .toBe(lanes)
   await expect(
     studio.getByText('Saved in this browser', { exact: true }),
   ).toBeVisible({ timeout: 30_000 })

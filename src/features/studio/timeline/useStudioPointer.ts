@@ -95,6 +95,7 @@ export function useStudioPointer(
       project: current.project,
       clip: current.clip,
       asset: props.assets.find((asset) => asset.id === current.clip.assetId),
+      assets: props.assets,
       kind: current.kind,
       deltaFrames: Math.round((delta / current.scale) * STUDIO_SAMPLE_RATE),
       targetTrackId: lane?.id ?? current.clip.trackId,

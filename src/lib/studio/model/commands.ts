@@ -8,6 +8,8 @@ import { applyStudioAutomationEdit, isStudioAutomationEdit } from './automation'
 import type { StudioCompEdit } from './clip-comp'
 import { applyStudioCompEdit, fitStudioComps, isStudioCompEdit, } from './clip-comp'
 import { studioClipOnPass } from './clip-passes'
+import type { StudioStackTakeEdit } from './clip-takes'
+import { fitStudioTakeComps, isStudioStackTakeEdit, stackStudioTake, } from './clip-takes'
 import { createStudioTrack } from './defaults'
 import type { StudioMidiRenderEdit } from './midi-render-commands'
 import { applyStudioMidiRenderEdit, isStudioMidiRenderEdit, } from './midi-render-commands'
@@ -27,6 +29,7 @@ import { requireValue } from './validation-values'
 
 export type StudioEdit =
   | StudioCompEdit
+  | StudioStackTakeEdit
   | StudioPasteEdit
   | StudioPunchEdit
   | StudioSoundEdit
@@ -308,6 +311,7 @@ function applyEdit(project: StudioProject, edit: StudioEdit): StudioProject {
   if (isStudioMidiRenderEdit(edit))
     return applyStudioMidiRenderEdit(project, edit)
   if (isStudioCompEdit(edit)) return applyStudioCompEdit(project, edit)
+  if (isStudioStackTakeEdit(edit)) return stackStudioTake(project, edit)
   if ('clipId' in edit) return editClip(project, edit)
   switch (edit.type) {
     case 'paste-clip':
@@ -407,11 +411,13 @@ export function applyStudioCommand(
   const initial = validateStudioProject(project, options.assets)
   const edits = command.type === 'batch' ? command.commands : [command]
   // An edit that moves a comped clip's edges cuts its comp to them
-  // (clip-comp.ts). A sequence no clip names any more goes with the command
-  // that left it so; undo brings it back with its clip.
+  // (clip-comp.ts), a take that is not playing's too (clip-takes.ts). A
+  // sequence no clip names any more goes with the command that left it so;
+  // undo brings it back with its clip.
   const next = pruneStudioSequences(
     edits.reduce(
-      (current, edit) => fitStudioComps(applyEdit(current, edit)),
+      (current, edit) =>
+        fitStudioTakeComps(fitStudioComps(applyEdit(current, edit))),
       initial,
     ),
   )

@@ -1,7 +1,7 @@
 // Studio clip details — numeric alternatives to move, trim and source-anchored fades, and a loop take's passes; a MIDI clip's notes open from here, and save as a MIDI file.
 import { createEffect, createSignal, on, Show } from 'solid-js'
 import styles from '@/features/studio/StudioPage.module.css'
-import { studioClipSourceBounds } from '@/lib/studio/model/clip-passes'
+import { studioClipTakeBounds } from '@/lib/studio/model/clip-takes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip } from '@/lib/studio/model/types'
 import { FileDown, NoteBars } from '../studio-icons'
@@ -12,6 +12,8 @@ import { StudioNumberField } from './StudioNumberField'
 interface StudioClipDetailsProps {
   clip: StudioClip
   asset: StudioAsset
+  /** The song's audio: a clip's other takes bound its trims too. */
+  assets?: readonly StudioAsset[]
   writable: boolean
   onCommand(command: StudioCommand): boolean
   /** Open a MIDI clip's notes in the note editor. */
@@ -35,10 +37,17 @@ export function StudioClipDetails(props: StudioClipDetailsProps) {
     ),
   )
   const duration = () => props.clip.sourceOutFrame - props.clip.sourceInFrame
-  // A loop take's clip trims inside its pass, and a MIDI clip's end past its
-  // audio, growing its sequence (clip-passes.ts).
-  const bounds = () =>
-    studioClipSourceBounds(props.clip, props.asset.normalizedFrameCount)
+  // A loop take's clip trims inside its pass, a MIDI clip's end past its
+  // audio, growing its sequence (clip-passes.ts), and a clip of several
+  // takes as far as all of them have audio (clip-takes.ts).
+  const bounds = () => {
+    const assets = props.assets ?? [props.asset]
+    return studioClipTakeBounds(
+      props.clip,
+      (assetId) =>
+        assets.find((asset) => asset.id === assetId)?.normalizedFrameCount,
+    )
+  }
   const fadeIn = () =>
     Math.max(
       0,

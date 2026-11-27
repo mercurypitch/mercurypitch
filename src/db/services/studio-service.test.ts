@@ -401,6 +401,59 @@ describe('local Studio persistence', () => {
     ).toEqual([copied.assetId])
   })
 
+  it("keeps the audio of a clip's every take through a prune, a copy and a restore", async () => {
+    const saved = await savedArrangement()
+    const second = await studioAssetFixture(saved.project.id, 'asset-two', 0.4)
+    const [clip] = saved.project.clips
+    const stacked = {
+      ...saved.project,
+      revision: 2,
+      clips: [
+        {
+          ...clip,
+          activeTake: 1,
+          takes: [
+            {
+              assetId: 'asset-two',
+              offsetFrames: 0,
+              gainDb: 0,
+              fades: { curve: 'linear-amplitude' as const },
+            },
+          ],
+        },
+      ],
+    }
+    const project = await service.saveProject(
+      stacked,
+      { ...saved.lease, expectedRevision: 1 },
+      [second],
+    )
+
+    const kept = await service.pruneUnusedAssets(project.id, {
+      ...saved.lease,
+      expectedRevision: 2,
+    })
+    expect(kept.map((asset) => asset.id).sort()).toEqual([
+      'asset-one',
+      'asset-two',
+    ])
+
+    // A copy and a restore each own both takes' audio under ids of their own.
+    const copy = await service.forkProject(project)
+    const restored = await service.restoreProject({ ...stacked, revision: 0 }, [
+      saved.data,
+      second,
+    ])
+    for (const song of [copy, restored]) {
+      const [take] = song.clips
+      const owned = (await service.listAssets(song.id)).map((a) => a.id)
+      expect(owned).toHaveLength(2)
+      expect(owned).toContain(take.assetId)
+      expect(owned).toContain(take.takes![0].assetId)
+      expect(take.takes![0].assetId).not.toBe('asset-two')
+    }
+  })
+
   it("keeps a take's waveform peaks beside its two files, and lets them go with the take", async () => {
     const saved = await savedArrangement()
     const other = await studioAssetFixture(saved.project.id, 'asset-two', 0.3)

@@ -695,8 +695,12 @@ test.describe('Studio comping', () => {
     await expect(recordButton(page)).toHaveAttribute('data-phase', 'armed', {
       timeout: 15_000,
     })
+    // End on the ruler: the workspace itself moves the playhead on Home
+    // alone, and a take sung over Lane 2's clip would become its newest take.
+    await studio
+      .getByRole('slider', { name: 'Song playhead', exact: true })
+      .press('End')
     await studio.locator('[data-tour="studio.workspace"]').focus()
-    await page.keyboard.press('End')
     await page.keyboard.press('r')
     await expect(recordButton(page)).toHaveAccessibleName('Stop recording', {
       timeout: 15_000,
