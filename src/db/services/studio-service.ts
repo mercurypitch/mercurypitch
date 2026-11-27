@@ -6,6 +6,7 @@ import type { DexieAdapter } from '@/db/adapters/dexie-adapter'
 import { getLocalDatabase } from '@/db/local-database'
 import { CANONICAL_PCM_MIME } from '@/lib/studio/audio/canonical-pcm'
 import { isStudioMemoryRefusal, reserveStudioMemory, } from '@/lib/studio/memory-budget'
+import { studioSongAssetIds } from '@/lib/studio/model/clip-takes'
 import { createStudioProject, summarizeStudioProject, } from '@/lib/studio/model/defaults'
 import { StudioNewerSongError, studioSongVersion, } from '@/lib/studio/model/migrations'
 import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limits'
@@ -326,6 +327,12 @@ export function createStudioService(
         id: createId(),
         trackId: trackIds.get(clip.trackId)!,
         assetId: assetIds.get(clip.assetId)!,
+        ...(clip.takes && {
+          takes: clip.takes.map((take) => ({
+            ...take,
+            assetId: assetIds.get(take.assetId)!,
+          })),
+        }),
       })),
     }
     const copied = assets.map((data) => ({
@@ -528,10 +535,11 @@ export function createStudioService(
           // A clip of any song keeps its audio, not only this song's clips:
           // takes belong to one song, and this holds even where one did not.
           const used = new Set<string>()
+          // Every take of a clip counts, the ones not playing too.
           for (const stored of await db.readAllStrict<StudioProject>(
             STUDIO_STORES.projects,
           ))
-            for (const clip of stored.clips) used.add(clip.assetId)
+            for (const id of studioSongAssetIds(stored)) used.add(id)
           const assets = await listAssets(id)
           // Peaks are kept per song and hash: two takes of the same audio share them.
           const keptAudio = new Set(
@@ -563,7 +571,7 @@ export function createStudioService(
     forkProject: (project, assets = []) =>
       studioStorageOperation(async () => {
         const supplied = new Map(assets.map((data) => [data.asset.id, data]))
-        const used = [...new Set(project.clips.map((clip) => clip.assetId))]
+        const used = [...studioSongAssetIds(project)]
         const metadata = await listAssets(project.id)
         let storedBytes = 0
         for (const id of used) {

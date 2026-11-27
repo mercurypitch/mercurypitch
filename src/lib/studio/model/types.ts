@@ -188,6 +188,28 @@ export interface StudioClip {
   readonly midi?: StudioClipMidi
   /** Which pass plays each stretch of a loop take's clip; absent, its own pass plays throughout. */
   readonly comp?: readonly StudioCompSegment[]
+  /**
+   * The clip's other takes, oldest first, when it has more than one
+   * (clip-takes.ts). The fields above are the take that plays.
+   */
+  readonly takes?: readonly StudioClipTake[]
+  /** Where the playing take stands among `takes`, counted from 0: how many came before it. */
+  readonly activeTake?: number
+}
+
+/**
+ * A take of a clip that is not playing (clip-takes.ts). It plays over the
+ * clip's whole span when chosen: the clip keeps the place and length, the
+ * take its own sound.
+ */
+export interface StudioClipTake {
+  readonly assetId: string
+  /** Its source frame under any moment of the clip, less the playing take's there. */
+  readonly offsetFrames: number
+  readonly gainDb: number
+  readonly fades: StudioClip['fades']
+  readonly passes?: StudioClipPasses
+  readonly comp?: readonly StudioCompSegment[]
 }
 
 export interface StudioAsset {

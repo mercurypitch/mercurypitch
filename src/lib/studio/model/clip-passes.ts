@@ -69,7 +69,12 @@ export function studioClipSourceBounds(
   return { first: 0, end: audioFrames }
 }
 
-/** The clip playing pass `index` whole instead: its source frames and fades moved by whole passes, any comp let go (clip-comp.ts). */
+/**
+ * The clip playing pass `index` whole instead: its source frames and fades
+ * moved by whole passes, any comp let go (clip-comp.ts). The clip's other
+ * takes stay where they sound, so their line-up with it takes the move back
+ * (clip-takes.ts).
+ */
 export function studioClipOnPass(clip: StudioClip, index: number): StudioClip {
   if (!clip.passes) return clip
   const { comp: _comp, ...whole } = clip
@@ -88,6 +93,12 @@ export function studioClipOnPass(clip: StudioClip, index: number): StudioClip {
       ...(clip.fades.in && { in: move(clip.fades.in) }),
       ...(clip.fades.out && { out: move(clip.fades.out) }),
     },
+    ...(clip.takes && {
+      takes: clip.takes.map((take) => ({
+        ...take,
+        offsetFrames: take.offsetFrames - shift,
+      })),
+    }),
   }
 }
 

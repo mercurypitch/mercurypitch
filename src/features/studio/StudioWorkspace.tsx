@@ -744,6 +744,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               <StudioClipDetails
                 clip={selectedClip()!}
                 asset={selectedAsset()!}
+                assets={props.studio.assets()}
                 writable={writable()}
                 onCommand={props.studio.dispatch}
                 onEditNotes={() => void notes.open(selectedClip()!.id)}

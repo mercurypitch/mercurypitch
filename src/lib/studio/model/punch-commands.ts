@@ -17,6 +17,10 @@
 // across the cut from outside that stretch: a new fade could only meet it
 // by changing what plays outside the stretch, so that part ends on the
 // Studio's short edge fade (edge-envelope.ts) instead.
+//
+// A clip of several takes gets the fade on every take (clip-takes.ts), so
+// a take chosen there later meets the punch as the playing one does.
+import { studioClipEveryTake } from './clip-takes'
 import type { StudioClip, StudioProject } from './types'
 import { requireValue } from './validation-values'
 
@@ -112,22 +116,22 @@ export function punchStudioClip(
     const parts: StudioClip[] = []
     if (start < from)
       parts.push(
-        fadeOutToEnd(
+        studioClipEveryTake(
           { ...clip, sourceOutFrame: clip.sourceInFrame + from - start },
-          edit.fadeFrames,
+          (take) => fadeOutToEnd(take, edit.fadeFrames),
         ),
       )
     if (end > to) {
       if (start < from) split++
       parts.push(
-        fadeInFromStart(
+        studioClipEveryTake(
           {
             ...clip,
             id: start < from ? edit.afterClipId : clip.id,
             startFrame: to,
             sourceInFrame: clip.sourceInFrame + to - start,
           },
-          edit.fadeFrames,
+          (take) => fadeInFromStart(take, edit.fadeFrames),
         ),
       )
     }

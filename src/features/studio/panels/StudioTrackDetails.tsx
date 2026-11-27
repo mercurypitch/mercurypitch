@@ -2,6 +2,7 @@
 import { createMemo, For, Show } from 'solid-js'
 import styles from '@/features/studio/StudioPage.module.css'
 import { studioLaneInstrument } from '@/lib/studio/instruments/resolve'
+import { studioClipAssetIds } from '@/lib/studio/model/clip-takes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioProject, StudioTrack, } from '@/lib/studio/model/types'
 import { isTrackRole, ROLE_LABELS, TRACK_ROLES, } from '@/lib/studio-fx/role-chains'
@@ -50,7 +51,7 @@ export function StudioTrackDetails(props: StudioTrackDetailsProps) {
     const ids = new Set(
       props.project.clips
         .filter((clip) => clip.trackId === props.track.id)
-        .map((clip) => clip.assetId),
+        .flatMap((clip) => studioClipAssetIds(clip)),
     )
     return props.assets.filter((asset) => ids.has(asset.id))
   })

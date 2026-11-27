@@ -1,5 +1,5 @@
 // Studio gesture drafts — pure move, trim and source-fade previews without project writes.
-import { studioClipSourceBounds } from '@/lib/studio/model/clip-passes'
+import { studioClipTakeBounds } from '@/lib/studio/model/clip-takes'
 import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model/types'
 import { clipEndFrame } from './timeline-geometry'
@@ -24,6 +24,8 @@ export interface StudioGestureInput {
   project: StudioProject
   clip: StudioClip
   asset?: StudioAsset
+  /** The song's audio, for a clip whose other takes bound its trims too. */
+  assets?: readonly StudioAsset[]
   kind: StudioGestureKind
   deltaFrames: number
   targetTrackId: string
@@ -109,11 +111,15 @@ export function draftStudioGesture(
     })
   let next = clip
   let snapFrame: number | null = null
-  // A loop take's clip trims inside its pass, and a MIDI clip's end past
-  // its audio and its sequence's end (clip-passes.ts).
-  const bounds = studioClipSourceBounds(
+  // A loop take's clip trims inside its pass, a MIDI clip's end past its
+  // audio and its sequence's end (clip-passes.ts), and a clip of several
+  // takes as far as all of them have audio (clip-takes.ts).
+  const bounds = studioClipTakeBounds(
     clip,
-    input.asset?.normalizedFrameCount ?? clip.sourceOutFrame,
+    (assetId) =>
+      (input.assets ?? (input.asset ? [input.asset] : [])).find(
+        (asset) => asset.id === assetId,
+      )?.normalizedFrameCount,
   )
   if (input.kind === 'move') {
     const position = snap(

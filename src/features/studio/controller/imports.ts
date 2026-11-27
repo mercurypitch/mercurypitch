@@ -5,12 +5,13 @@ import { prepareStudioAsset } from '@/lib/studio/audio/prepare-studio-asset'
 import type { StudioMidiSoundKind } from '@/lib/studio/midi/render-key'
 import { studioMidiRenderKey } from '@/lib/studio/midi/render-key'
 import { studioFitPasses } from '@/lib/studio/model/clip-passes'
+import { studioSongAssetIds, studioStackTargets, } from '@/lib/studio/model/clip-takes'
 import type { StudioCommand, StudioEdit } from '@/lib/studio/model/commands'
 import { createStudioTrack } from '@/lib/studio/model/defaults'
 import type { StudioNewMidiClip } from '@/lib/studio/model/new-midi-clips'
 import { STUDIO_NEW_CLIP_SILENCE_FRAMES, studioNewMidiClips, } from '@/lib/studio/model/new-midi-clips'
 import { fitsStudioProjectStorageBudget } from '@/lib/studio/model/storage-limits'
-import type { StudioAsset, StudioAssetData, StudioClipMidi, StudioClipPasses, StudioNote, StudioProject, } from '@/lib/studio/model/types'
+import type { SourceKind, StudioAsset, StudioAssetData, StudioClip, StudioClipMidi, StudioClipPasses, StudioNote, StudioProject, } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
 import { studioTakeFileName, studioTakeWav, } from '@/lib/studio/record/take-audio'
 import { studioTakeSequence } from '@/lib/studio/record/take-notes'
@@ -32,6 +33,8 @@ interface ImportItem {
   passes?: StudioClipPasses
   /** A punch: it replaces what its lane plays under it, as tape does. */
   punch?: boolean
+  /** A take recorded here: over takes on its lane it is their newest take (clip-takes.ts). */
+  stack?: boolean
   /** A MIDI lane's take: the notes its clip plays. */
   midi?: StudioRecordingMidi
   prepare(
@@ -252,33 +255,74 @@ function clipSource({ item, asset }: ImportEntry) {
   }
 }
 
+/** How the first item lands on its chosen lane. */
+type StudioLanding =
+  | { readonly as: 'clip' | 'punch'; readonly trackId: string }
+  /** As the newest take of the takes under it, `under` of them (clip-takes.ts). */
+  | { readonly as: 'stack'; readonly trackId: string; readonly under: number }
+
+/**
+ * Where the first item lands on the chosen lane: there when it fits; over a
+ * stretch of it as a punch; as the newest take of the takes under it, a
+ * take recorded here. Null gives it a lane of its own.
+ */
+function landing(
+  entry: ImportEntry | undefined,
+  project: StudioProject,
+  startFrame: number,
+  trackId: string | null,
+  kindOf: (assetId: string) => SourceKind | undefined,
+): StudioLanding | null {
+  if (entry === undefined || trackId === null) return null
+  if (!project.tracks.some((track) => track.id === trackId)) return null
+  if (entry.item.punch === true) return { as: 'punch', trackId }
+  const source = clipSource(entry)
+  const end = startFrame + source.sourceOutFrame - source.sourceInFrame
+  if (laneHasRoom(project, trackId, startFrame, end - startFrame))
+    return { as: 'clip', trackId }
+  if (entry.item.stack !== true) return null
+  const under = studioStackTargets(project, trackId, startFrame, end, kindOf)
+  return under === null ? null : { as: 'stack', trackId, under: under.length }
+}
+
+/** The first item's clip as its landing puts it on the chosen lane. */
+function landedEdit(
+  land: StudioLanding,
+  item: ImportItem,
+  clip: StudioClip,
+  createId: () => string,
+): StudioEdit {
+  if (land.as === 'punch')
+    return {
+      type: 'punch-clip',
+      clip,
+      afterClipId: createId(),
+      fadeFrames: item.fadeFrames ?? 0,
+    }
+  if (land.as === 'stack')
+    return {
+      type: 'stack-take',
+      clip,
+      newClipIds: Array.from({ length: 3 * land.under }, () => createId()),
+    }
+  return { type: 'add-clip', clip }
+}
+
 function importCommands(
   items: readonly ImportEntry[],
   project: StudioProject,
   startFrame: number,
   createId: () => string,
   targetTrackId: string | null,
+  kindOf: (assetId: string) => SourceKind | undefined,
 ): StudioEdit[] {
   const firstOrder =
     Math.max(-1, ...project.tracks.map((track) => track.order)) + 1
-  const first = items.length > 0 ? clipSource(items[0]) : undefined
-  // The first item lands on the chosen lane when it fits; the rest, or an item
-  // that would overlap a clip there, get lanes of their own. A punch takes
-  // its stretch of the lane over instead (punch-commands.ts).
-  const punch = items[0]?.item.punch === true
-  const target =
-    targetTrackId !== null &&
-    first !== undefined &&
-    (punch
-      ? project.tracks.some((track) => track.id === targetTrackId)
-      : laneHasRoom(
-          project,
-          targetTrackId,
-          startFrame,
-          first.sourceOutFrame - first.sourceInFrame,
-        ))
-      ? targetTrackId
-      : null
+  // The first item lands on the chosen lane when it fits, or stacks there as
+  // a take; the rest, or an item that would overlap a clip there, get lanes
+  // of their own. A punch takes its stretch of the lane over instead
+  // (punch-commands.ts).
+  const land = landing(items[0], project, startFrame, targetTrackId, kindOf)
   let order = firstOrder
   return items.map((entry, index): StudioEdit => {
     const { item, asset } = entry
@@ -291,15 +335,8 @@ function importCommands(
       gainDb: 0,
       ...(entry.midi && { midi: entry.midi }),
     })
-    if (index === 0 && target !== null)
-      return punch
-        ? {
-            type: 'punch-clip',
-            clip: clip(target),
-            afterClipId: createId(),
-            fadeFrames: item.fadeFrames ?? 0,
-          }
-        : { type: 'add-clip', clip: clip(target) }
+    if (index === 0 && land !== null)
+      return landedEdit(land, item, clip(land.trackId), createId)
     const track = createStudioTrack({
       id: createId(),
       name: item.title,
@@ -402,9 +439,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
       )
       checkImportCancelled(abort.signal)
       if (!options.current(epoch) || !options.canEdit()) return false
-      const inUse = new Set(
-        (options.project()?.clips ?? []).map((clip) => clip.assetId),
-      )
+      const inUse = studioSongAssetIds(options.project() ?? { clips: [] })
       const asset = retainNewAudio(data, options.assets(), inUse, retained)
       const prepared = retained.values()
       retained.clear()
@@ -459,7 +494,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
       )
       const project = options.project()
       if (!project || !options.current(epoch) || !options.canEdit()) return null
-      const inUse = new Set(project.clips.map((clip) => clip.assetId))
+      const inUse = studioSongAssetIds(project)
       const asset = retainNewAudio(data, options.assets(), inUse, retained)
       const made = studioNewMidiClips(
         project,
@@ -552,7 +587,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
         const known = [...options.assets(), ...adding]
         // The takes the song plays, and the ones this import is adding.
         const inUse = new Set([
-          ...(options.project()?.clips ?? []).map((clip) => clip.assetId),
+          ...studioSongAssetIds(options.project() ?? { clips: [] }),
           ...adding.map((asset) => asset.id),
         ])
         selected.push({
@@ -565,12 +600,15 @@ export function createStudioImporter(options: ImportControllerOptions) {
       // A MIDI take's sequence is added in the edit that adds its clip, so
       // one undo takes both away.
       const played = selected.map((entry) => midiEntry(entry, options.createId))
+      const known = options.assets()
       const commands = importCommands(
         played.map((each) => each.entry),
         currentProject,
         startFrame,
         options.createId,
         trackId,
+        (assetId) =>
+          known.find((asset) => asset.id === assetId)?.provenance.kind,
       )
       const edits = [
         ...played.flatMap((each) => (each.edit ? [each.edit] : [])),
@@ -692,6 +730,7 @@ export function createStudioImporter(options: ImportControllerOptions) {
           fadeFrames: take.fadeFrames,
           passes: take.passes,
           punch: take.punch,
+          stack: take.punch !== true && take.midi === undefined,
           midi: take.midi,
           prepare: async (id, projectId, signal) => {
             const data = await (options.prepareFile ?? prepareStudioAsset)(

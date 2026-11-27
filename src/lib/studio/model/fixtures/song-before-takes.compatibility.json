@@ -1,0 +1,1850 @@
+{
+  "project": {
+    "id": "project-1",
+    "schemaVersion": 2,
+    "revision": 0,
+    "title": "Song before takes",
+    "createdAt": "2026-10-26T12:00:00.000Z",
+    "updatedAt": "2026-10-26T12:00:00.000Z",
+    "sampleRate": 48000,
+    "tempoBpm": 120,
+    "ruler": "time",
+    "tracks": [
+      {
+        "id": "track-1",
+        "name": "Guitar",
+        "order": 0,
+        "role": "acoustic-guitar",
+        "gainDb": 0,
+        "balanceGainDb": -6,
+        "pan": 0,
+        "mute": false,
+        "solo": false,
+        "fx": {
+          "version": 1,
+          "baseSpec": {
+            "version": 1,
+            "effects": [
+              {
+                "id": "level-match",
+                "kind": "gain",
+                "enabled": true,
+                "params": {
+                  "gainDb": 0
+                }
+              },
+              {
+                "id": "cleanup-eq",
+                "kind": "eq",
+                "enabled": true,
+                "params": {
+                  "lowCutHz": 90,
+                  "lowShelfHz": 120,
+                  "lowShelfDb": 0,
+                  "lowMidHz": 220,
+                  "lowMidDb": -3,
+                  "lowMidQ": 1.2,
+                  "highMidHz": 4500,
+                  "highMidDb": 1.5,
+                  "highMidQ": 0.9,
+                  "highShelfHz": 11000,
+                  "highShelfDb": 2,
+                  "highCutHz": 20000
+                }
+              },
+              {
+                "id": "boom",
+                "kind": "dyneq",
+                "enabled": true,
+                "params": {
+                  "frequencyHz": 180,
+                  "q": 1.2,
+                  "thresholdDb": -24,
+                  "ratio": 2.5,
+                  "rangeDb": 5,
+                  "attackMs": 15,
+                  "releaseMs": 150
+                }
+              },
+              {
+                "id": "dynamics",
+                "kind": "compressor",
+                "enabled": true,
+                "params": {
+                  "thresholdDb": -22,
+                  "ratio": 3,
+                  "attackMs": 20,
+                  "releaseMs": 150,
+                  "kneeDb": 6,
+                  "makeupDb": 2,
+                  "mix": 100
+                }
+              },
+              {
+                "id": "spread",
+                "kind": "stereo",
+                "enabled": true,
+                "params": {
+                  "widthPct": 100,
+                  "monoBelowHz": 120,
+                  "haasMs": 16,
+                  "haasAmount": 35
+                }
+              },
+              {
+                "id": "space",
+                "kind": "reverb",
+                "enabled": true,
+                "params": {
+                  "decayS": 1.5,
+                  "preDelayMs": 20,
+                  "damping": 50,
+                  "lowCutHz": 200,
+                  "highCutHz": 10000,
+                  "mix": 14,
+                  "duck": 0
+                }
+              },
+              {
+                "id": "tone",
+                "kind": "tilt",
+                "enabled": true,
+                "params": {
+                  "brightnessDb": 0
+                }
+              },
+              {
+                "id": "balance",
+                "kind": "gain",
+                "enabled": true,
+                "params": {
+                  "gainDb": 0
+                }
+              }
+            ]
+          },
+          "spaceOffset": 0
+        }
+      },
+      {
+        "id": "track-keys",
+        "name": "Keys",
+        "order": 1,
+        "role": "keys",
+        "gainDb": 0,
+        "balanceGainDb": -8,
+        "pan": 0,
+        "mute": false,
+        "solo": false,
+        "fx": {
+          "version": 1,
+          "baseSpec": {
+            "version": 1,
+            "effects": [
+              {
+                "id": "level-match",
+                "kind": "gain",
+                "enabled": true,
+                "params": {
+                  "gainDb": 0
+                }
+              },
+              {
+                "id": "cleanup-eq",
+                "kind": "eq",
+                "enabled": true,
+                "params": {
+                  "lowCutHz": 100,
+                  "lowShelfHz": 120,
+                  "lowShelfDb": 0,
+                  "lowMidHz": 400,
+                  "lowMidDb": -2,
+                  "lowMidQ": 1,
+                  "highMidHz": 3000,
+                  "highMidDb": 0,
+                  "highMidQ": 1,
+                  "highShelfHz": 9000,
+                  "highShelfDb": 1,
+                  "highCutHz": 16000
+                }
+              },
+              {
+                "id": "dynamics",
+                "kind": "compressor",
+                "enabled": true,
+                "params": {
+                  "thresholdDb": -22,
+                  "ratio": 2,
+                  "attackMs": 25,
+                  "releaseMs": 200,
+                  "kneeDb": 10,
+                  "makeupDb": 1,
+                  "mix": 100
+                }
+              },
+              {
+                "id": "spread",
+                "kind": "stereo",
+                "enabled": true,
+                "params": {
+                  "widthPct": 125,
+                  "monoBelowHz": 150,
+                  "haasMs": 20,
+                  "haasAmount": 25
+                }
+              },
+              {
+                "id": "echo",
+                "kind": "delay",
+                "enabled": true,
+                "params": {
+                  "timeMs": 375,
+                  "feedback": 25,
+                  "pingPong": 100,
+                  "lowCutHz": 400,
+                  "highCutHz": 4000,
+                  "mix": 7,
+                  "duck": 0
+                }
+              },
+              {
+                "id": "space",
+                "kind": "reverb",
+                "enabled": true,
+                "params": {
+                  "decayS": 2.6,
+                  "preDelayMs": 20,
+                  "damping": 50,
+                  "lowCutHz": 200,
+                  "highCutHz": 10000,
+                  "mix": 22,
+                  "duck": 0
+                }
+              },
+              {
+                "id": "tone",
+                "kind": "tilt",
+                "enabled": true,
+                "params": {
+                  "brightnessDb": 0
+                }
+              },
+              {
+                "id": "balance",
+                "kind": "gain",
+                "enabled": true,
+                "params": {
+                  "gainDb": 0
+                }
+              }
+            ]
+          },
+          "spaceOffset": 0
+        }
+      },
+      {
+        "id": "track-voice",
+        "name": "Voice",
+        "order": 2,
+        "role": "voice",
+        "gainDb": 0,
+        "balanceGainDb": 0,
+        "pan": 0,
+        "mute": false,
+        "solo": false,
+        "fx": {
+          "version": 1,
+          "baseSpec": {
+            "version": 1,
+            "effects": [
+              {
+                "id": "level-match",
+                "kind": "gain",
+                "enabled": true,
+                "params": {
+                  "gainDb": 0
+                }
+              },
+              {
+                "id": "cleanup-eq",
+                "kind": "eq",
+                "enabled": true,
+                "params": {
+                  "lowCutHz": 67,
+                  "lowShelfHz": 100,
+                  "lowShelfDb": 1.4,
+                  "lowMidHz": 402,
+                  "lowMidDb": -1.5,
+                  "lowMidQ": 1,
+                  "highMidHz": 3000,
+                  "highMidDb": 0,
+                  "highMidQ": 1,
+                  "highShelfHz": 4040,
+                  "highShelfDb": 2.5,
+                  "highCutHz": 19000
+                }
+              },
+              {
+                "id": "mud",
+                "kind": "dyneq",
+                "enabled": true,
+                "params": {
+                  "frequencyHz": 280,
+                  "q": 1,
+                  "thresholdDb": -24,
+                  "ratio": 2,
+                  "rangeDb": 4,
+                  "attackMs": 25,
+                  "releaseMs": 220
+                }
+              },
+              {
+                "id": "box",
+                "kind": "dyneq",
+                "enabled": true,
+                "params": {
+                  "frequencyHz": 520,
+                  "q": 1.2,
+                  "thresholdDb": -27,
+                  "ratio": 2,
+                  "rangeDb": 4,
+                  "attackMs": 20,
+                  "releaseMs": 200
+                }
+              },
+              {
+                "id": "character",
+                "kind": "compressor",
+                "enabled": true,
+                "params": {
+                  "thresholdDb": -20,
+                  "ratio": 2,
+                  "attackMs": 15,
+                  "releaseMs": 180,
+                  "kneeDb": 6,
+                  "makeupDb": 1.5,
+                  "mix": 100
+                }
+              },
+              {
+                "id": "nasal",
+                "kind": "dyneq",
+                "enabled": true,
+                "params": {
+                  "frequencyHz": 1100,
+                  "q": 1.2,
+                  "thresholdDb": -34,
+                  "ratio": 2,
+                  "rangeDb": 4,
+                  "attackMs": 18,
+                  "releaseMs": 180
+                }
+              },
+              {
+                "id": "harsh",
+                "kind": "dyneq",
+                "enabled": true,
+                "params": {
+                  "frequencyHz": 7500,
+                  "q": 0.8,
+                  "thresholdDb": -40,
+                  "ratio": 2,
+                  "rangeDb": 4,
+                  "attackMs": 8,
+                  "releaseMs": 90
+                }
+              },
+              {
+                "id": "air",
+                "kind": "exciter",
+                "enabled": true,
+                "params": {
+                  "frequencyHz": 4500,
+                  "driveDb": 24,
+                  "amount": 25
+                }
+              },
+              {
+                "id": "safety",
+                "kind": "limiter",
+                "enabled": true,
+                "params": {
+                  "driveDb": 0,
+                  "ceilingDb": -1,
+                  "releaseMs": 100
+                }
+              },
+              {
+                "id": "echo",
+                "kind": "delay",
+                "enabled": true,
+                "params": {
+                  "timeMs": 120,
+                  "feedback": 10,
+                  "pingPong": 35,
+                  "lowCutHz": 300,
+                  "highCutHz": 5000,
+                  "mix": 9,
+                  "duck": 70
+                }
+              },
+              {
+                "id": "space",
+                "kind": "reverb",
+                "enabled": true,
+                "params": {
+                  "decayS": 2.35,
+                  "preDelayMs": 80,
+                  "damping": 45,
+                  "lowCutHz": 180,
+                  "highCutHz": 10000,
+                  "mix": 16,
+                  "duck": 60
+                }
+              },
+              {
+                "id": "tone",
+                "kind": "tilt",
+                "enabled": true,
+                "params": {
+                  "brightnessDb": 0
+                }
+              },
+              {
+                "id": "balance",
+                "kind": "gain",
+                "enabled": true,
+                "params": {
+                  "gainDb": 0
+                }
+              }
+            ]
+          },
+          "spaceOffset": 0
+        }
+      },
+      {
+        "id": "track-backing",
+        "name": "Backing",
+        "order": 3,
+        "role": "backing",
+        "gainDb": 0,
+        "balanceGainDb": -3,
+        "pan": 0,
+        "mute": false,
+        "solo": false,
+        "fx": {
+          "version": 1,
+          "baseSpec": {
+            "version": 1,
+            "effects": [
+              {
+                "id": "level-match",
+                "kind": "gain",
+                "enabled": true,
+                "params": {
+                  "gainDb": 0
+                }
+              },
+              {
+                "id": "pocket-eq",
+                "kind": "eq",
+                "enabled": true,
+                "params": {
+                  "lowCutHz": 30,
+                  "lowShelfHz": 120,
+                  "lowShelfDb": 0,
+                  "lowMidHz": 400,
+                  "lowMidDb": 0,
+                  "lowMidQ": 1,
+                  "highMidHz": 2800,
+                  "highMidDb": -1.5,
+                  "highMidQ": 0.8,
+                  "highShelfHz": 10000,
+                  "highShelfDb": 0,
+                  "highCutHz": 20000
+                }
+              },
+              {
+                "id": "glue",
+                "kind": "compressor",
+                "enabled": true,
+                "params": {
+                  "thresholdDb": -16,
+                  "ratio": 1.5,
+                  "attackMs": 30,
+                  "releaseMs": 250,
+                  "kneeDb": 8,
+                  "makeupDb": 0,
+                  "mix": 100
+                }
+              },
+              {
+                "id": "spread",
+                "kind": "stereo",
+                "enabled": true,
+                "params": {
+                  "widthPct": 105,
+                  "monoBelowHz": 100,
+                  "haasMs": 14,
+                  "haasAmount": 0
+                }
+              },
+              {
+                "id": "tone",
+                "kind": "tilt",
+                "enabled": true,
+                "params": {
+                  "brightnessDb": 0
+                }
+              },
+              {
+                "id": "balance",
+                "kind": "gain",
+                "enabled": true,
+                "params": {
+                  "gainDb": 0
+                }
+              }
+            ]
+          },
+          "spaceOffset": 0
+        }
+      }
+    ],
+    "clips": [
+      {
+        "id": "clip-1",
+        "trackId": "track-1",
+        "assetId": "asset-1",
+        "startFrame": 100,
+        "sourceInFrame": 0,
+        "sourceOutFrame": 1000,
+        "gainDb": -6,
+        "fades": {
+          "curve": "linear-amplitude",
+          "in": {
+            "fromSourceFrame": 0,
+            "toSourceFrame": 200
+          },
+          "out": {
+            "fromSourceFrame": 800,
+            "toSourceFrame": 1000
+          }
+        }
+      },
+      {
+        "id": "clip-midi",
+        "trackId": "track-keys",
+        "assetId": "asset-midi",
+        "startFrame": 48000,
+        "sourceInFrame": 24000,
+        "sourceOutFrame": 96000,
+        "gainDb": 0,
+        "fades": {
+          "curve": "linear-amplitude"
+        },
+        "midi": {
+          "sequenceId": "sequence-1",
+          "renderKey": "107330a0b8e86cf2"
+        }
+      },
+      {
+        "id": "clip-loop",
+        "trackId": "track-voice",
+        "assetId": "asset-loop",
+        "startFrame": 2000,
+        "sourceInFrame": 900,
+        "sourceOutFrame": 1300,
+        "gainDb": -2,
+        "fades": {
+          "curve": "linear-amplitude",
+          "in": {
+            "fromSourceFrame": 900,
+            "toSourceFrame": 924
+          }
+        },
+        "passes": {
+          "firstFrame": 100,
+          "frames": 400,
+          "count": 3
+        },
+        "comp": [
+          {
+            "fromSourceFrame": 900,
+            "toSourceFrame": 1100,
+            "pass": 2
+          },
+          {
+            "fromSourceFrame": 1100,
+            "toSourceFrame": 1300,
+            "pass": 0
+          }
+        ]
+      },
+      {
+        "id": "clip-file",
+        "trackId": "track-backing",
+        "assetId": "asset-file",
+        "startFrame": 0,
+        "sourceInFrame": 0,
+        "sourceOutFrame": 4000,
+        "gainDb": 0,
+        "fades": {
+          "curve": "linear-amplitude"
+        }
+      }
+    ],
+    "mix": {
+      "flavourId": "natural",
+      "macros": {
+        "space": 0,
+        "tone": 0,
+        "punch": 0,
+        "warmth": 0,
+        "width": 0
+      }
+    },
+    "master": {
+      "presetId": "streaming",
+      "engineVersion": "studio-fx-v1",
+      "targetLufs": -14,
+      "ceilingDbtp": -1.5,
+      "maxLimitingDb": 5,
+      "masterEq": {
+        "lowCutHz": 25,
+        "lowShelfHz": 120,
+        "lowShelfDb": 0,
+        "lowMidHz": 400,
+        "lowMidDb": 0,
+        "lowMidQ": 1,
+        "highMidHz": 3000,
+        "highMidDb": 0,
+        "highMidQ": 1,
+        "highShelfHz": 10000,
+        "highShelfDb": 0,
+        "highCutHz": 20000
+      }
+    },
+    "export": {
+      "format": "wav",
+      "bitDepth": 16,
+      "range": "song"
+    },
+    "sequences": [
+      {
+        "id": "sequence-1",
+        "ppq": 960,
+        "tempoBpm": 120,
+        "lengthTicks": 3840,
+        "nextNoteId": 3,
+        "notes": [
+          {
+            "id": 1,
+            "pitch": 60,
+            "startTick": 960,
+            "lengthTicks": 480,
+            "velocity": 0.8
+          },
+          {
+            "id": 2,
+            "pitch": 64,
+            "startTick": 1920,
+            "lengthTicks": 960,
+            "velocity": 0.5
+          }
+        ]
+      }
+    ]
+  },
+  "assets": [
+    {
+      "id": "asset-1",
+      "projectId": "project-1",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "mimeType": "audio/wav",
+      "byteLength": 2044,
+      "channels": 1,
+      "normalizedSampleRate": 48000,
+      "normalizedFrameCount": 1000,
+      "importVersion": 1,
+      "canonicalPcmId": "pcm-1",
+      "canonicalPcmSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "canonicalPcmByteLength": 4032,
+      "preparation": {
+        "algorithmVersion": "bs1770-48k-v1",
+        "gainDb": 3
+      },
+      "provenance": {
+        "kind": "guitar-night",
+        "sourceId": "guitar-take:kept-1",
+        "importedAt": "2026-10-26T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "asset-midi",
+      "projectId": "project-1",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "mimeType": "audio/wav",
+      "byteLength": 2044,
+      "channels": 1,
+      "normalizedSampleRate": 48000,
+      "normalizedFrameCount": 96000,
+      "importVersion": 1,
+      "canonicalPcmId": "pcm-midi",
+      "canonicalPcmSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "canonicalPcmByteLength": 384032,
+      "preparation": {
+        "algorithmVersion": "bs1770-48k-v1",
+        "gainDb": 3
+      },
+      "provenance": {
+        "kind": "recording",
+        "importedAt": "2026-10-26T12:00:00.000Z"
+      }
+    },
+    {
+      "id": "asset-loop",
+      "projectId": "project-1",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "mimeType": "audio/wav",
+      "byteLength": 2044,
+      "channels": 1,
+      "normalizedSampleRate": 48000,
+      "normalizedFrameCount": 1300,
+      "importVersion": 1,
+      "canonicalPcmId": "pcm-loop",
+      "canonicalPcmSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "canonicalPcmByteLength": 5232,
+      "preparation": {
+        "algorithmVersion": "bs1770-48k-v1",
+        "gainDb": 3
+      },
+      "provenance": {
+        "kind": "recording",
+        "importedAt": "2026-10-26T12:00:00.000Z"
+      },
+      "originalName": "Take 3.wav"
+    },
+    {
+      "id": "asset-file",
+      "projectId": "project-1",
+      "sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "mimeType": "audio/wav",
+      "byteLength": 2044,
+      "channels": 1,
+      "normalizedSampleRate": 48000,
+      "normalizedFrameCount": 4000,
+      "importVersion": 1,
+      "canonicalPcmId": "pcm-file",
+      "canonicalPcmSha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "canonicalPcmByteLength": 16032,
+      "preparation": {
+        "algorithmVersion": "bs1770-48k-v1",
+        "gainDb": 3
+      },
+      "provenance": {
+        "kind": "file",
+        "importedAt": "2026-10-26T12:00:00.000Z"
+      },
+      "originalName": "Backing.wav"
+    }
+  ],
+  "plan": {
+    "projectId": "project-1",
+    "revision": 0,
+    "sampleRate": 48000,
+    "startFrame": 0,
+    "endFrame": 120000,
+    "tailFrames": 235853,
+    "monoMapping": "dual-mono",
+    "lanes": [
+      {
+        "track": {
+          "id": "track-1",
+          "name": "Guitar",
+          "order": 0,
+          "role": "acoustic-guitar",
+          "gainDb": 0,
+          "balanceGainDb": -6,
+          "pan": 0,
+          "mute": false,
+          "solo": false,
+          "fx": {
+            "version": 1,
+            "baseSpec": {
+              "version": 1,
+              "effects": [
+                {
+                  "id": "level-match",
+                  "kind": "gain",
+                  "enabled": true,
+                  "params": {
+                    "gainDb": 0
+                  }
+                },
+                {
+                  "id": "cleanup-eq",
+                  "kind": "eq",
+                  "enabled": true,
+                  "params": {
+                    "lowCutHz": 90,
+                    "lowShelfHz": 120,
+                    "lowShelfDb": 0,
+                    "lowMidHz": 220,
+                    "lowMidDb": -3,
+                    "lowMidQ": 1.2,
+                    "highMidHz": 4500,
+                    "highMidDb": 1.5,
+                    "highMidQ": 0.9,
+                    "highShelfHz": 11000,
+                    "highShelfDb": 2,
+                    "highCutHz": 20000
+                  }
+                },
+                {
+                  "id": "boom",
+                  "kind": "dyneq",
+                  "enabled": true,
+                  "params": {
+                    "frequencyHz": 180,
+                    "q": 1.2,
+                    "thresholdDb": -24,
+                    "ratio": 2.5,
+                    "rangeDb": 5,
+                    "attackMs": 15,
+                    "releaseMs": 150
+                  }
+                },
+                {
+                  "id": "dynamics",
+                  "kind": "compressor",
+                  "enabled": true,
+                  "params": {
+                    "thresholdDb": -22,
+                    "ratio": 3,
+                    "attackMs": 20,
+                    "releaseMs": 150,
+                    "kneeDb": 6,
+                    "makeupDb": 2,
+                    "mix": 100
+                  }
+                },
+                {
+                  "id": "spread",
+                  "kind": "stereo",
+                  "enabled": true,
+                  "params": {
+                    "widthPct": 100,
+                    "monoBelowHz": 120,
+                    "haasMs": 16,
+                    "haasAmount": 35
+                  }
+                },
+                {
+                  "id": "space",
+                  "kind": "reverb",
+                  "enabled": true,
+                  "params": {
+                    "decayS": 1.5,
+                    "preDelayMs": 20,
+                    "damping": 50,
+                    "lowCutHz": 200,
+                    "highCutHz": 10000,
+                    "mix": 14,
+                    "duck": 0
+                  }
+                },
+                {
+                  "id": "tone",
+                  "kind": "tilt",
+                  "enabled": true,
+                  "params": {
+                    "brightnessDb": 0
+                  }
+                },
+                {
+                  "id": "balance",
+                  "kind": "gain",
+                  "enabled": true,
+                  "params": {
+                    "gainDb": 0
+                  }
+                }
+              ]
+            },
+            "spaceOffset": 0
+          }
+        },
+        "audible": true,
+        "spec": {
+          "version": 1,
+          "effects": [
+            {
+              "id": "level-match",
+              "kind": "gain",
+              "enabled": true,
+              "params": {
+                "gainDb": 0
+              }
+            },
+            {
+              "id": "cleanup-eq",
+              "kind": "eq",
+              "enabled": true,
+              "params": {
+                "lowCutHz": 90,
+                "lowShelfHz": 120,
+                "lowShelfDb": 0,
+                "lowMidHz": 220,
+                "lowMidDb": -3,
+                "lowMidQ": 1.2,
+                "highMidHz": 4500,
+                "highMidDb": 1.5,
+                "highMidQ": 0.9,
+                "highShelfHz": 11000,
+                "highShelfDb": 2,
+                "highCutHz": 20000
+              }
+            },
+            {
+              "id": "boom",
+              "kind": "dyneq",
+              "enabled": true,
+              "params": {
+                "frequencyHz": 180,
+                "q": 1.2,
+                "thresholdDb": -24,
+                "ratio": 2.5,
+                "rangeDb": 5,
+                "attackMs": 15,
+                "releaseMs": 150
+              }
+            },
+            {
+              "id": "dynamics",
+              "kind": "compressor",
+              "enabled": true,
+              "params": {
+                "thresholdDb": -22,
+                "ratio": 3,
+                "attackMs": 20,
+                "releaseMs": 150,
+                "kneeDb": 6,
+                "makeupDb": 2,
+                "mix": 100
+              }
+            },
+            {
+              "id": "spread",
+              "kind": "stereo",
+              "enabled": true,
+              "params": {
+                "widthPct": 100,
+                "monoBelowHz": 120,
+                "haasMs": 16,
+                "haasAmount": 35
+              }
+            },
+            {
+              "id": "space",
+              "kind": "reverb",
+              "enabled": true,
+              "params": {
+                "decayS": 1.5,
+                "preDelayMs": 20,
+                "damping": 50,
+                "lowCutHz": 200,
+                "highCutHz": 10000,
+                "mix": 14,
+                "duck": 0
+              }
+            },
+            {
+              "id": "tone",
+              "kind": "tilt",
+              "enabled": true,
+              "params": {
+                "brightnessDb": 0
+              }
+            },
+            {
+              "id": "balance",
+              "kind": "gain",
+              "enabled": true,
+              "params": {
+                "gainDb": 0
+              }
+            }
+          ]
+        },
+        "segments": [
+          {
+            "clipIds": ["clip-1"],
+            "assetId": "asset-1",
+            "startFrame": 100,
+            "groupStartFrame": 100,
+            "groupEndFrame": 1100,
+            "sourceInFrame": 0,
+            "sourceOutFrame": 1000,
+            "gainDb": -6,
+            "preparationGainDb": 3,
+            "fades": {
+              "curve": "linear-amplitude",
+              "in": {
+                "fromSourceFrame": 0,
+                "toSourceFrame": 200
+              },
+              "out": {
+                "fromSourceFrame": 800,
+                "toSourceFrame": 1000
+              }
+            }
+          }
+        ],
+        "chainLatencySeconds": null,
+        "compensationSeconds": null
+      },
+      {
+        "track": {
+          "id": "track-keys",
+          "name": "Keys",
+          "order": 1,
+          "role": "keys",
+          "gainDb": 0,
+          "balanceGainDb": -8,
+          "pan": 0,
+          "mute": false,
+          "solo": false,
+          "fx": {
+            "version": 1,
+            "baseSpec": {
+              "version": 1,
+              "effects": [
+                {
+                  "id": "level-match",
+                  "kind": "gain",
+                  "enabled": true,
+                  "params": {
+                    "gainDb": 0
+                  }
+                },
+                {
+                  "id": "cleanup-eq",
+                  "kind": "eq",
+                  "enabled": true,
+                  "params": {
+                    "lowCutHz": 100,
+                    "lowShelfHz": 120,
+                    "lowShelfDb": 0,
+                    "lowMidHz": 400,
+                    "lowMidDb": -2,
+                    "lowMidQ": 1,
+                    "highMidHz": 3000,
+                    "highMidDb": 0,
+                    "highMidQ": 1,
+                    "highShelfHz": 9000,
+                    "highShelfDb": 1,
+                    "highCutHz": 16000
+                  }
+                },
+                {
+                  "id": "dynamics",
+                  "kind": "compressor",
+                  "enabled": true,
+                  "params": {
+                    "thresholdDb": -22,
+                    "ratio": 2,
+                    "attackMs": 25,
+                    "releaseMs": 200,
+                    "kneeDb": 10,
+                    "makeupDb": 1,
+                    "mix": 100
+                  }
+                },
+                {
+                  "id": "spread",
+                  "kind": "stereo",
+                  "enabled": true,
+                  "params": {
+                    "widthPct": 125,
+                    "monoBelowHz": 150,
+                    "haasMs": 20,
+                    "haasAmount": 25
+                  }
+                },
+                {
+                  "id": "echo",
+                  "kind": "delay",
+                  "enabled": true,
+                  "params": {
+                    "timeMs": 375,
+                    "feedback": 25,
+                    "pingPong": 100,
+                    "lowCutHz": 400,
+                    "highCutHz": 4000,
+                    "mix": 7,
+                    "duck": 0
+                  }
+                },
+                {
+                  "id": "space",
+                  "kind": "reverb",
+                  "enabled": true,
+                  "params": {
+                    "decayS": 2.6,
+                    "preDelayMs": 20,
+                    "damping": 50,
+                    "lowCutHz": 200,
+                    "highCutHz": 10000,
+                    "mix": 22,
+                    "duck": 0
+                  }
+                },
+                {
+                  "id": "tone",
+                  "kind": "tilt",
+                  "enabled": true,
+                  "params": {
+                    "brightnessDb": 0
+                  }
+                },
+                {
+                  "id": "balance",
+                  "kind": "gain",
+                  "enabled": true,
+                  "params": {
+                    "gainDb": 0
+                  }
+                }
+              ]
+            },
+            "spaceOffset": 0
+          }
+        },
+        "audible": true,
+        "spec": {
+          "version": 1,
+          "effects": [
+            {
+              "id": "level-match",
+              "kind": "gain",
+              "enabled": true,
+              "params": {
+                "gainDb": 0
+              }
+            },
+            {
+              "id": "cleanup-eq",
+              "kind": "eq",
+              "enabled": true,
+              "params": {
+                "lowCutHz": 100,
+                "lowShelfHz": 120,
+                "lowShelfDb": 0,
+                "lowMidHz": 400,
+                "lowMidDb": -2,
+                "lowMidQ": 1,
+                "highMidHz": 3000,
+                "highMidDb": 0,
+                "highMidQ": 1,
+                "highShelfHz": 9000,
+                "highShelfDb": 1,
+                "highCutHz": 16000
+              }
+            },
+            {
+              "id": "dynamics",
+              "kind": "compressor",
+              "enabled": true,
+              "params": {
+                "thresholdDb": -22,
+                "ratio": 2,
+                "attackMs": 25,
+                "releaseMs": 200,
+                "kneeDb": 10,
+                "makeupDb": 1,
+                "mix": 100
+              }
+            },
+            {
+              "id": "spread",
+              "kind": "stereo",
+              "enabled": true,
+              "params": {
+                "widthPct": 125,
+                "monoBelowHz": 150,
+                "haasMs": 20,
+                "haasAmount": 25
+              }
+            },
+            {
+              "id": "echo",
+              "kind": "delay",
+              "enabled": true,
+              "params": {
+                "timeMs": 375,
+                "feedback": 25,
+                "pingPong": 100,
+                "lowCutHz": 400,
+                "highCutHz": 4000,
+                "mix": 7,
+                "duck": 0
+              }
+            },
+            {
+              "id": "space",
+              "kind": "reverb",
+              "enabled": true,
+              "params": {
+                "decayS": 2.6,
+                "preDelayMs": 20,
+                "damping": 50,
+                "lowCutHz": 200,
+                "highCutHz": 10000,
+                "mix": 22,
+                "duck": 0
+              }
+            },
+            {
+              "id": "tone",
+              "kind": "tilt",
+              "enabled": true,
+              "params": {
+                "brightnessDb": 0
+              }
+            },
+            {
+              "id": "balance",
+              "kind": "gain",
+              "enabled": true,
+              "params": {
+                "gainDb": 0
+              }
+            }
+          ]
+        },
+        "segments": [
+          {
+            "clipIds": ["clip-midi"],
+            "assetId": "asset-midi",
+            "startFrame": 48000,
+            "groupStartFrame": 48000,
+            "groupEndFrame": 120000,
+            "sourceInFrame": 24000,
+            "sourceOutFrame": 96000,
+            "gainDb": 0,
+            "preparationGainDb": 3,
+            "fades": {
+              "curve": "linear-amplitude"
+            }
+          }
+        ],
+        "chainLatencySeconds": null,
+        "compensationSeconds": null
+      },
+      {
+        "track": {
+          "id": "track-voice",
+          "name": "Voice",
+          "order": 2,
+          "role": "voice",
+          "gainDb": 0,
+          "balanceGainDb": 0,
+          "pan": 0,
+          "mute": false,
+          "solo": false,
+          "fx": {
+            "version": 1,
+            "baseSpec": {
+              "version": 1,
+              "effects": [
+                {
+                  "id": "level-match",
+                  "kind": "gain",
+                  "enabled": true,
+                  "params": {
+                    "gainDb": 0
+                  }
+                },
+                {
+                  "id": "cleanup-eq",
+                  "kind": "eq",
+                  "enabled": true,
+                  "params": {
+                    "lowCutHz": 67,
+                    "lowShelfHz": 100,
+                    "lowShelfDb": 1.4,
+                    "lowMidHz": 402,
+                    "lowMidDb": -1.5,
+                    "lowMidQ": 1,
+                    "highMidHz": 3000,
+                    "highMidDb": 0,
+                    "highMidQ": 1,
+                    "highShelfHz": 4040,
+                    "highShelfDb": 2.5,
+                    "highCutHz": 19000
+                  }
+                },
+                {
+                  "id": "mud",
+                  "kind": "dyneq",
+                  "enabled": true,
+                  "params": {
+                    "frequencyHz": 280,
+                    "q": 1,
+                    "thresholdDb": -24,
+                    "ratio": 2,
+                    "rangeDb": 4,
+                    "attackMs": 25,
+                    "releaseMs": 220
+                  }
+                },
+                {
+                  "id": "box",
+                  "kind": "dyneq",
+                  "enabled": true,
+                  "params": {
+                    "frequencyHz": 520,
+                    "q": 1.2,
+                    "thresholdDb": -27,
+                    "ratio": 2,
+                    "rangeDb": 4,
+                    "attackMs": 20,
+                    "releaseMs": 200
+                  }
+                },
+                {
+                  "id": "character",
+                  "kind": "compressor",
+                  "enabled": true,
+                  "params": {
+                    "thresholdDb": -20,
+                    "ratio": 2,
+                    "attackMs": 15,
+                    "releaseMs": 180,
+                    "kneeDb": 6,
+                    "makeupDb": 1.5,
+                    "mix": 100
+                  }
+                },
+                {
+                  "id": "nasal",
+                  "kind": "dyneq",
+                  "enabled": true,
+                  "params": {
+                    "frequencyHz": 1100,
+                    "q": 1.2,
+                    "thresholdDb": -34,
+                    "ratio": 2,
+                    "rangeDb": 4,
+                    "attackMs": 18,
+                    "releaseMs": 180
+                  }
+                },
+                {
+                  "id": "harsh",
+                  "kind": "dyneq",
+                  "enabled": true,
+                  "params": {
+                    "frequencyHz": 7500,
+                    "q": 0.8,
+                    "thresholdDb": -40,
+                    "ratio": 2,
+                    "rangeDb": 4,
+                    "attackMs": 8,
+                    "releaseMs": 90
+                  }
+                },
+                {
+                  "id": "air",
+                  "kind": "exciter",
+                  "enabled": true,
+                  "params": {
+                    "frequencyHz": 4500,
+                    "driveDb": 24,
+                    "amount": 25
+                  }
+                },
+                {
+                  "id": "safety",
+                  "kind": "limiter",
+                  "enabled": true,
+                  "params": {
+                    "driveDb": 0,
+                    "ceilingDb": -1,
+                    "releaseMs": 100
+                  }
+                },
+                {
+                  "id": "echo",
+                  "kind": "delay",
+                  "enabled": true,
+                  "params": {
+                    "timeMs": 120,
+                    "feedback": 10,
+                    "pingPong": 35,
+                    "lowCutHz": 300,
+                    "highCutHz": 5000,
+                    "mix": 9,
+                    "duck": 70
+                  }
+                },
+                {
+                  "id": "space",
+                  "kind": "reverb",
+                  "enabled": true,
+                  "params": {
+                    "decayS": 2.35,
+                    "preDelayMs": 80,
+                    "damping": 45,
+                    "lowCutHz": 180,
+                    "highCutHz": 10000,
+                    "mix": 16,
+                    "duck": 60
+                  }
+                },
+                {
+                  "id": "tone",
+                  "kind": "tilt",
+                  "enabled": true,
+                  "params": {
+                    "brightnessDb": 0
+                  }
+                },
+                {
+                  "id": "balance",
+                  "kind": "gain",
+                  "enabled": true,
+                  "params": {
+                    "gainDb": 0
+                  }
+                }
+              ]
+            },
+            "spaceOffset": 0
+          }
+        },
+        "audible": true,
+        "spec": {
+          "version": 1,
+          "effects": [
+            {
+              "id": "level-match",
+              "kind": "gain",
+              "enabled": true,
+              "params": {
+                "gainDb": 0
+              }
+            },
+            {
+              "id": "cleanup-eq",
+              "kind": "eq",
+              "enabled": true,
+              "params": {
+                "lowCutHz": 67,
+                "lowShelfHz": 100,
+                "lowShelfDb": 1.4,
+                "lowMidHz": 402,
+                "lowMidDb": -1.5,
+                "lowMidQ": 1,
+                "highMidHz": 3000,
+                "highMidDb": 0,
+                "highMidQ": 1,
+                "highShelfHz": 4040,
+                "highShelfDb": 2.5,
+                "highCutHz": 19000
+              }
+            },
+            {
+              "id": "mud",
+              "kind": "dyneq",
+              "enabled": true,
+              "params": {
+                "frequencyHz": 280,
+                "q": 1,
+                "thresholdDb": -24,
+                "ratio": 2,
+                "rangeDb": 4,
+                "attackMs": 25,
+                "releaseMs": 220
+              }
+            },
+            {
+              "id": "box",
+              "kind": "dyneq",
+              "enabled": true,
+              "params": {
+                "frequencyHz": 520,
+                "q": 1.2,
+                "thresholdDb": -27,
+                "ratio": 2,
+                "rangeDb": 4,
+                "attackMs": 20,
+                "releaseMs": 200
+              }
+            },
+            {
+              "id": "character",
+              "kind": "compressor",
+              "enabled": true,
+              "params": {
+                "thresholdDb": -20,
+                "ratio": 2,
+                "attackMs": 15,
+                "releaseMs": 180,
+                "kneeDb": 6,
+                "makeupDb": 1.5,
+                "mix": 100
+              }
+            },
+            {
+              "id": "nasal",
+              "kind": "dyneq",
+              "enabled": true,
+              "params": {
+                "frequencyHz": 1100,
+                "q": 1.2,
+                "thresholdDb": -34,
+                "ratio": 2,
+                "rangeDb": 4,
+                "attackMs": 18,
+                "releaseMs": 180
+              }
+            },
+            {
+              "id": "harsh",
+              "kind": "dyneq",
+              "enabled": true,
+              "params": {
+                "frequencyHz": 7500,
+                "q": 0.8,
+                "thresholdDb": -40,
+                "ratio": 2,
+                "rangeDb": 4,
+                "attackMs": 8,
+                "releaseMs": 90
+              }
+            },
+            {
+              "id": "air",
+              "kind": "exciter",
+              "enabled": true,
+              "params": {
+                "frequencyHz": 4500,
+                "driveDb": 24,
+                "amount": 25
+              }
+            },
+            {
+              "id": "echo",
+              "kind": "delay",
+              "enabled": true,
+              "params": {
+                "timeMs": 120,
+                "feedback": 10,
+                "pingPong": 35,
+                "lowCutHz": 300,
+                "highCutHz": 5000,
+                "mix": 9,
+                "duck": 70
+              }
+            },
+            {
+              "id": "space",
+              "kind": "reverb",
+              "enabled": true,
+              "params": {
+                "decayS": 2.35,
+                "preDelayMs": 80,
+                "damping": 45,
+                "lowCutHz": 180,
+                "highCutHz": 10000,
+                "mix": 16,
+                "duck": 60
+              }
+            },
+            {
+              "id": "tone",
+              "kind": "tilt",
+              "enabled": true,
+              "params": {
+                "brightnessDb": 0
+              }
+            },
+            {
+              "id": "balance",
+              "kind": "gain",
+              "enabled": true,
+              "params": {
+                "gainDb": 0
+              }
+            }
+          ]
+        },
+        "segments": [
+          {
+            "clipIds": ["clip-loop"],
+            "assetId": "asset-loop",
+            "startFrame": 2000,
+            "groupStartFrame": 2000,
+            "groupEndFrame": 2400,
+            "sourceInFrame": 900,
+            "sourceOutFrame": 1151,
+            "gainDb": -2,
+            "preparationGainDb": 3,
+            "fades": {
+              "curve": "linear-amplitude",
+              "in": {
+                "fromSourceFrame": 900,
+                "toSourceFrame": 924
+              }
+            },
+            "crossfades": {
+              "out": {
+                "fromSourceFrame": 1050,
+                "toSourceFrame": 1150
+              }
+            }
+          },
+          {
+            "clipIds": ["clip-loop"],
+            "assetId": "asset-loop",
+            "startFrame": 2149,
+            "groupStartFrame": 2000,
+            "groupEndFrame": 2400,
+            "sourceInFrame": 249,
+            "sourceOutFrame": 500,
+            "gainDb": -2,
+            "preparationGainDb": 3,
+            "fades": {
+              "curve": "linear-amplitude",
+              "in": {
+                "fromSourceFrame": 100,
+                "toSourceFrame": 124
+              }
+            },
+            "crossfades": {
+              "in": {
+                "fromSourceFrame": 250,
+                "toSourceFrame": 350
+              }
+            }
+          }
+        ],
+        "chainLatencySeconds": null,
+        "compensationSeconds": null
+      },
+      {
+        "track": {
+          "id": "track-backing",
+          "name": "Backing",
+          "order": 3,
+          "role": "backing",
+          "gainDb": 0,
+          "balanceGainDb": -3,
+          "pan": 0,
+          "mute": false,
+          "solo": false,
+          "fx": {
+            "version": 1,
+            "baseSpec": {
+              "version": 1,
+              "effects": [
+                {
+                  "id": "level-match",
+                  "kind": "gain",
+                  "enabled": true,
+                  "params": {
+                    "gainDb": 0
+                  }
+                },
+                {
+                  "id": "pocket-eq",
+                  "kind": "eq",
+                  "enabled": true,
+                  "params": {
+                    "lowCutHz": 30,
+                    "lowShelfHz": 120,
+                    "lowShelfDb": 0,
+                    "lowMidHz": 400,
+                    "lowMidDb": 0,
+                    "lowMidQ": 1,
+                    "highMidHz": 2800,
+                    "highMidDb": -1.5,
+                    "highMidQ": 0.8,
+                    "highShelfHz": 10000,
+                    "highShelfDb": 0,
+                    "highCutHz": 20000
+                  }
+                },
+                {
+                  "id": "glue",
+                  "kind": "compressor",
+                  "enabled": true,
+                  "params": {
+                    "thresholdDb": -16,
+                    "ratio": 1.5,
+                    "attackMs": 30,
+                    "releaseMs": 250,
+                    "kneeDb": 8,
+                    "makeupDb": 0,
+                    "mix": 100
+                  }
+                },
+                {
+                  "id": "spread",
+                  "kind": "stereo",
+                  "enabled": true,
+                  "params": {
+                    "widthPct": 105,
+                    "monoBelowHz": 100,
+                    "haasMs": 14,
+                    "haasAmount": 0
+                  }
+                },
+                {
+                  "id": "tone",
+                  "kind": "tilt",
+                  "enabled": true,
+                  "params": {
+                    "brightnessDb": 0
+                  }
+                },
+                {
+                  "id": "balance",
+                  "kind": "gain",
+                  "enabled": true,
+                  "params": {
+                    "gainDb": 0
+                  }
+                }
+              ]
+            },
+            "spaceOffset": 0
+          }
+        },
+        "audible": true,
+        "spec": {
+          "version": 1,
+          "effects": [
+            {
+              "id": "level-match",
+              "kind": "gain",
+              "enabled": true,
+              "params": {
+                "gainDb": 0
+              }
+            },
+            {
+              "id": "pocket-eq",
+              "kind": "eq",
+              "enabled": true,
+              "params": {
+                "lowCutHz": 30,
+                "lowShelfHz": 120,
+                "lowShelfDb": 0,
+                "lowMidHz": 400,
+                "lowMidDb": 0,
+                "lowMidQ": 1,
+                "highMidHz": 2800,
+                "highMidDb": -1.5,
+                "highMidQ": 0.8,
+                "highShelfHz": 10000,
+                "highShelfDb": 0,
+                "highCutHz": 20000
+              }
+            },
+            {
+              "id": "glue",
+              "kind": "compressor",
+              "enabled": true,
+              "params": {
+                "thresholdDb": -16,
+                "ratio": 1.5,
+                "attackMs": 30,
+                "releaseMs": 250,
+                "kneeDb": 8,
+                "makeupDb": 0,
+                "mix": 100
+              }
+            },
+            {
+              "id": "spread",
+              "kind": "stereo",
+              "enabled": true,
+              "params": {
+                "widthPct": 105,
+                "monoBelowHz": 100,
+                "haasMs": 14,
+                "haasAmount": 0
+              }
+            },
+            {
+              "id": "tone",
+              "kind": "tilt",
+              "enabled": true,
+              "params": {
+                "brightnessDb": 0
+              }
+            },
+            {
+              "id": "balance",
+              "kind": "gain",
+              "enabled": true,
+              "params": {
+                "gainDb": 0
+              }
+            }
+          ]
+        },
+        "segments": [
+          {
+            "clipIds": ["clip-file"],
+            "assetId": "asset-file",
+            "startFrame": 0,
+            "groupStartFrame": 0,
+            "groupEndFrame": 4000,
+            "sourceInFrame": 0,
+            "sourceOutFrame": 4000,
+            "gainDb": 0,
+            "preparationGainDb": 3,
+            "fades": {
+              "curve": "linear-amplitude"
+            }
+          }
+        ],
+        "chainLatencySeconds": null,
+        "compensationSeconds": null
+      }
+    ],
+    "master": {
+      "presetId": "streaming",
+      "engineVersion": "studio-fx-v1",
+      "targetLufs": -14,
+      "ceilingDbtp": -1.5,
+      "maxLimitingDb": 5,
+      "masterEq": {
+        "lowCutHz": 25,
+        "lowShelfHz": 120,
+        "lowShelfDb": 0,
+        "lowMidHz": 400,
+        "lowMidDb": 0,
+        "lowMidQ": 1,
+        "highMidHz": 3000,
+        "highMidDb": 0,
+        "highMidQ": 1,
+        "highShelfHz": 10000,
+        "highShelfDb": 0,
+        "highCutHz": 20000
+      }
+    },
+    "macros": {
+      "space": 0,
+      "tone": 0,
+      "punch": 0,
+      "warmth": 0,
+      "width": 0
+    }
+  }
+}

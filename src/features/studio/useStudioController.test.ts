@@ -926,6 +926,59 @@ describe('Studio controller', () => {
     expect(play()).toEqual(before)
   })
 
+  it('keeps a take recorded over a take on its lane as the newest take of that clip, playing alone, and one Undo takes it back', async () => {
+    const { controller, service } = mount({ prepareFile: recordedFixture })
+    await controller.open('one')
+    const record = (title: string, assetId: string, trackId: string | null) =>
+      controller.addRecording({
+        wav: new Blob(['take'], { type: 'audio/wav' }),
+        title,
+        assetId,
+        startFrame: 0,
+        sourceInFrame: 0,
+        trackId,
+      })
+    await record('Take 1', 'take-1', null)
+    const lane = controller.project()!.tracks[0].id
+    const first = controller.project()!.clips[0]
+
+    expect(await record('Take 2', 'take-2', lane)).toBe(true)
+
+    expect(controller.project()!.tracks).toHaveLength(1)
+    expect(controller.laneNotice()).toBeNull()
+    expect(controller.undoLabel()).toBe('Undo add take')
+    expect(controller.project()!.clips).toEqual([
+      expect.objectContaining({
+        id: first.id,
+        assetId: 'take-2',
+        activeTake: 1,
+        takes: [
+          expect.objectContaining({ assetId: 'take-1', offsetFrames: 0 }),
+        ],
+      }),
+    ])
+    // Only the newest take plays: silence it and the song is silent.
+    const heard = mixdown(
+      controller.project()!,
+      controller.assets(),
+      (assetId) => (assetId === 'take-2' ? 0 : 1),
+      4800,
+    )
+    expect(heard).toEqual(new Array(4800).fill(0))
+    expect(service.saveProject).toHaveBeenLastCalledWith(
+      expect.anything(),
+      expect.anything(),
+      [
+        expect.objectContaining({
+          asset: expect.objectContaining({ id: 'take-2' }),
+        }),
+      ],
+    )
+
+    expect(controller.undo()).toBe(true)
+    expect(controller.project()!.clips).toEqual([first])
+  })
+
   it('keeps a loop take as one file, its clip on the newest whole pass and a pass away from the rest', async () => {
     const { controller, service } = mount({ prepareFile: recordedFixture })
     await controller.open('one')
