@@ -5753,7 +5753,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   - FACTS gets b47's printed form;
   - HOSTS' PASSES: Tavi's s14 landing is a hop with NO sparkles (replaces 135's fan).
   Next free call: 137.
-- LAUNCHED ((model) xhigh): E's POLISH (briefs/l6-polish-E-02.md); its id is in the agent list.
+- LAUNCHED ((model) xhigh): E's POLISH (builder) (briefs/l6-polish-E-02.md).
   No third round.
 - Running: D's polish redo ((builder)) and E's polish.
 - Next: when D's polish ends, the SOUND STEP (briefs/l6-sound.md; the clock is now 531.54 s).
