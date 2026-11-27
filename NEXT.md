@@ -5546,3 +5546,6 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   series change to the hosts. L6 holds are measured again on its final passes. Next free call: 128.
 - NEXT: start L6 GROUP D (fresh (model) xhigh builder, briefs/l6-film-scenes-D.md with its
   27 November preface).
+- 08:32: LAUNCHED ((model) xhigh): L6 GROUP D BUILDER (builder) (briefs/l6-film-scenes-D.md
+  and the common brief), building S10-S11 from their stubs. Then critic D-01, D's fix, critic D-02
+  (the last), D's polish; then E, the kit pass and the whole film.
