@@ -5518,3 +5518,31 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - 08:13: SENT THE OWNER the group C look: l6film/renders/look-group-c-30.mp4 (S8-S9, 2:09).
   L5's film-final-60.mp4 and its music-only twin (164 MB each) are in renders/; the agent is
   measuring and writing the deliverables.
+
+## 27 Nov 08:32 UTC: LESSON 5 FINAL FILM DELIVERED to the owner
+- L5 FINAL RUN ((builder), 362k tokens) DONE, DECISIONS 257-269:
+  - renders/film-final-60.mp4: 157 MB, 569.75 s, 1080p60, 34185 frames;
+  - its passes in 19 pieces with HyperFrames' plan and renderChunk, each piece's own plan, peak
+    8.61 GiB, the watchdog never fired;
+  - joins proven by straddled re-renders;
+  - check 0 errors, contrast 67/67;
+  - holds 0.6 s per 30 s, the longest 0.5 s at 444.20 (s12);
+  - -16.0 LUFS, LRA 5.0, -2.6 dBTP.
+  Also film-final-60-music-only.mp4 (the music mix muxed on), sheets in review/final-measure/,
+  DELIVERY.md, LEDGER.md. The lead looked at review/final-film/scenes-sheet.png: all 15 scenes
+  read. SENT THE OWNER the film (SendUserFile, about 08:20). No critic has seen the final film.
+- OWNER'S CHECK LIST from the agent:
+  - watch and listen once;
+  - the new breaths and blinks and `breathe` in motion;
+  - S14 into S15;
+  - the voices' 15 take edges and 22 lines the speech check heard differently (IMPORT.md, ASR.md);
+  - the effects by ear;
+  - the long low-motion runs at 380.0 s (18.1 s), 459.4 s (16.6 s) and 399.5 s (14.7 s);
+  - S9's two overlapping words at 265.37;
+  - whether their ElevenLabs plan covers this use.
+- KEPT for retakes: renders/pieces/ (300 MB). A retake re-renders only its pieces
+  (lab/final-run/NOTES.md).
+- LEAD-ANSWERS 127: the final passes' idle registers (L5 1.7 to 0.6 s per 30 s), so there is no
+  series change to the hosts. L6 holds are measured again on its final passes. Next free call: 128.
+- NEXT: start L6 GROUP D (fresh (model) xhigh builder, briefs/l6-film-scenes-D.md with its
+  27 November preface).

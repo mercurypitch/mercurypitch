@@ -4,7 +4,7 @@ The log of record is DECISIONS from 257 on, `tools/CHANGES.md` (26 November, the
 last row of `LEDGER.md`. This file says where the run is and how to pick it up. Everything is run
 from the film's root (`l5film/`), every heavy job through `$S/bin/heavy`, one at a time.
 
-## Where the run is (updated 26 November 23:55 UTC)
+## Where the run is (updated 27 November 08:20 UTC: the run is finished)
 
 | Step | What | State |
 | ---- | ---- | ----- |
@@ -12,9 +12,9 @@ from the film's root (`l5film/`), every heavy job through `$S/bin/heavy`, one at
 | 1 | `MIX=full python3 tools/gen-root.py`, in place: the 13 root `data-duration` values of DECISIONS 252, nothing else (`logs/01-gen-root.txt`); `check`: 0 errors, 24 standing warnings (`logs/01-check-after-gen-root.txt`) | done (257) |
 | 2 | `merc-shots.py --final` on the voiced clock, with the lead's additions (DECISIONS 258, `tools/CHANGES.md`; `logs/02-*`); S14's `base` 400 (259); the 54 Merc tags written for the new shots and `--margins` checked (`logs/03-tags-*`) | done: do NOT run merc-shots.py again (it would make every pass stale) |
 | 3 | The 27 jobs, roots, joins (23 of 23), tags check (15 of 15), sheet (on `lab/final-run/dump-current/`) | done 04:09 UTC 27 November (263) |
-| 4 | The 60 fps picture in 19 pieces (DECISIONS 264: the single render stopped, OOM; 265: the pieces), then the join and the two muxes | `lab/final-run/render-pieces.sh` running; state in `render-pieces.state` |
-| 5 | The measure | |
-| 6 | The deliverables | |
+| 4 | DONE 07:33 (269): the 60 fps picture in 19 pieces (DECISIONS 264: the single render stopped, OOM; 265: the pieces), then the join and the two muxes | `lab/final-run/render-pieces.sh` running; state in `render-pieces.state` |
+| 5 | The measure | done 08:08 (269): `review/final-measure/` |
+| 6 | The deliverables | done: `DELIVERY.md`, LEDGER's last row |
 
 ### Step 3, the queue
 
@@ -71,3 +71,12 @@ from the film's root (`l5film/`), every heavy job through `$S/bin/heavy`, one at
   heavy): the join and frame count, the two muxes, the join check against root snapshots
   (`review/final-film/joins.md`), a frame from every scene, measure.py render and audio
   (`review/final-measure/`). State in `lab/final-run/finish-film.state`.
+
+### A retake of one line, after this run
+
+1. The new take and the clock: as the import did (DECISIONS 246 to 256).
+2. Only that scene's passes: render its two chunks (see "How to resume").
+3. Only the pieces that scene is on screen in (`renders/pieces/piece-NNN.mp4`, 30 s each:
+   piece N is film time 30N to 30N + 30). Remove those files; they are this run's. Then start
+   `render-pieces.sh`, which renders only the missing pieces, then run `finish-film.sh`.
+4. If the clock moved, every piece after the change moves with it: render them all again.

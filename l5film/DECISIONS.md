@@ -2282,3 +2282,38 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
        probe browser.
      - Piece phase: the plan's copies (at most about 2.7 GiB) plus one browser.
      - On any exit: `/dev/shm/l5-plan` and `/dev/shm/l5-cache` are both cleared.
+269. **The final film: 19 pieces, one picture, two soundtracks** (27 November, 06:10 to 08:08 UTC).
+     - `check` before the pieces: 0 errors, the 24 standing warnings. The 19 pieces took 4,890 s
+       of rendering (06:12 to 07:31); each piece's plan took 10 to 25 s and its frames 167 to 318 s.
+     - Memory: the most the cgroup used in any piece was 8.61 GiB (piece 15, s12 and s13, its plan
+       2.9 GiB in memory), with at least 6.32 GiB free under the cap throughout. The watchdog never
+       fired (every piece in `lab/final-run/render-pieces.state`).
+     - The join: ffmpeg concat, stream copy, gives 34,185 frames (`renders/pieces/picture.mp4`,
+       144 MB). `assets/audio/full.wav` and `music-only.wav` were each muxed on it once, as AAC 192k
+       at 48 kHz, giving `renders/film-final-60.mp4` and `renders/film-final-60-music-only.mp4`
+       (157 MB each, 569.750 s, H.264 High, 1920x1080, 60 fps). The music-only version is the same
+       picture, not a second render (the lead's call).
+     - The joins against single-frame snapshots of the root (`review/final-film/joins.md`,
+       `joins/cmp-*.png`): a snapshot does not sample the camera exactly as the render does. In
+       S10's slow truck (frame 19799) the whole picture sits about 2 px off, so up to 128,357 pixels
+       change by more than 24 levels on a join frame. That difference is the snapshot's, not the
+       join's.
+     - The decisive check (`lab/final-run/straddle.sh`, `review/final-film/joins/straddle/`): the
+       same renderer's frames around joins 1, 10 and 11 (S1, S10 into S11, S11), rendered from
+       inside a 1,300-frame range that straddles each join, against the joined picture. The two
+       frames before and the two after each join differ alike: up to 6,115 pixels over 24 levels
+       (S1's grain and the hosts' edges, an encode at another place in its GOP), means 0.48 to
+       1.04. No join repeats, skips or shifts a frame.
+     - Frame 0 is the finished cold open: the kicker, the A3 band, both hosts and their
+       reflections (`review/final-film/frame-00000.png`, `review/final-measure/frame-0.png`). A
+       frame from the middle of every scene was looked at (`review/final-film/scenes-sheet.png`).
+     - Measured (`review/final-measure/summary.md`; by scene in `holds-by-scene.md`): holds
+       12.3 s inside the film, 0.6 s per 30 s, the longest 0.5 s at 444.20 s (s12-your-turn), and
+       no final hold. No single-frame event among the strongest; 28 weaker are in `events.csv`.
+       Loudness -16.0 LUFS integrated, range 5.0 LU, true peak -2.6 dBTP. Film-draft-02: holds
+       1.7 s per 30 s, longest 0.5 s, -21.0 LUFS, true peak -1.6 dBTP.
+     - `measure.py audio` against the music-only version (`review/final-measure/audio/`) reads
+       every voice line as an effect over silence, because that version has no voice. Its "harsh"
+       and "over silence" rows are the hosts speaking, not a finding on the effects. The effects
+       against the music are the sound step's measure on the stems (`review/sound-01/`); they were
+       not re-measured here.

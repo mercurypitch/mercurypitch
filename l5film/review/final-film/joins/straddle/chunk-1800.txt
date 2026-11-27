@@ -1,0 +1,13 @@
+[BrowserManager] Browser launched (HeadlessChrome/152.0.7977.30, beginframe, gl=--use-gl=angle --use-angle=swiftshader, headlessShell=true, platform=linux)
+[initSession:beginframe] warmup loop started (0ms)
+[initSession:beginframe] page.goto start (1ms)
+[HyperFrames] render runtime fps {"canonicalFps":60,"source":"render-options","rawFpsSource":"render-options","rawFps":60}
+[initSession:beginframe] page.goto complete (557ms)
+[initSession:beginframe] GSAP proxy flush complete (573ms)
+[initSession:beginframe] pollHfReady complete (575ms)
+[initSession:beginframe] pollSubCompositionTimelines complete (ready) (578ms)
+[initSession:beginframe] applyVideoMetadataHints complete (578ms)
+[initSession:beginframe] media + fonts + tailwind ready (681ms)
+[initSession:beginframe] static-frame dedup: disabled (capture mode beginframe, not screenshot) (2377ms)
+CHUNK {"outputPath":"/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/review/final-film/joins/straddle/range-1800.mp4","outputKind":"file","framesEncoded":1300,"sha256":"8509e30e68f211e2a6a6197e7da9575ad76be5824d559bbae4efc9a489208f50","durationMs":219681,"planHashMs":1550,"sessionBootMs":5155,"captureStageMs":189873,"encodeStageMs":22810,"workers":1,"captureMode":"beginframe","perfPath":"/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/review/final-film/joins/straddle/range-1800.mp4.perf.json"}
+chunk done in 219.9 s
