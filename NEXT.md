@@ -5288,3 +5288,26 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   the session's own transcript and log, and three new git packs in the main checkout at 00:19
   (342 + 237 + 5 MB, from a repack or fetch, not ours to touch). Nothing deleted. The L5 render needs
   about 1 G for its two MP4s on top of the 2 G floor: watch it at each check-in.
+
+## 27 Nov 01:22 UTC: A's POLISH DONE ((builder), 371k tokens); lead's call 119
+- Done, all proven, with no commits:
+  - the sphere's specular stays crisp to r 900 (L.approach.sphere, the kit; S1 and S2 only). The lead
+    looked at polish/sheet-pass.png: it reads as chrome now. Luma rises on every frame, except
+    -0.02 at 39.967, before the sphere is on screen (accepted);
+  - S1's kicker "WHAT WILL STILL MATCH?" 14.75 to 22.92 (it cannot stay longer: the hook takes its
+    row from 30.79);
+  - S3's arrow is 8.00 px clear;
+  - the ghost line is cut at its rings in S1 alone (no kit change);
+  - clearance 0 on S1 to S3, root check 0, clock-lint silent, merc-tags current.
+- LEAD-ANSWERS 119: S2's notes 3 and 4 BACK ON THEIR CHIMES. The polish had them land 0.37 s after
+  their ripples and chimes. The lead restored s02-title.html from $S/l6-pre-A-polish/; the polish's
+  version is kept as s02-title.polish-late-notes.html, and its clips and clearance moved to
+  lab/s02-title/polish/late-notes/. The proof ($S/tmp/s02-revert-proof.sh: clearance, 60 and
+  30 fps clips, clock-lint) is running in the background. 117's first bullet stands again.
+- The kit pass list gains A's "For the kit pass" list (end of lab/s01-cold-open/BUILD-NOTES.md),
+  minus its S2 notes item (119). It also gains "should S1's ghost-line cut become the L.TUNE
+  default?". Next free call: 120.
+- GROUP A IS DONE for the owner's look, once 119's proof passes.
+- 01:26: 119's proof passed: S2 clearance 0 (217 frames), clips 60 and 30 fps fresh, clock-lint
+  silent. Noted in s02's and s01's BUILD-NOTES. GROUP A IS DONE for the owner's look; its doc and
+  board changes wait for the kit pass.
