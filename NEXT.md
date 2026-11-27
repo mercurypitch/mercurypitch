@@ -5887,3 +5887,43 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   to review/critic-F-01/REPORT.md). The owner's cap is two film rounds; this is round one.
 - SENT the owner the draft and the small sheet for an early look. Their notes and F-01's go into
   one fix round.
+
+## 27 Nov 16:47 UTC: CRITIC F-01 RETURNED (ONE MORE PASS); the FILM FIX ROUND launched (two sides)
+- CRITIC F-01 ((builder), finished): saved verbatim to review/critic-F-01/REPORT.md.
+  Its problems:
+  1. chapter 4's pills read "Yes" on mute;
+  2. frozen screen 1.7 s per 30 s, the centre still for 6 to 9 s at five spans;
+  3. one layout for about six minutes (chapters 1, 3, 4, 5 and the recap);
+  4. empty frames at 44.0, 53.9, 442.8, 455 and 499;
+  5. the doctor lines not alone (BRIEF line 234 asks for it);
+  6. Merc off screen for b4a;
+  7. audio: the examples 3 LU under the speech; the music-only definition, which the lead's
+     brief misdescribed.
+  Small ones: the cards' 3 px snap at 513; the title's grey field 0.13 s; the hook's place (a
+  recorded departure); frame 0 against L5; the rest card's kicker padding.
+- The LEAD CHECKED frame 0 against L5's last tease frame ($S/tmp/f01check/compare.png): the
+  geometry is close, but L5's beads are lit blue, with connectors and the hook. FACTS 84 is
+  reworded to "before it lights" (backup $S/l6-FACTS-pre141.md); facts-check passes.
+- LEAD-ANSWERS 141 takes it all:
+  - the pills: No filled with the tick, Yes at 50 %;
+  - camera moves: ch3 follows the slide; ch4 close push on b22 at 255.5; ch5 into the C-G
+    bracket at 297 to 311, then pull back;
+  - slow 2 to 3 % pushes in S5 (83 to 99) and S10 (375 to 381);
+  - the empty frames filled; 12c's push from 457.44;
+  - the doctor lines alone and centred in `rest`, with no band;
+  - every speaker on screen;
+  - examples +2 dB (-19.0 LUFS, mixed at the draft);
+  - the cards' height kept; the title's field at 0.2 s or more; frame 0 aligned to L5's pixels;
+    the kicker's padding.
+  Next free call: 142.
+- LAUNCHED ((model) xhigh), two sides at once:
+  - SIDE A (builder) (S1 to S7; briefs/l6-fix-F-01-A.md);
+  - SIDE B (builder) (S8 to S14; briefs/l6-fix-F-01-B.md).
+- Next, when both hand back:
+  - the mix with examples at -19.0 (mix.py's examples target, then re-run with the sequence in
+    review/sound-01/NOTES.md);
+  - film-draft-02 (a brief from l6-film-draft-01.md);
+  - CRITIC F-02, the film's last round (a brief from F-01 plus the verification section);
+  - a polish;
+  - the owner's look;
+  - then the final voices (on the owner's word), the hosts' passes and the 60 fps final.
