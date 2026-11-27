@@ -108,7 +108,7 @@ describe('Studio take keys', () => {
     expect(editor.clip()).toMatchObject({ sourceInFrame: 200 })
   })
 
-  it('leaves T to the page on a clip of one take, with Ctrl, and on a held key', () => {
+  it('leaves T to the page on a clip of one take and with Ctrl, and swallows a held T on a clip of takes without stepping', () => {
     const one = takesEditor(1)
     expect(one.press('t').defaultPrevented).toBe(false)
     expect(
