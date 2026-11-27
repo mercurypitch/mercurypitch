@@ -5960,3 +5960,20 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   DRAFT 02 agent = (builder) (notes in review/film-02/NOTES.md). Running: it alone.
   Next: its hand-back -> the lead's check -> CRITIC F-02 (briefs/l6-critic-F-02.md, the last
   film round) -> the polish -> the owner's look.
+
+## 27 Nov 19:37 UTC: DRAFT 02 DONE; the mix rerun (144); CRITIC F-02 launched
+- DRAFT 02 ((builder), finished):
+  - 15,947 frames; check 0 errors; holds 1.57 per 30 s (1.72); cuts all hold;
+  - events 78: 27 new, from the slow moves stepping by whole pixels (S5 19, S7 2, S11 6);
+  - the 513 cards: no snap.
+  - Its mix STOPPED: sound-kit.mjs read layerRig's local `t0`.
+- The LEAD renamed t0/t1 inside layerRig to rigT0/rigT1 in s05 to s09 (backup
+  $S/l6-pre-rigrename/); sound-kit evaluates; reran mix.py: examples -19.0; full -16.0 LUFS,
+  4.5 LU, -1.4 dBTP before gain; captions and chapters unchanged.
+  Re-muxed renders/film-draft-02-full.mp4: -16.0 LUFS, 4.6 LU, -1.7 dBFS. LEAD-ANSWERS 144.
+  Next free call: 145.
+- LAUNCHED ((model) xhigh): CRITIC F-02, the LAST film round (briefs/l6-critic-F-02.md); its id is
+  in the next line.
+  CRITIC F-02 = (builder). Running: it alone. Next: its report -> the lead's calls -> a
+  polish (no third round; the pixel stepping of the slow moves is a likely item) -> send the
+  owner draft 02 (or the polished draft 03) for their look.
