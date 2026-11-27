@@ -58,8 +58,9 @@ from the film's root (`l5film/`), every heavy job through `$S/bin/heavy`, one at
 
 - Start or resume, from `l5film/`:
   `HEAVY_PRI=1 HEAVY_MIN_GIB=10 setsid nohup $S/bin/heavy $S/bin/heavy bash lab/final-run/render-pieces.sh > lab/final-run/logs/05-render-pieces.out 2>&1 &`
-  It rebuilds the plan in `/dev/shm/l5-plan` (cleared on every exit; if a restart left it, `rm -rf
-  /dev/shm/l5-plan` first) and skips every `renders/pieces/piece-NNN.mp4` already there.
+  Each piece: its own root (`piece-root.py`, DECISIONS 266), its own plan in `/dev/shm/l5-plan`
+  (cleared after each piece and on every exit; if a restart left it, `rm -rf /dev/shm/l5-plan`
+  first), its frames; it skips every `renders/pieces/piece-NNN.mp4` already there.
 - After all 19: concat (stream copy) to `renders/pieces/picture.mp4`, count 34,185 frames, mux
   `assets/audio/full.wav` and `music-only.wav` (AAC 192k, as HyperFrames muxes) to
   `renders/film-final-60.mp4` and `renders/film-final-60-music-only.mp4`; the join check against

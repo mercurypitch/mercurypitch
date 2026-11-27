@@ -1,0 +1,50 @@
+[INFO] [Compiler] Embedded local font file: assets/fonts/InstrumentSerif-Regular.ttf (68 KB → data URI)
+[INFO] [Compiler] Embedded local font file: assets/fonts/InstrumentSerif-Italic.ttf (70 KB → data URI)
+[INFO] [Compiler] Embedded local font file: assets/fonts/Outfit-wght.ttf (108 KB → data URI)
+[INFO] [Compiler] Embedded local font file: assets/fonts/Inter-opsz-wght.ttf (856 KB → data URI)
+[INFO] [Compiler] Embedded local font file: assets/fonts/JetBrainsMono-wght.ttf (183 KB → data URI)
+[INFO] [Compiler] Embedded local font file: assets/fonts/NotoMusic-Regular.ttf (121 KB → data URI)
+[INFO] Compiled composition metadata {"entryFile":"index.html","staticDuration":569.74,"width":1920,"height":1080,"videoCount":4,"audioCount":0,"renderModeHints":{"recommendScreenshot":false,"reasons":[]}}
+[WARN] [plan] size budget exceeded {"observedAt":"pre-freeze","sizeBytes":2265480652,"limitBytes":2147483648,"fileCount":5693,"compiledBytes":1551162110,"sourceMediaBytes":1519651250,"videoFramesBytes":714315241,"videoFrameFileCount":5070,"audioBytes":0,"metadataBytes":3301,"otherBytes":0,"topComponents":[{"label":"compiled","sizeBytes":1551162110,"fileCount":622},{"label":"video-frames:a640afdaf19e","sizeBytes":359677156,"fileCount":2535},{"label":"video-frames:e16a39229710","sizeBytes":354638085,"fileCount":2535},{"label":"metadata","sizeBytes":3301,"fileCount":1}]}
+file:///root/.npm/_npx/f293411582888030/node_modules/hyperframes/dist/chunk-VSVNEDUL.js:14999
+  throw new PlanTooLargeError(breakdown.totalBytes, input.limitBytes, breakdown, input.observedAt);
+        ^
+
+PlanTooLargeError: [plan] planDir size 2.11 GiB exceeds the configured ceiling 2.00 GiB (PLAN_TOO_LARGE). The default 2 GB cap fits inside AWS Lambda's 10 GB /tmp budget alongside the chunk worker's frame buffer and ffmpeg's working set. To unblock: use the content-addressed `planV2()` transport, shorten the composition, lower the framerate, or use the in-process renderer (`executeRenderJob`) — it has no planDir size cap. Observed at pre-freeze. Breakdown: video-frames=681.2 MiB, compiled=1.44 GiB (source-media=1.42 GiB), audio=0 B, metadata=3.2 KiB, other=0 B, files=5693.
+    at assertPlanSizeWithinLimit (file:///root/.npm/_npx/f293411582888030/node_modules/hyperframes/dist/chunk-VSVNEDUL.js:14999:9)
+    at buildLocalExecutionPlan (file:///root/.npm/_npx/f293411582888030/node_modules/hyperframes/dist/chunk-VSVNEDUL.js:15378:3)
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+    at async plan (file:///root/.npm/_npx/f293411582888030/node_modules/hyperframes/dist/chunk-VSVNEDUL.js:15419:25)
+    at async file:///tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad/l5film/lab/final-run/piece.mjs:16:13 {
+  code: 'PLAN_TOO_LARGE',
+  sizeBytes: 2265480652,
+  limitBytes: 2147483648,
+  breakdown: {
+    totalBytes: 2265480652,
+    fileCount: 5693,
+    compiledBytes: 1551162110,
+    sourceMediaBytes: 1519651250,
+    videoFramesBytes: 714315241,
+    videoFrameFileCount: 5070,
+    audioBytes: 0,
+    metadataBytes: 3301,
+    otherBytes: 0,
+    topComponents: [
+      { label: 'compiled', sizeBytes: 1551162110, fileCount: 622 },
+      {
+        label: 'video-frames:a640afdaf19e',
+        sizeBytes: 359677156,
+        fileCount: 2535
+      },
+      {
+        label: 'video-frames:e16a39229710',
+        sizeBytes: 354638085,
+        fileCount: 2535
+      },
+      { label: 'metadata', sizeBytes: 3301, fileCount: 1 }
+    ]
+  },
+  observedAt: 'pre-freeze'
+}
+
+Node.js v22.23.4

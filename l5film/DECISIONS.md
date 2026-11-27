@@ -2243,3 +2243,24 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      - The pieces are then joined with ffmpeg concat (stream copy). The full mix and the music-only
        mix are muxed onto the one joined picture from `assets/audio/`, so the music-only version is
        not rendered again.
+266. **One plan for the whole root does not fit in memory, so each piece gets its own plan of a
+     piece root.** The first plan reached 9.7 GiB in `/dev/shm/l5-plan` within 133 s, and the
+     watchdog stopped it cleanly at 1.49 GiB free, with nothing killed by the kernel. The cause:
+     with the extract cache off, every one of the 54 video tags is extracted on its own (each pass
+     twice, for its reflection), about 10.6 GiB. With a cache the plan is worse: it copies each
+     cache entry into the plan for every tag that uses it (`stageExtractedFrameDir`,
+     `materializeSymlinks: true`).
+     - What each piece is planned from: `lab/final-run/piece-root.py` writes the film's own root,
+       its 569.740 s and every host's `data-start` unchanged, keeping only the scene hosts on screen
+       in that piece's 30 s (with 0.1 s to spare), and no soundtrack. The pieces are picture only.
+       This is make-proj.sh's "film" mode, which reproduced the film to 0.1 px
+       (`lab/integration/film-hops-fix/`).
+     - Why the frames are the film's: a host off screen draws nothing. The plan keeps the film's
+       grid; the script checks that each plan has 34,185 frames, 19 chunks and 60 fps before
+       rendering from it.
+     - Memory per piece: each plan extracts only its kept scenes' passes. That is 0.7 to 2.7 GiB
+       (piece 15, s12 and s13, the most), plus one browser of about 2.6 GiB, so under about
+       5.5 GiB a piece.
+     - The run: each piece is built, planned, rendered and cleared in turn, with the watchdog
+       on both the plan and the frames, and every piece waits for 6 GiB free first. The piece
+       projects are in `$S/l5film-pieces/` (made by this run, symlinks but for `index.html`).

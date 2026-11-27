@@ -1,12 +1,13 @@
 #!/bin/bash
-# Step 4, in pieces (DECISIONS 265): check, the renderer's plan of the whole root in memory
-# (/dev/shm/l5-plan), then each 1,800-frame piece of the picture in a fresh process with one browser,
-# watched: a piece is stopped cleanly if free memory under the cap falls under 1.5 GiB.
+# Step 4, in pieces (DECISIONS 265, 266): check, then each 1,800-frame piece of the picture: its own
+# project (lab/final-run/piece-root.py: the film's root with only the scenes on screen in the piece),
+# the renderer's plan of it in memory (/dev/shm/l5-plan, extract cache off), the piece's frames by a
+# fresh process with one browser, the plan cleared. Every step watched: stopped cleanly if free
+# memory under the cap falls under 1.5 GiB.
 # Start it holding both heavy slots, with a priority ticket:
 #   HEAVY_PRI=1 HEAVY_MIN_GIB=10 setsid nohup $S/bin/heavy $S/bin/heavy bash lab/final-run/render-pieces.sh \
 #     > lab/final-run/logs/05-render-pieces.out 2>&1 &
-# Resumable: a piece already in renders/pieces/ is kept; the plan is made again (its frames are
-# cleared on every exit).
+# Resumable: a piece already in renders/pieces/ is kept (the plan is cleared on every exit).
 S=/tmp/claude-0/-home-user-mercurypitch/12ae313e-03fe-590a-b304-88d38ce9e159/scratchpad
 P=$S/l5film
 cd "$P" || exit 1
@@ -80,36 +81,39 @@ if [ $rc != 0 ] || grep -Eq '(^|[^0-9])[1-9][0-9]* error' "$LOG/05-check.txt"; t
 fi
 note "check: 0 errors, $(grep -Eo '[0-9]+ warning\(s\)' "$LOG/05-check.txt" | head -1)"
 
-echo plan > "$LOG/.piece"
-rm -rf /dev/shm/l5-plan
-t0=$(date +%s)
-run_watched node lab/final-run/piece.mjs plan /dev/shm/l5-plan "$P" $CHUNK > "$LOG/05-plan.txt" 2>&1; rc=$?
-note "plan exit $rc, $(( $(date +%s) - t0 )) s, peak use $(gib $PEAK_USE) GiB, least free $(gib $MIN_FREE) GiB, plan $(du -sh /dev/shm/l5-plan | cut -f1)"
-[ $rc = 0 ] || exit 5
-grep '^PLAN ' "$LOG/05-plan.txt" | tail -1 | cut -c6- > "$OUT/plan.json"
-N=$(python3 -c "import json;print(json.load(open('$OUT/plan.json'))['chunkCount'])")
-TOTAL=$(python3 -c "import json;print(json.load(open('$OUT/plan.json'))['totalFrames'])")
-note "plan: $TOTAL frames, $N pieces of $CHUNK"
-
+TOTAL=34185; N=$(( (TOTAL + CHUNK - 1) / CHUNK ))
+PROJ=$S/l5film-pieces
 for ((i = 0; i < N; i++)); do
   f=$(printf '%s/piece-%03d.mp4' "$OUT" $i)
   [ -s "$f" ] && continue
   w=0
-  while [ "$(free_bytes)" -lt $((7 * GiB / 2)) ]; do
-    [ $w -ge 600 ] && { note "STOP: under 3.5 GiB free for 10 minutes before piece $i"; exit 6; }
+  while [ "$(free_bytes)" -lt $((6 * GiB)) ]; do
+    [ $w -ge 600 ] && { note "STOP: under 6 GiB free for 10 minutes before piece $i"; exit 6; }
     sleep 10; w=$((w + 10))
   done
   dk=$(df -k / | awk 'NR==2 {print $4}')
   [ "$dk" -lt $((5 * 1048576 / 2)) ] && { note "STOP: $(awk -v k=$dk 'BEGIN{printf "%.2f", k/1048576}') GiB free on disk before piece $i, under 2.5"; exit 8; }
   echo "piece-$i" > "$LOG/.piece"
   t0=$(date +%s)
+  scenes=$(python3 lab/final-run/piece-root.py $i $CHUNK "$PROJ/p$i")
+  rm -rf /dev/shm/l5-plan
+  run_watched node lab/final-run/piece.mjs plan /dev/shm/l5-plan "$PROJ/p$i" $CHUNK > "$LOG/05-piece-$i-plan.txt" 2>&1; rc=$?
+  pk1=$PEAK_USE; mf1=$MIN_FREE; shm=$(du -sh /dev/shm/l5-plan 2>/dev/null | cut -f1)
+  [ $rc = 0 ] || { note "STOP: piece $i plan exit $rc (logs/05-piece-$i-plan.txt)"; exit 5; }
+  pl=$(grep '^PLAN ' "$LOG/05-piece-$i-plan.txt" | tail -1 | cut -c6-)
+  python3 -c "import json,sys;p=json.loads(sys.argv[1]);sys.exit(0 if p['totalFrames']==$TOTAL and p['chunkCount']==$N and p['fps']==60 else 1)" "$pl" \
+    || { note "STOP: piece $i plan is not the film's grid: $pl"; exit 9; }
+  t1=$(date +%s)
   run_watched node lab/final-run/piece.mjs chunk /dev/shm/l5-plan $i "${f%.mp4}.tmp.mp4" > "$LOG/05-piece-$i.txt" 2>&1; rc=$?
+  rm -rf /dev/shm/l5-plan
   if [ $rc != 0 ]; then
     rm -f "${f%.mp4}.tmp.mp4"
-    note "STOP: piece $i exit $rc after $(( $(date +%s) - t0 )) s (logs/05-piece-$i.txt)"; exit 7
+    note "STOP: piece $i exit $rc after $(( $(date +%s) - t1 )) s (logs/05-piece-$i.txt)"; exit 7
   fi
   mv "${f%.mp4}.tmp.mp4" "$f"
-  note "piece $i: $(( $(date +%s) - t0 )) s, $(du -h "$f" | cut -f1), peak use $(gib $PEAK_USE) GiB, least free $(gib $MIN_FREE) GiB"
+  [ $pk1 -gt $PEAK_USE ] && PEAK_USE=$pk1
+  [ $mf1 -lt $MIN_FREE ] && MIN_FREE=$mf1
+  note "piece $i ($scenes): plan $((t1 - t0)) s ($shm), frames $(( $(date +%s) - t1 )) s, $(du -h "$f" | cut -f1), peak use $(gib $PEAK_USE) GiB, least free $(gib $MIN_FREE) GiB"
 done
 echo done > "$LOG/.piece"
 note "all $N pieces rendered"

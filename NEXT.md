@@ -5470,3 +5470,20 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   The scene route was rejected: scene starts are off the 60 fps grid. Expect about 2 h, so done
   about 08:00; then the join, the mix mux, the music-only mux, measure and the deliverables.
   The passes' contact sheet was looked at by the agent. Disk 4.3 G.
+
+## 27 Nov 06:06 UTC: critic C-02 (the LAST round for C): ONE MORE PASS on mechanical items; C's polish launched
+- CRITIC C-02 ((builder), 189k tokens). Saved verbatim to
+  review/critic-scenes-C-02/REPORT.md.
+  - FIXED: the counting, the swap, 9m, the keys, and most small ones.
+  - Left:
+    - S9's empty frame at 295.1-295.55;
+    - holds of 1.9 and 2.1 per 30 s;
+    - 8f's dimmed evidence below AA (3.7:1; "+2" and "+7" at 2.8:1);
+    - the card's 57 px gap;
+    - 8g's labels reading as one row with the Yes pill.
+- LEAD-ANSWERS 126 takes them all into a POLISH pass, with no third round. Holds as 120 and 121
+  say. Next free call: 127.
+- LAUNCHED ((model) xhigh): C's POLISH (see the agent list; briefs/l6-polish-C-02.md). It edits now
+  and renders through heavy after L5's pieces, about 08:00.
+- After it: GROUP C IS DONE for the owner's look. Then group D (S10-S11) and E. D's brief must say
+  that S10 opens with the octave measure as ticks only (125).
