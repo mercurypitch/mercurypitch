@@ -5703,3 +5703,30 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - 11:25: briefs/l6-critic-scenes-E-02.md WRITTEN (from E-01: verification marks, reads E-01's
   REPORT, maps items by cue since the clock moves after 524, newest clips, D's polish edits
   s10-s11). review/critic-scenes-E-02/ made. Launch it when E's fix hands back.
+
+## 27 Nov 12:28 UTC: D's polish redo (134); E's FIX DONE (135); CRITIC E-02 launched
+- D's POLISH ((builder)) handed back. All of 133 was built, but clearance reported 45
+  failures, all from 133.2's in-place cross-fade.
+  - The lead LOOKED at 401.75 (clip-still-17.52.png): the two blocks overprint as a jumble.
+  - LEAD-ANSWERS 134 withdraws the overlap: the three swaps become a LINE-BY-LINE WIPE, top to
+    bottom over about 0.4 s. A line lands once the lines under its box are below 8 %. Targets:
+    clearance 0 and the region's ink at 60 % or more on every frame.
+  - The rest stands: the 10 % reading band, the stop line leaving by alpha, 11h's glide from the
+    landing, "Your turn." at baseline 220.
+  - RESUMED the same agent with SendMessage for the redo.
+- E's FIX ((builder)) DONE, all of 131:
+  - THE CLOCK: the `end` gap is 1.3 s; 120 cues identical; voice.wav identical plus 0.9 s of
+    silence; end at 525.34, total 531.54; gen-root ran, moved into place atomically;
+  - probes 62/18/13; clearance 0; root 0; board tools 0;
+  - holds: S12 1.4, S13 0.9 s in all (longest 0.5 s, the hook's beat), S14 0.
+  LEAD-ANSWERS 135:
+  - HOSTS' PASSES +: the four end chunks on the new clock, retiring S14's data-merc-lead -0.900
+    and S13's -hold tags; Tavi's s14 sparkles fanned away from Merc (the bible's celebrate);
+  - KIT PASS +: frames.js's old end-push note.
+  Next free call: 136.
+- LAUNCHED ((model) xhigh): CRITIC E-02 (builder), the last round
+  (briefs/l6-critic-scenes-E-02.md).
+- Running: D's polish redo ((builder)) and critic E-02 ((builder)).
+- Next: E-02 -> E's polish (no third round). D's polish done -> the SOUND STEP
+  (briefs/l6-sound.md; note the clock is now 531.54 s). Then the KIT PASS, the film draft and
+  the owner's look.
