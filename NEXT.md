@@ -5333,3 +5333,30 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
     26 Nov; it applies 113-115 and 120 where missing, proves, and hands back).
 - L5 queue at 01:33: 11 done, 16 to go. It ends about 05:15, then the render.
 - QUEUE: C's critic (round 01) after C's finish; then D, E, the kit pass and the whole film.
+
+## 27 Nov 01:49 UTC: critic B-02 (the LAST round for B): ONE MORE PASS on two points; B's polish launched
+- CRITIC B-02 ((builder)) came back at 196k tokens. Saved verbatim to
+  review/critic-scenes-B-02/REPORT.md.
+  - FIXED: the panel, the gold, the push, seek order, "how far?", the definition, "-1".
+  - STILL PRESENT:
+    - frozen screen: S7 3.1, S6 1.9, S5 1.3 per 30 s, longest 0.4 s; "the hosts register no
+      motion";
+    - cards PARTLY: S7's measure at +22 is a bar between "whole" and "tune"; S5's block edge
+      crosses "The";
+    - new: "+4" lands 0.1 s after the seventh arrow.
+- LEAD-ANSWERS 121:
+  - cards: a stroke crossing the title's ink stands at 0 under a card; S7's measure and ticks go
+    to 0, and S5's lit blocks go to the rims' 10 %. Standing rule, added to the common brief, and
+    group C was told by message.
+  - "+4" lands on "semitones" (29.78).
+  - frozen screen: nothing now. The hosts' idle (a 2 % breath and blinks, the critic's first
+    fix) is a series question. Lesson 5's final measure shows whether its final passes'
+    idle registers; if not, it goes to the owner with the wink. S7's gold sheen (31.9-33.2)
+    only if S7 is still over budget on its final passes.
+  - The rest stands.
+  Next free call: 122.
+- LAUNCHED ((model) xhigh): B's POLISH (builder) (briefs/l6-polish-B-02.md). It changes the
+  scene files only and lists its doc changes under "For the kit pass" in
+  lab/s07-slide/BUILD-NOTES.md.
+- After B's polish, GROUP B IS DONE for the owner's look. Running: C's finish, B's polish, and L5
+  (waiting on its queue).
