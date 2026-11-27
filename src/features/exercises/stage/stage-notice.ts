@@ -176,9 +176,10 @@ export interface BubbleNoticeInput {
  * first that applies: a warning or an error; then the example's line (no
  * notice); then any other of the app's notices; then the take's notice;
  * then nothing, and the bubble says the run's instruction or the brief.
- * While a run is under way, and while the take has the bubble (its
- * question, a keep, "Take kept"), the store keeps the calmer notices back,
- * so the take's comes before an achievement the run earned.
+ * While a run is under way the store keeps the calmer notices back. While
+ * the take has the bubble (its question, a keep, "Take kept"), the store
+ * holds achievements back and hands every other notice to the toasts, so
+ * the take's is the only one here then.
  */
 export function bubbleNotice(
   input: BubbleNoticeInput,

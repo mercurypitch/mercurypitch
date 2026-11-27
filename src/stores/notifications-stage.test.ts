@@ -6,12 +6,14 @@
 // store shows one at a time and merges unlocks of one moment, as under the
 // native pill; it puts a warning or an error before anything calmer, keeps
 // the calmer ones back while the stage is quiet (a run, an example), and
-// never lets a waiting notice run out its time unseen. Released, it hands
-// whatever is still waiting back to the toasts, in order.
+// never lets a waiting notice run out its time unseen. While a take's
+// question has Merc's bubble, every notice but an achievement is a toast at
+// once, and achievements wait for the bubble. Released, it hands whatever
+// is still waiting back to the toasts, in order.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { UnlockItem } from '@/stores/notifications-store'
-import { notificationPresenter, notifications, presentNoticesOnStage, removeNotification, resetNotifications, setNotificationPresenter, setStageQuiet, showActionNotification, showNotification, } from '@/stores/notifications-store'
+import { notificationPresenter, notifications, presentNoticesOnStage, removeNotification, resetNotifications, setNotificationPresenter, setStageQuiet, setStageTakeHolds, showActionNotification, showNotification, toastsBesideStage, } from '@/stores/notifications-store'
 
 const viewport = vi.hoisted(() => ({
   setNarrow: (_narrow: boolean): void => undefined,
@@ -213,6 +215,100 @@ describe('leaving the stage', () => {
     first()
 
     expect(notificationPresenter()).toBe('stage')
+  })
+})
+
+describe("while a take's question has Merc's bubble", () => {
+  it('shows every notice but an achievement at once, as a toast, a warning too', () => {
+    release = presentNoticesOnStage()
+    setStageTakeHolds(true)
+
+    showNotification('Synced', 'info')
+    showNotification('Microphone disconnected.', 'warning')
+
+    expect(notificationPresenter()).toBe('toast')
+    expect(messages()).toEqual(['Synced', 'Microphone disconnected.'])
+  })
+
+  it('shows a notice at once even while a calmer one waits for a run', () => {
+    release = presentNoticesOnStage()
+    setStageQuiet(true)
+    showNotification('Synced', 'info')
+    expect(messages()).toEqual([])
+
+    setStageQuiet(false)
+    setStageTakeHolds(true)
+
+    expect(messages()).toEqual(['Synced'])
+  })
+
+  it('holds the achievements back, merged, with their time not running, and puts them in the bubble once it lets go', () => {
+    release = presentNoticesOnStage()
+    setStageTakeHolds(true)
+    grant(FIRST_NOTE)
+    grant(DRILL_SERGEANT)
+    showNotification('Synced', 'info')
+    expect(messages()).toEqual(['Synced'])
+
+    vi.advanceTimersByTime(60_000)
+    setStageTakeHolds(false)
+
+    expect(notificationPresenter()).toBe('stage')
+    expect(messages()).toEqual(['2 new achievements'])
+    expect(notifications()[0]!.unlocks).toEqual([FIRST_NOTE, DRILL_SERGEANT])
+  })
+
+  it('keeps a toast it let through a toast until its time is up, and gives the bubble to the achievements at once', () => {
+    release = presentNoticesOnStage()
+    setStageTakeHolds(true)
+    grant(FIRST_NOTE)
+    showNotification('Synced', 'info', { durationMs: 8000 })
+
+    vi.advanceTimersByTime(3000)
+    setStageTakeHolds(false)
+
+    expect(messages()).toEqual(['New achievement: First Note'])
+    expect(toastsBesideStage().map((n) => n.message)).toEqual(['Synced'])
+
+    vi.advanceTimersByTime(5000)
+    expect(toastsBesideStage()).toEqual([])
+    expect(messages()).toEqual(['New achievement: First Note'])
+  })
+
+  it('hands a toast beside the bubble back to the toasts when the drill is left', () => {
+    release = presentNoticesOnStage()
+    setStageTakeHolds(true)
+    showNotification('Synced', 'info')
+    setStageTakeHolds(false)
+
+    release()
+
+    expect(toastsBesideStage()).toEqual([])
+    expect(messages()).toEqual(['Synced'])
+  })
+
+  it('sends an achievement on screen back to wait, and brings it back after', () => {
+    release = presentNoticesOnStage()
+    grant(FIRST_NOTE)
+    expect(messages()).toEqual(['New achievement: First Note'])
+
+    setStageTakeHolds(true)
+    expect(messages()).toEqual([])
+
+    setStageTakeHolds(false)
+    expect(messages()).toEqual(['New achievement: First Note'])
+  })
+
+  it('hands a held achievement to the toasts when the drill is left', () => {
+    release = presentNoticesOnStage()
+    setStageTakeHolds(true)
+    grant(FIRST_NOTE)
+
+    release()
+
+    expect(notificationPresenter()).toBe('toast')
+    expect(messages()).toHaveLength(1)
+    expect(notifications()[0]!.unlocks).toEqual([FIRST_NOTE])
   })
 })
 

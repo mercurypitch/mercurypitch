@@ -13,8 +13,10 @@
 // pressed meanwhile lost the take unasked). Once the question is answered,
 // one notice in the bubble names both achievements, no toast is on the
 // page, the sheet under it has not moved, it covers no control, and it
-// goes at an upward swipe of a mouse or of a finger. The order of what the
-// bubble says, and the store's queue, are unit-tested.
+// goes at an upward swipe of a mouse or of a finger. While the question
+// waits, nothing covers it and nothing but an achievement waits for it:
+// any other notice is a toast at once (owner, 27 Nov 2026). The order of
+// what the bubble says, and the store's queue, are unit-tested.
 //
 // Each check of the achievements' notice waits for the take's to be gone
 // first. The two used to race on a slow runner: a take asked before the
@@ -222,6 +224,63 @@ test('Keep, then Try Again, keeps the take, and the achievements come after it',
   await expect(history.getByText(/Pitch Hold/).first()).toBeVisible({
     timeout: 10000,
   })
+})
+
+test("during the take's question an info notice is a toast at once, and the achievements wait for the bubble until Keep", async ({
+  page,
+}) => {
+  test.slow()
+  await finishFirstRun(page)
+  await expectTakeAskedFirst(page)
+  const coach = page.getByTestId('exercise-stage-coach')
+  const take = coach.getByTestId(TAKE)
+  const toasts = page.getByRole('region', { name: 'Notifications' })
+
+  await page.evaluate(() => {
+    const notices = (
+      window as unknown as {
+        mpNotices: {
+          show: (m: string, t: string, o?: Record<string, unknown>) => void
+        }
+      }
+    ).mpNotices
+    notices.show('Your practice is synced to this device.', 'info', {
+      durationMs: 60_000,
+    })
+  })
+
+  // A toast at once, on screen and clear of the question, which keeps the
+  // bubble. The achievements are in neither place.
+  const toast = toasts.locator('> *')
+  await expect(toast).toHaveCount(1, { timeout: 1500 })
+  await expect(toast).toContainText('Your practice is synced to this device.')
+  await expect(toast).toBeInViewport()
+  const [toastBox, takeBox] = await Promise.all([
+    toast.boundingBox(),
+    take.boundingBox(),
+  ])
+  expect(
+    toastBox!.y >= takeBox!.y + takeBox!.height ||
+      takeBox!.y >= toastBox!.y + toastBox!.height,
+  ).toBe(true)
+  await expect(take).toContainText('Keep this take?')
+  await expect(coach.locator(NOTICE)).toHaveCount(0)
+
+  // Keep: "Take kept", then the achievements in the bubble, never a toast.
+  await page.getByRole('button', { name: 'Keep', exact: true }).click()
+  await expect(take).toContainText('Take kept', { timeout: 15000 })
+  await expect(coach.locator(NOTICE)).toHaveCount(0)
+  const notice = coach.locator(NOTICE)
+  await expect(notice).toHaveCount(1, { timeout: 10000 })
+  await expect(notice).toContainText('2 new achievements')
+  await expect(notice).toContainText('First Note, Drill Sergeant')
+  await expect(toasts.getByText(/achievement/i)).toHaveCount(0)
+  // The toast the question let through is still a toast, not in the bubble.
+  await expect(toast).toContainText('Your practice is synced to this device.')
+  const seen = await noticesSeen(page)
+  expect(seen.filter((n) => n.endsWith(':unlock'))).toEqual([
+    'exercise-stage-notice:unlock',
+  ])
 })
 
 test('the notice follows an upward swipe of a mouse and goes, a short drag springs back @smoke', async ({
