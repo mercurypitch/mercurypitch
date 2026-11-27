@@ -9,7 +9,9 @@
 // drag along a pass never chooses a take: opening one closes the other.
 // The clip bar, Clip details and the clip menu open them and the lane shows
 // them, places that share no component, so they read it here, as the
-// take-running flag is read (take-running.ts). One Studio is open at a time.
+// take-running flag is read (take-running.ts). One Studio is open at a time,
+// and the rows belong to its song: they close as the song is left
+// (StudioTimeline.tsx), even for a song with no lane to close them.
 //
 // While a take counts in, records or is being kept, the rows step aside
 // and every Comp button waits, as Repeat, Punch and the range do: the take
@@ -87,4 +89,9 @@ export function closeStudioTakes(): void {
 /** Opens a clip's takes, or closes them when they are open already. */
 export function toggleStudioTakes(clipId: string): void {
   toggle('takes', clipId)
+}
+
+/** Closes whatever rows stand open, takes or passes: their song is left. */
+export function closeStudioRows(): void {
+  setOpen(null)
 }

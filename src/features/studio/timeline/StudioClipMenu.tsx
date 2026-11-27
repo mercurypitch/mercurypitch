@@ -3,8 +3,10 @@
 // It follows the app's one rule for floating panels (use-popover-layer):
 // portalled to the page, clamped inside the viewport, and closed by a press
 // outside, a scroll that moves what opened it, a resize, or Escape, which
-// gives the focus back to what opened it. The page's own theme tokens
-// paint it: the Studio's are scoped to its page, which a portal leaves.
+// gives the focus back to what opened it. A row that takes away what opened
+// it, as Crop to this take takes the Takes button with the takes, gives the
+// focus to the clip instead. The page's own theme tokens paint it: the
+// Studio's are scoped to its page, which a portal leaves.
 // The checked row takes the focus first, so Enter on a menu the keyboard
 // opened changes nothing.
 import { createEffect, createSignal, For, onCleanup, Show } from 'solid-js'
@@ -13,6 +15,7 @@ import { CheckSmall } from '@/components/icons'
 import type { OverflowMenuItem } from '@/components/OverflowMenu'
 import type { PopoverAnchorRect } from '@/lib/use-popover-layer'
 import { placePopover, usePopoverLayer } from '@/lib/use-popover-layer'
+import { focusStudioClip } from './clip-focus'
 import styles from './StudioClipMenu.module.css'
 
 /** Where a clip menu opens, and what opened it. */
@@ -27,6 +30,8 @@ interface StudioClipMenuProps {
   anchor: StudioClipMenuAnchor | null
   label: string
   items: readonly OverflowMenuItem[]
+  /** The clip the rows act on: it takes the focus when a row takes away what opened the menu. */
+  clipId: string
   onClose(): void
 }
 
@@ -115,8 +120,12 @@ export function StudioClipMenu(props: StudioClipMenuProps) {
   })
   const pick = (item: OverflowMenuItem) => {
     if (item.disabled === true) return
+    // Read before the row acts, as what it changes can take this menu away.
+    const opener = props.anchor?.element
+    const clipId = props.clipId
     close(true)
     item.onSelect()
+    if (opener?.isConnected === false) focusStudioClip(clipId)
   }
   return (
     <Show when={props.anchor}>
