@@ -7,8 +7,7 @@ Shift+T step through the takes, the clip's right-click menu lists them, a
 row, and Crop keeps the one you chose. Loop recording already keeps one pass
 per loop; its passes become takes in all of these.
 
-**The saved-song format in section 4.2 waits for maff's review.** Nothing
-that changes it merges before he has read it.
+**The saved-song format in section 3.2 was approved by maff, 27 Nov 2026.**
 
 The owner asked for this in his words: "The feature to overdub recording,
 not push it to new lane when it was over existing take, we should simply
@@ -164,7 +163,7 @@ why the model below keeps the playing take in exactly those fields.
 8. **The most takes a clip keeps is 32**, as for passes. A 33rd take over a
    full clip goes to a new lane, with the same notice as today.
 
-### 3.2 The saved-song model (waits for maff's review)
+### 3.2 The saved-song model (approved by maff, 27 Nov 2026)
 
 A clip keeps playing what it plays today through its own fields. A clip with
 more than one take adds two optional fields:
