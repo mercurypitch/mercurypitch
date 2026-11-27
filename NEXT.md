@@ -5615,3 +5615,6 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Running: D's fix and critic E-01. ALL FIVE GROUPS ARE NOW BUILT. Left: D's last round and
   polish; E's fix, last round and polish; the KIT PASS (list in NEXT.md); then the final passes
   and the whole film.
+- 10:51: briefs/l6-critic-scenes-D-02.md WRITTEN (from D-01: verification marks, reads D-01's
+  REPORT, newest clips, S12 now built so the matched cut is judged against S12's first frame too,
+  E may edit s12-s14). review/critic-scenes-D-02/ made. Launch it when D's fix hands back.
