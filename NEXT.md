@@ -5664,3 +5664,16 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   (briefs/l6-sound.md); it goes when a slot frees, about when D's polish ends.
 - OWNER ASKED (10:56): may the old web-app scratch go (about 3.3 GB), and L6's final voices
   after their L5 listen? No answer yet.
+- 11:12: D's FIX ((builder)) HANDED BACK, all of 129 done:
+  - checks: probes 39/39 and 70/70, clearance 0, contrast all pass, root 0, board tools 0, seek
+    order 0 px;
+  - S10 holds 2.0 -> 1.8 per 30 s (longest 0.2 s); S11 1.3 per 30 s, unchanged;
+  - F-sing 1.5x (60 % of the width, 83 % of the height above the caption band);
+  - the push's layer rates are a local rig (floor 1.30, staves 1.10, glows 1.03);
+  - the rows at the cut at 24 % (2.0:1 nominal).
+  LEAD-ANSWERS 132: its decisions stand; the y 828 underline (a stroke) is accepted; the rows
+  stay at 24 %; KIT PASS +: the per-layer push rig. Next free call: 133.
+- LAUNCHED ((model) xhigh): CRITIC D-02, the last round (briefs/l6-critic-scenes-D-02.md).
+  CRITIC D-02 = (builder). Running now: E's fix ((builder)) and critic D-02.
+  Next: D-02's report -> D's polish (brief from l6-polish-C-02.md; no third round), then the
+  sound step in the freed slot.
