@@ -5282,3 +5282,9 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - KIT PASS LIST, so far: data-own; the ghost-line clip (110, if not done in S1); the card fade
   check (116); the stale counts and the dimmed-bead docs (117); A's polish's "For the kit pass"
   list (118).
+- 00:51 check-in: seven_day allowed_warning (spend lean). In flight: L5 final run (waiting on
+  its queue: 8 of 27 done, 19 to go, slowed by the L6 jobs sharing the slots); B's fix; A's
+  polish. DISK 4.9 G free (5.6 at 00:02). Where it went: the L6 labs (846 M), the L6 reviews (278 M),
+  the session's own transcript and log, and three new git packs in the main checkout at 00:19
+  (342 + 237 + 5 MB, from a repack or fetch, not ours to touch). Nothing deleted. The L5 render needs
+  about 1 G for its two MP4s on top of the 2 G floor: watch it at each check-in.
