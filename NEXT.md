@@ -5862,3 +5862,28 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   FILM DRAFT agent = (builder) (notes in review/film-01/NOTES.md). Running: the film draft
   alone. When it hands back: the lead checks the numbers and the sheets; decide on ONE film-round
   critic (the film has had none), then send the owner the draft and the small sheet.
+
+## 27 Nov 16:30 UTC: FILM DRAFT 01 DONE; CRITIC F-01 launched; the owner gets the draft
+- FILM DRAFT ((builder), finished):
+  - renders/film-draft-01.mp4: 15,947 frames, 531.567 s, frame 0 fine; check 0 errors;
+  - holds 1.7 s per 30 s, longest 0.4 s; 18 holds of 0.3 s or more (S7 worst, 2.66 per 30 s);
+  - all 13 cuts hold; the matched cut (0, 0);
+  - sync: 4 notes flagged, but per region each note's own light starts 0 to 40 ms from its onset
+    (the tool picked up the hosts and other stretches);
+  - events: 40.767 (S2, 7.4 %, the sphere shrinks and the bead streaks in); 513.067 (the
+    practise cards' layer snaps about 1 px); 381.73 and 381.80 (S10's stop and doctor lines snap
+    twice);
+  - HyperFrames' mix came out 0.85 dB low.
+  - The LEAD MUXED full.wav onto the draft's video (video copied):
+    renders/film-draft-01-full.mp4, -16.1 LUFS, -1.5 dBTP.
+  - DISK: the render's extract cache took 2.5 G plus Chrome's temp files, and free disk fell to
+    0.75 G near the end; it is cleared and 4.5 G is free. THE FINAL 60 fps RENDER MUST keep the
+    cache in /dev/shm and clear it per piece, as L5's render-pieces.sh did.
+  - tools/film-cuts.py still holds L5's ids; the agent used a copy at
+    $S/l6-draft01-bin/film-cuts-l6.py.
+- The LEAD LOOKED at the small contact sheet: the film reads as one piece, with nothing broken
+  at that scale.
+- LAUNCHED ((model) xhigh): CRITIC F-01 (builder), the whole film with sound (briefs/l6-critic-F-01.md; report
+  to review/critic-F-01/REPORT.md). The owner's cap is two film rounds; this is round one.
+- SENT the owner the draft and the small sheet for an early look. Their notes and F-01's go into
+  one fix round.
