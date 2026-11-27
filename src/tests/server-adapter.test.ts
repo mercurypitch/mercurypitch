@@ -6,6 +6,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { resetCloudReadWarningsForTests, ServerAdapter, } from '@/db/adapters/server-adapter'
+import { API_READ_DEADLINE_MS, API_WRITE_DEADLINE_MS, ApiDeadlineError, } from '@/db/api-fetch'
 import type { DbEntity } from '@/db/types'
 
 interface Rec extends DbEntity {
@@ -177,6 +178,107 @@ describe('ServerAdapter retry semantics', () => {
     await vi.advanceTimersByTimeAsync(2000)
     await assertion
     expect(plainError).toHaveBeenCalledTimes(1)
+  })
+})
+
+// A network that holds requests to the API host for a minute used to cost a
+// read three of those minutes: no deadline, and a retry for each TypeError
+// the hold finally ended in. One read now costs one deadline.
+describe('a request that runs out of time', () => {
+  /** Nobody answers; it rejects as a browser's fetch does once aborted. */
+  const held = () =>
+    vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<never>((_resolve, reject) => {
+          init?.signal?.addEventListener('abort', () => {
+            reject(new DOMException('The operation was aborted.', 'AbortError'))
+          })
+        }),
+    )
+
+  it('costs a held read one deadline and is not tried again', async () => {
+    const fetchMock = held()
+    vi.stubGlobal('fetch', fetchMock)
+
+    let rows: Rec[] | undefined
+    void repo()
+      .findAll()
+      .then((r) => {
+        rows = r
+      })
+    await vi.advanceTimersByTimeAsync(API_READ_DEADLINE_MS)
+
+    expect(rows).toEqual([])
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('does not try a write again once it ran out of time', async () => {
+    const fetchMock = held()
+    vi.stubGlobal('fetch', fetchMock)
+
+    let error: unknown
+    repo()
+      .create({ score: 1 })
+      .catch((e: unknown) => {
+        error = e
+      })
+    await vi.advanceTimersByTimeAsync(API_WRITE_DEADLINE_MS)
+
+    expect(error).toBeInstanceOf(ApiDeadlineError)
+    await vi.advanceTimersByTimeAsync(60_000)
+    expect(fetchMock).toHaveBeenCalledTimes(1)
+  })
+
+  it('still tries again after a network failure that came back at once', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockResolvedValueOnce(ok([{ id: 'a', score: 1 }]))
+    vi.stubGlobal('fetch', fetchMock)
+
+    let rows: Rec[] | undefined
+    void repo()
+      .findAll()
+      .then((r) => {
+        rows = r
+      })
+    await vi.advanceTimersByTimeAsync(2000)
+
+    expect(rows).toEqual([{ id: 'a', score: 1 }])
+    expect(fetchMock).toHaveBeenCalledTimes(3)
+  })
+
+  it('gives a read whose attempts keep failing slowly no more than one deadline', async () => {
+    // Each attempt is refused after 5 s, as a proxy that holds for a while
+    // would. The retry after the first starts at about 5.3 s and is cut off
+    // at the read's deadline; there is no third.
+    const fetchMock = vi.fn(
+      (_url: string, init?: RequestInit) =>
+        new Promise<never>((_resolve, reject) => {
+          const refusal = setTimeout(() => {
+            reject(new TypeError('Failed to fetch'))
+          }, 5000)
+          init?.signal?.addEventListener('abort', () => {
+            clearTimeout(refusal)
+            reject(new DOMException('The operation was aborted.', 'AbortError'))
+          })
+        }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    const started = Date.now()
+    let tookMs: number | undefined
+    void repo()
+      .findAll()
+      .then(() => {
+        tookMs = Date.now() - started
+      })
+    await vi.advanceTimersByTimeAsync(30_000)
+
+    expect(tookMs).toBe(API_READ_DEADLINE_MS)
+    expect(fetchMock).toHaveBeenCalledTimes(2)
   })
 })
 

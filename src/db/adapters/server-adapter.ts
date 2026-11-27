@@ -13,6 +13,7 @@
 //   DELETE /api/<entity>/:id      → delete
 //   GET    /api/<entity>/count    → count
 
+import { ApiDeadlineError, deadlineFor, fetchWithDeadline, } from '@/db/api-fetch'
 import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/types'
 import { IS_DEV } from '@/lib/defaults'
 
@@ -91,6 +92,12 @@ function describeCloudFailure(err: unknown): { cause: string; what: string } {
     return {
       cause: `http-${err.status}`,
       what: `the backend answered ${err.status}`,
+    }
+  }
+  if (err instanceof ApiDeadlineError) {
+    return {
+      cause: 'deadline',
+      what: `the backend did not answer within ${Math.round(err.deadlineMs / 1000)} s`,
     }
   }
   // The retry loop only re-throws a TypeError once it has given up, so by the
@@ -179,15 +186,41 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
         this.config.writeIdentity?.() === expectedIdentity) &&
       new Headers(this.headers()).get('authorization') === requestCredential
 
+    // One deadline for the whole request, retries and their waits included.
+    // A network that holds requests to the API host for a minute used to cost
+    // a read three of those minutes, because the TypeError the hold finally
+    // ended in was retried twice with no deadline on any attempt. Now an
+    // attempt gets what is left of the deadline, a retry happens only while
+    // some is left, and an attempt that runs out of it ends the request with
+    // an ApiDeadlineError, which is never retried (it is not a TypeError).
+    // A refusal that comes back at once is still retried as before.
+    const deadlineMs = deadlineFor(init)
+    const giveUpAt = Date.now() + deadlineMs
+    const timeLeft = (): number => giveUpAt - Date.now()
+    const backoff = (attempt: number): number =>
+      Math.pow(2, attempt) * 200 + Math.random() * 100
+
     for (let attempt = 0; attempt <= retries; attempt++) {
       try {
-        const res = await fetch(url, { ...init, headers })
+        const res = await fetchWithDeadline(
+          url,
+          { ...init, headers },
+          timeLeft(),
+        ).catch((err: unknown) => {
+          // Say how long the request had, not what its last attempt had left.
+          throw err instanceof ApiDeadlineError
+            ? new ApiDeadlineError(url, deadlineMs)
+            : err
+        })
 
-        // Retry on 5xx server errors or 429 rate limits
+        // Retry on 5xx server errors or 429 rate limits, while there is time;
+        // without it, this response is the answer.
         if ((res.status >= 500 || res.status === 429) && attempt < retries) {
-          const delay = Math.pow(2, attempt) * 200 + Math.random() * 100
-          await new Promise((r) => setTimeout(r, delay))
-          continue
+          const delay = backoff(attempt)
+          if (delay < timeLeft()) {
+            await new Promise((r) => setTimeout(r, delay))
+            continue
+          }
         }
 
         if (res.status === 401) {
@@ -217,10 +250,12 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
         return res.json() as Promise<R>
       } catch (err) {
         if (attempt < retries && err instanceof TypeError) {
-          // Network error (offline, DNS failure) — retry
-          const delay = Math.pow(2, attempt) * 200 + Math.random() * 100
-          await new Promise((r) => setTimeout(r, delay))
-          continue
+          // Network error (offline, DNS failure): retry, if time is left.
+          const delay = backoff(attempt)
+          if (delay < timeLeft()) {
+            await new Promise((r) => setTimeout(r, delay))
+            continue
+          }
         }
         throw err
       }
