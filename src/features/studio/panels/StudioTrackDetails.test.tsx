@@ -1,9 +1,11 @@
 // Studio track details tests — a lane's details open its lines in the arrangement (an overlaid panel stepping aside), hold them while a take runs, arm the lane where its header cannot, and comp its loop takes on a phone only.
 import { fireEvent, render, screen } from '@solidjs/testing-library'
+import { createSignal } from 'solid-js'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
 import type { StudioClip } from '@/lib/studio/model/types'
+import { DEFAULT_STUDIO_RECORD_SETTINGS } from '@/lib/studio/record/record-settings'
 import type { StudioRecordPhase } from '@/lib/studio/record/studio-recorder'
 import { setStudioTakeRunning } from '../record/take-running'
 import { studioLaneLinesRequest } from '../timeline/lane-lines-request'
@@ -104,5 +106,32 @@ describe('Studio track details', () => {
 
     expect(screen.queryByRole('group', { name: /^Comp of / })).toBeNull()
     expect(screen.queryByRole('button', { name: /^Bar / })).toBeNull()
+  })
+
+  it('switches Hear yourself, the Studio’s one monitoring switch, and says it is for every lane', () => {
+    // Arrange
+    const [settings, setSettings] = createSignal(DEFAULT_STUDIO_RECORD_SETTINGS)
+    render(() => (
+      <StudioTrackDetails
+        track={track}
+        project={project}
+        assets={[]}
+        writable
+        recordSettings={{ settings, setSettings }}
+        onCommand={() => true}
+        onRemove={vi.fn()}
+      />
+    ))
+    const toggle = screen.getByRole('checkbox', {
+      name: 'Hear yourself on every lane',
+    })
+
+    // Act
+    fireEvent.click(toggle)
+
+    // Assert
+    expect(settings().monitor).toBe(true)
+    expect(toggle).toBeChecked()
+    expect(screen.getByText(/same as Monitor through headphones/)).toBeTruthy()
   })
 })

@@ -264,7 +264,7 @@ export function StudioTimelineLane(props: StudioTimelineLaneProps) {
       data-armed={armed()}
       style={{ '--studio-track': color() }}
     >
-      <div class={styles.trackHeader}>
+      <div class={styles.trackHeader} data-studio-lane-head={props.id}>
         <Show when={!props.timeline.phone} fallback={phoneIdentity()}>
           <StudioTrackControls
             track={props.track}

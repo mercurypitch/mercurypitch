@@ -615,6 +615,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             assetPeaks={props.studio.assetPeaks}
             records={recorder.timeline()}
             arming={recorder.arming}
+            recordSettings={recorder}
           />
           <StudioRecordStatus recorder={recorder} />
           <Show when={deskOpen()}>
@@ -753,6 +754,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
                 phone={phone()}
                 arming={phone() ? recorder.arming : undefined}
                 input={recorder}
+                recordSettings={recorder}
                 focusInput={inputFocusFor() === selectedTrack()!.id}
                 onInputFocused={() => setInputFocusFor(null)}
                 onInputs={() => openPanel('inputs')}

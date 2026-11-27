@@ -10,9 +10,10 @@ import type { StudioLaneInputRecorder } from '../record/StudioLaneInputField'
 import { StudioLaneInputField } from '../record/StudioLaneInputField'
 import { studioTakeRunning } from '../record/take-running'
 import { requestStudioLaneLines } from '../timeline/lane-lines-request'
+import { STUDIO_HEAR_YOURSELF_LABEL, studioHearYourself, } from '../timeline/lane-menu-items'
 import { LaneLine } from '../timeline/line-icons'
 import { StudioArmButton } from '../timeline/StudioLaneHeader'
-import type { StudioLaneArming } from '../timeline/types'
+import type { StudioLaneArming, StudioRecordSettingsSource, } from '../timeline/types'
 import { StudioCompSheet } from './StudioCompSheet'
 
 interface StudioTrackDetailsProps {
@@ -31,6 +32,8 @@ interface StudioTrackDetailsProps {
   arming?: StudioLaneArming
   /** The lane's own input and channel, on this device; absent where nothing records. */
   input?: StudioLaneInputRecorder
+  /** Where Hear yourself, the Studio's one monitoring switch, is kept, as Sound has it; absent where nothing records. */
+  recordSettings?: StudioRecordSettingsSource
   /** The lane header's input chip opened the details: the input takes the focus. */
   focusInput?: boolean
   onInputFocused?(): void
@@ -141,6 +144,27 @@ export function StudioTrackDetails(props: StudioTrackDetailsProps) {
             onAllInputs={props.onInputs}
             instrument={studioLaneInstrument(props.track)}
           />
+        )}
+      </Show>
+      <Show
+        when={props.recordSettings && studioHearYourself(props.recordSettings)}
+      >
+        {(hear) => (
+          <>
+            <label class={styles.toggleField}>
+              <input
+                type="checkbox"
+                checked={hear().on()}
+                data-studio-hear-yourself=""
+                onChange={(event) => hear().set(event.currentTarget.checked)}
+              />
+              <span>{STUDIO_HEAR_YOURSELF_LABEL}</span>
+            </label>
+            <p class={styles.help}>
+              One switch for the Studio, the same as Monitor through headphones
+              in Sound. Wear headphones, or the mic hears the speakers.
+            </p>
+          </>
         )}
       </Show>
       <div class={styles.fieldDivider} />

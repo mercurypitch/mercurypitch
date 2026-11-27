@@ -1056,6 +1056,32 @@
 }
 /* A lane's details open with what its compact header leaves out: its lines,
    and on a phone its arm. */
+/* A switch in a details sheet, as Sound's switches are: the box, then its words. */
+.toggleField {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-height: 36px;
+  color: var(--studio-text);
+  font-size: 13px;
+  cursor: pointer;
+}
+.toggleField input {
+  flex: none;
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--studio-accent);
+}
+/* A press on the words lands on the label itself, which hands it to the box. */
+.toggleField span {
+  pointer-events: none;
+}
+@media (pointer: coarse) {
+  .toggleField {
+    min-height: 44px;
+  }
+}
 .laneActions {
   display: flex;
   flex-wrap: wrap;

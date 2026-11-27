@@ -3,6 +3,7 @@ import type { StudioCommand } from '@/lib/studio/model/commands'
 import type { StudioAsset, StudioClip, StudioProject, } from '@/lib/studio/model/types'
 import type { StudioFrameRange } from '@/lib/studio/playback/loop-range'
 import type { StudioLaneInput } from '@/lib/studio/record/lane-inputs'
+import type { StudioRecordSettings } from '@/lib/studio/record/record-settings'
 import type { StudioLiveTake, StudioRecordPhase, } from '@/lib/studio/record/studio-recorder'
 import type { StudioPlayheadClock } from './playhead-motion'
 import type { StudioWaveformPeaksStore } from './waveform-resource'
@@ -26,6 +27,18 @@ export interface StudioLaneArming {
   /** Whether a press can arm a lane now: the song takes edits and its audio is free. */
   canArm(): boolean
   toggle(trackId: string): void
+}
+
+/** The Studio-wide monitoring switch (record-settings.ts `monitor`), as a lane's menu and details read and set it. */
+export interface StudioHearYourself {
+  on(): boolean
+  set(on: boolean): void
+}
+
+/** The recorder's settings on this device (record-settings.ts), where Hear yourself is kept. */
+export interface StudioRecordSettingsSource {
+  settings(): StudioRecordSettings
+  setSettings(next: StudioRecordSettings): void
 }
 
 /** Each lane's own input, kept on this device, and the name of the Studio's that the others follow. */
@@ -102,6 +115,8 @@ export interface StudioTimelineProps {
   records?: readonly StudioTimelineRecording[]
   /** The lanes' arm buttons; absent, the headers show none. */
   arming?: StudioLaneArming
+  /** Where Hear yourself is kept, for a lane's menu; absent where nothing records. */
+  recordSettings?: StudioRecordSettingsSource
   /** The range on the ruler Repeat loops and Punch records in (StudioRulerRange.tsx). */
   range?: StudioFrameRange | null
   /** Set or clear the range: a drag along the ruler, its handles, or a clip's toolbar. */
