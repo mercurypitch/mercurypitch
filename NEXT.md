@@ -5700,3 +5700,6 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   - E's fix -> CRITIC E-02 (brief from E-01 plus the verification section, as D-02 was made);
   - D's polish done -> the SOUND STEP (briefs/l6-sound.md) in the freed slot;
   - E-02 -> E's polish -> KIT PASS -> film draft (MIX=full root) -> the owner's look.
+- 11:25: briefs/l6-critic-scenes-E-02.md WRITTEN (from E-01: verification marks, reads E-01's
+  REPORT, maps items by cue since the clock moves after 524, newest clips, D's polish edits
+  s10-s11). review/critic-scenes-E-02/ made. Launch it when E's fix hands back.
