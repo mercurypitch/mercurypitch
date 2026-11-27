@@ -5759,3 +5759,19 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - Next: when D's polish ends, the SOUND STEP (briefs/l6-sound.md; the clock is now 531.54 s).
   When both polishes end: the KIT PASS (its list in NEXT.md, with the + items since), then the
   30 fps film draft with MIX=full, measure, and the owner's look.
+
+## 27 Nov 12:55 UTC: GROUP D DONE (137); SOUND STEP launched
+- D's POLISH second set ((builder), finished):
+  - the three swaps are a line-by-line wipe; clearance 0 with no exemption;
+  - least region ink 49.9 / 71.2 / 37.4 % (the 60 % target cannot be met under the rule);
+  - S11 holds 1.2 per 30 s; S10 1.8.
+  The lead LOOKED at swap 3's strip: it reads clean, with no overprint. LEAD-ANSWERS 137 accepts
+  it and withdraws the 60 % target for a moving front. GROUP D IS DONE. Next free call: 138.
+- briefs/l6-sound.md updated: the clock (531.54 s, end at 525.34); stems as FLAC; E's scenes
+  last, as their polish runs.
+- LAUNCHED ((model) xhigh): SOUND STEP (builder) (briefs/l6-sound.md; NOTES in
+  review/sound-01/NOTES.md).
+- Running: E's polish ((builder)) and the sound step ((builder)).
+- Next: when E's polish ends -> the KIT PASS brief (write it: the list in NEXT.md with every +
+  since); then the 30 fps film draft with MIX=full (after the sound step), measure, and the
+  owner's look.
