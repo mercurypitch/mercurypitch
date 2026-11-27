@@ -5618,3 +5618,19 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - 10:51: briefs/l6-critic-scenes-D-02.md WRITTEN (from D-01: verification marks, reads D-01's
   REPORT, newest clips, S12 now built so the matched cut is judged against S12's first frame too,
   E may edit s12-s14). review/critic-scenes-D-02/ made. Launch it when D's fix hands back.
+- 10:56: briefs/l6-sound.md WRITTEN (L6's sound step, from l5-sound.md):
+  - the ooh from facts-check SOUNDS, checked in node against the notes the kit draws;
+  - the pad on C per FACTS 83, with Lesson 1's A-major chimes unchanged (the series' sound);
+  - the mix matched to L5 (-16.0 LUFS, 5.0 LU, -2.5 dBTP); captions lesson-06; chapters;
+  - tools/sync-check.py (bead lights against onsets, re-runnable on the film draft);
+  - listening copies in renders/listen/; stems as 16-bit;
+  - NO gen-root (the lead switches the root to MIX=full at the film draft).
+  LAUNCH it when a slot frees (about when D's polish ends).
+- DISK: 3.3 GB free of the session allowance. L6 still needs about 2 GB (sound step about 1 GB,
+  as L5's stems were 939 MB; final pieces and renders about 0.5 GB; rounds about 0.5 GB).
+  - Candidates, NOT deleted (the owner's rule):
+    - old web-app scratch for merged PRs: polish2 1.3G (three dist builds 594M), eardrill 607M,
+      dev 523M, audit 350M, earwide 283M, snotices 210M;
+    - L5 backup-pre-voices 1.3G (until the owner's listen).
+  - ASKED THE OWNER.
+- ASK THE OWNER (with the disk): L6's final voices (ElevenLabs, as L5's), after their L5 listen.
