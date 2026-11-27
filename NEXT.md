@@ -5838,3 +5838,9 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   - The film draft fits. The hosts' passes and the final render do not.
   - ASKED THE OWNER AGAIN, with the table: may the old web-app scratch go (polish2 1.3G,
     eardrill 607M, dev 523M, audit 350M, earwide 283M, snotices 210M)? Nothing deleted.
+- 15:51 check-in: the KIT PASS's clip chain DONE at 15:50 (its hand-back is due).
+  - DISK 4.7 G free. The kit pass found that HyperFrames' shared extract cache
+    (/tmp/hyperframes-extract-cache-0) had grown 3.8 G from its own renders (an entry per host per
+    render) and removed its own entries. Its bin/clips.sh now clears each render's entries.
+  - The film draft brief now says the same. LESSON: the extract cache explains this session's
+    disk drops; every render agent clears its own entries.
