@@ -5483,7 +5483,7 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
     - 8g's labels reading as one row with the Yes pill.
 - LEAD-ANSWERS 126 takes them all into a POLISH pass, with no third round. Holds as 120 and 121
   say. Next free call: 127.
-- LAUNCHED ((model) xhigh): C's POLISH (see the agent list; briefs/l6-polish-C-02.md). It edits now
+- LAUNCHED ((model) xhigh): C's POLISH (builder) (briefs/l6-polish-C-02.md). It edits now
   and renders through heavy after L5's pieces, about 08:00.
 - After it: GROUP C IS DONE for the owner's look. Then group D (S10-S11) and E. D's brief must say
   that S10 opens with the octave measure as ticks only (125).
