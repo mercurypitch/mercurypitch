@@ -6003,3 +6003,26 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - briefs/l6-film-draft-03.md WRITTEN (from draft 02's: it checks the mix is fresh, renders,
   muxes, measures, cuts, sync, COMPARE with draft 02, sheets). LAUNCH it when the polish hands
   back; then SEND THE OWNER draft 03 for their look (no critic follows).
+
+## 27 Nov 21:34 UTC: THE F-02 POLISH RETURNED; call 146; DRAFT 03 LAUNCHED
+- The F-02 POLISH ((builder), finished and RETIRED): all seven items of 145 are built.
+  - The duet sits level with the speech (-14.6 to -14.9 LUFS against -14.8 to -15.2).
+  - The whooshes come down 6.8 dB against the pad. Their 2 to 8 kHz lift is +5.8 to +6.9 dB,
+    still over the kit's +4, because the bed is near silent. That is for the owner's ear.
+  - 12c is at 3.0x and fills 59.1 % of the frame.
+  - 381.5 is the wipe by lines.
+  - The room breath is built, but it does not lower the holds. The hosts' passes will (127).
+  - 184 and 199.7: the letters change with the gold.
+  - The mix is rebuilt: -16.0 LUFS, 4.4 LU, -1.8 dBTP. full.wav (20:23) is newer than every
+    scene and mix.py.
+  - Notes: lab/s08-swap/BUILD-NOTES.md § Film polish after F-02; tools/CHANGES.md.
+- LEAD-ANSWERS 146: all accepted (backup $S/l6-LEAD-ANSWERS-pre146.md). Next free call: 147.
+- briefs/l6-film-draft-03.md now keeps the host frames in /dev/shm/l6-d03-extract, as L5's
+  render-final.sh did, so the disk holds (3.2 G free).
+- LAUNCHED ((model) xhigh): DRAFT 03, (builder) (briefs/l6-film-draft-03.md). It is the
+  only agent running.
+  - Its notes: l6film/review/film-03/NOTES.md.
+  - Next: check its numbers, then SEND THE OWNER film-draft-03-full.mp4 and the small sheet for
+    their look. No critic follows.
+  - Restate the three open questions: their notes on the draft; L6's final voices now or after
+    their L5 listen; deleting the old web-app scratch.
