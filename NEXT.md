@@ -5927,3 +5927,12 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   - a polish;
   - the owner's look;
   - then the final voices (on the owner's word), the hosts' passes and the 60 fps final.
+- 17:59: SIDE A ((builder)) HANDED BACK, all of its items in 141 done:
+  - frame 0 matches L5 within 0.9 px; the title's field holds 0.25 s;
+  - Merc is in at 52.40 (a stand-in from his own pass, on hand-timed tags);
+  - S5's drift at 2.2 px/s; S7 pulls to 0.94 and pushes to 1.06 with the slide;
+  - probes S1 to S7 all pass (the ring places and S1's sphere fixed); clearance 0; root 0 (34
+    warnings); board tools 0; seek order 0 (S1 at 3.0: 3 px).
+  LEAD-ANSWERS 142: accepted. HOSTS' PASSES +: Merc's S3/S4 entrance and his b4a talk.
+  KIT-HYGIENE +: the copies of the rig. Next free call: 143.
+- Running: SIDE B ((builder)) alone.
