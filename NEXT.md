@@ -5360,3 +5360,5 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   lab/s07-slide/BUILD-NOTES.md.
 - After B's polish, GROUP B IS DONE for the owner's look. Running: C's finish, B's polish, and L5
   (waiting on its queue).
+- 01:50 check-in: seven_day allowed_warning. In flight: L5 final run (queue 13 done, 14 to go),
+  C's finish, B's polish. Disk 5.1 G free. Nothing stopped and nothing due.
