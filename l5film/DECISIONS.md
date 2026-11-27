@@ -2206,3 +2206,40 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      with their arcs, the hops in the break, the end card, the long listen and the feet on y 840
      all read as the shots say. Its footer still says "30 fps scratch passes", a stale label in
      the tool; the stills are this run's 60 fps passes.
+264. **The single 60 fps render is stopped** (the lead's call, 27 November 05:52 UTC; the lead named
+     it 263, which was already step 3's). Started 04:26 after `check` (0 errors, the 24 standing
+     warnings) with 12.75 GiB free under the cap. Its two Chrome workers grew to about 3.2 GiB each;
+     at 04:48 the cgroup used 13.35 GiB, by 04:57 none was free (`logs/04-memory.tsv`), the kernel
+     killed one, and HyperFrames logged "parallel capture stalled (stuck at 20883/34185)" and began
+     again from frame 0 with one worker in screenshot mode. That worker's browser grew about 0.19 GiB
+     per 1,000 frames, so it would have met the cap again near frame 23,000. Stopped at 5,198 s
+     (TERM to the HyperFrames process tree; the script's own trap then cleared
+     `/dev/shm/l5-extract`, which had held 5.53 GiB at most). No output was written; nothing of it is
+     left in `renders/`. The picture is now rendered in pieces, each a fresh process, and joined
+     (265).
+265. **The picture in pieces: HyperFrames' own frame range on the root** (the lead's call after 264).
+     `hyperframes render` takes no time or frame range. HyperFrames 0.8.97's distributed API does:
+     `plan` makes the renderer's plan of the whole root (its compile, its timing, its video cut and
+     its sound), and `renderChunk` captures one fixed range of the root's own frames. These are the
+     same stages as `render`, and the lab proved them on this film: 0.2 px from the CLI and
+     byte-identical run to run (`lab/integration/film-hops-fix/README.md`). The scene route was
+     not taken because it is not exact: a scene hosted alone from its own time 0
+     (`tools/lab.mjs`) is sampled on its own grid, and the scene starts (42.620 s, 56.305 s, ...)
+     are not on the film's 60 fps grid, so its frames would be a fraction of a frame off the
+     film's, and the scenes' frame counts would not add up to the film's.
+     - `lab/final-run/render-pieces.sh` runs `check` (0 errors), then the plan into
+       `/dev/shm/l5-plan` (the extract cache off, so the frames do not land in /tmp on disk), then
+       pieces of 1,800 frames (30 s; 34,185 frames make 19 pieces, the last 1,785). Each piece is a
+       fresh `node lab/final-run/piece.mjs chunk` process with one browser (`PRODUCER_MAX_WORKERS=1`),
+       written to `renders/pieces/` with video only.
+     - Memory per piece: the plan's 5.5 GiB plus one fresh browser, which the stopped render showed
+       at about 2.6 GiB for node, Chrome and the encoder together. It grows about 0.19 GiB per
+       1,000 frames, so about 0.35 GiB over a piece.
+     - A watchdog stops a piece's process group if fewer than 1.5 GiB are free under the cap (heavy's
+       formula, read every 2 s). Each piece also waits for 3.5 GiB free, and for 2.5 GiB of disk.
+     - The script holds both heavy slots for all of its pieces (started as 262 was). Peak memory
+       and least free for each piece go to `render-pieces.state`, and every 30 s to
+       `logs/05-memory.tsv`.
+     - The pieces are then joined with ffmpeg concat (stream copy). The full mix and the music-only
+       mix are muxed onto the one joined picture from `assets/audio/`, so the music-only version is
+       not rendered again.

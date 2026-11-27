@@ -5461,3 +5461,12 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
     render.
   - Checks: 34185 frames; the joins against root snapshots.
   - Disk 4.0 G. Critic C-02 is still reading and waits on `heavy true`.
+- 05:58: L5 DECISIONS 263 to 265. The single render was stopped at 05:52 (no output written).
+  NOW: lab/final-run/render-pieces.sh runs:
+  - check;
+  - HyperFrames' own `plan` of the root into /dev/shm/l5-plan;
+  - 19 pieces of 1800 frames, each a fresh `renderChunk` with one browser (the distributed API,
+    proven in lab/integration/film-hops-fix: 0.2 px from the CLI, byte-identical run to run).
+  The scene route was rejected: scene starts are off the 60 fps grid. Expect about 2 h, so done
+  about 08:00; then the join, the mix mux, the music-only mux, measure and the deliverables.
+  The passes' contact sheet was looked at by the agent. Disk 4.3 G.

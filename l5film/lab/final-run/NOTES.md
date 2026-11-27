@@ -12,7 +12,7 @@ from the film's root (`l5film/`), every heavy job through `$S/bin/heavy`, one at
 | 1 | `MIX=full python3 tools/gen-root.py`, in place: the 13 root `data-duration` values of DECISIONS 252, nothing else (`logs/01-gen-root.txt`); `check`: 0 errors, 24 standing warnings (`logs/01-check-after-gen-root.txt`) | done (257) |
 | 2 | `merc-shots.py --final` on the voiced clock, with the lead's additions (DECISIONS 258, `tools/CHANGES.md`; `logs/02-*`); S14's `base` 400 (259); the 54 Merc tags written for the new shots and `--margins` checked (`logs/03-tags-*`) | done: do NOT run merc-shots.py again (it would make every pass stale) |
 | 3 | The 27 jobs, roots, joins (23 of 23), tags check (15 of 15), sheet (on `lab/final-run/dump-current/`) | done 04:09 UTC 27 November (263) |
-| 4 | The 60 fps render and the music-only sibling's (DECISIONS 262: the extraction in memory) | `lab/final-run/render-final.sh`, after step 3; state in `lab/final-run/render-final.state`, memory in `logs/04-memory.tsv` |
+| 4 | The 60 fps picture in 19 pieces (DECISIONS 264: the single render stopped, OOM; 265: the pieces), then the join and the two muxes | `lab/final-run/render-pieces.sh` running; state in `render-pieces.state` |
 | 5 | The measure | |
 | 6 | The deliverables | |
 
@@ -53,3 +53,14 @@ from the film's root (`l5film/`), every heavy job through `$S/bin/heavy`, one at
 - If the script died (a worker restart): `rm -rf /dev/shm/l5-extract` first (its own frames, about
   5.3 GiB of memory), then start it again; `SKIP_FILM=1` at the head of that command line skips a film already
   rendered (`render-final.state` says "film render exit 0").
+
+### Step 4 in pieces (DECISIONS 265; replaces render-final.sh, which is not to be run again)
+
+- Start or resume, from `l5film/`:
+  `HEAVY_PRI=1 HEAVY_MIN_GIB=10 setsid nohup $S/bin/heavy $S/bin/heavy bash lab/final-run/render-pieces.sh > lab/final-run/logs/05-render-pieces.out 2>&1 &`
+  It rebuilds the plan in `/dev/shm/l5-plan` (cleared on every exit; if a restart left it, `rm -rf
+  /dev/shm/l5-plan` first) and skips every `renders/pieces/piece-NNN.mp4` already there.
+- After all 19: concat (stream copy) to `renders/pieces/picture.mp4`, count 34,185 frames, mux
+  `assets/audio/full.wav` and `music-only.wav` (AAC 192k, as HyperFrames muxes) to
+  `renders/film-final-60.mp4` and `renders/film-final-60-music-only.mp4`; the join check against
+  snapshots of the root; then `renders/pieces/` can go (made by this run).
