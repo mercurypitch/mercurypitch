@@ -5570,5 +5570,5 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   the care block word for word against FACTS § 3.
 - 09:41: E's brief (briefs/l6-film-scenes-E.md) gained the 27 November preface: the standing
   calls, the type re-layout after a push (128), S11's last frame as E's first, the lab tools, and
-  exact-replacement edits. LAUNCHED ((model) xhigh): L6 GROUP E BUILDER (see the agent list) for
+  exact-replacement edits. LAUNCHED ((model) xhigh): L6 GROUP E BUILDER (builder) for
   S12-S14. Running: critic D-01 and E's build.
