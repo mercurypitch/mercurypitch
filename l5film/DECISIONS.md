@@ -2264,3 +2264,21 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      - The run: each piece is built, planned, rendered and cleared in turn, with the watchdog
        on both the plan and the frames, and every piece waits for 6 GiB free first. The piece
        projects are in `$S/l5film-pieces/` (made by this run, symlinks but for `index.html`).
+267. **Two more fixes for the piece plans** (06:07 UTC). Piece 0's plan stopped on HyperFrames'
+     plan size ceiling (PLAN_TOO_LARGE: 2.11 GiB against 2.00 GiB, a Lambda budget). The plan had
+     copied the project's media into itself: 1.42 GiB of it was `assets/audio/` (the mixes and
+     stems), and only the soundtrack uses those. So a piece project now links `assets/` entry by
+     entry, everything but `audio/`, and its plan's ceiling is set to 6 GiB
+     (`planDirSizeLimitBytes`, the config's own field). Nothing on screen reads `assets/audio/`
+     (only the root's `<audio>` does, and the pieces have none).
+268. **The extract cache goes back on, in memory.** Piece 0's plan, made with the cache off, left
+     out the reflection tags' frames. Each reflection shares its pass's frames, and the plan stages
+     frames only for the tag that extracted them. `renderChunk` then refused the plan ("planDir
+     missing extracted video frames for s01-cold-open-m01-blue-refl"). With the cache on, the plan
+     copies each cache entry in for every tag that uses it, which is the path the lab's
+     `window.mjs` ran (proved on the film). So the cache is now `/dev/shm/l5-cache`, its cap set to
+     8 GiB so nothing is swept. It is cleared after each plan, before the piece renders.
+     - Plan phase: the cache once plus the copies, at most about 4 GiB for piece 15, plus the plan's
+       probe browser.
+     - Piece phase: the plan's copies (at most about 2.7 GiB) plus one browser.
+     - On any exit: `/dev/shm/l5-plan` and `/dev/shm/l5-cache` are both cleared.

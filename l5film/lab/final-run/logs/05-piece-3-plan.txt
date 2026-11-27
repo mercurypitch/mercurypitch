@@ -1,0 +1,9 @@
+[INFO] [Compiler] Embedded local font file: assets/fonts/InstrumentSerif-Regular.ttf (68 KB → data URI)
+[INFO] [Compiler] Embedded local font file: assets/fonts/InstrumentSerif-Italic.ttf (70 KB → data URI)
+[INFO] [Compiler] Embedded local font file: assets/fonts/Outfit-wght.ttf (108 KB → data URI)
+[INFO] [Compiler] Embedded local font file: assets/fonts/Inter-opsz-wght.ttf (856 KB → data URI)
+[INFO] [Compiler] Embedded local font file: assets/fonts/JetBrainsMono-wght.ttf (183 KB → data URI)
+[INFO] [Compiler] Embedded local font file: assets/fonts/NotoMusic-Regular.ttf (121 KB → data URI)
+[INFO] Compiled composition metadata {"entryFile":"index.html","staticDuration":569.74,"width":1920,"height":1080,"videoCount":8,"audioCount":0,"renderModeHints":{"recommendScreenshot":false,"reasons":[]}}
+PLAN {"planDir":"/dev/shm/l5-plan","planProtocol":{"schemaVersion":1,"artifactLayout":"plan-dir-v1","hashSchema":"hyperframes-plan-hash-v1"},"planHash":"e5b57eb8c1193d11d55fd73c39320e0c7cb14dc22f8711add006b94a1ba5be29","chunkCount":19,"totalFrames":34185,"fps":60,"width":1920,"height":1080,"format":"mp4","ffmpegVersion":"ffmpeg version 6.1.1-3ubuntu5 Copyright (c) 2000-2023 the FFmpeg developers","producerVersion":"0.0.0-unknown"}
+plan done in 18.6 s

@@ -5487,3 +5487,19 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   and renders through heavy after L5's pieces, about 08:00.
 - After it: GROUP C IS DONE for the owner's look. Then group D (S10-S11) and E. D's brief must say
   that S10 opens with the octave measure as ticks only (125).
+- 06:50: C's POLISH ((builder), 386k tokens) handed back:
+  - Every 126 item is edited:
+    - S9's miniature comes up from 294.70;
+    - 8f's labels are at 60 %, "+2" and "+7" at ink-2, and the predict block is 60 px right;
+    - the card's rows are 14 px up, 43 px gaps;
+    - "+2" crosses 20 px under "+7", not 24, because of the floor;
+    - the waiting figure is two empty rings;
+    - the octave starts on "octave:" (348.28);
+    - F-gap is 1.27, inside the 54 px margin.
+  - Light checks pass: clock-lint, merc-tags, both board tools.
+  - THE HEAVY PROOF CHAIN IS QUEUED DETACHED: $S/l6-C-polish-work/run-all.sh (pid 7726;
+    run-all.log ends "== done"). It covers the probes, clearance, clips with measure.py, cuts,
+    contrast and the root check, and runs after L5's pieces, about 08:00. The LEAD READS ITS
+    RESULTS; a background waiter is armed.
+- L5 pieces: 7 of 19 done at 06:49, each about 5 min with its own plan, peak 6.2-7.8 GiB, least
+  free 7 GiB. Done about 07:55.

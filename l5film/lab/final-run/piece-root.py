@@ -4,8 +4,9 @@
 
 Writes <dir>/index.html: the film's own root, its length and every host's data-start unchanged, with
 only the scene hosts on screen in the piece's frames kept (with 0.1 s to spare either side), and no
-soundtrack (the pieces are picture only). The rest of the project is linked: assets/, compositions/,
-hyperframes.json, package.json. This is make-proj.sh's "film" mode (lab/integration/film-hops-fix/):
+soundtrack (the pieces are picture only). The rest of the project is linked: compositions/,
+hyperframes.json, package.json, and assets/ entry by entry but for assets/audio/ (1.4 GB that only
+the soundtrack uses: the plan copies the project's media into itself). This is make-proj.sh's "film" mode (lab/integration/film-hops-fix/):
 a scene off screen draws nothing, so the piece's frames are the root's, and the plan extracts only
 the passes of the scenes it keeps. Prints the scenes kept.
 """
@@ -31,8 +32,13 @@ for line in open(os.path.join(ROOT, 'index.html')):
     lines.append(line)
 open(os.path.join(out, 'index.html'), 'w').write(''.join(lines))
 open(os.path.join(out, 'meta.json'), 'w').write('{\n  "id": "lesson-05-piece-%03d",\n  "name": "lesson-05-piece-%03d"\n}\n' % (i, i))
-for e in ('assets', 'compositions', 'hyperframes.json', 'package.json'):
+for e in ('compositions', 'hyperframes.json', 'package.json'):
     p = os.path.join(out, e)
     if not os.path.lexists(p):
         os.symlink(os.path.join(ROOT, e), p)
+os.makedirs(os.path.join(out, 'assets'), exist_ok=True)
+for e in os.listdir(os.path.join(ROOT, 'assets')):
+    p = os.path.join(out, 'assets', e)
+    if e != 'audio' and not os.path.lexists(p):
+        os.symlink(os.path.join(ROOT, 'assets', e), p)
 print(' '.join(kept))

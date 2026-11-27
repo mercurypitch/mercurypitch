@@ -1,5 +1,5 @@
 ◆  Checking l5film
-[hyperframes] media proxy pre-resolve: 27/27 ready, 0 failed (7162ms)
+[hyperframes] media proxy pre-resolve: 27/27 ready, 0 failed (8ms)
 [hyperframes] browserGpuMode probe → software (WebGL unavailable)
 
 Lint

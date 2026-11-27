@@ -1,0 +1,11 @@
+[BrowserManager] Browser launched (HeadlessChrome/152.0.7977.30, beginframe, gl=--use-gl=angle --use-angle=swiftshader, headlessShell=true, platform=linux)
+[initSession:beginframe] warmup loop started (0ms)
+[initSession:beginframe] page.goto start (0ms)
+[HyperFrames] render runtime fps {"canonicalFps":60,"source":"render-options","rawFpsSource":"render-options","rawFps":60}
+[initSession:beginframe] page.goto complete (437ms)
+[initSession:beginframe] GSAP proxy flush complete (504ms)
+[initSession:beginframe] pollHfReady complete (506ms)
+[initSession:beginframe] pollSubCompositionTimelines complete (ready) (513ms)
+[initSession:beginframe] applyVideoMetadataHints complete (513ms)
+[initSession:beginframe] media + fonts + tailwind ready (619ms)
+[initSession:beginframe] static-frame dedup: disabled (capture mode beginframe, not screenshot) (2433ms)

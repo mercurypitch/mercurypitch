@@ -16,6 +16,7 @@ if (mode === 'plan') {
   const p = await plan(resolve(a), {
     fps: 60, width: 1920, height: 1080, format: 'mp4', quality: 'high', chunkSize: Number(b),
     maxParallelChunks: 256, rejectOnSystemFonts: false, failClosedFontFetch: false,
+    planDirSizeLimitBytes: 6 * 2 ** 30,   // the default 2 GiB is a Lambda budget; a piece's plan is up to about 3 GiB
   }, resolve(planDir))
   console.log('PLAN ' + JSON.stringify(p))
 } else if (mode === 'chunk') {

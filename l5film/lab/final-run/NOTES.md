@@ -65,3 +65,9 @@ from the film's root (`l5film/`), every heavy job through `$S/bin/heavy`, one at
   `assets/audio/full.wav` and `music-only.wav` (AAC 192k, as HyperFrames muxes) to
   `renders/film-final-60.mp4` and `renders/film-final-60-music-only.mp4`; the join check against
   snapshots of the root; then `renders/pieces/` can go (made by this run).
+- 27 November 06:18 UTC: piece 0 done (1,800 frames, 305 s, peak use 7.67 GiB); frame 0 looked at
+  (`review/final-film/frame-00000.png`), a finished picture. After the 19th piece,
+  `bash lab/final-run/finish-film.sh` (light but for the snapshots and measure.py, which go through
+  heavy): the join and frame count, the two muxes, the join check against root snapshots
+  (`review/final-film/joins.md`), a frame from every scene, measure.py render and audio
+  (`review/final-measure/`). State in `lab/final-run/finish-film.state`.

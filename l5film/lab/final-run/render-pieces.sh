@@ -18,9 +18,10 @@ OUT=$P/renders/pieces
 CHUNK=1800
 GiB=1073741824
 export PRODUCER_MAX_WORKERS=1 HYPERFRAMES_SKIP_SKILLS=1 HYPERFRAMES_NO_TELEMETRY=1   # one browser a piece
-# no extract cache: the plan extracts straight into its own folder in memory (with the cache on, the
-# frames would go to /tmp on disk and be copied into the plan as well)
-export HYPERFRAMES_EXTRACT_CACHE_DIR=off
+# the extract cache in memory too, not /tmp on disk: with it off, a pass's reflection tag shares the
+# pass's frames and the plan leaves its frames out, which renderChunk refuses (DECISIONS 268). The
+# plan copies the cache's frames in for each tag, then the cache is cleared before the piece renders.
+export HYPERFRAMES_EXTRACT_CACHE_DIR=/dev/shm/l5-cache HYPERFRAMES_EXTRACT_CACHE_MAX_MB=8192
 mkdir -p "$OUT"
 note() { echo "$(date -u +%FT%TZ) $*" | tee -a "$ST"; }
 gib() { awk -v b="$1" 'BEGIN{printf "%.2f", b/1073741824}'; }
@@ -44,7 +45,7 @@ echo "start" > "$LOG/.piece"
 (
   while true; do
     use=$(cat "$CG/memory.usage_in_bytes"); fb=$(free_bytes)
-    ex=$(du -sk /dev/shm/l5-plan 2>/dev/null | cut -f1); ex=${ex:-0}
+    ex=$(du -sck /dev/shm/l5-plan /dev/shm/l5-cache 2>/dev/null | tail -1 | cut -f1); ex=${ex:-0}
     disk=$(df -k / | awk 'NR==2 {print $4}')
     awk -v t="$(date -u +%FT%TZ)" -v p="$(cat "$LOG/.piece")" -v u="$use" -v f="$fb" -v e="$ex" -v d="$disk" \
       'BEGIN{printf "%s\t%s\t%.2f\t%.2f\t%.2f\t%.2f\n", t, p, u/2^30, f/2^30, e/2^20, d/2^20}' >> "$MEM"
@@ -53,7 +54,7 @@ echo "start" > "$LOG/.piece"
 ) &
 LOGGER=$!
 # on any exit the plan's frames in memory go (only this script's)
-trap 'kill $LOGGER 2>/dev/null; rm -rf /dev/shm/l5-plan' EXIT
+trap 'kill $LOGGER 2>/dev/null; rm -rf /dev/shm/l5-plan /dev/shm/l5-cache' EXIT
 
 # run "$@" in its own process group, watched every 2 s; sets PEAK_USE and MIN_FREE (bytes)
 run_watched() {
@@ -96,9 +97,10 @@ for ((i = 0; i < N; i++)); do
   echo "piece-$i" > "$LOG/.piece"
   t0=$(date +%s)
   scenes=$(python3 lab/final-run/piece-root.py $i $CHUNK "$PROJ/p$i")
-  rm -rf /dev/shm/l5-plan
+  rm -rf /dev/shm/l5-plan /dev/shm/l5-cache
   run_watched node lab/final-run/piece.mjs plan /dev/shm/l5-plan "$PROJ/p$i" $CHUNK > "$LOG/05-piece-$i-plan.txt" 2>&1; rc=$?
   pk1=$PEAK_USE; mf1=$MIN_FREE; shm=$(du -sh /dev/shm/l5-plan 2>/dev/null | cut -f1)
+  rm -rf /dev/shm/l5-cache
   [ $rc = 0 ] || { note "STOP: piece $i plan exit $rc (logs/05-piece-$i-plan.txt)"; exit 5; }
   pl=$(grep '^PLAN ' "$LOG/05-piece-$i-plan.txt" | tail -1 | cut -c6-)
   python3 -c "import json,sys;p=json.loads(sys.argv[1]);sys.exit(0 if p['totalFrames']==$TOTAL and p['chunkCount']==$N and p['fps']==60 else 1)" "$pl" \
