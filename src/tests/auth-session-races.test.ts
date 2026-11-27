@@ -207,8 +207,10 @@ describe('verification response ownership', () => {
       expect(showNotification).not.toHaveBeenCalled()
       expect(await restoreAuth()).toBe(true)
       expect(fetchMock).toHaveBeenCalledTimes(2)
+      // The signal is the request's deadline (src/db/api-fetch.ts).
       expect(fetchMock.mock.calls[1]?.[1]).toEqual({
         headers: { Authorization: `Bearer ${replacement}` },
+        signal: expect.any(AbortSignal),
       })
     },
   )
@@ -226,24 +228,23 @@ describe('verification response ownership', () => {
     expect(fetchMock).toHaveBeenCalledOnce()
   })
 
-  it('honors a current-token refusal after another request verified that same token', async () => {
+  // Two checks of one session used to be two /me requests, and a success on
+  // one could hide a refusal on the other. Overlapping checks of the same
+  // session now share one request (startup no longer waits for its check, so
+  // writes and the account UI ask while it is out), so neither can hide the
+  // other's answer: a refusal reaches every caller.
+  it('asks once when two checks of one session overlap, and a refusal reaches both', async () => {
     setAuthToken(token('account'))
-    const accepted = deferred<Response>()
     const refused = deferred<Response>()
-    vi.stubGlobal(
-      'fetch',
-      vi
-        .fn()
-        .mockReturnValueOnce(accepted.promise)
-        .mockReturnValueOnce(refused.promise),
-    )
+    const fetchMock = vi.fn().mockReturnValue(refused.promise)
+    vi.stubGlobal('fetch', fetchMock)
     const first = restoreAuth()
     const second = restoreAuth()
-    accepted.resolve(new Response('{}'))
-    expect(await first).toBe(true)
     refused.resolve(new Response('{}', { status: 401 }))
 
+    expect(await first).toBe(false)
     expect(await second).toBe(false)
+    expect(fetchMock).toHaveBeenCalledOnce()
     expect(getAuthToken()).toBeNull()
     expect(needsSignIn()).toBe(true)
   })
