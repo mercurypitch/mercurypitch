@@ -2171,3 +2171,24 @@ it, and then the owner looks. Each scene group fixes its own scenes; the lead's 
      about 5.3 GiB of the 13.7 GiB the shells share, held for the render's length, so a 5 GB heavy
      job elsewhere would have little room). The music-only render needs the same frames (a cache
      hit when the cache directory is kept between the two renders).
+262. **The lead's call on 261: the extraction goes to memory, and nothing is deleted on disk.** The
+     two renders run from `lab/final-run/render-final.sh`, started holding both heavy slots with a
+     priority ticket (`HEAVY_PRI=1 HEAVY_MIN_GIB=10 $S/bin/heavy $S/bin/heavy bash ...`), so no
+     Lesson 6 job starts beside them. The script stops if fewer than 9 GiB are free under the cap
+     (heavy's own formula), runs `check` (0 errors), the film (`MIX=full`, 60 fps, delivery, two
+     workers, `--strict`, `--frames-cache-dir=/dev/shm/l5-extract`), then `check` and the render of
+     the music-only sibling (`$S/l5film-music-only/`: the root `index.html` with `music-only.wav` as
+     its soundtrack, everything else linked to the film's own files; SKILL § 8 and the bridge's
+     § One root per project), and logs memory every 30 s (`logs/04-memory.tsv`).
+     How HyperFrames 0.8.97 collects its extract cache (`chunk-H7EMX7GA.js`, `gcExtractionCache`):
+     the 2 GiB cap (`extractCacheMaxBytes`, env `HYPERFRAMES_EXTRACT_CACHE_MAX_MB`) applies to any
+     cache directory, `--frames-cache-dir` included. The sweep runs once, after a render's
+     extraction ends with a miss, and removes the least recently used entries only while the total
+     is over the cap, skipping any entry less than an hour old. A render's own frames are minutes
+     old when it sweeps, so it never evicts frames during the capture. The script still sets the cap
+     to 8 GiB, so nothing is swept at all. The cache key holds the video's path
+     (`canonicalKeyBlob`: path, mtime, size, media start, duration, fps, format), and the sibling's
+     videos sit at another path, so the music-only render extracts again (the lead's "fine"). The
+     script therefore clears `/dev/shm/l5-extract` between the two renders as well as after them:
+     otherwise both sets, about 10.6 GiB, would sit there together until the second sweep, which
+     could not remove the new ones anyway. The same literal path is cleared on any exit.

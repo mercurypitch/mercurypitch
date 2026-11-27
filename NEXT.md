@@ -5260,3 +5260,8 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   (briefs/l6-fix-B-01.md; calls 111-116; may change L.SPECIMEN.travel's optional duration only).
 - QUEUE: C's build (fresh (model), after B's fix, since both edit HANDOFFS/STORYBOARD), critic B-02,
   C's critic, D, E, the kit pass.
+- 00:09: L5 DECISIONS 262 logged; lead read lab/final-run/render-final.sh (the guard under 9 GiB,
+  the literal-path rm of /dev/shm/l5-extract between the renders, after them and on any exit, the
+  extract GC raised to 8 GiB). Music-only sibling at $S/l5film-music-only/ (symlinks, its own
+  check). The agent waits on run-passes.sh (queue at m01-blue); it starts render-final.sh when the
+  queue ends.

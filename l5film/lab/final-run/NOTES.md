@@ -12,7 +12,7 @@ from the film's root (`l5film/`), every heavy job through `$S/bin/heavy`, one at
 | 1 | `MIX=full python3 tools/gen-root.py`, in place: the 13 root `data-duration` values of DECISIONS 252, nothing else (`logs/01-gen-root.txt`); `check`: 0 errors, 24 standing warnings (`logs/01-check-after-gen-root.txt`) | done (257) |
 | 2 | `merc-shots.py --final` on the voiced clock, with the lead's additions (DECISIONS 258, `tools/CHANGES.md`; `logs/02-*`); S14's `base` 400 (259); the 54 Merc tags written for the new shots and `--margins` checked (`logs/03-tags-*`) | done: do NOT run merc-shots.py again (it would make every pass stale) |
 | 3 | The 27 jobs (`merc-queue.py --order=final`), then joins, tags `--check`, roots.js, sheet | running: see below |
-| 4 | The 60 fps render | blocked on disk (DECISIONS 261): about 5.3 GiB of extracted PNG and 0.5 GiB of MP4 against 5.5 GiB free and a 2 GB floor; waits for the lead |
+| 4 | The 60 fps render and the music-only sibling's (DECISIONS 262: the extraction in memory) | `lab/final-run/render-final.sh`, after step 3; state in `lab/final-run/render-final.state`, memory in `logs/04-memory.tsv` |
 | 5 | The measure | |
 | 6 | The deliverables | |
 
@@ -41,3 +41,13 @@ from the film's root (`l5film/`), every heavy job through `$S/bin/heavy`, one at
   chunks by hand with the command the queue logs in `merc/queue.out`
   (`$S/bin/heavy node tools/merc-pass.mjs merc/shots/<pass>.json --chunk=<pass>-sNN --dump=...`),
   then `merc-roots.py`, `merc-joins.py` and `merc-tags.py <scene> --check`.
+
+### Steps 4 and 6a, the renders (DECISIONS 262)
+
+- Start, once step 3 is finished, from `l5film/`:
+  `HEAVY_PRI=1 HEAVY_MIN_GIB=10 setsid nohup $S/bin/heavy $S/bin/heavy bash lab/final-run/render-final.sh > lab/final-run/logs/04-render-final.out 2>&1 &`
+- The music-only sibling project is `$S/l5film-music-only/` (made by this run: `index.html` with
+  `music-only.wav`, `meta.json`, `renders/`, the rest symlinks to `l5film/`).
+- If the script died (a worker restart): `rm -rf /dev/shm/l5-extract` first (its own frames, about
+  5.3 GiB of memory), then start it again; `SKIP_FILM=1` at the head of that command line skips a film already
+  rendered (`render-final.state` says "film render exit 0").
