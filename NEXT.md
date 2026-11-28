@@ -6047,3 +6047,11 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - NOTHING RUNNING. Next: the owner's notes, then a fix round if they ask for one. The final
   voices need their word (ElevenLabs), then the re-time, the hosts' passes, the 60 fps final in
   pieces (cache in /dev/shm) and the deliverables.
+
+## 28 Nov 00:50 UTC: the hourly check-in PAUSED while nothing runs
+- Three check-ins in a row (22:50, 23:50, 00:50) found nothing running and nothing new. The
+  wait is on the owner (draft 03's look and the three questions), so the lead paused the
+  check-in (trig_01JGQdH9F56vCzkd9UvFFRJv, enabled=false). Its own text says "hourly while work
+  runs". Disk 3.2 G free.
+- FIRST, when the owner writes and work starts again: turn it back on
+  (update_trigger enabled=true) before launching any agent.
