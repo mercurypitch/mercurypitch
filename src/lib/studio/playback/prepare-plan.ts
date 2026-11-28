@@ -270,7 +270,7 @@ export function playableStudioFrom(
 ): number {
   const content = compileStudioArrangement(project, assets)
   if (!content.lanes.some((lane) => lane.segments.length > 0))
-    throw new StudioRefusal('Add an audible take before playing.')
+    throw new StudioRefusal('Add a take or draw some notes before playing.')
   if (loop !== null) return startInLoop(startFrame, loop)
   if (repeat && content.endFrame < 12000)
     throw new StudioRefusal('A song needs at least a quarter second to repeat.')
