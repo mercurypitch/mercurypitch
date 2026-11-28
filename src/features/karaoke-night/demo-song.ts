@@ -13,6 +13,7 @@
 // This module is part of the page's FIRST-PAINT graph — keep it free of
 // static db/store imports (the lyrics seed loads the db layer on demand).
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import type { LyricsData } from '@/db/services/lyrics-db-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import { DEMO_SESSION_ID, demoSessionId, isDemoSessionId, } from '@/lib/example-session'
@@ -90,7 +91,9 @@ export async function loadDemoSongsFromApi(
 ): Promise<DemoSongManifest[]> {
   if ((API_BASE_URL ?? '') === '') return []
   try {
-    const res = await fetch(`${API_BASE_URL}/api/demo-songs`, { signal })
+    const res = await fetchWithDeadline(`${API_BASE_URL}/api/demo-songs`, {
+      signal,
+    })
     if (!res.ok) return []
     const data = (await res.json()) as { songs?: unknown }
     if (!Array.isArray(data.songs)) return []

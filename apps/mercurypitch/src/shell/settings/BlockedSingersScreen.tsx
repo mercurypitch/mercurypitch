@@ -54,7 +54,7 @@ export function BlockedSingersScreen(): JSX.Element {
 
   const retry = (): void => {
     if (list.reading()) return
-    void list.load().then(() => {
+    void list.load({ userAction: true }).then(() => {
       if (list.stop() === null) focusAt(0)
     })
   }

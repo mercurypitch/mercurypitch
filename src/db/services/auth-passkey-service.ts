@@ -10,6 +10,7 @@
 // `available` from the server and a working authenticator in the browser, and
 // the caller has to ask for both.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { API_BASE_URL } from '@/lib/defaults'
 import { rememberSignInMethod } from '@/lib/last-sign-in'
 import { createCredential, getCredential } from '@/lib/webauthn'
@@ -69,19 +70,25 @@ async function messageOf(res: Response, fallback: string): Promise<string> {
   }
 }
 
+/** Every POST here follows a person's press (add, remove, or the passkey
+ *  they picked), so it goes even while the API is out of reach. */
 async function post(
   path: string,
   body: unknown,
   authed = true,
 ): Promise<Response> {
-  return fetch(`${requireBaseUrl()}${path}`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      ...(authed ? { Authorization: `Bearer ${requireToken()}` } : {}),
+  return fetchWithDeadline(
+    `${requireBaseUrl()}${path}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        ...(authed ? { Authorization: `Bearer ${requireToken()}` } : {}),
+      },
+      body: JSON.stringify(body),
     },
-    body: JSON.stringify(body),
-  })
+    { userAction: true },
+  )
 }
 
 interface CeremonyOptions {
@@ -92,7 +99,9 @@ interface CeremonyOptions {
 /** Whether this deployment has an RP id at all. False on PR previews. */
 export async function passkeysAvailable(): Promise<boolean> {
   try {
-    const res = await fetch(`${requireBaseUrl()}/api/auth/passkey/status`)
+    const res = await fetchWithDeadline(
+      `${requireBaseUrl()}/api/auth/passkey/status`,
+    )
     if (!res.ok) return false
     return ((await res.json()) as { available: boolean }).available
   } catch {
@@ -101,9 +110,10 @@ export async function passkeysAvailable(): Promise<boolean> {
 }
 
 export async function fetchPasskeys(): Promise<Passkey[]> {
-  const res = await fetch(`${requireBaseUrl()}/api/auth/passkey/list`, {
-    headers: { Authorization: `Bearer ${requireToken()}` },
-  })
+  const res = await fetchWithDeadline(
+    `${requireBaseUrl()}/api/auth/passkey/list`,
+    { headers: { Authorization: `Bearer ${requireToken()}` } },
+  )
   if (!res.ok) throw new Error(await messageOf(res, 'Could not list passkeys'))
   return ((await res.json()) as { passkeys: Passkey[] }).passkeys
 }
@@ -170,7 +180,7 @@ export async function removePasskey(id: string): Promise<Passkey[]> {
 export async function signInWithPasskey(
   opts: { conditional?: boolean; signal?: AbortSignal } = {},
 ): Promise<AuthResponse> {
-  const start = await fetch(
+  const start = await fetchWithDeadline(
     `${requireBaseUrl()}/api/auth/passkey/login/options`,
     {
       method: 'POST',
@@ -178,6 +188,9 @@ export async function signInWithPasskey(
       body: '{}',
       ...(opts.signal === undefined ? {} : { signal: opts.signal }),
     },
+    // Without `conditional` somebody pressed a button for this. With it, the
+    // form armed it as it opened, which nobody asked for in so many words.
+    { userAction: opts.conditional !== true },
   )
   if (!start.ok) {
     throw new Error(await messageOf(start, 'Passkey sign-in is unavailable'))

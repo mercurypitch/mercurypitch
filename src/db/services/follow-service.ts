@@ -31,6 +31,7 @@
 // require an account that joining it did not.
 
 import { getDb } from '@/db'
+import { fetchWithDeadline } from '@/db/api-fetch'
 import type { Follow } from '@/db/entities'
 import { hasUpgradedAccount } from '@/db/services/auth-service'
 import { getAuthHeaders, getUserId } from '@/db/services/user-service'
@@ -68,7 +69,7 @@ export async function getMyFriendCode(): Promise<string | null> {
   if (API_BASE_URL == null || API_BASE_URL === '') return null
   if (!hasUpgradedAccount()) return null
   try {
-    const res = await fetch(`${API_BASE_URL}/api/friends/code`, {
+    const res = await fetchWithDeadline(`${API_BASE_URL}/api/friends/code`, {
       headers: getAuthHeaders(),
     })
     if (!res.ok) return null
@@ -125,11 +126,17 @@ async function friendAction(
     return { ok: false, error: OFFLINE }
   }
   try {
-    const res = await fetch(`${API_BASE_URL}/api/friends/${route}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: JSON.stringify(body),
-    })
+    // Every friend action is a person's press: sent even while the API is
+    // out of reach (api-reachability.ts).
+    const res = await fetchWithDeadline(
+      `${API_BASE_URL}/api/friends/${route}`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify(body),
+      },
+      { userAction: true },
+    )
     const data = (await res.json().catch(() => ({}))) as FriendActionResult
     if (!res.ok) return { ok: false, error: data.error ?? fallbackError }
     return { ok: true, status: data.status, displayName: data.displayName }
@@ -189,9 +196,12 @@ export async function listFriendRequests(): Promise<{
   if (API_BASE_URL == null || API_BASE_URL === '') return empty
   if (!hasUpgradedAccount()) return empty
   try {
-    const res = await fetch(`${API_BASE_URL}/api/friends/requests`, {
-      headers: getAuthHeaders(),
-    })
+    const res = await fetchWithDeadline(
+      `${API_BASE_URL}/api/friends/requests`,
+      {
+        headers: getAuthHeaders(),
+      },
+    )
     if (!res.ok) return empty
     const data = (await res.json()) as Partial<{
       incoming: FriendRequest[]

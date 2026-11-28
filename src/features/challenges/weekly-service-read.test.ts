@@ -36,6 +36,25 @@ afterEach(() => {
   vi.unstubAllGlobals()
 })
 
+describe('readActiveWeekly while the API is out of reach', () => {
+  it('is unreachable at once, and asks anyway for the singer', async () => {
+    const refused = vi.fn(async () => {
+      throw new TypeError('Failed to fetch')
+    })
+    vi.stubGlobal('fetch', refused)
+    // The first read gets no answer, which opens the window.
+    expect(await readActiveWeekly()).toEqual({ status: 'unreachable' })
+    expect(await readActiveWeekly()).toEqual({ status: 'unreachable' })
+    expect(refused).toHaveBeenCalledTimes(1)
+
+    answer(200, { challenge: { id: 'legend-1', title: 'Vincero' } })
+    expect(await readActiveWeekly({ userAction: true })).toMatchObject({
+      status: 'ok',
+      challenge: { id: 'legend-1' },
+    })
+  })
+})
+
 describe('readActiveWeekly', () => {
   it('gives the running Legend', async () => {
     answer(200, { challenge: { id: 'legend-1', title: 'Vincero' } })

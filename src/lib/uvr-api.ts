@@ -3,6 +3,7 @@
 // ============================================================
 
 import { z } from 'zod/v4'
+import { ApiDeadlineError, deadlineFor, fetchWithDeadline, } from '@/db/api-fetch'
 import { hasValidToken, requireAuth } from '@/db/services/auth-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD, UVR_ORIGIN, } from '@/lib/native-build'
@@ -11,36 +12,29 @@ import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD, UVR_ORIGIN, } from '@/lib/native-bui
  *  native page is not, so its build names that worker's host. */
 const API_BASE = `${UVR_ORIGIN}/api/uvr`
 
-/** Per-request cap for a status poll. Without it, a socket left half-open by an
- *  iOS app-switch (frozen page → resumed with a dead connection) never settles,
- *  and the whole setTimeout poll chain stalls on that one hung fetch — the
- *  "stuck on Waiting for a GPU worker forever" bug. On timeout we abort and let
- *  the poll retry. */
-const STATUS_FETCH_TIMEOUT_MS = 15_000
-/** Stem downloads are larger (a few MB over an R2 redirect); give them room. */
-const OUTPUT_FETCH_TIMEOUT_MS = 60_000
+/** These routes are the site worker's (src/worker.ts), not the API host's, so
+ *  every call goes through fetchWithDeadline for its deadline only: while the
+ *  API is out of reach a separation still runs, and a failure here says
+ *  nothing about the API. A deadline ends a call with an ApiDeadlineError. */
+const SITE_WORKER = { siteWorker: true } as const
 
-/** fetch() with an AbortController timeout. Composes with a caller-supplied
- *  signal (either aborting wins). Throws AbortError on timeout. */
-async function fetchWithTimeout(
-  input: string,
-  timeoutMs: number,
-  init?: RequestInit,
-): Promise<Response> {
-  const ctrl = new AbortController()
-  const timer = setTimeout(() => ctrl.abort(), timeoutMs)
-  // AbortSignal.any keeps the caller's signal wired for the WHOLE response
-  // lifetime — including the body read after headers arrive (the internal
-  // timer only bounds time-to-headers and is cleared once fetch resolves).
-  const signal = init?.signal
-    ? AbortSignal.any([init.signal, ctrl.signal])
-    : ctrl.signal
-  try {
-    return await fetch(input, { ...init, signal })
-  } finally {
-    clearTimeout(timer)
-  }
-}
+/** Per-request cap for a status poll, its answer included. Without it, a
+ *  socket left half-open by an iOS app-switch (frozen page → resumed with a
+ *  dead connection) never settles, and the whole setTimeout poll chain stalls
+ *  on that one hung fetch — the "stuck on Waiting for a GPU worker forever"
+ *  bug. On timeout the poll retries. Longer than a read's 8 s: the worker
+ *  asks RunPod, and R2 when RunPod has let the job go, before it answers. */
+const STATUS_FETCH_TIMEOUT_MS = 15_000
+/** Stem downloads are larger (a few MB over an R2 redirect); give them room.
+ *  This bounds the wait for the answer's headers only: the caller bounds
+ *  reading the stem itself with its own signal. */
+const OUTPUT_FETCH_TIMEOUT_MS = 60_000
+/** What the worker does with a job once its upload has arrived, before it
+ *  answers: it checks the session with the API, admits and prices the job,
+ *  puts a large file in R2 and hands the job to RunPod, all from Cloudflare.
+ *  A minute covers that. The upload itself gets as long as its size needs at
+ *  64 kbit/s (deadlineFor): a 5 MB song is given about ten minutes. */
+const PROCESS_SERVER_WORK_MS = 60_000
 
 /**
  * Authorization header for state-changing UVR calls. The production worker
@@ -460,7 +454,11 @@ export function buildStemSplitRequest(
  * List available UVR models
  */
 export async function listModels(): Promise<string[]> {
-  const response = await fetch(`${API_BASE}/models`)
+  const response = await fetchWithDeadline(
+    `${API_BASE}/models`,
+    undefined,
+    SITE_WORKER,
+  )
   if (!response.ok) {
     throw new Error(`Failed to list models: ${response.statusText}`)
   }
@@ -477,7 +475,8 @@ export type UploadProgress = (share: number) => void
  * a refusal the same way either way. fetch cannot report an upload's
  * progress; the native room shows "Sending · 45%" while a song goes up over
  * a phone's connection (plan S8 §6.4). A dropped connection rejects with a
- * TypeError and a stopped one with an AbortError, as fetch's do.
+ * TypeError and a stopped one with an AbortError, as fetch's do, and one that
+ * runs past `deadlineMs` with the ApiDeadlineError fetchWithDeadline gives.
  */
 async function postWithProgress(
   url: string,
@@ -485,6 +484,7 @@ async function postWithProgress(
   body: FormData,
   signal: AbortSignal | undefined,
   onProgress: UploadProgress,
+  deadlineMs: number,
 ): Promise<Response> {
   return new Promise<Response>((resolve, reject) => {
     const stopped = () =>
@@ -499,6 +499,9 @@ async function postWithProgress(
     const settled = () => signal?.removeEventListener('abort', stop)
 
     xhr.open('POST', url)
+    // The whole request, upload and answer: the same deadline the fetch
+    // below gets.
+    xhr.timeout = deadlineMs
     for (const [name, value] of Object.entries(headers)) {
       xhr.setRequestHeader(name, value)
     }
@@ -529,6 +532,10 @@ async function postWithProgress(
     xhr.onabort = () => {
       settled()
       reject(stopped())
+    }
+    xhr.ontimeout = () => {
+      settled()
+      reject(new ApiDeadlineError(url, deadlineMs))
     }
     xhr.send(body)
   })
@@ -581,8 +588,10 @@ export async function processAudio(
   }
 
   // Dispatching a job spends credits and creates server-side state, so this
-  // is exactly the kind of action that earns an identity.
-  await requireAuth()
+  // is exactly the kind of action that earns an identity. The singer pressed
+  // for it, so a first identity is asked for even while the API is out of
+  // reach (api-reachability.ts).
+  await requireAuth({ userAction: true })
 
   const headers: Record<string, string> = { ...authHeaders() }
   if (options.provider !== undefined) {
@@ -602,13 +611,18 @@ export async function processAudio(
     headers['X-UVR-Model'] = options.model
   }
 
+  const init: RequestInit = {
+    method: 'POST',
+    headers,
+    body: formData,
+    signal,
+  }
+  const deadlineMs = deadlineFor(init) + PROCESS_SERVER_WORK_MS
   const response =
     onUploadProgress === undefined
-      ? await fetch(`${API_BASE}/process`, {
-          method: 'POST',
-          headers,
-          body: formData,
-          signal,
+      ? await fetchWithDeadline(`${API_BASE}/process`, init, {
+          ...SITE_WORKER,
+          deadlineMs,
         })
       : await postWithProgress(
           `${API_BASE}/process`,
@@ -616,6 +630,7 @@ export async function processAudio(
           formData,
           signal,
           onUploadProgress,
+          deadlineMs,
         )
 
   if (!response.ok) {
@@ -687,10 +702,10 @@ export async function getProcessStatus(
   sessionId: string,
   signal?: AbortSignal,
 ): Promise<ProcessStatusResponse> {
-  const response = await fetchWithTimeout(
+  const response = await fetchWithDeadline(
     `${API_BASE}/status/${sessionId}`,
-    STATUS_FETCH_TIMEOUT_MS,
     signal ? { signal } : undefined,
+    { ...SITE_WORKER, deadlineMs: STATUS_FETCH_TIMEOUT_MS },
   )
   if (!response.ok) {
     throw new Error(`Failed to get status: ${response.statusText}`)
@@ -706,13 +721,14 @@ export async function getOutputFile(
   path: string,
   /** Outer abort — lets callers bound the BODY read too (the internal
    *  timeout only covers time-to-headers; reading a multi-MB stem on a
-   *  stalled connection would otherwise hang forever). */
+   *  stalled connection would otherwise hang forever). It stays wired to
+   *  the request after the headers arrive. */
   signal?: AbortSignal,
 ): Promise<Response> {
-  return fetchWithTimeout(
+  return fetchWithDeadline(
     `${API_BASE}/output/${sessionId}/${encodeURIComponent(path)}`,
-    OUTPUT_FETCH_TIMEOUT_MS,
     signal ? { signal } : undefined,
+    { ...SITE_WORKER, deadlineMs: OUTPUT_FETCH_TIMEOUT_MS, untilHeaders: true },
   )
 }
 
@@ -722,10 +738,11 @@ export async function getOutputFile(
 export async function deleteSession(
   sessionId: string,
 ): Promise<{ status: string; message: string }> {
-  const response = await fetch(`${API_BASE}/session/${sessionId}`, {
-    method: 'DELETE',
-    headers: authHeaders(),
-  })
+  const response = await fetchWithDeadline(
+    `${API_BASE}/session/${sessionId}`,
+    { method: 'DELETE', headers: authHeaders() },
+    SITE_WORKER,
+  )
   if (!response.ok) {
     throw new Error(`Failed to delete session: ${response.statusText}`)
   }
@@ -739,7 +756,11 @@ export async function healthCheck(): Promise<{
   status: string
   version: string
 }> {
-  const response = await fetch(`${API_BASE}/health`)
+  const response = await fetchWithDeadline(
+    `${API_BASE}/health`,
+    undefined,
+    SITE_WORKER,
+  )
   if (!response.ok) {
     throw new Error(`Health check failed: ${response.statusText}`)
   }

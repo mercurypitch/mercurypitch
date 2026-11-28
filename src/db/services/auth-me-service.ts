@@ -11,6 +11,7 @@
 // Kept out of auth-service.ts, as auth-email-code-service is: that file loads
 // on the first paint of every surface, and only the native shell asks this.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { API_BASE_URL } from '@/lib/defaults'
 import type { MeResponse } from './auth-service'
 import { accountHeld, handleAuthErrorResponse } from './auth-service'
@@ -36,11 +37,12 @@ export async function readMe(): Promise<MeRead> {
   }
   let res: Response
   try {
-    res = await fetch(`${API_BASE_URL}/api/auth/me`, {
+    res = await fetchWithDeadline(`${API_BASE_URL}/api/auth/me`, {
       headers: { Authorization: `Bearer ${token}` },
     })
   } catch {
-    // Offline, CORS, or a worker that is down.
+    // Offline, CORS, a worker that is down, no answer by the deadline, or
+    // the API out of reach since an earlier call (api-fetch.ts).
     return { status: 'unreachable' }
   }
   if (!res.ok) {

@@ -8,6 +8,7 @@
 // module is on the Karaoke page's first-paint graph, and nothing an
 // authoring page needs belongs there.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { API_BASE_URL } from '@/lib/defaults'
 
 /** The slug the shipped manifest and every pre-list row carry. */
@@ -121,9 +122,13 @@ export async function loadDemoSongs(
 > {
   if (base() === '') return { ok: false, error: 'No API configured' }
   try {
-    const res = await fetch(`${base()}/api/demo-songs`, {
-      headers: { 'X-Admin-Key': adminKey },
-    })
+    // The owner's request, like every admin call: it goes even while the API
+    // is out of reach (api-reachability.ts).
+    const res = await fetchWithDeadline(
+      `${base()}/api/demo-songs`,
+      { headers: { 'X-Admin-Key': adminKey } },
+      { userAction: true },
+    )
     if (!res.ok) return { ok: false, error: `Request failed (${res.status})` }
     const data = (await res.json()) as { songs?: DemoSongRecord[] }
     return { ok: true, songs: data.songs ?? [] }
@@ -141,7 +146,7 @@ export async function saveDemoSong(
 > {
   if (base() === '') return { ok: false, error: 'No API configured' }
   try {
-    const res = await fetch(
+    const res = await fetchWithDeadline(
       `${base()}/api/demo-song?slug=${encodeURIComponent(slug)}`,
       {
         method: 'PUT',
@@ -151,6 +156,7 @@ export async function saveDemoSong(
         },
         body: JSON.stringify(draft),
       },
+      { userAction: true },
     )
     const data = (await res.json().catch(() => ({}))) as {
       song?: DemoSongRecord

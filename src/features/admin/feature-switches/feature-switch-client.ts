@@ -21,6 +21,7 @@
 // and a worker deployed ahead of this build may list a feature it does not
 // know yet; the page says so beside it.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { API_BASE_URL } from '@/lib/defaults'
 import { ADMIN_FEATURES_PATH } from '@/lib/experimental-features'
 import type { AdminEnvironment } from '../admin-environment'
@@ -62,8 +63,13 @@ export type FeatureApiResult<T> =
   | { readonly ok: true; readonly value: T }
   | { readonly ok: false; readonly error: FeatureApiError }
 
-// Read at call time, so a test that stubs the global is the one asked.
-const fetchNow: Fetcher = (input, init) => fetch(input, init)
+// Read at call time, so a test that stubs the global is the one asked. With
+// the API's deadline. Everything an admin tool asks is the owner's request,
+// made because they opened the tool or pressed for it (Read again, Save), so
+// it goes even while the API is out of reach (api-reachability.ts): a tool
+// refused on what an earlier request found would look broken.
+const fetchNow: Fetcher = (input, init) =>
+  fetchWithDeadline(input, init, { userAction: true })
 
 /** Same-origin when no API is configured, as in the e2e bundle. */
 function url(path: string): string {

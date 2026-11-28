@@ -8,6 +8,7 @@
 // page). Everything degrades to null when no API is configured or on error —
 // telemetry/UI must never break the app.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { authVersion, getAuthHeaders, getUserId, } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import { midiToFrequency, midiToNoteName, noteToMidi, } from '@/lib/frequency-to-note'
@@ -189,10 +190,24 @@ export type ActiveWeeklyRead =
   | { status: 'ok'; challenge: WeeklyChallenge | null }
   | { status: 'unreachable' }
 
-export async function readActiveWeekly(): Promise<ActiveWeeklyRead> {
+/**
+ * `userAction`: a person pressed Try again. The read is then sent even while
+ * the API is out of reach (api-reachability.ts), as the attempt they asked
+ * for; read by the page itself it is refused at once, and the card says the
+ * Legend could not be loaded without waiting out a deadline.
+ */
+export async function readActiveWeekly(
+  options: { userAction?: boolean } = {},
+): Promise<ActiveWeeklyRead> {
   if (base() === '') return { status: 'unreachable' }
   try {
-    const res = await fetch(`${base()}/api/weekly/active`)
+    const res = await fetchWithDeadline(
+      `${base()}/api/weekly/active`,
+      undefined,
+      {
+        userAction: options.userAction === true,
+      },
+    )
     if (!res.ok) return { status: 'unreachable' }
     const data = (await res.json()) as { challenge: WeeklyChallenge | null }
     return { status: 'ok', challenge: data.challenge ?? null }
@@ -209,7 +224,7 @@ export async function getActiveWeekly(): Promise<WeeklyChallenge | null> {
 export async function getWeeklyBoard(id: string): Promise<WeeklyBoard | null> {
   if (base() === '') return null
   try {
-    const res = await fetch(
+    const res = await fetchWithDeadline(
       `${base()}/api/weekly/board?id=${encodeURIComponent(id)}`,
       { headers: getAuthHeaders() },
     )
@@ -238,7 +253,7 @@ export function archiveReader(): string {
 export async function getWeeklyArchive(): Promise<ArchivedWeeklyChallenge[]> {
   if (base() === '') return []
   try {
-    const res = await fetch(`${base()}/api/weekly/archive`, {
+    const res = await fetchWithDeadline(`${base()}/api/weekly/archive`, {
       headers: getAuthHeaders(),
     })
     if (!res.ok) return []
@@ -257,11 +272,18 @@ export async function createWeekly(
 ): Promise<{ id: string } | { error: string }> {
   if (base() === '') return { error: 'No API configured' }
   try {
-    const res = await fetch(`${base()}/api/weekly`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
-      body: JSON.stringify(payload),
-    })
+    const res = await fetchWithDeadline(
+      `${base()}/api/weekly`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Key': adminKey,
+        },
+        body: JSON.stringify(payload),
+      },
+      { userAction: true },
+    )
     return (await res.json()) as { id: string } | { error: string }
   } catch (e) {
     return { error: String(e) }
@@ -279,11 +301,18 @@ export async function updateWeekly(
 ): Promise<WeeklyUpdateResult> {
   if (base() === '') return { ok: false, error: 'No API base is configured' }
   try {
-    const res = await fetch(`${base()}/api/weekly/${encodeURIComponent(id)}`, {
-      method: 'PATCH',
-      headers: { 'Content-Type': 'application/json', 'X-Admin-Key': adminKey },
-      body: JSON.stringify(patch),
-    })
+    const res = await fetchWithDeadline(
+      `${base()}/api/weekly/${encodeURIComponent(id)}`,
+      {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Admin-Key': adminKey,
+        },
+        body: JSON.stringify(patch),
+      },
+      { userAction: true },
+    )
     if (res.ok) return { ok: true }
     let error = `The server refused the change (${res.status})`
     try {
@@ -352,7 +381,7 @@ export async function listAllWeekly(
   if (base() === '' && isE2ETestMode()) return []
   if (base() === '') return null
   try {
-    const res = await fetch(`${base()}/api/weekly/all`, {
+    const res = await fetchWithDeadline(`${base()}/api/weekly/all`, {
       headers: { 'X-Admin-Key': adminKey },
     })
     if (!res.ok) return null
@@ -369,10 +398,11 @@ export async function deleteWeekly(
 ): Promise<boolean> {
   if (base() === '') return false
   try {
-    const res = await fetch(`${base()}/api/weekly/${encodeURIComponent(id)}`, {
-      method: 'DELETE',
-      headers: { 'X-Admin-Key': adminKey },
-    })
+    const res = await fetchWithDeadline(
+      `${base()}/api/weekly/${encodeURIComponent(id)}`,
+      { method: 'DELETE', headers: { 'X-Admin-Key': adminKey } },
+      { userAction: true },
+    )
     return res.ok
   } catch {
     return false

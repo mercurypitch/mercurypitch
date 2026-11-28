@@ -7,6 +7,7 @@
 // one task-shaped snapshot, while UUID revision ids, protected content fetches
 // and the X-Admin-Key header remain centralized here.
 
+import { deadlineForBytes, fetchWithDeadline } from '@/db/api-fetch'
 import type { BackgroundPerkId, BackgroundSurface, } from '@/lib/backgrounds/background-catalog'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -190,6 +191,14 @@ function base(): string {
   return API_BASE_URL ?? ''
 }
 
+/**
+ * The largest variant picture the worker takes (MAX_WEBP_BYTES in
+ * workers/db-worker/src/premium-background-admin.ts). Its preview comes back
+ * whole, so the read is given the time that size needs on a slow line: a
+ * read's 8 s would cut a large one off.
+ */
+const LARGEST_VARIANT_BYTES = 16 * 1024 * 1024
+
 function adminHeaders(adminKey: string, json = false): HeadersInit {
   return {
     'X-Admin-Key': adminKey,
@@ -204,13 +213,20 @@ async function request<T>(
 ): Promise<AdminApiResult<T>> {
   if (base() === '') return { ok: false, error: 'No API configured.' }
   try {
-    const response = await fetch(`${base()}${path}`, {
-      ...init,
-      headers: {
-        ...adminHeaders(adminKey),
-        ...init.headers,
+    // Every admin call is the owner's request and goes even while the API is
+    // out of reach (api-reachability.ts). An uploaded variant's deadline grows
+    // with its size (deadlineFor), so a 16 MB picture is not cut off at 20 s.
+    const response = await fetchWithDeadline(
+      `${base()}${path}`,
+      {
+        ...init,
+        headers: {
+          ...adminHeaders(adminKey),
+          ...init.headers,
+        },
       },
-    })
+      { userAction: true },
+    )
     const data = (await response.json().catch(() => null)) as
       | (T & { error?: string })
       | null
@@ -441,9 +457,10 @@ export async function loadBackgroundVariantPreview(
 ): Promise<AdminApiResult<Blob>> {
   if (base() === '') return { ok: false, error: 'No API configured.' }
   try {
-    const response = await fetch(
+    const response = await fetchWithDeadline(
       `${base()}/api/admin/premium-backgrounds/${encode(backgroundId)}/revisions/${encode(revisionId)}/variants/${encode(variant)}/content`,
       { headers: adminHeaders(adminKey) },
+      { deadlineMs: deadlineForBytes(LARGEST_VARIANT_BYTES), userAction: true },
     )
     if (!response.ok) {
       const data = (await response.json().catch(() => null)) as {

@@ -42,6 +42,9 @@ function countdownLabel(endsAt: string): string {
   return `${Math.floor(h / 24)}d left`
 }
 
+/** What Try again hands the read it starts again. */
+const TRY_AGAIN = 'try-again'
+
 interface WeeklyLegendHeroProps {
   /**
    * Whether to offer the way to past challenges. On by default for Home;
@@ -55,7 +58,12 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
   // Read with its outcome: "nothing is running" and "this network cannot
   // reach the server" used to share one line of copy, which told a singer
   // behind a blocking firewall that the first Legend was still on its way.
-  const [active, { refetch: refetchActive }] = createResource(readActiveWeekly)
+  // Try again is a person's press, so its read is sent even while the API is
+  // out of reach (weekly-service.ts `readActiveWeekly`).
+  const [active, { refetch: refetchActive }] = createResource(
+    (_source: true, info: { refetching: unknown }) =>
+      readActiveWeekly({ userAction: info.refetching === TRY_AGAIN }),
+  )
   /** The live Legend: null when there is none or it could not be read,
    *  undefined until the first read lands. */
   const challenge = () => {
@@ -232,7 +240,7 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
               </p>
               <button
                 class={styles.allLink}
-                onClick={() => void refetchActive()}
+                onClick={() => void refetchActive(TRY_AGAIN)}
                 data-testid="legend-retry"
               >
                 Try again

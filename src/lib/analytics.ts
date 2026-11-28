@@ -9,6 +9,7 @@
 // no payload — counts only, no PII, no scores.
 // ============================================================
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { API_BASE_URL } from '@/lib/defaults'
 import { funnelEventBody, trackFunnelTags } from '@/lib/funnel'
 import type { AppFunnelEventName } from '@/lib/funnel-event-catalog'
@@ -41,7 +42,9 @@ function beacon(event: AppFunnelEvent): void {
     // success. keepalive fetch with credentials omitted survives page
     // unloads (checkout_start fires right before the Stripe redirect)
     // and is compatible with the wildcard.
-    void fetch(url, {
+    // Through the API's helper: a deadline, and while the API is out of reach
+    // the event is not sent at all (api-fetch.ts), since it could not arrive.
+    void fetchWithDeadline(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: payload,

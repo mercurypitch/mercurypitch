@@ -6,6 +6,7 @@
 // invalid content. The caller can then retain the bundled ZEN_EXERCISES seed
 // catalogue as its offline and rollout fallback.
 
+import { deadlineForBytes, fetchWithDeadline } from '@/db/api-fetch'
 import { API_BASE_URL } from '@/lib/defaults'
 import { isE2ETestMode } from '@/lib/test-utils'
 import type { ZenExampleAudio, ZenExerciseDefinition } from './types'
@@ -140,6 +141,14 @@ function validationIssues(value: unknown): ApiValidationIssue[] | undefined {
   return issues.length === 0 ? undefined : issues
 }
 
+/**
+ * One call to the API. A change (anything but a GET), and any call made with
+ * the admin key, is the owner's request in the studio and goes even while the
+ * API is out of reach (api-reachability.ts); the published catalogue's reads
+ * are the page's and are refused then. An upload's deadline grows with its
+ * size (deadlineFor): playback can be 2 MiB, which a write's 20 s does not
+ * cover on a slow line.
+ */
 async function apiRequest<T>(
   path: string,
   init?: RequestInit,
@@ -148,7 +157,11 @@ async function apiRequest<T>(
     return { ok: false, error: 'No API configured', status: 0 }
   }
   try {
-    const response = await fetch(`${base()}${path}`, init)
+    const response = await fetchWithDeadline(`${base()}${path}`, init, {
+      userAction:
+        (init?.method ?? 'GET') !== 'GET' ||
+        new Headers(init?.headers).has('X-Admin-Key'),
+    })
     let body: unknown = null
     try {
       body = await response.json()
@@ -362,9 +375,16 @@ export async function downloadAdminGuidedExerciseMedia(
     return { ok: false, error: 'No API configured', status: 0 }
   }
   try {
-    const response = await fetch(
+    const response = await fetchWithDeadline(
       `${base()}/api/admin/guided-media/${encodeURIComponent(mediaId)}`,
       { headers: adminHeaders(key) },
+      // The whole recording comes back, up to the 2 MiB the worker takes, so
+      // it is given that size's time rather than a read's 8 s. The owner's
+      // request, made with the admin key.
+      {
+        deadlineMs: deadlineForBytes(MAX_GUIDED_MEDIA_BYTES),
+        userAction: true,
+      },
     )
     if (!response.ok) {
       let message = `Playback request failed (${response.status})`

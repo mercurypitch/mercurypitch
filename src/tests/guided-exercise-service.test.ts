@@ -37,9 +37,10 @@ describe('guided exercise service', () => {
     await expect(service.listPublishedGuidedExercises()).resolves.toEqual([
       exercise,
     ])
+    // A plain read, carrying its deadline's signal (api-fetch.ts).
     expect(globalThis.fetch).toHaveBeenCalledWith(
       `${API}/api/guided-exercises`,
-      undefined,
+      { signal: expect.any(AbortSignal) },
     )
   })
 
@@ -70,7 +71,7 @@ describe('guided exercise service', () => {
     ).resolves.toEqual(exercise)
     expect(fetchMock).toHaveBeenCalledWith(
       `${API}/api/guided-exercises/${exercise.id}/versions/${exercise.version}`,
-      undefined,
+      { signal: expect.any(AbortSignal) },
     )
   })
 
@@ -150,7 +151,10 @@ describe('guided exercise service', () => {
     }
     expect(fetchMock).toHaveBeenCalledWith(
       `${API}/api/admin/guided-media/media-private`,
-      { headers: { 'X-Admin-Key': 'admin-key' } },
+      {
+        headers: { 'X-Admin-Key': 'admin-key' },
+        signal: expect.any(AbortSignal),
+      },
     )
   })
 

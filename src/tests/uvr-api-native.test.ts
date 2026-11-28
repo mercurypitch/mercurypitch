@@ -104,6 +104,8 @@ class FakeXhr {
   onload: (() => void) | null = null
   onerror: (() => void) | null = null
   onabort: (() => void) | null = null
+  ontimeout: (() => void) | null = null
+  timeout = 0
   status = 0
   statusText = ''
   responseText = ''
@@ -246,6 +248,32 @@ describe('sending a song with its progress', () => {
     FakeXhr.last?.answer(0, {})
 
     await expect(pending).rejects.toBeInstanceOf(TypeError)
+  })
+
+  it('gives up by a deadline that grows with the song', async () => {
+    const small = processAudio(
+      new File([new Uint8Array([1])], 'song.m4a'),
+      { provider: 'runpod' },
+      undefined,
+      () => undefined,
+    )
+    await vi.waitFor(() => expect(FakeXhr.last).not.toBeNull())
+    const xhr = FakeXhr.last as FakeXhr
+    // A write's 20 s for a small body, and a minute for the worker's part.
+    expect(xhr.timeout).toBe(80_000)
+    xhr.ontimeout?.()
+    await expect(small).rejects.toMatchObject({ name: 'ApiDeadlineError' })
+
+    FakeXhr.last = null
+    void processAudio(
+      new File([new Uint8Array(4_000_000)], 'song.m4a'),
+      { provider: 'runpod' },
+      undefined,
+      () => undefined,
+    ).catch(() => undefined)
+    await vi.waitFor(() => expect(FakeXhr.last).not.toBeNull())
+    // 4 MB at 64 kbit/s takes 500 s to send.
+    expect((FakeXhr.last as FakeXhr | null)?.timeout).toBe(500_000 + 60_000)
   })
 
   it('says a dropped connection is one', async () => {

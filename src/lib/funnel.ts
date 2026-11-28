@@ -17,6 +17,7 @@
 // Everything degrades silently when no API is configured (pure-local
 // dev), because telemetry must never break the product.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { forgetFunnelAcquisition, funnelIdMonths, getFunnelAcquisition, } from '@/lib/acquisition'
 import { trackAdConversion, trackGa4Event } from '@/lib/consent'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -204,7 +205,9 @@ function beacon(event: string, metrics?: FunnelMetrics): void {
     // event. keepalive fetch with credentials omitted survives page
     // unloads (share / cta events fire right before navigation) and is
     // compatible with the wildcard.
-    void fetch(`${API_BASE_URL}${ENDPOINT}`, {
+    // Through the API's helper: a deadline, and while the API is out of reach
+    // the event is not sent at all (api-fetch.ts), since it could not arrive.
+    void fetchWithDeadline(`${API_BASE_URL}${ENDPOINT}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: funnelEventBody(event, metrics),

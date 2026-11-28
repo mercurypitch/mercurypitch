@@ -246,6 +246,7 @@ describe('premium perks admin service', () => {
       'https://api-dev.example.test/api/admin/premium-backgrounds/golden-stage/revisions/revision-1/variants/portrait-2k/content',
       {
         headers: expect.objectContaining({ 'X-Admin-Key': 'owner-key' }),
+        signal: expect.any(AbortSignal),
       },
     )
   })

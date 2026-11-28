@@ -12,6 +12,7 @@
 // Part of the Karaoke room's Stage 2 (vite.config.ts KARAOKE_STAGE_2): a store
 // build that does not import songs carries none of this.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { requireAuth } from '@/db/services/auth-service'
 import { getAuthHeaders } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -50,13 +51,18 @@ export async function redeemReviewAccess(
   }
   try {
     // A reviewer on a fresh install has no identity yet: this gives the
-    // phone its anonymous one, which is all the grant needs.
-    await requireAuth().catch(() => false)
-    const response = await fetch(`${api}/api/billing/review-access`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
-      body: JSON.stringify({ code }),
-    })
+    // phone its anonymous one, which is all the grant needs. Both are the
+    // reviewer's press, so they go even while the API is out of reach.
+    await requireAuth({ userAction: true }).catch(() => false)
+    const response = await fetchWithDeadline(
+      `${api}/api/billing/review-access`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
+        body: JSON.stringify({ code }),
+      },
+      { userAction: true },
+    )
     if (!response.ok) return { kind: 'refused', why: refusal(response.status) }
     const body = (await response.json().catch(() => ({}))) as {
       granted?: unknown

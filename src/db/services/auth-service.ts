@@ -362,8 +362,9 @@ async function handleAuthResponse(
 async function postAuth(
   route: string,
   body: Record<string, unknown>,
+  userAction?: boolean,
 ): Promise<AuthResponse> {
-  const outcome = await postSignIn(route, body)
+  const outcome = await postSignIn(route, body, userAction)
   if (isTwofaChallenge(outcome)) {
     throw new AuthHttpError(
       'This account needs a second factor — sign in from the sign-in screen',
@@ -376,14 +377,23 @@ async function postAuth(
 async function postSignIn(
   route: string,
   body: Record<string, unknown>,
+  userAction = route !== 'anonymous',
 ): Promise<SignInOutcome> {
   // A write's deadline (api-fetch.ts). Anonymous provisioning comes through
-  // here from a write's beforeWrite hook, which waited on it with none.
-  const res = await fetchWithDeadline(`${requireBaseUrl()}/api/auth/${route}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  // here from a write's beforeWrite hook, which waited on it with none. Every
+  // other route is a person signing in, who asked for this attempt: it goes
+  // even while the API is out of reach (api-reachability.ts). Provisioning is
+  // refused then, like any call nobody asked for, unless it is the first step
+  // of a person's own press (requireAuth's `userAction`).
+  const res = await fetchWithDeadline(
+    `${requireBaseUrl()}/api/auth/${route}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    { userAction },
+  )
   if (!res.ok) {
     // Surface the server's human-readable message ({"error": "…"}),
     // not the raw JSON — this string is shown directly in the UI.
@@ -595,8 +605,15 @@ let tearingDown = false
  *
  * Returns false when no API is configured, the network is down, or the
  * account was upgraded and requires an explicit login. Never throws.
+ *
+ * `userAction`: a person pressed for what needs the identity (Buy, a cloud
+ * split), so a provisioning request goes even while the API is out of reach,
+ * as the probe their press is (api-reachability.ts). The check of a session
+ * already held stays as it is: refused then, it keeps the session.
  */
-export async function requireAuth(): Promise<boolean> {
+export async function requireAuth(
+  options: { userAction?: boolean } = {},
+): Promise<boolean> {
   if (API_BASE_URL == null || API_BASE_URL === '') return false
   if (tearingDown) return false
   if (await restoreAuth()) return true
@@ -606,10 +623,11 @@ export async function requireAuth(): Promise<boolean> {
   if (requiresLogin()) return false
   provisioning ??= (async () => {
     try {
-      await postAuth('anonymous', {
-        deviceId: getUserId(),
-        deviceSecret: getDeviceSecret(),
-      })
+      await postAuth(
+        'anonymous',
+        { deviceId: getUserId(), deviceSecret: getDeviceSecret() },
+        options.userAction === true,
+      )
       return true
     } catch (err) {
       if (
@@ -853,18 +871,22 @@ export async function googleSignInUrl(signup?: SignupContext): Promise<string> {
   // worker needs the device secret to allow it — and a secret in a URL ends up
   // in browser history, server logs and Referer headers.
   const base = requireBaseUrl()
-  const res = await fetch(`${base}/api/auth/google/start`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      deviceId: getUserId(),
-      deviceSecret: getDeviceSecret(),
-      returnTo,
-      ...signup,
-      // Echoed back beside the session: the return counts only here.
-      nonce: beginGoogleReturn(),
-    }),
-  })
+  const res = await fetchWithDeadline(
+    `${base}/api/auth/google/start`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        deviceId: getUserId(),
+        deviceSecret: getDeviceSecret(),
+        returnTo,
+        ...signup,
+        // Echoed back beside the session: the return counts only here.
+        nonce: beginGoogleReturn(),
+      }),
+    },
+    { userAction: true },
+  )
   if (!res.ok) throw new Error(`google/start failed: ${res.status}`)
   const { url } = (await res.json()) as { url?: string }
   if (url == null || url === '') throw new Error('google/start returned no url')
@@ -1051,11 +1073,15 @@ export async function startDeviceLink(
 ): Promise<DeviceLinkRequest | null> {
   let res: Response
   try {
-    res = await fetch(`${requireBaseUrl()}/api/auth/device/start`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ deviceLabel }),
-    })
+    res = await fetchWithDeadline(
+      `${requireBaseUrl()}/api/auth/device/start`,
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ deviceLabel }),
+      },
+      { userAction: true },
+    )
   } catch {
     return null
   }
@@ -1095,7 +1121,7 @@ export async function pollDeviceLink(
 ): Promise<DeviceLinkPoll> {
   let res: Response
   try {
-    res = await fetch(`${requireBaseUrl()}/api/auth/device/poll`, {
+    res = await fetchWithDeadline(`${requireBaseUrl()}/api/auth/device/poll`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -1136,7 +1162,7 @@ export async function fetchDeviceLinkPending(
   if (token == null || token === '') return { status: 'signed-out' }
   let res: Response
   try {
-    res = await fetch(
+    res = await fetchWithDeadline(
       `${requireBaseUrl()}/api/auth/device/pending?code=${encodeURIComponent(code)}`,
       { headers: { Authorization: `Bearer ${token}` } },
     )
@@ -1166,14 +1192,18 @@ export async function approveDeviceLink(
   if (token == null || token === '') return { ok: false, reason: 'signed-out' }
   let res: Response
   try {
-    res = await fetch(`${requireBaseUrl()}/api/auth/device/approve`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+    res = await fetchWithDeadline(
+      `${requireBaseUrl()}/api/auth/device/approve`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ code }),
       },
-      body: JSON.stringify({ code }),
-    })
+      { userAction: true },
+    )
   } catch {
     return { ok: false, reason: 'failed' }
   }
@@ -1228,10 +1258,11 @@ export function takeEmailVerifyResult(): EmailVerifyResult | null {
 export async function resendVerificationEmail(): Promise<void> {
   const token = getAuthToken()
   if (token == null || token === '') throw new Error('Not signed in')
-  const res = await fetch(`${requireBaseUrl()}/api/auth/resend-verification`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const res = await fetchWithDeadline(
+    `${requireBaseUrl()}/api/auth/resend-verification`,
+    { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+    { userAction: true },
+  )
   await handleAuthResponse(res)
   if (!res.ok) {
     const detail = await res.text().catch(() => '')
@@ -1269,11 +1300,15 @@ export async function requestPasswordReset(
   email: string,
   cfTurnstileToken?: string,
 ): Promise<void> {
-  const res = await fetch(`${requireBaseUrl()}/api/auth/forgot-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ email, cfTurnstileToken }),
-  })
+  const res = await fetchWithDeadline(
+    `${requireBaseUrl()}/api/auth/forgot-password`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, cfTurnstileToken }),
+    },
+    { userAction: true },
+  )
   if (!res.ok) {
     throw new Error(await extractError(res, 'Could not send the reset email'))
   }
@@ -1283,7 +1318,7 @@ export async function requestPasswordReset(
  *  show "link expired" before the user types anything. Throws on network /
  *  server failure — callers decide whether to fall through to the form. */
 export async function checkResetToken(token: string): Promise<boolean> {
-  const res = await fetch(
+  const res = await fetchWithDeadline(
     `${requireBaseUrl()}/api/auth/reset-password?token=${encodeURIComponent(token)}`,
   )
   if (!res.ok) {
@@ -1298,11 +1333,15 @@ export async function resetPassword(
   token: string,
   password: string,
 ): Promise<void> {
-  const res = await fetch(`${requireBaseUrl()}/api/auth/reset-password`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ token, password }),
-  })
+  const res = await fetchWithDeadline(
+    `${requireBaseUrl()}/api/auth/reset-password`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ token, password }),
+    },
+    { userAction: true },
+  )
   if (!res.ok) {
     throw new Error(await extractError(res, 'Could not reset the password'))
   }
@@ -1351,21 +1390,27 @@ export function logout(): void {
   // the token and leaves the account's other devices signed in — signing out
   // on a phone used to sign out the laptop and the television with it. To end
   // every device instead, see revokeAllSessions in auth-sessions-service.
-  // Fire-and-forget: the client is already signed out regardless.
+  // Fire-and-forget: the client is already signed out regardless. A person
+  // pressed Sign out, so it is sent even while the API is out of reach: a
+  // session left alive on the server is one a shared device still holds.
   if (
     token != null &&
     payload != null &&
     API_BASE_URL != null &&
     API_BASE_URL !== ''
   ) {
-    void fetch(`${API_BASE_URL}/api/auth/logout`, {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}` },
-    }).catch(() => {
+    void fetchWithDeadline(
+      `${API_BASE_URL}/api/auth/logout`,
+      { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+      { userAction: true },
+    ).catch(() => {
       // Network failure is non-fatal
     })
   }
 }
+
+/** How long erasing an account may take; see deleteAccount. */
+const ACCOUNT_ERASURE_DEADLINE_MS = 60_000
 
 /**
  * Permanently delete the signed-in account and everything the server holds
@@ -1376,10 +1421,16 @@ export function logout(): void {
 export async function deleteAccount(): Promise<void> {
   const token = getAuthToken()
   if (token == null || token === '') throw new Error('Not signed in')
-  const res = await fetch(`${requireBaseUrl()}/api/auth/me`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const res = await fetchWithDeadline(
+    `${requireBaseUrl()}/api/auth/me`,
+    { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
+    // Longer than a write's 20 s. The worker erases every table the account
+    // owns and first revokes its Google Drive grant, which waits on Google
+    // (handleDeleteMe in workers/db-worker/src/auth.ts). Given up on too
+    // soon, the erasure finishes anyway while this says it failed, and the
+    // retry it invites is refused with a 401.
+    { deadlineMs: ACCOUNT_ERASURE_DEADLINE_MS, userAction: true },
+  )
   await handleAuthResponse(res)
   if (!res.ok) {
     const detail = await res.text().catch(() => '')

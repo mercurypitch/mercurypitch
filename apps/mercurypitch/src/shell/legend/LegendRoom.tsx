@@ -42,6 +42,9 @@ import { createLegendTake } from './legend-take'
 import { LegendDoor } from './LegendDoor'
 import { LegendTakeView } from './LegendTakeView'
 
+/** What Try again hands the read it starts again. */
+const TRY_AGAIN = 'try-again'
+
 /** How often the close's words are worked out again. */
 const CLOCK_MS = 60_000
 
@@ -52,7 +55,12 @@ export function LegendRoom(): JSX.Element {
   const clock = setInterval(() => setNow(Date.now()), CLOCK_MS)
   onCleanup(() => clearInterval(clock))
 
-  const [active, { refetch: readAgain }] = createResource(readActiveWeekly)
+  // Try again is a person's press, so its read is sent even while the API is
+  // out of reach (weekly-service.ts `readActiveWeekly`).
+  const [active, { refetch: readAgain }] = createResource(
+    (_source: true, info: { refetching: unknown }) =>
+      readActiveWeekly({ userAction: info.refetching === TRY_AGAIN }),
+  )
   const running = (): WeeklyChallenge | null => {
     const read = active()
     return read?.status === 'ok' ? read.challenge : null
@@ -175,7 +183,7 @@ export function LegendRoom(): JSX.Element {
             reading={() => active.loading}
             unreachable={() => active()?.status === 'unreachable'}
             onRetry={() => {
-              void readAgain()
+              void readAgain(TRY_AGAIN)
             }}
             board={() => board() ?? null}
             archive={() => archive.latest ?? []}

@@ -172,9 +172,19 @@ function bodyBytes(body: BodyInit | null | undefined): number {
 export function deadlineFor(init?: RequestInit): number {
   const method = (init?.method ?? 'GET').toUpperCase()
   if (method === 'GET' || method === 'HEAD') return API_READ_DEADLINE_MS
+  return deadlineForBytes(bodyBytes(init?.body))
+}
+
+/**
+ * How long moving `bytes` either way may take: as long as they need at the
+ * same 64 kbit/s, and never less than a write's 20 s. For a download whose
+ * largest size is known (a picture the server caps), where a read's 8 s
+ * would cut off a large one on a slow line.
+ */
+export function deadlineForBytes(bytes: number): number {
   return Math.max(
     API_WRITE_DEADLINE_MS,
-    Math.ceil(bodyBytes(init?.body) / SLOW_UPLINK_BYTES_PER_MS),
+    Math.ceil(bytes / SLOW_UPLINK_BYTES_PER_MS),
   )
 }
 

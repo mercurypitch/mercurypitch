@@ -5,6 +5,7 @@
 // localStorage remembers only a preferred id. It is never evidence of access:
 // every protected selection is re-resolved against fresh server responses.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import type { BillingMe } from '@/db/services/billing-service'
 import { fetchBillingMe, supporterEntitlement, } from '@/db/services/billing-service'
 import { getAuthHeaders } from '@/db/services/user-service'
@@ -72,7 +73,7 @@ export async function fetchPerksMe(base?: string): Promise<PerksMe | null> {
   if (resolved === '') return null
 
   try {
-    const response = await fetch(`${resolved}/api/perks/me`, {
+    const response = await fetchWithDeadline(`${resolved}/api/perks/me`, {
       headers: getAuthHeaders(),
     })
     if (!response.ok) return null

@@ -34,7 +34,11 @@ export interface BlockedList {
   /** The singer being unblocked, while it is out. */
   unblocking: () => string | null
   unblockFailed: () => UnblockFailure | null
-  load: () => Promise<void>
+  /**
+   * Read the list again. `userAction`: the singer pressed Try again, so the
+   * read goes even while the API is out of reach (api-reachability.ts).
+   */
+  load: (options?: { userAction?: boolean }) => Promise<void>
   /** True when the block was lifted. */
   unblock: (singer: BlockedSinger) => Promise<boolean>
 }
@@ -101,11 +105,11 @@ export function createBlockedList(
     if (problem === 'refused') handleCloudSessionRejected()
   }
 
-  async function load(): Promise<void> {
+  async function load(options: { userAction?: boolean } = {}): Promise<void> {
     const accountId = untrack(holder)
     if (accountId === null || untrack(readingFor) === accountId) return
     setReadingFor(accountId)
-    const answer = await readBlockedSingers()
+    const answer = await readBlockedSingers(options)
     if (untrack(readingFor) === accountId) setReadingFor(null)
     // Signed out by the read itself: said, though nobody holds it now.
     if (answer.status === 'suspended') {

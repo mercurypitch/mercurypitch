@@ -3,6 +3,7 @@
 // ============================================================
 
 import { getDb } from '@/db'
+import { fetchWithDeadline } from '@/db/api-fetch'
 import type { LeaderboardCategory, LeaderboardPeriod, SessionRecord, UserProfile, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { getCurrentStreak } from '@/db/services/streak-service'
@@ -194,9 +195,12 @@ export async function loadLeaderboardPage(opts: {
         limit: String(limit),
         offset: String(offset),
       })
-      const res = await fetch(`${API_BASE_URL}/api/leaderboard?${params}`, {
-        headers: getAuthHeaders(),
-      })
+      const res = await fetchWithDeadline(
+        `${API_BASE_URL}/api/leaderboard?${params}`,
+        {
+          headers: getAuthHeaders(),
+        },
+      )
       if (!res.ok) throw new Error(`leaderboard failed: ${res.status}`)
       const data = (await res.json()) as {
         total: number

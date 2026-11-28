@@ -15,6 +15,7 @@ vi.mock('@/stores/notifications-store', () => ({
   showNotification: vi.fn(),
 }))
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { accountKnownHere } from '@/db/services/account-known'
 import type { AuthResponse } from '@/db/services/auth-service'
 import { consumeGoogleRedirect, deleteAccount, fetchMe, googleSignInUrl, googleTwofaPending, handleAuthErrorResponse, handleCloudSessionRejected, hasUpgradedAccount, hasValidToken, isRegisteredProvider, isTwofaChallenge, loginWithApple, loginWithGoogle, loginWithPassword, logout, needsSignIn, refreshSession, registerWithPassword, requireAuth, resendVerificationEmail, restoreAuth, takeDriveConnectResult, takeGoogleAccountCreated, takeGoogleRedirectResult, takeGoogleTwofaChallenge, } from '@/db/services/auth-service'
@@ -1110,6 +1111,32 @@ describe('logout', () => {
     // Only the credential goes; an ordinary preference is left alone.
     expect(localStorage.getItem('pitchperfect_theme')).toBe('dusk')
     localStorage.removeItem('pitchperfect_theme')
+  })
+
+  // Sign out is a person's press: the server hears that this device is done
+  // even while the API is out of reach, and whatever that request meets never
+  // reaches the caller (api-reachability.ts).
+  it('tells the server even while the API is out of reach, and never throws', async () => {
+    const refused = vi.fn(async () => {
+      throw new TypeError('Failed to fetch')
+    })
+    vi.stubGlobal('fetch', refused)
+    await expect(
+      fetchWithDeadline('http://api.test/api/weekly/active'),
+    ).rejects.toBeInstanceOf(TypeError)
+    await expect(
+      fetchWithDeadline('http://api.test/api/weekly/active'),
+    ).rejects.toMatchObject({ name: 'ApiUnreachableError' })
+    setAuthToken(makeToken(3600, 'password'))
+    refused.mockClear()
+
+    expect(() => logout()).not.toThrow()
+    await vi.waitFor(() =>
+      expect(refused).toHaveBeenCalledWith(
+        'http://api.test/api/auth/logout',
+        expect.objectContaining({ method: 'POST' }),
+      ),
+    )
   })
 
   it('clears it even when nobody was signed in', async () => {

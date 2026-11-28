@@ -13,6 +13,7 @@
 // voiceprint is a keepsake — a link someone opens next year should
 // still open. See docs/plans/voiceprint-share-link.md.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { midiToNoteNameOctave } from '@/lib/note-utils'
 import type { VoiceprintShareData } from '@/lib/share-codec'
 import { decodeSharePayload, encodeVoiceprintForShare } from '@/lib/share-codec'
@@ -100,11 +101,18 @@ export function newOgCardId(): string {
  * run.
  */
 export function uploadOgCard(id: string, card: Blob): void {
-  void fetch(`/api/og/card/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': card.type },
-    body: card,
-  }).catch(() => {
+  // The site worker's own route (src/og-card-handler.ts), not the API. Its
+  // deadline grows with the picture, which the worker takes up to 1 MB of:
+  // at 64 kbit/s a few hundred kilobytes need more than a write's 20 s.
+  void fetchWithDeadline(
+    `/api/og/card/${id}`,
+    {
+      method: 'PUT',
+      headers: { 'Content-Type': card.type },
+      body: card,
+    },
+    { siteWorker: true },
+  ).catch(() => {
     // Nothing to do and nothing to tell the singer: the link still works.
   })
 }

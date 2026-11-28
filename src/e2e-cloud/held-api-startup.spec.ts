@@ -14,6 +14,11 @@
 // and after a reload, and the singer is told once per page load that the
 // servers are out of reach.
 //
+// Once one call has found the API out of reach, the page leaves it alone for
+// a while (src/db/api-reachability.ts): what it asks for in that time is
+// refused at once instead of waiting out a deadline of its own, and nothing
+// is sent. A person's press, such as Try again, is sent anyway.
+//
 // The default e2e build has no API (VITE_API_BASE_URL is empty, so every
 // page uses the local database alone and none of this code runs), so this
 // lives in the cloud suite (playwright.cloud.config.ts). The database is
@@ -77,6 +82,16 @@ async function holdTheApi(page: Page): Promise<void> {
   await page.route('**/cloud/api/**', () => {
     // Never fulfilled, continued or aborted: the request hangs.
   })
+}
+
+/** The paths of the API requests the page sends, in order, from now on. */
+function apiRequests(page: Page): string[] {
+  const sent: string[] = []
+  page.on('request', (request) => {
+    const { pathname } = new URL(request.url())
+    if (pathname.startsWith('/cloud/api/')) sent.push(pathname)
+  })
+  return sent
 }
 
 function playlists(page: Page): Promise<string[]> {
@@ -148,4 +163,60 @@ test('the singer is told once that the servers are out of reach, and nothing wai
     page.getByRole('status').filter({ hasText: NOTICE }),
   ).toHaveCount(1)
   await expect(page.locator('[aria-modal="true"], dialog[open]')).toHaveCount(0)
+})
+
+test('once a call finds the servers out of reach, the page stops asking them for a while', async ({
+  page,
+}) => {
+  await seedReturningSinger(page, accountToken())
+  await holdTheApi(page)
+  const sent = apiRequests(page)
+
+  await page.goto('/')
+  await expect(page.getByTestId('home-lessons')).toBeVisible()
+  // The first call to give up, at its 8 s deadline, raises the notice.
+  await expect(page.getByText(NOTICE)).toBeVisible({ timeout: 12_000 })
+  const before = sent.length
+
+  // The Legends view reads the running Legend from the API. Asked now, it
+  // is refused at once: the card says it can't reach the server within
+  // moments rather than at a deadline of its own, and the API host hears
+  // nothing.
+  await page.evaluate(() => {
+    location.hash = '#/leaderboard'
+  })
+  await page.getByTestId('legends-tab').click()
+  await expect(
+    page.getByTestId('legends-showcase').getByTestId('legend-unreachable'),
+  ).toBeVisible({ timeout: PROMPTLY_MS })
+  expect(sent.slice(before)).toEqual([])
+})
+
+test('Try again on the Legend card asks the servers once, even while they are out of reach', async ({
+  page,
+}) => {
+  test.setTimeout(60_000)
+  await seedReturningSinger(page, accountToken())
+  await holdTheApi(page)
+  const sent = apiRequests(page)
+  const legendReads = () =>
+    sent.filter((path) => path.endsWith('/api/weekly/active')).length
+
+  await page.goto('/')
+  // Its first read gives up by its 8 s deadline, which is also what leaves
+  // the API alone for a while.
+  const retry = page.getByTestId('legend-retry')
+  await expect(retry).toBeVisible({ timeout: 12_000 })
+  const before = legendReads()
+
+  await retry.click()
+  await expect.poll(legendReads).toBe(before + 1)
+  // Unanswered, it gives up by the same 8 s deadline, and the card still
+  // says it can't reach the server.
+  await page.waitForEvent('requestfailed', {
+    predicate: (request) => request.url().endsWith('/api/weekly/active'),
+    timeout: 12_000,
+  })
+  await expect(page.getByTestId('legend-unreachable')).toBeVisible()
+  expect(legendReads()).toBe(before + 1)
 })

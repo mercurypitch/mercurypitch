@@ -13,6 +13,7 @@
 // file already loads on the first paint of every surface with an account chip,
 // and nobody needs this before they ask for a code.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { API_BASE_URL } from '@/lib/defaults'
 import { rememberSignInMethod } from '@/lib/last-sign-in'
 import type { AuthResponse, SignInOutcome } from './auth-service'
@@ -37,12 +38,18 @@ async function messageOf(res: Response, fallback: string): Promise<string> {
   }
 }
 
+/** Both calls are a person signing in: they go even while the API is out of
+ *  reach (api-reachability.ts), as the attempt they asked for. */
 async function postJson(path: string, body: unknown): Promise<Response> {
-  return fetch(`${requireBaseUrl()}${path}`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(body),
-  })
+  return fetchWithDeadline(
+    `${requireBaseUrl()}${path}`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    },
+    { userAction: true },
+  )
 }
 
 /**

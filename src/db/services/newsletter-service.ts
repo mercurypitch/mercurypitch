@@ -15,6 +15,7 @@
 // paint of every surface with an account chip. Nobody needs this before they
 // open their settings.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { API_BASE_URL } from '@/lib/defaults'
 import { getAuthToken } from './user-service'
 
@@ -33,14 +34,19 @@ export async function setNewsletterOptIn(optIn: boolean): Promise<void> {
   }
   if (token == null || token === '') throw new Error('Not signed in')
 
-  const res = await fetch(`${base}/api/newsletter/preference`, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${token}`,
-      'content-type': 'application/json',
+  const res = await fetchWithDeadline(
+    `${base}/api/newsletter/preference`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({ optIn }),
     },
-    body: JSON.stringify({ optIn }),
-  })
+    // A person ticked or cleared the box.
+    { userAction: true },
+  )
   if (!res.ok) {
     throw new Error(
       optIn

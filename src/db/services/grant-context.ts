@@ -19,6 +19,7 @@
 // have to produce the same shape, and the tests run both.
 
 import { getDb } from '@/db'
+import { fetchWithDeadline } from '@/db/api-fetch'
 import type { Achievement, BadgeDefinition, ChallengeDefinition, ChallengeProgress, SessionRecord, SharedMelody, SharedSession, UserAchievement, UserActivity, UserBadge, UserProfile, } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { hasValidToken } from '@/db/services/auth-service'
@@ -92,9 +93,12 @@ interface GrantContextResponse {
 
 async function fetchBulkContext(): Promise<GrantContext | null> {
   try {
-    const res = await fetch(`${API_BASE_URL}/api/me/grant-context`, {
-      headers: getAuthHeaders(),
-    })
+    const res = await fetchWithDeadline(
+      `${API_BASE_URL}/api/me/grant-context`,
+      {
+        headers: getAuthHeaders(),
+      },
+    )
     if (!res.ok) return null
     const body = (await res.json()) as GrantContextResponse
 

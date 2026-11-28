@@ -288,6 +288,11 @@ describe('the door', () => {
     await settle()
     await settle()
     expect(text('.mp-legend-door__title')).toBe('Vincero')
+    // Try again is the singer asking: it goes even while the API is out of
+    // reach (api-reachability.ts). The first read is the room's own.
+    expect(
+      active.mock.calls.map(([options]) => options?.userAction === true),
+    ).toEqual([false, true])
   })
 
   it('says when the line sits outside the singer’s range, and moves nothing', async () => {

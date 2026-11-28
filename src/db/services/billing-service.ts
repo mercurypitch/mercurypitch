@@ -6,6 +6,7 @@
 // an optional `base` (defaults to API_BASE_URL) so the fetch paths are
 // unit-testable even though tests run with VITE_API_BASE_URL unset.
 
+import { API_WRITE_DEADLINE_MS, fetchWithDeadline } from '@/db/api-fetch'
 import { requireAuth } from '@/db/services/auth-service'
 import { getAuthHeaders } from '@/db/services/user-service'
 import { trackEvent } from '@/lib/analytics'
@@ -246,6 +247,11 @@ function apiBase(base?: string): string {
   return b != null && b !== '' ? b.replace(/\/+$/, '') : ''
 }
 
+/** A person's press (Buy, Redeem): sent even while the API is out of reach. */
+function pressed(url: string, init: RequestInit): Promise<Response> {
+  return fetchWithDeadline(url, init, { userAction: true })
+}
+
 /** Public pricing. Returns null when no cloud API is configured. */
 export async function fetchPricing(
   base?: string,
@@ -253,7 +259,7 @@ export async function fetchPricing(
 ): Promise<Pricing | null> {
   const b = apiBase(base)
   if (b === '') return null
-  const res = await fetch(`${b}/api/billing/pricing`, { signal })
+  const res = await fetchWithDeadline(`${b}/api/billing/pricing`, { signal })
   if (!res.ok) throw new Error(`Failed to load pricing: ${res.statusText}`)
   return withModelCredits((await res.json()) as Pricing)
 }
@@ -345,7 +351,7 @@ export async function fetchBillingMe(
   const b = apiBase(base)
   if (b === '') return null
   try {
-    const res = await fetch(`${b}/api/billing/me`, {
+    const res = await fetchWithDeadline(`${b}/api/billing/me`, {
       headers: getAuthHeaders(),
       signal,
     })
@@ -427,8 +433,8 @@ export async function startCheckout(
   if (b === '') throw new Error('Billing is not available in this build')
   // Buying credits needs somewhere to put them — provision on demand, since
   // identities are no longer minted at startup.
-  await requireAuth()
-  const res = await fetch(`${b}/api/billing/checkout`, {
+  await requireAuth({ userAction: true })
+  const res = await pressed(`${b}/api/billing/checkout`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     body: JSON.stringify({ planId }),
@@ -448,9 +454,12 @@ export async function startCheckout(
 export async function openBillingPortal(base?: string): Promise<string> {
   const b = apiBase(base)
   if (b === '') throw new Error('Billing is not available in this build')
-  const res = await fetch(`${b}/api/billing/portal`, {
-    headers: getAuthHeaders(),
-  })
+  const res = await fetchWithDeadline(
+    `${b}/api/billing/portal`,
+    { headers: getAuthHeaders() },
+    // A GET, but the worker opens a Stripe session first: a write's time.
+    { deadlineMs: API_WRITE_DEADLINE_MS, userAction: true },
+  )
   const data = (await res.json().catch(() => ({}))) as {
     url?: string
     error?: string
@@ -575,7 +584,7 @@ export async function fetchFeaturedPromo(
   const b = apiBase(base)
   if (b === '') return null
   try {
-    const res = await fetch(`${b}/api/billing/promo/featured`)
+    const res = await fetchWithDeadline(`${b}/api/billing/promo/featured`)
     if (!res.ok) return null
     const body = (await res.json()) as { promo?: unknown } | null
     const promo = body?.promo
@@ -618,7 +627,7 @@ export async function fetchAppGift(base?: string): Promise<AppGift | null> {
   const b = apiBase(base)
   if (b === '') return null
   try {
-    const res = await fetch(`${b}/api/billing/promo/featured`)
+    const res = await fetchWithDeadline(`${b}/api/billing/promo/featured`)
     if (!res.ok) return null
     const body = (await res.json()) as { appGift?: unknown } | null
     const gift = body?.appGift
@@ -640,14 +649,14 @@ export async function redeemPromoCode(
   code: string,
   base?: string,
 ): Promise<RedeemPromoResponse> {
-  await requireAuth()
+  await requireAuth({ userAction: true })
   const authHeaders = getAuthHeaders()
   if (!authHeaders.Authorization) {
     throw new Error('Please sign in to redeem promo codes.')
   }
 
   const b = apiBase(base)
-  const res = await fetch(`${b}/api/billing/promo/redeem`, {
+  const res = await pressed(`${b}/api/billing/promo/redeem`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
@@ -745,7 +754,8 @@ export async function fetchWithdrawals(
   const b = apiBase(base)
   const headers = getAuthHeaders()
   if (b === '' || !headers.Authorization) return null
-  const res = await fetch(`${b}/api/billing/withdrawals`, { headers, signal })
+  const url = `${b}/api/billing/withdrawals`
+  const res = await fetchWithDeadline(url, { headers, signal })
   if (res.status === 401) return null
   if (!res.ok) throw new Error(`Failed to load your purchases: ${res.status}`)
   return (await res.json()) as Withdrawals
@@ -767,7 +777,7 @@ export async function submitWithdrawal(
   if (!headers.Authorization) {
     throw new Error('Sign in to cancel a purchase.')
   }
-  const res = await fetch(`${apiBase(base)}/api/billing/withdrawals`, {
+  const res = await pressed(`${apiBase(base)}/api/billing/withdrawals`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', ...headers },
     body: JSON.stringify(request),

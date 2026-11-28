@@ -59,6 +59,7 @@ export default defineConfig({
     // dev worker, Vitest serves import.meta.env from Vite's env, and a test
     // that reached getDb() would otherwise talk to it instead of Dexie.
     env: { VITE_PORTABLE_CONSOLE: 'true', VITE_API_BASE_URL: '' },
+    setupFiles: ['./src/test-setup.ts'],
     projects: [
       {
         extends: true,

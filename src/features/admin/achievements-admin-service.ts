@@ -10,6 +10,7 @@
 // an achievement authored in the studio and later added to seed-data.json
 // under the same name updates in place rather than duplicating.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import type { Achievement, AchievementCategory } from '@/db/entities'
 import { API_BASE_URL } from '@/lib/defaults'
 
@@ -42,7 +43,13 @@ function adminHeaders(adminKey: string): HeadersInit {
  */
 export async function listAchievements(): Promise<Achievement[] | null> {
   try {
-    const res = await fetch(`${base()}/api/achievements?limit=500`)
+    // The owner opened the editor for this: it goes even while the API is
+    // out of reach (api-reachability.ts), as every admin call does.
+    const res = await fetchWithDeadline(
+      `${base()}/api/achievements?limit=500`,
+      undefined,
+      { userAction: true },
+    )
     if (!res.ok) return null
     const rows = (await res.json()) as Achievement[]
     return rows.sort(
@@ -58,11 +65,15 @@ export async function createAchievement(
   draft: AchievementDraft,
 ): Promise<Achievement | null> {
   try {
-    const res = await fetch(`${base()}/api/achievements`, {
-      method: 'POST',
-      headers: adminHeaders(adminKey),
-      body: JSON.stringify(draft),
-    })
+    const res = await fetchWithDeadline(
+      `${base()}/api/achievements`,
+      {
+        method: 'POST',
+        headers: adminHeaders(adminKey),
+        body: JSON.stringify(draft),
+      },
+      { userAction: true },
+    )
     if (!res.ok) return null
     return (await res.json()) as Achievement
   } catch {
@@ -76,13 +87,14 @@ export async function updateAchievement(
   draft: AchievementDraft,
 ): Promise<Achievement | null> {
   try {
-    const res = await fetch(
+    const res = await fetchWithDeadline(
       `${base()}/api/achievements/${encodeURIComponent(id)}`,
       {
         method: 'PATCH',
         headers: adminHeaders(adminKey),
         body: JSON.stringify(draft),
       },
+      { userAction: true },
     )
     if (!res.ok) return null
     return (await res.json()) as Achievement
@@ -101,9 +113,10 @@ export async function deleteAchievement(
   id: string,
 ): Promise<boolean> {
   try {
-    const res = await fetch(
+    const res = await fetchWithDeadline(
       `${base()}/api/achievements/${encodeURIComponent(id)}`,
       { method: 'DELETE', headers: { 'X-Admin-Key': adminKey } },
+      { userAction: true },
     )
     return res.ok
   } catch {

@@ -11,6 +11,7 @@
 // first paint of every surface with an account chip. Nothing here is needed
 // before someone opens their settings.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { API_BASE_URL } from '@/lib/defaults'
 import { getAuthToken } from './user-service'
 
@@ -40,7 +41,7 @@ function requireAuthorized(): { base: string; token: string } {
 /** Where this account is signed in, most recently seen first. */
 export async function fetchSessions(): Promise<AuthSession[]> {
   const { base, token } = requireAuthorized()
-  const res = await fetch(`${base}/api/auth/sessions`, {
+  const res = await fetchWithDeadline(`${base}/api/auth/sessions`, {
     headers: { Authorization: `Bearer ${token}` },
   })
   if (!res.ok) throw new Error('Could not load your devices')
@@ -57,9 +58,10 @@ export async function fetchSessions(): Promise<AuthSession[]> {
  */
 export async function revokeSession(sessionId: string): Promise<void> {
   const { base, token } = requireAuthorized()
-  const res = await fetch(
+  const res = await fetchWithDeadline(
     `${base}/api/auth/sessions/${encodeURIComponent(sessionId)}`,
     { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
+    { userAction: true },
   )
   if (!res.ok) throw new Error('Could not sign that device out')
 }
@@ -73,9 +75,10 @@ export async function revokeSession(sessionId: string): Promise<void> {
  */
 export async function revokeAllSessions(): Promise<void> {
   const { base, token } = requireAuthorized()
-  const res = await fetch(`${base}/api/auth/logout-all`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const res = await fetchWithDeadline(
+    `${base}/api/auth/logout-all`,
+    { method: 'POST', headers: { Authorization: `Bearer ${token}` } },
+    { userAction: true },
+  )
   if (!res.ok) throw new Error('Could not sign out everywhere')
 }

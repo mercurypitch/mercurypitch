@@ -10,6 +10,7 @@
 // Ads conversion (Campaign E's future bid target).
 // ============================================================
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { AD_CONVERSIONS, trackAdConversion } from '@/lib/consent'
 import { API_BASE_URL } from '@/lib/defaults'
 import { funnelEventBody, trackFunnelTags } from '@/lib/funnel'
@@ -62,7 +63,9 @@ function beacon(event: KaraokeFunnelEvent): void {
     // wildcard origin, which silently drops the request (see the mirror
     // funnel's history). keepalive survives the page unloads of
     // karaoke_cta_studio.
-    void fetch(url, {
+    // Through the API's helper: a deadline, and while the API is out of reach
+    // the event is not sent at all (api-fetch.ts), since it could not arrive.
+    void fetchWithDeadline(url, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: payload,

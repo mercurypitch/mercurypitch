@@ -73,15 +73,18 @@ function note(accountId: string, userId: string, blocked: boolean): void {
 /**
  * Read the account's blocked list from the worker, and keep its ids. An ask
  * while a read for the same account is out shares that read. Never throws.
+ * `userAction`: the singer asked for this read (listBlockedSingers).
  */
-export function readBlockedSingers(): Promise<BlockListRead> {
+export function readBlockedSingers(
+  options: { userAction?: boolean } = {},
+): Promise<BlockListRead> {
   const accountId = untrack(heldAccount)
   if (accountId === null) return Promise.resolve({ status: 'account' })
   if (inflight !== null && inflight.accountId === accountId) {
     return inflight.done
   }
   madeDuringRead.clear()
-  const done = listBlockedSingers().then((read) => {
+  const done = listBlockedSingers(options).then((read) => {
     if (inflight?.done === done) inflight = null
     // The answer is the account's that asked: if the device changed hands
     // while it was out, it is nobody's.

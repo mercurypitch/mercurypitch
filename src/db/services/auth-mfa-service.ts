@@ -10,6 +10,7 @@
 // paint of every surface with an account chip. Nobody needs this before they
 // open settings or meet a challenge.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { API_BASE_URL } from '@/lib/defaults'
 import type { AuthResponse } from './auth-service'
 import { adoptSession } from './auth-service'
@@ -52,18 +53,27 @@ async function messageOf(res: Response, fallback: string): Promise<string> {
   }
 }
 
+/**
+ * One call with the session. A read (the status) is refused at once while
+ * the API is out of reach; a change is a person's own press and goes anyway
+ * (api-reachability.ts).
+ */
 async function authedJson(
   path: string,
   init: RequestInit = {},
 ): Promise<Response> {
-  return fetch(`${requireBaseUrl()}${path}`, {
-    ...init,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${requireToken()}`,
-      ...(init.headers as Record<string, string>),
+  return fetchWithDeadline(
+    `${requireBaseUrl()}${path}`,
+    {
+      ...init,
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${requireToken()}`,
+        ...(init.headers as Record<string, string>),
+      },
     },
-  })
+    { userAction: (init.method ?? 'GET') !== 'GET' },
+  )
 }
 
 // ── Enrollment (needs a session) ─────────────────────────────────────
@@ -133,11 +143,15 @@ export async function verifyTwofa(
   ceremony: string,
   code: string,
 ): Promise<AuthResponse> {
-  const res = await fetch(`${requireBaseUrl()}/api/auth/2fa/verify`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ceremony, code: code.trim() }),
-  })
+  const res = await fetchWithDeadline(
+    `${requireBaseUrl()}/api/auth/2fa/verify`,
+    {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ceremony, code: code.trim() }),
+    },
+    { userAction: true },
+  )
   if (!res.ok) throw new Error(await messageOf(res, 'That code did not match'))
   const auth = (await res.json()) as AuthResponse
   // The session is this module's only side effect on global state, and it

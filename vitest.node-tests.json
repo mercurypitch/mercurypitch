@@ -3,6 +3,7 @@
   "src/components/pitch-testing-uvr-cancellation.test.ts",
   "src/components/shared/control-bar/control-bar-theme.test.ts",
   "src/components/shared/loop-range-rail.test.ts",
+  "src/db/api-fetch-callers.test.ts",
   "src/db/services/studio-service.test.ts",
   "src/features/challenges/challenge-stage-voice-take.test.ts",
   "src/features/ear-lab/click-synth.test.ts",

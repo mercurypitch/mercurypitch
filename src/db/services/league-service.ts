@@ -7,6 +7,7 @@
 // state. The ladder (the 7 rungs + trophy art) is public config, read
 // straight from the generic CRUD API (leagues is an admin-read table).
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { handleAuthErrorResponse } from '@/db/services/auth-service'
 import { getAuthHeaders } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -63,7 +64,9 @@ function base(): string {
 export async function fetchLeagueLadder(): Promise<LeagueRung[]> {
   if (base() === '') return []
   try {
-    const res = await fetch(`${base()}/api/leagues?orderBy=rank&orderDir=asc`)
+    const res = await fetchWithDeadline(
+      `${base()}/api/leagues?orderBy=rank&orderDir=asc`,
+    )
     if (!res.ok) return []
     return (await res.json()) as LeagueRung[]
   } catch {
@@ -91,7 +94,7 @@ export type LeagueMeRead =
 async function requestLeagueMe(): Promise<Response | null> {
   if (base() === '') return null
   try {
-    return await fetch(`${base()}/api/league/me`, {
+    return await fetchWithDeadline(`${base()}/api/league/me`, {
       headers: getAuthHeaders(),
     })
   } catch {

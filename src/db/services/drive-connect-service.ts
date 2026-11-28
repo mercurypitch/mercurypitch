@@ -14,6 +14,7 @@
 // consumeGoogleRedirect() and taken by the settings page. This module
 // imports from auth-service one way only, so the two cannot form a cycle.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import type { DriveConnectResult } from './auth-service'
 import { requireBaseUrl, RETURN_HASH_KEY } from './auth-service'
 import { getAuthToken } from './user-service'
@@ -35,7 +36,7 @@ export async function finishDriveConnect(
   if (token == null || token === '') return { ok: false, error: 'signed_out' }
   let res: Response
   try {
-    res = await fetch(`${requireBaseUrl()}/api/auth/drive/finish`, {
+    res = await fetchWithDeadline(`${requireBaseUrl()}/api/auth/drive/finish`, {
       method: 'POST',
       headers: {
         Authorization: `Bearer ${token}`,
@@ -70,14 +71,18 @@ export async function startDriveConnect(): Promise<{
     window.location.origin + window.location.pathname + window.location.search
   let res: Response
   try {
-    res = await fetch(`${requireBaseUrl()}/api/auth/drive/start`, {
-      method: 'POST',
-      headers: {
-        Authorization: `Bearer ${token}`,
-        'Content-Type': 'application/json',
+    res = await fetchWithDeadline(
+      `${requireBaseUrl()}/api/auth/drive/start`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ returnTo }),
       },
-      body: JSON.stringify({ returnTo }),
-    })
+      { userAction: true },
+    )
   } catch {
     return { ok: false, error: 'offline' }
   }
@@ -109,7 +114,7 @@ export async function fetchDriveStatus(): Promise<DriveStatus> {
   if (token == null || token === '') return { known: true, connected: false }
   let res: Response
   try {
-    res = await fetch(`${requireBaseUrl()}/api/auth/drive/status`, {
+    res = await fetchWithDeadline(`${requireBaseUrl()}/api/auth/drive/status`, {
       headers: { Authorization: `Bearer ${token}` },
     })
   } catch {
@@ -136,10 +141,13 @@ export type DriveAccessToken =
 export async function fetchDriveAccessToken(): Promise<DriveAccessToken> {
   const token = getAuthToken()
   if (token == null || token === '') return { ok: false, reason: 'failed' }
-  const res = await fetch(`${requireBaseUrl()}/api/auth/drive/token`, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const res = await fetchWithDeadline(
+    `${requireBaseUrl()}/api/auth/drive/token`,
+    {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    },
+  )
   if (res.status === 410) return { ok: false, reason: 'disconnected' }
   if (!res.ok) return { ok: false, reason: 'failed' }
   const data = (await res.json()) as {
@@ -160,9 +168,10 @@ export async function fetchDriveAccessToken(): Promise<DriveAccessToken> {
 export async function disconnectDrive(): Promise<boolean> {
   const token = getAuthToken()
   if (token == null || token === '') return false
-  const res = await fetch(`${requireBaseUrl()}/api/auth/drive`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const res = await fetchWithDeadline(
+    `${requireBaseUrl()}/api/auth/drive`,
+    { method: 'DELETE', headers: { Authorization: `Bearer ${token}` } },
+    { userAction: true },
+  )
   return res.ok
 }

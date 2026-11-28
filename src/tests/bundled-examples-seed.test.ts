@@ -294,6 +294,9 @@ describe('going online later', () => {
 
     net.online = true
     net.songs = serverList()
+    // The browser says so, which is what lets the API be asked again at once
+    // after a request found it out of reach (api-reachability.ts).
+    window.dispatchEvent(new Event('online'))
     seed.resetExamplesSeedForTests()
     await seed.seedExamplesLibrary()
 

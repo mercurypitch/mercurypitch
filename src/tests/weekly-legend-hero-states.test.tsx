@@ -14,12 +14,15 @@ import type { ActiveWeeklyRead } from '@/features/challenges/weekly-service'
 
 const tabs: string[] = []
 let reads = 0
+/** Whether each read went as a person's press (weekly-service.ts). */
+const asked: boolean[] = []
 let nextRead: () => Promise<ActiveWeeklyRead> = () =>
   Promise.resolve({ status: 'ok', challenge: null })
 
 vi.mock('@/features/challenges/weekly-service', () => ({
-  readActiveWeekly: () => {
+  readActiveWeekly: (options?: { userAction?: boolean }) => {
     reads += 1
+    asked.push(options?.userAction === true)
     return nextRead()
   },
   getWeeklyBoard: () => Promise.resolve(null),
@@ -55,6 +58,7 @@ const { TAB_LEADERBOARD } = await import('@/features/tabs/constants')
 beforeEach(() => {
   tabs.length = 0
   reads = 0
+  asked.length = 0
   takeRequestedLeaderboardView()
   nextRead = () => Promise.resolve({ status: 'ok', challenge: null })
 })
@@ -129,6 +133,15 @@ describe('the Legend card when the server cannot be reached', () => {
     await waitFor(() => screen.getByText('Hold the Night'))
     expect(reads).toBe(2)
     expect(screen.queryByTestId('legend-unreachable')).toBeNull()
+  })
+
+  // While the API is out of reach a read the page makes by itself is refused
+  // at once (api-reachability.ts); Try again is the singer asking, so it goes.
+  it('asks on Try again as the singer, and on its first read as the page', async () => {
+    nextRead = () => Promise.resolve({ status: 'unreachable' })
+    render(() => <WeeklyLegendHero />)
+    fireEvent.click(await waitFor(() => screen.getByTestId('legend-retry')))
+    await waitFor(() => expect(asked).toEqual([false, true]))
   })
 })
 

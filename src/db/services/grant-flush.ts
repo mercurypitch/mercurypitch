@@ -24,6 +24,7 @@
 // way a tab goes away.
 
 import { getDb } from '@/db'
+import { fetchWithDeadline } from '@/db/api-fetch'
 import type { UserAchievement, UserBadge } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { hasValidToken } from '@/db/services/auth-service'
@@ -214,16 +215,19 @@ async function writeCloud(
   opts: CloudWriteOptions,
 ): Promise<void> {
   if (achievements.length > 0) {
-    const res = await fetch(`${API_BASE_URL}/api/userAchievements/bulk`, {
-      method: 'POST',
-      headers: opts.headers,
-      body: JSON.stringify({ rows: achievements }),
-      keepalive: opts.unloading,
-    })
+    const res = await fetchWithDeadline(
+      `${API_BASE_URL}/api/userAchievements/bulk`,
+      {
+        method: 'POST',
+        headers: opts.headers,
+        body: JSON.stringify({ rows: achievements }),
+        keepalive: opts.unloading,
+      },
+    )
     if (!res.ok) throw new Error(`bulk achievements: ${res.status}`)
   }
   if (badges.length > 0) {
-    const res = await fetch(`${API_BASE_URL}/api/userBadges/bulk`, {
+    const res = await fetchWithDeadline(`${API_BASE_URL}/api/userBadges/bulk`, {
       method: 'POST',
       headers: opts.headers,
       body: JSON.stringify({

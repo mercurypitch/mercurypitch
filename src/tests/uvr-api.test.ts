@@ -2,9 +2,10 @@
 // UVR API Client Tests — EARS REQ-UV-005, REQ-UV-006, REQ-UV-007, REQ-UV-008, REQ-UV-009, REQ-UV-010, REQ-UV-063
 // ============================================================
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { fetchWithDeadline } from '@/db/api-fetch'
 import type { ProcessStatusResponse } from '@/lib/uvr-api'
-import { DEFAULT_PROCESS_REQUEST, deleteSession, formatFileSize, getProcessStatus, pollForCompletion, processAudio, TerminalPollError, } from '@/lib/uvr-api'
+import { DEFAULT_PROCESS_REQUEST, deleteSession, formatFileSize, getOutputFile, getProcessStatus, listModels, pollForCompletion, processAudio, TerminalPollError, } from '@/lib/uvr-api'
 
 beforeEach(() => {
   vi.restoreAllMocks()
@@ -40,6 +41,76 @@ describe('deleteSession', () => {
       '/api/uvr/session/rp_gpu_job-1',
       expect.objectContaining({ method: 'DELETE' }),
     )
+  })
+})
+
+// ── Deadlines: these are the site worker's routes, not the API's ──
+
+/** A server that never answers, as a held connection does. */
+function neverAnswers() {
+  return vi.fn(
+    (_input: string, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () => {
+          reject(new DOMException('The operation was aborted.', 'AbortError'))
+        })
+      }),
+  )
+}
+
+describe('calls to the separation server', () => {
+  afterEach(() => {
+    vi.useRealTimers()
+    vi.unstubAllGlobals()
+  })
+
+  it('end a status read that gets no answer by its deadline', async () => {
+    vi.useFakeTimers()
+    vi.stubGlobal('fetch', neverAnswers())
+    const status = getProcessStatus('rp_gpu_job-1').catch(
+      (error: unknown) => error,
+    )
+    await vi.advanceTimersByTimeAsync(15_000)
+    expect(await status).toMatchObject({ name: 'ApiDeadlineError' })
+  })
+
+  it('leave reading a stem to the caller once its headers are in', async () => {
+    vi.useFakeTimers()
+    let sent: AbortSignal | null | undefined
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async (_input: string, init?: RequestInit) => {
+        sent = init?.signal
+        return new Response('stem')
+      }),
+    )
+    const caller = new AbortController()
+    await getOutputFile('rp_gpu_job-1', 'vocals.wav', caller.signal)
+
+    await vi.advanceTimersByTimeAsync(10 * 60_000)
+    expect(sent?.aborted).toBe(false)
+    caller.abort()
+    expect(sent?.aborted).toBe(true)
+  })
+
+  it('are sent while the API is out of reach', async () => {
+    vi.stubGlobal(
+      'fetch',
+      vi.fn(async () => {
+        throw new TypeError('Failed to fetch')
+      }),
+    )
+    await expect(
+      fetchWithDeadline('http://api.test/api/weekly/active'),
+    ).rejects.toBeInstanceOf(TypeError)
+    await expect(
+      fetchWithDeadline('http://api.test/api/weekly/active'),
+    ).rejects.toMatchObject({ name: 'ApiUnreachableError' })
+
+    const worker = vi.fn(async () => Response.json({ models: ['roformer'] }))
+    vi.stubGlobal('fetch', worker)
+    await expect(listModels()).resolves.toEqual(['roformer'])
+    expect(worker).toHaveBeenCalledTimes(1)
   })
 })
 
@@ -444,7 +515,11 @@ describe('processAudio — server tier opt-in + 402 handling', () => {
     expect((init.headers as Record<string, string>)['X-UVR-Model']).toBe(
       'roformer',
     )
-    expect(init.signal).toBe(controller.signal)
+    // The request carries a deadline of its own, and the caller's signal
+    // still stops it.
+    expect(init.signal?.aborted).toBe(false)
+    controller.abort()
+    expect(init.signal?.aborted).toBe(true)
   })
 
   it('asks its own origin on the web', async () => {

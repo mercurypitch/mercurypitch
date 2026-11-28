@@ -26,6 +26,7 @@
 // back as `refused` and changes nothing itself: the caller asks for a
 // sign-in again.
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { handleAuthErrorResponse } from '@/db/services/auth-service'
 import { getAuthHeaders } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -92,19 +93,32 @@ function base(): string {
   return API_BASE_URL ?? ''
 }
 
-/** One request to the worker, or null when there was no answer. */
-async function send(path: string, init: RequestInit): Promise<Response | null> {
+/**
+ * One request to the worker, or null when there was no answer. A report, a
+ * block or an unblock is a person's press, so it is sent even while the API
+ * is out of reach (api-reachability.ts); the list of blocks is a read, and
+ * goes then only when the singer asked for it (`userAction`: Try again).
+ */
+async function send(
+  path: string,
+  init: RequestInit,
+  userAction = (init.method ?? 'GET') !== 'GET',
+): Promise<Response | null> {
   if (base() === '') return null
   try {
-    return await fetch(`${base()}${path}`, {
-      ...init,
-      headers: {
-        ...(init.body === undefined
-          ? {}
-          : { 'Content-Type': 'application/json' }),
-        ...getAuthHeaders(),
+    return await fetchWithDeadline(
+      `${base()}${path}`,
+      {
+        ...init,
+        headers: {
+          ...(init.body === undefined
+            ? {}
+            : { 'Content-Type': 'application/json' }),
+          ...getAuthHeaders(),
+        },
       },
-    })
+      { userAction },
+    )
   } catch {
     return null
   }
@@ -195,9 +209,18 @@ function blockedSingerOf(value: unknown): BlockedSinger | null {
   }
 }
 
-/** Whom the caller blocked, newest first, by the names they go by now. */
-export async function listBlockedSingers(): Promise<BlockListRead> {
-  const res = await send('/api/blocks', { method: 'GET' })
+/**
+ * Whom the caller blocked, newest first, by the names they go by now.
+ * `userAction`: the singer pressed Try again for it.
+ */
+export async function listBlockedSingers(
+  options: { userAction?: boolean } = {},
+): Promise<BlockListRead> {
+  const res = await send(
+    '/api/blocks',
+    { method: 'GET' },
+    options.userAction === true,
+  )
   if (res === null) return { status: 'unreachable' }
   if (!res.ok) return { status: await problemOf(res) }
   try {

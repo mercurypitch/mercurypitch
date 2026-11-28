@@ -12,6 +12,7 @@
 // to avoid repeating key names across many items.
 // ============================================================
 
+import { fetchWithDeadline } from '@/db/api-fetch'
 import { midiToFreq, midiToNote } from '@/lib/scale-data'
 import type { MelodyItem } from '@/types'
 
@@ -446,11 +447,16 @@ export function generateShareFullUrl(encoded: string): string {
 
 async function tryShortenUrl(payload: string): Promise<string | null> {
   try {
-    const res = await fetch('/api/share/shorten', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ payload }),
-    })
+    // The site worker's own route (src/share-handler.ts), not the API.
+    const res = await fetchWithDeadline(
+      '/api/share/shorten',
+      {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payload }),
+      },
+      { siteWorker: true },
+    )
     if (!res.ok) return null
     const { id } = await res.json()
     if (typeof id !== 'string' || id.length === 0) return null
@@ -464,7 +470,11 @@ export async function fetchShortPayload(
   shortId: string,
 ): Promise<string | null> {
   try {
-    const res = await fetch(`/api/share/s/${encodeURIComponent(shortId)}`)
+    const res = await fetchWithDeadline(
+      `/api/share/s/${encodeURIComponent(shortId)}`,
+      undefined,
+      { siteWorker: true },
+    )
     if (!res.ok) return null
     const data = (await res.json()) as { payload: string }
     return typeof data.payload === 'string' ? data.payload : null
