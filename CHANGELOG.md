@@ -5,6 +5,44 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.32] - 2026-11-28
+
+Studio keeps every take you sing over a clip, and the app no longer stalls
+on a network that blocks its servers.
+
+### Added
+
+- **Every take stays.** Record over a clip on the armed lane and the new take
+  joins that clip instead of opening a new lane. The clip shows which take
+  plays, such as 2/3.
+- **Pick the take that plays.** Press T for the next take and Shift+T for the
+  one before, or choose one from the clip's Takes button or its right-click
+  menu. A loop's passes count as takes too.
+- **See every take at once.** Show takes lays each take in a row under its
+  lane. Click a row to play that take.
+- **Keep one take, or spread them out.** Crop to this take keeps only the one
+  that plays. Explode takes to new lanes gives each take a lane of its own.
+- **Right-click a lane's header** for its menu, with Hear yourself in it. On
+  a touchscreen, hold a finger on the header for half a second.
+
+### Changed
+
+- **Weekly Legend is now Legend Attempt.** Legends run for four weeks, so
+  Progress, share cards, saved takes and Studio use the new name.
+- **The Legend card says what is going on.** When no Legend is running it
+  says so and links to the past ones. When the servers can't be reached, it
+  says that and offers Try again.
+- **Only achievements wait for your answer.** After a run, other notices show
+  straight away instead of waiting behind "Keep this take?".
+
+### Fixed
+
+- **No more frozen app on a network that blocks Mercury Pitch.** The app
+  opens at once with everything on your device, and says once that it can't
+  reach the servers. Signed in, it used to sit unusable for about a minute.
+- **Smaller things.** Mix dial values sit centred, and each mix strip's
+  colour line follows its rounded corners.
+
 ## [0.9.31] - 2026-11-21
 
 Studio opens: record, arrange and mix your takes into a song. Merc's rooms
