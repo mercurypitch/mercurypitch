@@ -14,7 +14,9 @@ function storageRefusal(message: string): Error {
 describe('the words a Studio failure shows a person', () => {
   it('are a refusal’s own, and a storage refusal’s, as written for people', () => {
     // Arrange
-    const refusal = new StudioRefusal('Add an audible take before playing.')
+    const refusal = new StudioRefusal(
+      'Add a take or draw some notes before playing.',
+    )
     const storage = storageRefusal('This project audio is missing.')
 
     // Act
@@ -22,7 +24,7 @@ describe('the words a Studio failure shows a person', () => {
 
     // Assert
     expect(said).toEqual([
-      'Add an audible take before playing.',
+      'Add a take or draw some notes before playing.',
       'This project audio is missing.',
     ])
   })
@@ -73,7 +75,7 @@ describe('a Studio failure’s error', () => {
     logStudioFailure('Playback stopped', check)
     logStudioFailure(
       'Playback stopped',
-      new StudioRefusal('Add an audible take before playing.'),
+      new StudioRefusal('Add a take or draw some notes before playing.'),
     )
 
     // Assert

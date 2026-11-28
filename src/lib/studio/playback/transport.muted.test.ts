@@ -114,7 +114,7 @@ describe('Studio transport with nothing heard', () => {
     await finish(f)
   })
 
-  it('still refuses a song with no clips at all, in the words it always used', async () => {
+  it('still refuses a song with no clips at all, asking for a take or some notes', async () => {
     vi.useFakeTimers()
     const f = transportFixture()
     const project = { ...f.project, clips: [] }
@@ -123,7 +123,7 @@ describe('Studio transport with nothing heard', () => {
 
     expect(f.transport.getState()).toMatchObject({
       playing: false,
-      error: 'Add an audible take before playing.',
+      error: 'Add a take or draw some notes before playing.',
     })
     expect(f.buildGraph).not.toHaveBeenCalled()
     await finish(f)

@@ -24,13 +24,13 @@ describe('a Studio failure', () => {
     setError('Audio was interrupted. Press Play to continue.')
     const first = notifications().map((each) => each.message)
     setError(null)
-    setError('Add an audible take before playing.')
+    setError('Add a take or draw some notes before playing.')
 
     // Assert
     expect(first).toEqual(['Audio was interrupted. Press Play to continue.'])
     expect(notifications()).toMatchObject([
       {
-        message: 'Add an audible take before playing.',
+        message: 'Add a take or draw some notes before playing.',
         type: 'error',
         channel: STUDIO_PLAYBACK_NOTICE,
       },
