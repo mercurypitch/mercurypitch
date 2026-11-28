@@ -12,6 +12,7 @@ import { createSignal } from 'solid-js'
 import type { UvrStemType } from '@/db/entities'
 import { deleteStemBlobs, getStemBlob, saveStemBlobDurable, } from '@/db/services/uvr-service'
 import { eventBus } from './event-bus'
+import { isNoAnswer, NO_ANSWER_TEXT } from './no-answer-copy'
 import type { OutputFile } from './uvr-api'
 import { buildStemSplitRequest, deleteSession, getOutputFile, getUvrModel, KEEP_POLLING, pollForCompletion, processAudio, splitStemsFor, TerminalPollError, UVR_DEFAULT_MULTI_STEM_MODEL, } from './uvr-api'
 import { wavDurationSeconds } from './wav-meta'
@@ -55,6 +56,19 @@ export interface StemSplitResult {
   /** Wall-clock ms of the whole split (upload -> process -> saved) — the
    *  caller records it on the session (recordUvrSplitTime). */
   elapsedMs: number
+}
+
+/**
+ * "Splitting the instrumental failed", and why. When our servers did not
+ * answer, the why is said plainly: the error's own message names an address
+ * and a number of milliseconds (no-answer-copy.ts).
+ */
+function splitFailedText(err: unknown): string {
+  if (isNoAnswer(err)) {
+    return `Splitting the instrumental failed. ${NO_ANSWER_TEXT}`
+  }
+  const detail = err instanceof Error ? err.message : String(err)
+  return `Splitting the instrumental failed: ${detail}`
 }
 
 export class StemSplitError extends Error {
@@ -184,10 +198,7 @@ export async function runStemSplit(
         const status = (err as Error & { status?: number }).status
         if (status !== 410) {
           if (err instanceof Error && err.name === 'AbortError') throw err
-          const detail = err instanceof Error ? err.message : String(err)
-          throw new StemSplitError(
-            `Splitting the instrumental failed: ${detail}`,
-          )
+          throw new StemSplitError(splitFailedText(err))
         }
         // Expired on the server — fall through to the upload below.
       }
@@ -453,8 +464,7 @@ export async function attachToStemSplitJob(
     ).catch((err: unknown) => {
       if (completionError !== undefined) throw completionError
       if (err instanceof Error && err.name === 'AbortError') throw err
-      const detail = err instanceof Error ? err.message : String(err)
-      throw new StemSplitError(`Splitting the instrumental failed: ${detail}`, {
+      throw new StemSplitError(splitFailedText(err), {
         // Only a server-reported verdict (job FAILED — auto-refunded)
         // means the job is truly dead. Poll/network trouble is not a
         // verdict: the stems may be sitting in R2 waiting to be fetched.

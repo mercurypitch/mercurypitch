@@ -7,6 +7,8 @@
 // cleaned up once stems are safely in IndexedDB.
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiDeadlineError } from '@/db/api-fetch'
+import { NO_ANSWER_TEXT } from '@/lib/no-answer-copy'
 import type { OutputFile } from '@/lib/uvr-api'
 import { KEEP_POLLING, TerminalPollError } from '@/lib/uvr-api'
 
@@ -198,6 +200,33 @@ describe('runStemSplit', () => {
     api.pollForCompletion.mockRejectedValue(new Error('GPU exploded'))
     await expect(runStemSplit('session-1')).rejects.toThrow(
       /Splitting the instrumental failed: GPU exploded/,
+    )
+  })
+
+  // The error's own message names the address and the milliseconds: the
+  // singer reads what happened instead (src/lib/no-answer-copy.ts).
+  it('says plainly that the servers did not answer when a poll got no answer', async () => {
+    api.pollForCompletion.mockRejectedValue(
+      new ApiDeadlineError('https://mp.test/api/uvr/status/srv-1', 15_000),
+    )
+    const err = await runStemSplit('session-1').catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(StemSplitError)
+    expect((err as Error).message).toBe(
+      `Splitting the instrumental failed. ${NO_ANSWER_TEXT}`,
+    )
+    expect((err as StemSplitError).recoverable).toBe(true)
+  })
+
+  it('says the same when splitting in place got no answer', async () => {
+    api.processAudio.mockRejectedValueOnce(
+      new ApiDeadlineError('https://mp.test/api/uvr/process', 80_000),
+    )
+    const err = await runStemSplit('session-1', {
+      reuseApiSessionId: 'rp_gpu_prev-job',
+    }).catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(StemSplitError)
+    expect((err as Error).message).toBe(
+      `Splitting the instrumental failed. ${NO_ANSWER_TEXT}`,
     )
   })
 
