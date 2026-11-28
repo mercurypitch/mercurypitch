@@ -6,8 +6,8 @@
 // failures surface as StemSplitError, and the server-side session is
 // cleaned up once stems are safely in IndexedDB.
 
-import { beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiDeadlineError } from '@/db/api-fetch'
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiDeadlineError, ApiUnreachableError } from '@/db/api-fetch'
 import { NO_ANSWER_TEXT } from '@/lib/no-answer-copy'
 import type { OutputFile } from '@/lib/uvr-api'
 import { KEEP_POLLING, TerminalPollError } from '@/lib/uvr-api'
@@ -365,6 +365,55 @@ describe('runStemSplit', () => {
 // The three-way call on a 'completed' listing: save what matches, wait
 // while a part-less listing may still be an upload in progress, give up
 // (recoverably) once it has outstayed the patience window.
+
+describe('downloading a part', () => {
+  const OUTPUT = 'https://mp.test/api/uvr/output/srv-1/input_(drums).wav'
+
+  afterEach(() => {
+    vi.useRealTimers()
+  })
+
+  // A download that got no answer has already waited its 60 s for the
+  // headers. Two more attempts would hold the singer for three minutes on a
+  // dead line, and a request that ran out of time is not tried again anywhere
+  // else either (api-fetch.ts). The job itself may be fine: recoverable.
+  it.each([
+    ['ran out of time', () => new ApiDeadlineError(OUTPUT, 60_000)],
+    ['was not sent', () => new ApiUnreachableError(OUTPUT)],
+  ])('is not tried again when it %s', async (_how, error) => {
+    vi.useFakeTimers()
+    api.getOutputFile.mockRejectedValue(error())
+
+    const run = runStemSplit('session-1').catch((e: unknown) => e)
+    await vi.advanceTimersByTimeAsync(10_000)
+    const failure = await run
+
+    expect(api.getOutputFile).toHaveBeenCalledTimes(1)
+    expect(failure).toBeInstanceOf(StemSplitError)
+    expect((failure as StemSplitError).recoverable).toBe(true)
+    expect((failure as Error).message).toMatch(
+      /^Downloading the \w+ stem failed\. /,
+    )
+    expect((failure as Error).message).toContain(NO_ANSWER_TEXT)
+  })
+
+  // A worker restart or a blip fails at once, and the next attempt usually
+  // lands: those keep their two further tries.
+  it('tries a download that failed at once twice more, then saves it', async () => {
+    vi.useFakeTimers()
+    api.getOutputFile
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+      .mockRejectedValueOnce(new TypeError('Failed to fetch'))
+
+    const run = runStemSplit('session-1')
+    await vi.advanceTimersByTimeAsync(10_000)
+    const result = await run
+
+    expect(result.saved).toHaveLength(5)
+    // Three attempts for the first part, one for each of the other four.
+    expect(api.getOutputFile).toHaveBeenCalledTimes(7)
+  })
+})
 
 describe('decideSplitParts', () => {
   const WANTED = ['drums', 'bass', 'guitar', 'piano', 'other'] as const

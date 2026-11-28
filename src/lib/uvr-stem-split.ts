@@ -419,6 +419,17 @@ export async function attachToStemSplitJob(
                 ) {
                   throw fetchErr
                 }
+                // No answer by the deadline (60 s for the headers), or not
+                // sent while the servers are out of reach: that wait is not
+                // repeated, as no request that ran out of time is anywhere
+                // (api-fetch.ts). Only a failure that came at once is tried
+                // again. The job may be fine, so the split stays recoverable.
+                if (isNoAnswer(fetchErr)) {
+                  throw new StemSplitError(
+                    `Downloading the ${part.stem} stem failed. ${NO_ANSWER_TEXT}`,
+                    { recoverable: true },
+                  )
+                }
                 if (attempt >= 2) {
                   throw new StemSplitError(
                     `Downloading the ${part.stem} stem failed.`,
