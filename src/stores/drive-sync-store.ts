@@ -316,6 +316,26 @@ function noteError(error: unknown): void {
   setDriveError(describe(error))
 }
 
+/**
+ * Back up and Restore are presses. When the job's token has to be minted,
+ * that call to our servers goes as the person's, even while the API is out
+ * of reach (api-reachability.ts), as Check Drive again's does. False, with
+ * the reason on screen, when there is no token: the job would stop at its
+ * first request anyway.
+ */
+async function readyForPress(options: {
+  userAction?: boolean
+}): Promise<boolean> {
+  if (options.userAction !== true) return true
+  try {
+    if ((await accessToken(false, options)) !== null) return true
+    noteError(new DriveAuthError())
+  } catch (error) {
+    noteError(error)
+  }
+  return false
+}
+
 /** Ask the worker whether this account has Drive connected. */
 export async function refreshDriveStatus(): Promise<void> {
   forgetIfAccountChanged()
@@ -547,13 +567,18 @@ function advanceJob(patch: Partial<DriveJob>): void {
  * phone, and two at once compete for the same decoder while doubling
  * peak memory. A song that fails is counted and stepped over -- one
  * unreadable stem must not strand the other twenty.
+ *
+ * `options.userAction`: somebody pressed Back up (readyForPress).
  */
-export async function backUpToDrive(): Promise<void> {
+export async function backUpToDrive(
+  options: { userAction?: boolean } = {},
+): Promise<void> {
   forgetIfAccountChanged()
-  const scan = driveScan() ?? (await scanDrive())
+  const scan = driveScan() ?? (await scanDrive(options))
   if (scan === null) return
   const queue = scan.toBackUp
   if (queue.length === 0) return
+  if (!(await readyForPress(options))) return
 
   setDriveError(null)
   startJob('backup', queue.length)
@@ -730,12 +755,15 @@ async function readContainerHeader(
  * read that answers is the whole transport. Nothing assembles the file
  * locally, so restoring a library onto a phone never needs more free
  * memory than its largest single part.
+ *
+ * `options.userAction`: somebody pressed Restore (readyForPress).
  */
 export async function restoreFromDrive(
   onlyHashes?: readonly string[],
+  options: { userAction?: boolean } = {},
 ): Promise<void> {
   forgetIfAccountChanged()
-  const scan = driveScan() ?? (await scanDrive())
+  const scan = driveScan() ?? (await scanDrive(options))
   if (scan === null) return
   // The picker hands in the hashes somebody ticked; no argument keeps
   // the original everything-missing restore.
@@ -745,6 +773,7 @@ export async function restoreFromDrive(
       ? scan.toRestore
       : scan.toRestore.filter((c) => chosen.has(c.fileHash))
   if (queue.length === 0) return
+  if (!(await readyForPress(options))) return
 
   setDriveError(null)
   startJob('restore', queue.length)

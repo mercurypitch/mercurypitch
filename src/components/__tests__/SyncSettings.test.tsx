@@ -80,14 +80,20 @@ const drive = vi.hoisted(() => ({
   stopping: false,
   busy: false,
   refreshDriveStatus: vi.fn(() => Promise.resolve()),
-  restoreFromDrive: vi.fn(() => Promise.resolve()),
+  backUpToDrive: vi.fn((_options?: { userAction?: boolean }) =>
+    Promise.resolve(),
+  ),
+  restoreFromDrive: vi.fn(
+    (_hashes?: readonly string[], _options?: { userAction?: boolean }) =>
+      Promise.resolve(),
+  ),
   scanDrive: vi.fn((_options?: { userAction?: boolean }) =>
     Promise.resolve(null),
   ),
   stopDriveJob: vi.fn(),
 }))
 vi.mock('@/stores/drive-sync-store', () => ({
-  backUpToDrive: vi.fn(),
+  backUpToDrive: drive.backUpToDrive,
   connectDrive: vi.fn(),
   disconnectDriveSync: vi.fn(),
   driveBusy: () => drive.busy,
@@ -122,6 +128,7 @@ beforeEach(() => {
   drive.stopping = false
   drive.busy = false
   drive.refreshDriveStatus.mockClear()
+  drive.backUpToDrive.mockClear()
   drive.restoreFromDrive.mockClear()
   drive.scanDrive.mockClear()
   manifests.syncLibraryList.mockClear()
@@ -247,7 +254,29 @@ describe('the Drive section', () => {
 
     const button = screen.getByText('Restore 1 song') as HTMLButtonElement
     fireEvent.click(button)
-    expect(drive.restoreFromDrive).toHaveBeenCalledWith(['h-2'])
+    // A press: its Drive token is minted as the person's, even while the
+    // API is out of reach (api-reachability.ts).
+    expect(drive.restoreFromDrive).toHaveBeenCalledWith(['h-2'], {
+      userAction: true,
+    })
+  })
+
+  it('backs up as the person who pressed Back up', async () => {
+    auth.held = true
+    drive.state = 'connected'
+    drive.scan = {
+      inDrive: 0,
+      here: 1,
+      toBackUp: [{ fileHash: 'h-1', title: 'Only Here', ref: 's-1' }],
+      toRestore: [],
+    }
+    render(() => <SyncSettings />)
+
+    fireEvent.click(await screen.findByText('Back up 1 song'))
+
+    expect(drive.backUpToDrive).toHaveBeenCalledExactlyOnceWith({
+      userAction: true,
+    })
   })
 
   // The connect callback now hands the grant back sealed instead of storing

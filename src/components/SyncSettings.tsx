@@ -570,7 +570,7 @@ export const SyncSettings: Component = () => {
                     type="button"
                     class={panel.settingsActionBtn}
                     disabled={driveBusy()}
-                    onClick={() => void backUpToDrive()}
+                    onClick={() => void backUpToDrive({ userAction: true })}
                   >
                     Back up {driveScan()?.toBackUp.length}{' '}
                     {driveScan()?.toBackUp.length === 1 ? 'song' : 'songs'}
@@ -584,6 +584,7 @@ export const SyncSettings: Component = () => {
                     onClick={() =>
                       void restoreFromDrive(
                         chosenRestore().map((c) => c.fileHash),
+                        { userAction: true },
                       )
                     }
                   >
