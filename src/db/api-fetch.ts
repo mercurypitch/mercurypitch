@@ -20,7 +20,20 @@
 // tells the singer, once, that the servers are out of reach: a toast, which
 // nothing waits on. A server that answers, even with an error, was reached,
 // and a request its own caller cancelled says nothing about the network.
+//
+// That failure also closes a window in which further calls to the API are
+// refused at once with an ApiUnreachableError, instead of each waiting out a
+// deadline of its own (api-reachability.ts).
+//
+// The site worker (src/worker.ts: /api/uvr, /api/og, /api/share and
+// /api/guided-media on the page's own host) is not the API host. A network
+// that holds the API host still reaches it, and the site worker makes its own
+// calls to the API from Cloudflare. So a call to it comes through here for
+// its deadline only (`siteWorker`): the API's window never refuses it, its
+// failure never closes that window, and it raises no notice about the API.
 
+import type { ApiAdmission, ApiCallKind } from '@/db/api-reachability'
+import { admitApiCall, apiAnswered, apiCallAbandoned, apiDidNotAnswer, } from '@/db/api-reachability'
 import { showNotification } from '@/stores/notifications-store'
 
 /** A read: whose session this is, a table's rows, a count. */
@@ -56,15 +69,81 @@ export const API_UNREACHABLE_CHANNEL = 'api-unreachable'
 export const API_UNREACHABLE_MESSAGE =
   "Can't reach Mercury Pitch's servers from this network. Recordings still save on this device, but your streak won't update."
 
+/**
+ * An address as an error may name it: without its query, which can carry a
+ * one-time code (`/api/auth/reset-password?token=…`), and errors reach the
+ * console and the developer log.
+ */
+function withoutQuery(url: string): string {
+  const cut = url.search(/[?#]/)
+  return cut === -1 ? url : url.slice(0, cut)
+}
+
 /** A request that did not finish by its deadline. Never retried. */
 export class ApiDeadlineError extends Error {
+  readonly url: string
+
   constructor(
-    readonly url: string,
+    url: string,
     readonly deadlineMs: number,
   ) {
-    super(`No answer from ${url} within ${deadlineMs} ms`)
+    const address = withoutQuery(url)
+    super(`No answer from ${address} within ${deadlineMs} ms`)
     this.name = 'ApiDeadlineError'
+    this.url = address
   }
+}
+
+/**
+ * A call to the API that was not sent, because a recent one got no answer and
+ * the window that opened is not over (api-reachability.ts). It is the network
+ * failure that call would have met, found out at once. Never retried.
+ */
+export class ApiUnreachableError extends Error {
+  readonly url: string
+
+  constructor(url: string) {
+    const address = withoutQuery(url)
+    super(
+      `Not sent to ${address}: the API did not answer a recent request, so it is being left alone for a while`,
+    )
+    this.name = 'ApiUnreachableError'
+    this.url = address
+  }
+}
+
+/** How a call through fetchWithDeadline goes. */
+export interface ApiFetchOptions {
+  /** How long the call may take. deadlineFor(init) when not given. */
+  deadlineMs?: number
+  /**
+   * The deadline ends when the answer's headers arrive, and the body is the
+   * caller's to bound with its own signal. For a download whose size is not
+   * known when it is asked for (a separated stem): a fixed limit on reading
+   * it would cut off a large one on a slow line.
+   */
+  untilHeaders?: boolean
+  /**
+   * A person asked for this call just now and is waiting for its answer:
+   * Try again, a sign-in, a purchase. While the API is out of reach it is
+   * sent anyway, as a probe, rather than refused on what an earlier request
+   * found. Never set it on anything a page does by itself.
+   */
+  userAction?: boolean
+  /**
+   * A further attempt of a call that was already let through (ServerAdapter's
+   * retries). Not refused, so the call that found the API out of reach keeps
+   * the retries it always had.
+   */
+  retry?: boolean
+  /** A call to the site worker, not the API host: a deadline and nothing else. */
+  siteWorker?: boolean
+}
+
+function callKind(options: ApiFetchOptions): ApiCallKind {
+  if (options.retry === true) return 'retry'
+  if (options.userAction === true) return 'user-action'
+  return 'call'
 }
 
 /** The bytes a body sends, as far as they can be counted before sending. */
@@ -100,49 +179,105 @@ export function deadlineFor(init?: RequestInit): number {
 }
 
 /**
- * fetch(), ending by `deadlineMs` with an ApiDeadlineError.
+ * fetch(), ending by its deadline with an ApiDeadlineError. The third
+ * argument is the deadline in milliseconds, or the options above.
  *
  * The deadline covers the body as well as the headers: the timer stays set
  * after the response arrives, so a body that stalls is cut off by the same
- * abort, and reading it rejects with an AbortError. Aborting a request that
- * has finished does nothing. A network failure rejects with the TypeError
- * fetch gave, and the caller's own signal still cancels the request.
+ * abort, and reading it rejects with an AbortError (unless `untilHeaders`).
+ * Aborting a request that has finished does nothing. A network failure
+ * rejects with the TypeError fetch gave, and the caller's own signal still
+ * cancels the request.
+ *
+ * While the API is out of reach, a call to it rejects at once with an
+ * ApiUnreachableError and nothing is sent.
  */
 export async function fetchWithDeadline(
   input: string,
   init?: RequestInit,
-  deadlineMs: number = deadlineFor(init),
+  deadline: number | ApiFetchOptions = {},
 ): Promise<Response> {
+  const options: ApiFetchOptions =
+    typeof deadline === 'number' ? { deadlineMs: deadline } : deadline
+  const deadlineMs = options.deadlineMs ?? deadlineFor(init)
+  const admission = admit(input, options)
   const controller = new AbortController()
-  const callerSignal = init?.signal ?? null
-  const followCaller = (): void => {
-    controller.abort()
-  }
+  const unfollow = followCaller(init?.signal, controller)
   let expired = false
   const timer = setTimeout(
     () => {
       expired = true
-      callerSignal?.removeEventListener('abort', followCaller)
+      unfollow()
       controller.abort()
     },
     Math.max(0, deadlineMs),
   )
-  if (callerSignal !== null) {
-    if (callerSignal.aborted) controller.abort()
-    else callerSignal.addEventListener('abort', followCaller, { once: true })
-  }
   try {
-    return await fetch(input, { ...init, signal: controller.signal })
+    const response = await fetch(input, { ...init, signal: controller.signal })
+    if (options.untilHeaders === true) clearTimeout(timer)
+    // Any answer, an error status included: the server was reached.
+    settle(admission, 'answered')
+    return response
   } catch (error) {
     clearTimeout(timer)
-    callerSignal?.removeEventListener('abort', followCaller)
+    unfollow()
     if (expired) {
-      noteUnreachable()
+      settle(admission, 'no-answer')
       throw new ApiDeadlineError(input, deadlineMs)
     }
-    if (error instanceof TypeError) noteUnreachable()
+    // A network failure is no answer; a request its own caller cancelled
+    // says nothing about the network.
+    settle(admission, error instanceof TypeError ? 'no-answer' : 'abandoned')
     throw error
   }
+}
+
+/**
+ * The API's leave for this call, or null for a call to the site worker,
+ * which needs none. Refused: throws the ApiUnreachableError, and nothing is
+ * sent.
+ */
+function admit(input: string, options: ApiFetchOptions): ApiAdmission | null {
+  if (options.siteWorker === true) return null
+  const admission = admitApiCall(callKind(options))
+  if (admission === null) throw new ApiUnreachableError(input)
+  return admission
+}
+
+/**
+ * Abort `controller` when the caller's own signal aborts, for as long as the
+ * request and its body are being read. Returns the way to stop following.
+ */
+function followCaller(
+  callerSignal: AbortSignal | null | undefined,
+  controller: AbortController,
+): () => void {
+  if (callerSignal == null) return () => undefined
+  const abort = (): void => {
+    controller.abort()
+  }
+  if (callerSignal.aborted) controller.abort()
+  else callerSignal.addEventListener('abort', abort, { once: true })
+  return () => {
+    callerSignal.removeEventListener('abort', abort)
+  }
+}
+
+/** How a call to the API ended, as its reachability hears it. */
+function settle(
+  admission: ApiAdmission | null,
+  outcome: 'answered' | 'no-answer' | 'abandoned',
+): void {
+  if (admission === null) return
+  if (outcome === 'answered') apiAnswered()
+  else if (outcome === 'no-answer') noAnswer(admission)
+  else apiCallAbandoned(admission)
+}
+
+/** A call to the API ended with no answer: by its deadline, or the network. */
+function noAnswer(admission: ApiAdmission): void {
+  apiDidNotAnswer(admission)
+  noteUnreachable()
 }
 
 let unreachableNoted = false

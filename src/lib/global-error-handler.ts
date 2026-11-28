@@ -29,10 +29,17 @@ function messageOf(reason: unknown): string {
  */
 export function isNetworkError(reason: unknown): boolean {
   // A call to the API that had no answer by its deadline (ApiDeadlineError,
-  // src/db/api-fetch.ts) is the same state: the backend is out of reach. It
-  // is recognised by its name, so this module does not import api-fetch.ts
+  // src/db/api-fetch.ts), or that was not sent because a recent one had none
+  // (ApiUnreachableError), is the same state: the backend is out of reach.
+  // They are recognised by name, so this module does not import api-fetch.ts
   // and the notification store behind it.
-  if (reason instanceof Error && reason.name === 'ApiDeadlineError') return true
+  if (
+    reason instanceof Error &&
+    (reason.name === 'ApiDeadlineError' ||
+      reason.name === 'ApiUnreachableError')
+  ) {
+    return true
+  }
   return /NetworkError when attempting to fetch|Failed to fetch|Load failed/i.test(
     messageOf(reason),
   )

@@ -320,7 +320,18 @@ class MockWorker {
 }
 global.Worker = MockWorker as unknown as typeof Worker
 
-import { vi } from 'vitest'
+import { beforeEach, vi } from 'vitest'
+import { resetApiReachabilityForTests } from '@/db/api-reachability'
+
+// Whether the API answered lately is the page's state, and every test is a
+// fresh page. Without this, one test whose request ran out of time or met a
+// network error left the API "out of reach" for the rest of its file, and the
+// next test's call was refused without being sent (src/db/api-reachability.ts).
+// That module imports nothing, so loading it here cannot get ahead of a test
+// file's own mocks.
+beforeEach(() => {
+  resetApiReachabilityForTests()
+})
 
 vi.mock('worker_threads', () => {
   return {

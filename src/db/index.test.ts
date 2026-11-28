@@ -25,9 +25,10 @@ vi.mock('@/lib/analytics', () => ({ trackEvent: vi.fn() }))
 vi.mock('@/stores/notifications-store', () => ({ showNotification: vi.fn() }))
 
 import { closeDatabase, getDb } from '@/db'
-import { API_READ_DEADLINE_MS, API_UNREACHABLE_CHANNEL, resetApiUnreachableNoticeForTests, } from '@/db/api-fetch'
+import { API_READ_DEADLINE_MS, API_UNREACHABLE_CHANNEL, ApiUnreachableError, fetchWithDeadline, resetApiUnreachableNoticeForTests, } from '@/db/api-fetch'
+import { API_UNREACHABLE_FIRST_WINDOW_MS } from '@/db/api-reachability'
 import type { SessionRecord } from '@/db/entities'
-import { needsSignIn } from '@/db/services/auth-service'
+import { needsSignIn, restoreAuth } from '@/db/services/auth-service'
 import { getAuthToken, getUserId, setAuthToken, } from '@/db/services/user-service'
 import type { DbEntity } from '@/db/types'
 import { showNotification } from '@/stores/notifications-store'
@@ -287,7 +288,11 @@ describe('a stale session found after the database opened', () => {
 })
 
 describe('a write that races the startup check', () => {
-  it('goes out under the stored session when the check runs out of time, and mints nothing', async () => {
+  // The check running out of time is the API out of reach, so the write that
+  // waited on it is refused at once rather than spending 20 s of its own
+  // (src/db/api-reachability.ts). What matters as much: it is refused under
+  // the session the singer has, and no identity is minted for it.
+  it('is refused at once when the check runs out of time, and mints nothing', async () => {
     vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
     const stored = token('acct-1', 'password')
     setAuthToken(stored)
@@ -308,19 +313,16 @@ describe('a write that races the startup check', () => {
     )
     await vi.advanceTimersByTimeAsync(API_READ_DEADLINE_MS)
 
-    expect(saving.error).toBeUndefined()
-    expect(saving.value?.id).toBe('run-1')
+    expect(saving.error).toBeInstanceOf(ApiUnreachableError)
     // The write waited on the startup check rather than asking again...
     expect(api.to('/api/auth/me')).toHaveLength(1)
-    // ...never asked for an identity...
+    // ...never asked for an identity, sent nothing...
     expect(api.to('/api/auth/anonymous')).toHaveLength(0)
-    // ...and carried the session the singer already had.
-    const [write] = api.to('/api/sessionRecords')
-    expect(new Headers(write?.init?.headers).get('authorization')).toBe(
-      `Bearer ${stored}`,
-    )
+    expect(api.to('/api/sessionRecords')).toHaveLength(0)
+    // ...and the singer keeps the session they had.
     expect(getAuthToken()).toBe(stored)
     expect(getUserId()).toBe('acct-1')
+    expect(needsSignIn()).toBe(false)
   })
 
   it('is refused, not re-homed, when the server refuses an account mid-write', async () => {
@@ -383,5 +385,122 @@ describe('a write that races the startup check', () => {
       `Bearer ${reissued}`,
     )
     expect(getUserId()).toBe(DEVICE_ID)
+  })
+})
+
+// Once a request to the API got no answer, calls to it are refused at once for
+// a while (src/db/api-reachability.ts). A refusal is the network failing, found
+// out early, so every rule above for a server that cannot be reached holds: no
+// sign-out, nothing on the device lost, and no second identity.
+describe('while the API is out of reach', () => {
+  /** Opens the database for a signed-in singer and lets /me run out of time. */
+  async function openWithApiOutOfReach(
+    answer: Parameters<typeof fakeApi>[0],
+  ): Promise<Awaited<ReturnType<typeof getDb>>> {
+    vi.useFakeTimers({ toFake: ['setTimeout', 'clearTimeout', 'Date'] })
+    api = fakeApi(answer)
+    const opening = track(getDb())
+    await vi.advanceTimersByTimeAsync(API_READ_DEADLINE_MS)
+    expect(opening.settled).toBe(true)
+    return opening.value as Awaited<ReturnType<typeof getDb>>
+  }
+
+  it("keeps a singer's session when the check of it is refused", async () => {
+    const stored = token('acct-1', 'password')
+    setAuthToken(stored)
+    await openWithApiOutOfReach((url) =>
+      url.endsWith('/api/auth/me') ? 'hold' : json([]),
+    )
+
+    const restored = await restoreAuth()
+
+    expect(restored).toBe(true)
+    expect(api?.to('/api/auth/me')).toHaveLength(1)
+    expect(getAuthToken()).toBe(stored)
+    expect(needsSignIn()).toBe(false)
+  })
+
+  it("reads and writes the device's own data", async () => {
+    setAuthToken(token('acct-1', 'password'))
+    const db = await openWithApiOutOfReach(() => 'hold')
+    const groups = db.getRepository<DbEntity & { name: string }>(
+      'sessionGroups',
+    )
+
+    const made = await groups.create({ name: 'Kept on this phone' })
+
+    expect((await groups.findById(made.id))?.name).toBe('Kept on this phone')
+  })
+
+  it('mints no identity for a visitor whose first cloud write is refused', async () => {
+    const db = await openWithApiOutOfReach(() => 'hold')
+    // A visitor has no session to check, and a read of their own rows needs
+    // no request, so the window is closed by what Home asks first.
+    const legend = track(fetchWithDeadline(`${API}/api/weekly/active`))
+    await vi.advanceTimersByTimeAsync(API_READ_DEADLINE_MS)
+    expect(legend.error).toBeDefined()
+
+    const saving = track(
+      db
+        .getRepository<SessionRecord>('sessionRecords')
+        .create(practiceRun(DEVICE_ID)),
+    )
+    await vi.advanceTimersByTimeAsync(0)
+
+    // Refused at once by HybridAdapter, as when provisioning meets a network
+    // error: the identity request was not sent, so there is none to write as.
+    expect(saving.settled).toBe(true)
+    expect((saving.error as Error).message).toContain('not being saved')
+    expect(api?.to('/api/auth/anonymous')).toHaveLength(0)
+    expect(api?.to('/api/sessionRecords')).toHaveLength(0)
+    expect(getAuthToken()).toBeNull()
+    expect(getUserId()).toBe(DEVICE_ID)
+  })
+
+  it('sends a write once the window is over, under the stored session, and mints nothing', async () => {
+    const stored = token('acct-1', 'password')
+    setAuthToken(stored)
+    let meAnswers = false
+    const db = await openWithApiOutOfReach((url, init) => {
+      if (url.endsWith('/api/auth/me'))
+        return meAnswers ? json({ user: { id: 'acct-1' } }) : 'hold'
+      if (url.endsWith('/api/sessionRecords') && init?.method === 'POST')
+        return json({ id: 'run-1', ...practiceRun('acct-1') })
+      return json([])
+    })
+    await vi.advanceTimersByTimeAsync(API_UNREACHABLE_FIRST_WINDOW_MS)
+    meAnswers = true
+
+    const saving = track(
+      db
+        .getRepository<SessionRecord>('sessionRecords')
+        .create(practiceRun('acct-1')),
+    )
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(saving.value?.id).toBe('run-1')
+    expect(api?.to('/api/auth/anonymous')).toHaveLength(0)
+    const [write] = api?.to('/api/sessionRecords') ?? []
+    expect(new Headers(write?.init?.headers).get('authorization')).toBe(
+      `Bearer ${stored}`,
+    )
+  })
+
+  it('still signs an account out when the probe is answered with a refusal', async () => {
+    setAuthToken(token('acct-1', 'password'))
+    let meAnswers = false
+    await openWithApiOutOfReach((url) => {
+      if (url.endsWith('/api/auth/me'))
+        return meAnswers ? json({ error: 'Unauthorized' }, 401) : 'hold'
+      return json([])
+    })
+    await vi.advanceTimersByTimeAsync(API_UNREACHABLE_FIRST_WINDOW_MS)
+    meAnswers = true
+
+    const restored = await restoreAuth()
+
+    expect(restored).toBe(false)
+    expect(getAuthToken()).toBeNull()
+    expect(needsSignIn()).toBe(true)
   })
 })

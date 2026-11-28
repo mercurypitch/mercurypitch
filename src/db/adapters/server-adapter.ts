@@ -13,7 +13,7 @@
 //   DELETE /api/<entity>/:id      → delete
 //   GET    /api/<entity>/count    → count
 
-import { ApiDeadlineError, deadlineFor, fetchWithDeadline, } from '@/db/api-fetch'
+import { ApiDeadlineError, ApiUnreachableError, deadlineFor, fetchWithDeadline, } from '@/db/api-fetch'
 import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/types'
 import { IS_DEV } from '@/lib/defaults'
 
@@ -98,6 +98,12 @@ function describeCloudFailure(err: unknown): { cause: string; what: string } {
     return {
       cause: 'deadline',
       what: `the backend did not answer within ${Math.round(err.deadlineMs / 1000)} s`,
+    }
+  }
+  if (err instanceof ApiUnreachableError) {
+    return {
+      cause: 'unreachable',
+      what: 'the backend did not answer a recent request, so this one was not sent',
     }
   }
   // The retry loop only re-throws a TypeError once it has given up, so by the
@@ -194,6 +200,13 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     // some is left, and an attempt that runs out of it ends the request with
     // an ApiDeadlineError, which is never retried (it is not a TypeError).
     // A refusal that comes back at once is still retried as before.
+    //
+    // While the API is out of reach the first attempt is refused at once
+    // with an ApiUnreachableError, which is not retried either. The attempts
+    // after a first one that went out are marked `retry`, so the request
+    // that found the API out of reach still gets its own retries: a
+    // connection reset is the commonest network error, and the retry is what
+    // gets past it.
     const deadlineMs = deadlineFor(init)
     const giveUpAt = Date.now() + deadlineMs
     const timeLeft = (): number => giveUpAt - Date.now()
@@ -205,7 +218,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
         const res = await fetchWithDeadline(
           url,
           { ...init, headers },
-          timeLeft(),
+          { deadlineMs: timeLeft(), retry: attempt > 0 },
         ).catch((err: unknown) => {
           // Say how long the request had, not what its last attempt had left.
           throw err instanceof ApiDeadlineError

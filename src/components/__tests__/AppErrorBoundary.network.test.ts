@@ -12,6 +12,7 @@
 
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { setupGlobalErrorHandler } from '@/components/AppErrorBoundary'
+import { ApiDeadlineError, ApiUnreachableError } from '@/db/api-fetch'
 import { appError, setAppError } from '@/stores/app-store'
 
 /**
@@ -42,6 +43,17 @@ describe('setupGlobalErrorHandler', () => {
     'Load failed',
   ])('does not raise a crash for: %s', (message) => {
     dispatchRejection(new Error(message))
+    expect(appError()).toBeNull()
+  })
+
+  // The two errors the API helper ends a call with when the API is out of
+  // reach (src/db/api-fetch.ts). Neither carries a browser's network message,
+  // so they are known by name.
+  it.each([
+    ['ran out of time', new ApiDeadlineError('https://api.test/api/me', 8000)],
+    ['was not sent', new ApiUnreachableError('https://api.test/api/me')],
+  ])('does not raise a crash for an API call that %s', (_label, reason) => {
+    dispatchRejection(reason)
     expect(appError()).toBeNull()
   })
 

@@ -1,5 +1,5 @@
 import { beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
-import { ApiDeadlineError } from '@/db/api-fetch'
+import { ApiDeadlineError, ApiUnreachableError } from '@/db/api-fetch'
 import { initGlobalErrorHandlers, isNetworkError, isStaleBuildError, } from './global-error-handler'
 import { requestUpdateCheck } from './pwa-service-worker'
 
@@ -28,6 +28,10 @@ describe('isNetworkError', () => {
     [
       'an API request with no answer by its deadline',
       new ApiDeadlineError('https://api.example.test/api/auth/me', 8000),
+    ],
+    [
+      'an API request not sent while the API is out of reach',
+      new ApiUnreachableError('https://api.example.test/api/sessionRecords'),
     ],
   ])('recognises %s', (_label, reason) => {
     expect(isNetworkError(reason)).toBe(true)
@@ -155,6 +159,16 @@ describe('the global handlers', () => {
     window.dispatchEvent(event)
 
     expect(askedForUpdate).not.toHaveBeenCalled()
+    expect(event.defaultPrevented).toBe(true)
+  })
+
+  it('treats an API request not sent while the API is out of reach as degraded, not broken', () => {
+    const event = rejection(
+      new ApiUnreachableError('https://api.example.test/api/userSettings'),
+    )
+
+    window.dispatchEvent(event)
+
     expect(event.defaultPrevented).toBe(true)
   })
 
