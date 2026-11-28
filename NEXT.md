@@ -6095,3 +6095,22 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
      - Merc's S3/S4 entrance at 52.40 and his b4a talk: retire the stand-in;
      - re-measure the holds (127).
      Then the stale probes, the 60 fps final in pieces (cache in /dev/shm) and the deliverables.
+
+## 28 Nov 17:22 UTC: GENERATION RETURNED, 66 of 72: the ElevenLabs QUOTA ran out
+- GENERATE ((builder), finished and RETIRED): 72 calls, one a line, no retries.
+  - 66 generated and downloaded: Merc 53 of 58, Tavi 13 of 14.
+  - 4,349 credits: Merc 3,688, Tavi 661.
+  - The 6 that failed: b48, b49, b50, b51, b53 (Merc) and o14 (Tavi). Each said "This request
+    exceeds your quota of 10000", and none was charged.
+  - The account has about 11 credits left of 10,000. The 6 need 440 (Merc 375, Tavi 65).
+  - The lead verified: ledger 72 rows, 72 unique ids and sessions, 66 takes, 368.5 s, none under
+    0.5 s.
+  - b27 runs 15.23 s for 124 characters (the spelled "C, D, E, F, G"): a listen.
+- Told IMPORT ((builder)) by SendMessage:
+  - Phase 2 goes on the 66, with the 6 kept as their scratch takes in assets/voice/, marked
+    scratch stand-ins.
+  - The later step is one short re-run, written in $S/l6-voices/NOTES.md.
+  - Its hand-back lists the 6 lines' new times.
+- ASK THE OWNER: top up 440 or more ElevenLabs credits, or wait for the quota's reset. Then the
+  6 are NEW calls, one a line; the failed calls were refused for quota and never charged, which
+  NEXT.md records as the reason.
