@@ -85,13 +85,17 @@ export const karaokeSongs = songs
  * Ask the server again. `identify` first gives this phone the identity a
  * separation needs (anonymous until the singer signs in), which is right at
  * the moment of an import and too eager on the way into the room. What is
- * known stands when the server does not answer.
+ * known stands when the server does not answer. `userAction`: a person
+ * pressed for this read just now (Restore purchase), so it goes even while
+ * the API is out of reach (api-reachability.ts).
  */
 export async function refreshKaraokeSongs(
-  options: { identify?: boolean } = {},
+  options: { identify?: boolean; userAction?: boolean } = {},
 ): Promise<KaraokeSongs> {
   if (options.identify === true) await ensureSingerIdentity()
-  const me = await fetchBillingMe()
+  const me = await fetchBillingMe(undefined, undefined, {
+    userAction: options.userAction === true,
+  })
   if (me === null) return songs()
   const next: KaraokeSongs =
     me.songs === undefined
@@ -128,10 +132,11 @@ const sleep = (ms: number): Promise<void> =>
 
 /**
  * Ask the server again until it says subscribed, a few times, and settle
- * for what it last said. `refresh` is how to ask (refreshKaraokeSongs).
+ * for what it last said. `refresh` is how to ask (refreshKaraokeSongs);
+ * `asked` counts from 0, so a press can send its own first ask as itself.
  */
 export async function awaitSubscription(
-  refresh: () => Promise<KaraokeSongs>,
+  refresh: (asked: number) => Promise<KaraokeSongs>,
   options: {
     tries?: number
     everyMs?: number
@@ -141,10 +146,10 @@ export async function awaitSubscription(
   const { tries = 10, everyMs = 3_000, wait = sleep } = options
   setOnTheWay(true)
   try {
-    let heard = await refresh()
+    let heard = await refresh(0)
     for (let asked = 1; asked < tries && !heard.subscribed; asked += 1) {
       await wait(everyMs)
-      heard = await refresh()
+      heard = await refresh(asked)
     }
     return heard
   } finally {

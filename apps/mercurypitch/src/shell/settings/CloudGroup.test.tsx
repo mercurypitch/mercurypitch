@@ -13,7 +13,7 @@ import type { KaraokeSongs } from '@/features/karaoke-room/karaoke-songs'
 
 const server = vi.hoisted(() => ({
   next: null as KaraokeSongs | null,
-  asked: [] as ({ identify?: boolean } | undefined)[],
+  asked: [] as ({ identify?: boolean; userAction?: boolean } | undefined)[],
   // The songs the server has after this many more asks, if it has not heard.
   heardAfter: 0,
 }))
@@ -21,17 +21,19 @@ vi.mock('@/features/karaoke-room/karaoke-songs', async (importOriginal) => {
   const actual = await importOriginal<typeof Songs>()
   return {
     ...actual,
-    refreshKaraokeSongs: vi.fn(async (options?: { identify?: boolean }) => {
-      server.asked.push(options)
-      if (server.heardAfter > 0) server.heardAfter -= 1
-      else if (server.next !== null) {
-        actual.resetKaraokeSongsForTests(server.next)
-      }
-      return Promise.resolve(actual.karaokeSongs())
-    }),
+    refreshKaraokeSongs: vi.fn(
+      async (options?: { identify?: boolean; userAction?: boolean }) => {
+        server.asked.push(options)
+        if (server.heardAfter > 0) server.heardAfter -= 1
+        else if (server.next !== null) {
+          actual.resetKaraokeSongsForTests(server.next)
+        }
+        return Promise.resolve(actual.karaokeSongs())
+      },
+    ),
     // The webhook's few seconds, without the test waiting them.
     awaitSubscription: async (
-      refresh: () => Promise<KaraokeSongs>,
+      refresh: Parameters<typeof actual.awaitSubscription>[0],
       options?: Parameters<typeof actual.awaitSubscription>[1],
     ) =>
       actual.awaitSubscription(refresh, {
@@ -238,7 +240,9 @@ describe('Restore purchase', () => {
     expect(said(root)).toBe(
       'Your Mercury Pitch Cloud subscription is restored.',
     )
-    expect(server.asked).toEqual([{ identify: true }])
+    // The press's own read goes as the press, even while the API is out of
+    // reach.
+    expect(server.asked).toEqual([{ identify: true, userAction: true }])
     expect(row(root, 'cloud-status')?.textContent).toContain(
       'Subscribed, renews on 27 October',
     )
@@ -258,10 +262,11 @@ describe('Restore purchase', () => {
     expect(said(root)).toBe(
       'Your Mercury Pitch Cloud subscription is restored.',
     )
+    // Only the first ask is the press; the rest wait on the store's word.
     expect(server.asked).toEqual([
-      { identify: true },
-      { identify: true },
-      { identify: true },
+      { identify: true, userAction: true },
+      { identify: true, userAction: false },
+      { identify: true, userAction: false },
     ])
     expect(row(root, 'cloud-status')?.textContent).toContain(
       'Subscribed, renews on 27 October',

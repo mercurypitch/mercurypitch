@@ -67,8 +67,10 @@ export function CloudGroup(): JSX.Element {
         : await api.restore().catch(() => 'failed' as const)
     if (live) setNote(restoreNote(outcome))
     if (outcome === 'restored') {
-      await awaitSubscription(async () =>
-        refreshKaraokeSongs({ identify: true }),
+      // The first read is the press's own, so it goes even while the API is
+      // out of reach; the asks after it wait on the store's word.
+      await awaitSubscription(async (asked) =>
+        refreshKaraokeSongs({ identify: true, userAction: asked === 0 }),
       )
     }
   }

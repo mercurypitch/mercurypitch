@@ -16,12 +16,21 @@ const billing = vi.hoisted(() => ({
   me: null as BillingMe | null,
   fetches: 0,
   identified: 0,
+  // Whether each read went as a person's press.
+  pressed: [] as boolean[],
 }))
 vi.mock('@/db/services/billing-service', () => ({
-  fetchBillingMe: vi.fn(async () => {
-    billing.fetches += 1
-    return Promise.resolve(billing.me)
-  }),
+  fetchBillingMe: vi.fn(
+    async (
+      _base?: string,
+      _signal?: AbortSignal,
+      options?: { userAction?: boolean },
+    ) => {
+      billing.fetches += 1
+      billing.pressed.push(options?.userAction === true)
+      return Promise.resolve(billing.me)
+    },
+  ),
 }))
 vi.mock('@/db/services/auth-service', () => ({
   requireAuth: vi.fn(async () => {
@@ -136,6 +145,17 @@ describe('asking the server', () => {
 
     await expect(refreshKaraokeSongs()).resolves.toEqual(subscriber)
     expect(karaokeSongs()).toEqual(subscriber)
+  })
+
+  // Restore purchase reads the songs again right after the press. Sent as
+  // an ordinary call, it was refused while the API was out of reach.
+  it('reads as the press only when a person pressed for it', async () => {
+    billing.pressed = []
+
+    await refreshKaraokeSongs({ userAction: true })
+    await refreshKaraokeSongs()
+
+    expect(billing.pressed).toEqual([true, false])
   })
 
   it('gives the phone its identity first only when asked to', async () => {
@@ -399,6 +419,19 @@ describe('after the store says yes', () => {
     expect(wait).toHaveBeenCalledTimes(2)
     expect(seen).toEqual([true, true, true])
     expect(songsOnTheWay()).toBe(false)
+  })
+
+  // Only the first ask can be the press that sent it: the rest are the
+  // page asking by itself, which the API's gate may hold back.
+  it('tells each ask which it is', async () => {
+    const answers = [waiting, waiting, subscriber]
+    const refresh = vi.fn(async (_asked: number) =>
+      Promise.resolve(answers.shift() ?? subscriber),
+    )
+
+    await awaitSubscription(refresh, { wait: async () => undefined })
+
+    expect(refresh.mock.calls).toEqual([[0], [1], [2]])
   })
 
   it('settles for what it last heard after a few tries', async () => {
