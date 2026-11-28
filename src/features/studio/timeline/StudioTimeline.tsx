@@ -3,12 +3,13 @@ import { createEffect, createMemo, createSignal, For, Index, on, onCleanup, Show
 import { Plus } from '@/components/icons'
 import type { StudioClip } from '@/lib/studio/model/types'
 import { STUDIO_SAMPLE_RATE } from '@/lib/studio/model/types'
+import { createReactiveMatch } from '@/lib/use-viewport'
 import { setStudioRecordCardAside } from '../record/record-card-aside'
 import { StudioRecordLane } from '../record/StudioRecordLane'
 import { studioTakeRunning } from '../record/take-running'
 import { StudioViewControls } from '../StudioViewControls'
 import { closeStudioRows } from './comp-editor'
-import { studioLaneHeight } from './lane-height'
+import { STUDIO_LOW_TABLET_QUERY, studioLaneHeight } from './lane-height'
 import { studioLaneLinesRequest } from './lane-lines-request'
 import { attachStudioLaneNavigation } from './lane-navigation'
 import { createStudioLineEditor } from './line-editor'
@@ -50,10 +51,18 @@ export function StudioTimeline(props: StudioTimelineProps) {
   // Solo, on a tablet under the name; a tall lane adds its lines, fader and
   // knob, which want a wider tablet header. A phone's holds the glyph and name.
   // The ruler's corner is as wide: a tablet's needs 224 px for Snap, Time and
-  // Beats and the tempo, each 44 px wide.
+  // Beats and the tempo, each 44 px wide. A tablet in a short window puts the
+  // switches beside the name, a row less in every lane, and takes the width
+  // they leave the name from the arrangement, which has width to spare there.
   const tall = () => !props.phone && studioLaneHeight() === 'tall'
-  const headerWidth = () =>
-    props.phone ? 88 : props.tablet === true ? (tall() ? 256 : 224) : 240
+  const lowWindow = createReactiveMatch(STUDIO_LOW_TABLET_QUERY)
+  const low = () => !props.phone && props.tablet === true && lowWindow()
+  const headerWidth = () => {
+    if (props.phone) return 88
+    if (props.tablet !== true) return 240
+    if (low()) return 296
+    return tall() ? 256 : 224
+  }
   // With the desk open, zoom and the clip bar leave the lanes for a dock.
   const docked = () => !props.phone && props.deskOpen === true
   const contentWidth = createMemo(() => Math.max(1, width() - headerWidth()))
@@ -465,6 +474,7 @@ export function StudioTimeline(props: StudioTimelineProps) {
       classList={{
         [styles.phone]: props.phone,
         [styles.tablet]: !props.phone && props.tablet === true,
+        [styles.low]: low(),
         [styles.tall]: tall(),
         [styles.editing]: pointer.active(),
         [styles.docking]: docked(),

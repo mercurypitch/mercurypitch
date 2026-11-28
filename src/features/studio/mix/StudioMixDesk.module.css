@@ -400,11 +400,15 @@
     display: grid;
   }
 }
-/* On a short tablet desk the flavours keep to one row and scroll sideways.
-   A focused chip scrolls clear of the fades below. */
-@container (max-height: 300px) and (max-width: 1100px) {
+/* On a short tablet desk the flavours keep to one row: a second row would
+   push the dials past the desk's foot. Their pills are narrower and closer,
+   none under a finger's 44 px, so all seven fit the 420 px a narrow desk
+   gives the master (410 px in Chromium); with wider type or longer words the
+   row scrolls sideways, and a focused chip scrolls clear of the fades below. */
+@container (max-height: 300px) {
   .touch .flavours {
     flex-wrap: nowrap;
+    gap: 5px;
     max-width: none;
     overflow-x: auto;
     scrollbar-width: none;
@@ -413,6 +417,26 @@
   }
   .touch .flavours > * {
     flex: none;
+  }
+  .touch .flavours > button {
+    min-width: 44px;
+    padding-inline: 9px;
+  }
+}
+/* A tablet desk below 250 px (dragged down, or a very short window): the
+   group names go to screen readers and the master's rows close up, so the
+   flavours and all five dials, their words included, stay inside down to
+   the desk's floor. The strips widen for the knob beside the fader
+   (StudioTimeline.module.css, at the same height). */
+@container (max-height: 250px) {
+  .touch .groupLabel {
+    display: none;
+  }
+  .touch .masterControls {
+    gap: 4px;
+  }
+  .touch .strip {
+    --strip-width: 128px;
   }
 }
 /* More flavours past an edge of the row: that edge fades out, so a cut chip

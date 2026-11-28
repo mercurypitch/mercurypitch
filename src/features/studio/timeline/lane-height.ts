@@ -42,3 +42,13 @@ export function setStudioLaneHeight(next: StudioLaneHeight): void {
 export function reloadStudioLaneHeight(): void {
   setHeight(stored())
 }
+
+/**
+ * A tablet on its side in a short window, where a lane header stands its
+ * arm, Mute and Solo beside the name instead of under it. A Galaxy Tab S9+
+ * in Chrome is about 1340 by 690 once the tab strip and the address bar
+ * are drawn: two tall lanes of three finger-sized rows left Mix 222 px.
+ * A 1024 by 768 tablet, and anything taller, keeps the rows.
+ */
+export const STUDIO_LOW_TABLET_QUERY =
+  '(orientation: landscape) and (max-height: 760px)'
