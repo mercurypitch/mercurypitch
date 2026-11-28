@@ -10,7 +10,7 @@
 
 import { hasValidToken, requireAuth } from '@/db/services/auth-service'
 import { getUserId } from '@/db/services/user-service'
-import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/types'
+import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, WriteOptions, } from '@/db/types'
 
 /**
  * Entities served by the db-worker. Must mirror the allowlist in
@@ -76,11 +76,14 @@ const USER_SCOPED_ENTITIES: ReadonlySet<string> = new Set([
 /** One page of a read for "all my rows": the worker's MAX_LIST_LIMIT. */
 const PAGE_SIZE = 1000
 
+/** requireAuth's shape: `userAction` provisions as a person's press. */
+type EnsureAuthed = (options: { userAction?: boolean }) => Promise<boolean>
+
 class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
   constructor(
     private inner: Repository<T>,
     private isAuthed: () => boolean,
-    private ensureAuthed: () => Promise<boolean>,
+    private ensureAuthed: EnsureAuthed,
     private currentIdentity: () => string,
   ) {}
 
@@ -145,25 +148,29 @@ class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
     return this.isAuthed() ? this.inner.count(opts) : 0
   }
 
-  async create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T> {
-    const expectedIdentity = await this.prepareWrite()
+  async create(
+    entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>,
+    opts?: WriteOptions,
+  ): Promise<T> {
+    const expectedIdentity = await this.prepareWrite(opts)
     this.assertWriteIdentity(expectedIdentity)
-    return this.inner.create(entity)
+    return this.inner.create(entity, opts)
   }
 
   async update(
     id: string,
     patch: Partial<Omit<T, 'id' | 'createdAt'>>,
+    opts?: WriteOptions,
   ): Promise<T> {
-    const expectedIdentity = await this.prepareWrite()
+    const expectedIdentity = await this.prepareWrite(opts)
     this.assertWriteIdentity(expectedIdentity)
-    return this.inner.update(id, patch)
+    return this.inner.update(id, patch, opts)
   }
 
-  async delete(id: string): Promise<void> {
-    const expectedIdentity = await this.prepareWrite()
+  async delete(id: string, opts?: WriteOptions): Promise<void> {
+    const expectedIdentity = await this.prepareWrite(opts)
     this.assertWriteIdentity(expectedIdentity)
-    return this.inner.delete(id)
+    return this.inner.delete(id, opts)
   }
 
   /**
@@ -189,10 +196,14 @@ class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
    *
    * Reads deliberately do NOT do this. Browsing must leave no server-side
    * row, so an unprovisioned read resolves empty instead of minting.
+   *
+   * A write a person pressed for provisions as their press: refused while
+   * the API is out of reach, the press would end here as "signed out".
    */
-  private async prepareWrite(): Promise<string> {
+  private async prepareWrite(opts?: WriteOptions): Promise<string> {
     const expectedIdentity = this.currentIdentity()
-    if (!this.isAuthed() && !(await this.ensureAuthed())) {
+    const userAction = opts?.userAction === true
+    if (!this.isAuthed() && !(await this.ensureAuthed({ userAction }))) {
       throw new Error('Signed out — personal data is not being saved')
     }
     this.assertWriteIdentity(expectedIdentity)
@@ -214,7 +225,7 @@ export class HybridAdapter implements DatabaseAdapter {
     private cloud: DatabaseAdapter,
     private local: DatabaseAdapter,
     private isAuthed: () => boolean = hasValidToken,
-    private ensureAuthed: () => Promise<boolean> = requireAuth,
+    private ensureAuthed: EnsureAuthed = requireAuth,
     private currentIdentity: () => string = getUserId,
   ) {}
 

@@ -26,6 +26,18 @@ export interface QueryOptions<T> {
   userAction?: boolean
 }
 
+/** How a write goes. */
+export interface WriteOptions {
+  /**
+   * A person pressed for this write just now (Unpublish, the leaderboard
+   * listing). On the server it goes even while the API is out of reach, as
+   * their press (api-fetch.ts), and so does the identity it provisions; its
+   * retries stay retries. Never set it on a write the app makes by itself:
+   * a sync, a grant flush, a practice run's record.
+   */
+  userAction?: boolean
+}
+
 /** Generic CRUD repository for one entity type. */
 export interface Repository<T extends DbEntity> {
   /** `opts.userAction`: as on QueryOptions. */
@@ -34,9 +46,16 @@ export interface Repository<T extends DbEntity> {
     opts?: Pick<QueryOptions<T>, 'userAction'>,
   ): Promise<T | null>
   findAll(opts?: QueryOptions<T>): Promise<T[]>
-  create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T>
-  update(id: string, patch: Partial<Omit<T, 'id' | 'createdAt'>>): Promise<T>
-  delete(id: string): Promise<void>
+  create(
+    entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>,
+    opts?: WriteOptions,
+  ): Promise<T>
+  update(
+    id: string,
+    patch: Partial<Omit<T, 'id' | 'createdAt'>>,
+    opts?: WriteOptions,
+  ): Promise<T>
+  delete(id: string, opts?: WriteOptions): Promise<void>
   count(opts?: QueryOptions<T>): Promise<number>
 }
 

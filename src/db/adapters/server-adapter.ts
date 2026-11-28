@@ -14,7 +14,7 @@
 //   GET    /api/<entity>/count    → count
 
 import { ApiDeadlineError, ApiUnreachableError, deadlineFor, fetchWithDeadline, } from '@/db/api-fetch'
-import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, } from '@/db/types'
+import type { DatabaseAdapter, DbEntity, QueryOptions, Repository, WriteOptions, } from '@/db/types'
 import { IS_DEV } from '@/lib/defaults'
 
 // ── Config ──────────────────────────────────────────────────────
@@ -27,9 +27,10 @@ export interface ServerAdapterConfig {
    * Awaited before every create/update/delete, after which `headers()` is
    * read. Lets the caller provision a cloud identity lazily — the first
    * write is what turns a visitor into a user. Reads deliberately skip it:
-   * browsing must never create an account.
+   * browsing must never create an account. `userAction`: the write is a
+   * person's press, so an identity it provisions goes as that press too.
    */
-  beforeWrite?: () => Promise<unknown>
+  beforeWrite?: (options: { userAction: boolean }) => Promise<unknown>
   /**
    * Current owner of a state-changing request. Captured before `beforeWrite`
    * and checked again immediately before auth headers are read so an account
@@ -207,9 +208,9 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     // after a first one that went out are marked `retry`, so the request
     // that found the API out of reach still gets its own retries: a
     // connection reset is the commonest network error, and the retry is what
-    // gets past it. A read a person asked for (`userAction`, Try again) goes
-    // even inside that window: its first attempt as their press, the rest as
-    // retries.
+    // gets past it. A read or a write a person asked for (`userAction`: Try
+    // again, Unpublish) goes even inside that window: its first attempt as
+    // their press, the rest as retries.
     const deadlineMs = deadlineFor(init)
     const giveUpAt = Date.now() + deadlineMs
     const timeLeft = (): number => giveUpAt - Date.now()
@@ -286,12 +287,12 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     )
   }
 
-  private async prepareWrite(): Promise<{
+  private async prepareWrite(userAction: boolean): Promise<{
     headers: Record<string, string>
     identity?: string
   }> {
     const expectedIdentity = this.config.writeIdentity?.()
-    await this.config.beforeWrite?.()
+    await this.config.beforeWrite?.({ userAction })
     if (
       expectedIdentity !== undefined &&
       this.config.writeIdentity?.() !== expectedIdentity
@@ -344,8 +345,13 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     }
   }
 
-  async create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T> {
-    const prepared = await this.prepareWrite()
+  /** A write: sent as a person's press when they asked for it (`userAction`). */
+  async create(
+    entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>,
+    opts?: WriteOptions,
+  ): Promise<T> {
+    const userAction = opts?.userAction === true
+    const prepared = await this.prepareWrite(userAction)
     return this.request<T>(
       '',
       {
@@ -358,14 +364,17 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
       2,
       prepared.headers,
       prepared.identity,
+      userAction,
     )
   }
 
   async update(
     id: string,
     patch: Partial<Omit<T, 'id' | 'createdAt'>>,
+    opts?: WriteOptions,
   ): Promise<T> {
-    const prepared = await this.prepareWrite()
+    const userAction = opts?.userAction === true
+    const prepared = await this.prepareWrite(userAction)
     return this.request<T>(
       `/${encodeURIComponent(id)}`,
       {
@@ -375,11 +384,13 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
       2,
       prepared.headers,
       prepared.identity,
+      userAction,
     )
   }
 
-  async delete(id: string): Promise<void> {
-    const prepared = await this.prepareWrite()
+  async delete(id: string, opts?: WriteOptions): Promise<void> {
+    const userAction = opts?.userAction === true
+    const prepared = await this.prepareWrite(userAction)
     await this.request(
       `/${encodeURIComponent(id)}`,
       {
@@ -388,6 +399,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
       2,
       prepared.headers,
       prepared.identity,
+      userAction,
     )
   }
 

@@ -10,7 +10,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { ApiUnreachableError } from '@/db/api-fetch'
-import type { DbEntity } from '@/db/types'
+import type { DbEntity, WriteOptions } from '@/db/types'
 import { resetCloudReadWarningsForTests, ServerAdapter } from './server-adapter'
 
 interface Rec extends DbEntity {
@@ -128,6 +128,55 @@ describe('a request refused while the API is out of reach', () => {
 
     expect(asked.value).toBe(0)
     expect(fetchMock).toHaveBeenCalledTimes(sent + 3)
+  })
+
+  // Save name, Unpublish: a write a person pressed for goes as their press,
+  // as a Try again's read does, and keeps the retries any write has.
+  const writes: ReadonlyArray<
+    readonly [string, (asked: WriteOptions) => Promise<unknown>]
+  > = [
+    ['create', (asked) => repo().create({ score: 4 }, asked)],
+    ['update', (asked) => repo().update('a', { score: 4 }, asked)],
+    ['delete', (asked) => repo().delete('a', asked)],
+  ]
+  it.each(writes)(
+    'sends the %s a person pressed for, with its own retries',
+    async (_name, write) => {
+      const fetchMock = refusingNetwork()
+      void repo()
+        .findAll()
+        .catch(() => undefined)
+      await vi.advanceTimersByTimeAsync(2000)
+      const sent = fetchMock.mock.calls.length
+
+      const pressed = track(write({ userAction: true }))
+      await vi.advanceTimersByTimeAsync(2000)
+
+      expect(pressed.error).toBeInstanceOf(TypeError)
+      expect(fetchMock).toHaveBeenCalledTimes(sent + 3)
+    },
+  )
+
+  // A first write provisions the identity it needs (requireAuth). Pressed
+  // for, that request is the press too.
+  it('hands the press to the provisioning a write waits on', async () => {
+    refusingNetwork()
+    const beforeWrite = vi.fn(async () => undefined)
+    const pressed = new ServerAdapter({
+      baseUrl: 'http://api.test',
+      beforeWrite,
+    }).getRepository<Rec>('sessionRecords')
+
+    void pressed
+      .create({ score: 5 }, { userAction: true })
+      .catch(() => undefined)
+    void pressed.update('a', { score: 5 }).catch(() => undefined)
+    await vi.advanceTimersByTimeAsync(0)
+
+    expect(beforeWrite.mock.calls).toEqual([
+      [{ userAction: true }],
+      [{ userAction: false }],
+    ])
   })
 
   it('rejects a read that asked to know, rather than calling it empty', async () => {
