@@ -84,8 +84,11 @@ class SignedOutAwareRepository<T extends DbEntity> implements Repository<T> {
     private currentIdentity: () => string,
   ) {}
 
-  async findById(id: string): Promise<T | null> {
-    return this.isAuthed() ? this.inner.findById(id) : null
+  async findById(
+    id: string,
+    opts?: Pick<QueryOptions<T>, 'userAction'>,
+  ): Promise<T | null> {
+    return this.isAuthed() ? this.inner.findById(id, opts) : null
   }
 
   /**

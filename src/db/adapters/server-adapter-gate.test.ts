@@ -112,6 +112,24 @@ describe('a request refused while the API is out of reach', () => {
     )
   })
 
+  // Try again on a screen that reads tables: the person asked for it now, so
+  // it goes as their press, and the attempt that finds the network down
+  // still gets its retries, as any request does.
+  it('goes when a person asked for it, with its own retries', async () => {
+    const fetchMock = refusingNetwork()
+    void repo()
+      .findAll()
+      .catch(() => undefined)
+    await vi.advanceTimersByTimeAsync(2000)
+    const sent = fetchMock.mock.calls.length
+
+    const asked = track(repo().count({ userAction: true }))
+    await vi.advanceTimersByTimeAsync(2000)
+
+    expect(asked.value).toBe(0)
+    expect(fetchMock).toHaveBeenCalledTimes(sent + 3)
+  })
+
   it('rejects a read that asked to know, rather than calling it empty', async () => {
     refusingNetwork()
     void repo()

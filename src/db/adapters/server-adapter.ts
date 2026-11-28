@@ -180,6 +180,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     retries = 2,
     fixedHeaders?: Record<string, string>,
     fixedIdentity?: string,
+    userAction = false,
   ): Promise<R> {
     const url = `${this.url}${path}`
     const expectedIdentity = fixedIdentity ?? this.config.writeIdentity?.()
@@ -206,7 +207,9 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     // after a first one that went out are marked `retry`, so the request
     // that found the API out of reach still gets its own retries: a
     // connection reset is the commonest network error, and the retry is what
-    // gets past it.
+    // gets past it. A read a person asked for (`userAction`, Try again) goes
+    // even inside that window: its first attempt as their press, the rest as
+    // retries.
     const deadlineMs = deadlineFor(init)
     const giveUpAt = Date.now() + deadlineMs
     const timeLeft = (): number => giveUpAt - Date.now()
@@ -218,7 +221,11 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
         const res = await fetchWithDeadline(
           url,
           { ...init, headers },
-          { deadlineMs: timeLeft(), retry: attempt > 0 },
+          {
+            deadlineMs: timeLeft(),
+            retry: attempt > 0,
+            userAction: userAction && attempt === 0,
+          },
         ).catch((err: unknown) => {
           // Say how long the request had, not what its last attempt had left.
           throw err instanceof ApiDeadlineError
@@ -297,9 +304,17 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     return { headers: this.headers(), identity: expectedIdentity }
   }
 
-  async findById(id: string): Promise<T | null> {
+  /** A read: sent as a person's press when they asked for it (`userAction`). */
+  private read<R>(path: string, userAction = false): Promise<R> {
+    return this.request<R>(path, undefined, 2, undefined, undefined, userAction)
+  }
+
+  async findById(
+    id: string,
+    opts?: Pick<QueryOptions<T>, 'userAction'>,
+  ): Promise<T | null> {
     try {
-      return await this.request<T>(`/${encodeURIComponent(id)}`)
+      return await this.read<T>(`/${encodeURIComponent(id)}`, opts?.userAction)
     } catch (err) {
       warnCloudReadFailed(this.entityName, err)
       return null
@@ -321,7 +336,7 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     if (opts?.offset !== undefined) params.set('offset', String(opts.offset))
     const qs = params.toString()
     try {
-      return await this.request<T[]>(qs ? `?${qs}` : '')
+      return await this.read<T[]>(qs ? `?${qs}` : '', opts?.userAction)
     } catch (err) {
       warnCloudReadFailed(this.entityName, err)
       if (opts?.throwOnError === true) throw err
@@ -385,8 +400,9 @@ class ServerRepository<T extends DbEntity> implements Repository<T> {
     }
     const qs = params.toString()
     try {
-      const result = await this.request<{ count: number }>(
+      const result = await this.read<{ count: number }>(
         `/count${qs ? `?${qs}` : ''}`,
+        opts?.userAction,
       )
       return result.count
     } catch (err) {

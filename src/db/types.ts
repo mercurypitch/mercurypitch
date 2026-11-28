@@ -18,11 +18,21 @@ export interface QueryOptions<T> {
   offset?: number
   /** Opt out of repository empty-result fallbacks for audited reads. */
   throwOnError?: boolean
+  /**
+   * A person asked for this read just now (Try again). On the server it goes
+   * even while the API is out of reach, as their press (api-fetch.ts); its
+   * retries stay retries. Never set it on a read a screen makes by itself.
+   */
+  userAction?: boolean
 }
 
 /** Generic CRUD repository for one entity type. */
 export interface Repository<T extends DbEntity> {
-  findById(id: string): Promise<T | null>
+  /** `opts.userAction`: as on QueryOptions. */
+  findById(
+    id: string,
+    opts?: Pick<QueryOptions<T>, 'userAction'>,
+  ): Promise<T | null>
   findAll(opts?: QueryOptions<T>): Promise<T[]>
   create(entity: Omit<T, 'id' | 'createdAt' | 'updatedAt'>): Promise<T>
   update(id: string, patch: Partial<Omit<T, 'id' | 'createdAt'>>): Promise<T>
