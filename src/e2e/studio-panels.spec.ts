@@ -1,4 +1,4 @@
-// Studio panels — each top-bar button closes the panel it opened, X opens and closes Mix but stays a letter in a text field, and a take added from Mix returns to Mix.
+// Studio panels — each top-bar button closes the panel it opened, X opens and closes Mix but stays a letter in a text field, a take added from Mix returns to Mix, and with Add takes open New lane's choices show once: in the row under the lanes on a computer, in Add takes where it covers the lanes.
 import { expect, test } from '@playwright/test'
 import { audioFixture, importStudioAudio, openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
 
@@ -61,3 +61,43 @@ test('Studio top-bar buttons close their own panels, X toggles Mix outside text 
   await importStudioAudio(page, 'Keys', 2)
   await expect(desk).toBeVisible()
 })
+
+for (const [width, height, covers] of [
+  [1440, 900, false],
+  [1024, 768, true],
+  [390, 844, true],
+] as const)
+  test(`with Add takes open at ${width} wide, New lane's choices show once, ${covers ? 'in Add takes, which covers the lanes' : 'in the row under the lanes'} @smoke`, async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    await page.setViewportSize({ width, height })
+    await openArrangement(page)
+    const studio = studioRegion(page)
+
+    await studio.locator('[data-tour="studio.add-takes"]').click()
+
+    const picker = studio
+      .getByRole('region', { name: 'Add takes', exact: true })
+      .or(studio.getByRole('dialog', { name: 'Add takes', exact: true }))
+    await expect(picker).toBeVisible()
+    const inPicker = picker.getByRole('group', {
+      name: 'New lane',
+      exact: true,
+    })
+    if (covers) await expect(inPicker).toBeVisible()
+    else {
+      await expect(inPicker).toHaveCount(0)
+      const choices = studio.getByRole('group', {
+        name: 'New lane',
+        exact: true,
+      })
+      await expect(choices).toHaveCount(1)
+      await expect(
+        studio.locator('[data-studio-new-lane]').getByRole('group', {
+          name: 'New lane',
+          exact: true,
+        }),
+      ).toBeVisible()
+    }
+  })

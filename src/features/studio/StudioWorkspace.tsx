@@ -14,7 +14,7 @@ import { createStudioEditor } from './editor/studio-editor'
 import { downloadStudioClipMidi } from './export/midi-download'
 import { StudioExportPanel } from './export/StudioExportPanel'
 import { useStudioExport } from './export/useStudioExport'
-import { StudioInputsPanel } from './inputs/StudioInputsPanel'
+import { studioInputsClock, StudioInputsPanel, } from './inputs/StudioInputsPanel'
 import { isStudioAudioDrop, isStudioMidiFile, STUDIO_FILE_ACCEPT, studioDropFrame, studioDroppedTake, } from './integration/drop-audio'
 import type { StudioSourceEntry } from './integration/source-catalog'
 import { StudioMidiEditorContext } from './midi/midi-render-editor'
@@ -67,6 +67,8 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     '(max-width: 1100px), (pointer: coarse) and (max-height: 500px)',
   )
   const tablet = () => coarse() && !phone()
+  // A panel over the lanes hides the row under them: Add takes holds New lane.
+  const covers = () => overlay() || phone()
   const {
     panel,
     open: openPanel,
@@ -95,7 +97,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     project: () => props.studio.project(),
     phone,
     panel,
-    panelCovers: () => overlay() || phone(),
+    panelCovers: covers,
     closePanel,
     selectClip: setSelectedClipId,
     selectedClipId,
@@ -313,13 +315,6 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     setInputFocusFor(at === 'input' ? id : null)
   }
 
-  /** The Studio's clock for a check in Inputs: started inside the press, as an arm's is. */
-  async function inputsClock(): Promise<AudioContext | null> {
-    if (!(await transport.unlock().catch(() => false))) return null
-    const context = transport.clock()
-    return context?.state === 'running' ? context : null
-  }
-
   /** Save MIDI clip `clipId`'s notes alone as a MIDI file; whether its download was asked for. */
   function exportClipMidi(clipId: string): boolean {
     try {
@@ -358,6 +353,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
     openNotes: (clipId, tool) => void notes.open(clipId, tool),
     announce: setAnnouncement,
   })
+  const newLane = () => (writable() ? newClips.newLane : undefined)
 
   function chooseFile(): void {
     importFrame = transport.frameNow()
@@ -581,7 +577,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
             selectedClipId={selectedClipId()}
             selectedTrackId={selectedTrackId()}
             onSelectTrack={setSelectedTrackId}
-            onNewLane={writable() ? newClips.newLane : undefined}
+            onNewLane={newLane()}
             onNewMidiClip={writable() ? newClips.newClip : undefined}
             keyboardPreviewClip={keyboardPreview()}
             notice={midi.notice()}
@@ -702,7 +698,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
               <StudioInputsPanel
                 recorder={recorder}
                 project={project()}
-                clock={inputsClock}
+                clock={() => studioInputsClock(transport)}
               />
             </Show>
             <Show when={panel() === 'export'}>
@@ -717,7 +713,7 @@ export function StudioWorkspace(props: StudioWorkspaceProps) {
                 studio={props.studio}
                 onAdd={addTakes}
                 onFile={chooseFile}
-                onNewLane={writable() ? newClips.newLane : undefined}
+                onNewLane={covers() ? newLane() : undefined}
                 touch={coarse()}
                 previewEpoch={previewEpoch()}
                 previewing={transport.previewing()}
