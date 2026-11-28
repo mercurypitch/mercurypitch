@@ -5,6 +5,30 @@ app, so every entry is one to three short sentences a stranger can follow — no
 PR numbers, no file names, no rationale. The full engineering history, at
 whatever length it needs, is in [`dev-changelog.md`](./dev-changelog.md).
 
+## [0.9.33] - 2026-11-28
+
+Studio fits a tablet held sideways, opens a new song ready for its first
+lane, and plays a song whose lanes are all muted.
+
+### Changed
+
+- **A new song opens ready for its first lane.** Nothing covers the
+  workspace, and New lane, with Audio, Piano and Drums, waits at the top of
+  the lane column. On a phone the three choices sit in the middle.
+- **Play works with every lane muted.** The song plays through in silence
+  instead of refusing. Only a song with nothing in it asks for a take or some
+  notes first.
+
+### Fixed
+
+- **Studio fits a tablet held sideways.** In a short window, a lane's arm,
+  Mute and Solo sit beside its name, so more lanes fit. The open Mix keeps
+  its levels clear of Mute and Solo, and the Master's dials in view.
+- **A new take covers the clip it records over.** While it records, the old
+  take's name and waveform no longer show through.
+- **Smaller things.** With Add takes open beside the lanes, the New lane
+  choices show once, in the lane column, instead of twice.
+
 ## [0.9.32] - 2026-11-28
 
 Studio keeps every take you sing over a clip, and the app no longer stalls
