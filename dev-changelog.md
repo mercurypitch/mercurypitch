@@ -9,6 +9,124 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.32] - 2026-11-28
+
+21 commits since `v0.9.31` (32f938cde) before these notes, from five PRs
+merged after the tag: #1477, #1478, #1479, #1480 and #1481, all
+rebase-merged. No database migration and no feature switch changes:
+everything below ships with Studio and the challenges that are already on
+in production.
+
+### Studio: takes, as in REAPER (#1479)
+
+- A take recorded on the armed lane over clips of recordings or practice
+  takes no longer lands on a new lane. Each clip under it is split at the
+  take's edges: the shared stretch becomes one clip playing the new take and
+  keeping the old one, and what only one of them covers stays a clip of its
+  own. One Undo takes the whole stack back ("Undo add take"). Over a picked
+  file, a MIDI clip or a clip of 32 takes, a MIDI take and a punch still do
+  what they did.
+- A clip of several takes says which one plays: "2/3" at the start of its
+  band, and ", take 2 of 3" in its name for a screen reader. A loop take's
+  passes count as takes of their own. T and Shift+T step through them (one
+  undo step each, "Undo choose take", spoken), as do the clip's right-click
+  menu and its Takes button.
+- Show takes stands every take in a row under the clip's lane, newest on
+  top, as REAPER's take lanes; a click, a tap, or Enter/Space on a focused
+  row plays it. The rows share the comp rows' look and push the lanes below
+  down.
+- Crop to this take (Alt+Shift+T) keeps the playing take and drops the rest,
+  keeping any loop pass a comp still plays; Explode takes to new lanes moves
+  them out. After either, the focus returns to the clip they acted on
+  (clip-focus.ts, shared with Show takes' Escape), and a take saved with
+  null passes or comp is refused on load.
+- The song format for takes was approved by the owner before the slices
+  landed (docs/plans, "Studio takes").
+
+### Studio: lane menu and mix desk polish (#1477)
+
+- A right-click on a lane's header or its buttons opens the lane's menu at
+  the pointer, inside the window; empty lane space and clips open the
+  Studio's. Arrows, Home, End, Enter, Escape and Tab work in it; Shift+F10
+  or the menu key opens it at the focused header, and a finger held still
+  for half a second opens it on touch. The menu hangs from its lane, so a
+  scroll of the lanes closes it, and Escape returns the focus inside the
+  lane.
+- Hear yourself is in the lane menu and in Track details. It stays the one
+  Studio-wide setting it was (Monitor through headphones in Sound).
+- A mix dial's value is centred again: a minus sign pulled the digits 3.2 px
+  off centre, and the cap's pointer ran into the value on 700 of 1,005
+  readings at 1440x900.
+- A strip's colour line is now the top border of a box over the whole strip
+  with the strip's own radius, so it follows the 10 px corners instead of
+  ending square inside them.
+
+### Exercises: only achievements wait behind the take's question (#1478)
+
+- Since 0.9.31, "Keep this take?" held Merc's bubble by quieting the stage,
+  which held back every notice. Only achievements wait now (owner, 27 Nov
+  2026); anything else shows at once as a toast, and a grouped notice joins
+  the toast beside the bubble instead of opening a second one.
+
+### Challenges: queued Legends and Home's Legend card (#1480)
+
+- `scripts/legend-queue.mjs` holds the next four Legends, continuing prod's
+  four-week Monday windows after The Run (ends 21 Dec 2026): Hold the Night
+  (Silent Night, 21 Dec), Old Acquaintance (Auld Lang Syne, 18 Jan), The
+  Rebel Bird (Carmen's Habanera, 15 Feb) and The Pipes Are Calling (Danny
+  Boy, 15 Mar to 12 Apr 2027). Each line is transcribed from a published
+  engraving, inside G3-C5, with its source, credits and public-domain
+  reason on the row.
+- `pnpm db:seed:legends` posts them as queued rows and refuses on any
+  problem `legendQueueProblems()` finds, or when the first window starts
+  before the live Legend ends. The rows are not in production until it is
+  run with `MP_ALLOW_PROD=1`, `MP_API_BASE` and `MP_ADMIN_KEY` set, first
+  with `-- --dry-run`. Each Legend reaches Home about 48 hours after its
+  start, once the outgoing one's late-attempt window (WEEKLY_GRACE_MS)
+  closes.
+- The authoring page's New challenge starts queued and four weeks long; an
+  active row with a future date went live at once. Its tags move to
+  `challenge-taxonomy.ts`, which adds `chromatic`.
+- Home's Legend card reads the active Legend with its outcome
+  (readActiveWeekly): loading holds its place, nothing running says so and
+  links to past Legends, unreachable says the network may be blocking the
+  servers and offers Try again. Its text links get a 45 px tap target.
+- Weekly Legend becomes Legend Attempt in Progress (web and native), share
+  cards, saved take titles, Studio's source labels and three achievements.
+  Production's achievement texts live in D1 and are edited from the admin
+  page; `seed-data.json` only seeds a fresh database. The stage's practice
+  notice no longer says "This week has ended", and the period-wording test
+  now reads wrapped JSX text.
+
+### Sync: the app opens without waiting for the server (#1481)
+
+- On a network that holds requests to the API host (a proxy answering a 403
+  without CORS headers after about a minute), a signed-in visitor waited a
+  minute on every page load: `createDatabase()` awaited `restoreAuth()`, a
+  fetch of `/api/auth/me` with no deadline, and every read and write on the
+  device waits for that adapter. Cloud reads then retried the resulting
+  TypeError twice, again without a deadline. Measured with a stub holding
+  every request 60 s: `getDb()` 59,846 ms signed in, 7 ms signed out; after
+  the fix 33 ms, and 22 ms after Lessons and Back.
+- `src/db/api-fetch.ts` adds `fetchWithDeadline()`: 8 s for a read, 20 s for
+  a write or longer for a body that needs it at 64 kbit/s, on AbortController
+  and setTimeout so older Android WebViews keep working. ServerAdapter gives
+  a request one deadline across its retries and never retries one that ran
+  out. The session check runs in the background and does what it did when
+  the server answers; overlapping checks of one session share one request,
+  so a write racing it cannot mint a second identity.
+- One notice per page load when a request times out or cannot connect:
+  "Can't reach Mercury Pitch's servers from this network. Recordings still
+  save on this device, but your streak won't update." Practice runs, minutes
+  and the streak are credited only once the server has the run.
+  `isNetworkError` knows the new `ApiDeadlineError`, so an unhandled one never
+  opens the crash screen.
+- `src/e2e-cloud/held-api-startup.spec.ts` holds the API in a real browser.
+  It is not in PR CI (the smoke build has no API base). Follow-ups: move the
+  remaining direct `fetch()` callers to the helper, fail fast while the API
+  is known to be out of reach, a same-origin `/api` proxy, and an upgrade
+  test bench.
+
 ## [0.9.31] - 2026-11-21
 
 404 commits since `v0.9.30` (1b8320bd3) before these notes: 403 commits and
