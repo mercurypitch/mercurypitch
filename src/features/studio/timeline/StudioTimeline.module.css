@@ -1557,8 +1557,9 @@
   stroke-width: 1.5;
   stroke-dasharray: 4 4;
 }
-/* The two ways to start: Add takes, and New lane's choices under it
-   (StudioNewLaneStart), as wide as the column lets them be. */
+/* The two ways to start: Add takes, and on a phone New lane's choices
+   under it (StudioNewLaneStart), as wide as the column lets them be. A
+   computer and a tablet have those in the New lane row instead. */
 .emptyActions {
   display: flex;
   flex-direction: column;

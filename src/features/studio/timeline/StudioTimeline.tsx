@@ -631,11 +631,14 @@ export function StudioTimeline(props: StudioTimelineProps) {
               />
             )}
           </Show>
-          <Show when={!props.phone && props.project.tracks.length > 0}>
+          {/* A computer and a tablet keep New lane under the lanes, at the
+              top of an empty song's lane column. A phone has no room for it. */}
+          <Show when={!props.phone}>
             <StudioNewLane
               onNewLane={props.onNewLane}
               dragging={pointer.active()}
               tablet={props.tablet === true}
+              lanes={props.project.tracks.length > 0}
             />
           </Show>
           <div class={styles.filler} aria-hidden="true">
@@ -699,8 +702,10 @@ export function StudioTimeline(props: StudioTimelineProps) {
               <rect x="52" y="52" width="64" height="16" rx="3" />
             </svg>
             <p>Add a take, or start a lane to record or draw notes in.</p>
-            {/* No Add takes while it is open: it holds New lane too, so the
-                song shows the three choices once. */}
+            {/* No Add takes while it is open. New lane's three choices show
+                once: a computer and a tablet have them in the row at the top
+                of the lane column, so only a phone, which has no such row,
+                offers them here. */}
             <Show when={props.onAddTakes}>
               {(add) => (
                 <div
@@ -716,10 +721,9 @@ export function StudioTimeline(props: StudioTimelineProps) {
                   >
                     <Plus size={16} /> Add takes
                   </button>
-                  <StudioNewLaneStart
-                    onNewLane={props.onNewLane}
-                    touch={props.phone || props.tablet === true}
-                  />
+                  <Show when={props.phone}>
+                    <StudioNewLaneStart onNewLane={props.onNewLane} touch />
+                  </Show>
                 </div>
               )}
             </Show>
