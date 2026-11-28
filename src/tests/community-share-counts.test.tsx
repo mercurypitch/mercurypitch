@@ -540,6 +540,7 @@ describe('Community publication lifecycle', () => {
     await waitFor(() =>
       expect(mocks.saveSharedSession).toHaveBeenCalledWith(
         expect.objectContaining({ sourceSessionId: 'a', results: [64] }),
+        { userAction: true },
       ),
     )
   })
@@ -571,6 +572,7 @@ describe('Community publication lifecycle', () => {
     await waitFor(() =>
       expect(mocks.saveSharedSession).toHaveBeenCalledWith(
         expect.objectContaining({ sourceSessionId: 'a' }),
+        { userAction: true },
       ),
     )
   })
@@ -634,7 +636,11 @@ describe('Community publication lifecycle', () => {
     await waitFor(() =>
       expect(screen.queryByRole('button', { name: 'Open Run a' })).toBeNull(),
     )
-    expect(mocks.unpublishShared).toHaveBeenCalledWith('session', 's-new')
+    // Unpublish is a press: sent as the person's, even while the API is out
+    // of reach after a request that got no answer (api-reachability.ts).
+    expect(mocks.unpublishShared).toHaveBeenCalledWith('session', 's-new', {
+      userAction: true,
+    })
     openTab(/Profile/)
     await waitFor(() => published(/^result$/, 1))
   })
@@ -666,7 +672,11 @@ describe('Community publication lifecycle', () => {
     expect(screen.queryByRole('button', { name: 'Open New melody' })).toBeNull()
     save.resolve(boardMelody('m-new', 'user-0001', 'New melody'))
     await screen.findByRole('button', { name: 'Open New melody' })
-    expect(mocks.saveSharedMelody).toHaveBeenCalledTimes(1)
+    // Share is a press, as Unpublish is.
+    expect(mocks.saveSharedMelody).toHaveBeenCalledExactlyOnceWith(
+      expect.objectContaining({ name: 'New melody' }),
+      { userAction: true },
+    )
     openTab(/Profile/)
     await waitFor(() => published(/^melodies$/, 2))
   })

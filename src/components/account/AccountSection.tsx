@@ -109,8 +109,12 @@ export const AccountSection: Component = () => {
       const db = await getDb()
       assertProfileIdentity(userId)
       const profiles = db.getRepository<UserProfile>('userProfiles')
-      // Cloud row id == userId (the JWT identity)
-      const profile = await profiles.findById(userId)
+      // Cloud row id == userId (the JWT identity). Save is a press, and this
+      // read is its first request: it goes even while the API is out of
+      // reach (api-reachability.ts), and its answer opens the way for the
+      // write. With no answer the write is refused at once, and the save
+      // says so without waiting out a second request.
+      const profile = await profiles.findById(userId, { userAction: true })
       assertProfileIdentity(userId)
       if (profile != null) {
         await profiles.update(userId, { displayName: name })
@@ -232,10 +236,15 @@ export const AccountSection: Component = () => {
     try {
       const db = await getDb()
       const profiles = db.getRepository<UserProfile>('userProfiles')
-      await profiles.update(getUserId(), {
-        leaderboardOptIn: next,
-        leaderboardOptInAt: next ? new Date().toISOString() : null,
-      })
+      // A press: sent even while the API is out of reach.
+      await profiles.update(
+        getUserId(),
+        {
+          leaderboardOptIn: next,
+          leaderboardOptInAt: next ? new Date().toISOString() : null,
+        },
+        { userAction: true },
+      )
       await refreshMe()
       showNotification(
         next

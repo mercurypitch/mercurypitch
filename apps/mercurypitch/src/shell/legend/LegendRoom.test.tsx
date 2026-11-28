@@ -366,7 +366,11 @@ describe('singing it for the board', () => {
     q('[data-testid="legend-sing"]')?.click()
     q('[data-testid="legend-consent-yes"]')?.click()
     await settle()
-    expect(grantBoardConsent).toHaveBeenCalledTimes(1)
+    // The yes is a press: stored as the singer's, even while the API is out
+    // of reach after a request that got no answer (api-reachability.ts).
+    expect(grantBoardConsent).toHaveBeenCalledExactlyOnceWith({
+      userAction: true,
+    })
     expect(fakeTake.start).not.toHaveBeenCalled()
     expect(document.body.textContent).toContain(
       'You are on the board now. Tap Sing it to start.',

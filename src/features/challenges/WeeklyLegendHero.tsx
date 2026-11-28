@@ -132,7 +132,8 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
   /** Store the consent, then take the attempt it was asked for. */
   async function acceptConsent(): Promise<void> {
     setConsenting(true)
-    const stored = await grantBoardConsent()
+    // The yes is a press: sent even while the API is out of reach.
+    const stored = await grantBoardConsent({ userAction: true })
     setConsenting(false)
     if (!stored) {
       // Never start a ranked take on a consent that was not saved — the

@@ -130,7 +130,8 @@ export function LegendRoom(): JSX.Element {
     if (granting()) return
     setGranting(true)
     setConsentFailed(false)
-    const given = await grantBoardConsent()
+    // The yes is a press: sent even while the API is out of reach.
+    const given = await grantBoardConsent({ userAction: true })
     setGranting(false)
     if (!given) {
       setConsentFailed(true)

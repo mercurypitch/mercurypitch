@@ -109,6 +109,9 @@ describe('UserSurveyModal — the one question', () => {
         kind: 'gh97-v2',
         gotInTheWay: 'load my own song',
       })
+      // Submit is a press: sent as the singer's, even while the API is out
+      // of reach after a request that got no answer (api-reachability.ts).
+      expect(sent.mock.calls[0][1]).toStrictEqual({ userAction: true })
     },
   )
 

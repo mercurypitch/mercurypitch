@@ -22,6 +22,7 @@ const notes: Array<{ message: string; kind: string }> = []
 let consented = false
 let consentWriteSucceeds = true
 let consentWrites = 0
+const consentAsked: unknown[] = []
 let boardResponse: unknown = null
 
 const CHALLENGE = {
@@ -43,7 +44,8 @@ const CHALLENGE = {
 
 vi.mock('@/features/challenges/board-consent', () => ({
   hasBoardConsent: () => Promise.resolve(consented),
-  grantBoardConsent: () => {
+  grantBoardConsent: (asked?: unknown) => {
+    consentAsked.push(asked)
     consentWrites += 1
     if (consentWriteSucceeds) consented = true
     return Promise.resolve(consentWriteSucceeds)
@@ -97,6 +99,7 @@ beforeEach(() => {
   consented = false
   consentWriteSucceeds = true
   consentWrites = 0
+  consentAsked.length = 0
   boardResponse = null
 })
 
@@ -126,6 +129,18 @@ describe('the first ranked take', () => {
     await waitFor(() => expect(began).toHaveLength(1))
     expect(consentWrites).toBe(1)
     expect(staged[0].mode).toBe('ranked')
+  })
+
+  // The yes is a press: stored as the singer's, even while the API is out of
+  // reach after a request that got no answer (api-reachability.ts).
+  it('stores the consent as the singer, not as the page', async () => {
+    await openHero()
+    await tapSingIt()
+    await waitFor(() => screen.getByText('Sing it for the board?'))
+
+    fireEvent.click(screen.getByText('Put me on the board'))
+
+    await waitFor(() => expect(consentAsked).toEqual([{ userAction: true }]))
   })
 
   it('offers the melody as practice when the singer declines', async () => {

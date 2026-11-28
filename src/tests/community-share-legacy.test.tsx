@@ -283,8 +283,8 @@ describe('Community historical local copies', () => {
       expect(melodyCards(view.container)).toEqual(['legacy-local']),
     )
     expect(mocks.unpublishShared.mock.calls).toEqual([
-      ['melody', 'canonical'],
-      ['melody', 'canonical'],
+      ['melody', 'canonical', { userAction: true }],
+      ['melody', 'canonical', { userAction: true }],
     ])
     expect(JSON.stringify(saved.pp_shared_melodies)).toBe(original)
     fireEvent.click(

@@ -87,10 +87,11 @@ const UserSurveyModal: Component<Props> = (props) => {
     // `finally` puts the button back whatever happens below: a send that goes
     // wrong must leave the singer able to send again, not stuck on "Sending...".
     try {
-      const saved = await submitSurvey({
-        kind: 'gh97-v2',
-        gotInTheWay: gotInTheWay().trim(),
-      })
+      // Submit is a press: sent even while the API is out of reach.
+      const saved = await submitSurvey(
+        { kind: 'gh97-v2', gotInTheWay: gotInTheWay().trim() },
+        { userAction: true },
+      )
       // Only thank the user if the response was actually persisted. On a
       // failure, keep the modal open with their text intact and say so -
       // closing "quietly" would discard typed feedback, and in survey mode

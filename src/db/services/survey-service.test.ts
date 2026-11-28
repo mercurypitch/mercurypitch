@@ -188,6 +188,19 @@ describe('saving the survey', () => {
     expect(await rows().findAll()).toHaveLength(1)
   })
 
+  // Submit is a press (UserSurveyModal). While the API is out of reach after
+  // a request that got no answer, a call nobody asked for is refused before
+  // it is sent (api-reachability.ts); this write goes as the press.
+  it('hands the press on to the write', async () => {
+    const repo = rows()
+    const create = vi.spyOn(repo, 'create')
+    vi.spyOn(db, 'getRepository').mockReturnValue(repo as never)
+
+    await submitSurvey(ONE_QUESTION, { userAction: true })
+
+    expect(create.mock.calls[0]?.[1]).toEqual({ userAction: true })
+  })
+
   it('returns null when the survey write fails', async () => {
     vi.spyOn(rows(), 'create').mockRejectedValue(new Error('disk full'))
 

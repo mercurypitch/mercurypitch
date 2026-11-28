@@ -9,6 +9,7 @@ import type { SharedMelody, SharedSession, UserProfile } from '@/db/entities'
 import { hasUpgradedAccount } from '@/db/services/auth-service'
 import { refusedPublicTextField } from '@/db/services/public-text-refusal'
 import { authVersion, findOwnProfile, getUserId, } from '@/db/services/user-service'
+import type { WriteOptions } from '@/db/types'
 import { midiToNote } from '@/lib/scale-data'
 import { parseSharedRunResult } from '@/lib/shared-run-result'
 import type { MelodyItem } from '@/types'
@@ -298,13 +299,19 @@ export function canPostToCommunity(): boolean {
  * Publish a melody to the board. Null when it could not be published,
  * except for a name or lyric the word filter refused: that worker error is
  * thrown, for the caller to read with `refusedPublicTextField`.
+ *
+ * `asked.userAction`: a person pressed Share, so the write goes even while
+ * the API is out of reach (api-reachability.ts). The same for the two below.
  */
-export async function saveSharedMelody(data: {
-  name: string
-  items: unknown[]
-  author: string
-  tags?: string[]
-}): Promise<SharedMelodyView | null> {
+export async function saveSharedMelody(
+  data: {
+    name: string
+    items: unknown[]
+    author: string
+    tags?: string[]
+  },
+  asked: WriteOptions = {},
+): Promise<SharedMelodyView | null> {
   if (!canPostToCommunity()) return null
   const userId = getUserId()
   const version = authVersion()
@@ -313,15 +320,18 @@ export async function saveSharedMelody(data: {
     const db = await getDb()
     if (getUserId() !== userId || authVersion() !== version) return null
     const repo = db.getRepository<SharedMelody>('sharedMelodies')
-    const created = await repo.create({
-      userId,
-      melodyId: '',
-      melodyName: data.name,
-      author: data.author,
-      itemsJson: JSON.stringify(items),
-      tags: data.tags ?? [],
-      isPublic: true,
-    })
+    const created = await repo.create(
+      {
+        userId,
+        melodyId: '',
+        melodyName: data.name,
+        author: data.author,
+        itemsJson: JSON.stringify(items),
+        tags: data.tags ?? [],
+        isPublic: true,
+      },
+      asked,
+    )
     return {
       id: created.id,
       userId: created.userId,
@@ -339,13 +349,16 @@ export async function saveSharedMelody(data: {
 }
 
 /** Publish a run to the board, refusing as `saveSharedMelody` does. */
-export async function saveSharedSession(data: {
-  name: string
-  items: unknown[]
-  author: string
-  results: number[]
-  sourceSessionId?: string
-}): Promise<SharedSessionView | null> {
+export async function saveSharedSession(
+  data: {
+    name: string
+    items: unknown[]
+    author: string
+    results: number[]
+    sourceSessionId?: string
+  },
+  asked: WriteOptions = {},
+): Promise<SharedSessionView | null> {
   if (!canPostToCommunity()) return null
   const userId = getUserId()
   const version = authVersion()
@@ -361,18 +374,21 @@ export async function saveSharedSession(data: {
     const db = await getDb()
     if (getUserId() !== userId || authVersion() !== version) return null
     const repo = db.getRepository<SharedSession>('sharedSessions')
-    const created = await repo.create({
-      userId,
-      sessionId: data.sourceSessionId ?? '',
-      sessionName: summary.name,
-      author: summary.author,
-      score: Math.round(
-        summary.results.reduce((a, b) => a + b, 0) / summary.results.length,
-      ),
-      accuracy: 0,
-      resultsJson: JSON.stringify(summary.results),
-      isPublic: true,
-    })
+    const created = await repo.create(
+      {
+        userId,
+        sessionId: data.sourceSessionId ?? '',
+        sessionName: summary.name,
+        author: summary.author,
+        score: Math.round(
+          summary.results.reduce((a, b) => a + b, 0) / summary.results.length,
+        ),
+        accuracy: 0,
+        resultsJson: JSON.stringify(summary.results),
+        isPublic: true,
+      },
+      asked,
+    )
     return sharedSessionView(created)
   } catch (err) {
     if (refusedPublicTextField(err) !== null) throw err
@@ -398,6 +414,7 @@ export async function saveSharedSession(data: {
 export async function unpublishShared(
   kind: 'melody' | 'session',
   id: string,
+  asked: WriteOptions = {},
 ): Promise<boolean> {
   const userId = getUserId()
   const version = authVersion()
@@ -405,7 +422,7 @@ export async function unpublishShared(
     const db = await getDb()
     if (getUserId() !== userId || authVersion() !== version) return false
     const table = kind === 'melody' ? 'sharedMelodies' : 'sharedSessions'
-    await db.getRepository(table).delete(id)
+    await db.getRepository(table).delete(id, asked)
     return true
   } catch (err) {
     return err instanceof CloudRequestError && err.status === 404

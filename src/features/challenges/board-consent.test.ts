@@ -215,6 +215,25 @@ describe('a consent already given', () => {
   })
 })
 
+describe('as a person gave it', () => {
+  // The consent is an answer a person gave just now. While the API is out of
+  // reach after a request that got no answer, a call nobody asked for is
+  // refused before it is sent (api-reachability.ts); the read that starts
+  // their answer goes as their press, and its answer opens the way for the
+  // write after it.
+  it('reads the profile as the press, and as the page when nobody asked', async () => {
+    await grantBoardConsent({ userAction: true })
+    await revokeBoardConsent({ userAction: true })
+    await grantBoardConsent()
+
+    expect(mocks.findById.mock.calls).toEqual([
+      ['singer-1', { userAction: true }],
+      ['singer-1', { userAction: true }],
+      ['singer-1', { userAction: false }],
+    ])
+  })
+})
+
 describe('revokeBoardConsent', () => {
   it('takes the name off every board, and its date with it', async () => {
     mocks.profile = {

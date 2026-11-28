@@ -239,6 +239,32 @@ describe('share flows', () => {
     { midi: 64, startBeat: 1, duration: 1, freq: 329.63 },
   ]
 
+  // Share and Unpublish are presses (CommunityShare). While the API is out
+  // of reach after a request that got no answer, a call nobody asked for is
+  // refused before it is sent (api-reachability.ts); these go as the press.
+  it('hands the press on to the write it makes', async () => {
+    const melodies = adapter.getRepository('sharedMelodies')
+    const sessions = adapter.getRepository('sharedSessions')
+    const publishMelody = vi.spyOn(melodies, 'create')
+    const publishRun = vi.spyOn(sessions, 'create')
+    const takeDown = vi.spyOn(melodies, 'delete')
+    const pressed = { userAction: true }
+
+    await saveSharedMelody(
+      { name: 'Pressed', items: melodyItems, author: 'Me' },
+      pressed,
+    )
+    await saveSharedSession(
+      { name: 'Pressed', items: [], author: 'Me', results: [80] },
+      pressed,
+    )
+    await unpublishShared('melody', 'm1', pressed)
+
+    expect(publishMelody.mock.calls[0]?.[1]).toEqual(pressed)
+    expect(publishRun.mock.calls[0]?.[1]).toEqual(pressed)
+    expect(takeDown.mock.calls[0]?.[1]).toEqual(pressed)
+  })
+
   it('counts every public row owned by the requested singer, excluding foreign and private rows', async () => {
     const melodyRepo = adapter.getRepository('sharedMelodies')
     const sessionRepo = adapter.getRepository('sharedSessions')

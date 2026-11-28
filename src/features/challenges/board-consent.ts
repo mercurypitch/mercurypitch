@@ -49,8 +49,15 @@ export async function hasBoardConsent(): Promise<boolean> {
  *
  * `leaderboardOptInAt` is written alongside because consent with no date is
  * not evidence of anything.
+ *
+ * `asked.userAction`: a person gave the consent just now (a dialog's yes, a
+ * switch). The profile read that starts it goes as their press, even while
+ * the API is out of reach (api-reachability.ts), and its answer opens the
+ * way for the write.
  */
-export async function grantBoardConsent(): Promise<boolean> {
+export async function grantBoardConsent(
+  asked: { userAction?: boolean } = {},
+): Promise<boolean> {
   try {
     const userId = getUserId()
     const db = await getDb()
@@ -70,7 +77,9 @@ export async function grantBoardConsent(): Promise<boolean> {
     // `displayName: ''` would put a blank entry on a public podium. The same
     // handle the fallback would have produced is written instead, matching
     // leaderboard-service so both paths mint the identical name.
-    const profile = await profiles.findById(userId)
+    const profile = await profiles.findById(userId, {
+      userAction: asked.userAction === true,
+    })
     if (getUserId() !== userId) return false
     // Given already: kept as it is, with the date it was given on. Asked
     // twice, a second write would have moved that date.
@@ -112,12 +121,16 @@ export async function grantBoardConsent(): Promise<boolean> {
  * The date goes with the flag: consent with no date is not evidence, and
  * a withdrawal leaves none behind.
  */
-export async function revokeBoardConsent(): Promise<boolean> {
+export async function revokeBoardConsent(
+  asked: { userAction?: boolean } = {},
+): Promise<boolean> {
   try {
     const userId = getUserId()
     const db = await getDb()
     const profiles = db.getRepository<UserProfile>('userProfiles')
-    const profile = await profiles.findById(userId)
+    const profile = await profiles.findById(userId, {
+      userAction: asked.userAction === true,
+    })
     if (getUserId() !== userId) return false
     if (profile == null) return true
     await profiles.update(userId, {

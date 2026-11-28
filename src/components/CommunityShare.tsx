@@ -548,12 +548,16 @@ export const CommunityShare: Component = () => {
       if (publishToBoard) {
         const saved = await publishOrExplain(
           () =>
-            saveSharedMelodyToDb({
-              name: shareable.name,
-              items: shareable.items,
-              author: shareable.author,
-              tags: shareable.tags,
-            }),
+            // Share is a press: sent even while the API is out of reach.
+            saveSharedMelodyToDb(
+              {
+                name: shareable.name,
+                items: shareable.items,
+                author: shareable.author,
+                tags: shareable.tags,
+              },
+              { userAction: true },
+            ),
           isCurrent,
           'Could not publish this melody. Try sharing it again.',
           (field) =>
@@ -669,7 +673,10 @@ export const CommunityShare: Component = () => {
     setRemoving(true)
     try {
       if (published) {
-        const removed = await unpublishShared(target.kind, target.id)
+        // A press: sent even while the API is out of reach.
+        const removed = await unpublishShared(target.kind, target.id, {
+          userAction: true,
+        })
         if (!isCurrent()) return
         if (!removed) {
           showNotification(
@@ -801,13 +808,16 @@ export const CommunityShare: Component = () => {
       if (publishToBoard) {
         const saved = await publishOrExplain(
           () =>
-            saveSharedSessionToDb({
-              name: shareable.name,
-              items: shareable.items,
-              author: shareable.author,
-              results: shareable.results,
-              sourceSessionId,
-            }),
+            saveSharedSessionToDb(
+              {
+                name: shareable.name,
+                items: shareable.items,
+                author: shareable.author,
+                results: shareable.results,
+                sourceSessionId,
+              },
+              { userAction: true },
+            ),
           isCurrent,
           'Could not publish this run. Try sharing it again.',
           // A run's title is the melody's name when the run was saved, and

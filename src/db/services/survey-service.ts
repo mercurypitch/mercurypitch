@@ -36,6 +36,7 @@ import { getDb } from '@/db'
 import type { UserSurveyResponse } from '@/db/entities'
 import { getUserId } from '@/db/seed'
 import { hasUpgradedAccount } from '@/db/services/auth-service'
+import type { WriteOptions } from '@/db/types'
 
 /**
  * What the survey saves. The modal sends `kind: 'gh97-v2'` and `gotInTheWay`,
@@ -102,14 +103,20 @@ function isPlanRow(row: UserSurveyResponse): boolean {
 }
 
 /** Writes one row of the current user's. Rejects when the write fails. */
-async function createRow(answers: object): Promise<UserSurveyResponse> {
+async function createRow(
+  answers: object,
+  asked: WriteOptions = {},
+): Promise<UserSurveyResponse> {
   const db = await getDb()
   const repo = db.getRepository<UserSurveyResponse>('userSurveyResponses')
-  return repo.create({
-    userId: getUserId(),
-    answersJson: JSON.stringify(answers),
-    submittedAt: new Date().toISOString(),
-  })
+  return repo.create(
+    {
+      userId: getUserId(),
+      answersJson: JSON.stringify(answers),
+      submittedAt: new Date().toISOString(),
+    },
+    asked,
+  )
 }
 
 /** Check if the current user has already submitted the survey. The plan's rows do not count. */
@@ -124,12 +131,17 @@ export async function hasSubmittedSurvey(): Promise<boolean> {
   }
 }
 
-/** Save survey answers for the current user. Null when the write fails. */
+/**
+ * Save survey answers for the current user. Null when the write fails.
+ * `asked.userAction`: a person pressed Submit, so the write goes even while
+ * the API is out of reach (api-reachability.ts).
+ */
 export async function submitSurvey(
   answers: SurveyAnswers,
+  asked: WriteOptions = {},
 ): Promise<UserSurveyResponse | null> {
   try {
-    return await createRow(answers)
+    return await createRow(answers, asked)
   } catch {
     return null
   }

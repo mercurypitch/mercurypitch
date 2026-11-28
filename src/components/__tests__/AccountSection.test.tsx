@@ -269,6 +269,25 @@ describe('AccountSection', () => {
 // standing field never had: opening, cancelling, and what the editor does
 // with a profile refresh that lands while somebody is typing.
 
+describe('the leaderboard listing', () => {
+  // Ticking the box is a press: the write goes as the person's, even while
+  // the API is out of reach after a request that got no answer.
+  it('stores the answer as the person, not as the page', async () => {
+    mocks.fetchMe.mockResolvedValue(passwordMe)
+    render(() => <AccountSection />)
+
+    fireEvent.click(await screen.findByTestId('leaderboard-optin'))
+
+    await vi.waitFor(() =>
+      expect(dbMocks.profileRepo.update).toHaveBeenCalledExactlyOnceWith(
+        expect.any(String),
+        { leaderboardOptIn: true, leaderboardOptInAt: expect.any(String) },
+        { userAction: true },
+      ),
+    )
+  })
+})
+
 describe('the display name editor', () => {
   const googleMe = {
     user: { authProvider: 'google', email: 'maff@gmail.com' },
@@ -317,6 +336,27 @@ describe('the display name editor', () => {
     // And the editor closes behind a save that worked.
     await vi.waitFor(() =>
       expect(screen.queryByTestId('display-name-input')).toBeNull(),
+    )
+  })
+
+  // Save is a press. While the API is out of reach after a request that got
+  // no answer, a call the page makes by itself is refused before it is sent
+  // (api-reachability.ts). The save's first request, its read of the
+  // profile, goes as the person's; its answer opens the way for the write.
+  it('reads the profile for a save as the person, not as the page', async () => {
+    mocks.fetchMe.mockResolvedValue(passwordMe)
+    render(() => <AccountSection />)
+
+    const input = await openEditor()
+    fireEvent.input(input, { target: { value: 'Maffy' } })
+    fireEvent.click(screen.getByTestId('display-name-save'))
+
+    await vi.waitFor(() =>
+      expect(dbMocks.profileRepo.update).toHaveBeenCalled(),
+    )
+    expect(dbMocks.profileRepo.findById).toHaveBeenCalledExactlyOnceWith(
+      expect.any(String),
+      { userAction: true },
     )
   })
 

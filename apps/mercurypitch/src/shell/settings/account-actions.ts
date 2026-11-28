@@ -6,6 +6,10 @@
 // account section already uses, so the account ends up exactly as the web
 // would leave it. Every change reads the account again afterwards: the card
 // shows what the server holds, never what was only asked for.
+//
+// Each is a press on an Account screen, so the request that starts it goes as
+// the singer's, even while the API is out of reach (api-reachability.ts).
+// Its answer opens the way for the writes after it.
 
 import { getDb } from '@/db'
 import type { UserProfile } from '@/db/entities'
@@ -26,7 +30,7 @@ export async function saveAccountName(name: string): Promise<void> {
   const db = await getDb()
   const profiles = db.getRepository<UserProfile>('userProfiles')
   const userId = getUserId()
-  if ((await profiles.findById(userId)) != null) {
+  if ((await profiles.findById(userId, { userAction: true })) != null) {
     await profiles.update(userId, { displayName: name })
   } else {
     await profiles.create({
@@ -51,7 +55,10 @@ export async function setProductNews(on: boolean): Promise<void> {
  * Throws when it could not be stored.
  */
 export async function setPublicBoards(on: boolean): Promise<void> {
-  const stored = on ? await grantBoardConsent() : await revokeBoardConsent()
+  const pressed = { userAction: true }
+  const stored = on
+    ? await grantBoardConsent(pressed)
+    : await revokeBoardConsent(pressed)
   if (!stored) throw new Error('Could not save that. Try again.')
   keepBoardsAnswer(on)
   await refreshAccount()
