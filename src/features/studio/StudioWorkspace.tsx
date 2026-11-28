@@ -50,7 +50,7 @@ import { useStudioNewClips } from './useStudioNewClips'
 interface StudioWorkspaceProps {
   studio: StudioController
   /** The drawer a newly opened song starts with. */
-  startPanel: 'sources' | 'export' | null
+  startPanel: 'export' | null
   onLibrary(): void
   onBackup(): void
   onDelete(): void

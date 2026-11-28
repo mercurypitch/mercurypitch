@@ -339,7 +339,7 @@ describe('Studio page song switch for the sidebar', () => {
     ).toBeNull()
   })
 
-  it('opens a song picked after a New song without the Add takes that New song asked for', async () => {
+  it('opens a New song with no panel over its empty state, and a song picked after it with none either', async () => {
     const [open, setOpen] = createSignal({ id: 'one', title: 'Window seat' })
     mountPage(null, {
       project: open,
@@ -356,12 +356,12 @@ describe('Studio page song switch for the sidebar', () => {
     const loan = studioSongs()!
 
     await loan.create()
-    expect(workspaceMounts).toEqual(['sources'])
+    expect(workspaceMounts).toEqual([null])
 
     await loan.open('one')
 
     expect(loan.openId()).toBe('one')
-    expect(workspaceMounts).toEqual(['sources', null])
+    expect(workspaceMounts).toEqual([null, null])
   })
 
   it('makes no song while a switch is held, or while a save is in flight', async () => {

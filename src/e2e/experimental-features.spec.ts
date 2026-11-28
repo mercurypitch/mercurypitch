@@ -250,7 +250,6 @@ test.describe('Studio as an experimental feature', () => {
     await studio(page)
       .getByRole('button', { name: 'Create project', exact: true })
       .click()
-    await studio(page).getByRole('button', { name: 'Close Add takes' }).click()
     await studio(page).getByRole('button', { name: 'Song options' }).click()
     const title = studio(page).getByRole('textbox', { name: 'Project name' })
     await expect(title).toBeEnabled()

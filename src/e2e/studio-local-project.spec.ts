@@ -62,7 +62,6 @@ test('Studio imports audio, reloads and restores a backup in a fresh browser @sm
   await studio
     .getByRole('button', { name: 'Create project', exact: true })
     .click()
-  await studio.getByRole('button', { name: 'Close Add takes' }).click()
   await studio.getByRole('button', { name: 'Song options' }).click()
   const title = studio.getByRole('textbox', { name: 'Project name' })
   await expect(title).toBeEnabled()
@@ -173,7 +172,6 @@ test('Studio makes a second tab read only until explicit takeover @smoke', async
   await studio
     .getByRole('button', { name: 'Create project', exact: true })
     .click()
-  await studio.getByRole('button', { name: 'Close Add takes' }).click()
   await studio.getByRole('button', { name: 'Song options' }).click()
   const title = studio.getByRole('textbox', { name: 'Project name' })
   await expect(title).toBeEnabled()
@@ -231,9 +229,11 @@ test('Studio shows both themes and edits a real take with one set of track contr
   await studio
     .getByRole('button', { name: 'Create project', exact: true })
     .click()
+  // A new song opens with nothing over it: its empty state says how to start.
   await expect(
-    studio.getByRole('button', { name: 'Close Add takes' }),
+    studio.getByRole('group', { name: 'Start your song', exact: true }),
   ).toBeVisible()
+  await expect(page.locator('[data-studio-panel]')).toHaveCount(0)
   await studio.locator('input[type=file][accept^="audio/"]').setInputFiles({
     name: 'Vocal.wav',
     mimeType: 'audio/wav',
@@ -426,7 +426,6 @@ test('Studio plays four owned audio lanes and stops after reopening @smoke', asy
   await studio
     .getByRole('button', { name: 'Create project', exact: true })
     .click()
-  await studio.getByRole('button', { name: 'Close Add takes' }).click()
   await studio.getByRole('button', { name: 'Song options' }).click()
   await studio
     .getByRole('textbox', { name: 'Project name' })
