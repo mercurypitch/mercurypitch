@@ -29,7 +29,10 @@
 //
 // Evidence has an order. A failure counts only if nothing has answered since
 // its request went out (`epoch`): a request that ran out of time while a
-// newer one got its answer says nothing about now.
+// newer one got its answer says nothing about now. And a probe doubles only
+// the window it was sent in (`window`): a press that sends several requests
+// at once, a screen's reads, is one probe, so when none of them is answered
+// the window doubles once, not once for each.
 //
 // In memory, for this page only: a new page load starts with the API
 // reachable.
@@ -49,6 +52,8 @@ export interface ApiAdmission {
   readonly epoch: number
   /** A failure doubles the window. */
   readonly probe: boolean
+  /** The window it went out in; see `window` below. */
+  readonly window: number
 }
 
 interface Reachability {
@@ -58,6 +63,8 @@ interface Reachability {
   probeAt: number | null
   /** The window the next failed probe doubles. */
   windowMs: number
+  /** Moves on whenever a window opens or doubles. */
+  window: number
   /** The probe that came at the end of a window, while it is out. */
   probe: ApiAdmission | null
 }
@@ -67,6 +74,7 @@ function reachable(epoch: number): Reachability {
     epoch,
     probeAt: null,
     windowMs: API_UNREACHABLE_FIRST_WINDOW_MS,
+    window: 0,
     probe: null,
   }
 }
@@ -79,12 +87,13 @@ let state = reachable(0)
  * apiDidNotAnswer or apiCallAbandoned.
  */
 export function admitApiCall(kind: ApiCallKind): ApiAdmission | null {
+  const { epoch, window } = state
   if (state.probeAt === null || kind === 'retry') {
-    return { epoch: state.epoch, probe: false }
+    return { epoch, probe: false, window }
   }
-  if (kind === 'user-action') return { epoch: state.epoch, probe: true }
+  if (kind === 'user-action') return { epoch, probe: true, window }
   if (state.probe !== null || Date.now() < state.probeAt) return null
-  state.probe = { epoch: state.epoch, probe: true }
+  state.probe = { epoch, probe: true, window }
   return state.probe
 }
 
@@ -100,15 +109,17 @@ export function apiDidNotAnswer(admission: ApiAdmission): void {
   if (state.probeAt === null) {
     state.windowMs = API_UNREACHABLE_FIRST_WINDOW_MS
     state.probeAt = Date.now() + state.windowMs
+    state.window += 1
     listenForTheWayBack()
     return
   }
-  if (!admission.probe) return
+  if (!admission.probe || admission.window !== state.window) return
   state.windowMs = Math.min(
     state.windowMs * 2,
     API_UNREACHABLE_LONGEST_WINDOW_MS,
   )
   state.probeAt = Date.now() + state.windowMs
+  state.window += 1
 }
 
 /** The caller cancelled a call: nothing was learned about the network. */

@@ -356,6 +356,51 @@ describe('a call a person asked for', () => {
   })
 })
 
+describe('a press that sends several requests at once', () => {
+  // A Try again can read a whole screen, a sign-out flushes as it goes. When
+  // none of them gets an answer, that is one probe that failed: the window
+  // doubles once, not once for each request.
+  it('doubles the window once when none of them gets an answer', async () => {
+    const net = network(() => 'hold')
+    await holdOneRead()
+    const press = [1, 2, 3].map(() =>
+      track(fetchWithDeadline(ME, undefined, { userAction: true })),
+    )
+    await vi.advanceTimersByTimeAsync(API_READ_DEADLINE_MS)
+    expect(press.every((call) => call.error instanceof ApiDeadlineError)).toBe(
+      true,
+    )
+
+    // Doubled once: 60 s from when they gave up, not 240 s.
+    await vi.advanceTimersByTimeAsync(2 * API_UNREACHABLE_FIRST_WINDOW_MS - 1)
+    const early = track(fetchWithDeadline(ME))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(early.error).toBeInstanceOf(ApiUnreachableError)
+    await vi.advanceTimersByTimeAsync(1)
+    const sentBefore = net.sent.length
+    const probe = track(fetchWithDeadline(ME))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(probe.settled).toBe(false)
+    expect(net.sent).toHaveLength(sentBefore + 1)
+  })
+
+  it('still doubles again for the next press that goes unanswered', async () => {
+    network(() => 'hold')
+    await holdOneRead()
+    for (let press = 0; press < 2; press++) {
+      const call = track(fetchWithDeadline(ME, undefined, { userAction: true }))
+      await vi.advanceTimersByTimeAsync(API_READ_DEADLINE_MS)
+      expect(call.error).toBeInstanceOf(ApiDeadlineError)
+    }
+
+    // 30 s, doubled by each press: 120 s from when the second gave up.
+    await vi.advanceTimersByTimeAsync(4 * API_UNREACHABLE_FIRST_WINDOW_MS - 1)
+    const early = track(fetchWithDeadline(ME))
+    await vi.advanceTimersByTimeAsync(0)
+    expect(early.error).toBeInstanceOf(ApiUnreachableError)
+  })
+})
+
 describe('a retry of a call already let through', () => {
   it('is sent even though the attempt before it closed the window', async () => {
     const net = network(() => 'refuse')
