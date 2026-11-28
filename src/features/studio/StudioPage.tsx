@@ -39,9 +39,9 @@ export function StudioPage() {
     studio.importing() ||
     studio.saveState() === 'saving'
   const [library, setLibrary] = createSignal(true)
-  const [startPanel, setStartPanel] = createSignal<'sources' | 'export' | null>(
-    null,
-  )
+  // The panel a song opens with: Export when the list asks for it. A new
+  // song opens with none, its empty state showing the ways to start.
+  const [startPanel, setStartPanel] = createSignal<'export' | null>(null)
   const [confirmation, setConfirmation] = createSignal<
     'delete' | 'discard' | null
   >(null)
@@ -51,7 +51,7 @@ export function StudioPage() {
 
   async function create(): Promise<void> {
     if (await studio.create()) {
-      setStartPanel('sources')
+      setStartPanel(null)
       setLibrary(false)
     }
   }
@@ -95,7 +95,7 @@ export function StudioPage() {
       if (!studio.canBackup(id)) return
       setSwitching(true)
       // The picked song's workspace mounts inside the switch and reads the
-      // start panel only then: a New song's Add takes is not for it.
+      // start panel only then: an Export asked for another song is not for it.
       setStartPanel(null)
       try {
         // The controller asks again once the save has landed, take included.
@@ -113,18 +113,16 @@ export function StudioPage() {
 
   // The rail's New song is the page's own New song, held by the switch's
   // checks too, and it holds the rail like a pick until the song opens.
-  // The new song's workspace mounts before the create returns, so Add takes
-  // is asked for first, and taken back if no song opened.
+  // The new song's workspace mounts before the create returns, so no start
+  // panel is left asked for it.
   async function createFromRail(): Promise<void> {
     if (switching() || switchHold() !== null || blocked()) return
-    const before = studio.project()?.id
     setSwitching(true)
-    setStartPanel('sources')
+    setStartPanel(null)
     try {
       await create()
     } finally {
       setSwitching(false)
-      if (studio.project()?.id === before) setStartPanel(null)
     }
   }
 

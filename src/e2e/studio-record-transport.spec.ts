@@ -186,9 +186,6 @@ test.describe('Studio take transport', () => {
     await studio
       .getByRole('button', { name: 'Create project', exact: true })
       .click()
-    await studio
-      .getByRole('button', { name: 'Close Add takes', exact: true })
-      .click()
     const toggle = studio.getByRole('button', { name: /^(Play|Pause) song$/ })
 
     // Record arms a new lane and counts in: the playhead holds at the start.

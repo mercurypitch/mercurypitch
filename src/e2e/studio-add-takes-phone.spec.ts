@@ -69,7 +69,7 @@ async function seedKeptTakes(page: Page): Promise<void> {
   }, wav)
 }
 
-/** A new song on a phone, its Add takes sheet open on the kept takes. */
+/** A new song on a phone, its Add takes sheet opened from the top bar on the kept takes. */
 async function openAddTakes(page: Page): Promise<void> {
   await page.addInitScript(() => {
     ;(window as unknown as { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
@@ -86,6 +86,8 @@ async function openAddTakes(page: Page): Promise<void> {
   await expect(create).toBeVisible()
   await seedKeptTakes(page)
   await create.click()
+  // A new song opens with nothing over it: Add takes is the top bar's.
+  await studio.locator('[data-tour="studio.add-takes"]').click()
   await studio.getByRole('button', { name: 'Refresh', exact: true }).click()
   await expect(studio.getByText('Strummed verse')).toBeVisible()
 }

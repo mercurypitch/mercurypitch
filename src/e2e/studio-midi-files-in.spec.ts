@@ -121,7 +121,7 @@ async function renderedSong(page: Page): Promise<StudioProject> {
   return readStudioProject(page)
 }
 
-/** A new song with no clips, open in the Studio: Add takes opens with it. */
+/** A new song with no clips, open in the Studio with no panel over it: chooseFile opens Add takes. */
 async function openEmptySong(page: Page): Promise<void> {
   await page.addInitScript(() => {
     ;(window as unknown as { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
@@ -133,7 +133,10 @@ async function openEmptySong(page: Page): Promise<void> {
     .getByRole('button', { name: 'Create project', exact: true })
     .click()
   await expect(
-    studioRegion(page).getByRole('button', { name: /^Choose file/ }),
+    studioRegion(page).getByRole('group', {
+      name: 'Start your song',
+      exact: true,
+    }),
   ).toBeVisible()
 }
 
