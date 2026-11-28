@@ -45,18 +45,28 @@ export function NightAudioChoices(props: {
   const refresh = () => setRevision((value) => value + 1)
   window.addEventListener('focus', refresh)
   onCleanup(() => window.removeEventListener('focus', refresh))
+  // Retry check is the singer asking: the check it starts goes as their
+  // press, even while the API is out of reach (api-reachability.ts). The
+  // check on focus stays the screen's own.
+  let pressed = false
+  const checkAgain = () => {
+    pressed = true
+    refresh()
+  }
 
   createEffect(() => {
     const source = request()
     authVersion()
     balanceVersion()
     revision()
+    const userAction = pressed
+    pressed = false
     const abort = new AbortController()
     onCleanup(() => abort.abort())
     setFacts(undefined)
     setFailure('')
     if (!source) return
-    void loadNightAudioFacts(source, abort.signal)
+    void loadNightAudioFacts(source, abort.signal, { userAction })
       .then((result) => {
         if (!abort.signal.aborted) setFacts(result)
       })
@@ -123,7 +133,7 @@ export function NightAudioChoices(props: {
   }
   const recover = (section: NonNullable<NightAudioEligibility['recovery']>) => {
     auto = false
-    if (section === 'retry') refresh()
+    if (section === 'retry') checkAgain()
     else if (section === 'cloud') chooseMode('server')
     else props.controller.resolveAccess(section)
   }
@@ -184,7 +194,7 @@ export function NightAudioChoices(props: {
       <Show when={failure()}>
         <p class={shared.error} role="alert">
           {failure()}{' '}
-          <button type="button" onClick={refresh}>
+          <button type="button" onClick={checkAgain}>
             Retry check
           </button>
         </p>

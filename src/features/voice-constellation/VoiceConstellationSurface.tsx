@@ -13,6 +13,7 @@ import { Portal } from 'solid-js/web'
 import { Sparkles, Voice, X } from '@/components/icons'
 import { BusyLink } from '@/components/shared'
 import { authVersion } from '@/db/services/user-service'
+import type { VoiceprintRecord } from '@/db/services/voiceprint-service'
 import { listVoiceprints } from '@/db/services/voiceprint-service'
 import { legendArt, legendTierSrc } from '@/features/mirror/LegendCaricature'
 import { WEBSITE_URL } from '@/lib/legal-links'
@@ -316,13 +317,21 @@ const LegendDetailDialog: Component<{
   )
 }
 
+/** Marks the read Try again asks for: it goes as the singer's press, even
+ * while the API is out of reach (api-reachability.ts). */
+const TRY_AGAIN = 'try-again'
+
 export const VoiceConstellationSurface: Component<
   VoiceConstellationSurfaceProps
 > = (props) => {
   let dialog: HTMLElement | undefined
   let closeButton: HTMLButtonElement | undefined
 
-  const [prints, { refetch }] = createResource(authVersion, listVoiceprints)
+  const [prints, { refetch }] = createResource(
+    authVersion,
+    (_version, info): Promise<VoiceprintRecord[]> =>
+      listVoiceprints({ userAction: info.refetching === TRY_AGAIN }),
+  )
   const [selectedLegendId, setSelectedLegendId] = createSignal<string | null>(
     null,
   )
@@ -531,7 +540,7 @@ export const VoiceConstellationSurface: Component<
                   until your history is available.
                 </p>
               </div>
-              <button type="button" onClick={() => void refetch()}>
+              <button type="button" onClick={() => void refetch(TRY_AGAIN)}>
                 Try again
               </button>
             </div>

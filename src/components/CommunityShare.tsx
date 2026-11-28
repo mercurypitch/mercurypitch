@@ -391,7 +391,7 @@ export const CommunityShare: Component = () => {
   // The voice twin shown on the profile is the newest measured one.
   // Keyed on authVersion because signing in changes WHOSE voice this is,
   // and an unkeyed resource would keep the previous identity's twin.
-  const [voiceprints] = createResource(authVersion, listVoiceprints)
+  const [voiceprints] = createResource(authVersion, () => listVoiceprints())
   const latestTwin = (): string | undefined => {
     if (voiceprints.loading) return undefined
     const twin = voiceprints()?.[0]?.twin

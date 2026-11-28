@@ -256,10 +256,17 @@ function pressed(url: string, init: RequestInit): Promise<Response> {
 export async function fetchPricing(
   base?: string,
   signal?: AbortSignal,
+  options: { userAction?: boolean } = {},
 ): Promise<Pricing | null> {
   const b = apiBase(base)
   if (b === '') return null
-  const res = await fetchWithDeadline(`${b}/api/billing/pricing`, { signal })
+  // userAction: a person asked (Retry check), so it goes even while the API
+  // is out of reach (api-reachability.ts).
+  const res = await fetchWithDeadline(
+    `${b}/api/billing/pricing`,
+    { signal },
+    { userAction: options.userAction === true },
+  )
   if (!res.ok) throw new Error(`Failed to load pricing: ${res.statusText}`)
   return withModelCredits((await res.json()) as Pricing)
 }
@@ -347,14 +354,17 @@ export function formatSupporterExpiry(
 export async function fetchBillingMe(
   base?: string,
   signal?: AbortSignal,
+  options: { userAction?: boolean } = {},
 ): Promise<BillingMe | null> {
   const b = apiBase(base)
   if (b === '') return null
   try {
-    const res = await fetchWithDeadline(`${b}/api/billing/me`, {
-      headers: getAuthHeaders(),
-      signal,
-    })
+    // userAction: as for fetchPricing.
+    const res = await fetchWithDeadline(
+      `${b}/api/billing/me`,
+      { headers: getAuthHeaders(), signal },
+      { userAction: options.userAction === true },
+    )
     if (!res.ok) return null
     const data = (await res.json()) as unknown
     return isBillingMe(data)

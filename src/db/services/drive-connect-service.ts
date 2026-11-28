@@ -137,8 +137,13 @@ export type DriveAccessToken =
  * A short-lived Drive access token, minted by the worker from the stored
  * refresh token. 410 means the grant is gone (revoked on Google's side or
  * never stored) — the caller should surface "reconnect", not retry.
+ *
+ * `options.userAction`: a person asked (Check Drive again), so it goes even
+ * while the API is out of reach (api-reachability.ts).
  */
-export async function fetchDriveAccessToken(): Promise<DriveAccessToken> {
+export async function fetchDriveAccessToken(
+  options: { userAction?: boolean } = {},
+): Promise<DriveAccessToken> {
   const token = getAuthToken()
   if (token == null || token === '') return { ok: false, reason: 'failed' }
   const res = await fetchWithDeadline(
@@ -147,6 +152,7 @@ export async function fetchDriveAccessToken(): Promise<DriveAccessToken> {
       method: 'POST',
       headers: { Authorization: `Bearer ${token}` },
     },
+    { userAction: options.userAction === true },
   )
   if (res.status === 410) return { ok: false, reason: 'disconnected' }
   if (!res.ok) return { ok: false, reason: 'failed' }

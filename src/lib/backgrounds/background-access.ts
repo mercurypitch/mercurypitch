@@ -68,14 +68,21 @@ function normalizeFeaturePerks(
 }
 
 /** Explicit cosmetic grants from the authenticated worker. */
-export async function fetchPerksMe(base?: string): Promise<PerksMe | null> {
+export async function fetchPerksMe(
+  base?: string,
+  options: { userAction?: boolean } = {},
+): Promise<PerksMe | null> {
   const resolved = apiBase(base)
   if (resolved === '') return null
 
   try {
-    const response = await fetchWithDeadline(`${resolved}/api/perks/me`, {
-      headers: getAuthHeaders(),
-    })
+    // userAction: a person asked (Check again), so it goes even while the
+    // API is out of reach (api-reachability.ts).
+    const response = await fetchWithDeadline(
+      `${resolved}/api/perks/me`,
+      { headers: getAuthHeaders() },
+      { userAction: options.userAction === true },
+    )
     if (!response.ok) return null
     const data = (await response.json()) as {
       features?: unknown

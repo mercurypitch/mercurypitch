@@ -15,6 +15,7 @@ import { DRUM_PLAY_ALONG_POLICY, GUITAR_PLAY_ALONG_POLICY, hasUsablePlayAlongPar
 export async function loadNightAudioFacts(
   request: NightAudioRequest,
   signal: AbortSignal,
+  options: { userAction?: boolean } = {},
 ): Promise<NightAudioFacts> {
   signal.throwIfAborted()
   const signedIn = accountHeld()
@@ -25,8 +26,9 @@ export async function loadNightAudioFacts(
   const timeout = setTimeout(cancelBilling, 8000)
   const billing = signedIn
     ? Promise.all([
-        fetchBillingMe(undefined, billingAbort.signal),
-        fetchPricing(undefined, billingAbort.signal).catch(() => null),
+        // Both go as the singer's press when they asked (Retry check).
+        fetchBillingMe(undefined, billingAbort.signal, options),
+        fetchPricing(undefined, billingAbort.signal, options).catch(() => null),
       ])
     : Promise.resolve([null, null] as const)
   const settledBilling = billing.finally(() => {

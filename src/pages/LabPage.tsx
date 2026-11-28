@@ -24,6 +24,10 @@ function hasLocalE2ELabAccess(): boolean {
   return ['localhost', '127.0.0.1', '[::1]'].includes(window.location.hostname)
 }
 
+/** Marks the read Check again asks for: it goes as the person's press, even
+ * while the API is out of reach (api-reachability.ts). */
+const CHECK_AGAIN = 'check-again'
+
 /** Supporter research surface. The heavy spectral tooling is requested only
  * after the authenticated Worker grants access in every environment. */
 export const LabPage: Component<{ initialTab?: LabTab }> = (props) => {
@@ -32,12 +36,15 @@ export const LabPage: Component<{ initialTab?: LabTab }> = (props) => {
     authKey,
     async (
       requestedAuthKey,
+      info,
     ): Promise<{
       authKey: string
       perks: PerksMe | null
     }> => ({
       authKey: requestedAuthKey,
-      perks: await fetchPerksMe(),
+      perks: await fetchPerksMe(undefined, {
+        userAction: info.refetching === CHECK_AGAIN,
+      }),
     }),
   )
   const currentPerks = (): PerksMe | null => {
@@ -98,7 +105,7 @@ export const LabPage: Component<{ initialTab?: LabTab }> = (props) => {
                 type="button"
                 class={styles.retryAction}
                 disabled={access.loading}
-                onClick={() => void refetch()}
+                onClick={() => void refetch(CHECK_AGAIN)}
               >
                 Check again
               </button>

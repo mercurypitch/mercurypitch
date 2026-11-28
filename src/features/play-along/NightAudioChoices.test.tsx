@@ -22,6 +22,8 @@ const port = vi.hoisted(() => ({
   resolveAccess: vi.fn(),
   inspect: vi.fn(),
   bumpAuth: () => {},
+  /** Per billing read, in order: whether it went as the singer's press. */
+  asked: [] as boolean[],
 }))
 vi.mock('@/db/services/auth-service', () => ({
   accountHeld: () => port.signedIn,
@@ -34,10 +36,22 @@ vi.mock('@/db/services/user-service', async () => {
   return { authVersion: version }
 })
 vi.mock('@/db/services/billing-service', () => ({
-  fetchBillingMe: async () =>
-    port.balance === null ? null : { creditBalance: port.balance },
-  fetchPricing: async () =>
-    port.prices === null ? null : { uvrModelCredits: port.prices },
+  fetchBillingMe: async (
+    _base?: string,
+    _signal?: AbortSignal,
+    options?: { userAction?: boolean },
+  ) => {
+    port.asked.push(options?.userAction === true)
+    return port.balance === null ? null : { creditBalance: port.balance }
+  },
+  fetchPricing: async (
+    _base?: string,
+    _signal?: AbortSignal,
+    options?: { userAction?: boolean },
+  ) => {
+    port.asked.push(options?.userAction === true)
+    return port.prices === null ? null : { uvrModelCredits: port.prices }
+  },
 }))
 vi.mock('@/db/services/uvr-service', () => ({
   findSessionByFileHash: async () => {
@@ -104,6 +118,7 @@ beforeEach(() => {
     prices: { roformer: 2, 'demucs-6s': 4 },
     parts: [],
     sessionId: null,
+    asked: [],
   })
   port.inspect.mockResolvedValue(undefined)
   port.prepare.mockResolvedValue({ status: 'completed', sessionId: 'new' })
@@ -205,6 +220,26 @@ describe('Night audio choices', () => {
     fireEvent.click(screen.getAllByRole('button', { name: 'Retry check' })[0]!)
     await waitFor(() => expect(band()).toBeEnabled())
     expect(port.prepare).not.toHaveBeenCalled()
+  })
+
+  // While the API is out of reach a check the screen makes by itself is
+  // refused at once (api-reachability.ts). Retry check is the singer
+  // asking, so both of its reads go.
+  it('checks again as the singer on Retry check, and first as the screen', async () => {
+    port.signedIn = true
+    port.balance = null
+    setUvrProcessingMode('server')
+    setup()
+    await screen.findAllByRole('button', { name: 'Retry check' })
+    const byItself = [...port.asked]
+    port.asked.length = 0
+
+    fireEvent.click(screen.getAllByRole('button', { name: 'Retry check' })[0]!)
+
+    await waitFor(() => expect(port.asked).toHaveLength(2))
+    expect(byItself.length).toBeGreaterThan(0)
+    expect(byItself).not.toContain(true)
+    expect(port.asked).toEqual([true, true])
   })
   it('remembers the opt-in, but applying it to the current song still needs an explicit choice', async () => {
     const { controller, receive } = setup()

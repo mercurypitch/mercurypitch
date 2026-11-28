@@ -59,8 +59,14 @@ const driveConnect = vi.hoisted(() => ({
 vi.mock('@/db/services/drive-connect-service', () => ({
   finishDriveConnect: driveConnect.finishDriveConnect,
 }))
+const manifests = vi.hoisted(() => ({
+  syncLibraryList: vi.fn(
+    (_sessions: unknown, _options?: { userAction?: boolean }) =>
+      Promise.resolve([]),
+  ),
+}))
 vi.mock('@/db/services/song-manifest-service', () => ({
-  syncLibraryList: () => Promise.resolve([]),
+  syncLibraryList: manifests.syncLibraryList,
   readLibraryManifests: () => Promise.resolve([]),
 }))
 vi.mock('@/lib/pwa-install', () => ({
@@ -75,7 +81,9 @@ const drive = vi.hoisted(() => ({
   busy: false,
   refreshDriveStatus: vi.fn(() => Promise.resolve()),
   restoreFromDrive: vi.fn(() => Promise.resolve()),
-  scanDrive: vi.fn(() => Promise.resolve(null)),
+  scanDrive: vi.fn((_options?: { userAction?: boolean }) =>
+    Promise.resolve(null),
+  ),
   stopDriveJob: vi.fn(),
 }))
 vi.mock('@/stores/drive-sync-store', () => ({
@@ -116,6 +124,7 @@ beforeEach(() => {
   drive.refreshDriveStatus.mockClear()
   drive.restoreFromDrive.mockClear()
   drive.scanDrive.mockClear()
+  manifests.syncLibraryList.mockClear()
 })
 
 afterEach(() => cleanup())
@@ -359,5 +368,48 @@ describe('the Drive check button', () => {
     })
     expect(button.querySelector('polyline')).not.toBeNull()
     expect(button.querySelector('[data-testid="spinner"]')).toBeNull()
+  })
+})
+
+// While the API is out of reach a check the page makes by itself is refused
+// at once (api-reachability.ts). A Check again is the person asking, so it
+// goes as their press.
+describe('checking again', () => {
+  it('reads the library again as the person, and on arrival as the page', async () => {
+    render(() => <SyncSettings />)
+    await waitFor(() =>
+      expect(manifests.syncLibraryList).toHaveBeenCalledTimes(1),
+    )
+    const button = screen.getByRole('button', { name: 'Check again' })
+    await waitFor(() => expect(button).toBeEnabled())
+
+    fireEvent.click(button)
+
+    await waitFor(() =>
+      expect(manifests.syncLibraryList).toHaveBeenCalledTimes(2),
+    )
+    expect(
+      manifests.syncLibraryList.mock.calls.map(
+        ([, options]) => options?.userAction === true,
+      ),
+    ).toEqual([false, true])
+  })
+
+  it('checks Drive again as the person, and on arrival as the page', async () => {
+    auth.held = true
+    drive.state = 'connected'
+    render(() => <SyncSettings />)
+    await waitFor(() => expect(drive.scanDrive).toHaveBeenCalledTimes(1))
+
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Check Drive again' }),
+    )
+
+    await waitFor(() => expect(drive.scanDrive).toHaveBeenCalledTimes(2))
+    expect(
+      drive.scanDrive.mock.calls.map(
+        ([options]) => options?.userAction === true,
+      ),
+    ).toEqual([false, true])
   })
 })

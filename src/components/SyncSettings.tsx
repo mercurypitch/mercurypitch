@@ -83,7 +83,11 @@ export const SyncSettings: Component = () => {
     })
   }
 
-  const refresh = async (): Promise<void> => {
+  // Check again passes userAction: the person asked, so its first read goes
+  // even while the API is out of reach (api-reachability.ts).
+  const refresh = async (
+    options: { userAction?: boolean } = {},
+  ): Promise<void> => {
     setBusy(true)
     try {
       // The session cache fills from IndexedDB asynchronously at app
@@ -93,7 +97,7 @@ export const SyncSettings: Component = () => {
       await whenSessionStoreReady()
       const sessions = getAllUvrSessions()
       setHere(sessions.filter((s) => s.status === 'completed').length)
-      const missing = await syncLibraryList(sessions)
+      const missing = await syncLibraryList(sessions, options)
       setElsewhere(missing.length)
       setKnown((await readLibraryManifests()).length)
       setStorage(await storageEstimate())
@@ -280,7 +284,7 @@ export const SyncSettings: Component = () => {
             type="button"
             class={`${panel.settingsActionBtn} ${styles.iconAction}`}
             disabled={busy()}
-            onClick={() => void refresh()}
+            onClick={() => void refresh({ userAction: true })}
             aria-label="Check again"
             title="Check again"
           >
@@ -326,7 +330,7 @@ export const SyncSettings: Component = () => {
               type="button"
               class={`${panel.settingsActionBtn} ${styles.iconAction}`}
               disabled={driveBusy()}
-              onClick={() => void scanDrive()}
+              onClick={() => void scanDrive({ userAction: true })}
               aria-label="Check Drive again"
               title="Check Drive again"
             >

@@ -146,6 +146,7 @@ export function manifestFromSession(
  */
 export async function publishLibraryManifests(
   sessions: readonly UvrSession[],
+  options: { userAction?: boolean } = {},
 ): Promise<number> {
   if (!cloudActive()) return 0
   const userId = getUserId()
@@ -153,7 +154,13 @@ export async function publishLibraryManifests(
 
   try {
     const repo = await manifestRepo()
-    const existing = await repo.findAll({ where: { userId } })
+    // A Check again sends this first read as the person's press, so it goes
+    // even while the API is out of reach (api-reachability.ts). Once it is
+    // answered the gate is open again for the writes and reads after it.
+    const existing = await repo.findAll({
+      where: { userId },
+      userAction: options.userAction === true,
+    })
     const byHash = new Map(existing.map((m) => [m.fileHash, m]))
 
     let written = 0
@@ -237,8 +244,9 @@ export function manifestsMissingHere(
  */
 export async function syncLibraryList(
   localSessions: readonly UvrSession[],
+  options: { userAction?: boolean } = {},
 ): Promise<SongManifest[]> {
-  await publishLibraryManifests(localSessions)
+  await publishLibraryManifests(localSessions, options)
   const all = await readLibraryManifests()
   return manifestsMissingHere(all, localSessions)
 }

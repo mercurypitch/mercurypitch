@@ -27,7 +27,7 @@ vi.mock('@/lib/drive/drive-client', async (importOriginal) => {
 
 const auth = vi.hoisted(() => ({
   account: 'user-1' as string | null,
-  fetchDriveAccessToken: vi.fn(() =>
+  fetchDriveAccessToken: vi.fn((_options?: { userAction?: boolean }) =>
     Promise.resolve({ ok: true, accessToken: 'tok', expiresIn: 3600 }),
   ),
   fetchDriveStatus: vi.fn(
@@ -158,6 +158,24 @@ beforeEach(() => {
 })
 
 describe('scan', () => {
+  // Check Drive again is a press. When the scan has to mint a Drive token,
+  // that call to our servers goes as the person's, even while the API is
+  // out of reach (api-reachability.ts); a scan by itself asks for nothing.
+  it('mints the token as the press when the person asked', async () => {
+    auth.account = 'user-pressed'
+    await scanDrive({ userAction: true })
+    expect(auth.fetchDriveAccessToken).toHaveBeenCalledTimes(1)
+    expect(auth.fetchDriveAccessToken).toHaveBeenCalledWith({
+      userAction: true,
+    })
+  })
+
+  it('does not mint as a press when the page scans by itself', async () => {
+    auth.account = 'user-by-itself'
+    await scanDrive()
+    expect(auth.fetchDriveAccessToken).not.toHaveBeenCalled()
+  })
+
   it('matches songs by content hash, not by name', async () => {
     sessions.list = [
       localSession('h-1', 'Both Sides.mp3'),

@@ -56,9 +56,8 @@ export const VoiceSection: Component<VoiceSectionProps> = (props) => {
   // changes WHOSE voiceprints these are, and an unkeyed resource kept
   // showing the previous identity's until a manual page reload (owner
   // testing).
-  const [prints, { refetch: refetchPrints }] = createResource(
-    authVersion,
-    listVoiceprints,
+  const [prints, { refetch: refetchPrints }] = createResource(authVersion, () =>
+    listVoiceprints(),
   )
   const [zoomed, setZoomed] = createSignal(false)
 

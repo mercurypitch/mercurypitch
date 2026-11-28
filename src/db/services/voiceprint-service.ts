@@ -230,8 +230,13 @@ function visibleDeviceTakes(
  * account**; takes made anonymously or under another account stay off
  * the signed-in list until the adoption notice resolves them (owner
  * decision D2 — shared-PC accounts must not see each other's takes).
+ *
+ * `options.userAction`: the singer pressed Try again, so the account read
+ * goes even while the API is out of reach (api-reachability.ts).
  */
-export async function listVoiceprints(): Promise<VoiceprintRecord[]> {
+export async function listVoiceprints(
+  options: { userAction?: boolean } = {},
+): Promise<VoiceprintRecord[]> {
   const local = loadLocalVoiceprints()
   const ownerId = getUserId()
   const onDevice = visibleDeviceTakes(local, realAccountHeld() ? ownerId : null)
@@ -241,7 +246,10 @@ export async function listVoiceprints(): Promise<VoiceprintRecord[]> {
     const db = await getDb()
     if (getUserId() !== ownerId) return []
     const repo = db.getRepository<Voiceprint>('voiceprints')
-    const rows = await repo.findAll({ where: { userId: ownerId } })
+    const rows = await repo.findAll({
+      where: { userId: ownerId },
+      userAction: options.userAction === true,
+    })
     if (getUserId() !== ownerId) return []
     const remote: VoiceprintRecord[] = rows.map((row) => ({
       id: row.id,

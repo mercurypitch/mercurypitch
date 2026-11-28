@@ -16,6 +16,8 @@ const state = vi.hoisted(() => ({
   deviceId: 'device-local-id',
   dbGate: null as Promise<void> | null,
   cloudReadFails: false,
+  /** Per cloud list read, in order: whether it went as a person's press. */
+  readAsPress: [] as boolean[],
   cloudRows: [] as Array<{
     id: string
     userId: string
@@ -50,7 +52,9 @@ vi.mock('@/db', () => ({
           where?: { userId?: string }
           offset?: number
           limit?: number
+          userAction?: boolean
         }) => {
+          state.readAsPress.push(opts?.userAction === true)
           if (state.cloudReadFails) throw new Error('offline')
           return state.cloudRows
             .filter(
@@ -107,6 +111,7 @@ function signInAnonymously(): void {
 
 beforeEach(() => {
   localStorage.clear()
+  state.readAsPress = []
   state.cloudRows = []
   state.dbGate = null
   state.cloudReadFails = false
@@ -158,6 +163,16 @@ describe('tagging at capture', () => {
 })
 
 describe('listing', () => {
+  // Try again on the constellation is the singer asking, so its read goes
+  // even while the API is out of reach (api-reachability.ts). The read the
+  // screen makes by itself stays an ordinary one.
+  it('reads the account as the singer only when they asked', async () => {
+    signIn('user-a')
+    await listVoiceprints()
+    await listVoiceprints({ userAction: true })
+    expect(state.readAsPress).toEqual([false, true])
+  })
+
   it('signed out shows every device take, whoever made it', async () => {
     await saveVoiceprint({ summary, twin: null, source: 'onboarding' })
     signIn('user-a')

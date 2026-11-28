@@ -205,10 +205,13 @@ async function resolveFolder(drive: DriveClient): Promise<string> {
  */
 let lastTokenFailure: 'disconnected' | 'failed' | null = null
 
-async function accessToken(forceFresh = false): Promise<string | null> {
+async function accessToken(
+  forceFresh = false,
+  options: { userAction?: boolean } = {},
+): Promise<string | null> {
   const now = Date.now()
   if (!forceFresh && token !== null && token.expiresAt > now) return token.value
-  const minted = await fetchDriveAccessToken()
+  const minted = await fetchDriveAccessToken(options)
   if (!minted.ok) {
     token = null
     lastTokenFailure = minted.reason
@@ -400,7 +403,9 @@ export async function disconnectDriveSync(): Promise<void> {
  * another device is recognised as the same song without downloading a
  * byte of it.
  */
-export async function scanDrive(): Promise<DriveScan | null> {
+export async function scanDrive(
+  options: { userAction?: boolean } = {},
+): Promise<DriveScan | null> {
   forgetIfAccountChanged()
   setDriveBusy(true)
   setDriveError(null)
@@ -410,6 +415,16 @@ export async function scanDrive(): Promise<DriveScan | null> {
     // against a cache that is merely EMPTY SO FAR reports a full device
     // as having nothing to back up.
     await whenSessionStoreReady()
+    // Check Drive again is a press. When the token has to be minted, that
+    // call to our servers goes as the person's, even while the API is out
+    // of reach (api-reachability.ts). Without a token the scan stops here,
+    // as the client itself would stop it.
+    if (
+      options.userAction === true &&
+      (await accessToken(false, options)) === null
+    ) {
+      throw new DriveAuthError()
+    }
     const drive = driveClient()
     const folderId = await resolveFolder(drive)
     const remote = await drive.listSongs(folderId)
