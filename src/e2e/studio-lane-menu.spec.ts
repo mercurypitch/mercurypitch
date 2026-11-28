@@ -1,4 +1,4 @@
-// Studio lane menus — a right-click on a lane's header opens the lane's menu with Hear yourself in it, a right-click on empty lane space opens the Studio's, both instead of the browser's menu; the keys move through them, Escape closes them and gives the focus back to the lane, a scroll closes them, Remove track leaves the focus where Ctrl+Z undoes it, a long press opens them on touch, and the lane's details switch Hear yourself too.
+// Studio lane menus — a right-click on a lane's header opens the lane's menu with Hear yourself in it, a right-click on empty lane space opens the Studio's, both instead of the browser's menu; the keys move through them, Escape closes them and gives the focus back to the lane, a scroll closes them, Remove track leaves the focus where Ctrl+Z undoes it, a long press on a header or its arm button opens them on touch without arming the lane, and the lane's details switch Hear yourself too.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { importStudioAudio, openArrangement, studioRegion, timelineViewport, } from './helpers/dedicatedstudio-fixture'
 
@@ -276,6 +276,47 @@ test.describe('on a tablet', () => {
     } finally {
       await session.detach()
     }
+  })
+
+  test('A long press on the arm button opens the lane menu only: the lane stays disarmed and its details stay shut @smoke', async ({
+    page,
+  }) => {
+    test.setTimeout(90_000)
+    await page.setViewportSize({ width: 1024, height: 768 })
+    await openArrangement(page)
+    const arm = studioRegion(page).getByRole('button', {
+      name: 'Arm Phrase for recording',
+      exact: true,
+    })
+    await expect(arm).toHaveAttribute('aria-pressed', 'false')
+    const box = (await arm.boundingBox())!
+    const point = { x: box.x + box.width / 2, y: box.y + box.height / 2, id: 1 }
+    const session = await page.context().newCDPSession(page)
+    try {
+      await session.send('Input.dispatchTouchEvent', {
+        type: 'touchStart',
+        touchPoints: [point],
+      })
+      const menu = page.getByRole('menu', { name: 'Phrase' })
+      await expect(menu).toBeVisible()
+      await session.send('Input.dispatchTouchEvent', {
+        type: 'touchEnd',
+        touchPoints: [],
+      })
+      await expect(menu).toBeVisible()
+      await page.keyboard.press('Escape')
+      await expect(menu).toBeHidden()
+    } finally {
+      await session.detach()
+    }
+    // The lift was not a tap: nothing armed, and Track details did not open.
+    await expect(arm).toHaveAttribute('aria-pressed', 'false')
+    await expect(
+      studioRegion(page).locator('[data-studio-record]:visible'),
+    ).not.toHaveAttribute('data-phase', 'armed')
+    await expect(
+      studioRegion(page).getByRole('combobox', { name: 'Sound role' }),
+    ).toHaveCount(0)
   })
 
   test('After a long press, a key on the lane still presses it where no click follows the lift @smoke', async ({
