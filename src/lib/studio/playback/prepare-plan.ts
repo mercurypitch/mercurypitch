@@ -255,8 +255,11 @@ export function studioFirstFrame(endFrame: number, frame: number): number {
 /**
  * Where a run asked to start at `startFrame` begins: inside `loop` when
  * Repeat plays a range, at its start when the frame is outside it. Throws
- * when nothing would sound, or when a song too short to loop is set to
- * repeat.
+ * when the song has no clips, or when a song too short to loop is set to
+ * repeat. A song whose every lane is muted, or whose Solo leaves nothing
+ * heard, plays its clock silently to the end, as REAPER does: the run
+ * builds its muted lanes at zero gain where memory allows, so unmuting
+ * one brings it in.
  */
 export function playableStudioFrom(
   project: StudioProject,
@@ -266,7 +269,7 @@ export function playableStudioFrom(
   loop: StudioFrameRange | null = null,
 ): number {
   const content = compileStudioArrangement(project, assets)
-  if (!content.lanes.some((lane) => lane.audible && lane.segments.length > 0))
+  if (!content.lanes.some((lane) => lane.segments.length > 0))
     throw new StudioRefusal('Add an audible take before playing.')
   if (loop !== null) return startInLoop(startFrame, loop)
   if (repeat && content.endFrame < 12000)
