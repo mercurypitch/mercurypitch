@@ -7,7 +7,7 @@ import type { StudioCommand } from '@/lib/studio/model/commands'
 import { applyStudioCommand } from '@/lib/studio/model/commands'
 import { createStudioProject, createStudioTrack, } from '@/lib/studio/model/defaults'
 import { studioFixture } from '@/lib/studio/model/model.test-fixtures'
-import { reloadStudioLaneHeight, setStudioLaneHeight } from './lane-height'
+import { reloadStudioLaneHeight, setStudioLaneHeight, STUDIO_LOW_TABLET_QUERY, } from './lane-height'
 import { StudioTimeline } from './StudioTimeline'
 import { StudioTrackControls } from './StudioTrackControls'
 
@@ -152,6 +152,49 @@ describe('Studio timeline', () => {
     ).toHaveAccessibleName('Lead vocal volume and pan lines')
     expect(localStorage.getItem('mercurypitch.studio.lane-height')).toBe('tall')
     setStudioLaneHeight('compact')
+  })
+
+  it("widens a tablet's lane headers for the switches beside the name in a short window on its side, and nobody else's", () => {
+    /** The header width a timeline draws while the short-window query does or does not match. */
+    const headerWidth = (
+      low: boolean,
+      layout: { tablet?: boolean; phone?: boolean },
+    ) => {
+      vi.stubGlobal(
+        'matchMedia',
+        vi.fn((media: string) => ({
+          matches: media === STUDIO_LOW_TABLET_QUERY && low,
+          media,
+          addEventListener: vi.fn(),
+          removeEventListener: vi.fn(),
+        })),
+      )
+      const { container, unmount } = render(() => (
+        <StudioTimeline
+          {...base}
+          phone={layout.phone ?? false}
+          tablet={layout.tablet}
+        />
+      ))
+      const width = /--studio-header-width: (\d+)px/.exec(
+        container.firstElementChild!.getAttribute('style') ?? '',
+      )?.[1]
+      unmount()
+      vi.unstubAllGlobals()
+      return Number(width)
+    }
+    try {
+      expect(headerWidth(true, { tablet: true })).toBe(296)
+      expect(headerWidth(false, { tablet: true })).toBe(224)
+      // A short desktop window and a phone keep their own headers.
+      expect(headerWidth(true, {})).toBe(240)
+      expect(headerWidth(true, { phone: true, tablet: true })).toBe(88)
+      setStudioLaneHeight('tall')
+      expect(headerWidth(true, { tablet: true })).toBe(296)
+      expect(headerWidth(false, { tablet: true })).toBe(256)
+    } finally {
+      setStudioLaneHeight('compact')
+    }
   })
 
   it("names the pass a loop take's clip plays, and picks another from its toolbar", () => {

@@ -1044,6 +1044,52 @@
     height: 24px;
   }
 }
+/* A tablet desk too short for four finger-sized rows and a fader (the
+   desk's own height: it is the nearest size container): the knob and its
+   reading stand beside the fader instead of over it, so the name, the knob,
+   Mute and Solo keep 44 px and the fader keeps at least 44 px of its own at
+   the desk's floor. StudioMixDesk.module.css widens the strip at the same
+   height, for the fader, its meter and the knob side by side. */
+@container (max-height: 250px) {
+  .stripControls.touchControls {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) 44px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      'identity identity'
+      'volume knob'
+      'buttons buttons';
+    gap: 4px;
+  }
+  .stripControls.touchControls .knob {
+    flex-direction: column;
+    align-self: start;
+    justify-content: flex-start;
+    gap: 2px;
+  }
+  .stripControls.touchControls .panValue {
+    position: static;
+    min-width: 0;
+    margin: 0;
+  }
+  /* The fader and its reading in the column's first 44 px; the meter
+     hangs in the padding beside them, inside the drag area. */
+  .stripControls.touchControls .volume {
+    padding-right: 22px;
+  }
+  .stripControls.touchControls .stripButtons {
+    grid-area: buttons;
+  }
+}
+/* A fader column with no room left of the fader for the ladder's words (the
+   knob beside it, above) keeps the ladder's ticks and drops the words. The
+   column is its own size container, so this asks its width; a strip's
+   column is 94 px or more otherwise. */
+@container studio-fader (max-width: 80px) {
+  .faderScale {
+    display: none;
+  }
+}
 
 /* Clips */
 .laneAudio {
@@ -1651,6 +1697,69 @@
 }
 .tablet.tall .soundRow {
   margin-left: -2px;
+}
+/* A tablet in a short window (STUDIO_LOW_TABLET_QUERY): the arm, Mute and
+   Solo stand beside the name, as a computer's do, so a compact lane is one
+   finger-sized row, and a tall one two: 4 + 44 + 6 + 44 + 4, the rule and a
+   pixel, which centring splits between the header's top and foot. */
+.tablet.low {
+  --studio-row-height: 64px;
+}
+.tablet.low.tall {
+  --studio-row-height: 104px;
+}
+.low .withIdentity {
+  display: grid;
+  /* Two columns of its own, not the bare controls' four named cells. */
+  grid-template-areas: none;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 6px 10px;
+}
+.low .soundRow {
+  grid-column: 1 / -1;
+}
+/* The name sits at its row's height, beside the switches, not over them. */
+.timeline.low button.trackName {
+  margin-block: 0;
+  padding-block: 2px;
+}
+/* A name too long for one line beside the switches keeps both its lines,
+   and its source steps out of sight (the title still says it). Shrunk to
+   make room for the source, it showed a 4 px sliver of its second line. */
+.low .trackNameText {
+  flex-shrink: 0;
+}
+/* The switches are drawn at 36 px, 12 px apart, and each takes a 48 px
+   press: 6 px all round, meeting its neighbour's and clear of the name, the
+   row below and the header's edge. A press counts, not the drawing. */
+.low .switchRow {
+  gap: 12px;
+  padding-left: 0;
+}
+.low .switchRow > button {
+  position: relative;
+  width: 36px;
+  height: 36px;
+}
+.low .switchRow > button::before {
+  content: '';
+  position: absolute;
+  /* From the padding box: 6 px past a 1 px border. */
+  inset: -7px;
+}
+/* An armed lane's arm has a 2 px ring. */
+.low .switchRow > button[aria-pressed='true'][data-studio-arm]::before {
+  inset: -8px;
+}
+.low .switchRow > button svg {
+  width: 16px;
+  height: 16px;
+}
+/* The dB reading stays inside the fader's own box, under its rail and clear
+   of the cap, 4 px above the header's foot instead of on it. */
+.low .soundRow .gainValue {
+  bottom: 0;
 }
 .phone {
   --studio-row-height: 56px;

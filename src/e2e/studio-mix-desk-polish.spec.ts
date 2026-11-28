@@ -281,7 +281,18 @@ test.describe('on a tablet', () => {
           faded: (style.maskImage || style.webkitMaskImage) !== 'none',
         }
       })
-    // A short tablet desk keeps the flavours to one row that scrolls.
+    // A short tablet desk keeps the flavours to one row, and at the type's
+    // own size all seven fit it.
+    await expect
+      .poll(edges)
+      .toEqual({ scrolls: false, before: false, after: false, faded: false })
+
+    // A size up, as a larger text setting draws them, they no longer fit:
+    // the row scrolls, and fades at the edge where more flavours wait.
+    await row.evaluate((element) => {
+      for (const chip of element.querySelectorAll('button'))
+        chip.style.fontSize = '14.5px'
+    })
     await expect
       .poll(edges)
       .toEqual({ scrolls: true, before: false, after: true, faded: true })
