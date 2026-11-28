@@ -64,9 +64,15 @@ export async function levelFromStart(page: Page): Promise<number> {
  * Lane 2 of the fixture's song with two takes from its start: Take 1, three
  * seconds turned all the way down, then Take 2, two seconds at full level,
  * sung over it on the lane still armed. Only the takes sound: the fixture's
- * phrase is muted. Returns the lane's id and both takes' audio ids.
+ * phrase is muted. `duringTwo` runs once Take 2 is two seconds in, while it
+ * still records over Take 1, on a page `viewport` wide when one is given.
+ * Returns the lane's id and both takes' audio ids.
  */
-export async function recordTwoTakes(page: Page) {
+export async function recordTwoTakes(
+  page: Page,
+  duringTwo: () => Promise<void> = async () => undefined,
+  viewport?: { width: number; height: number },
+) {
   await tapOutput(page)
   await openArrangement(page)
   const studio = studioRegion(page)
@@ -105,9 +111,10 @@ export async function recordTwoTakes(page: Page) {
     (track) => track.name === 'Lane 2',
   )!.id
 
+  if (viewport) await page.setViewportSize(viewport)
   await studio.locator('[data-tour="studio.workspace"]').focus()
   await page.keyboard.press('Home')
-  await recordTake(page, 'Take 2')
+  await recordTake(page, 'Take 2', duringTwo)
   const two = await takeId(page, 'Take 2')
   await expect
     .poll(async () => firstClip(await readStudioProject(page), lane)?.assetId)

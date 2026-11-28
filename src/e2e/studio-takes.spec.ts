@@ -1,6 +1,6 @@
 // Studio takes: a take sung over a take on the armed lane becomes that clip's newest take instead of landing on a new lane; the newest take plays, the older one waits with its own volume, and a reload keeps both. The clip says which take plays, and its right-click menu, its bar's Takes list, a phone's clip note and T and Shift+T choose another. Show takes stands them in rows under the lane, where a click plays one. Crop and Explode from the bar's list leave the focus on the clip.
 import { expect, test } from '@playwright/test'
-import { readStudioProject } from './helpers/dedicatedstudio-fixture'
+import { readStudioProject, studioRegion, } from './helpers/dedicatedstudio-fixture'
 import { firstClip, levelFromStart, recordTwoTakes, } from './helpers/studio-clip-takes'
 import { fakeMicArgs, TONE_HZ, writeToneWav } from './helpers/tone-wav'
 
@@ -283,4 +283,58 @@ test.describe('Studio takes', () => {
     await expect(takes).toHaveCount(0)
     await expect(cropped).toBeFocused()
   })
+
+  for (const [width, height] of [
+    [1440, 900],
+    [390, 844],
+  ] as const)
+    test(`a take recorded over a clip covers the clip's name, so only the take's own name reads, at ${width} wide @smoke`, async ({
+      page,
+    }) => {
+      test.setTimeout(180_000)
+      let covered = false
+      let alone: boolean | null = null
+      await recordTwoTakes(
+        page,
+        async () => {
+          const studio = studioRegion(page)
+          const live = studio.locator('[data-studio-live-take] span').first()
+          await expect(live).toHaveText('Take 2')
+          const under = studio
+            .getByRole('button', { name: /^Lane 2, Take 1\.wav, / })
+            .locator(':scope > span')
+            .first()
+          await expect(under).toHaveText('Take 1')
+          const a = (await live.boundingBox())!
+          const b = (await under.boundingBox())!
+          // The take starts where Take 1 does, so the two names share a spot.
+          covered =
+            a.x < b.x + b.width &&
+            b.x < a.x + a.width &&
+            a.y < b.y + b.height &&
+            b.y < a.y + a.height
+          // The part of the take's name band the clip's name sits under: the
+          // same pixels with that name drawn or not, when nothing reads through.
+          const clip = {
+            x: Math.max(a.x, b.x),
+            y: Math.max(a.y, b.y),
+            width: 48,
+            height:
+              Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y),
+          }
+          const drawn = await page.screenshot({ clip })
+          await under.evaluate((name) => {
+            ;(name as HTMLElement).style.color = 'transparent'
+          })
+          const blank = await page.screenshot({ clip })
+          await under.evaluate((name) => {
+            ;(name as HTMLElement).style.color = ''
+          })
+          alone = drawn.equals(blank)
+        },
+        { width, height },
+      )
+      expect(covered).toBe(true)
+      expect(alone).toBe(true)
+    })
 })
