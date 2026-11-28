@@ -25,6 +25,7 @@ import { createEffect, createSignal, onMount, Show } from 'solid-js'
 import { authStamp, fetchMe, hasValidToken, resendVerificationEmail, takeEmailVerifyResult, } from '@/db/services/auth-service'
 import { publishFootSpace } from '@/lib/foot-space'
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
+import { failureText } from '@/lib/no-answer-copy'
 import { confirmedGiftMessage } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './VerifyEmailBanner.module.css'
@@ -152,10 +153,7 @@ export const VerifyEmailBanner: Component<VerifyEmailBannerProps> = (props) => {
       setSendState('sent')
     } catch (err) {
       setSendState('idle')
-      showNotification(
-        err instanceof Error ? err.message : 'Could not resend the email',
-        'error',
-      )
+      showNotification(failureText(err, 'Could not resend the email'), 'error')
     }
   }
 

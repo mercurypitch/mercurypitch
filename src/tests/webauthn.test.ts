@@ -6,6 +6,8 @@
 // round-trip is pinned against known values rather than against itself.
 
 import { describe, expect, it } from 'vitest'
+import { ApiDeadlineError } from '@/db/api-fetch'
+import { NO_ANSWER_TEXT } from '@/lib/no-answer-copy'
 import { base64UrlToBytes, bytesToBase64Url, describeWebAuthnError, passkeysSupported, } from '@/lib/webauthn'
 
 const utf8 = (s: string): Uint8Array => new TextEncoder().encode(s)
@@ -45,6 +47,17 @@ describe('base64url', () => {
 })
 
 describe('describeWebAuthnError', () => {
+  it('says plainly when our servers did not answer', () => {
+    expect(
+      describeWebAuthnError(
+        new ApiDeadlineError(
+          'https://api.test/api/auth/passkey/options',
+          20_000,
+        ),
+      ),
+    ).toBe(NO_ANSWER_TEXT)
+  })
+
   it('reads a cancelled dialog as cancelled', () => {
     // NotAllowedError is what both "you cancelled" and "it timed out" raise.
     // Showing the DOM name verbatim is how a cancel looks like a broken site.

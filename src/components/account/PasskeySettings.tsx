@@ -17,6 +17,7 @@ import { createSignal, For, onMount, Show } from 'solid-js'
 import { Key, Trash2 } from '@/components/icons'
 import type { Passkey, PasskeyProof } from '@/db/services/auth-passkey-service'
 import { addPasskey, fetchPasskeys, PasskeyReauthRequired, passkeysAvailable, removePasskey, } from '@/db/services/auth-passkey-service'
+import { failureText } from '@/lib/no-answer-copy'
 import { describeWebAuthnError, platformAuthenticatorAvailable, } from '@/lib/webauthn'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './PasskeySettings.module.css'
@@ -65,7 +66,7 @@ export const PasskeySettings: Component = () => {
       try {
         setPasskeys(await fetchPasskeys())
       } catch (err) {
-        setError(err instanceof Error ? err.message : 'Could not load passkeys')
+        setError(failureText(err, 'Could not load passkeys'))
       }
     })()
   })
@@ -97,7 +98,7 @@ export const PasskeySettings: Component = () => {
       setPasskeys(await removePasskey(passkey.id))
       showNotification(`Removed ${passkey.name}.`, 'success')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not remove it')
+      setError(failureText(err, 'Could not remove it'))
     } finally {
       setBusy('')
     }

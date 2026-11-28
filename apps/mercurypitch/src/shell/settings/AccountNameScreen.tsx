@@ -10,6 +10,7 @@
 
 import type { JSX } from 'solid-js'
 import { createSignal, Show } from 'solid-js'
+import { failureText } from '@/lib/no-answer-copy'
 import { showNotification } from '@/stores/notifications-store'
 import { popScreen } from '../run-shell-store'
 import { saveAccountName } from './account-actions'
@@ -37,7 +38,7 @@ export function AccountNameScreen(): JSX.Element {
       showNotification('Name updated', 'info')
       popScreen()
     } catch (err) {
-      setError(err instanceof Error ? err.message : String(err))
+      setError(failureText(err, String(err)))
     } finally {
       setBusy(false)
     }

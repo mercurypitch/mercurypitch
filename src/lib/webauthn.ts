@@ -11,6 +11,7 @@
 // COSE, attestation).
 
 import { IS_NATIVE_BUILD } from '@/lib/native-build'
+import { isNoAnswer, NO_ANSWER_TEXT } from '@/lib/no-answer-copy'
 
 export function base64UrlToBytes(value: string): Uint8Array {
   const padded = value.replace(/-/g, '+').replace(/_/g, '/')
@@ -218,5 +219,6 @@ export function describeWebAuthnError(err: unknown): string {
       return 'Passkeys are not available on this address.'
     }
   }
+  if (isNoAnswer(err)) return NO_ANSWER_TEXT
   return err instanceof Error ? err.message : 'That did not work.'
 }

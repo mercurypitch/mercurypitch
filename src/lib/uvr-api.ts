@@ -7,6 +7,7 @@ import { ApiDeadlineError, deadlineFor, fetchWithDeadline, } from '@/db/api-fetc
 import { hasValidToken, requireAuth } from '@/db/services/auth-service'
 import { getAuthToken } from '@/db/services/user-service'
 import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD, UVR_ORIGIN, } from '@/lib/native-build'
+import { failureText } from '@/lib/no-answer-copy'
 
 /** Empty origin on the web: its page is on the worker that serves this. A
  *  native page is not, so its build names that worker's host. */
@@ -953,7 +954,7 @@ export async function pollForCompletion(
           )
           return
         }
-        onError(error instanceof Error ? error.message : 'Unknown error')
+        onError(failureText(error, 'Unknown error'))
         reject(error)
       }
     }

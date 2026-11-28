@@ -223,6 +223,11 @@ export async function runStemSplit(
     }
   } catch (err) {
     clearSplit(sessionId)
+    // An upload our servers did not answer: said plainly, as the reuse and
+    // poll paths say it.
+    if (isNoAnswer(err)) {
+      throw new StemSplitError(splitFailedText(err), { recoverable: true })
+    }
     throw err
   }
 

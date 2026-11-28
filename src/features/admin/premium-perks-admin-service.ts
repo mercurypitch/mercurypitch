@@ -11,6 +11,7 @@ import { deadlineForBytes, fetchWithDeadline } from '@/db/api-fetch'
 import type { BackgroundPerkId, BackgroundSurface, } from '@/lib/backgrounds/background-catalog'
 import { getBackgroundDefinition } from '@/lib/backgrounds/background-catalog'
 import { API_BASE_URL } from '@/lib/defaults'
+import { isNoAnswer, NO_ANSWER_TEXT } from '@/lib/no-answer-copy'
 import type { SupporterFeaturePerk, SupporterFeaturePerkId, } from '@/lib/supporter-feature-catalog'
 import { isSupporterFeaturePerkId, SUPPORTER_FEATURE_PERKS, } from '@/lib/supporter-feature-catalog'
 import type { AdminEnvironment } from './admin-environment'
@@ -243,7 +244,10 @@ async function request<T>(
     }
     return { ok: true, value: data }
   } catch (error) {
-    return { ok: false, error: String(error) }
+    return {
+      ok: false,
+      error: isNoAnswer(error) ? NO_ANSWER_TEXT : String(error),
+    }
   }
 }
 
@@ -477,7 +481,10 @@ export async function loadBackgroundVariantPreview(
     }
     return { ok: true, value: blob }
   } catch (error) {
-    return { ok: false, error: String(error) }
+    return {
+      ok: false,
+      error: isNoAnswer(error) ? NO_ANSWER_TEXT : String(error),
+    }
   }
 }
 

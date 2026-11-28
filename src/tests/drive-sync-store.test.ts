@@ -94,7 +94,9 @@ vi.mock('@/lib/platform', () => ({
   platform: { keepAwake: { enable: power.enable, disable: power.disable } },
 }))
 
+import { ApiDeadlineError } from '@/db/api-fetch'
 import { DriveApiError } from '@/lib/drive/drive-client'
+import { NO_ANSWER_TEXT } from '@/lib/no-answer-copy'
 import { encodeContainerHeader } from '@/lib/portable/portable-container'
 import { backUpToDrive, disconnectDriveSync, driveError, driveFolderId, driveJob, driveJobFailures, driveJobStopping, driveScan, driveState, refreshDriveStatus, restoreFromDrive, scanDrive, stopDriveJob, } from '@/stores/drive-sync-store'
 
@@ -168,6 +170,15 @@ describe('scan', () => {
     expect(auth.fetchDriveAccessToken).toHaveBeenCalledWith({
       userAction: true,
     })
+  })
+
+  it('says plainly when our servers did not answer for the token', async () => {
+    auth.account = 'user-no-answer'
+    auth.fetchDriveAccessToken.mockRejectedValueOnce(
+      new ApiDeadlineError('https://api.test/api/auth/drive/token', 20_000),
+    )
+    await scanDrive({ userAction: true })
+    expect(driveError()).toBe(NO_ANSWER_TEXT)
   })
 
   it('does not mint as a press when the page scans by itself', async () => {

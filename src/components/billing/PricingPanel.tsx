@@ -20,6 +20,7 @@ import { trackEvent } from '@/lib/analytics'
 import { stashPendingPurchase } from '@/lib/consent'
 import { colorTokenVars } from '@/lib/css-color-token'
 import { packsAsked, packsShown } from '@/lib/launch-offer'
+import { failureText } from '@/lib/no-answer-copy'
 import type { UvrProcessingMode } from '@/stores/app-store'
 import { setUvrProcessingMode, uvrProcessingMode } from '@/stores/app-store'
 import { balanceVersion } from '@/stores/billing-store'
@@ -123,10 +124,7 @@ export const PricingPanel: Component = () => {
       }
       window.location.assign(url)
     } catch (err) {
-      showNotification(
-        err instanceof Error ? err.message : 'Checkout failed',
-        'error',
-      )
+      showNotification(failureText(err, 'Checkout failed'), 'error')
     }
   }
 

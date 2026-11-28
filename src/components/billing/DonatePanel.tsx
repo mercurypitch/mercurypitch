@@ -19,6 +19,7 @@ import { fetchBillingMe, fetchPricing, formatPrice, formatSupportDuration, start
 import { trackEvent } from '@/lib/analytics'
 import { GITHUB_SPONSORS_URL, KOFI_URL, SPONSORS_LIVE, } from '@/lib/contact-links'
 import { colorTokenVars } from '@/lib/css-color-token'
+import { failureText } from '@/lib/no-answer-copy'
 import { balanceVersion } from '@/stores/billing-store'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal } from '@/stores/ui-store'
@@ -97,7 +98,7 @@ export const DonatePanel: Component = () => {
       window.location.assign(url)
     } catch (err) {
       showNotification(
-        err instanceof Error ? err.message : 'Could not start the donation',
+        failureText(err, 'Could not start the donation'),
         'error',
       )
     }

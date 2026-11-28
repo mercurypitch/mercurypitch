@@ -2,6 +2,7 @@
 // ============================================================
 
 import { createSignal, onCleanup } from 'solid-js'
+import { isNoAnswer, NO_ANSWER_TEXT } from '@/lib/no-answer-copy'
 import type { CloudSplitBlocker } from '@/lib/uvr-cloud-preflight'
 import type { PlayAlongBandPreparationPhase, PlayAlongBandPreparationPort, } from './band-preparation-port'
 import { prepareBandWithPreflight } from './prepare-band'
@@ -179,8 +180,9 @@ export function usePlayAlongBandPreparationController(
       setState({
         kind: 'error',
         sessionId,
-        message:
-          error instanceof Error && error.message.trim() !== ''
+        message: isNoAnswer(error)
+          ? NO_ANSWER_TEXT
+          : error instanceof Error && error.message.trim() !== ''
             ? error.message
             : (options.failureMessage ??
               'The band could not be separated. Your current mix is still ready.'),

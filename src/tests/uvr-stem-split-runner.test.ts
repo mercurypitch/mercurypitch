@@ -217,6 +217,18 @@ describe('runStemSplit', () => {
     expect((err as StemSplitError).recoverable).toBe(true)
   })
 
+  it('says the same when the upload got no answer', async () => {
+    api.processAudio.mockRejectedValueOnce(
+      new ApiDeadlineError('https://mp.test/api/uvr/process', 80_000),
+    )
+    const err = await runStemSplit('session-1').catch((e: unknown) => e)
+    expect(err).toBeInstanceOf(StemSplitError)
+    expect((err as Error).message).toBe(
+      `Splitting the instrumental failed. ${NO_ANSWER_TEXT}`,
+    )
+    expect((err as StemSplitError).recoverable).toBe(true)
+  })
+
   it('says the same when splitting in place got no answer', async () => {
     api.processAudio.mockRejectedValueOnce(
       new ApiDeadlineError('https://mp.test/api/uvr/process', 80_000),

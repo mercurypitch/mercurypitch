@@ -12,6 +12,7 @@ import { fetchWithDeadline } from '@/db/api-fetch'
 import { authVersion, getAuthHeaders, getUserId, } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
 import { midiToFrequency, midiToNoteName, noteToMidi, } from '@/lib/frequency-to-note'
+import { isNoAnswer, NO_ANSWER_TEXT } from '@/lib/no-answer-copy'
 import { isE2ETestMode } from '@/lib/test-utils'
 import type { MelodyItem, NoteName } from '@/types'
 
@@ -286,7 +287,7 @@ export async function createWeekly(
     )
     return (await res.json()) as { id: string } | { error: string }
   } catch (e) {
-    return { error: String(e) }
+    return { error: isNoAnswer(e) ? NO_ANSWER_TEXT : String(e) }
   }
 }
 

@@ -10,6 +10,7 @@
 
 import { fetchWithDeadline } from '@/db/api-fetch'
 import { API_BASE_URL } from '@/lib/defaults'
+import { isNoAnswer, NO_ANSWER_TEXT } from '@/lib/no-answer-copy'
 
 /** The slug the shipped manifest and every pre-list row carry. */
 export const DEFAULT_DEMO_SLUG = 'karaoke-night'
@@ -133,7 +134,7 @@ export async function loadDemoSongs(
     const data = (await res.json()) as { songs?: DemoSongRecord[] }
     return { ok: true, songs: data.songs ?? [] }
   } catch (e) {
-    return { ok: false, error: String(e) }
+    return { ok: false, error: isNoAnswer(e) ? NO_ANSWER_TEXT : String(e) }
   }
 }
 
@@ -167,7 +168,7 @@ export async function saveDemoSong(
     }
     return { ok: true, song: data.song ?? null }
   } catch (e) {
-    return { ok: false, error: String(e) }
+    return { ok: false, error: isNoAnswer(e) ? NO_ANSWER_TEXT : String(e) }
   }
 }
 

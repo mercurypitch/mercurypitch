@@ -23,6 +23,7 @@ import { createEffect, createResource, createSignal, onMount, Show, } from 'soli
 import { fetchMe, resendVerificationEmail } from '@/db/services/auth-service'
 import { fetchBillingMe, redeemPromoCode } from '@/db/services/billing-service'
 import { giftCount, giftOfferLine } from '@/lib/launch-gift-copy'
+import { failureText } from '@/lib/no-answer-copy'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { recordPromoClaim } from '@/stores/launch-gift-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -152,8 +153,7 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
       refetchBilling()
       refetchUser()
     } catch (err) {
-      const errText =
-        err instanceof Error ? err.message : 'Failed to redeem promo code'
+      const errText = failureText(err, 'Failed to redeem promo code')
       setMessage({ text: errText, type: 'error' })
       showNotification(errText, 'error')
     } finally {
@@ -170,9 +170,7 @@ export const PromoCodeCard: Component<PromoCodeCardProps> = (props) => {
       showNotification('Verification email sent! Check your inbox.', 'info')
     } catch (err) {
       showNotification(
-        err instanceof Error
-          ? err.message
-          : 'Failed to send verification email',
+        failureText(err, 'Failed to send verification email'),
         'error',
       )
     } finally {

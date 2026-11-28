@@ -28,6 +28,7 @@ import { refusedPublicTextField } from '@/db/services/public-text-refusal'
 import { authVersion, getUserId } from '@/db/services/user-service'
 import { CONTACT_FORM_URL, GITHUB_NEW_ISSUE_URL } from '@/lib/contact-links'
 import { API_BASE_URL } from '@/lib/defaults'
+import { failureText } from '@/lib/no-answer-copy'
 import { useSupporterFeatures } from '@/lib/use-supporter-features'
 import { showNotification } from '@/stores/notifications-store'
 import { openAuthModal, openFeedbackSurvey } from '@/stores/ui-store'
@@ -142,9 +143,7 @@ export const AccountSection: Component = () => {
       setError(
         refusedPublicTextField(err) !== null
           ? "That name uses a word we don't allow. Try another."
-          : err instanceof Error
-            ? err.message
-            : String(err),
+          : failureText(err, String(err)),
       )
       return false
     } finally {
@@ -250,7 +249,7 @@ export const AccountSection: Component = () => {
       // and a checkbox lying about consent is the one state this section
       // must never show.
       await refreshMe().catch(() => undefined)
-      const raw = err instanceof Error ? err.message : String(err)
+      const raw = failureText(err, String(err))
       setError(
         raw.includes('no cloud identity')
           ? 'Sign in to change your leaderboard listing.'
@@ -287,7 +286,7 @@ export const AccountSection: Component = () => {
       // checkbox that shows consent the server never accepted is worse than
       // one that shows an error.
       await refreshMe().catch(() => undefined)
-      setError(err instanceof Error ? err.message : String(err))
+      setError(failureText(err, String(err)))
     } finally {
       setBusy(false)
     }

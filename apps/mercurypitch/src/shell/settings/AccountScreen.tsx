@@ -30,6 +30,7 @@ import { fetchSessions } from '@/db/services/auth-sessions-service'
 import { authVersion } from '@/db/services/user-service'
 import { thisDevice } from '@/lib/device-noun'
 import { focusLost } from '@/lib/focus-lost'
+import { failureText } from '@/lib/no-answer-copy'
 import { showNotification } from '@/stores/notifications-store'
 import { isApplePrivateRelayAddress } from '../../../../../workers/db-worker/src/apple-relay'
 import { AccountIcon, BlockIcon, CopyIcon, MailIcon, PersonIcon, PhoneIcon, ShieldIcon, SignOutIcon, TrophyIcon, WarnIcon, } from '../icons'
@@ -198,7 +199,7 @@ function AccountSettings(): JSX.Element {
     } catch (err) {
       // The switch goes back to what the account holds: a switch showing an
       // answer the account never took is worse than an error line.
-      if (live) setError(err instanceof Error ? err.message : String(err))
+      if (live) setError(failureText(err, String(err)))
     } finally {
       if (live) setNewsAsked(null)
     }

@@ -4,6 +4,7 @@
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { fetchWithDeadline } from '@/db/api-fetch'
+import { NO_ANSWER_TEXT } from '@/lib/no-answer-copy'
 import type { ProcessStatusResponse } from '@/lib/uvr-api'
 import { DEFAULT_PROCESS_REQUEST, deleteSession, formatFileSize, getOutputFile, getProcessStatus, listModels, pollForCompletion, processAudio, TerminalPollError, } from '@/lib/uvr-api'
 
@@ -184,6 +185,35 @@ describe('DEFAULT_PROCESS_REQUEST', () => {
 // ── REQ-UV-006: Progress Polling ─────────────────────────────
 
 describe('pollForCompletion (REQ-UV-006, REQ-UV-009)', () => {
+  // The singer reads what happened, not the request that went unanswered.
+  it('says plainly when the first status read got no answer', async () => {
+    vi.useFakeTimers()
+    try {
+      // A spy, so restoreAllMocks puts fetch back for the tests after it.
+      vi.spyOn(global, 'fetch').mockImplementation(
+        (_input, init) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              reject(new DOMException('Aborted', 'AbortError'))
+            })
+          }),
+      )
+      const onError = vi.fn()
+      const polled = pollForCompletion(
+        'test-session',
+        vi.fn(),
+        vi.fn(),
+        onError,
+        10,
+      ).catch((e: unknown) => e)
+      await vi.advanceTimersByTimeAsync(60_000)
+      expect(await polled).toMatchObject({ name: 'ApiDeadlineError' })
+      expect(onError).toHaveBeenCalledWith(NO_ANSWER_TEXT)
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
   it('calls onComplete when status is completed', async () => {
     const completedResponse: ProcessStatusResponse = {
       session_id: 'test-session',

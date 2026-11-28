@@ -30,6 +30,7 @@ import { sessionStemPresence } from '@/db/services/uvr-service'
 import { stripAudioExtension } from '@/lib/audio-file-name'
 import type { DriveClient, DriveSongFile } from '@/lib/drive/drive-client'
 import { createDriveClient, DriveAuthError, SONG_FILE_SUFFIX, } from '@/lib/drive/drive-client'
+import { failureText } from '@/lib/no-answer-copy'
 import { platform } from '@/lib/platform'
 import type { EncodeAbort } from '@/lib/portable/portable-audio'
 import type { PortablePartInfo } from '@/lib/portable/portable-bundle'
@@ -264,7 +265,7 @@ function titleOf(session: UvrSession): string {
 
 function describe(error: unknown): string {
   if (error instanceof DriveAuthError) return error.message
-  return error instanceof Error ? error.message : String(error)
+  return failureText(error, String(error))
 }
 
 /** One line a person can act on, from whatever a failed song threw. */

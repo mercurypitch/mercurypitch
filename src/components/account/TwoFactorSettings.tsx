@@ -22,6 +22,7 @@ import { AlertTriangle, CheckCircle, Copy, Download, Lock, } from '@/components/
 import { QrCode } from '@/components/QrCode'
 import type { TwofaSetup } from '@/db/services/auth-mfa-service'
 import { disableTwofa, enableTwofa, fetchTwofaStatus, startTwofaSetup, } from '@/db/services/auth-mfa-service'
+import { failureText } from '@/lib/no-answer-copy'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './TwoFactorSettings.module.css'
 
@@ -87,7 +88,7 @@ export const TwoFactorSettings: Component = () => {
       setCode('')
       setStage('enrolling')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not start setup')
+      setError(failureText(err, 'Could not start setup'))
     } finally {
       setBusy(false)
     }
@@ -101,7 +102,7 @@ export const TwoFactorSettings: Component = () => {
       setCode('')
       setStage('codes')
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'That code did not match')
+      setError(failureText(err, 'That code did not match'))
     } finally {
       setBusy(false)
     }
@@ -117,7 +118,7 @@ export const TwoFactorSettings: Component = () => {
       showNotification('Two-step verification is off.', 'success')
       await load()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'That code did not match')
+      setError(failureText(err, 'That code did not match'))
     } finally {
       setBusy(false)
     }

@@ -14,6 +14,7 @@ import type { JSX } from 'solid-js'
 import { createSignal, For, Show } from 'solid-js'
 import { Dynamic } from 'solid-js/web'
 import { AppleMark } from '@/components/account/AppleMark'
+import { failureText } from '@/lib/no-answer-copy'
 import { HistoryIcon, PersonIcon, TrashIcon, TrophyIcon, WaveIcon, } from '../icons'
 import { DELETE_ACCOUNT, DELETE_QUESTION } from './account-copy'
 import { deleteAccountHere } from './account-deletion'
@@ -42,7 +43,7 @@ export function DeleteAccountScreen(): JSX.Element {
     try {
       await deleteAccountHere()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not delete account')
+      setError(failureText(err, 'Could not delete account'))
       setBusy(false)
     }
   }

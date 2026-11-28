@@ -26,6 +26,7 @@ import { NativeSignInError, signInWithApple, signInWithGoogle, } from '@/feature
 import { appleSignInOffered, nativeGoogleSignInOffered, webGoogleSignInOffered, } from '@/features/account/sign-in-methods'
 import { isTvDevice } from '@/lib/device-tier'
 import { googleSignInPending, googleSignInUnavailableReason, startGoogleSignIn, } from '@/lib/google-sign-in'
+import { failureText } from '@/lib/no-answer-copy'
 import { isPasswordValid } from '@/lib/password-policy'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { conditionalMediationAvailable, describeWebAuthnError, platformAuthenticatorAvailable, } from '@/lib/webauthn'
@@ -622,7 +623,7 @@ export const AuthModal: Component<AuthModalProps> = (props) => {
         }
       } catch (err) {
         if (request !== requestGeneration) return
-        setError(err instanceof Error ? err.message : String(err))
+        setError(failureText(err, String(err)))
         setTurnstileToken('')
         resetTurnstile()
         // A rejected sign-in clears the password and re-arms the field for

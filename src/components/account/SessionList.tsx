@@ -15,6 +15,7 @@ import { createSignal, For, onMount, Show } from 'solid-js'
 import { DeviceSync, Smartphone } from '@/components/icons'
 import type { AuthSession } from '@/db/services/auth-sessions-service'
 import { fetchSessions, revokeSession, } from '@/db/services/auth-sessions-service'
+import { failureText } from '@/lib/no-answer-copy'
 import { showNotification } from '@/stores/notifications-store'
 import styles from './SessionList.module.css'
 
@@ -42,7 +43,7 @@ export const SessionList: Component = () => {
     } catch (err) {
       // A failure here must not look like "you are signed in nowhere", which
       // is the one reading that would make someone panic.
-      setError(err instanceof Error ? err.message : 'Could not load devices')
+      setError(failureText(err, 'Could not load devices'))
     }
   }
 
@@ -57,7 +58,7 @@ export const SessionList: Component = () => {
       showNotification(`Signed out ${session.label}.`, 'success')
       await load()
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Could not sign that out')
+      setError(failureText(err, 'Could not sign that out'))
     } finally {
       setBusy('')
     }

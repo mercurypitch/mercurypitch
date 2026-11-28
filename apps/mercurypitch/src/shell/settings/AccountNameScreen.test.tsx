@@ -8,6 +8,8 @@
 // saved one goes back to Account with the card already renamed.
 
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { ApiUnreachableError } from '@/db/api-fetch'
+import { NO_ANSWER_TEXT } from '@/lib/no-answer-copy'
 import type { RenderedShell } from '../render-for-test'
 import { renderShell } from '../render-for-test'
 import { pushed, pushScreen, pushSettingsScreen, resetRunShell, } from '../run-shell-store'
@@ -87,6 +89,19 @@ describe('the Name screen', () => {
 
     expect((q('account-name-save') as HTMLButtonElement).disabled).toBe(true)
     expect(q('account-name-hint')?.textContent).toBe('A name cannot be empty.')
+  })
+
+  // The singer reads what happened, not the request that was held back.
+  it('says plainly when our servers did not answer the save', async () => {
+    stand.save.mockRejectedValue(
+      new ApiUnreachableError('https://api.test/api/userProfiles/u-1'),
+    )
+    type('Alexandra')
+
+    q('account-name-save')?.click()
+    await settle()
+
+    expect(q('account-error')?.textContent).toBe(NO_ANSWER_TEXT)
   })
 
   it('keeps what was typed when the save fails', async () => {

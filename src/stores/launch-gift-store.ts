@@ -36,6 +36,7 @@ import type { BillingMe, FeaturedPromo, PromoClaim, } from '@/db/services/billin
 import { fetchBillingMe, redeemPromoCode } from '@/db/services/billing-service'
 import { trackEvent } from '@/lib/analytics'
 import { giftCount, giftOfferLine } from '@/lib/launch-gift-copy'
+import { failureText } from '@/lib/no-answer-copy'
 import { refreshBalance } from './billing-store'
 import { showNotification } from './notifications-store'
 import { loadFeaturedPromo, offeredPromo } from './promo-store'
@@ -380,7 +381,7 @@ export function claimGiftNow(): Promise<void> {
       )
     } catch (err) {
       showNotification(
-        err instanceof Error ? err.message : 'Could not claim the credits.',
+        failureText(err, 'Could not claim the credits.'),
         'error',
       )
     }

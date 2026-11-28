@@ -12,6 +12,7 @@ import { ensureSessionHydrated } from '@/features/stem-mixer/karaoke-playlist-ru
 import { AUDIO_UPLOAD_ACCEPT } from '@/lib/audio-upload-contract'
 import { FILE_PICKER_UNAVAILABLE_MESSAGE, openFilePicker, } from '@/lib/file-picker'
 import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
+import { failureText } from '@/lib/no-answer-copy'
 import { credits, offer, refreshCredits, signedIn, } from '@/lib/standalone-account'
 import { getPlaylistsReactive, initKaraokePlaylistStore, isPlaylistActive, startPlaylist, } from '@/stores/karaoke-playlist-store'
 import { showNotification } from '@/stores/notifications-store'
@@ -304,8 +305,7 @@ export function KaraokeRailPanels(props: KaraokeRailPanelsProps) {
     } catch (err) {
       if (import.meta.env.DEV)
         console.warn('[KaraokeNight] separation failed:', err)
-      const message =
-        err instanceof Error ? err.message : 'Separation failed. Try again.'
+      const message = failureText(err, 'Separation failed. Try again.')
       setErrorUvrSession(sessionId, message)
       setUploadError(message)
     }

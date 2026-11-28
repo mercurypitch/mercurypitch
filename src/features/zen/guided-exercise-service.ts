@@ -8,6 +8,7 @@
 
 import { deadlineForBytes, fetchWithDeadline } from '@/db/api-fetch'
 import { API_BASE_URL } from '@/lib/defaults'
+import { failureText } from '@/lib/no-answer-copy'
 import { isE2ETestMode } from '@/lib/test-utils'
 import type { ZenExampleAudio, ZenExerciseDefinition } from './types'
 import { parseZenExercise } from './validate-exercise'
@@ -187,7 +188,7 @@ async function apiRequest<T>(
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: failureText(error, String(error)),
       status: 0,
     }
   }
@@ -400,7 +401,7 @@ export async function downloadAdminGuidedExerciseMedia(
   } catch (error) {
     return {
       ok: false,
-      error: error instanceof Error ? error.message : String(error),
+      error: failureText(error, String(error)),
       status: 0,
     }
   }

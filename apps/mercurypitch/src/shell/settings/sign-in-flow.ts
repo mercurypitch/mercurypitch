@@ -29,6 +29,7 @@ import { isTwofaChallenge, loginWithPassword, takeNativeTwofaChallenge, } from '
 import type { SignupContext } from '@/db/services/signup-context'
 import { NativeSignInError, signInWithApple, signInWithGoogle, } from '@/features/account/native-sign-in'
 import { thisDeviceLower } from '@/lib/device-noun'
+import { failureText } from '@/lib/no-answer-copy'
 
 export type SignInPane = 'methods' | 'email' | 'code' | 'password' | 'twofa'
 
@@ -113,7 +114,7 @@ function failureOf(error: unknown): SignInFailure {
   if (error instanceof NativeSignInError && error.kind === 'network') {
     return { kind: 'network' }
   }
-  const text = error instanceof Error ? error.message : String(error)
+  const text = failureText(error, String(error))
   return { kind: 'message', text }
 }
 

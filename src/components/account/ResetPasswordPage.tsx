@@ -15,6 +15,7 @@ import { createSignal, createUniqueId, Match, onMount, Show, Switch, } from 'sol
 import { CheckCircle, Eye, EyeOff, X } from '@/components/icons'
 import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } from '@/components/shared/Turnstile'
 import { checkResetToken, requestPasswordReset, resetPassword, } from '@/db/services/auth-service'
+import { failureText } from '@/lib/no-answer-copy'
 import { isPasswordValid } from '@/lib/password-policy'
 import { useFocusTrap } from '@/lib/use-focus-trap'
 import { openAuthModal } from '@/stores/ui-store'
@@ -103,7 +104,7 @@ export const ResetPasswordPage: Component<ResetPasswordPageProps> = (props) => {
         await resetPassword(token, pw)
         setView('done')
       } catch (err) {
-        const message = err instanceof Error ? err.message : String(err)
+        const message = failureText(err, String(err))
         if (message === RESET_LINK_DEAD) {
           setView('invalid')
         } else {
@@ -127,7 +128,7 @@ export const ResetPasswordPage: Component<ResetPasswordPageProps> = (props) => {
         setSentTo(address)
         setView('request-sent')
       } catch (err) {
-        setError(err instanceof Error ? err.message : String(err))
+        setError(failureText(err, String(err)))
         // Single-use token: a failed request has spent it, so the widget has
         // to re-arm or the next press replays a token the server rejected.
         setTurnstileToken('')

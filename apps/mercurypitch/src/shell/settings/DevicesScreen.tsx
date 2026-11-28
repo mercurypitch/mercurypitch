@@ -14,6 +14,7 @@ import { createSignal, For, onCleanup, onMount, Show } from 'solid-js'
 import type { AuthSession } from '@/db/services/auth-sessions-service'
 import { fetchSessions, revokeSession, } from '@/db/services/auth-sessions-service'
 import { thisDevice } from '@/lib/device-noun'
+import { failureText } from '@/lib/no-answer-copy'
 import { showNotification } from '@/stores/notifications-store'
 import { ComputerIcon, PhoneIcon, WarnIcon } from '../icons'
 import { SettingsGroup } from './SettingsList'
@@ -102,10 +103,7 @@ export function DevicesScreen(): JSX.Element {
       showNotification(`Signed out ${session.label}.`, 'success')
       await load()
     } catch (err) {
-      showNotification(
-        err instanceof Error ? err.message : String(err),
-        'error',
-      )
+      showNotification(failureText(err, String(err)), 'error')
     } finally {
       if (live) setEnding(null)
     }

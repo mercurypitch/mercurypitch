@@ -10,6 +10,7 @@ import { hasRoomFor } from '@/db/durable-write'
 import { findSessionByFileHash, getOriginalFileBlob, saveStemBlobDurable, } from '@/db/services/uvr-service'
 import { audioUploadValidationError, LOCAL_MAX_UPLOAD_BYTES, SERVER_MAX_UPLOAD_BYTES, } from '@/lib/audio-upload-contract'
 import { computeFileHash } from '@/lib/file-hash'
+import { failureText } from '@/lib/no-answer-copy'
 import type { ProcessingResult } from '@/lib/uvr-processing-pipeline'
 import { cancelUvrPipeline, runUvrPipeline, } from '@/lib/uvr-processing-pipeline'
 import type { UvrProcessingMode, UvrSession } from '@/stores/uvr-store'
@@ -290,7 +291,7 @@ export async function runUvrSessionPreparation(
       return cancelRun()
     }
     const message = humanizeUvrPreparationError(
-      error instanceof Error ? error.message : 'Song preparation failed.',
+      failureText(error, 'Song preparation failed.'),
       options.mode,
     )
     return failSession(sessionId, message)
@@ -409,7 +410,7 @@ export async function prepareUvrSong(
     return {
       status: 'error',
       message: humanizeUvrPreparationError(
-        error instanceof Error ? error.message : 'Song preparation failed.',
+        failureText(error, 'Song preparation failed.'),
         options.mode,
       ),
     }

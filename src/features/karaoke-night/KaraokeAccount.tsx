@@ -11,6 +11,7 @@ import Turnstile, { resetTurnstile, turnstileEnabled, turnstileUnavailable, } fr
 import { loginWithPassword, registerWithPassword, takeGoogleRedirectResult, } from '@/db/services/auth-service'
 import type { SignupContext } from '@/db/services/signup-context'
 import { googleSignInPending, startGoogleSignIn } from '@/lib/google-sign-in'
+import { failureText } from '@/lib/no-answer-copy'
 import { isPasswordValid } from '@/lib/password-policy'
 import { account, credits, refreshAccount, signedIn, signOutStandalone, } from '@/lib/standalone-account'
 import { signUpGiftMessage, syncPromoClaims } from '@/stores/launch-gift-store'
@@ -124,7 +125,7 @@ export function KaraokeAccount() {
       setPassword('')
       setShowPassword(false)
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Sign-in failed.')
+      setError(failureText(err, 'Sign-in failed.'))
       // Turnstile tokens are single-use, so a failed attempt has spent this
       // one. Without a reset the next press sends a token the server has
       // already rejected, and the form can never recover.

@@ -1,6 +1,8 @@
 import { cleanup, fireEvent, render, screen, waitFor, } from '@solidjs/testing-library'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { SessionList } from '@/components/account/SessionList'
+import { ApiDeadlineError } from '@/db/api-fetch'
+import { NO_ANSWER_TEXT } from '@/lib/no-answer-copy'
 
 const fetchSessions = vi.fn()
 const revokeSession = vi.fn()
@@ -36,6 +38,19 @@ afterEach(() => {
 })
 
 describe('SessionList', () => {
+  // The singer reads what happened, not the request that went unanswered.
+  it('says plainly when our servers did not answer', async () => {
+    fetchSessions.mockRejectedValue(
+      new ApiDeadlineError('https://api.test/api/auth/sessions', 8_000),
+    )
+    render(() => <SessionList />)
+    await waitFor(() =>
+      expect(screen.getByTestId('session-list-error').textContent).toBe(
+        NO_ANSWER_TEXT,
+      ),
+    )
+  })
+
   beforeEach(() => {
     revokeSession.mockResolvedValue(undefined)
   })

@@ -25,6 +25,7 @@ import { KARAOKE_NIGHT_PATH, karaokeNightSessionUrl, } from '@/lib/karaoke-night
 import { extractTitle } from '@/lib/lyrics-service'
 import { generateVocalMidi } from '@/lib/midi-generator'
 import { CAN_TAKE_PAYMENT, IS_NATIVE_BUILD } from '@/lib/native-build'
+import { failureText } from '@/lib/no-answer-copy'
 import { addStemFingerprint } from '@/lib/shazam/melody-fingerprints'
 import { extractStemFingerprint } from '@/lib/shazam/stem-fingerprinter'
 import type { LivePitchContour, MatchCandidate } from '@/lib/shazam/types'
@@ -1314,7 +1315,7 @@ export const UvrPanel: Component<UvrPanelProps> = (props) => {
       }
       console.error('Processing error:', error)
       const message = humanizeProcessingError(
-        error instanceof Error ? error.message : 'Processing failed',
+        failureText(error, 'Processing failed'),
         processingMode,
       )
       setErrorUvrSession(sessionId, message)

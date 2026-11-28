@@ -1,6 +1,7 @@
 // Night music import coordinates explicit intent, cancellation and route-wide external drops.
 import { batch, createSignal, onCleanup, onMount, untrack } from 'solid-js'
 import { registerVoiceCommandBlocker } from '@/features/voice-control/voice-command-blockers'
+import { failureText } from '@/lib/no-answer-copy'
 import type { NightMusicAction, NightMusicRoom } from './night-music-import'
 import { isExternalFileDrag, NightMusicActionError, validateNightMusicFiles, } from './night-music-import'
 import type { UnifiedSongImportKind } from './song-import'
@@ -163,9 +164,10 @@ export function useNightMusicImport(options: NightMusicImportOptions) {
           caught instanceof NightMusicActionError ? caught.recovery : undefined,
         )
         setError(
-          caught instanceof Error
-            ? caught.message
-            : 'This file could not be opened. Try another file.',
+          failureText(
+            caught,
+            'This file could not be opened. Try another file.',
+          ),
         )
         setStatus('')
       }

@@ -15,6 +15,7 @@ import type { MeResponse } from '@/db/services/auth-service'
 import { deleteAccount, fetchMe, restoreAuth } from '@/db/services/auth-service'
 import { authVersion } from '@/db/services/user-service'
 import { API_BASE_URL } from '@/lib/defaults'
+import { failureText } from '@/lib/no-answer-copy'
 import { showNotification } from '@/stores/notifications-store'
 import styles from '../SettingsPanel.module.css'
 
@@ -55,10 +56,7 @@ export const DeleteAccountRow: Component = () => {
       // Close the dialog but surface the failure loudly — silently
       // "succeeding" would tell someone their data is gone when it is
       // still there.
-      showNotification(
-        err instanceof Error ? err.message : 'Could not delete account',
-        'error',
-      )
+      showNotification(failureText(err, 'Could not delete account'), 'error')
       setConfirmDelete(false)
     } finally {
       setBusy(false)

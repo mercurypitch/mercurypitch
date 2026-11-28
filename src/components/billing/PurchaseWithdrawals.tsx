@@ -22,6 +22,7 @@ import { createMemo, createResource, createSignal, For, Show } from 'solid-js'
 import { accountHeld } from '@/db/services/auth-service'
 import type { CancellablePack, WithdrawalStatement, } from '@/db/services/billing-service'
 import { fetchWithdrawals, formatPrice, submitWithdrawal, } from '@/db/services/billing-service'
+import { failureText } from '@/lib/no-answer-copy'
 import { balanceVersion, refreshBalance } from '@/stores/billing-store'
 import { CONFIRM_WITHDRAWAL_LABEL, WITHDRAW_LINK_LABEL, WITHDRAWAL_RECEIVED, } from '../../../workers/db-worker/src/withdrawal-wording'
 import styles from './PurchaseWithdrawals.module.css'
@@ -174,9 +175,7 @@ export const PurchaseWithdrawals: Component = () => {
       refreshBalance()
       void refetch()
     } catch (err) {
-      setError(
-        err instanceof Error ? err.message : "We couldn't send it. Try again.",
-      )
+      setError(failureText(err, "We couldn't send it. Try again."))
     } finally {
       setBusy(false)
     }

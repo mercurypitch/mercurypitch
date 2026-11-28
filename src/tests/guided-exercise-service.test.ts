@@ -1,5 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import { ZEN_EXERCISES } from '@/features/zen/exercise-catalog'
+import { NO_ANSWER_TEXT } from '@/lib/no-answer-copy'
 
 const API = 'https://guided-api.test'
 
@@ -73,6 +74,35 @@ describe('guided exercise service', () => {
       `${API}/api/guided-exercises/${exercise.id}/versions/${exercise.version}`,
       { signal: expect.any(AbortSignal) },
     )
+  })
+
+  // An admin call that got no answer says so plainly, not the request.
+  it('says plainly when our servers did not answer', async () => {
+    vi.useFakeTimers()
+    try {
+      vi.spyOn(globalThis, 'fetch').mockImplementation(
+        (_input, init) =>
+          new Promise<Response>((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => {
+              reject(new DOMException('Aborted', 'AbortError'))
+            })
+          }),
+      )
+      const service = await loadService()
+      const saved = service.saveGuidedExerciseDraft(
+        ZEN_EXERCISES[0].id,
+        ZEN_EXERCISES[0],
+        1,
+        'admin-key',
+      )
+      await vi.advanceTimersByTimeAsync(60_000)
+      await expect(saved).resolves.toMatchObject({
+        ok: false,
+        error: NO_ANSWER_TEXT,
+      })
+    } finally {
+      vi.useRealTimers()
+    }
   })
 
   it('surfaces optimistic draft conflicts as an ApiResult', async () => {
