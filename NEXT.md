@@ -6055,3 +6055,43 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
   runs". Disk 3.2 G free.
 - FIRST, when the owner writes and work starts again: turn it back on
   (update_trigger enabled=true) before launching any agent.
+
+## 28 Nov 17:15 UTC: the OWNER'S "Yes sure, continue": L6 FINAL VOICES started
+- OWNER, verbatim: "Yes sure, continue". It answers the last message: draft 03's look (no notes),
+  L6's final voices now, and the old scratch. The lead takes it as the go for the voices now.
+- The hourly check-in is ON again (trig_01JGQdH9F56vCzkd9UvFFRJv, enabled 17:10).
+- Voices checked with creative_list_voices:
+  - Merc "Merc V1 Gentle Whimsical D2" B4fBPRmasEsTgd6YlSok;
+  - Tavi "Tavi - Orange Merc (recreated)" nIlUZMilnuQseg9riG4H.
+- account_get_usage was refused (the connector lacks the permission), so the credit balance is
+  unknown.
+- FLOW 7EY16QvGRpxvJAqAZuQ3 ("... Lesson 6 final voices: Merc") holds BOTH hosts. Creating a
+  Tavi flow was refused by the auto-mode classifier; the lead did not retry.
+- l6film/voice-takes/batch.json: 72 lines in script order, Merc 58 (4,063 chars) and Tavi 14
+  (726 chars), 4,789 in all. ledger.jsonl starts empty.
+- LAUNCHED ((model) xhigh):
+  - GENERATE (builder) (briefs/l6-voices-generate.md): one call a line, never a retry;
+    it writes voice-takes/report.md at the end.
+  - IMPORT (builder) (briefs/l6-voices-import.md):
+    - Phase 1 now: L5's ctc_align.py, import.py and calibration copied, model W2V_MODEL=L5's;
+      the calibration checked on L6's scratch takes.
+    - Phase 2 when report.md exists: backup-pre-voices/, import 72, words check (V/ASR.md),
+      cues.py --no-tts, the rebuild sequence, script-md, gen-root, check, clock-lint,
+      merc-tags, board-clock then the board tools (report only), and the listening copies
+      renders/voices-final-listen.mp3 and -voice-only.mp3.
+    - Its notes: $S/l6-voices/NOTES.md.
+- THE OLD SCRATCH (polish2, eardrill, dev, audit, earwide, snotices; about 3.3 G): the lead
+  checked them (logs, shots, dist builds, one git init with no commits) and tried to delete
+  them. The auto-mode classifier REFUSED the delete. Not retried. Ask the owner for an explicit
+  yes, or a permission rule. Disk 3.2 G free.
+- NEXT:
+  1. Check the import (calibration, words-check flags, length).
+  2. Send the owner the listening copy.
+  3. Write the final-run brief from L5's final-run (lab/final-run: run-passes.sh,
+     render-pieces.sh, render-final.sh, finish-film.sh) with L6's HOSTS' PASSES list:
+     - the four end chunks on the new clock: retire S14's data-merc-lead -0.900 and S13's -hold
+       tags;
+     - Tavi's s14 landing as a hop with no sparkles (136);
+     - Merc's S3/S4 entrance at 52.40 and his b4a talk: retire the stand-in;
+     - re-measure the holds (127).
+     Then the stale probes, the 60 fps final in pieces (cache in /dev/shm) and the deliverables.
