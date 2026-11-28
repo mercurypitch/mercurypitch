@@ -726,7 +726,9 @@ export function DrumNightApp(props: DrumNightAppProps = {}): JSX.Element {
       import('@/lib/standalone-account'),
       import('@/lib/uvr-cloud-preflight'),
     ])
-    if (!account.accountReady()) await account.refreshAccount()
+    // Asked as the press when this page does not know the account yet. A
+    // read that got no answer stops here with that said, never as "sign in".
+    await account.ensureAccountKnown()
     const balance = account.credits()
     return preflight.cloudSplitBlocker({
       signedIn: account.signedIn(),

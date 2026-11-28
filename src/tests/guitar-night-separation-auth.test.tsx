@@ -7,15 +7,16 @@ import type { GuitarNightBandPreparationPort } from '@/features/guitar-night/ban
 import { GUITAR_NIGHT_GOOGLE_SEPARATION_INTENT_TTL_MS, takeGuitarNightGoogleSeparationIntent, } from '@/features/guitar-night/guitar-night-google-separation-intent'
 import { GuitarNightApp } from '@/features/guitar-night/GuitarNightApp'
 import type { GuitarNightOpenBackingResult, GuitarNightSongPort, } from '@/features/guitar-night/song-port'
+import { NO_ANSWER_TEXT } from '@/lib/no-answer-copy'
 import { closeAuthModal } from '@/stores/ui-store'
 
 const accountState = vi.hoisted(() => ({
-  ready: true,
   signedIn: false,
   balance: null as number | null,
   balanceAfterRefresh: null as number | null,
   refreshAccount: vi.fn<() => Promise<void>>(async () => undefined),
   refreshCredits: vi.fn<() => Promise<void>>(async () => undefined),
+  ensureAccountKnown: vi.fn<() => Promise<void>>(async () => undefined),
   googleResult: null as { ok: true } | { ok: false; error: string } | null,
 }))
 
@@ -33,8 +34,8 @@ vi.mock('@/lib/standalone-account', () => ({
     accountState.signedIn
       ? { email: 'guitarist@example.com', provider: 'password' as const }
       : null,
-  accountReady: () => accountState.ready,
   credits: () => accountState.balance,
+  ensureAccountKnown: accountState.ensureAccountKnown,
   refreshAccount: accountState.refreshAccount,
   refreshCredits: accountState.refreshCredits,
   signedIn: () => accountState.signedIn,
@@ -124,7 +125,6 @@ function deferred(): {
 
 describe('Guitar Night separation account gate', () => {
   beforeEach(() => {
-    accountState.ready = true
     accountState.signedIn = false
     accountState.balance = null
     accountState.balanceAfterRefresh = 4
@@ -133,6 +133,7 @@ describe('Guitar Night separation account gate', () => {
     accountState.refreshCredits.mockReset().mockImplementation(async () => {
       accountState.balance = accountState.balanceAfterRefresh
     })
+    accountState.ensureAccountKnown.mockReset().mockResolvedValue(undefined)
   })
 
   afterEach(() => {
@@ -180,6 +181,32 @@ describe('Guitar Night separation account gate', () => {
     )
     expect(accountState.refreshAccount).toHaveBeenCalled()
     expect(accountState.refreshCredits).toHaveBeenCalled()
+  })
+
+  // A read of the account that got no answer is not a sign-out: refused as
+  // "signed out", a signed-in guitarist was sent to sign in again.
+  it('says our servers did not answer, rather than asking to sign in, when it cannot tell who is signed in', async () => {
+    accountState.ensureAccountKnown.mockRejectedValueOnce(
+      new Error(NO_ANSWER_TEXT),
+    )
+    const prepareBand = vi.fn<GuitarNightBandPreparationPort['prepareBand']>()
+
+    render(() => (
+      <GuitarNightApp
+        loadSongPort={() => Promise.resolve(mixedSongPort('session-no-answer'))}
+        loadBandPreparationPort={() => Promise.resolve({ prepareBand })}
+      />
+    ))
+    await openMixedSong()
+    fireEvent.click(screen.getByRole('button', { name: 'Separate guitar' }))
+
+    expect((await screen.findAllByText(NO_ANSWER_TEXT)).length).toBeGreaterThan(
+      0,
+    )
+    expect(
+      screen.queryByRole('button', { name: /^Sign in$/ }),
+    ).not.toBeInTheDocument()
+    expect(prepareBand).not.toHaveBeenCalled()
   })
 
   it('does not turn a topbar sign-in into a separation request', async () => {
@@ -306,6 +333,41 @@ describe('Guitar Night separation account gate', () => {
         expect.objectContaining({ signal: expect.any(AbortSignal) }),
       ),
     )
+  })
+
+  it('says our servers did not answer when a Google return cannot tell who signed in', async () => {
+    const prepareBand = vi.fn<GuitarNightBandPreparationPort['prepareBand']>()
+    const songPort = mixedSongPort('session-google-no-answer')
+
+    render(() => (
+      <GuitarNightApp
+        loadSongPort={() => Promise.resolve(songPort)}
+        loadBandPreparationPort={() => Promise.resolve({ prepareBand })}
+      />
+    ))
+    await openMixedSong()
+    fireEvent.click(screen.getByRole('button', { name: 'Separate guitar' }))
+    fireEvent.click(await screen.findByRole('button', { name: /^Sign in$/ }))
+    fireEvent.click(
+      await screen.findByRole('button', { name: 'Start Google redirect' }),
+    )
+
+    cleanup()
+    closeAuthModal()
+    accountState.googleResult = { ok: true }
+    accountState.ensureAccountKnown.mockRejectedValue(new Error(NO_ANSWER_TEXT))
+
+    render(() => (
+      <GuitarNightApp
+        loadSongPort={() => Promise.resolve(songPort)}
+        loadBandPreparationPort={() => Promise.resolve({ prepareBand })}
+      />
+    ))
+
+    expect((await screen.findAllByText(NO_ANSWER_TEXT)).length).toBeGreaterThan(
+      0,
+    )
+    expect(prepareBand).not.toHaveBeenCalled()
   })
 
   it('consumes a failed Google return without replaying separation', async () => {

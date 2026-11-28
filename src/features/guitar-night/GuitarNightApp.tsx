@@ -39,7 +39,7 @@ import { DEFAULT_GUITAR_TUNING, instrumentTuningFromSource, } from '@/lib/guitar
 import type { GuitarPracticeScore } from '@/lib/guitar/recording-types'
 import { isLocalSaveNavigationLocked } from '@/lib/local-save-navigation-lock'
 import { CAN_TAKE_PAYMENT } from '@/lib/native-build'
-import { accountReady, credits, refreshAccount, refreshCredits, signedIn, } from '@/lib/standalone-account'
+import { credits, ensureAccountKnown, refreshAccount, refreshCredits, signedIn, } from '@/lib/standalone-account'
 import { useBeforeUnloadGuard } from '@/lib/use-before-unload-guard'
 import { useDatabaseLifecycle } from '@/lib/use-database-lifecycle'
 import { useFocusTrap } from '@/lib/use-focus-trap'
@@ -565,8 +565,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
     if (configured !== undefined) return configured()
     // The account chip is lazy, so on a cold room this state may not have
     // loaded yet — and refusing from data we do not have would turn away
-    // a signed-in singer. Ask, then decide.
-    if (!accountReady()) await refreshAccount()
+    // a signed-in singer. Ask, as the press, then decide. A read that got no
+    // answer stops here with that said, never as "sign in".
+    await ensureAccountKnown()
     // `refreshAccount` starts its credits refresh without awaiting it. For
     // a newly restored account, waiting here is what distinguishes a real
     // zero balance from the initial unknown value before a billable job.
@@ -731,7 +732,9 @@ export function GuitarNightApp(props: GuitarNightAppProps) {
       if (pendingBackingSelectionRevision !== backingSelectionRevision) return
       await refreshCredits()
       if (pendingBackingSelectionRevision !== backingSelectionRevision) return
-      const blocker = await checkBandPreflight()
+      // With no answer about the account, `start` below asks once more and
+      // says so on the band card, beside its Try again.
+      const blocker = await checkBandPreflight().catch(() => null)
       if (pendingBackingSelectionRevision !== backingSelectionRevision) return
       if (blocker !== null) {
         bandPreparationController.block(pending.sessionId, blocker)

@@ -97,6 +97,17 @@ describe('readMe', () => {
     expect(read).toEqual({ status: 'signed-out' })
   })
 
+  // The worker answers 404 when the account behind the token is gone, and
+  // the session check at boot already reads that as a rejected session.
+  it('answers signed out when the server no longer has the account', async () => {
+    setAuthToken(makeToken('apple'))
+    answer(404, { error: 'User not found' })
+
+    const read = await readMe()
+
+    expect(read).toEqual({ status: 'signed-out' })
+  })
+
   it('answers signed out with no token, without asking the server', async () => {
     const fetchMock = answer(200, ME)
 

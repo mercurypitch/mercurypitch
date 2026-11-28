@@ -5,11 +5,14 @@
 // fetchMe() in auth-service answers null for a signed-out phone and for a
 // phone with no network alike, and the web's account card is built on that
 // null. The native Account screen has to tell the two apart: a phone with no
-// signal is still signed in (S6 audit D1, REQ-NAM-049). This reads the same
-// /api/auth/me and keeps the answers apart.
+// signal is still signed in (S6 audit D1, REQ-NAM-049). So do the standalone
+// rooms (standalone-account.ts): a band split refused as "signed out" for a
+// read that got no answer sends a signed-in singer to sign in. This reads the
+// same /api/auth/me and keeps the answers apart.
 //
 // Kept out of auth-service.ts, as auth-email-code-service is: that file loads
-// on the first paint of every surface, and only the native shell asks this.
+// on the first paint of every surface, and only the native shell and the
+// standalone rooms ask this.
 
 import { fetchWithDeadline } from '@/db/api-fetch'
 import { API_BASE_URL } from '@/lib/defaults'
@@ -20,8 +23,9 @@ import { getAuthToken } from './user-service'
 /**
  * What reading the account came back with, and WHY when it has no account.
  *
- * `signed-out` is a phone with no session, or one the server refused;
- * `unreachable` is a network or a server that could not answer.
+ * `signed-out` is a phone with no session, one the server refused, or one
+ * whose account the server no longer has (404, as the session check at boot
+ * reads it); `unreachable` is a network or a server that could not answer.
  */
 export type MeRead =
   | { status: 'ok'; me: MeResponse }
@@ -53,7 +57,7 @@ export async function readMe(
     // A suspended account is told so here exactly as fetchMe's callers are.
     const body = await res.text().catch(() => '')
     handleAuthErrorResponse(res.status, body)
-    return res.status === 401 || res.status === 403
+    return res.status === 401 || res.status === 403 || res.status === 404
       ? { status: 'signed-out' }
       : { status: 'unreachable' }
   }
