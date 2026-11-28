@@ -130,6 +130,29 @@ describe('shared practice result', () => {
     expect(loadPublicSharedSession).toHaveBeenCalledTimes(2)
   })
 
+  // While the API is out of reach a read the page makes by itself is
+  // refused at once (api-reachability.ts); Try again is the person asking,
+  // so it goes.
+  it('reads again on Try again as the person, and first as the page', async () => {
+    vi.mocked(loadPublicSharedSession)
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(row)
+    render(() => (
+      <SharedRunResult
+        request={{ kind: 'public', id: 'shared-id' }}
+        onClose={vi.fn()}
+      />
+    ))
+    fireEvent.click(await screen.findByRole('button', { name: 'Try again' }))
+
+    await waitFor(() =>
+      expect(vi.mocked(loadPublicSharedSession).mock.calls).toEqual([
+        ['shared-id'],
+        ['shared-id', { userAction: true }],
+      ]),
+    )
+  })
+
   it('does not replace the next result when an older public request finishes late', async () => {
     const old = deferred<SharedSessionView | null>()
     vi.mocked(loadPublicSharedSession).mockReturnValueOnce(old.promise)

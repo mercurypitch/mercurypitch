@@ -329,8 +329,9 @@ export function CommunityScreen(): JSX.Element {
   const retry = (): void => {
     if (communityReading()) return
     // Try again went with the problem: the focus follows it, unless the
-    // singer has put it somewhere else meanwhile.
-    void refreshCommunity().then(() => {
+    // singer has put it somewhere else meanwhile. Its reads go as the
+    // singer's press (api-fetch.ts).
+    void refreshCommunity(false, { userAction: true }).then(() => {
       if (communityProblem() === null && focusLost()) focusFirst()
     })
   }

@@ -32,10 +32,12 @@ export async function loadProgressSessionRecords(
   options: {
     pageSize?: number
     maxRecords?: number
+    userAction?: boolean
   } = {},
 ): Promise<ProgressSessionRecords> {
   const pageSize = Math.min(1000, Math.max(1, options.pageSize ?? 500))
   const maxRecords = Math.max(pageSize, options.maxRecords ?? 5000)
+  const userAction = options.userAction === true
   const ownerId = getUserId()
 
   try {
@@ -43,7 +45,11 @@ export async function loadProgressSessionRecords(
     if (getUserId() !== ownerId) throw new Error('identity changed')
     const repo = db.getRepository<SessionRecord>('sessionRecords')
     const where = { userId: ownerId }
-    const initialTotal = await repo.count({ where, throwOnError: true })
+    const initialTotal = await repo.count({
+      where,
+      throwOnError: true,
+      userAction,
+    })
     const records: SessionRecord[] = []
     const seen = new Set<string>()
     const target = Math.min(initialTotal, maxRecords)
@@ -58,6 +64,7 @@ export async function loadProgressSessionRecords(
         limit: requested,
         offset,
         throwOnError: true,
+        userAction,
       })
       if (getUserId() !== ownerId) throw new Error('identity changed')
       if (page.length === 0) break
@@ -74,7 +81,11 @@ export async function loadProgressSessionRecords(
       const ended = b.endedAt.localeCompare(a.endedAt)
       return ended !== 0 ? ended : b.id.localeCompare(a.id)
     })
-    const finalTotal = await repo.count({ where, throwOnError: true })
+    const finalTotal = await repo.count({
+      where,
+      throwOnError: true,
+      userAction,
+    })
     if (getUserId() !== ownerId) throw new Error('identity changed')
     const stableRead =
       initialTotal === finalTotal && records.length === initialTotal

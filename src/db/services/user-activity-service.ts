@@ -143,7 +143,11 @@ export interface ProgressActivityRecords {
 
 /** Audited, bounded activity history for account-level Progress totals. */
 export async function loadProgressActivityRecords(
-  options: { pageSize?: number; maxRecords?: number } = {},
+  options: {
+    pageSize?: number
+    maxRecords?: number
+    userAction?: boolean
+  } = {},
 ): Promise<ProgressActivityRecords> {
   const ownerId = getUserId()
   if (!cloudActive()) {
@@ -152,12 +156,17 @@ export async function loadProgressActivityRecords(
 
   const pageSize = Math.min(1000, Math.max(1, options.pageSize ?? 500))
   const maxRecords = Math.max(pageSize, options.maxRecords ?? 5000)
+  const userAction = options.userAction === true
   try {
     const db = await getDb()
     if (getUserId() !== ownerId) throw new Error('identity changed')
     const repo = db.getRepository<UserActivity>('userActivity')
     const where = { userId: ownerId }
-    const initialTotal = await repo.count({ where, throwOnError: true })
+    const initialTotal = await repo.count({
+      where,
+      throwOnError: true,
+      userAction,
+    })
     const target = Math.min(initialTotal, maxRecords)
     const records: UserActivity[] = []
     const seen = new Set<string>()
@@ -172,6 +181,7 @@ export async function loadProgressActivityRecords(
         limit: requested,
         offset,
         throwOnError: true,
+        userAction,
       })
       if (getUserId() !== ownerId) throw new Error('identity changed')
       if (page.length === 0) break
@@ -188,7 +198,11 @@ export async function loadProgressActivityRecords(
       const at = b.at.localeCompare(a.at)
       return at !== 0 ? at : b.id.localeCompare(a.id)
     })
-    const finalTotal = await repo.count({ where, throwOnError: true })
+    const finalTotal = await repo.count({
+      where,
+      throwOnError: true,
+      userAction,
+    })
     if (getUserId() !== ownerId) throw new Error('identity changed')
     const totalAvailable = finalTotal >= records.length ? finalTotal : null
     return {

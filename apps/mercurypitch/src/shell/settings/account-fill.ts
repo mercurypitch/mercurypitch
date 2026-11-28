@@ -60,11 +60,16 @@ export function settleAccountFill(): void {
 export const forgetAccountFill = settleAccountFill
 
 /** Count what the account holds. Never throws. */
-export async function loadAccountFill(): Promise<AccountFill> {
+export async function loadAccountFill(
+  options: { userAction?: boolean } = {},
+): Promise<AccountFill> {
+  // Try again's reads go as the singer's press (api-fetch.ts).
+  const page =
+    options.userAction === true ? { ...PAGE, userAction: true } : PAGE
   try {
     const [sessions, voiceprints] = await Promise.all([
-      loadProgressSessionRecords(PAGE),
-      loadProgressVoiceprints(PAGE),
+      loadProgressSessionRecords(page),
+      loadProgressVoiceprints(page),
     ])
     if (!sessions.available || !voiceprints.available) {
       return { status: 'failed' }

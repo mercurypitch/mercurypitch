@@ -321,7 +321,7 @@ function SignedIn(): JSX.Element {
   const retry = (): void => {
     if (retrying()) return
     setRetrying(true)
-    void refreshAccount().finally(() => {
+    void refreshAccount({ userAction: true }).finally(() => {
       setRetrying(false)
       if (accountReach() === 'unreachable') return
       root?.querySelector<HTMLElement>('[data-account-focus]')?.focus()

@@ -53,9 +53,14 @@ export interface PublishedShareCounts {
  * Failed reads must reject so a temporary outage cannot erase known totals. */
 export async function loadPublishedShareCounts(
   userId: string,
+  asked: { userAction?: boolean } = {},
 ): Promise<PublishedShareCounts> {
   const db = await getDb()
-  const options = { where: { userId, isPublic: true }, throwOnError: true }
+  const options = {
+    where: { userId, isPublic: true },
+    throwOnError: true,
+    userAction: asked.userAction === true,
+  }
   const [melodies, sessions] = await Promise.all([
     db.getRepository<SharedMelody>('sharedMelodies').count(options),
     db.getRepository<SharedSession>('sharedSessions').count(options),
@@ -147,11 +152,13 @@ function parseMelodyItems(value: unknown): MelodyItem[] {
     })
 }
 
-export async function loadUserProfile(): Promise<UserProfileView | null> {
+export async function loadUserProfile(
+  options: { userAction?: boolean } = {},
+): Promise<UserProfileView | null> {
   try {
     const db = await getDb()
     const repo = db.getRepository<UserProfile>('userProfiles')
-    const p = await findOwnProfile(repo)
+    const p = await findOwnProfile(repo, undefined, options)
     if (p === undefined) return null
     return {
       userId: p.id,
@@ -171,7 +178,9 @@ export async function loadUserProfile(): Promise<UserProfileView | null> {
  * not be read, so a screen can tell a failed read from an empty board (the
  * phone's Community, slice 4c); `loadSharedMelodies` is the web's quiet read.
  */
-export async function readSharedMelodies(): Promise<SharedMelodyView[]> {
+export async function readSharedMelodies(
+  options: { userAction?: boolean } = {},
+): Promise<SharedMelodyView[]> {
   const db = await getDb()
   const repo = db.getRepository<SharedMelody>('sharedMelodies')
   const items = await repo.findAll({
@@ -179,6 +188,7 @@ export async function readSharedMelodies(): Promise<SharedMelodyView[]> {
     orderBy: 'createdAt',
     orderDir: 'desc',
     throwOnError: true,
+    userAction: options.userAction === true,
   })
   return items.flatMap((m) => {
     try {
@@ -205,7 +215,9 @@ export async function loadSharedMelodies(): Promise<SharedMelodyView[]> {
 }
 
 /** The public results, newest first, rejecting as `readSharedMelodies`. */
-export async function readSharedSessions(): Promise<SharedSessionView[]> {
+export async function readSharedSessions(
+  options: { userAction?: boolean } = {},
+): Promise<SharedSessionView[]> {
   const db = await getDb()
   const repo = db.getRepository<SharedSession>('sharedSessions')
   const items = await repo.findAll({
@@ -213,6 +225,7 @@ export async function readSharedSessions(): Promise<SharedSessionView[]> {
     orderBy: 'createdAt',
     orderDir: 'desc',
     throwOnError: true,
+    userAction: options.userAction === true,
   })
   return items.flatMap((row) => {
     const result = sharedSessionView(row)
@@ -252,6 +265,7 @@ function sharedSessionView(row: SharedSession): SharedSessionView | null {
  * Let transport failures reject so the result page can offer a retry. */
 export async function loadPublicSharedSession(
   id: string,
+  options: { userAction?: boolean } = {},
 ): Promise<SharedSessionView | null> {
   if (id.length === 0 || id.length > 128) return null
   const db = await getDb()
@@ -259,6 +273,7 @@ export async function loadPublicSharedSession(
     where: { id, isPublic: true },
     limit: 1,
     throwOnError: true,
+    userAction: options.userAction === true,
   })
   const row = rows[0]
   return row?.id === id && row.isPublic === true ? sharedSessionView(row) : null

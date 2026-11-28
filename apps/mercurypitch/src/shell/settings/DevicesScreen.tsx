@@ -64,10 +64,12 @@ export function DevicesScreen(): JSX.Element {
   })
 
   /** Read the list; true once it landed. */
-  async function load(): Promise<boolean> {
+  async function load(
+    options: { userAction?: boolean } = {},
+  ): Promise<boolean> {
     setReading(true)
     try {
-      const list = await fetchSessions()
+      const list = await fetchSessions(options)
       if (live) {
         setSessions(thisPhoneFirst(list))
         setFailed(false)
@@ -88,7 +90,7 @@ export function DevicesScreen(): JSX.Element {
   /** Try again: read the list, and hand focus to it once it lands. */
   async function retry(): Promise<void> {
     if (reading()) return
-    if (!(await load())) return
+    if (!(await load({ userAction: true }))) return
     root?.querySelector<HTMLElement>('[data-settings-focus]')?.focus()
   }
 

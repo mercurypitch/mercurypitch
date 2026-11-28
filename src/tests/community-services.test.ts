@@ -276,6 +276,7 @@ describe('share flows', () => {
     expect(count).toHaveBeenCalledWith({
       where: { userId: 'owner', isPublic: true },
       throwOnError: true,
+      userAction: false,
     })
   })
 

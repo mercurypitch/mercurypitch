@@ -167,8 +167,9 @@ export function setAuthToken(token: string | null): void {
 export async function findOwnProfile(
   repo: Repository<UserProfile>,
   userId = getUserId(),
+  options: { userAction?: boolean } = {},
 ): Promise<UserProfile | undefined> {
-  const byId = await repo.findById(userId)
+  const byId = await repo.findById(userId, options)
   if (byId !== null) return byId
   if (API_BASE_URL != null && API_BASE_URL !== '') return undefined
   const profiles = await repo.findAll({ limit: 1 })

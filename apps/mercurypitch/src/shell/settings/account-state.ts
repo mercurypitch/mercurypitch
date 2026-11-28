@@ -145,7 +145,9 @@ function cardFrom(me: MeResponse): AccountCard {
 }
 
 /** Read the account again and fill the card. Safe to call at any time. */
-export async function refreshAccount(): Promise<void> {
+export async function refreshAccount(
+  options: { userAction?: boolean } = {},
+): Promise<void> {
   if (!accountHeld()) {
     setReach('idle')
     return
@@ -154,7 +156,7 @@ export async function refreshAccount(): Promise<void> {
   generation += 1
   const mine = generation
   setReach('loading')
-  const read = await readMe()
+  const read = await readMe(options)
   if (mine !== generation || currentAccountId() !== id) return
   if (read.status === 'ok') {
     const card = cardFrom(read.me)

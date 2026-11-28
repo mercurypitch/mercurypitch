@@ -81,6 +81,7 @@ describe('public practice-result lookup', () => {
       where: { id: privateRow.id, isPublic: true },
       limit: 1,
       throwOnError: true,
+      userAction: false,
     })
     findAll.mockResolvedValueOnce([
       { ...privateRow, isPublic: true, id: 'different-public-row' },

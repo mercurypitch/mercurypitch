@@ -248,12 +248,15 @@ function offline(): boolean {
 }
 
 /** The singer's figures, or null when their runs could not be read. */
-async function readProfile(viewer: string): Promise<CommunityProfile | null> {
+async function readProfile(
+  viewer: string,
+  options: { userAction?: boolean },
+): Promise<CommunityProfile | null> {
   const [history, streak, published, own] = await Promise.all([
-    loadProgressSessionRecords(),
-    getCurrentStreak(viewer),
-    loadPublishedShareCounts(viewer).catch(() => null),
-    loadUserProfile(),
+    loadProgressSessionRecords(options),
+    getCurrentStreak(viewer, options),
+    loadPublishedShareCounts(viewer, options).catch(() => null),
+    loadUserProfile(options),
   ])
   if (!history.available) return null
   const runs = history.records.map(runFromRecord).filter(isProgressRun)
@@ -274,13 +277,16 @@ async function readProfile(viewer: string): Promise<CommunityProfile | null> {
  * that gets no answer keeps what was loaded and says so; offline, the phone
  * asks nothing.
  */
-export function refreshCommunity(fresh = false): Promise<void> {
+export function refreshCommunity(
+  fresh = false,
+  options: { userAction?: boolean } = {},
+): Promise<void> {
   const viewer = untrack(viewerNow)
   if (!fresh && inflight !== null && inflight.viewer === viewer) {
     return inflight.done
   }
   const mine = ++generation
-  const done = readCommunity(mine, viewer).finally(() => {
+  const done = readCommunity(mine, viewer, options).finally(() => {
     if (inflight?.done === done) inflight = null
   })
   inflight = { viewer, done }
@@ -297,6 +303,7 @@ type CommunityRead = [
 async function readCommunity(
   mine: number,
   viewer: string | null,
+  options: { userAction?: boolean },
 ): Promise<void> {
   if (offline()) {
     batch(() => {
@@ -309,9 +316,9 @@ async function readCommunity(
   let read: CommunityRead
   try {
     read = await Promise.all([
-      readSharedMelodies(),
-      readSharedSessions(),
-      viewer === null ? Promise.resolve(null) : readProfile(viewer),
+      readSharedMelodies(options),
+      readSharedSessions(options),
+      viewer === null ? Promise.resolve(null) : readProfile(viewer, options),
     ])
   } catch {
     if (mine === generation) failed(viewer)

@@ -171,13 +171,15 @@ export function forgetLeague(): void {
  * gets no answer keeps what the phone had and says so (`leagueReadFailed`)
  * until one does; a session the server refuses is asked to sign in again.
  */
-export function refreshLeague(): Promise<void> {
+export function refreshLeague(
+  options: { userAction?: boolean } = {},
+): Promise<void> {
   const accountId = untrack(accountHeld) ? currentAccountId() : null
   if (inflight !== null && inflight.accountId === accountId) {
     return inflight.done
   }
   const mine = ++generation
-  const done = readLeague(mine, accountId).finally(() => {
+  const done = readLeague(mine, accountId, options).finally(() => {
     if (inflight?.done === done) inflight = null
   })
   inflight = { accountId, done }
@@ -187,11 +189,12 @@ export function refreshLeague(): Promise<void> {
 async function readLeague(
   mine: number,
   accountId: string | null,
+  options: { userAction?: boolean },
 ): Promise<void> {
   setReading(true)
   const [read, rungs] = await Promise.all([
-    accountId === null ? Promise.resolve(null) : readLeagueMe(),
-    fetchLeagueLadder(),
+    accountId === null ? Promise.resolve(null) : readLeagueMe(options),
+    fetchLeagueLadder(options),
   ])
   if (mine !== generation) return
   batch(() => {

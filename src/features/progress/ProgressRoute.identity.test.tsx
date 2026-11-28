@@ -271,3 +271,27 @@ describe('ProgressRoute identity safety and recovery', () => {
     })
   })
 })
+
+describe('Try again on Progress', () => {
+  // While the API is out of reach a read the page makes by itself is
+  // refused at once (api-reachability.ts); Try again is the singer asking,
+  // so its reads go. The app's Progress screen uses the same record.
+  it('reads again as the singer, and first as the page', async () => {
+    routeMocks.loadProgressModel
+      .mockReset()
+      .mockRejectedValueOnce(new Error('offline'))
+      .mockResolvedValueOnce(accountAModel)
+    render(() => <ProgressRoute />)
+    fireEvent.click(await screen.findByRole('button', { name: 'Try again' }))
+
+    await waitFor(() =>
+      expect(
+        routeMocks.loadProgressModel.mock.calls.map(
+          ([options]) =>
+            (options as { userAction?: boolean } | undefined)?.userAction ===
+            true,
+        ),
+      ).toEqual([false, true]),
+    )
+  })
+})

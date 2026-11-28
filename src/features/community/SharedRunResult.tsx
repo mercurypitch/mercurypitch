@@ -8,18 +8,26 @@ import styles from './SharedRunResult.module.css'
 
 type ResultState = { summary: SharedRunResultData | null; failed: boolean }
 
+/**
+ * What Try again hands the read it starts again: the person asked, so it goes
+ * even while the API is out of reach (api-fetch.ts).
+ */
+const TRY_AGAIN = 'try-again'
+
 export function SharedRunResult(props: {
   request: SharedRunRequest
   onClose: () => void
 }) {
   const [result, { refetch }] = createResource(
     () => props.request,
-    async (request): Promise<ResultState> => {
+    async (request, info): Promise<ResultState> => {
       try {
         const summary =
           request.kind === 'payload'
             ? decodeSharedRunResult(request.payload)
-            : await loadPublicSharedSession(request.id)
+            : info.refetching === TRY_AGAIN
+              ? await loadPublicSharedSession(request.id, { userAction: true })
+              : await loadPublicSharedSession(request.id)
         return { summary, failed: false }
       } catch {
         return { summary: null, failed: true }
@@ -48,7 +56,7 @@ export function SharedRunResult(props: {
               <button
                 type="button"
                 class={styles.button}
-                onClick={() => void refetch()}
+                onClick={() => void refetch(TRY_AGAIN)}
               >
                 Try again
               </button>

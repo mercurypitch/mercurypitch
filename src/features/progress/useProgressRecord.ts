@@ -141,6 +141,12 @@ export interface ProgressRecord {
  * stays a pure surface. A changed auth/session key never renders the
  * previous singer's retained resource value during the replacement request.
  */
+/**
+ * What Try again hands the read it starts again: the singer asked, so its
+ * reads go even while the API is out of reach (progress-data.ts).
+ */
+const TRY_AGAIN = 'try-again'
+
 export function useProgressRecord(): ProgressRecord {
   const currentKey = (): string =>
     progressResourceKey(authVersion(), sessionRecordVersion())
@@ -151,7 +157,9 @@ export function useProgressRecord(): ProgressRecord {
         return {
           status: 'success',
           key,
-          model: await loadProgressModel(),
+          model: await loadProgressModel({
+            userAction: info.refetching === TRY_AGAIN,
+          }),
         }
       } catch (error) {
         const retainedModel = progressModelForKey(info.value, key)
@@ -320,7 +328,7 @@ export function useProgressRecord(): ProgressRecord {
     status,
     errorMessage,
     emptyAction: PROGRESS_EMPTY_ACTION,
-    retry: () => void refetch(),
+    retry: () => void refetch(TRY_AGAIN),
     selectMoment,
     filterHistory,
     changePeriod: () => trackEvent('progress_period_changed'),

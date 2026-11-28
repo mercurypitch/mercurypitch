@@ -883,14 +883,17 @@ describe('Progress data loader', () => {
     expect(dependencies.loadProgressSessionRecords).toHaveBeenCalledWith({
       pageSize: 500,
       maxRecords: 5_000,
+      userAction: false,
     })
     expect(dependencies.loadProgressVoiceprints).toHaveBeenCalledWith({
       pageSize: 500,
       maxRecords: 5_000,
+      userAction: false,
     })
     expect(dependencies.loadProgressActivityRecords).toHaveBeenCalledWith({
       pageSize: 500,
       maxRecords: 5_000,
+      userAction: false,
     })
   })
 })

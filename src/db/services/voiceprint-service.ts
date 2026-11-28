@@ -273,7 +273,11 @@ export interface ProgressVoiceprintRecords {
  * several people, so they are never compared as one singer's growth.
  */
 export async function loadProgressVoiceprints(
-  options: { pageSize?: number; maxRecords?: number } = {},
+  options: {
+    pageSize?: number
+    maxRecords?: number
+    userAction?: boolean
+  } = {},
 ): Promise<ProgressVoiceprintRecords> {
   const ownerId = getUserId()
   const accountOwnerId = realAccountHeld() ? ownerId : null
@@ -294,12 +298,17 @@ export async function loadProgressVoiceprints(
 
   const pageSize = Math.min(1000, Math.max(1, options.pageSize ?? 500))
   const maxRecords = Math.max(pageSize, options.maxRecords ?? 5000)
+  const userAction = options.userAction === true
   try {
     const db = await getDb()
     if (getUserId() !== ownerId) throw new Error('identity changed')
     const repo = db.getRepository<Voiceprint>('voiceprints')
     const where = { userId: ownerId }
-    const initialTotal = await repo.count({ where, throwOnError: true })
+    const initialTotal = await repo.count({
+      where,
+      throwOnError: true,
+      userAction,
+    })
     const target = Math.min(initialTotal, maxRecords)
     const remote: VoiceprintRecord[] = []
     const seen = new Set<string>()
@@ -314,6 +323,7 @@ export async function loadProgressVoiceprints(
         limit: requested,
         offset,
         throwOnError: true,
+        userAction,
       })
       if (getUserId() !== ownerId) throw new Error('identity changed')
       if (page.length === 0) break
@@ -332,7 +342,11 @@ export async function loadProgressVoiceprints(
       if (page.length < requested) break
     }
 
-    const finalTotal = await repo.count({ where, throwOnError: true })
+    const finalTotal = await repo.count({
+      where,
+      throwOnError: true,
+      userAction,
+    })
     if (getUserId() !== ownerId) throw new Error('identity changed')
     const complete =
       initialTotal === finalTotal &&

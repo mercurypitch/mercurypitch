@@ -493,13 +493,14 @@ export async function repairStreak(): Promise<RepairResult> {
  */
 export async function getCurrentStreak(
   expectedUserId = getUserId(),
+  options: { userAction?: boolean } = {},
 ): Promise<number> {
   try {
     if (getUserId() !== expectedUserId) return 0
     const db = await getDb()
     if (getUserId() !== expectedUserId) return 0
     const repo = db.getRepository<UserProfile>('userProfiles')
-    const profile = await findOwnProfile(repo, expectedUserId)
+    const profile = await findOwnProfile(repo, expectedUserId, options)
     if (getUserId() !== expectedUserId) return 0
     return computeStreakState(streakFieldsOf(profile), todayDateString())
       .currentStreak

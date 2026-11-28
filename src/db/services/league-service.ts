@@ -61,11 +61,15 @@ function base(): string {
 }
 
 /** The 7-rung ladder, ascending. Empty when no API / unreachable. */
-export async function fetchLeagueLadder(): Promise<LeagueRung[]> {
+export async function fetchLeagueLadder(
+  options: { userAction?: boolean } = {},
+): Promise<LeagueRung[]> {
   if (base() === '') return []
   try {
     const res = await fetchWithDeadline(
       `${base()}/api/leagues?orderBy=rank&orderDir=asc`,
+      undefined,
+      { userAction: options.userAction === true },
     )
     if (!res.ok) return []
     return (await res.json()) as LeagueRung[]
@@ -91,20 +95,26 @@ export type LeagueMeRead =
   | { status: 'unreachable' }
 
 /** One GET of /api/league/me: its response, or null with no answer. */
-async function requestLeagueMe(): Promise<Response | null> {
+async function requestLeagueMe(
+  options: { userAction?: boolean } = {},
+): Promise<Response | null> {
   if (base() === '') return null
   try {
-    return await fetchWithDeadline(`${base()}/api/league/me`, {
-      headers: getAuthHeaders(),
-    })
+    return await fetchWithDeadline(
+      `${base()}/api/league/me`,
+      { headers: getAuthHeaders() },
+      { userAction: options.userAction === true },
+    )
   } catch {
     return null
   }
 }
 
 /** The signed-in user's league state, or why there is none. */
-export async function readLeagueMe(): Promise<LeagueMeRead> {
-  const res = await requestLeagueMe()
+export async function readLeagueMe(
+  options: { userAction?: boolean } = {},
+): Promise<LeagueMeRead> {
+  const res = await requestLeagueMe(options)
   if (res === null) return { status: 'unreachable' }
   if (!res.ok) {
     // A suspended account is told so here as on every other read.
@@ -126,8 +136,10 @@ export async function readLeagueMe(): Promise<LeagueMeRead> {
  * (the view falls back to the locked ladder-only presentation). A passive
  * read: whatever the answer, it changes nothing about the session.
  */
-export async function fetchLeagueMe(): Promise<LeagueMe | null> {
-  const res = await requestLeagueMe()
+export async function fetchLeagueMe(
+  options: { userAction?: boolean } = {},
+): Promise<LeagueMe | null> {
+  const res = await requestLeagueMe(options)
   if (res === null || !res.ok) return null
   try {
     return (await res.json()) as LeagueMe

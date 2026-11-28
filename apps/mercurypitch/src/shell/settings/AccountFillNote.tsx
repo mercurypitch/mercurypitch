@@ -25,9 +25,9 @@ export function AccountFillNote(): JSX.Element {
     live = false
   })
 
-  async function load(): Promise<void> {
+  async function load(options: { userAction?: boolean } = {}): Promise<void> {
     setLoading(true)
-    const next = await loadAccountFill()
+    const next = await loadAccountFill(options)
     if (!live) return
     setLoading(false)
     setFill(next)
@@ -66,7 +66,7 @@ export function AccountFillNote(): JSX.Element {
                 type="button"
                 class="mp-set-button mp-set-button--secondary mp-set-button--small"
                 disabled={loading()}
-                onClick={() => void load()}
+                onClick={() => void load({ userAction: true })}
                 data-testid="account-fill-retry"
               >
                 Try again

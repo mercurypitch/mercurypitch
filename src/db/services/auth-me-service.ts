@@ -29,7 +29,9 @@ export type MeRead =
   | { status: 'unreachable' }
 
 /** The account's own record, or why there is none. See `MeRead`. */
-export async function readMe(): Promise<MeRead> {
+export async function readMe(
+  options: { userAction?: boolean } = {},
+): Promise<MeRead> {
   const token = getAuthToken()
   if (token == null || token === '') return { status: 'signed-out' }
   if (API_BASE_URL == null || API_BASE_URL === '') {
@@ -37,9 +39,11 @@ export async function readMe(): Promise<MeRead> {
   }
   let res: Response
   try {
-    res = await fetchWithDeadline(`${API_BASE_URL}/api/auth/me`, {
-      headers: { Authorization: `Bearer ${token}` },
-    })
+    res = await fetchWithDeadline(
+      `${API_BASE_URL}/api/auth/me`,
+      { headers: { Authorization: `Bearer ${token}` } },
+      { userAction: options.userAction === true },
+    )
   } catch {
     // Offline, CORS, a worker that is down, no answer by the deadline, or
     // the API out of reach since an earlier call (api-fetch.ts).

@@ -91,13 +91,16 @@ interface GrantContextResponse {
   sharesPosted: number
 }
 
-async function fetchBulkContext(): Promise<GrantContext | null> {
+async function fetchBulkContext(
+  options: { userAction?: boolean } = {},
+): Promise<GrantContext | null> {
   try {
     const res = await fetchWithDeadline(
       `${API_BASE_URL}/api/me/grant-context`,
       {
         headers: getAuthHeaders(),
       },
+      { userAction: options.userAction === true },
     )
     if (!res.ok) return null
     const body = (await res.json()) as GrantContextResponse
@@ -233,10 +236,12 @@ export async function loadGrantContext(): Promise<GrantContext> {
  * dashboard uses this audited envelope so failed account reads never become
  * invented zero streaks or an empty earned-mark shelf.
  */
-export async function loadProgressGrantContext(): Promise<ProgressGrantContext> {
+export async function loadProgressGrantContext(
+  options: { userAction?: boolean } = {},
+): Promise<ProgressGrantContext> {
   const ownerId = getUserId()
   if (cloudActive()) {
-    const context = await fetchBulkContext()
+    const context = await fetchBulkContext(options)
     if (getUserId() !== ownerId || context === null) {
       return { context: null, available: false }
     }

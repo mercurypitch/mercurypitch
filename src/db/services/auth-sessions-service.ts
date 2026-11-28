@@ -39,11 +39,15 @@ function requireAuthorized(): { base: string; token: string } {
 }
 
 /** Where this account is signed in, most recently seen first. */
-export async function fetchSessions(): Promise<AuthSession[]> {
+export async function fetchSessions(
+  options: { userAction?: boolean } = {},
+): Promise<AuthSession[]> {
   const { base, token } = requireAuthorized()
-  const res = await fetchWithDeadline(`${base}/api/auth/sessions`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const res = await fetchWithDeadline(
+    `${base}/api/auth/sessions`,
+    { headers: { Authorization: `Bearer ${token}` } },
+    { userAction: options.userAction === true },
+  )
   if (!res.ok) throw new Error('Could not load your devices')
   const body = (await res.json()) as { sessions?: AuthSession[] }
   return body.sessions ?? []

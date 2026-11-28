@@ -288,7 +288,7 @@ export function LeaguesScreen(): JSX.Element {
             aria-disabled={leagueReading() ? 'true' : undefined}
             onClick={() => {
               if (leagueReading()) return
-              void refreshLeague().then(() => {
+              void refreshLeague({ userAction: true }).then(() => {
                 if (!leagueReadFailed()) focusLeague()
               })
             }}

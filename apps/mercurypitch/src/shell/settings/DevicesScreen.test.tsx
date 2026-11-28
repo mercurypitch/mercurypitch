@@ -132,6 +132,25 @@ describe('the Devices screen', () => {
     expect(devices()).toHaveLength(1)
   })
 
+  // While the API is out of reach a read the screen makes by itself is
+  // refused at once (api-reachability.ts); Try again is the singer asking,
+  // so it goes.
+  it('reads on Try again as the singer, and on opening as the screen', async () => {
+    fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
+    fetchMock.mockResolvedValueOnce([session('s-1', 'Safari on iPhone', true)])
+    view = renderShell(() => <DevicesScreen />)
+    await settle()
+
+    view.container
+      .querySelector<HTMLButtonElement>('[data-testid="devices-retry"]')
+      ?.click()
+    await settle()
+
+    expect(
+      fetchMock.mock.calls.map(([options]) => options?.userAction === true),
+    ).toEqual([false, true])
+  })
+
   it('keeps Try again, and its focus, while the read is out, then hands focus to the list', async () => {
     fetchMock.mockRejectedValueOnce(new TypeError('Failed to fetch'))
     let land: (list: AuthSession[]) => void = () => undefined

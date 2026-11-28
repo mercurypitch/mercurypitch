@@ -21,20 +21,25 @@ import type { BuildProgressModelOptions, ProgressDataAvailability, ProgressModel
 import { buildProgressModel, challengeIdForRecord, PROGRESS_SESSION_LIMIT, } from './model'
 
 export interface ProgressDataDependencies {
-  loadProgressGrantContext: () => Promise<ProgressGrantContext>
+  loadProgressGrantContext: (options: {
+    userAction?: boolean
+  }) => Promise<ProgressGrantContext>
   loadProgressSessionRecords: (options: {
     pageSize: number
     maxRecords: number
+    userAction?: boolean
   }) => Promise<ProgressSessionRecords>
   loadProgressVoiceprints: (options: {
     pageSize: number
     maxRecords: number
+    userAction?: boolean
   }) => Promise<ProgressVoiceprintRecords>
   loadProgressActivityRecords: (options: {
     pageSize: number
     maxRecords: number
+    userAction?: boolean
   }) => Promise<ProgressActivityRecords>
-  fetchLeagueMe: () => Promise<LeagueMe | null>
+  fetchLeagueMe: (options: { userAction?: boolean }) => Promise<LeagueMe | null>
   loadChallengeTrace: (challengeId: string) => StoredChallengeTrace | null
   /**
    * Push pending badge and achievement writes before reading them back.
@@ -45,6 +50,11 @@ export interface ProgressDataDependencies {
 
 export interface LoadProgressModelOptions extends BuildProgressModelOptions {
   dependencies?: ProgressDataDependencies
+  /**
+   * The singer pressed Try again: every read below goes as their press, even
+   * while the API is out of reach (api-fetch.ts). The flush stays the page's.
+   */
+  userAction?: boolean
 }
 
 export const defaultProgressDataDependencies: ProgressDataDependencies = {
@@ -92,6 +102,7 @@ export async function loadProgressModel(
 ): Promise<ProgressModel> {
   const dependencies = options.dependencies ?? defaultProgressDataDependencies
   const sessionLimit = options.sessionLimit ?? PROGRESS_SESSION_LIMIT
+  const userAction = options.userAction === true
   // Achievement progress is written on a delay, and the page that displays
   // it is the moment worth paying the write for — otherwise a singer who
   // finishes a run and comes straight here reads the numbers from before it.
@@ -108,20 +119,23 @@ export async function loadProgressModel(
     activityResult,
     leagueResult,
   ] = await Promise.allSettled([
-    dependencies.loadProgressGrantContext(),
+    dependencies.loadProgressGrantContext({ userAction }),
     dependencies.loadProgressSessionRecords({
       pageSize: Math.min(500, sessionLimit),
       maxRecords: sessionLimit,
+      userAction,
     }),
     dependencies.loadProgressVoiceprints({
       pageSize: Math.min(500, sessionLimit),
       maxRecords: sessionLimit,
+      userAction,
     }),
     dependencies.loadProgressActivityRecords({
       pageSize: Math.min(500, sessionLimit),
       maxRecords: sessionLimit,
+      userAction,
     }),
-    dependencies.fetchLeagueMe(),
+    dependencies.fetchLeagueMe({ userAction }),
   ])
 
   const contextEnvelope = valueOr<ProgressGrantContext>(contextResult, {
