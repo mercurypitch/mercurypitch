@@ -29,11 +29,11 @@ async function newSong(page: Page): Promise<void> {
   ).toBeVisible()
 }
 
-/** New lane's Piano or Drums: its empty clip opens in Draw. */
+/** New lane's Piano or Drums, from the row under the lanes: its empty clip opens in Draw. */
 async function newMidiLane(page: Page, kind: 'piano' | 'drums') {
   await studioRegion(page)
+    .locator('[data-studio-new-lane]')
     .getByRole('button', { name: `New ${kind} lane`, exact: true })
-    .first()
     .click()
   const editor = noteEditor(page)
   await expect(editor).toHaveAttribute(

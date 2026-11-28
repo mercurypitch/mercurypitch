@@ -29,6 +29,16 @@ export interface StudioInputsPanelProps {
   clock(): Promise<AudioContext | null>
 }
 
+/** The Studio's clock for a check in Inputs: started inside the press, as an arm's is. */
+export async function studioInputsClock(transport: {
+  unlock(): Promise<boolean>
+  clock(): AudioContext | null
+}): Promise<AudioContext | null> {
+  if (!(await transport.unlock().catch(() => false))) return null
+  const context = transport.clock()
+  return context?.state === 'running' ? context : null
+}
+
 export function StudioInputsPanel(props: StudioInputsPanelProps) {
   const inputs = useStudioInputs({
     // The workspace makes its recorder once and never replaces it.
