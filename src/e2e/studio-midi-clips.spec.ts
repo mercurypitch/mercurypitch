@@ -1,4 +1,4 @@
-// Studio MIDI clips — drawn from scratch and lengthened, each result read back from the saved song: New lane's Piano and Drums (from Add takes on a phone, and from an empty song's own offer under its Add takes, on a computer, a tablet and a phone) make a lane with an empty clip four bars long at the playhead's bar, its audio a quarter second of silence, open in Draw; a double-click with a mouse, or two taps of a finger, on an empty stretch of a MIDI lane makes a clip from the bar under it; a MIDI clip's right edge in the lanes drags past its audio, snapping, its sequence growing, one undo step; the editor's End handle lengthens the clip by a finger or a mouse; and a note drawn in a new clip is rendered and kept as the editor closes, the clip's render key then naming its notes. The sampled grand's samples are refused, so the piano's synth renders. Nothing reaches the live site.
+// Studio MIDI clips — drawn from scratch and lengthened, each result read back from the saved song: New lane's Piano and Drums (from Add takes on a phone, from an empty song's own offer under its Add takes on a phone, and from the New lane row at the top of an empty song's lane column on a computer and a tablet; a new song opens with no panel over it) make a lane with an empty clip four bars long at the playhead's bar, its audio a quarter second of silence, open in Draw; a double-click with a mouse, or two taps of a finger, on an empty stretch of a MIDI lane makes a clip from the bar under it; a MIDI clip's right edge in the lanes drags past its audio, snapping, its sequence growing, one undo step; the editor's End handle lengthens the clip by a finger or a mouse; and a note drawn in a new clip is rendered and kept as the editor closes, the clip's render key then naming its notes. The sampled grand's samples are refused, so the piano's synth renders. Nothing reaches the live site.
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { studioMidiRenderKey } from '@/lib/studio/midi/render-key'
 import { center, importStudioAudio, openArrangement, studioRegion, } from './helpers/dedicatedstudio-fixture'
@@ -396,7 +396,7 @@ test.describe('Studio MIDI clips on a phone', () => {
   })
 })
 
-/** A new song with nothing in it and Add takes closed: the song's own way to start. */
+/** A new song with nothing in it: no panel opens over it, and its empty state offers the ways to start. */
 async function openEmptySong(page: Page): Promise<Locator> {
   await page.addInitScript(() => {
     ;(window as unknown as { E2E_TEST_MODE?: boolean }).E2E_TEST_MODE = true
@@ -408,40 +408,65 @@ async function openEmptySong(page: Page): Promise<Locator> {
   await studio
     .getByRole('button', { name: 'Create project', exact: true })
     .click()
-  // A new song opens Add takes, which holds New lane as well. Closed, the
-  // song offers both ways to start itself.
-  await studio
-    .getByRole('button', { name: 'Close Add takes', exact: true })
-    .click()
-  return studio.getByRole('group', { name: 'Start your song', exact: true })
+  const start = studio.getByRole('group', {
+    name: 'Start your song',
+    exact: true,
+  })
+  await expect(start).toBeVisible()
+  // Nothing over the workspace: Add takes stays shut until asked for.
+  await expect(
+    studio.getByRole('button', { name: 'Close Add takes', exact: true }),
+  ).toHaveCount(0)
+  await expect(
+    studio.getByRole('button', { name: 'Add takes', exact: true }).first(),
+  ).toBeVisible()
+  return start
 }
 
-for (const [where, device, touch, tag] of [
-  ['a computer', COMPUTER, false, ' @smoke'],
-  ['a tablet', TABLET, true, ''],
-  ['a phone', PHONE, true, ' @smoke'],
+for (const [where, device, touch, row] of [
+  ['a computer', COMPUTER, false, true],
+  ['a tablet', TABLET, true, true],
+  ['a phone', PHONE, true, false],
 ] as const) {
   test.describe(`Studio MIDI clips from an empty song on ${where}`, () => {
     test.use(device)
 
-    test(`an empty song offers Add takes and New lane’s Audio, Piano and Drums, and Piano makes a Piano lane with an empty clip, open in Draw${tag}`, async ({
+    test(`a new song opens with no panel and offers Add takes and New lane’s Audio, Piano and Drums once, ${row ? 'in the row at the top of the lane column' : 'under Add takes'}, and Piano makes a Piano lane with an empty clip, open in Draw @smoke`, async ({
       page,
     }) => {
       test.setTimeout(120_000)
       const live = await routeNetwork(page)
       const start = await openEmptySong(page)
+      const studio = studioRegion(page)
       await expect(
         start.getByRole('button', { name: 'Add takes', exact: true }),
       ).toBeEnabled()
-      const choices = start.getByRole('group', {
-        name: 'New lane',
-        exact: true,
-      })
+      const choices = (
+        row ? studio.locator('[data-studio-new-lane]') : start
+      ).getByRole('group', { name: 'New lane', exact: true })
       await expect(choices.getByRole('button')).toHaveText([
         'Audio',
         'Piano',
         'Drums',
       ])
+      // The three choices show once.
+      await expect(
+        studio.getByRole('group', { name: 'New lane', exact: true }),
+      ).toHaveCount(1)
+      if (row) {
+        // The row stands where the first lane will: right under the ruler.
+        await expect(studio.locator('[data-studio-track]')).toHaveCount(0)
+        const ruler = (await studio
+          .locator('[data-studio-timeline-viewport] > div > div')
+          .first()
+          .boundingBox())!
+        const top = (await studio
+          .locator('[data-studio-new-lane]')
+          .boundingBox())!
+        expect(Math.abs(top.y - (ruler.y + ruler.height))).toBeLessThanOrEqual(
+          2,
+        )
+      }
       const piano = choices.getByRole('button', {
         name: 'New piano lane',
         exact: true,

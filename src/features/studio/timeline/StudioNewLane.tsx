@@ -2,14 +2,15 @@
 // Studio new lane — New lane's three choices, an Audio lane for takes or a Piano or Drums lane with an empty clip to draw in; and the row under the lanes that holds them, where a dragged clip is dropped for a lane of its own
 // ============================================================
 //
-// A computer and a tablet offer them in the row under the lanes. A phone
-// has no room for that row, and adds its lanes from Add takes, where the
-// same three choices stand (StudioSourcePicker.tsx). A song with no lanes
-// has no row either: its empty state offers them under Add takes, on every
-// screen (StudioNewLaneStart). Each choice wears its instrument's glyph in
-// its family's ink, as the lane it makes will (InstrumentGlyph.tsx): beside
-// its word in a computer's narrow header column, and as a chip over its
-// word for a finger.
+// A computer and a tablet offer them in the row under the lanes, and a
+// song with no lanes has the row at the top of its lane column, where it
+// sits under the first lane once there is one. A phone has no room for
+// that row: an empty song's empty state offers them under its Add takes
+// (StudioNewLaneStart), and a song with lanes adds them from Add takes,
+// where the same three choices stand (StudioSourcePicker.tsx). Each choice
+// wears its instrument's glyph in its family's ink, as the lane it makes
+// will (InstrumentGlyph.tsx): beside its word in a computer's narrow header
+// column, and as a chip over its word for a finger.
 import { For, Show } from 'solid-js'
 import type { InstrumentFamilyId, InstrumentGlyphId, } from '@/lib/studio/instruments/glyph-catalog'
 import { instrumentFamily } from '@/lib/studio/instruments/glyph-catalog'
@@ -102,7 +103,7 @@ export function StudioNewLaneChoices(props: {
   )
 }
 
-/** New lane's choices under their caption, for a song with no lanes yet: it has no row under its lanes to hold them. */
+/** New lane's choices under their caption, for a phone's song with no lanes yet: a phone has no row under its lanes to hold them. */
 export function StudioNewLaneStart(props: {
   onNewLane?: (kind: StudioNewLaneKind) => void
   touch?: boolean
@@ -123,6 +124,8 @@ export function StudioNewLane(props: {
   /** A clip is being dragged: the row is where it gets a lane of its own. */
   dragging: boolean
   tablet: boolean
+  /** The song has lanes, so a clip to drag here: a song with none shows no drop hint. */
+  lanes: boolean
 }) {
   return (
     <div class={timeline.newLane} data-studio-new-lane="">
@@ -135,13 +138,15 @@ export function StudioNewLane(props: {
           touch={props.tablet}
         />
       </div>
-      <span class={timeline.newLaneDrop}>
-        <span>
-          {props.dragging
-            ? 'Drop here to start a new lane'
-            : 'Drag a clip here to give it its own lane'}
+      <Show when={props.lanes}>
+        <span class={timeline.newLaneDrop}>
+          <span>
+            {props.dragging
+              ? 'Drop here to start a new lane'
+              : 'Drag a clip here to give it its own lane'}
+          </span>
         </span>
-      </span>
+      </Show>
     </div>
   )
 }

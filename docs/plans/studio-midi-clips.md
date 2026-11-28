@@ -238,6 +238,11 @@ Each PR adds its own "Where it lives" section below.
   lane row, finds them there too. Since 21 Nov 2026 an empty song also
   offers them itself, under its own Add takes, on every device, so its
   first lane can be a Piano or Drums lane without opening Add takes.
+  Since 28 Nov 2026 a computer and a tablet show the New lane row at the
+  top of an empty song's lane column, where it stays under the first lane
+  once there is one, and the empty state keeps only its caption and Add
+  takes; a phone, which has no row, keeps the choices under Add takes. A
+  new song no longer opens Add takes.
 - **The End handle is a slider over the ruler**, so it takes the focus and
   the arrows (a grid step, Shift a bar, each press one commit). Its target
   is 44 px across and as tall as the ruler; on a touch screen it reaches a
