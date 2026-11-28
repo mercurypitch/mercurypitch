@@ -6114,3 +6114,35 @@ MACHINE RULES: one heavy job of the lead's at a time (two builders run too; thre
 - ASK THE OWNER: top up 440 or more ElevenLabs credits, or wait for the quota's reset. Then the
   6 are NEW calls, one a line; the failed calls were refused for quota and never charged, which
   NEXT.md records as the reason.
+
+## 28 Nov 17:41 UTC: IMPORT RETURNED; call 147; listening copy SENT; FINAL RUN part A LAUNCHED
+- IMPORT ((builder), finished and RETIRED):
+  - 66 imported; the 6 kept on their scratch takes.
+  - The calibration holds with L5's constants (+35/+5 ms; starts p90 45 ms, ends p90 70 ms).
+  - The new clock: 559.67 s (9:19.7), +28.13 s; speech 1.09 times the scratch takes.
+  - Words check: 12 flags, mostly Tavi.
+  - 32 edge cuts on 28 lines; the hardest are b12 -3, o12a -4 and o5 -7.
+  - mix: -16.0 LUFS, 5.0 LU, -2.2 dBTP.
+  - check 0 errors; clock-lint has one false hit at s12:131; merc-tags shows 40 problems (the
+    passes).
+  - board-cues.json is never regenerated, so the board tools still read the frozen clock.
+  - gen-root was run aside; the 12 scene lengths are NOT yet in the scene files.
+  - Its re-run for the six: $S/l6-voices/rerun-six.sh. Backup: l6film/backup-pre-voices/.
+- The six stand-ins (b48 to b51, b53, o14) fall at 515.73 to 552.17, in S12 and S13; S14
+  follows.
+- LEAD-ANSWERS 147: the import accepted. The final run goes in two parts: A now (S1 to S11) and
+  B after the six. The music-only version is a mux, with no second render. Next free call: 148.
+- SENT THE OWNER renders/voices-final-listen.mp3. The six are in the old practice voice from
+  8:35 to 9:12.
+- LAUNCHED ((model) xhigh): FINAL RUN (builder) (briefs/l6-final-run.md). PART A: S1 to
+  S11.
+  - Its steps: gen-root in place; the clock-lint mark; merc-shots --final; the 60 fps jobs; the
+    joins and tags; the holds again; clearance and probes.
+  - It hands back Part A and WAITS. RESUME it with SendMessage for PART B when the six takes are
+    in.
+  - Its notes: l6film/lab/final-run/NOTES.md.
+- WAITING ON THE OWNER: the credit top-up (440 or more) or the quota's reset; their listen; the
+  explicit word on deleting the old scratch.
+- When the credits come: the 6 lines, one NEW call each (the failed calls were refused for
+  quota and never charged). Flow 7EY16QvGRpxvJAqAZuQ3; same voices; eleven_v3; ledger rows
+  appended. Then rerun-six.sh is Part B's step 1.
