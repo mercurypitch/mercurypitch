@@ -224,6 +224,8 @@
 /* The take as it records, in its lane: a clip-shaped box that grows. It
    draws above the lane's clips, a selected one (z-index 2) and its trim
    handles too, so a take over a clip on the same lane is seen as it grows. */
+/* An opaque face, as a clip's is: a take recorded over a clip covers it,
+   so the clip's name and waveform do not read through the take's own. */
 .liveTake {
   position: absolute;
   top: 6px;
@@ -232,7 +234,11 @@
   min-width: 2px;
   border: 1px solid color-mix(in srgb, var(--red, #e5484d) 60%, transparent);
   border-radius: 6px;
-  background: color-mix(in srgb, var(--red, #e5484d) 12%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--red, #e5484d) 12%,
+    var(--studio-clip-base)
+  );
   pointer-events: none;
 }
 /* The part of the take on screen, laid out as a clip is (StudioTimeline
@@ -250,7 +256,11 @@
   flex: none;
   height: 20px;
   padding: 3px 8px;
-  background: color-mix(in srgb, var(--red, #e5484d) 22%, transparent);
+  background: color-mix(
+    in srgb,
+    var(--red, #e5484d) 22%,
+    var(--studio-clip-base)
+  );
   color: var(--studio-text);
   font-size: 11px;
   font-weight: 600;
