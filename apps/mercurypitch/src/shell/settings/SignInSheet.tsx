@@ -63,7 +63,7 @@ export function FailureLine(props: { flow: SignInFlow }): JSX.Element {
           >
             <WarnIcon size={20} />
             <p>
-              <strong>MercuryPitch could not reach your account.</strong> Check
+              <strong>Mercury Pitch could not reach your account.</strong> Check
               the connection and try again. You are still practicing on{' '}
               {thisDeviceLower()}.
             </p>

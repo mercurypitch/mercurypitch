@@ -280,7 +280,7 @@ describe('when a way in does not end in a session', () => {
     await settle()
 
     const note = q('signin-offline')?.textContent ?? ''
-    expect(note).toContain('MercuryPitch could not reach your account.')
+    expect(note).toContain('Mercury Pitch could not reach your account.')
     expect(note).toContain('You are still practicing on this phone.')
   })
 

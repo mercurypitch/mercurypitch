@@ -266,7 +266,7 @@ export const SyncSettings: Component = () => {
                 when={iosHint()}
                 fallback="Installing the app makes browsers far more willing to keep your library, and it opens without browser chrome, so there is more room for the words."
               >
-                On an iPhone or iPad, adding MercuryPitch to the Home Screen is
+                On an iPhone or iPad, adding Mercury Pitch to the Home Screen is
                 what lets Safari keep your library — and it opens without the
                 browser chrome, so there is more room for the words. Until there
                 is a native app, this is the way to do it.
