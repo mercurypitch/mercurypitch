@@ -145,6 +145,39 @@ describe('the Legend card when the server cannot be reached', () => {
   })
 })
 
+describe('Try again on the Legend card, while its read is out', () => {
+  // That read can take its whole 8 s deadline. The button stays where it is,
+  // holding the focus, and waits (aria-disabled, as the Leagues screen's Try
+  // again does); a press while it waits sends nothing. One press, one request.
+  it('waits, and sends nothing more for further presses', async () => {
+    nextRead = () => Promise.resolve({ status: 'unreachable' })
+    render(() => <WeeklyLegendHero />)
+    const retry = await waitFor(() => screen.getByTestId('legend-retry'))
+    let answer: (read: ActiveWeeklyRead) => void = () => undefined
+    nextRead = () =>
+      new Promise<ActiveWeeklyRead>((resolve) => {
+        answer = resolve
+      })
+
+    fireEvent.click(retry)
+    await waitFor(() => expect(reads).toBe(2))
+    const waiting = screen.getByTestId('legend-retry')
+    expect(waiting).toBe(retry)
+    expect(waiting.getAttribute('aria-disabled')).toBe('true')
+    fireEvent.click(waiting)
+    fireEvent.click(waiting)
+    expect(reads).toBe(2)
+
+    answer({ status: 'unreachable' })
+    await waitFor(() =>
+      expect(
+        screen.getByTestId('legend-retry').getAttribute('aria-disabled'),
+      ).toBeNull(),
+    )
+    expect(reads).toBe(2)
+  })
+})
+
 describe('the Legend card while the first read is in flight', () => {
   it('holds its place and says nothing yet', async () => {
     nextRead = () => new Promise<ActiveWeeklyRead>(() => {})

@@ -92,13 +92,19 @@ export function LegendDoor(props: DoorProps): JSX.Element {
 
   return (
     <div class="mp-legend-door" data-testid="legend-door">
-      <Show when={props.reading() && props.running() === null}>
+      <Show
+        when={
+          props.reading() && props.running() === null && !props.unreachable()
+        }
+      >
         <p class="mp-legend-note mp-legend-empty" role="status">
           Loading the Legend
         </p>
       </Show>
 
-      <Show when={!props.reading() && props.unreachable()}>
+      {/* Kept while Try again's read is out, so the button and its focus
+          stay where they are. */}
+      <Show when={props.unreachable()}>
         <div class="mp-legend-empty">
           <div class="mp-set-note mp-set-note--warn" role="status">
             <WarnIcon size={20} />
@@ -107,11 +113,17 @@ export function LegendDoor(props: DoorProps): JSX.Element {
               and try again.
             </p>
           </div>
+          {/* Not `disabled` while its read is out: a disabled button drops
+              the focus it has. A press while it waits sends nothing. */}
           <button
             type="button"
             class="mp-legend-btn mp-legend-btn--line"
             data-testid="legend-retry"
-            onClick={() => props.onRetry()}
+            aria-disabled={props.reading() ? 'true' : undefined}
+            onClick={() => {
+              if (props.reading()) return
+              props.onRetry()
+            }}
           >
             Try again
           </button>

@@ -211,6 +211,12 @@ test('Try again on the Legend card asks the servers once, even while they are ou
 
   await retry.click()
   await expect.poll(legendReads).toBe(before + 1)
+  // While that read is out the button waits where it is, and pressing it
+  // again sends nothing: one press, one request. (Forced: Playwright will not
+  // press a button that says it is disabled, and a singer still can.)
+  await expect(retry).toHaveAttribute('aria-disabled', 'true')
+  await retry.click({ force: true })
+  await retry.click({ force: true })
   // Unanswered, it gives up by the same 8 s deadline, and the card still
   // says it can't reach the server.
   await page.waitForEvent('requestfailed', {
@@ -218,5 +224,6 @@ test('Try again on the Legend card asks the servers once, even while they are ou
     timeout: 12_000,
   })
   await expect(page.getByTestId('legend-unreachable')).toBeVisible()
+  await expect(retry).not.toHaveAttribute('aria-disabled', 'true')
   expect(legendReads()).toBe(before + 1)
 })

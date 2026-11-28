@@ -295,6 +295,43 @@ describe('the door', () => {
     ).toEqual([false, true])
   })
 
+  // That read can take its whole 8 s deadline. Try again stays where it is,
+  // holding the focus, and waits (aria-disabled, as the Leagues screen's Try
+  // again does); a press while it waits sends nothing. One press, one request.
+  it('holds Try again while its read is out, and sends nothing more', async () => {
+    active.mockResolvedValueOnce({ status: 'unreachable' })
+    await open()
+    let answer: (read: ActiveWeeklyRead) => void = () => undefined
+    active.mockImplementationOnce(
+      () =>
+        new Promise<ActiveWeeklyRead>((resolve) => {
+          answer = resolve
+        }),
+    )
+    const retry = q('[data-testid="legend-retry"]')
+    retry?.focus()
+    retry?.click()
+    await settle()
+
+    const waiting = q('[data-testid="legend-retry"]')
+    expect(waiting).not.toBeNull()
+    expect(waiting).toBe(retry)
+    expect(waiting?.getAttribute('aria-disabled')).toBe('true')
+    expect(document.activeElement).toBe(retry)
+    waiting?.click()
+    waiting?.click()
+    await settle()
+    expect(active).toHaveBeenCalledTimes(2)
+
+    answer({ status: 'unreachable' })
+    await settle()
+    await settle()
+    expect(
+      q('[data-testid="legend-retry"]')?.getAttribute('aria-disabled'),
+    ).toBeNull()
+    expect(active).toHaveBeenCalledTimes(2)
+  })
+
   it('says when the line sits outside the singer’s range, and moves nothing', async () => {
     active.mockResolvedValue(
       ok(legend({ targetItems: [note(72, 0), note(76, 1)] })),

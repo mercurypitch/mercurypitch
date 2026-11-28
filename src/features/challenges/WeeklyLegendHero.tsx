@@ -72,6 +72,15 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
     return read.status === 'ok' ? read.challenge : null
   }
   const unreachable = () => active()?.status === 'unreachable'
+  /**
+   * Try again, once. Its read can take its whole deadline; meanwhile the
+   * button stays where it is and waits (aria-disabled, not `disabled`, which
+   * would drop the focus it has), and a further press sends nothing.
+   */
+  const tryAgain = (): void => {
+    if (active.loading) return
+    void refetchActive(TRY_AGAIN)
+  }
   const [board, { refetch: refetchBoard }] = createResource(
     () => challenge()?.id,
     (id) => getWeeklyBoard(id),
@@ -240,7 +249,8 @@ export const WeeklyLegendHero: Component<WeeklyLegendHeroProps> = (props) => {
               </p>
               <button
                 class={styles.allLink}
-                onClick={() => void refetchActive(TRY_AGAIN)}
+                aria-disabled={active.loading ? 'true' : undefined}
+                onClick={tryAgain}
                 data-testid="legend-retry"
               >
                 Try again

@@ -187,6 +187,12 @@
   text-decoration: underline;
 }
 
+/* Try again while its read is out: it keeps its place and its focus. */
+.allLink[aria-disabled='true'] {
+  opacity: 0.55;
+  cursor: default;
+}
+
 /* How attempts work, stated up front — one tap records one run (D3). */
 .attemptHint {
   margin: 6px 0 0;
