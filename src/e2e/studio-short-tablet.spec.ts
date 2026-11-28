@@ -235,7 +235,8 @@ test('a short tablet window keeps lane switches beside the name with a finger’
     localStorage.setItem('mercurypitch.studio.lane-height', 'tall')
   })
   await openArrangement(page)
-  for (const name of ['Harmony', 'Bass', 'Keys'])
+  // The last lane's name is too long for its line beside the switches.
+  for (const name of ['Harmony', 'Bass', 'Acoustic guitar room mic'])
     await importStudioAudio(page, name, 2)
   const studio = studioRegion(page)
 
@@ -256,6 +257,19 @@ test('a short tablet window keeps lane switches beside the name with a finger’
       '[data-studio-track-name], [data-studio-track-source]',
     ),
   ).toEqual({ outside: [], crossing: [] })
+  // A name shows whole lines, one or two: no sliver of a second line.
+  const nameLines = await studio
+    .locator('[data-studio-track-name]')
+    .evaluateAll((names) =>
+      names.map(
+        (name) =>
+          Math.round(
+            (name.getBoundingClientRect().height * 100) /
+              Number.parseFloat(getComputedStyle(name).lineHeight),
+          ) / 100,
+      ),
+    )
+  expect(nameLines).toEqual([1, 1, 1, 2])
   for (const reading of await gainReadings(page)) {
     expect(reading.belowCap, 'the dB reading clears the cap').toBeGreaterThan(0)
     expect(
@@ -300,6 +314,9 @@ test('a short tablet window keeps lane switches beside the name with a finger’
     .poll(async () => Math.round((await desk.boundingBox())!.height))
     .toBe(196)
   await expectDeskFits(page, desk, 'floor')
-  const fader = desk.getByRole('slider', { name: 'Keys volume', exact: true })
+  const fader = desk.getByRole('slider', {
+    name: 'Acoustic guitar room mic volume',
+    exact: true,
+  })
   expect((await fader.boundingBox())!.height).toBeGreaterThanOrEqual(44)
 })

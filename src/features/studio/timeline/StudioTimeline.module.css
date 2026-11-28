@@ -1724,6 +1724,12 @@
   margin-block: 0;
   padding-block: 2px;
 }
+/* A name too long for one line beside the switches keeps both its lines,
+   and its source steps out of sight (the title still says it). Shrunk to
+   make room for the source, it showed a 4 px sliver of its second line. */
+.low .trackNameText {
+  flex-shrink: 0;
+}
 /* The switches are drawn at 36 px, 12 px apart, and each takes a 48 px
    press: 6 px all round, meeting its neighbour's and clear of the name, the
    row below and the header's edge. A press counts, not the drawing. */
