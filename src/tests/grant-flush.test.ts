@@ -15,6 +15,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 vi.mock('@/lib/defaults', () => ({ API_BASE_URL: 'http://api.test' }))
 vi.mock('@/lib/analytics', () => ({ trackEvent: vi.fn() }))
 
+import { admitApiCall, apiDidNotAnswer } from '@/db/api-reachability'
 import { discardPendingGrants, flushGrants, pendingAchievement, pendingCount, queueAchievement, queueBadge, } from '@/db/services/grant-flush'
 import { setAuthToken } from '@/db/services/user-service'
 
@@ -176,6 +177,28 @@ describe('flushGrants', () => {
     queueBadge('badge-1', '2026-08-04T10:00:00.000Z')
     await flushGrants()
 
+    expect(pendingCount()).toBe(1)
+  })
+})
+
+describe('while the API is out of reach', () => {
+  /** A call to the API just got no answer: the window is open. */
+  function apiOutOfReach(): void {
+    const call = admitApiCall('call')
+    if (call === null) throw new Error('the API was already out of reach')
+    apiDidNotAnswer(call)
+  }
+
+  // Only sign-out's flush goes as a person's press (auth-service.ts). The
+  // flushes a page makes by itself, an unload included, are refused inside
+  // the window like any other call it makes, and keep their rows.
+  it('refuses the unload flush and keeps its rows', async () => {
+    apiOutOfReach()
+    queueAchievement({ achievementId: 'ach-1', progress: 10, unlocked: false })
+
+    await flushGrants(true)
+
+    expect(recorded).toEqual([])
     expect(pendingCount()).toBe(1)
   })
 })

@@ -1139,6 +1139,37 @@ describe('logout', () => {
     )
   })
 
+  // What the grant engine still holds belongs to the singer signing out, and
+  // logout() discards it right after this flush: it gets this one chance. So
+  // it goes as part of the press, like the sign-out request itself.
+  it('sends the grants it still holds even while the API is out of reach', async () => {
+    const grants = await import('@/db/services/grant-flush')
+    grants.discardPendingGrants()
+    const network = vi.fn(async () => {
+      throw new TypeError('Failed to fetch')
+    })
+    vi.stubGlobal('fetch', network)
+    await expect(
+      fetchWithDeadline('http://api.test/api/weekly/active'),
+    ).rejects.toBeInstanceOf(TypeError)
+    setAuthToken(makeToken(3600, 'password'))
+    grants.queueAchievement({
+      achievementId: 'first-steps',
+      progress: 100,
+      unlocked: true,
+    })
+    network.mockClear()
+
+    logout()
+
+    await vi.waitFor(() =>
+      expect(network).toHaveBeenCalledWith(
+        'http://api.test/api/userAchievements/bulk',
+        expect.objectContaining({ method: 'POST', keepalive: true }),
+      ),
+    )
+  })
+
   it('clears it even when nobody was signed in', async () => {
     localStorage.setItem('pitchperfect_admin_key', 'k-456')
 

@@ -129,9 +129,22 @@ export interface GrantFlushCredentials {
   readonly userId: string
 }
 
+/** How a flush is sent. */
+export interface GrantFlushOptions {
+  /**
+   * A person's press is sending it: Sign out, after which logout() discards
+   * whatever this flush does not write. It goes even while the API is out of
+   * reach (api-fetch.ts), as their request, since there is no later flush for
+   * these rows. Every other flush is a page's own and is refused inside that
+   * window, an unload's included; its rows stay queued in the page.
+   */
+  readonly userAction?: boolean
+}
+
 export async function flushGrants(
   unloading = false,
   credentials?: GrantFlushCredentials,
+  options: GrantFlushOptions = {},
 ): Promise<void> {
   if (inFlight) return inFlight
   if (pendingAchievements.size === 0 && pendingBadges.size === 0) return
@@ -179,7 +192,11 @@ export async function flushGrants(
   inFlight = (async () => {
     try {
       if (cloud) {
-        await writeCloud(achievements, badges, { headers, unloading })
+        await writeCloud(achievements, badges, {
+          headers,
+          unloading,
+          userAction: options.userAction === true,
+        })
       } else {
         await writeLocal(achievements, badges, userId)
       }
@@ -197,6 +214,8 @@ interface CloudWriteOptions {
   /** No userId: both endpoints take the caller's identity from the token, and
    *  a userId in the body would be a claim rather than a fact. */
   unloading: boolean
+  /** Sent as a person's press: see GrantFlushOptions. */
+  userAction: boolean
 }
 
 /**
@@ -223,18 +242,23 @@ async function writeCloud(
         body: JSON.stringify({ rows: achievements }),
         keepalive: opts.unloading,
       },
+      { userAction: opts.userAction },
     )
     if (!res.ok) throw new Error(`bulk achievements: ${res.status}`)
   }
   if (badges.length > 0) {
-    const res = await fetchWithDeadline(`${API_BASE_URL}/api/userBadges/bulk`, {
-      method: 'POST',
-      headers: opts.headers,
-      body: JSON.stringify({
-        rows: badges.map(([badgeId, earnedAt]) => ({ badgeId, earnedAt })),
-      }),
-      keepalive: opts.unloading,
-    })
+    const res = await fetchWithDeadline(
+      `${API_BASE_URL}/api/userBadges/bulk`,
+      {
+        method: 'POST',
+        headers: opts.headers,
+        body: JSON.stringify({
+          rows: badges.map(([badgeId, earnedAt]) => ({ badgeId, earnedAt })),
+        }),
+        keepalive: opts.unloading,
+      },
+      { userAction: opts.userAction },
+    )
     if (!res.ok) throw new Error(`bulk badges: ${res.status}`)
   }
 }

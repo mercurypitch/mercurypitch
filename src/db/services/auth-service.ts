@@ -1363,8 +1363,10 @@ export function logout(): void {
     headers: { 'Content-Type': 'application/json', ...getAuthHeaders() },
     userId: getUserId(),
   }
+  // Sent as part of the press: what this flush does not write is discarded
+  // on the next line, so it goes even while the API is out of reach.
   void import('./grant-flush').then((grants) => {
-    void grants.flushGrants(true, grantCredentials)
+    void grants.flushGrants(true, grantCredentials, { userAction: true })
     grants.discardPendingGrants()
   })
 
