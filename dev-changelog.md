@@ -9,6 +9,71 @@ The short, user-facing summary rendered in the app's Changelog modal lives in
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.9.33] - 2026-11-28
+
+8 commits since `v0.9.32` (e260ed1c2) before these notes, from two PRs
+merged after the tag: #1483 and #1484, both rebase-merged. No database
+migration and no feature switch changes. Both touch Studio only.
+
+### Studio on a short tablet window (#1483)
+
+- On a tablet in a landscape window 760 px tall or less
+  (`STUDIO_LOW_TABLET_QUERY`, gated on height and orientation, not the
+  device), a lane header puts arm, Mute and Solo beside the name: a tall
+  lane is 104 px instead of 144 and a compact one 64 instead of 96. The
+  switches are drawn at 36 px with a 48 px press that never overlaps a
+  neighbour's. The header is 296 px wide and a long name keeps two whole
+  lines.
+- The Mix desk at 300 px or less keeps the Master's flavours on one row,
+  scrolling only when the pills cannot fit. Under 250 px on touch, each
+  strip puts its knob beside its fader, group labels hide (keeping their
+  names for screen readers) and the master tightens. A narrow fader hides
+  its scale words.
+- Measured in headless Chromium at 1344x688 (a Galaxy Tab S9+ in landscape
+  Chrome, estimated from the owner's screenshot): the lane row went from 144
+  to 104 px, the desk opens at 300 px instead of 222, and at the 196 px floor
+  the 20 strip overlaps, 5 master overlaps and the 18 px page scroll are
+  gone. 1440x900 and 1180x820 tablets, desktop 1440x900 and 1280x720, and a
+  390x844 phone are pixel-identical apart from the floor fix.
+- `src/e2e/studio-short-tablet.spec.ts` (@smoke, 1344x688, touch) checks the
+  lane heights, whole name lines, dB clearance and the 48 px presses.
+
+### Studio: follow-ups from the dev check of takes (#1484)
+
+- A take recording over a clip is opaque: the live take's face and name band
+  mix the red into `--studio-clip-base` (12% and 22%), the way a clip's own
+  face is made. Before, both were translucent, so "Take 2" printed over
+  "Take 1" and its waveform, and on a phone "Take 1" showed above "Take 2".
+- Play and Space run the song's clock silently when every lane is muted, or
+  when Solo leaves nothing heard, as REAPER does: its
+  [troubleshooting guide](https://www.reaper.fm/guides/ReaperTroubleshootingGuide.pdf)
+  lists a muted track as a cause of playback with no sound. Muted lanes are
+  built at zero gain where memory allows, so a lane unmuted during the run is
+  heard at once. `playableStudioFrom` refuses only a song with no segments,
+  in words that stay true for a muted take: "Add a take or draw some notes
+  before playing."
+- A new song no longer opens Add takes by itself (`startPanel` starts at
+  `null`), so the empty state's actions show.
+- On a computer and a tablet, the New lane row (Audio, Piano, Drums) shows on
+  a song with no lanes too, at the top of the lane column. Its drop hint
+  shows only once lanes exist. A phone has no row and keeps Add takes and the
+  three choices in the middle of the empty state.
+- Add takes shows its own New lane section only where the panel covers the
+  lanes (a narrow window or a phone). In 0.9.32 a computer showed both it and
+  the lane column's row once a song had lanes.
+- Checked, no change: on a tablet, a long press on the arm button opens only
+  the lane menu. `studio-lane-menu.spec.ts` now covers it.
+- Decisions, logged as overridable: the row in the lane column for New lane
+  on a new song (over opening Add takes, as built, or all four choices in the
+  middle), and keeping the top bar's Add takes button. Once a song has lanes
+  it is the only way to the takes kept in Karaoke, Jam and the drills, and to
+  files; on a phone it is also the only way to add a lane.
+- Tests: `transport.muted.test.ts`, `prepare-plan.test.ts` and
+  `studio-muted-play.spec.ts` are new. `studio-failure-notices.spec.ts` used
+  a muted song to trigger its notice and now uses a song too short to repeat.
+  The Inputs check's clock moved to `StudioInputsPanel.tsx`
+  (`studioInputsClock`), taking `StudioWorkspace.tsx` from 799 to 795 lines.
+
 ## [0.9.32] - 2026-11-28
 
 21 commits since `v0.9.31` (32f938cde) before these notes, from five PRs
